@@ -56,12 +56,8 @@ export function TopNavigation() {
         {/* Auth Buttons - only show if not authenticated */}
         {!isAuthenticated && (
           <div className="flex items-center gap-3 relative z-10">
-            <div className="p-1 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 shadow-lg">
-              <div className="flex items-center gap-2">
-                <LoginDialog />
-                <SignUpDialog />
-              </div>
-            </div>
+            <LoginDialog />
+            <SignUpDialog />
           </div>
         )}
       </div>
