@@ -1,6 +1,5 @@
-import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
-import { LogIn } from "lucide-react";
+import { LoginDialog } from "@/components/LoginDialog";
 
 const navigationItems = [
   { title: "Home", path: "/" },
@@ -43,10 +42,7 @@ export function TopNavigation() {
         </div>
 
         {/* Login Button */}
-        <Button variant="outline" size="sm" data-testid="button-login">
-          <LogIn className="w-4 h-4 mr-2" />
-          Log In
-        </Button>
+        <LoginDialog />
       </div>
 
       {/* Mobile Navigation */}
