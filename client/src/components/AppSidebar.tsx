@@ -28,12 +28,12 @@ const navigationItems = [
     icon: Home,
   },
   {
-    title: "Talent Acquisition",
+    title: "Philippine Talent",
     url: "/talent",
     icon: Search,
   },
   {
-    title: "Projects",
+    title: "Client Projects",
     url: "/projects",
     icon: Briefcase,
   },
@@ -46,22 +46,22 @@ const navigationItems = [
 
 const managementItems = [
   {
-    title: "Clients",
+    title: "Client Management",
     url: "/clients",
     icon: Users,
   },
   {
-    title: "Contracts",
-    url: "/contracts",
-    icon: FileText,
+    title: "Service Models",
+    url: "/services",
+    icon: Target,
   },
   {
-    title: "Payments",
-    url: "/payments",
-    icon: DollarSign,
+    title: "4P System",
+    url: "/4p-system",
+    icon: Target,
   },
   {
-    title: "ROI Analytics",
+    title: "ROI Calculator",
     url: "/roi",
     icon: TrendingUp,
   },
