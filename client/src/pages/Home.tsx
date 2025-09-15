@@ -90,12 +90,12 @@ export default function Home() {
               Making Outsourcing Easy
             </Badge>
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-              Scale Your Business with
-              <span className="text-primary block mt-2">OnSpot Talent</span>
+              Fuel Your Vision with
+              <span className="text-primary block mt-2">OnSpot</span>
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              Connect with 500+ vetted professionals. Reduce costs by 70%. 
-              Scale operations seamlessly with our proven outsourcing platform.
+              Connect with 50,000+ vetted professionals. Reduce cost by up to 70%. 
+              Scale operations seamlessly with our Performance-Driven System.
             </p>
           </div>
           
