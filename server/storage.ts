@@ -198,7 +198,7 @@ export class MemStorage implements IStorage {
     this.disputes = new Map();
     this.notifications = new Map();
 
-    // Seed default skills for Philippine marketplace
+    // Seed default skills for OnSpot marketplace
     this.seedDefaultSkills();
   }
 
@@ -319,7 +319,7 @@ export class MemStorage implements IStorage {
     const profile: Profile = {
       ...insertProfile,
       id,
-      location: insertProfile.location ?? "Philippines",
+      location: insertProfile.location ?? "Global",
       rateCurrency: insertProfile.rateCurrency ?? "USD",
       availability: insertProfile.availability ?? "available",
       languages: insertProfile.languages ?? ["English"],
