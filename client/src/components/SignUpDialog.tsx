@@ -89,7 +89,12 @@ export function SignUpDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="default" size="sm" data-testid="button-signup">
+        <Button 
+          variant="default" 
+          size="sm" 
+          className="bg-white text-[#474ead] border-0 font-semibold shadow-lg"
+          data-testid="button-signup"
+        >
           <UserPlus className="w-4 h-4 mr-2" />
           Sign Up
         </Button>

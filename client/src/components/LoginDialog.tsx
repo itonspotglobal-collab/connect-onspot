@@ -70,7 +70,12 @@ export function LoginDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" data-testid="button-login">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="text-white border-white/60 bg-black/20 font-medium"
+          data-testid="button-login"
+        >
           <LogIn className="w-4 h-4 mr-2" />
           Log In
         </Button>
