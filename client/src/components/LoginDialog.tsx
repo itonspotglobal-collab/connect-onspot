@@ -15,7 +15,7 @@ import {
 import { LogIn, Eye, EyeOff, Mail, Shield, Zap } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { OnSpotLogo } from "@/components/OnSpotLogo";
+import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
 
 export function LoginDialog() {
   const [open, setOpen] = useState(false);
@@ -78,7 +78,11 @@ export function LoginDialog() {
       <DialogContent className="sm:max-w-md">
         <DialogHeader className="text-center pb-6">
           <div className="flex justify-center mb-4">
-            <OnSpotLogo size="lg" />
+            <img 
+              src={onspotLogo} 
+              alt="OnSpot" 
+              className="h-12 w-auto"
+            />
           </div>
           <DialogTitle className="text-2xl">Welcome to OnSpot</DialogTitle>
           <DialogDescription className="text-base">
