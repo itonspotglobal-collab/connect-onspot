@@ -1,14 +1,14 @@
 import { ROICalculator } from '../ROICalculator'
 
 export default function ROICalculatorExample() {
-  //todo: remove mock functionality
+  //todo: remove mock functionality - Using actual OnSpot metrics
   const mockData = {
-    totalCostSavings: 145000,
+    totalCostSavings: 50000000, // $50M value delivered since 2021
     previousCosts: 280000,
-    currentCosts: 135000,
-    timeToROI: 6,
-    teamProductivity: 91,
-    clientSatisfaction: 95
+    currentCosts: 84000, // 70% cost savings
+    timeToROI: 3, // Faster ROI with OnSpot
+    teamProductivity: 85, // Employee NPS
+    clientSatisfaction: 75 // Client NPS
   }
 
   return (

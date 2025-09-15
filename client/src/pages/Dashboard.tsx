@@ -3,6 +3,8 @@ import { TalentCard } from '@/components/TalentCard'
 import { TaskBoard } from '@/components/TaskBoard'
 import { PerformanceChart } from '@/components/PerformanceChart'
 import { ROICalculator } from '@/components/ROICalculator'
+import { ServiceModels } from '@/components/ServiceModels'
+import { FourPSystem } from '@/components/FourPSystem'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -32,12 +34,12 @@ export default function Dashboard() {
   ]
 
   const roiData = {
-    totalCostSavings: 145000,
+    totalCostSavings: 50000000, // $50M value delivered since 2021
     previousCosts: 280000,
-    currentCosts: 135000,
-    timeToROI: 6,
-    teamProductivity: 91,
-    clientSatisfaction: 95
+    currentCosts: 84000, // 70% cost savings  
+    timeToROI: 3, // Faster ROI with OnSpot
+    teamProductivity: 85, // Employee NPS
+    clientSatisfaction: 75 // Client NPS
   }
 
   const mockTasks = {
@@ -110,7 +112,7 @@ export default function Dashboard() {
             Welcome to OnSpot Platform
           </h1>
           <p className="text-muted-foreground">
-            Making Outsourcing Easy - Your complete outsourcing management hub
+            Making Outsourcing Easy - Built by entrepreneurs, for entrepreneurs. Cut costs by up to 70% and fuel 8X business growth.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -134,30 +136,30 @@ export default function Dashboard() {
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <DashboardCard
-          title="Active Talent"
-          value="247"
-          change={{ value: 12, type: 'increase' }}
-          subtitle="Available now"
+          title="Resources Deployed"
+          value="500+"
+          change={{ value: 15, type: 'increase' }}
+          subtitle="Supporting client operations"
           icon={<Users className="h-4 w-4" />}
         />
         <DashboardCard
-          title="Cost Savings"
-          value="$85,430"
-          change={{ value: 8, type: 'increase' }}
-          subtitle="This month"
+          title="Value Delivered"
+          value="$50M"
+          change={{ value: 12, type: 'increase' }}
+          subtitle="Since 2021"
           icon={<DollarSign className="h-4 w-4" />}
         />
         <DashboardCard
-          title="Performance"
-          value="94%"
-          change={{ value: -2, type: 'decrease' }}
-          subtitle="Team productivity"
+          title="Client Satisfaction"
+          value="75%"
+          subtitle="Net Promoter Score"
           icon={<TrendingUp className="h-4 w-4" />}
         />
         <DashboardCard
-          title="Active Projects"
-          value="38"
-          subtitle="In progress"
+          title="Active Clients"
+          value="85"
+          change={{ value: 8, type: 'increase' }}
+          subtitle="Across industries"
           icon={<Briefcase className="h-4 w-4" />}
         />
       </div>
@@ -234,10 +236,10 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <TalentCard
               id="talent-1"
-              name="Sarah Chen"
+              name="Maria Santos"
               role="Senior Full Stack Developer"
-              location="San Francisco, CA"
-              hourlyRate={85}
+              location="Manila, Philippines"
+              hourlyRate={25}
               rating={4.9}
               skills={["React", "Node.js", "TypeScript", "Python", "AWS"]}
               avatarUrl={avatarImage}
@@ -246,25 +248,25 @@ export default function Dashboard() {
             />
             <TalentCard
               id="talent-2"
-              name="Marcus Rodriguez"
-              role="UI/UX Designer"
-              location="New York, NY"
-              hourlyRate={75}
+              name="Carlos Reyes"
+              role="Customer Support Specialist"
+              location="Cebu, Philippines"
+              hourlyRate={8}
               rating={4.8}
-              skills={["Figma", "Adobe Creative Suite", "Prototyping", "User Research"]}
-              experience="4+ years"
-              availability="busy"
+              skills={["English Fluency", "CRM Management", "Technical Support", "Customer Service"]}
+              experience="3+ years"
+              availability="available"
             />
             <TalentCard
               id="talent-3"
-              name="Priya Sharma"
-              role="Data Analyst"
-              location="Remote"
-              hourlyRate={65}
+              name="Ana Dela Cruz"
+              role="Virtual Assistant"
+              location="Davao, Philippines"
+              hourlyRate={6}
               rating={4.7}
-              skills={["Python", "SQL", "Tableau", "Machine Learning"]}
-              experience="3+ years"
-              availability="offline"
+              skills={["Admin Support", "Data Entry", "Social Media", "Lead Generation"]}
+              experience="4+ years"
+              availability="available"
             />
           </div>
         </CardContent>
@@ -273,19 +275,25 @@ export default function Dashboard() {
       {/* Project Management */}
       <TaskBoard tasks={mockTasks} />
 
+      {/* Service Models */}
+      <ServiceModels />
+
+      {/* 4P System */}
+      <FourPSystem />
+
       {/* AI Insights Section */}
       <Card>
         <CardHeader>
-          <CardTitle>AI Insights & Recommendations</CardTitle>
+          <CardTitle>OnSpot Insights & Recommendations</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
               <div className="h-2 w-2 rounded-full bg-blue-500 mt-2" />
               <div>
-                <p className="text-sm font-medium">Talent Match Opportunity</p>
+                <p className="text-sm font-medium">Philippine Talent Pool Alert</p>
                 <p className="text-sm text-muted-foreground">
-                  3 new developers with React expertise are available that match your current project requirements.
+                  15 pre-vetted specialists from our 50k+ talent pool match your project requirements. Start scaling in 21 days.
                 </p>
                 <Badge variant="outline" className="mt-1 text-xs">High Priority</Badge>
               </div>
@@ -293,21 +301,21 @@ export default function Dashboard() {
             <div className="flex items-start gap-3 p-3 bg-green-50 dark:bg-green-950/20 rounded-lg">
               <div className="h-2 w-2 rounded-full bg-green-500 mt-2" />
               <div>
-                <p className="text-sm font-medium">Cost Optimization</p>
+                <p className="text-sm font-medium">Cost Savings Opportunity</p>
                 <p className="text-sm text-muted-foreground">
-                  Switching to our recommended talent pool could save you an additional $12,000 this quarter.
+                  Upgrading to our Managed service could save you up to 70% on operational costs while boosting productivity.
                 </p>
-                <Badge variant="outline" className="mt-1 text-xs">Savings Opportunity</Badge>
+                <Badge variant="outline" className="mt-1 text-xs">70% Savings</Badge>
               </div>
             </div>
-            <div className="flex items-start gap-3 p-3 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg">
-              <div className="h-2 w-2 rounded-full bg-yellow-500 mt-2" />
+            <div className="flex items-start gap-3 p-3 bg-purple-50 dark:bg-purple-950/20 rounded-lg">
+              <div className="h-2 w-2 rounded-full bg-purple-500 mt-2" />
               <div>
-                <p className="text-sm font-medium">Performance Alert</p>
+                <p className="text-sm font-medium">Growth Potential</p>
                 <p className="text-sm text-muted-foreground">
-                  Project "Database optimization" is approaching deadline. Consider adding more resources.
+                  Based on our 4P System analysis, your business is positioned for 8X growth potential with the right outsourcing strategy.
                 </p>
-                <Badge variant="outline" className="mt-1 text-xs">Action Needed</Badge>
+                <Badge variant="outline" className="mt-1 text-xs">8X Growth</Badge>
               </div>
             </div>
           </div>
