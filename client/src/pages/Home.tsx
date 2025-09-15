@@ -148,11 +148,11 @@ export default function Home() {
         <div className="container mx-auto text-center space-y-12 py-16 px-6">
           <div className="space-y-8">
             <Badge variant="outline" className="text-sm font-medium px-6 py-3 border-white/40 text-white bg-white/15 backdrop-blur-sm">
-              Making Outsourcing Easy
+              Effortless Outsourcing
             </Badge>
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight text-white drop-shadow-lg">
-              Fuel Your Vision with
-              <span className="text-white block mt-4 text-6xl md:text-8xl lg:text-9xl">OnSpot</span>
+              Fuel Your Vision
+              <span className="text-white block mt-4 text-6xl md:text-8xl lg:text-9xl">with OnSpot</span>
             </h1>
             <p className="text-2xl md:text-3xl text-white/95 max-w-4xl mx-auto leading-relaxed font-light tracking-wide drop-shadow-md">
               Connect with 50,000+ vetted professionals. Reduce cost by up to 70%. 
