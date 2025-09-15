@@ -7,14 +7,14 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import Dashboard from "@/pages/Dashboard";
+import Home from "@/pages/Home";
 import TalentSearch from "@/pages/TalentSearch";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
+      <Route path="/" component={Home} />
       <Route path="/talent" component={TalentSearch} />
       <Route path="/projects" component={() => <div className="p-6">Projects Module - Coming Soon</div>} />
       <Route path="/performance" component={() => <div className="p-6">Performance Module - Coming Soon</div>} />

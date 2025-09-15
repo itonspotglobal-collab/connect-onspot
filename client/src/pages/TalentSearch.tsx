@@ -48,7 +48,7 @@ interface Filters {
 }
 
 const AVAILABILITY_OPTIONS = [
-  { value: "", label: "All Availability" },
+  { value: "all", label: "All Availability" },
   { value: "available", label: "Available Now" },
   { value: "busy", label: "Busy" },
   { value: "unavailable", label: "Not Available" }
@@ -66,9 +66,9 @@ const POPULAR_SKILLS = [
 
 export default function TalentSearch() {
   const [filters, setFilters] = useState<Filters>({
-    location: "",
+    location: "all",
     skills: [],
-    availability: "",
+    availability: "all",
     minRate: 5,
     maxRate: 50,
     rating: 0
@@ -102,9 +102,9 @@ export default function TalentSearch() {
 
   const clearFilters = () => {
     setFilters({
-      location: "",
+      location: "all",
       skills: [],
-      availability: "",
+      availability: "all",
       minRate: 5,
       maxRate: 50,
       rating: 0
@@ -183,7 +183,7 @@ export default function TalentSearch() {
                     <SelectValue placeholder="All Locations" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Locations</SelectItem>
+                    <SelectItem value="all">All Locations</SelectItem>
                     {LOCATION_OPTIONS.map(location => (
                       <SelectItem key={location} value={location}>{location}</SelectItem>
                     ))}
