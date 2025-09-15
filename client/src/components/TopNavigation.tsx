@@ -26,13 +26,11 @@ export function TopNavigation() {
       <div className="container flex h-16 items-center justify-between px-4 relative">
         {/* Logo */}
         <Link href="/" className="flex items-center relative z-10 hover-elevate transition-all duration-300" data-testid="logo-home">
-          <div className="p-2 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
-            <img 
-              src={onspotLogo} 
-              alt="OnSpot" 
-              className="h-8 w-auto brightness-0 saturate-100 invert drop-shadow-sm"
-            />
-          </div>
+          <img 
+            src={onspotLogo} 
+            alt="OnSpot" 
+            className="h-8 w-auto brightness-0 saturate-100 invert drop-shadow-sm"
+          />
         </Link>
 
         {/* Navigation Items */}
