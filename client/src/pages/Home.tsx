@@ -17,6 +17,7 @@ import {
   Briefcase
 } from "lucide-react";
 import { Link } from "wouter";
+import heroWorkspaceImage from "@assets/generated_images/Professional_tech_workspace_scene_ccd84356.png";
 
 const stats = [
   {
@@ -145,6 +146,16 @@ export default function Home() {
       <div className="relative overflow-hidden min-h-screen flex items-center justify-center" style={{ 
         background: `linear-gradient(135deg, #474ead 0%, #5a5dc7 50%, #6366f1 100%)` 
       }}>
+        {/* Background Image */}
+        <div className="absolute inset-0">
+          <img 
+            src={heroWorkspaceImage} 
+            alt="Professional tech workspace" 
+            className="w-full h-full object-cover object-center opacity-20 mix-blend-overlay"
+            loading="eager"
+            decoding="async"
+          />
+        </div>
         {/* Animated Background Elements */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
@@ -153,9 +164,9 @@ export default function Home() {
         </div>
         <div className="container mx-auto text-center space-y-12 py-16 px-6 relative z-10">
           <div className="space-y-8">
-            <Badge variant="outline" className="text-sm font-medium px-6 py-3 border-white/40 text-white bg-white/15 backdrop-blur-sm">
+            <p className="text-lg font-medium text-white/90 tracking-wide">
               Making Outsourcing Easy
-            </Badge>
+            </p>
             <h1 className="text-6xl md:text-8xl lg:text-9xl font-bold tracking-tight text-white drop-shadow-lg">
               Fuel Your Vision
             </h1>
