@@ -17,7 +17,7 @@ import {
   Briefcase
 } from "lucide-react";
 import { Link } from "wouter";
-import heroWorkspaceImage from "@assets/generated_images/Professional_tech_workspace_scene_ccd84356.png";
+import heroWorkspaceImage from "@assets/generated_images/Creative_collaborative_business_workspace_8528c1b1.png";
 
 const stats = [
   {
@@ -150,7 +150,7 @@ export default function Home() {
         <div className="absolute inset-0">
           <img 
             src={heroWorkspaceImage} 
-            alt="Professional tech workspace" 
+            alt="Creative collaborative workspace" 
             className="w-full h-full object-cover object-center opacity-20 mix-blend-overlay"
             loading="eager"
             decoding="async"
