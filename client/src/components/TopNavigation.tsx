@@ -1,5 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { LoginDialog } from "@/components/LoginDialog";
+import { useAuth } from "@/contexts/AuthContext";
+import { OnSpotLogo } from "@/components/OnSpotLogo";
 
 const navigationItems = [
   { title: "Home", path: "/" },
@@ -14,13 +16,14 @@ const navigationItems = [
 
 export function TopNavigation() {
   const [location] = useLocation();
+  const { isAuthenticated } = useAuth();
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between px-4">
         {/* Logo */}
         <Link href="/" className="flex items-center space-x-2" data-testid="logo-home">
-          <div className="font-bold text-xl text-primary">OnSpot</div>
+          <OnSpotLogo size="md" />
         </Link>
 
         {/* Navigation Items */}
@@ -41,8 +44,8 @@ export function TopNavigation() {
           ))}
         </div>
 
-        {/* Login Button */}
-        <LoginDialog />
+        {/* Login Button - only show if not authenticated */}
+        {!isAuthenticated && <LoginDialog />}
       </div>
 
       {/* Mobile Navigation */}

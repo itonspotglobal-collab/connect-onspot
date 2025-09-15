@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface User {
   id: string;
@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // Check for stored user on mount
-  useState(() => {
+  useEffect(() => {
     const storedUser = localStorage.getItem('onspot_user');
     if (storedUser) {
       try {
@@ -55,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem('onspot_user');
       }
     }
-  });
+  }, []);
 
   return (
     <AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
