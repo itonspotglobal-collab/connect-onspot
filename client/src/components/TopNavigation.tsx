@@ -18,7 +18,7 @@ export function TopNavigation() {
   const { isAuthenticated } = useAuth();
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <nav className="sticky top-0 z-50 w-full border-b backdrop-blur" style={{ backgroundColor: '#474ead' }}>
       <div className="container flex h-16 items-center justify-between px-4">
         {/* Logo */}
         <Link href="/" className="flex items-center" data-testid="logo-home">
@@ -35,10 +35,10 @@ export function TopNavigation() {
             <Link
               key={item.path}
               href={item.path}
-              className={`text-sm font-medium transition-colors hover:text-primary ${
+              className={`text-sm font-medium transition-colors hover:text-white ${
                 location === item.path 
-                  ? "text-primary" 
-                  : "text-muted-foreground"
+                  ? "text-white font-semibold" 
+                  : "text-white/80"
               }`}
               data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
             >
@@ -59,10 +59,10 @@ export function TopNavigation() {
               <Link
                 key={item.path}
                 href={item.path}
-                className={`text-xs font-medium transition-colors hover:text-primary ${
+                className={`text-xs font-medium transition-colors hover:text-white ${
                   location === item.path 
-                    ? "text-primary" 
-                    : "text-muted-foreground"
+                    ? "text-white font-semibold" 
+                    : "text-white/80"
                 }`}
                 data-testid={`mobile-nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
               >

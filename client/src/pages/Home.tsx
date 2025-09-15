@@ -142,17 +142,19 @@ export default function Home() {
   return (
     <div className="space-y-16">
       {/* Hero Section */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-background to-muted/20">
+      <div className="relative overflow-hidden" style={{ 
+        background: `linear-gradient(135deg, #474ead 0%, #5a5dc7 50%, #6366f1 100%)` 
+      }}>
         <div className="container mx-auto text-center space-y-8 py-20 px-6">
           <div className="space-y-4">
-            <Badge variant="outline" className="text-sm font-medium px-4 py-2">
+            <Badge variant="outline" className="text-sm font-medium px-4 py-2 border-white/30 text-white bg-white/10">
               Making Outsourcing Easy
             </Badge>
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
+            <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white">
               Fuel Your Vision with
-              <span className="text-primary block mt-2">OnSpot</span>
+              <span className="text-white block mt-2">OnSpot</span>
             </h1>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl text-white/90 max-w-3xl mx-auto leading-relaxed">
               Connect with 50,000+ vetted professionals. Reduce cost by up to 70%. 
               Scale operations seamlessly with our Performance-Driven System.
             </p>
