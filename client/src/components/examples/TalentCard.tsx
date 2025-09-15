@@ -7,10 +7,10 @@ export default function TalentCardExample() {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 max-w-6xl">
       <TalentCard
         id="talent-1"
-        name="Sarah Chen"
+        name="Maria Santos"
         role="Senior Full Stack Developer"
-        location="San Francisco, CA"
-        hourlyRate={85}
+        location="Manila, Philippines"
+        hourlyRate={25}
         rating={4.9}
         skills={["React", "Node.js", "TypeScript", "Python", "AWS"]}
         avatarUrl={avatarImage}
@@ -19,25 +19,25 @@ export default function TalentCardExample() {
       />
       <TalentCard
         id="talent-2"
-        name="Marcus Rodriguez"
-        role="UI/UX Designer"
-        location="New York, NY"
-        hourlyRate={75}
+        name="Carlos Reyes"
+        role="Customer Support Specialist"
+        location="Cebu, Philippines"
+        hourlyRate={8}
         rating={4.8}
-        skills={["Figma", "Adobe Creative Suite", "Prototyping", "User Research"]}
-        experience="4+ years"
-        availability="busy"
+        skills={["English Fluency", "CRM Management", "Technical Support", "Customer Service"]}
+        experience="3+ years"
+        availability="available"
       />
       <TalentCard
         id="talent-3"
-        name="Priya Sharma"
-        role="Data Analyst"
-        location="Remote"
-        hourlyRate={65}
+        name="Ana Dela Cruz"
+        role="Virtual Assistant"
+        location="Davao, Philippines"
+        hourlyRate={6}
         rating={4.7}
-        skills={["Python", "SQL", "Tableau", "Machine Learning"]}
-        experience="3+ years"
-        availability="offline"
+        skills={["Admin Support", "Data Entry", "Social Media", "Lead Generation"]}
+        experience="4+ years"
+        availability="available"
       />
     </div>
   )
