@@ -20,7 +20,7 @@ import { Link } from "wouter";
 
 const stats = [
   {
-    label: "Philippine Resources",
+    label: "OnSpot Resources",
     value: "500+",
     description: "Vetted professionals",
     icon: Users,
@@ -52,7 +52,7 @@ const stats = [
 const serviceModels = [
   {
     title: "Resourced",
-    description: "Staff augmentation with vetted Philippine talent",
+    description: "Staff augmentation with vetted OnSpot talent",
     features: ["Pre-screened professionals", "Quick deployment", "Flexible scaling", "Direct management"],
     icon: Users,
     color: "bg-blue-50 dark:bg-blue-950/20 text-blue-600"
@@ -91,7 +91,7 @@ export default function Home() {
             </Badge>
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
               Scale Your Business with
-              <span className="text-primary block mt-2">Philippine Talent</span>
+              <span className="text-primary block mt-2">OnSpot Talent</span>
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
               Connect with 500+ vetted professionals. Reduce costs by 70%. 
@@ -215,12 +215,12 @@ export default function Home() {
         </Card>
       </div>
 
-      {/* Philippines Advantage */}
+      {/* OnSpot Advantage */}
       <div className="space-y-6">
         <div className="text-center space-y-2">
-          <h2 className="text-3xl font-bold">Why Philippine Talent?</h2>
+          <h2 className="text-3xl font-bold">Why OnSpot Talent?</h2>
           <p className="text-muted-foreground">
-            Discover the competitive advantages of working with Filipino professionals
+            Discover the competitive advantages of working with OnSpot professionals
           </p>
         </div>
 
@@ -290,7 +290,7 @@ export default function Home() {
         <CardContent className="p-8 text-center space-y-4">
           <h2 className="text-2xl font-bold">Ready to Scale Your Operations?</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Join 85+ companies already saving millions with our Philippine talent network. 
+            Join 85+ companies already saving millions with our OnSpot talent network. 
             Start building your dream team today.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
