@@ -2,6 +2,7 @@ import { Link, useLocation } from "wouter";
 import { LoginDialog } from "@/components/LoginDialog";
 import { SignUpDialog } from "@/components/SignUpDialog";
 import { useAuth } from "@/contexts/AuthContext";
+import { useState, useEffect, useRef } from "react";
 import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
 
 const navigationItems = [
@@ -17,12 +18,61 @@ const navigationItems = [
 export function TopNavigation() {
   const [location] = useLocation();
   const { isAuthenticated } = useAuth();
+  const [isVisible, setIsVisible] = useState(true);
+  const lastScrollY = useRef(0);
+  const ticking = useRef(false);
+
+  useEffect(() => {
+    const controlNavbar = () => {
+      const currentScrollY = Math.max(0, window.scrollY);
+      const scrollDelta = Math.abs(currentScrollY - lastScrollY.current);
+      
+      // Only process if scroll delta is significant (prevents flicker)
+      if (scrollDelta < 10) {
+        ticking.current = false;
+        return;
+      }
+      
+      if (currentScrollY < 100) {
+        // Always show navigation at the top
+        setIsVisible(true);
+      } else if (currentScrollY > lastScrollY.current && currentScrollY > 200) {
+        // Scrolling down - hide navbar (with minimum scroll threshold)
+        setIsVisible(false);
+      } else if (currentScrollY < lastScrollY.current) {
+        // Scrolling up - show navbar
+        setIsVisible(true);
+      }
+      
+      lastScrollY.current = currentScrollY;
+      ticking.current = false;
+    };
+
+    const handleScroll = () => {
+      if (!ticking.current) {
+        requestAnimationFrame(controlNavbar);
+        ticking.current = true;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-white/20 backdrop-blur-md" style={{ 
-      background: 'linear-gradient(135deg, #474ead 0%, #5a5dc7 50%, #6366f1 100%)',
-      boxShadow: '0 8px 32px rgba(71, 74, 173, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1)'
-    }}>
+    <>
+      {/* Navigation Spacer - prevents content overlap */}
+      <div className="h-16" aria-hidden="true" />
+      
+      <nav 
+        className={`fixed top-0 z-50 w-full border-b border-white/20 backdrop-blur-md transition-transform duration-300 ease-in-out ${
+          isVisible ? 'translate-y-0' : '-translate-y-full'
+        }`} 
+        style={{ 
+          background: 'linear-gradient(135deg, #474ead 0%, #5a5dc7 50%, #6366f1 100%)',
+          boxShadow: isVisible ? '0 8px 32px rgba(71, 74, 173, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1)' : 'none'
+        }}
+      >
       <div className="container flex h-16 items-center justify-between px-4 relative">
         {/* Logo */}
         <Link href="/" className="flex items-center relative z-10 hover-elevate transition-all duration-300" data-testid="logo-home">
@@ -81,6 +131,7 @@ export function TopNavigation() {
           </div>
         </div>
       </div>
-    </nav>
+      </nav>
+    </>
   );
 }
