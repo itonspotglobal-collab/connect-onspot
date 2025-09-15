@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { LoginDialog } from "@/components/LoginDialog";
+import { SignUpDialog } from "@/components/SignUpDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
 
@@ -48,8 +49,13 @@ export function TopNavigation() {
           ))}
         </div>
 
-        {/* Login Button - only show if not authenticated */}
-        {!isAuthenticated && <LoginDialog />}
+        {/* Auth Buttons - only show if not authenticated */}
+        {!isAuthenticated && (
+          <div className="flex items-center gap-3">
+            <LoginDialog />
+            <SignUpDialog />
+          </div>
+        )}
       </div>
 
       {/* Mobile Navigation */}
