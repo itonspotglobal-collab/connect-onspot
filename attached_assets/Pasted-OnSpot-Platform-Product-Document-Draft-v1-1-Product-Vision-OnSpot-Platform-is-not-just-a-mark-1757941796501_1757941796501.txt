@@ -1,0 +1,121 @@
+OnSpot Platform — Product Document (Draft v1)
+
+1. Product Vision
+
+OnSpot Platform is not just a marketplace or BPO system. It is an Integrator System that simplifies outsourcing for B2B and B2C clients by making management effortless. The core value lies in the performance system — a unified, AI-powered framework that seamlessly connects people, processes, and platforms.
+
+Tagline: “Making Outsourcing Easy.”
+
+⸻
+
+2. Core Products
+	1.	Full-Time Equivalent (FTE) – Traditional outsourcing staffing.
+	2.	AI-driven Virtual Assistant (Subscription) – Automated support for clients.
+	3.	OnSpot Platform (Tool) – The interface and system to manage outsourcing.
+	4.	OnSpot Experience (Integrator Service) – High-touch management + consulting.
+
+⸻
+
+3. Ultimate Goal
+
+Build an Integrator System (Automated) that becomes the “operating system” for outsourcing management.
+
+⸻
+
+4. Interface Design (Core Requirement for Engineers)
+
+The interface is the primary touchpoint for B2B and B2C clients. It must be simple, fast, and intuitive, while embedding complexity under the hood.
+
+4.1. Interface Principles
+	•	Simplicity First: Minimal clicks to access talent, tasks, and performance data.
+	•	Transparency: Real-time performance metrics always visible.
+	•	Customization: Configurable dashboards per role (Client, Talent, Manager).
+	•	Scalability: Support both B2B enterprise accounts and solo entrepreneurs (B2C).
+	•	AI Under the Hood: Do not market as “AI” but integrate it seamlessly (recommendations, automation, insights).
+
+⸻
+
+4.2. User Types
+	1.	Client (B2B, B2C)
+	•	Needs: hire, manage, monitor talent.
+	•	Views: Cost savings, performance metrics, project status.
+	2.	Talent / Employee
+	•	Needs: manage profile, tasks, and payroll.
+	•	Views: Time tracking, task board, learning tools.
+	3.	Manager / OnSpot Integrator
+	•	Needs: oversee multiple accounts, performance systems.
+	•	Views: Client dashboards, KPIs, account health, escalations.
+
+⸻
+
+4.3. Core Modules in the Interface
+
+Each module is based on your handwritten “What to Build” list:
+	1.	Dashboard (Core Hub)
+	•	Global overview (tasks, KPIs, savings, alerts).
+	•	One-click navigation to all systems.
+	2.	Talent Acquisition System
+	•	Resume database, filters, instant shortlist.
+	•	AI recommendations for best-fit talent.
+	3.	4P System (People, Process, Philosophy, Problem-solving)
+	•	Visualized system checklist for each client.
+	•	Automated gaps analysis.
+	4.	Implementation System
+	•	Onboarding workflow (client + talent).
+	•	Step-by-step guided setup.
+	5.	Affiliate Module
+	•	Track referrals, commissions, partnerships.
+	6.	Account Management System
+	•	Centralized client communications, updates, and history.
+	7.	Performance Management System
+	•	Real-time performance dashboards.
+	•	KPIs: Productivity, savings, satisfaction.
+	8.	Global PMS (Project Management System)
+	•	Task boards, deadlines, collaboration tools.
+	9.	Contract Management System
+	•	Auto-generated contracts.
+	•	E-signature integration.
+	10.	Payment Management System
+
+	•	Multi-currency support.
+	•	Automatic invoicing, payouts.
+
+	11.	Client ROI System
+
+	•	Cost vs savings calculator.
+	•	Visual ROI reports.
+
+	12.	Client Hiring & Talent System
+
+	•	Interview scheduling.
+	•	Role-based scoring cards.
+
+	13.	Sales System
+
+	•	Lead pipeline dashboard.
+	•	Proposal generator.
+
+	14.	Marketing System
+
+	•	Campaign tracker.
+	•	Content calendar.
+
+	15.	AI System (Val/CIS)
+
+	•	AI-powered insights layer.
+	•	Automated reporting and alerts.
+
+⸻
+
+4.4. Visual Layout (Suggested)
+	•	Top Navigation: Dashboard | Talent | Clients | Performance | Finance | Contracts | Marketing | Settings
+	•	Left Sidebar (Quick Access): Notifications, AI Insights, Favorites.
+	•	Main Workspace: Module-specific panels (drag & drop flexibility).
+	•	Right Sidebar (Context Layer): AI assistant (recommendations, reminders, alerts).
+
+⸻
+
+4.5. Integration Flow
+	•	Clients → hire via Talent Acquisition → onboard via Implementation → managed via Account Mgmt → tracked via Performance Mgmt → invoiced via Payment Mgmt.
+	•	Managers oversee everything in Global PMS + Integrator Dashboard.
+	•	AI Insights cut across all modules (contextual layer, not standalone).

@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -10,15 +12,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { LogIn, Eye, EyeOff } from "lucide-react";
+import { LogIn, Eye, EyeOff, Mail, Shield, Zap } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { OnSpotLogo } from "@/components/OnSpotLogo";
 
 export function LoginDialog() {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const { toast } = useToast();
@@ -72,12 +76,31 @@ export function LoginDialog() {
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Welcome to OnSpot</DialogTitle>
-          <DialogDescription>
-            Sign in to access your dashboard and manage your projects
+        <DialogHeader className="text-center pb-6">
+          <div className="flex justify-center mb-4">
+            <OnSpotLogo size="lg" />
+          </div>
+          <DialogTitle className="text-2xl">Welcome to OnSpot</DialogTitle>
+          <DialogDescription className="text-base">
+            Making Outsourcing Easy - Access your client portal
           </DialogDescription>
         </DialogHeader>
+
+        {/* Quick Benefits */}
+        <div className="grid grid-cols-3 gap-4 py-4 border-y">
+          <div className="text-center">
+            <Zap className="h-6 w-6 mx-auto text-primary mb-2" />
+            <p className="text-xs text-muted-foreground">8X Growth</p>
+          </div>
+          <div className="text-center">
+            <Shield className="h-6 w-6 mx-auto text-primary mb-2" />
+            <p className="text-xs text-muted-foreground">70% Cost Savings</p>
+          </div>
+          <div className="text-center">
+            <Mail className="h-6 w-6 mx-auto text-primary mb-2" />
+            <p className="text-xs text-muted-foreground">24/7 Support</p>
+          </div>
+        </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
@@ -116,8 +139,25 @@ export function LoginDialog() {
               </Button>
             </div>
           </div>
+
+          {/* Remember Me & Forgot Password */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="remember" 
+                checked={rememberMe}
+                onCheckedChange={(checked) => setRememberMe(checked === true)}
+                data-testid="checkbox-remember-me"
+              />
+              <Label htmlFor="remember" className="text-sm">Remember me</Label>
+            </div>
+            <Button variant="ghost" className="p-0 h-auto text-sm hover:bg-transparent">
+              Forgot password?
+            </Button>
+          </div>
+
           <div className="flex flex-col gap-2">
-            <Button type="submit" disabled={isLoading} data-testid="button-submit-login">
+            <Button type="submit" disabled={isLoading} className="w-full" data-testid="button-submit-login">
               {isLoading ? "Signing in..." : "Sign In"}
             </Button>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
@@ -125,6 +165,16 @@ export function LoginDialog() {
             </Button>
           </div>
         </form>
+
+        <Separator className="my-4" />
+
+        {/* Additional Options */}
+        <div className="text-center space-y-2">
+          <p className="text-sm text-muted-foreground">New to OnSpot?</p>
+          <Button variant="ghost" className="p-0 h-auto text-sm font-medium hover:bg-transparent">
+            Contact us for a demo
+          </Button>
+        </div>
         <div className="text-center text-sm text-muted-foreground">
           <p>Demo: Use any email and password to log in</p>
         </div>
