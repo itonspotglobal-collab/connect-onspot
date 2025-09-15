@@ -55,7 +55,7 @@ const AVAILABILITY_OPTIONS = [
 ];
 
 const LOCATION_OPTIONS = [
-  "Philippines", "Manila", "Cebu", "Davao", "Quezon City", "Makati", "Taguig", "Pasig", "Iloilo", "Bacolod"
+  "Global", "Manila", "Cebu", "Davao", "Quezon City", "Makati", "Taguig", "Pasig", "Iloilo", "Bacolod"
 ];
 
 const POPULAR_SKILLS = [
@@ -127,7 +127,7 @@ export default function TalentSearch() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Philippine Talent</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">OnSpot Talent</h1>
           <p className="text-muted-foreground mt-2">
             Discover skilled professionals from our 500+ resource network
           </p>

@@ -28,7 +28,7 @@ const navigationItems = [
     icon: Home,
   },
   {
-    title: "Philippine Talent",
+    title: "OnSpot Talent",
     url: "/talent",
     icon: Search,
   },

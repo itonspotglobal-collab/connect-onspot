@@ -22,7 +22,7 @@ export const profiles = pgTable("profiles", {
   lastName: text("last_name").notNull(),
   title: text("title"), // Professional title
   bio: text("bio"),
-  location: text("location").default("Philippines"),
+  location: text("location").default("Global"),
   hourlyRate: decimal("hourly_rate", { precision: 10, scale: 2 }),
   rateCurrency: text("rate_currency").default("USD"), // USD or PHP
   availability: text("availability").default("available"), // available, busy, offline
