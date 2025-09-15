@@ -145,14 +145,19 @@ export default function Home() {
       <div className="relative overflow-hidden min-h-screen flex items-center justify-center" style={{ 
         background: `linear-gradient(135deg, #474ead 0%, #5a5dc7 50%, #6366f1 100%)` 
       }}>
-        <div className="container mx-auto text-center space-y-12 py-16 px-6">
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-white/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-white/5 rounded-full blur-3xl animate-pulse delay-500"></div>
+        </div>
+        <div className="container mx-auto text-center space-y-12 py-16 px-6 relative z-10">
           <div className="space-y-8">
             <Badge variant="outline" className="text-sm font-medium px-6 py-3 border-white/40 text-white bg-white/15 backdrop-blur-sm">
               Effortless Outsourcing
             </Badge>
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight text-white drop-shadow-lg">
+            <h1 className="text-6xl md:text-8xl lg:text-9xl font-bold tracking-tight text-white drop-shadow-lg">
               Fuel Your Vision
-              <span className="text-white block mt-4 text-6xl md:text-8xl lg:text-9xl">with OnSpot</span>
             </h1>
             <p className="text-2xl md:text-3xl text-white/95 max-w-4xl mx-auto leading-relaxed font-light tracking-wide drop-shadow-md">
               Connect with 50,000+ vetted professionals. Reduce cost by up to 70%. 
