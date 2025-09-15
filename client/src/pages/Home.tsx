@@ -154,7 +154,7 @@ export default function Home() {
         <div className="container mx-auto text-center space-y-12 py-16 px-6 relative z-10">
           <div className="space-y-8">
             <Badge variant="outline" className="text-sm font-medium px-6 py-3 border-white/40 text-white bg-white/15 backdrop-blur-sm">
-              Effortless Outsourcing
+              Making Outsourcing Easy
             </Badge>
             <h1 className="text-6xl md:text-8xl lg:text-9xl font-bold tracking-tight text-white drop-shadow-lg">
               Fuel Your Vision
