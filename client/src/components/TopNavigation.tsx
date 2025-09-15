@@ -1,10 +1,9 @@
 import { Link, useLocation } from "wouter";
 import { LoginDialog } from "@/components/LoginDialog";
 import { useAuth } from "@/contexts/AuthContext";
-import { OnSpotLogo } from "@/components/OnSpotLogo";
+import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
 
 const navigationItems = [
-  { title: "Home", path: "/" },
   { title: "Hire Talent", path: "/hire-talent" },
   { title: "Get Hired", path: "/get-hired" },
   { title: "Why OnSpot", path: "/why-onspot" },
@@ -22,8 +21,12 @@ export function TopNavigation() {
     <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between px-4">
         {/* Logo */}
-        <Link href="/" className="flex items-center space-x-2" data-testid="logo-home">
-          <OnSpotLogo size="md" />
+        <Link href="/" className="flex items-center" data-testid="logo-home">
+          <img 
+            src={onspotLogo} 
+            alt="OnSpot" 
+            className="h-8 w-auto"
+          />
         </Link>
 
         {/* Navigation Items */}
