@@ -36,7 +36,7 @@ export function Footer() {
               className="h-10 w-auto brightness-0 saturate-100 invert drop-shadow-sm"
             />
             <p className="text-white/90 max-w-md leading-relaxed">
-              Built by entrepreneurs, for entrepreneurs—OnSpot delivers premium teams that cut costs by up to 70% and fuel 8X business growth.
+              The growth engine behind modern businesses—built by entrepreneurs, for entrepreneurs. We deliver world-class teams and performance systems that slash costs by up to 70% while unlocking up to 8X faster growth.
             </p>
             <div className="flex space-x-3">
               <Button variant="ghost" size="sm" className="text-white/80 border border-white/30" asChild data-testid="social-facebook">
