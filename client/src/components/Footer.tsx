@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { OnSpotLogo } from "@/components/OnSpotLogo";
+import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { 
@@ -20,7 +20,11 @@ export function Footer() {
           
           {/* Company Info */}
           <div className="space-y-4">
-            <OnSpotLogo size="md" />
+            <img 
+              src={onspotLogo} 
+              alt="OnSpot" 
+              className="h-8 w-auto"
+            />
             <p className="text-sm text-muted-foreground max-w-xs">
               Making Outsourcing Easy. Built by entrepreneurs, for entrepreneurs—OnSpot delivers premium teams that cut costs by up to 70% and fuel 8X business growth.
             </p>
