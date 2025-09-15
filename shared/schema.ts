@@ -277,6 +277,95 @@ export const disputes = pgTable("disputes", {
   resolvedAt: timestamp("resolved_at"),
 });
 
+// LinkedIn Integration
+export const linkedinProfiles = pgTable("linkedin_profiles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().unique().references(() => users.id),
+  linkedinId: text("linkedin_id").unique(),
+  profileUrl: text("profile_url"),
+  accessToken: text("access_token"), // Encrypted
+  refreshToken: text("refresh_token"), // Encrypted
+  isVerified: boolean("is_verified").default(false),
+  lastSync: timestamp("last_sync"),
+  profileData: json("profile_data"), // Cached LinkedIn profile data
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Resume and Document Management
+export const documents = pgTable("documents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  type: text("type").notNull(), // resume, cover_letter, portfolio_file, video_intro
+  fileName: text("file_name").notNull(),
+  fileUrl: text("file_url").notNull(), // Object storage URL
+  fileSize: integer("file_size"), // in bytes
+  mimeType: text("mime_type"),
+  isPublic: boolean("is_public").default(false),
+  isPrimary: boolean("is_primary").default(false), // Primary resume/video
+  extractedText: text("extracted_text"), // For resume parsing
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Assessments and Tests
+export const assessments = pgTable("assessments", {
+  id: serial("id").primaryKey(),
+  type: text("type").notNull(), // writing, disc, technical, behavioral
+  title: text("title").notNull(),
+  description: text("description"),
+  questions: json("questions").notNull(), // Array of questions
+  scoringRubric: json("scoring_rubric").notNull(),
+  duration: integer("duration").notNull(), // minutes
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const assessmentResults = pgTable("assessment_results", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  assessmentId: integer("assessment_id").notNull().references(() => assessments.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  answers: json("answers").notNull(),
+  score: decimal("score", { precision: 5, scale: 2 }), // Overall score
+  results: json("results"), // Detailed results/analysis
+  timeSpent: integer("time_spent"), // minutes
+  startedAt: timestamp("started_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
+// Job Application Tracking
+export const jobApplications = pgTable("job_applications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  jobId: varchar("job_id").references(() => jobs.id), // Can be null for external jobs
+  externalJobTitle: text("external_job_title"), // For non-platform jobs
+  externalJobCompany: text("external_job_company"),
+  externalJobUrl: text("external_job_url"),
+  status: text("status").notNull().default("applied"), // applied, under_review, interviewed, rejected, hired
+  appliedAt: timestamp("applied_at").defaultNow(),
+  lastUpdated: timestamp("last_updated").defaultNow(),
+  notes: text("notes"),
+  interviewDate: timestamp("interview_date"),
+  salary: decimal("salary", { precision: 10, scale: 2 }),
+  salaryCurrency: text("salary_currency").default("USD"),
+});
+
+// Smart Matching Profile
+export const matchingProfiles = pgTable("matching_profiles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().unique().references(() => users.id),
+  workStylePreferences: json("work_style_preferences"), // Remote, hybrid, schedule preferences
+  compensationExpectations: json("compensation_expectations"), // Min/max rates, benefits
+  projectTypePreferences: json("project_type_preferences"), // Long-term, short-term, contract types
+  industryPreferences: text("industry_preferences").array(),
+  availabilityCalendar: json("availability_calendar"), // Weekly availability schedule
+  communicationStyle: json("communication_style"), // From DISC results
+  careerGoals: text("career_goals"),
+  dealBreakers: text("deal_breakers").array(), // What they won't accept
+  matchingScore: decimal("matching_score", { precision: 5, scale: 2 }), // AI-calculated overall score
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Notifications
 export const notifications = pgTable("notifications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -402,6 +491,41 @@ export const insertDisputeSchema = createInsertSchema(disputes).omit({
   resolvedAt: true,
 });
 
+export const insertLinkedinProfileSchema = createInsertSchema(linkedinProfiles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertDocumentSchema = createInsertSchema(documents).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertAssessmentSchema = createInsertSchema(assessments).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertAssessmentResultSchema = createInsertSchema(assessmentResults).omit({
+  id: true,
+  startedAt: true,
+  completedAt: true,
+});
+
+export const insertJobApplicationSchema = createInsertSchema(jobApplications).omit({
+  id: true,
+  appliedAt: true,
+  lastUpdated: true,
+});
+
+export const insertMatchingProfileSchema = createInsertSchema(matchingProfiles).omit({
+  id: true,
+  matchingScore: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertNotificationSchema = createInsertSchema(notifications).omit({
   id: true,
   isRead: true,
@@ -465,6 +589,24 @@ export type Payment = typeof payments.$inferSelect;
 
 export type InsertDispute = z.infer<typeof insertDisputeSchema>;
 export type Dispute = typeof disputes.$inferSelect;
+
+export type InsertLinkedinProfile = z.infer<typeof insertLinkedinProfileSchema>;
+export type LinkedinProfile = typeof linkedinProfiles.$inferSelect;
+
+export type InsertDocument = z.infer<typeof insertDocumentSchema>;
+export type Document = typeof documents.$inferSelect;
+
+export type InsertAssessment = z.infer<typeof insertAssessmentSchema>;
+export type Assessment = typeof assessments.$inferSelect;
+
+export type InsertAssessmentResult = z.infer<typeof insertAssessmentResultSchema>;
+export type AssessmentResult = typeof assessmentResults.$inferSelect;
+
+export type InsertJobApplication = z.infer<typeof insertJobApplicationSchema>;
+export type JobApplication = typeof jobApplications.$inferSelect;
+
+export type InsertMatchingProfile = z.infer<typeof insertMatchingProfileSchema>;
+export type MatchingProfile = typeof matchingProfiles.$inferSelect;
 
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Notification = typeof notifications.$inferSelect;
