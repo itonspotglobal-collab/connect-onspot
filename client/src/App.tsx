@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { TopNavigation } from "@/components/TopNavigation";
 import { ClientLayout } from "@/components/ClientLayout";
+import { Footer } from "@/components/Footer";
 import Home from "@/pages/Home";
 import TalentSearch from "@/pages/TalentSearch";
 import Dashboard from "@/pages/Dashboard";
@@ -32,6 +33,7 @@ function PublicRouter() {
           <Route component={NotFound} />
         </Switch>
       </main>
+      <Footer />
     </div>
   );
 }
