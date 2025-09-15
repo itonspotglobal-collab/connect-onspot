@@ -25,7 +25,8 @@ export function TopNavigation() {
           <img 
             src={onspotLogo} 
             alt="OnSpot" 
-            className="h-8 w-auto"
+            className="h-8 w-auto brightness-0 saturate-100 invert"
+            style={{ filter: 'brightness(0) saturate(100%) invert(1)' }}
           />
         </Link>
 
