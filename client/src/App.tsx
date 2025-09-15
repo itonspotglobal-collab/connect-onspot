@@ -11,6 +11,7 @@ import { Footer } from "@/components/Footer";
 import Home from "@/pages/Home";
 import TalentSearch from "@/pages/TalentSearch";
 import Dashboard from "@/pages/Dashboard";
+import WhyOnSpot from "@/pages/WhyOnSpot";
 import NotFound from "@/pages/not-found";
 
 // Public Routes (before login)
@@ -23,7 +24,7 @@ function PublicRouter() {
           <Route path="/" component={Home} />
           <Route path="/hire-talent" component={TalentSearch} />
           <Route path="/get-hired" component={() => <div className="container mx-auto p-8 text-center">Get Hired - Coming Soon</div>} />
-          <Route path="/why-onspot" component={() => <div className="container mx-auto p-8 text-center">Why OnSpot - Coming Soon</div>} />
+          <Route path="/why-onspot" component={WhyOnSpot} />
           <Route path="/amazing" component={() => <div className="container mx-auto p-8 text-center">Amazing Stories - Coming Soon</div>} />
           <Route path="/pricing" component={() => <div className="container mx-auto p-8 text-center">Pricing - Coming Soon</div>} />
           <Route path="/enterprise" component={() => <div className="container mx-auto p-8 text-center">Enterprise Solutions - Coming Soon</div>} />
