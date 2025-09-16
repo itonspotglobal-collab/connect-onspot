@@ -25,6 +25,7 @@ import TalentPortal from "@/pages/TalentPortal";
 import FindWork from "@/pages/FindWork";
 import Insights from "@/pages/Insights";
 import NotFound from "@/pages/not-found";
+import ComingSoon from "@/pages/ComingSoon";
 
 // Public Routes (before login)
 function PublicRouter() {
@@ -46,8 +47,10 @@ function PublicRouter() {
           <Route path="/why-onspot/integrator-system" component={WhyOnSpotIntegratorSystem} />
           <Route path="/why-onspot/value-calculator" component={WhyOnSpotValueCalculator} />
           <Route path="/amazing" component={Amazing} />
-          <Route path="/pricing" component={() => <div className="container mx-auto p-8 text-center">Pricing - Coming Soon</div>} />
-          <Route path="/enterprise" component={() => <div className="container mx-auto p-8 text-center">Enterprise Solutions - Coming Soon</div>} />
+          <Route path="/pricing" component={ComingSoon} />
+          <Route path="/enterprise" component={ComingSoon} />
+          <Route path="/affiliate-marketing" component={ComingSoon} />
+          <Route path="/bpo-partner" component={ComingSoon} />
           <Route path="/insights" component={Insights} />
           {/* Legacy routes for backward compatibility */}
           <Route path="/talent" component={TalentSearch} />
