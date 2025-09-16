@@ -145,7 +145,7 @@ export function SignUpDialog() {
           Sign Up
         </Button>
       </DialogTrigger>
-      <DialogContent className={currentStep === "user-type" ? "sm:max-w-lg" : "sm:max-w-md"}>
+      <DialogContent className={currentStep === "user-type" ? "sm:max-w-4xl" : "sm:max-w-md"}>
         <DialogHeader className="text-center pb-6">
           <div className="flex justify-center mb-4">
             <img 
@@ -195,7 +195,7 @@ export function SignUpDialog() {
         {currentStep === "user-type" && (
           <div className="space-y-4">
             {/* User Type Selection */}
-            <div className="grid gap-4">
+            <div className="grid grid-cols-2 gap-6">
               <Card 
                 className="relative cursor-pointer hover-elevate transition-all duration-300 group border-2 hover:border-primary/50"
                 onClick={() => handleSelectUserType("client")}
