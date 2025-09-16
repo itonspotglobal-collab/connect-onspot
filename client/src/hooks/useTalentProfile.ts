@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -236,7 +236,7 @@ export function useTalentProfile() {
     uploadDocument,
     
     // Form helpers
-    getDefaultFormValues: (): ProfileFormData => ({
+    getDefaultFormValues: useCallback((): ProfileFormData => ({
       firstName: profile?.firstName || '',
       lastName: profile?.lastName || '',
       title: profile?.title || '',
@@ -248,6 +248,6 @@ export function useTalentProfile() {
       phoneNumber: profile?.phoneNumber || '',
       languages: profile?.languages || ['English'],
       timezone: profile?.timezone || 'Asia/Manila'
-    })
+    }), [profile])
   };
 }
