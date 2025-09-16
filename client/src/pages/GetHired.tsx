@@ -31,7 +31,9 @@ import {
   Plus,
   X,
   Eye,
-  Download
+  Download,
+  Camera,
+  Trash2
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -40,6 +42,7 @@ import { profileFormSchema, ProfileFormData } from "@/hooks/useTalentProfile";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ObjectUploader } from "@/components/ObjectUploader";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 // Using consolidated profile form schema from hook
 // Removed duplicate schema definition
@@ -75,6 +78,7 @@ export default function GetHired() {
   const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLinkedInConnected, setIsLinkedInConnected] = useState(false);
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string>('');
   
   // Use consolidated profile system
   const {
@@ -128,6 +132,8 @@ export default function GetHired() {
         languages: profile.languages || ['English'],
         timezone: profile.timezone || 'Asia/Manila'
       });
+      // Set profile photo URL from existing profile
+      setProfilePhotoUrl(profile.profilePicture || '');
     }
   }, [profile, form]);
 
@@ -199,17 +205,60 @@ export default function GetHired() {
     }
   };
 
+  // Profile photo upload handlers
+  const handleProfilePhotoUpload = async () => {
+    const response = await apiRequest("POST", "/api/objects/upload");
+    const data = await response.json();
+    return {
+      method: "PUT" as const,
+      url: data.uploadURL
+    };
+  };
+
+  const handleProfilePhotoComplete = (result: any) => {
+    if (result.successful && result.successful.length > 0) {
+      const file = result.successful[0];
+      const photoUrl = file.uploadURL || file.url;
+      setProfilePhotoUrl(photoUrl);
+      
+      // Update profile with new photo URL immediately
+      if (profile && user?.id) {
+        updateProfile({
+          ...form.getValues(),
+          profilePicture: photoUrl
+        } as ProfileFormData & { profilePicture: string });
+      }
+    }
+  };
+
+  const removeProfilePhoto = () => {
+    setProfilePhotoUrl('');
+    // Update profile to remove photo URL
+    if (profile && user?.id) {
+      updateProfile({
+        ...form.getValues(),
+        profilePicture: ''
+      } as ProfileFormData & { profilePicture: string });
+    }
+  };
+
   // Profile form submission using consolidated system
   const onSubmit = async (data: ProfileFormData) => {
     console.log('🔥 FORM SUBMISSION TRIGGERED!');
     console.log('Form submission started with data:', data);
     console.log('Selected skills:', selectedSkills);
+    console.log('Profile photo URL:', profilePhotoUrl);
     console.log('User ID:', user?.id);
     console.log('Is updating:', isUpdating);
     
     try {
       console.log('Calling updateProfile...');
-      await updateProfile(data);
+      // Include profile photo URL in the profile data
+      const profileDataWithPhoto = {
+        ...data,
+        profilePicture: profilePhotoUrl
+      };
+      await updateProfile(profileDataWithPhoto as ProfileFormData & { profilePicture: string });
       console.log('Profile updated successfully');
       
       if (selectedSkills && selectedSkills.length > 0) {
@@ -348,6 +397,54 @@ export default function GetHired() {
                     onSubmit={form.handleSubmit(onSubmit, onFormError)} 
                     className="space-y-6"
                   >
+                    {/* Profile Photo Upload Section */}
+                    <div className="flex flex-col items-center space-y-4 pb-6 border-b border-border">
+                      <div className="relative">
+                        <Avatar className="w-24 h-24 ring-2 ring-border ring-offset-2">
+                          <AvatarImage 
+                            src={profilePhotoUrl} 
+                            alt={`${profile?.firstName || ''} ${profile?.lastName || ''}`.trim() || 'Profile'} 
+                          />
+                          <AvatarFallback className="text-2xl font-semibold bg-muted">
+                            {profile?.firstName?.charAt(0) || user?.email?.charAt(0)?.toUpperCase() || 'U'}
+                            {profile?.lastName?.charAt(0) || ''}
+                          </AvatarFallback>
+                        </Avatar>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <ObjectUploader
+                          maxNumberOfFiles={1}
+                          maxFileSize={5242880} // 5MB limit for images
+                          onGetUploadParameters={handleProfilePhotoUpload}
+                          onComplete={handleProfilePhotoComplete}
+                          buttonClassName="flex items-center gap-2"
+                        >
+                          <Camera className="w-4 h-4" />
+                          {profilePhotoUrl ? 'Change Photo' : 'Upload Photo'}
+                        </ObjectUploader>
+                        
+                        {profilePhotoUrl && (
+                          <Button 
+                            type="button"
+                            variant="outline" 
+                            size="sm"
+                            onClick={removeProfilePhoto}
+                            className="flex items-center gap-2 text-destructive hover:text-destructive"
+                            data-testid="button-remove-photo"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Remove
+                          </Button>
+                        )}
+                      </div>
+                      
+                      <p className="text-sm text-muted-foreground text-center max-w-md">
+                        Upload a professional profile photo to help clients recognize you. 
+                        Supports JPG, PNG, GIF, WebP (max 5MB).
+                      </p>
+                    </div>
+
                     <div className="grid md:grid-cols-2 gap-6">
                       <FormField
                         control={form.control}
