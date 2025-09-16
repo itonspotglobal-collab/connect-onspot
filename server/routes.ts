@@ -191,7 +191,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==================== USER SKILLS ====================
   app.get("/api/users/:userId/skills", async (req, res) => {
     try {
-      const userSkills = await storage.getUserSkills(req.params.userId);
+      const includeNames = req.query.includeNames === 'true';
+      const userSkills = includeNames 
+        ? await storage.getUserSkillsWithNames(req.params.userId)
+        : await storage.getUserSkills(req.params.userId);
       res.json(userSkills);
     } catch (error) {
       res.status(500).json({ error: "Failed to get user skills" });
@@ -243,6 +246,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ==================== JOBS ====================
+  // Advanced Job Search - Critical for job discovery (must come before :id route)
+  app.get("/api/jobs/search", async (req, res) => {
+    try {
+      const filters = {
+        category: req.query.category as string,
+        contractType: req.query.contractType as string,
+        experienceLevel: req.query.experienceLevel as string,
+        minBudget: req.query.minBudget ? Number(req.query.minBudget) : undefined,
+        maxBudget: req.query.maxBudget ? Number(req.query.maxBudget) : undefined,
+        skills: req.query.skills ? (req.query.skills as string).split(',') : undefined,
+        status: req.query.status as string || 'open',
+        q: req.query.q as string, // Text search query
+      };
+      const jobs = await storage.searchJobs(filters);
+      res.json(jobs);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to search jobs" });
+    }
+  });
+
   app.get("/api/jobs/:id", async (req, res) => {
     try {
       const job = await storage.getJob(req.params.id);
@@ -281,25 +304,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Validation failed", details: error.errors });
       }
       res.status(500).json({ error: "Failed to update job" });
-    }
-  });
-
-  // Advanced Job Search - Critical for job discovery
-  app.get("/api/jobs/search", async (req, res) => {
-    try {
-      const filters = {
-        category: req.query.category as string,
-        contractType: req.query.contractType as string,
-        experienceLevel: req.query.experienceLevel as string,
-        minBudget: req.query.minBudget ? Number(req.query.minBudget) : undefined,
-        maxBudget: req.query.maxBudget ? Number(req.query.maxBudget) : undefined,
-        skills: req.query.skills ? (req.query.skills as string).split(',') : undefined,
-        status: req.query.status as string || 'open',
-      };
-      const jobs = await storage.searchJobs(filters);
-      res.json(jobs);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to search jobs" });
     }
   });
 
