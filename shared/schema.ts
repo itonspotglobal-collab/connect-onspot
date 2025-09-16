@@ -1,12 +1,27 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, decimal, timestamp, boolean, json, serial, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, decimal, timestamp, boolean, json, jsonb, serial, uniqueIndex, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Session storage table for Replit Auth
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// User storage table for Replit Auth integration
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  email: text("email").notNull().unique(),
+  username: text("username").unique(), // Now optional for Replit Auth
+  email: varchar("email").unique(), // From Replit Auth
+  firstName: varchar("first_name"), // From Replit Auth
+  lastName: varchar("last_name"), // From Replit Auth  
+  profileImageUrl: varchar("profile_image_url"), // From Replit Auth
   role: text("role").notNull().default("client"), // client, talent, admin
   replitId: text("replit_id").unique(), // For Replit Auth integration
   stripeAccountId: text("stripe_account_id"), // For talent payouts
@@ -610,3 +625,7 @@ export type MatchingProfile = typeof matchingProfiles.$inferSelect;
 
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Notification = typeof notifications.$inferSelect;
+
+// Replit Auth types for user management
+export type UpsertUser = typeof users.$inferInsert;
+export type User = typeof users.$inferSelect;

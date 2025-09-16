@@ -38,7 +38,8 @@ import { Input } from "@/components/ui/input";
 import { useTalentProfile } from "@/hooks/useTalentProfile";
 import ProfileOnboardingModal from "@/components/ProfileOnboardingModal";
 import ProfileOnboarding from "@/components/ProfileOnboarding";
-import { type Job, type User as DbUser, type UserSkill, type Skill } from "@shared/schema";
+import JobApplicationModal from "@/components/JobApplicationModal";
+import { type Job, type User as DbUser, type UserSkill, type Skill, type Proposal } from "@shared/schema";
 
 // Extended Job type with computed fields for display
 interface JobOpportunity extends Job {
@@ -87,6 +88,8 @@ export default function TalentPortal() {
     skills: [] as string[]
   });
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [showApplicationModal, setShowApplicationModal] = useState(false);
   
   // Use real profile data from useTalentProfile hook
   const {
@@ -104,6 +107,18 @@ export default function TalentPortal() {
       if (!user?.id) return [];
       const response = await fetch(`/api/users/${user.id}/skills?includeNames=true`);
       if (!response.ok) throw new Error('Failed to fetch user skills');
+      return response.json();
+    },
+    enabled: !!user?.id
+  });
+
+  // Fetch user's proposals to check application status
+  const { data: userProposals = [] } = useQuery<Proposal[]>({
+    queryKey: ['/api/talents', user?.id, 'proposals'],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const response = await fetch(`/api/talents/${user.id}/proposals`);
+      if (!response.ok) throw new Error('Failed to fetch proposals');
       return response.json();
     },
     enabled: !!user?.id
@@ -169,6 +184,23 @@ export default function TalentPortal() {
 
   // Transform jobs data
   const jobOpportunities: JobOpportunity[] = jobsData.map(transformJobToOpportunity);
+
+  // Helper function to check if user has applied to a job
+  const hasAppliedToJob = (jobId: string): boolean => {
+    return userProposals.some(proposal => proposal.jobId === jobId);
+  };
+
+  // Handle opening the application modal
+  const handleApplyToJob = (job: Job) => {
+    setSelectedJob(job);
+    setShowApplicationModal(true);
+  };
+
+  // Handle successful application submission
+  const handleApplicationSuccess = () => {
+    // Refresh proposals data to update UI
+    queryClient.invalidateQueries({ queryKey: ['/api/talents', user?.id, 'proposals'] });
+  };
 
   // Show onboarding modal for new users
   useEffect(() => {
@@ -639,16 +671,25 @@ export default function TalentPortal() {
                         </div>
                       </div>
                       <div className="flex flex-col gap-2 ml-6">
-                        <Button 
-                          size="sm" 
-                          data-testid={`button-apply-job-${job.id}`}
-                          onClick={() => {
-                            // TODO: Implement application submission
-                            console.log('Apply to job:', job.id);
-                          }}
-                        >
-                          Apply Now
-                        </Button>
+                        {hasAppliedToJob(job.id) ? (
+                          <Button 
+                            size="sm" 
+                            variant="secondary"
+                            disabled
+                            data-testid={`button-applied-job-${job.id}`}
+                          >
+                            <CheckCircle2 className="w-4 h-4 mr-1" />
+                            Applied
+                          </Button>
+                        ) : (
+                          <Button 
+                            size="sm" 
+                            data-testid={`button-apply-job-${job.id}`}
+                            onClick={() => handleApplyToJob(job)}
+                          >
+                            Apply Now
+                          </Button>
+                        )}
                         <Button 
                           variant="outline" 
                           size="sm"
@@ -778,6 +819,14 @@ export default function TalentPortal() {
         onOpenChange={setShowOnboardingModal}
         onSkip={() => setShowOnboardingModal(false)}
         onComplete={() => setShowOnboardingModal(false)}
+      />
+
+      {/* Job Application Modal */}
+      <JobApplicationModal
+        open={showApplicationModal}
+        onOpenChange={setShowApplicationModal}
+        job={selectedJob}
+        onSuccess={handleApplicationSuccess}
       />
     </div>
   );

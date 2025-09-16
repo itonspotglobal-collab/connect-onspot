@@ -1,5 +1,5 @@
 import {
-  type User, type InsertUser,
+  type User, type InsertUser, type UpsertUser,
   type Profile, type InsertProfile,
   type Skill, type InsertSkill,
   type UserSkill, type InsertUserSkill,
@@ -29,6 +29,9 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, updates: Partial<InsertUser>): Promise<User | undefined>;
+  
+  // Replit Auth user management
+  upsertUser(user: UpsertUser): Promise<User>;
 
   // Profiles
   getProfile(id: string): Promise<Profile | undefined>;
@@ -303,6 +306,39 @@ export class MemStorage implements IStorage {
     };
     this.users.set(id, updatedUser);
     return updatedUser;
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const existingUser = this.users.get(userData.id!);
+    const now = new Date();
+    
+    if (existingUser) {
+      // Update existing user
+      const updatedUser: User = {
+        ...existingUser,
+        ...userData,
+        updatedAt: now,
+      };
+      this.users.set(userData.id!, updatedUser);
+      return updatedUser;
+    } else {
+      // Create new user
+      const newUser: User = {
+        id: userData.id || randomUUID(),
+        username: userData.username || null,
+        email: userData.email || null,
+        firstName: userData.firstName || null,
+        lastName: userData.lastName || null,
+        profileImageUrl: userData.profileImageUrl || null,
+        role: userData.role || "client",
+        replitId: userData.replitId || null,
+        stripeAccountId: userData.stripeAccountId || null,
+        createdAt: now,
+        updatedAt: now,
+      };
+      this.users.set(newUser.id, newUser);
+      return newUser;
+    }
   }
 
   // Profile Methods
