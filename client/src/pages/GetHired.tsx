@@ -94,18 +94,42 @@ export default function GetHired() {
     getDefaultFormValues
   } = useTalentProfile();
 
-  // Form setup using consolidated profile system
+  // Form setup using consolidated profile system - stabilized to avoid hooks order issues
   const form = useForm({
     resolver: zodResolver(profileFormSchema),
-    defaultValues: getDefaultFormValues()
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      title: '',
+      bio: '',
+      location: 'Manila, Philippines',
+      hourlyRate: '',
+      rateCurrency: 'USD',
+      availability: 'available',
+      phoneNumber: '',
+      languages: ['English'],
+      timezone: 'Asia/Manila'
+    }
   });
   
   // Reset form when profile data loads (only when profile changes, not on every render)
   useEffect(() => {
     if (profile) {
-      form.reset(getDefaultFormValues());
+      form.reset({
+        firstName: profile.firstName || '',
+        lastName: profile.lastName || '',
+        title: profile.title || '',
+        bio: profile.bio || '',
+        location: profile.location || 'Manila, Philippines',
+        hourlyRate: profile.hourlyRate || '',
+        rateCurrency: profile.rateCurrency || 'USD',
+        availability: profile.availability || 'available',
+        phoneNumber: profile.phoneNumber || '',
+        languages: profile.languages || ['English'],
+        timezone: profile.timezone || 'Asia/Manila'
+      });
     }
-  }, [profile, form, getDefaultFormValues]);
+  }, [profile, form]);
 
   // Removed duplicate profile queries - using consolidated system
 
@@ -188,6 +212,7 @@ export default function GetHired() {
     }
   };
 
+  // Handle loading state in JSX instead of early return to avoid hooks order violations
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
