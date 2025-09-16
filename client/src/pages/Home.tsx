@@ -184,30 +184,30 @@ export default function Home() {
         </div>
 
         <div className="container mx-auto text-center relative z-20 px-6">
-          <div className="max-w-6xl mx-auto space-y-16">
+          <div className="max-w-5xl mx-auto space-y-8">
             {/* Refined Typography Section */}
-            <div className="space-y-8 hero-content">
+            <div className="space-y-6 hero-content">
               {/* Elegant Badge */}
-              <div className="inline-flex items-center gap-2 text-sm font-medium text-white/90 tracking-[0.2em] uppercase bg-white/5 backdrop-blur-xl px-8 py-3 rounded-full border border-white/10 shadow-2xl">
-                <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full animate-pulse"></div>
-                Making Outsourcing Effortless
+              <div className="inline-flex items-center gap-2 text-xs font-medium text-white/90 tracking-[0.2em] uppercase bg-white/5 backdrop-blur-xl px-6 py-2 rounded-full border border-white/10 shadow-2xl">
+                <div className="w-1.5 h-1.5 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full animate-pulse"></div>
+                Making Outsourcing Easy
               </div>
               
               {/* Hero Title - Apple Typography */}
-              <div className="space-y-6">
+              <div className="space-y-2">
                 <h1 className="hero-title">
-                  <span className="block text-7xl md:text-8xl lg:text-9xl xl:text-[10rem] font-light tracking-tighter leading-[0.85] text-white">
+                  <span className="block text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-light tracking-tighter leading-[0.85] text-white">
                     Fuel Your
                   </span>
-                  <span className="block text-7xl md:text-8xl lg:text-9xl xl:text-[10rem] font-bold tracking-tighter leading-[0.85] bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
+                  <span className="block text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-bold tracking-tighter leading-[0.85] bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
                     Vision
                   </span>
                 </h1>
               </div>
               
               {/* Refined Description */}
-              <div className="max-w-4xl mx-auto">
-                <p className="text-xl md:text-2xl lg:text-3xl text-white/85 leading-relaxed font-light tracking-wide">
+              <div className="max-w-3xl mx-auto">
+                <p className="text-lg md:text-xl lg:text-2xl text-white/85 leading-relaxed font-light tracking-wide">
                   Connect with <span className="font-medium text-white">50,000+ vetted professionals</span>. 
                   Reduce cost by <span className="font-medium text-white">up to 70%</span>. 
                   Scale operations seamlessly with our <span className="font-medium text-white">Performance-Driven System</span>.
@@ -216,16 +216,16 @@ export default function Home() {
             </div>
             
             {/* Premium Call-to-Action */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 cta-buttons">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 cta-buttons">
               <Button 
                 size="lg" 
-                className="group relative overflow-hidden text-lg px-10 py-6 h-auto bg-white text-black hover:bg-gray-50 shadow-2xl hover:shadow-3xl transition-all duration-500 font-medium rounded-2xl border-2 border-white/20 min-w-[220px]" 
+                className="group relative overflow-hidden text-base px-8 py-4 h-auto bg-white text-black hover:bg-gray-50 shadow-2xl hover:shadow-3xl transition-all duration-500 font-medium rounded-xl border-2 border-white/20 min-w-[200px]" 
                 asChild 
                 data-testid="button-find-talent"
               >
                 <Link href="/hire-talent">
                   <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                  <Search className="w-5 h-5 mr-3 transition-transform group-hover:scale-110" />
+                  <Search className="w-4 h-4 mr-2 transition-transform group-hover:scale-110" />
                   Find Talent Now
                 </Link>
               </Button>
@@ -233,13 +233,13 @@ export default function Home() {
               <Button 
                 variant="outline" 
                 size="lg" 
-                className="group relative overflow-hidden text-lg px-10 py-6 h-auto border-2 border-white/30 text-white hover:bg-white/10 hover:border-white/60 shadow-2xl hover:shadow-3xl transition-all duration-500 font-medium backdrop-blur-xl bg-white/5 rounded-2xl min-w-[220px]" 
+                className="group relative overflow-hidden text-base px-8 py-4 h-auto border-2 border-white/30 text-white hover:bg-white/10 hover:border-white/60 shadow-2xl hover:shadow-3xl transition-all duration-500 font-medium backdrop-blur-xl bg-white/5 rounded-xl min-w-[200px]" 
                 asChild 
                 data-testid="button-get-hired"
               >
                 <Link href="/get-hired">
                   <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                  <Users className="w-5 h-5 mr-3 transition-transform group-hover:scale-110" />
+                  <Users className="w-4 h-4 mr-2 transition-transform group-hover:scale-110" />
                   Get Hired
                 </Link>
               </Button>
