@@ -32,7 +32,8 @@ import {
   Filter,
   Search,
   Plus,
-  AlertCircle
+  AlertCircle,
+  FolderOpen
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useTalentProfile } from "@/hooks/useTalentProfile";
@@ -40,6 +41,7 @@ import ProfileOnboardingModal from "@/components/ProfileOnboardingModal";
 import ProfileOnboarding from "@/components/ProfileOnboarding";
 import SkillsManagement from "@/components/SkillsManagement";
 import JobApplicationModal from "@/components/JobApplicationModal";
+import PortfolioManagement from "@/components/PortfolioManagement";
 import { type Job, type User as DbUser, type UserSkill, type Skill, type Proposal } from "@shared/schema";
 
 // Extended Job type with computed fields for display
@@ -364,7 +366,7 @@ export default function TalentPortal() {
 
       <div className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5 mb-8">
+          <TabsList className="grid w-full grid-cols-6 mb-8">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4" />
               Overview
@@ -380,6 +382,10 @@ export default function TalentPortal() {
             <TabsTrigger value="earnings" className="flex items-center gap-2">
               <DollarSign className="w-4 h-4" />
               Earnings
+            </TabsTrigger>
+            <TabsTrigger value="portfolio" className="flex items-center gap-2">
+              <FolderOpen className="w-4 h-4" />
+              Portfolio
             </TabsTrigger>
             <TabsTrigger value="profile" className="flex items-center gap-2">
               <User className="w-4 h-4" />
@@ -799,6 +805,11 @@ export default function TalentPortal() {
                 </Card>
               ))}
             </div>
+          </TabsContent>
+
+          {/* Portfolio */}
+          <TabsContent value="portfolio" className="space-y-6">
+            <PortfolioManagement talentId={user?.id} />
           </TabsContent>
 
           {/* Profile */}
