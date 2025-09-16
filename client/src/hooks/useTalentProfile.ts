@@ -101,6 +101,7 @@ export function useTalentProfile() {
     bio: profile?.bio || undefined,
     location: profile?.location || undefined,
     hourlyRate: profile?.hourlyRate || undefined,
+    profilePicture: profile?.profilePicture || undefined,
     selectedSkills,
     uploadedDocuments
   });
