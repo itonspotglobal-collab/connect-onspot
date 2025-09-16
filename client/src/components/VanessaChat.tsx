@@ -30,7 +30,7 @@ export function VanessaChat() {
     {
       id: '1',
       role: 'assistant',
-      content: "Hi! I'm Vanessa, your OnSpot virtual assistant. I'm here to help you learn about our outsourcing services, calculate potential savings, and guide you through getting started. What would you like to know?",
+      content: "Hey there! I'm Vanessa from OnSpot. I love helping people discover how outsourcing can transform their business. Whether you're curious about our services, want to crunch some numbers on potential savings, or just have questions about getting started - I'm here for you! What's on your mind?",
       timestamp: new Date()
     }
   ]);
@@ -97,12 +97,12 @@ export function VanessaChat() {
     } catch (error) {
       console.error('Chat error:', error);
       
-      let errorMessage = "I apologize, but I'm having trouble connecting right now. ";
+      let errorMessage = "Oops! I'm having a bit of trouble connecting right now. ";
       
       if (needsApiKey || (error instanceof Error && error.message.includes('API key'))) {
-        errorMessage += "It looks like my services need to be configured. Please contact support or try again later.";
+        errorMessage += "It seems like there's a setup issue on our end. Let me get that sorted out - try reaching out to our support team or give me another shot in a few minutes!";
       } else {
-        errorMessage += "Please try again in a moment, or feel free to explore our website for information about OnSpot's services.";
+        errorMessage += "Give me just a moment and try again, or feel free to browse around the site - there's tons of great info about what we do at OnSpot!";
       }
 
       const errorResponse: Message = {
@@ -126,10 +126,10 @@ export function VanessaChat() {
   };
 
   const quickQuestions = [
-    "How much can I save by outsourcing?",
-    "What services does OnSpot offer?",
-    "How does the 4-stage system work?",
-    "Can I see client success stories?"
+    "How much could I actually save?",
+    "What kind of teams do you build?", 
+    "How does your process work?",
+    "Got any success stories to share?"
   ];
 
   const handleQuickQuestion = (question: string) => {
