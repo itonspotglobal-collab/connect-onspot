@@ -53,6 +53,7 @@ export interface IStorage {
 
   // User Skills
   getUserSkills(userId: string): Promise<UserSkill[]>;
+  getUserSkillsWithNames(userId: string): Promise<(UserSkill & { skill: { name: string; category: string } | null })[]>;
   createUserSkill(userSkill: InsertUserSkill): Promise<UserSkill>;
   updateUserSkill(id: number, updates: Partial<InsertUserSkill>): Promise<UserSkill | undefined>;
   deleteUserSkill(id: number): Promise<boolean>;
@@ -452,6 +453,16 @@ export class MemStorage implements IStorage {
     return Array.from(this.userSkills.values()).filter(us => us.userId === userId);
   }
 
+  // Enhanced getUserSkills that includes skill names for better client-side processing
+  async getUserSkillsWithNames(userId: string): Promise<(UserSkill & { skill: { name: string; category: string } | null })[]> {
+    const userSkills = Array.from(this.userSkills.values()).filter(us => us.userId === userId);
+    
+    return userSkills.map(userSkill => ({
+      ...userSkill,
+      skill: this.skills.get(userSkill.skillId) || null
+    }));
+  }
+
   async createUserSkill(insertUserSkill: InsertUserSkill): Promise<UserSkill> {
     const id = this.userSkillIdCounter++;
     const userSkill: UserSkill = {
@@ -527,6 +538,7 @@ export class MemStorage implements IStorage {
     maxBudget?: number;
     skills?: string[];
     status?: string;
+    q?: string; // Text search query
   }): Promise<Job[]> {
     let jobs = Array.from(this.jobs.values());
 
@@ -571,6 +583,16 @@ export class MemStorage implements IStorage {
           )
         );
       });
+    }
+
+    // Add text search support
+    if (filters.q) {
+      const searchQuery = filters.q.toLowerCase();
+      jobs = jobs.filter(job => 
+        job.title.toLowerCase().includes(searchQuery) ||
+        job.description.toLowerCase().includes(searchQuery) ||
+        job.category.toLowerCase().includes(searchQuery)
+      );
     }
 
     return jobs.sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0));
