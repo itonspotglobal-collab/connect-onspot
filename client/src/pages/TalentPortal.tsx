@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -29,9 +29,14 @@ import {
   Settings,
   BarChart3,
   Filter,
-  Search
+  Search,
+  Plus,
+  AlertCircle
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { useTalentProfile } from "@/hooks/useTalentProfile";
+import ProfileOnboardingModal from "@/components/ProfileOnboardingModal";
+import ProfileOnboarding from "@/components/ProfileOnboarding";
 
 interface JobOpportunity {
   id: string;
@@ -71,23 +76,41 @@ export default function TalentPortal() {
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
   const [jobSearch, setJobSearch] = useState("");
+  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
+  
+  // Use real profile data from useTalentProfile hook
+  const {
+    profile,
+    profileCompletion,
+    isNewUser,
+    hasCompletedOnboarding,
+    isLoading: profileLoading
+  } = useTalentProfile();
 
-  // Mock data - in production these would come from API
-  const mockProfile = {
-    name: user?.username || "John Doe",
-    title: "Full Stack Developer",
-    avatar: "",
-    rating: 4.9,
-    reviewCount: 47,
-    location: "Manila, Philippines",
-    hourlyRate: 25,
-    currency: "USD",
-    completedJobs: 23,
-    totalEarnings: 18500,
-    profileCompletion: 95,
-    availability: "available" as const,
-    skills: ["React", "Node.js", "TypeScript", "Python", "AWS"],
-    languages: ["English", "Filipino"],
+  // Show onboarding modal for new users
+  useEffect(() => {
+    if (user?.userType === 'talent' && isNewUser && !hasCompletedOnboarding) {
+      const timer = setTimeout(() => setShowOnboardingModal(true), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [user, isNewUser, hasCompletedOnboarding]);
+
+  // Profile data from useTalentProfile hook, with fallbacks for display
+  const displayProfile = {
+    name: profile ? `${profile.firstName} ${profile.lastName}` : (user?.username || "John Doe"),
+    title: profile?.title || "Professional",
+    avatar: profile?.profilePicture || "",
+    rating: profile?.rating ? parseFloat(profile.rating.toString()) : 0,
+    reviewCount: 0, // Would come from reviews API
+    location: profile?.location || "Global",
+    hourlyRate: profile?.hourlyRate ? parseFloat(profile.hourlyRate.toString()) : 0,
+    currency: profile?.rateCurrency || "USD",
+    completedJobs: 0, // Would come from contracts API
+    totalEarnings: profile?.totalEarnings ? parseFloat(profile.totalEarnings.toString()) : 0,
+    profileCompletion,
+    availability: profile?.availability || "available" as const,
+    skills: [], // Would come from user skills API
+    languages: profile?.languages || ["English"],
     responseTime: "Within 1 hour"
   };
 
@@ -212,30 +235,41 @@ export default function TalentPortal() {
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-4">
                 <Avatar className="w-12 h-12">
-                  <AvatarImage src={mockProfile.avatar} />
-                  <AvatarFallback>{mockProfile.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                  <AvatarImage src={displayProfile.avatar} />
+                  <AvatarFallback>{displayProfile.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <h1 className="text-2xl font-bold">{mockProfile.name}</h1>
-                  <p className="text-muted-foreground">{mockProfile.title}</p>
+                  <h1 className="text-2xl font-bold">{displayProfile.name}</h1>
+                  <p className="text-muted-foreground">{displayProfile.title}</p>
                 </div>
               </div>
               <div className="hidden md:flex items-center gap-4 text-sm">
                 <div className="flex items-center gap-1">
                   <Star className="w-4 h-4 text-[hsl(var(--gold-yellow)/0.8)] fill-current" />
-                  <span className="font-medium">{mockProfile.rating}</span>
-                  <span className="text-muted-foreground">({mockProfile.reviewCount} reviews)</span>
+                  <span className="font-medium">{displayProfile.rating || 'N/A'}</span>
+                  <span className="text-muted-foreground">({displayProfile.reviewCount} reviews)</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <MapPin className="w-4 h-4 text-muted-foreground" />
-                  <span>{mockProfile.location}</span>
+                  <span>{displayProfile.location}</span>
                 </div>
-                <Badge variant={mockProfile.availability === "available" ? "default" : "secondary"}>
-                  {mockProfile.availability === "available" ? "Available" : "Busy"}
+                <Badge variant={displayProfile.availability === "available" ? "default" : "secondary"}>
+                  {displayProfile.availability === "available" ? "Available" : "Busy"}
                 </Badge>
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {profileCompletion < 70 && (
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  onClick={() => setShowOnboardingModal(true)}
+                  data-testid="button-complete-profile"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Complete Profile ({profileCompletion}%)
+                </Button>
+              )}
               <Button variant="outline" size="sm">
                 <Bell className="w-4 h-4" />
               </Button>
@@ -284,7 +318,7 @@ export default function TalentPortal() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Earnings</p>
-                      <p className="text-2xl font-bold">${mockProfile.totalEarnings.toLocaleString()}</p>
+                      <p className="text-2xl font-bold">${displayProfile.totalEarnings.toLocaleString()}</p>
                     </div>
                     <DollarSign className="w-8 h-8 text-green-600" />
                   </div>
@@ -295,7 +329,7 @@ export default function TalentPortal() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Completed Jobs</p>
-                      <p className="text-2xl font-bold">{mockProfile.completedJobs}</p>
+                      <p className="text-2xl font-bold">{displayProfile.completedJobs}</p>
                     </div>
                     <CheckCircle2 className="w-8 h-8 text-blue-600" />
                   </div>
@@ -306,7 +340,7 @@ export default function TalentPortal() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Success Rate</p>
-                      <p className="text-2xl font-bold">{mockProfile.rating}/5.0</p>
+                      <p className="text-2xl font-bold">{displayProfile.rating || 0}/5.0</p>
                     </div>
                     <Star className="w-8 h-8 text-[hsl(var(--gold-yellow)/0.8)]" />
                   </div>
@@ -317,13 +351,45 @@ export default function TalentPortal() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Profile Completion</p>
-                      <p className="text-2xl font-bold">{mockProfile.profileCompletion}%</p>
+                      <p className="text-2xl font-bold">{displayProfile.profileCompletion}%</p>
                     </div>
                     <User className="w-8 h-8 text-purple-600" />
                   </div>
                 </CardContent>
               </Card>
             </div>
+
+            {/* Profile Completion Progress (for incomplete profiles) */}
+            {profileCompletion < 100 && (
+              <Card className="border-primary/20 bg-primary/5">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                        <User className="w-6 h-6 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">Complete Your Profile</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {profileCompletion}% complete • Boost your chances of getting hired
+                        </p>
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={() => setShowOnboardingModal(true)}
+                      data-testid="button-complete-profile-card"
+                    >
+                      Continue Setup
+                    </Button>
+                  </div>
+                  <Progress value={profileCompletion} className="h-2" />
+                  <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
+                    <span>Get started</span>
+                    <span>Profile complete</span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Recent Activity & Quick Actions */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -529,7 +595,7 @@ export default function TalentPortal() {
               <div className="text-right">
                 <div className="text-sm text-muted-foreground">Total Earnings</div>
                 <div className="text-3xl font-bold text-green-600">
-                  ${mockProfile.totalEarnings.toLocaleString()}
+                  ${displayProfile.totalEarnings.toLocaleString()}
                 </div>
               </div>
             </div>
@@ -566,136 +632,24 @@ export default function TalentPortal() {
 
           {/* Profile */}
           <TabsContent value="profile" className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold">Profile Settings</h2>
-                <p className="text-muted-foreground">Manage your professional profile</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="text-right mr-4">
-                  <div className="text-sm text-muted-foreground">Profile Completion</div>
-                  <div className="flex items-center gap-2">
-                    <Progress value={mockProfile.profileCompletion} className="w-32" />
-                    <span className="font-bold">{mockProfile.profileCompletion}%</span>
-                  </div>
-                </div>
-                <Button>
-                  Edit Profile
-                </Button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card className="lg:col-span-2">
-                <CardHeader>
-                  <CardTitle>Professional Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="flex items-center gap-6">
-                    <Avatar className="w-24 h-24">
-                      <AvatarImage src={mockProfile.avatar} />
-                      <AvatarFallback className="text-2xl">
-                        {mockProfile.name.split(' ').map(n => n[0]).join('')}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <h3 className="text-2xl font-bold">{mockProfile.name}</h3>
-                      <p className="text-lg text-muted-foreground">{mockProfile.title}</p>
-                      <div className="flex items-center gap-4 mt-2 text-sm">
-                        <div className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
-                          <span>{mockProfile.location}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <DollarSign className="w-4 h-4" />
-                          <span>${mockProfile.hourlyRate}/hr</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h4 className="font-semibold mb-3">Skills</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {mockProfile.skills.map((skill) => (
-                        <Badge key={skill} variant="secondary">
-                          {skill}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h4 className="font-semibold mb-3">Languages</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {mockProfile.languages.map((language) => (
-                        <Badge key={language} variant="outline">
-                          {language}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Performance</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Success Rate</span>
-                      <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 text-[hsl(var(--gold-yellow)/0.8)] fill-current" />
-                        <span className="font-semibold">{mockProfile.rating}/5.0</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Jobs Completed</span>
-                      <span className="font-semibold">{mockProfile.completedJobs}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Response Time</span>
-                      <span className="font-semibold">{mockProfile.responseTime}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Documents</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <FileText className="w-5 h-5 text-muted-foreground" />
-                        <span className="text-sm">Resume.pdf</span>
-                      </div>
-                      <Button variant="outline" size="sm">
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <div className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Play className="w-5 h-5 text-muted-foreground" />
-                        <span className="text-sm">Intro Video</span>
-                      </div>
-                      <Button variant="outline" size="sm">
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <Button variant="ghost" size="sm" className="w-full">
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      Manage Documents
-                    </Button>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
+            <ProfileOnboarding 
+              mode="full"
+              onComplete={() => {
+                // Refresh profile data when onboarding is complete
+                window.location.reload();
+              }}
+            />
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Profile Onboarding Modal */}
+      <ProfileOnboardingModal
+        open={showOnboardingModal}
+        onOpenChange={setShowOnboardingModal}
+        onSkip={() => setShowOnboardingModal(false)}
+        onComplete={() => setShowOnboardingModal(false)}
+      />
     </div>
   );
 }
