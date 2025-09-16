@@ -69,11 +69,6 @@ const managementItems = [
 
 const systemItems = [
   {
-    title: "AI Insights",
-    url: "/insights",
-    icon: Target,
-  },
-  {
     title: "Settings",
     url: "/settings",
     icon: Settings,
