@@ -3,7 +3,7 @@ import { LoginDialog } from "@/components/LoginDialog";
 import { SignUpDialog } from "@/components/SignUpDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect, useRef } from "react";
-import { ChevronDown, Users, Zap, Building, User, Bot, ArrowRight, CheckCircle2, Code, PenTool, BarChart3, Headphones, Globe, Camera } from "lucide-react";
+import { ChevronDown, Users, Zap, Building, User, Bot, ArrowRight, CheckCircle2, Code, PenTool, BarChart3, Headphones, Globe, Camera, FileText, Star, Info, Settings, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -138,6 +138,55 @@ const workCategories = {
   }
 };
 
+// Why OnSpot sections for mega menu
+const whyOnSpotSections = {
+  caseStudies: {
+    title: "Case Studies",
+    subtitle: "Real success stories",
+    description: "See how we've transformed businesses and delivered measurable results",
+    icon: FileText,
+    highlights: ["8X Growth Stories", "ROI Case Studies", "Client Transformations", "Before/After Analysis"],
+    path: "/why-onspot/case-studies",
+    popular: true
+  },
+  reviews: {
+    title: "Reviews",
+    subtitle: "Client testimonials",
+    description: "Hear directly from our clients about their OnSpot experience",
+    icon: Star,
+    highlights: ["5-Star Reviews", "Video Testimonials", "Success Metrics", "Client Feedback"],
+    path: "/why-onspot/reviews",
+    popular: false
+  },
+  about: {
+    title: "About OnSpot",
+    subtitle: "Our story & mission",
+    description: "Learn about our journey, values, and what makes us different",
+    icon: Info,
+    highlights: ["Our Story", "Leadership Team", "Company Values", "Global Presence"],
+    path: "/why-onspot/about",
+    popular: false
+  },
+  experience: {
+    title: "The OnSpot Experience",
+    subtitle: "How we work",
+    description: "Discover our proven 4-stage system for seamless outsourcing",
+    icon: Settings,
+    highlights: ["4-Stage System", "Implementation Process", "Team Building", "Innovation Lab"],
+    path: "/why-onspot/experience",
+    popular: true
+  },
+  integrator: {
+    title: "The OnSpot Integrator System",
+    subtitle: "Our methodology",
+    description: "Deep dive into our proprietary system for outsourcing success",
+    icon: Layers,
+    highlights: ["Proven Framework", "Best Practices", "Process Optimization", "Continuous Improvement"],
+    path: "/why-onspot/integrator-system",
+    popular: false
+  }
+};
+
 const navigationItems = [
   { title: "Hire Talent", path: "/hire-talent" },
   { 
@@ -146,7 +195,12 @@ const navigationItems = [
     megaMenu: true,
     categories: workCategories
   },
-  { title: "Why OnSpot", path: "/why-onspot" },
+  { 
+    title: "Why OnSpot", 
+    path: "/why-onspot",
+    megaMenu: true,
+    whyOnSpot: whyOnSpotSections
+  },
   { title: "Amazing", path: "/amazing" },
   { 
     title: "Services", 
@@ -259,7 +313,8 @@ export function TopNavigation() {
             const hasMegaMenu = 'megaMenu' in item && item.megaMenu;
             const isActive = location === item.path || 
               (hasMegaMenu && item.services && Object.values(item.services).some(service => location === service.path)) ||
-              (hasMegaMenu && item.categories && Object.values(item.categories).some(category => location === category.path));
+              (hasMegaMenu && item.categories && Object.values(item.categories).some(category => location === category.path)) ||
+              (hasMegaMenu && item.whyOnSpot && Object.values(item.whyOnSpot).some(section => location === section.path));
             
             if (hasMegaMenu) {
               return (
@@ -506,6 +561,123 @@ export function TopNavigation() {
                           <div className="text-white/50 text-xs flex items-center gap-1">
                             <ChevronDown className="w-3 h-3 animate-bounce" />
                             Scroll to explore all categories
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Why OnSpot Mega Menu */}
+                  {activeDropdown === item.title && item.whyOnSpot && (
+                    <div 
+                      className="fixed top-16 left-1/2 transform -translate-x-1/2 mt-2 w-[min(100vw-2rem,1200px)] max-h-[calc(100vh-5rem)] rounded-lg border border-white/20 backdrop-blur-md shadow-2xl z-50 mx-4 overflow-hidden"
+                      style={{ 
+                        background: 'linear-gradient(135deg, #474ead 0%, #5a5dc7 50%, #6366f1 100%)'
+                      }}
+                      onMouseEnter={handleDropdownMouseEnter}
+                      onMouseLeave={handleDropdownMouseLeave}
+                    >
+                      {/* Sticky Header */}
+                      <div className="sticky top-0 p-6 pb-4 border-b border-white/10 bg-gradient-to-b from-[#474ead] to-transparent backdrop-blur-sm z-10">
+                        <div className="text-center">
+                          <h3 className="text-2xl font-bold text-white mb-2">Why Choose OnSpot?</h3>
+                          <p className="text-white/80 text-sm max-w-2xl mx-auto">Discover what makes OnSpot the trusted choice for effortless outsourcing</p>
+                        </div>
+                      </div>
+                      
+                      {/* Scrollable Content */}
+                      <div className="overflow-y-auto max-h-[calc(100vh-15rem)] px-6 pb-6">
+                        <div className="py-4">
+                          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                          {Object.entries(item.whyOnSpot).map(([key, section]) => (
+                            <Card key={key} className="relative overflow-hidden border-white/20 bg-white/5 backdrop-blur-md hover-elevate transition-all duration-300 group hover:bg-white/10 hover:scale-[1.02] hover:shadow-2xl">
+                              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+                              <div className="absolute top-0 left-0 w-1 h-full bg-primary/80 transform scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top"></div>
+                              <CardContent className="relative p-6">
+                                <div className="flex items-start gap-4 mb-4">
+                                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary/30 to-primary/10 backdrop-blur-sm flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                                    <section.icon className="w-7 h-7 text-primary drop-shadow-sm" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <h4 className="text-lg font-bold text-white truncate group-hover:text-primary/95 transition-colors duration-300">{section.title}</h4>
+                                      {section.popular && (
+                                        <Badge className="bg-primary text-white text-xs px-2 py-1 font-semibold animate-pulse">Popular</Badge>
+                                      )}
+                                    </div>
+                                    <p className="text-white/75 text-sm font-medium mb-2 group-hover:text-white/90 transition-colors duration-300">{section.subtitle}</p>
+                                    <p className="text-white/60 text-xs leading-relaxed mb-3 group-hover:text-white/75 transition-colors duration-300">{section.description}</p>
+                                  </div>
+                                </div>
+                                
+                                <div className="space-y-4 mb-5">
+                                  <div>
+                                    <span className="text-white/70 text-xs font-medium mb-2 block">Key Highlights:</span>
+                                    <div className="flex flex-wrap gap-2">
+                                      {section.highlights.slice(0, 3).map((highlight, index) => (
+                                        <Badge key={index} variant="outline" className="text-xs border-primary/50 text-primary/90 hover:bg-primary/10 transition-colors duration-200">
+                                          {highlight}
+                                        </Badge>
+                                      ))}
+                                      {section.highlights.length > 3 && (
+                                        <Badge variant="outline" className="text-xs border-white/30 text-white/60">
+                                          +{section.highlights.length - 3} more
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                <div className="flex gap-2">
+                                  <Button 
+                                    asChild
+                                    size="sm" 
+                                    className="flex-1 bg-primary text-white hover:bg-primary/90 font-bold transition-all duration-300 group-hover:shadow-xl hover:shadow-primary/30 hover:scale-105"
+                                  >
+                                    <Link href={section.path} data-testid={`cta-explore-${key}`}>
+                                      Explore
+                                      <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
+                                    </Link>
+                                  </Button>
+                                  <Button 
+                                    asChild
+                                    size="sm" 
+                                    variant="outline"
+                                    className="px-3 border-white/30 text-white/80 hover:bg-white/10 hover:border-white/50 transition-all duration-300"
+                                  >
+                                    <Link href={`${section.path}?action=learn`} data-testid={`link-learn-${key}`}>
+                                      Learn More
+                                    </Link>
+                                  </Button>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Sticky Footer */}
+                      <div className="sticky bottom-0 p-6 pt-4 border-t border-white/10 bg-gradient-to-t from-[#474ead] to-transparent backdrop-blur-sm">
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                          <Button asChild size="lg" className="bg-primary text-white hover:bg-primary/90 font-semibold shadow-lg hover:shadow-xl transition-all duration-300">
+                            <Link href="/why-onspot/about" data-testid="cta-learn-more">
+                              Learn More About OnSpot
+                              <ArrowRight className="w-4 h-4 ml-2" />
+                            </Link>
+                          </Button>
+                          <Button asChild size="lg" variant="outline" className="border-white/50 text-white hover:bg-white/10 hover:border-white/70 transition-all duration-300">
+                            <Link href="/hire-talent" data-testid="cta-get-started">
+                              Get Started Today
+                            </Link>
+                          </Button>
+                        </div>
+                        
+                        {/* Scroll Indicator */}
+                        <div className="flex justify-center mt-3">
+                          <div className="text-white/50 text-xs flex items-center gap-1">
+                            <ChevronDown className="w-3 h-3 animate-bounce" />
+                            Scroll to explore all sections
                           </div>
                         </div>
                       </div>

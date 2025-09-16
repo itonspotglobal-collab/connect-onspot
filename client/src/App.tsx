@@ -12,6 +12,11 @@ import Home from "@/pages/Home";
 import TalentSearch from "@/pages/TalentSearch";
 import Dashboard from "@/pages/Dashboard";
 import WhyOnSpot from "@/pages/WhyOnSpot";
+import WhyOnSpotAbout from "@/pages/WhyOnSpotAbout";
+import WhyOnSpotCaseStudies from "@/pages/WhyOnSpotCaseStudies";
+import WhyOnSpotReviews from "@/pages/WhyOnSpotReviews";
+import WhyOnSpotExperience from "@/pages/WhyOnSpotExperience";
+import WhyOnSpotIntegratorSystem from "@/pages/WhyOnSpotIntegratorSystem";
 import Amazing from "@/pages/Amazing";
 import GetHired from "@/pages/GetHired";
 import TalentPortal from "@/pages/TalentPortal";
@@ -32,6 +37,11 @@ function PublicRouter() {
           <Route path="/find-work/:category" component={FindWork} />
           <Route path="/get-hired" component={GetHired} />
           <Route path="/why-onspot" component={WhyOnSpot} />
+          <Route path="/why-onspot/about" component={WhyOnSpotAbout} />
+          <Route path="/why-onspot/case-studies" component={WhyOnSpotCaseStudies} />
+          <Route path="/why-onspot/reviews" component={WhyOnSpotReviews} />
+          <Route path="/why-onspot/experience" component={WhyOnSpotExperience} />
+          <Route path="/why-onspot/integrator-system" component={WhyOnSpotIntegratorSystem} />
           <Route path="/amazing" component={Amazing} />
           <Route path="/pricing" component={() => <div className="container mx-auto p-8 text-center">Pricing - Coming Soon</div>} />
           <Route path="/enterprise" component={() => <div className="container mx-auto p-8 text-center">Enterprise Solutions - Coming Soon</div>} />
