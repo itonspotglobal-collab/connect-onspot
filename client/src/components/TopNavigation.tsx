@@ -72,7 +72,6 @@ const navigationItems = [
   { title: "Hire Talent", path: "/hire-talent" },
   { title: "Why OnSpot", path: "/why-onspot" },
   { title: "Amazing", path: "/amazing" },
-  { title: "Pricing", path: "/pricing" },
   { 
     title: "Services", 
     path: "/services",
