@@ -209,10 +209,10 @@ export function TopNavigation() {
                   {/* Mega Menu */}
                   {activeDropdown === item.title && item.services && (
                     <div 
-                      className="absolute top-full left-1/2 mt-2 max-w-screen-lg w-[min(90vw,900px)] rounded-lg border border-white/20 backdrop-blur-md shadow-2xl z-50 -translate-x-1/2"
+                      className="absolute top-full left-1/2 mt-2 max-w-screen-xl w-[min(95vw,1200px)] rounded-lg border border-white/20 backdrop-blur-md shadow-2xl z-50 -translate-x-1/2"
                       style={{ 
                         background: 'linear-gradient(135deg, #474ead 0%, #5a5dc7 50%, #6366f1 100%)',
-                        left: 'clamp(1rem, 50%, calc(100vw - min(90vw, 900px) - 1rem))'
+                        left: 'clamp(1rem, 50%, calc(100vw - min(95vw, 1200px) - 1rem))'
                       }}
                       onMouseEnter={handleDropdownMouseEnter}
                       onMouseLeave={handleDropdownMouseLeave}
@@ -223,11 +223,11 @@ export function TopNavigation() {
                           <p className="text-white/80 text-sm">Choose the perfect solution for your business needs</p>
                         </div>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-5 gap-4">
                           {Object.entries(item.services).map(([key, service]) => (
                             <Card key={key} className="relative overflow-hidden border-white/20 bg-white/10 backdrop-blur-md hover-elevate transition-all duration-300 group">
                               <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                              <CardContent className="relative p-6">
+                              <CardContent className="relative p-4">
                                 <div className="flex items-start gap-4 mb-4">
                                   <div className="w-12 h-12 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
                                     <service.icon className="w-6 h-6 text-white" />
