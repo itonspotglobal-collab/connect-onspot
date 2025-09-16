@@ -12,11 +12,20 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  const headers: Record<string, string> = {};
+  
+  if (data) {
+    headers["Content-Type"] = "application/json";
+  }
+  
+  // Authentication is now handled by server-side sessions via cookies
+  // No client-controlled headers needed - this fixes the spoofable x-user-id vulnerability
+  
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
+    credentials: "include", // Include session cookies
   });
 
   await throwIfResNotOk(res);

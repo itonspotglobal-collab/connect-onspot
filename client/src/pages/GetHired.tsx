@@ -141,8 +141,8 @@ export default function GetHired() {
   const profileMutation = useMutation({
     mutationFn: async (data: ProfileFormData) => {
       return profile 
-        ? apiRequest(`/api/profile/${(profile as any).id}`, { method: "PUT", body: JSON.stringify(data) })
-        : apiRequest("/api/profile", { method: "POST", body: JSON.stringify(data) });
+        ? apiRequest("PUT", `/api/profile/${(profile as any).id}`, data)
+        : apiRequest("POST", "/api/profile", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/profile"] });
@@ -154,7 +154,7 @@ export default function GetHired() {
   const linkedinMutation = useMutation({
     mutationFn: async () => {
       // In a real app, this would initiate LinkedIn OAuth flow
-      return apiRequest("/api/linkedin/connect", { method: "POST" });
+      return apiRequest("POST", "/api/linkedin/connect");
     },
     onSuccess: () => {
       setIsLinkedInConnected(true);
@@ -164,7 +164,7 @@ export default function GetHired() {
   // Assessment Start Mutation
   const startAssessmentMutation = useMutation({
     mutationFn: async (assessmentId: number) => {
-      return apiRequest(`/api/assessments/${assessmentId}/start`, { method: "POST" });
+      return apiRequest("POST", `/api/assessments/${assessmentId}/start`);
     }
   });
 
@@ -196,10 +196,11 @@ export default function GetHired() {
 
   // File upload handlers
   const handleResumeUpload = async () => {
-    const response = await apiRequest("/api/objects/upload", { method: "POST" });
+    const response = await apiRequest("POST", "/api/objects/upload");
+    const data = await response.json();
     return {
       method: "PUT" as const,
-      url: response.uploadURL
+      url: data.uploadURL
     };
   };
 
