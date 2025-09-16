@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import heroWorkspaceImage from "@assets/generated_images/Creative_collaborative_business_workspace_8528c1b1.png";
+import heroVideoPath from "@assets/OnSpot Hero Section Video_1758018354294.mp4";
 
 const stats = [
   {
@@ -143,52 +144,80 @@ export default function Home() {
   return (
     <div className="space-y-16">
       {/* Hero Section */}
-      <div className="relative overflow-hidden min-h-screen flex items-center justify-center" style={{ 
-        background: `linear-gradient(135deg, #474ead 0%, #5a5dc7 50%, #6366f1 100%)` 
-      }}>
-        {/* Background Image */}
+      <div className="relative overflow-hidden min-h-screen flex items-center justify-center">
+        {/* Video Background */}
         <div className="absolute inset-0">
+          <video 
+            autoPlay 
+            muted 
+            loop 
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover object-center"
+            onError={(e) => {
+              // Fallback to image if video fails to load
+              const target = e.target as HTMLVideoElement;
+              target.style.display = 'none';
+              const fallbackImg = target.nextElementSibling as HTMLImageElement;
+              if (fallbackImg) fallbackImg.style.display = 'block';
+            }}
+          >
+            <source src={heroVideoPath} type="video/mp4" />
+          </video>
+          {/* Fallback Image */}
           <img 
             src={heroWorkspaceImage} 
             alt="Creative collaborative workspace" 
-            className="w-full h-full object-cover object-center opacity-20 mix-blend-overlay"
+            className="hidden w-full h-full object-cover object-center"
             loading="eager"
             decoding="async"
           />
         </div>
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-white/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-white/5 rounded-full blur-3xl animate-pulse delay-500"></div>
+        
+        {/* Video Overlay - Dark wash for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-black/60"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black/30"></div>
+        
+        {/* Subtle animated accents over video */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-white/15 to-primary/10 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-tr from-primary/10 to-white/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
+          <div className="absolute top-1/3 left-1/4 w-72 h-72 bg-gradient-to-bl from-white/10 to-transparent rounded-full blur-3xl animate-pulse delay-500"></div>
         </div>
-        <div className="container mx-auto text-center space-y-12 py-16 px-6 relative z-10">
-          <div className="space-y-8">
-            <p className="text-lg font-medium text-white/90 tracking-wide">
+        <div className="container mx-auto text-center space-y-12 py-16 px-6 relative z-20">
+          <div className="space-y-8 animate-fade-in">
+            <p className="text-lg font-medium text-white/95 tracking-wide uppercase backdrop-blur-sm bg-white/5 inline-block px-6 py-2 rounded-full border border-white/20">
               Making Outsourcing Easy
             </p>
-            <h1 className="text-6xl md:text-8xl lg:text-9xl font-bold tracking-tight text-white drop-shadow-lg">
-              Fuel Your Vision
+            <h1 className="text-6xl md:text-8xl lg:text-9xl font-bold tracking-tight text-white drop-shadow-2xl">
+              <span className="bg-gradient-to-r from-white to-white/90 bg-clip-text">
+                Fuel Your Vision
+              </span>
             </h1>
-            <p className="text-2xl md:text-3xl text-white/95 max-w-4xl mx-auto leading-relaxed font-light tracking-wide drop-shadow-md">
+            <p className="text-2xl md:text-3xl text-white/95 max-w-4xl mx-auto leading-relaxed font-light tracking-wide drop-shadow-lg backdrop-blur-sm bg-black/10 rounded-2xl p-6">
               Connect with 50,000+ vetted professionals. Reduce cost by up to 70%. 
               Scale operations seamlessly with our Performance-Driven System.
             </p>
           </div>
           
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-8">
-            <Button size="lg" className="text-lg px-8 py-4 h-auto bg-white text-purple-900 hover:bg-white/90 shadow-xl hover:shadow-2xl transition-all duration-300 font-semibold" asChild data-testid="button-find-talent">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-8 animate-slide-up">
+            <Button size="lg" className="text-lg px-8 py-4 h-auto bg-white text-primary hover:bg-white/95 shadow-2xl hover:shadow-3xl hover:scale-105 transition-all duration-300 font-semibold backdrop-blur-sm border border-white/20" asChild data-testid="button-find-talent">
               <Link href="/hire-talent">
                 <Search className="w-6 h-6 mr-3" />
                 Find Talent Now
               </Link>
             </Button>
-            <Button variant="outline" size="lg" className="text-lg px-8 py-4 h-auto border-white/50 text-white hover:bg-white hover:text-purple-900 shadow-xl hover:shadow-2xl transition-all duration-300 font-semibold backdrop-blur-sm" asChild data-testid="button-get-hired">
+            <Button variant="outline" size="lg" className="text-lg px-8 py-4 h-auto border-white/60 text-white hover:bg-white/10 hover:border-white hover:scale-105 shadow-2xl hover:shadow-3xl transition-all duration-300 font-semibold backdrop-blur-md bg-white/5" asChild data-testid="button-get-hired">
               <Link href="/get-hired">
                 <Users className="w-6 h-6 mr-3" />
                 Get Hired
               </Link>
             </Button>
+          </div>
+          
+          {/* Video Controls Indicator */}
+          <div className="absolute bottom-8 right-8 flex items-center gap-3 text-white/70 text-sm backdrop-blur-sm bg-black/20 px-4 py-2 rounded-full border border-white/10">
+            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+            <span>Live Preview</span>
           </div>
         </div>
       </div>
