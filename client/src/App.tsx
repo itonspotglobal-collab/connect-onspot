@@ -15,6 +15,7 @@ import WhyOnSpot from "@/pages/WhyOnSpot";
 import Amazing from "@/pages/Amazing";
 import GetHired from "@/pages/GetHired";
 import TalentPortal from "@/pages/TalentPortal";
+import FindWork from "@/pages/FindWork";
 import Insights from "@/pages/Insights";
 import NotFound from "@/pages/not-found";
 
@@ -27,6 +28,8 @@ function PublicRouter() {
         <Switch>
           <Route path="/" component={Home} />
           <Route path="/hire-talent" component={TalentSearch} />
+          <Route path="/find-work" component={FindWork} />
+          <Route path="/find-work/:category" component={FindWork} />
           <Route path="/get-hired" component={GetHired} />
           <Route path="/why-onspot" component={WhyOnSpot} />
           <Route path="/amazing" component={Amazing} />
@@ -61,6 +64,8 @@ function ClientRouter() {
         <Route path="/settings" component={() => <div className="p-6">Settings Module - Coming Soon</div>} />
         {/* Public routes accessible from client dashboard */}
         <Route path="/hire-talent" component={TalentSearch} />
+        <Route path="/find-work" component={FindWork} />
+        <Route path="/find-work/:category" component={FindWork} />
         <Route component={NotFound} />
       </Switch>
     </ClientLayout>

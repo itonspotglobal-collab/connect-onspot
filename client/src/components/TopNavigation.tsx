@@ -3,7 +3,7 @@ import { LoginDialog } from "@/components/LoginDialog";
 import { SignUpDialog } from "@/components/SignUpDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect, useRef } from "react";
-import { ChevronDown, Users, Zap, Building, User, Bot, ArrowRight, CheckCircle2 } from "lucide-react";
+import { ChevronDown, Users, Zap, Building, User, Bot, ArrowRight, CheckCircle2, Code, PenTool, BarChart3, Headphones, Globe, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -68,8 +68,84 @@ const serviceDetails = {
   }
 };
 
+// Work categories for Find Work mega menu
+const workCategories = {
+  development: {
+    title: "Development & IT",
+    subtitle: "Build the digital future",
+    description: "Full-stack development, mobile apps, and technical solutions",
+    icon: Code,
+    specialties: ["Web Development", "Mobile Apps", "AI/ML", "DevOps"],
+    demand: "High",
+    averageRate: "$35-65/hr",
+    path: "/find-work/development",
+    popular: true
+  },
+  design: {
+    title: "Design & Creative",
+    subtitle: "Visual storytelling",
+    description: "UI/UX design, branding, and creative content creation",
+    icon: PenTool,
+    specialties: ["UI/UX Design", "Branding", "Illustration", "Video Editing"],
+    demand: "High",
+    averageRate: "$25-45/hr",
+    path: "/find-work/design",
+    popular: true
+  },
+  marketing: {
+    title: "Sales & Marketing",
+    subtitle: "Growth acceleration",
+    description: "Digital marketing, content strategy, and sales optimization",
+    icon: BarChart3,
+    specialties: ["Digital Marketing", "Content Writing", "SEO/SEM", "Social Media"],
+    demand: "Very High",
+    averageRate: "$20-40/hr",
+    path: "/find-work/marketing",
+    popular: false
+  },
+  support: {
+    title: "Admin & Support",
+    subtitle: "Operational excellence",
+    description: "Virtual assistance, customer support, and business operations",
+    icon: Headphones,
+    specialties: ["Virtual Assistant", "Customer Support", "Data Entry", "Project Management"],
+    demand: "Very High",
+    averageRate: "$8-25/hr",
+    path: "/find-work/support",
+    popular: false
+  },
+  writing: {
+    title: "Writing & Translation",
+    subtitle: "Global communication",
+    description: "Content creation, technical writing, and language services",
+    icon: Globe,
+    specialties: ["Content Writing", "Technical Writing", "Translation", "Copywriting"],
+    demand: "High",
+    averageRate: "$15-35/hr",
+    path: "/find-work/writing",
+    popular: false
+  },
+  media: {
+    title: "Audio, Video & Animation",
+    subtitle: "Media production",
+    description: "Video editing, animation, audio production, and multimedia content",
+    icon: Camera,
+    specialties: ["Video Editing", "Animation", "Audio Production", "3D Modeling"],
+    demand: "Medium",
+    averageRate: "$20-50/hr",
+    path: "/find-work/media",
+    popular: false
+  }
+};
+
 const navigationItems = [
   { title: "Hire Talent", path: "/hire-talent" },
+  { 
+    title: "Find Work", 
+    path: "/find-work",
+    megaMenu: true,
+    categories: workCategories
+  },
   { title: "Why OnSpot", path: "/why-onspot" },
   { title: "Amazing", path: "/amazing" },
   { 
@@ -78,8 +154,7 @@ const navigationItems = [
     megaMenu: true,
     services: serviceDetails
   },
-  { title: "Insights", path: "/insights" },
-  { title: "Careers", path: "/get-hired" }
+  { title: "Insights", path: "/insights" }
 ];
 
 export function TopNavigation() {
@@ -182,7 +257,9 @@ export function TopNavigation() {
         <div className="hidden md:flex items-center space-x-2 relative z-10">
           {navigationItems.map((item) => {
             const hasMegaMenu = 'megaMenu' in item && item.megaMenu;
-            const isActive = location === item.path || (hasMegaMenu && item.services && Object.values(item.services).some(service => location === service.path));
+            const isActive = location === item.path || 
+              (hasMegaMenu && item.services && Object.values(item.services).some(service => location === service.path)) ||
+              (hasMegaMenu && item.categories && Object.values(item.categories).some(category => location === category.path));
             
             if (hasMegaMenu) {
               return (
@@ -206,7 +283,7 @@ export function TopNavigation() {
                     }`} />
                   </button>
                   
-                  {/* Mega Menu */}
+                  {/* Services Mega Menu */}
                   {activeDropdown === item.title && item.services && (
                     <div 
                       className="fixed top-16 left-1/2 transform -translate-x-1/2 mt-2 w-[min(100vw-2rem,1400px)] rounded-lg border border-white/20 backdrop-blur-md shadow-2xl z-50 mx-4"
@@ -300,6 +377,100 @@ export function TopNavigation() {
                       </div>
                     </div>
                   )}
+
+                  {/* Find Work Categories Mega Menu */}
+                  {activeDropdown === item.title && item.categories && (
+                    <div 
+                      className="fixed top-16 left-1/2 transform -translate-x-1/2 mt-2 w-[min(100vw-2rem,1200px)] rounded-lg border border-white/20 backdrop-blur-md shadow-2xl z-50 mx-4"
+                      style={{ 
+                        background: 'linear-gradient(135deg, #474ead 0%, #5a5dc7 50%, #6366f1 100%)'
+                      }}
+                      onMouseEnter={handleDropdownMouseEnter}
+                      onMouseLeave={handleDropdownMouseLeave}
+                    >
+                      <div className="p-8">
+                        <div className="mb-6">
+                          <h3 className="text-2xl font-bold text-white mb-2">Find Your Perfect Opportunity</h3>
+                          <p className="text-white/80 text-sm">Discover work that matches your skills and ambitions</p>
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-6">
+                          {Object.entries(item.categories).map(([key, category]) => (
+                            <Card key={key} className="relative overflow-hidden border-white/20 bg-white/10 backdrop-blur-md hover-elevate transition-all duration-300 group">
+                              <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                              <CardContent className="relative p-6">
+                                <div className="flex items-start gap-4 mb-4">
+                                  <div className="w-12 h-12 rounded-lg bg-[hsl(var(--gold-yellow)/0.2)] backdrop-blur-sm flex items-center justify-center flex-shrink-0">
+                                    <category.icon className="w-6 h-6 text-[hsl(var(--gold-yellow)/0.9)]" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <h4 className="text-lg font-bold text-white truncate">{category.title}</h4>
+                                      {category.popular && (
+                                        <Badge className="bg-[hsl(var(--gold-yellow)/0.9)] text-black text-xs px-2 py-1 font-semibold">Popular</Badge>
+                                      )}
+                                    </div>
+                                    <p className="text-white/70 text-sm font-medium mb-1">{category.subtitle}</p>
+                                    <p className="text-white/60 text-xs leading-relaxed mb-3">{category.description}</p>
+                                  </div>
+                                </div>
+                                
+                                <div className="space-y-3 mb-4">
+                                  <div className="grid grid-cols-2 gap-2 text-xs">
+                                    <div>
+                                      <span className="text-white/70">Demand:</span>
+                                      <div className="text-white font-semibold">{category.demand}</div>
+                                    </div>
+                                    <div>
+                                      <span className="text-white/70">Rate Range:</span>
+                                      <div className="text-white font-semibold">{category.averageRate}</div>
+                                    </div>
+                                  </div>
+                                  
+                                  <div>
+                                    <span className="text-white/70 text-xs">Popular Skills:</span>
+                                    <div className="mt-1 flex flex-wrap gap-1">
+                                      {category.specialties.slice(0, 2).map((specialty, index) => (
+                                        <Badge key={index} variant="outline" className="text-xs border-white/30 text-white/80">
+                                          {specialty}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                <Button 
+                                  asChild
+                                  size="sm" 
+                                  className="w-full bg-[hsl(var(--gold-yellow)/0.9)] text-black hover:bg-[hsl(var(--gold-yellow))] font-semibold transition-all duration-200 group-hover:shadow-lg"
+                                >
+                                  <Link href={category.path} data-testid={`cta-browse-${key}`}>
+                                    Browse Jobs
+                                    <ArrowRight className="w-4 h-4 ml-2" />
+                                  </Link>
+                                </Button>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                        
+                        <div className="mt-8 pt-6 border-t border-white/20">
+                          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                            <Button asChild size="lg" className="bg-[hsl(var(--gold-yellow)/0.9)] text-black hover:bg-[hsl(var(--gold-yellow))] font-semibold">
+                              <Link href="/find-work" data-testid="cta-all-jobs">
+                                View All Jobs
+                              </Link>
+                            </Button>
+                            <Button asChild size="lg" variant="outline" className="border-white/50 text-white hover:bg-white/10">
+                              <Link href="/get-hired" data-testid="cta-create-profile">
+                                Create Talent Profile
+                              </Link>
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             }
@@ -336,7 +507,9 @@ export function TopNavigation() {
           <div className="flex flex-wrap gap-2 justify-center">
             {navigationItems.map((item) => {
               const hasMegaMenu = 'megaMenu' in item && item.megaMenu;
-              const isActive = location === item.path || (hasMegaMenu && item.services && Object.values(item.services).some(service => location === service.path));
+              const isActive = location === item.path || 
+                (hasMegaMenu && item.services && Object.values(item.services).some(service => location === service.path)) ||
+                (hasMegaMenu && item.categories && Object.values(item.categories).some(category => location === category.path));
               
               if (hasMegaMenu) {
                 return (
@@ -394,6 +567,53 @@ export function TopNavigation() {
                                     </div>
                                     <p className="text-white/70 text-xs mb-1">{service.subtitle}</p>
                                     <p className="text-white/60 text-xs leading-relaxed">{service.description}</p>
+                                  </div>
+                                </div>
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Mobile Categories Menu */}
+                    {activeDropdown === item.title && item.categories && (
+                      <div className="absolute top-full left-0 mt-2 w-80 rounded-lg border border-white/20 backdrop-blur-md shadow-xl z-50"
+                        style={{ 
+                          background: 'linear-gradient(135deg, #474ead 0%, #5a5dc7 50%, #6366f1 100%)'
+                        }}
+                      >
+                        <div className="p-4">
+                          <div className="mb-4">
+                            <h3 className="text-lg font-bold text-white mb-1">Find Work</h3>
+                            <p className="text-white/70 text-xs">Discover opportunities</p>
+                          </div>
+                          <div className="space-y-3">
+                            {Object.entries(item.categories).map(([key, category]) => (
+                              <Link
+                                key={category.path}
+                                href={category.path}
+                                className={`block p-3 rounded-lg border border-white/20 bg-white/10 hover:bg-white/20 transition-all duration-200 group ${
+                                  location === category.path
+                                    ? "bg-white/20 border-white/40"
+                                    : ""
+                                }`}
+                                onClick={() => setActiveDropdown(null)}
+                                data-testid={`mobile-category-${key}`}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div className="w-8 h-8 rounded-lg bg-[hsl(var(--gold-yellow)/0.2)] flex items-center justify-center flex-shrink-0">
+                                    <category.icon className="w-4 h-4 text-[hsl(var(--gold-yellow)/0.9)]" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <h4 className="text-sm font-bold text-white truncate">{category.title}</h4>
+                                      {category.popular && (
+                                        <Badge className="bg-[hsl(var(--gold-yellow)/0.9)] text-black text-xs px-1 py-0.5 font-semibold">Popular</Badge>
+                                      )}
+                                    </div>
+                                    <p className="text-white/70 text-xs mb-1">{category.subtitle}</p>
+                                    <p className="text-white/60 text-xs leading-relaxed">{category.description}</p>
                                   </div>
                                 </div>
                               </Link>
