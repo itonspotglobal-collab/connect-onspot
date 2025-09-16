@@ -77,7 +77,7 @@ export function Footer() {
               <h3 className="font-semibold text-white text-base tracking-wide border-b border-white/20 pb-2">Services</h3>
               <ul className="space-y-2 text-white/85 text-sm">
                 <li><Link href="/hire-talent" className="hover:text-white transition-all duration-200 hover:translate-x-1" data-testid="footer-hire-talent">Hire Talent</Link></li>
-                <li><Link href="/get-hired" className="hover:text-white transition-all duration-200 hover:translate-x-1" data-testid="footer-get-hired">Get Hired</Link></li>
+                <li><Link href="/get-hired" className="hover:text-white transition-all duration-200 hover:translate-x-1" data-testid="footer-careers">Careers</Link></li>
                 <li><Link href="/pricing" className="hover:text-white transition-all duration-200 hover:translate-x-1" data-testid="footer-pricing">Pricing</Link></li>
                 <li><Link href="/enterprise" className="hover:text-white transition-all duration-200 hover:translate-x-1" data-testid="footer-enterprise">Enterprise Solutions</Link></li>
               </ul>
@@ -90,7 +90,6 @@ export function Footer() {
                 <li><Link href="/why-onspot" className="hover:text-white transition-all duration-200 hover:translate-x-1" data-testid="footer-why-onspot">Why OnSpot</Link></li>
                 <li><Link href="/amazing" className="hover:text-white transition-all duration-200 hover:translate-x-1" data-testid="footer-amazing">Amazing Stories</Link></li>
                 <li><Link href="/insights" className="hover:text-white transition-all duration-200 hover:translate-x-1" data-testid="footer-insights">Insights</Link></li>
-                <li><a href="#" className="hover:text-white transition-all duration-200 hover:translate-x-1" data-testid="footer-careers">Careers</a></li>
                 <li><a href="#" className="hover:text-white transition-all duration-200 hover:translate-x-1" data-testid="footer-about">About Us</a></li>
               </ul>
             </div>
