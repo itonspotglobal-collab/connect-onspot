@@ -138,9 +138,22 @@ export function useTalentProfile() {
 
   // Skills mutation
   const skillsMutation = useMutation({
-    mutationFn: async (skills: string[]) => {
+    mutationFn: async (skillNames: string[]) => {
       if (!user?.id) throw new Error('User not authenticated');
-      return apiRequest('POST', `/api/users/${user.id}/skills`, { skillNames: skills });
+      
+      // Convert skill names to skill IDs
+      const skillPromises = skillNames.map(async (skillName) => {
+        const skill = (availableSkills as any[]).find(s => s.name === skillName);
+        if (!skill) throw new Error(`Skill not found: ${skillName}`);
+        
+        return apiRequest('POST', `/api/users/${user.id}/skills`, {
+          skillId: skill.id,
+          level: 'intermediate', // Default level
+          yearsExperience: 1 // Default experience
+        });
+      });
+      
+      return Promise.all(skillPromises);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users', user?.id, 'skills'] });
