@@ -80,11 +80,6 @@ const managementItems = [
 // System
 const systemItems = [
   {
-    title: "AI Insights",
-    url: "/insights",
-    icon: TrendingUp,
-  },
-  {
     title: "Settings",
     url: "/settings",
     icon: Settings,
