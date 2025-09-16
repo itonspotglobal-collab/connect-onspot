@@ -68,6 +68,9 @@
 
   --destructive-foreground: 0 0% 98%;
 
+  --gold-yellow: 45 100% 60%;
+  --gold-yellow-foreground: 220 9% 15%;
+
   --input: 220 13% 85%;
   --ring: 248 46% 56%;
   --chart-1: 220 100% 45%;
@@ -185,6 +188,9 @@
   --destructive: 0 84% 60%;
 
   --destructive-foreground: 220 13% 9%;
+
+  --gold-yellow: 45 100% 65%;
+  --gold-yellow-foreground: 220 13% 9%;
 
   --input: 220 13% 25%;
   --ring: 212 100% 60%;

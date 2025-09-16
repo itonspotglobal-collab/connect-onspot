@@ -103,12 +103,12 @@ export default function WhyOnSpot() {
   ];
 
   const commonRoles = [
-    { category: "Customer Support", icon: Phone, color: "bg-blue-100 text-blue-700" },
-    { category: "Technical Support", icon: Code, color: "bg-green-100 text-green-700" },
-    { category: "Back-office Support", icon: Briefcase, color: "bg-purple-100 text-purple-700" },
-    { category: "Data Entry Service", icon: Target, color: "bg-orange-100 text-orange-700" },
-    { category: "Virtual Assistant", icon: Users, color: "bg-pink-100 text-pink-700" },
-    { category: "Sales Support", icon: TrendingUp, color: "bg-yellow-100 text-yellow-700" }
+    { category: "Customer Support", icon: Phone, color: "bg-primary/10 text-primary" },
+    { category: "Technical Support", icon: Code, color: "bg-muted text-muted-foreground" },
+    { category: "Back-office Support", icon: Briefcase, color: "bg-primary/15 text-primary" },
+    { category: "Data Entry Service", icon: Target, color: "bg-[hsl(var(--gold-yellow))]/15 text-[hsl(var(--gold-yellow))]" },
+    { category: "Virtual Assistant", icon: Users, color: "bg-muted text-muted-foreground" },
+    { category: "Sales Support", icon: TrendingUp, color: "bg-[hsl(var(--gold-yellow))]/20 text-[hsl(var(--gold-yellow))]" }
   ];
 
   const stats = [
@@ -134,9 +134,7 @@ export default function WhyOnSpot() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
       {/* Hero Section */}
-      <section className="relative py-32 px-4 text-center overflow-hidden" style={{
-        background: 'linear-gradient(135deg, #474ead 0%, #5a5dc7 30%, #6366f1 60%, #8b5cf6 100%)'
-      }}>
+      <section className="relative py-32 px-4 text-center overflow-hidden bg-gradient-to-br from-primary via-primary/90 to-primary/80">
         {/* Animated Background Elements */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
@@ -154,7 +152,7 @@ export default function WhyOnSpot() {
           
           <h1 className="text-6xl md:text-8xl font-bold tracking-tight mb-8 text-white">
             Making Outsourcing
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-orange-300 to-red-300">
+            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[hsl(var(--gold-yellow))] to-[hsl(45_100%_55%)]">
               Effortless
             </span>
           </h1>
@@ -215,7 +213,7 @@ export default function WhyOnSpot() {
         {/* Background Elements */}
         <div className="absolute inset-0">
           <div className="absolute top-32 left-10 w-32 h-32 bg-primary/5 rounded-full blur-2xl animate-pulse"></div>
-          <div className="absolute bottom-32 right-10 w-40 h-40 bg-purple-500/5 rounded-full blur-2xl animate-pulse delay-1000"></div>
+          <div className="absolute bottom-32 right-10 w-40 h-40 bg-[hsl(var(--gold-yellow))]/10 rounded-full blur-2xl animate-pulse delay-1000"></div>
           <div className="absolute inset-0 bg-grid-black/[0.01] bg-[size:60px_60px]"></div>
         </div>
         
@@ -226,7 +224,8 @@ export default function WhyOnSpot() {
               Service Models
             </div>
             <h2 className="text-5xl md:text-6xl font-bold mb-6">
-              Built for <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-600">Scale</span>, Not Stress
+              Built for <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-[hsl(var(--gold-yellow))]">
+              Scale</span>, Not Stress
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               Choose the level of support that fuels your vision and accelerates your growth
@@ -247,15 +246,15 @@ export default function WhyOnSpot() {
                 {/* Background Gradient */}
                 <div className={`absolute inset-0 ${
                   model.featured
-                    ? 'bg-gradient-to-br from-primary/20 via-purple-500/10 to-blue-500/20'
+                    ? 'bg-gradient-to-br from-primary/20 via-primary/10 to-[hsl(var(--gold-yellow))]/10'
                     : index === 0
-                    ? 'bg-gradient-to-br from-blue-500/10 via-cyan-500/10 to-teal-500/10'
-                    : 'bg-gradient-to-br from-purple-500/10 via-pink-500/10 to-red-500/10'
+                    ? 'bg-gradient-to-br from-primary/15 via-primary/8 to-primary/5'
+                    : 'bg-gradient-to-br from-muted/20 via-muted/10 to-foreground/5'
                 }`}></div>
                 
                 {model.featured && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
-                    <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white shadow-lg px-4 py-2 text-sm font-bold">
+                    <Badge className="bg-gradient-to-r from-[hsl(var(--gold-yellow))] to-[hsl(45_100%_55%)] text-[hsl(var(--gold-yellow-foreground))] shadow-lg px-4 py-2 text-sm font-bold">
                       <Star className="w-4 h-4 mr-1" />
                       BEST VALUE
                     </Badge>
@@ -264,10 +263,10 @@ export default function WhyOnSpot() {
                 <CardHeader className="relative text-center pb-4 pt-8">
                   <div className={`w-16 h-16 mx-auto mb-6 rounded-full flex items-center justify-center ${
                     model.featured
-                      ? 'bg-gradient-to-br from-primary to-purple-600'
+                      ? 'bg-gradient-to-br from-primary to-[hsl(var(--gold-yellow))]'
                       : index === 0
-                      ? 'bg-gradient-to-br from-blue-500 to-cyan-600'
-                      : 'bg-gradient-to-br from-purple-500 to-pink-600'
+                      ? 'bg-gradient-to-br from-primary to-primary/80'
+                      : 'bg-gradient-to-br from-foreground to-muted-foreground'
                   } shadow-xl`}>
                     {model.featured ? (
                       <Zap className="w-8 h-8 text-white" />
@@ -341,17 +340,17 @@ export default function WhyOnSpot() {
             {painPoints.map((point, index) => (
               <Card key={index} className="hover-elevate" data-testid={`pain-point-${index}`}>
                 <CardContent className="p-8 text-center">
-                  <div className="w-16 h-16 mx-auto mb-6 bg-red-100 rounded-full flex items-center justify-center">
-                    <point.icon className="w-8 h-8 text-red-600" />
+                  <div className="w-16 h-16 mx-auto mb-6 bg-muted rounded-full flex items-center justify-center">
+                    <point.icon className="w-8 h-8 text-muted-foreground" />
                   </div>
-                  <h3 className="text-xl font-bold mb-4 text-red-700">{point.title}</h3>
+                  <h3 className="text-xl font-bold mb-4 text-foreground">{point.title}</h3>
                   <p className="text-muted-foreground mb-8">{point.description}</p>
                   
                   <div className="border-t pt-6">
-                    <div className="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
-                      <TrendingUp className="w-8 h-8 text-green-600" />
+                    <div className="w-16 h-16 mx-auto mb-4 bg-[hsl(var(--gold-yellow))]/20 rounded-full flex items-center justify-center">
+                      <TrendingUp className="w-8 h-8 text-[hsl(var(--gold-yellow))]" />
                     </div>
-                    <h4 className="text-lg font-bold mb-3 text-green-700">{point.solution}</h4>
+                    <h4 className="text-lg font-bold mb-3 text-primary">{point.solution}</h4>
                     <p className="text-sm text-muted-foreground">{point.solutionDesc}</p>
                   </div>
                 </CardContent>
@@ -392,11 +391,9 @@ export default function WhyOnSpot() {
       {/* Leadership Team */}
       <section className="py-32 px-4 relative overflow-hidden">
         {/* Background */}
-        <div className="absolute inset-0" style={{
-          background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%)'
-        }}>
+        <div className="absolute inset-0 bg-gradient-to-br from-muted/30 via-background to-muted/50">
           <div className="absolute top-20 right-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-20 left-20 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-20 left-20 w-64 h-64 bg-[hsl(var(--gold-yellow))]/10 rounded-full blur-3xl"></div>
         </div>
         
         <div className="relative z-10 max-w-7xl mx-auto">
@@ -414,18 +411,18 @@ export default function WhyOnSpot() {
           <div className="grid md:grid-cols-2 gap-16 items-center">
             {/* Jake Wainberg - President */}
             <Card className="relative overflow-hidden border-none shadow-2xl hover-elevate transition-all duration-500 group">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-primary/10"></div>
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-muted/10"></div>
               <CardContent className="relative p-12">
                 <div className="flex flex-col items-center text-center">
                   <div className="relative mb-8">
                     <Avatar className="w-32 h-32 border-4 border-white shadow-xl">
                       <AvatarImage src="" alt="Jake Wainberg" />
-                      <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-2xl font-bold">
+                      <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-white text-2xl font-bold">
                         JW
                       </AvatarFallback>
                     </Avatar>
-                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                      <Award className="w-4 h-4 text-white" />
+                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-[hsl(var(--gold-yellow))] rounded-full flex items-center justify-center">
+                      <Award className="w-4 h-4 text-[hsl(var(--gold-yellow-foreground))]" />
                     </div>
                   </div>
                   
@@ -465,17 +462,17 @@ export default function WhyOnSpot() {
             
             {/* Nur Laminero - CEO */}
             <Card className="relative overflow-hidden border-none shadow-2xl hover-elevate transition-all duration-500 group">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-pink-500/10 to-red-500/10"></div>
+              <div className="absolute inset-0 bg-gradient-to-br from-muted/15 via-foreground/5 to-primary/5"></div>
               <CardContent className="relative p-12">
                 <div className="flex flex-col items-center text-center">
                   <div className="relative mb-8">
                     <Avatar className="w-32 h-32 border-4 border-white shadow-xl">
                       <AvatarImage src="" alt="Nur Laminero" />
-                      <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-600 text-white text-2xl font-bold">
+                      <AvatarFallback className="bg-gradient-to-br from-muted-foreground to-foreground text-white text-2xl font-bold">
                         NL
                       </AvatarFallback>
                     </Avatar>
-                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-primary rounded-full flex items-center justify-center">
                       <Star className="w-4 h-4 text-white" />
                     </div>
                   </div>
@@ -518,13 +515,11 @@ export default function WhyOnSpot() {
       </section>
 
       {/* OnSpot by the Numbers */}
-      <section className="py-32 px-4 relative overflow-hidden" style={{
-        background: 'linear-gradient(135deg, #1e293b 0%, #334155 50%, #475569 100%)'
-      }}>
+      <section className="py-32 px-4 relative overflow-hidden bg-gradient-to-br from-foreground/95 via-foreground to-muted-foreground">
         {/* Animated Background */}
         <div className="absolute inset-0">
           <div className="absolute top-20 left-20 w-64 h-64 bg-white/5 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-20 right-20 w-64 h-64 bg-primary/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+          <div className="absolute bottom-20 right-20 w-64 h-64 bg-[hsl(var(--gold-yellow))]/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
           <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:100px_100px]"></div>
         </div>
         
@@ -535,7 +530,7 @@ export default function WhyOnSpot() {
               Our Impact
             </div>
             <h2 className="text-5xl md:text-6xl font-bold mb-6 text-white">
-              OnSpot by the <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-orange-400">Numbers</span>
+              OnSpot by the <span className="text-transparent bg-clip-text bg-gradient-to-r from-[hsl(var(--gold-yellow))] to-[hsl(45_100%_50%)]">Numbers</span>
             </h2>
             <p className="text-xl text-white/80 max-w-3xl mx-auto">
               Proven results across clients and industries—numbers that speak to our commitment
@@ -545,7 +540,7 @@ export default function WhyOnSpot() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
               <Card key={index} className="relative overflow-hidden border-none bg-white/10 backdrop-blur-md hover-elevate transition-all duration-500 group" data-testid={`stat-${index}`}>
-                <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-[hsl(var(--gold-yellow))]/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                 <CardContent className="relative p-8 text-center">
                   <div className="text-5xl md:text-6xl font-bold mb-4 text-white">
                     {stat.value}
@@ -553,7 +548,7 @@ export default function WhyOnSpot() {
                   <p className="text-sm text-white/80 leading-tight font-medium">
                     {stat.label}
                   </p>
-                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-gradient-to-r from-primary to-purple-500 rounded-full"></div>
+                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-gradient-to-r from-[hsl(var(--gold-yellow))] to-[hsl(45_100%_50%)] rounded-full"></div>
                 </CardContent>
               </Card>
             ))}
