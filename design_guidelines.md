@@ -1,4 +1,4 @@
-# OnSpot Platform MVP - Design Guidelines
+# OnSpot MVP - Design Guidelines
 
 ## Design Approach
 **Apple HIG Inspired**: Following Apple's design principles for clean, intuitive interfaces with Upwork-style functionality. This utility-focused platform prioritizes efficiency and learnability for professional outsourcing management.
