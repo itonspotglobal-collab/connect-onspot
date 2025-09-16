@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useTalentProfile } from "@/hooks/useTalentProfile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,26 +36,13 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { profileFormSchema, ProfileFormData } from "@/hooks/useTalentProfile";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ObjectUploader } from "@/components/ObjectUploader";
 
-// Profile Form Schema
-const profileFormSchema = z.object({
-  firstName: z.string().min(2, "First name is required"),
-  lastName: z.string().min(2, "Last name is required"),
-  title: z.string().min(5, "Professional title is required"),
-  bio: z.string().min(50, "Bio must be at least 50 characters"),
-  location: z.string().min(2, "Location is required"),
-  hourlyRate: z.string().min(1, "Hourly rate is required"),
-  rateCurrency: z.string().default("USD"),
-  availability: z.string().default("available"),
-  phoneNumber: z.string().optional(),
-  languages: z.array(z.string()).min(1, "At least one language is required"),
-  timezone: z.string().default("Asia/Manila")
-});
-
-type ProfileFormData = z.infer<typeof profileFormSchema>;
+// Using consolidated profile form schema from hook
+// Removed duplicate schema definition
 
 interface AssessmentQuestion {
   id: string;
@@ -86,39 +74,41 @@ interface JobApplication {
 export default function GetHired() {
   const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
-  const [profileCompletion, setProfileCompletion] = useState(0);
-  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [isLinkedInConnected, setIsLinkedInConnected] = useState(false);
-  const [uploadedDocuments, setUploadedDocuments] = useState<any[]>([]);
+  
+  // Use consolidated profile system
+  const {
+    profile,
+    skills: selectedSkills,
+    documents: uploadedDocuments,
+    availableSkills,
+    profileCompletion,
+    isLoading,
+    isUpdating,
+    toggleSkill,
+    addDocument,
+    removeDocument,
+    updateProfile,
+    updateSkills,
+    uploadDocument,
+    getDefaultFormValues
+  } = useTalentProfile();
 
-  // Form setup
-  const form = useForm<ProfileFormData>({
+  // Form setup using consolidated profile system
+  const form = useForm({
     resolver: zodResolver(profileFormSchema),
-    defaultValues: {
-      firstName: "",
-      lastName: "",
-      title: "",
-      bio: "",
-      location: "Manila, Philippines",
-      hourlyRate: "",
-      rateCurrency: "USD",
-      availability: "available",
-      phoneNumber: "",
-      languages: ["English"],
-      timezone: "Asia/Manila"
-    }
+    defaultValues: getDefaultFormValues()
   });
+  
+  // Update form when profile loads
+  useEffect(() => {
+    const defaultValues = getDefaultFormValues();
+    Object.keys(defaultValues).forEach(key => {
+      form.setValue(key as any, (defaultValues as any)[key]);
+    });
+  }, [profile, form, getDefaultFormValues]);
 
-  // Fetch user profile
-  const { data: profile, isLoading: profileLoading } = useQuery({
-    queryKey: ["/api/profile"],
-    enabled: !!user
-  });
-
-  // Fetch available skills
-  const { data: skills = [] } = useQuery({
-    queryKey: ["/api/skills"]
-  });
+  // Removed duplicate profile queries - using consolidated system
 
   // Fetch assessments
   const { data: assessments = [] } = useQuery<Assessment[]>({
@@ -137,18 +127,7 @@ export default function GetHired() {
     enabled: !!user
   });
 
-  // Create/Update Profile Mutation
-  const profileMutation = useMutation({
-    mutationFn: async (data: ProfileFormData) => {
-      return profile 
-        ? apiRequest("PUT", `/api/profile/${(profile as any).id}`, data)
-        : apiRequest("POST", "/api/profile", data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/profile"] });
-      setCurrentStep(2);
-    }
-  });
+  // Removed duplicate profile mutation - using consolidated system
 
   // LinkedIn Connect Mutation
   const linkedinMutation = useMutation({
@@ -168,31 +147,9 @@ export default function GetHired() {
     }
   });
 
-  // Calculate profile completion
-  useEffect(() => {
-    let completion = 0;
-    const fields = form.getValues();
-    
-    if (fields.firstName && fields.lastName) completion += 15;
-    if (fields.title) completion += 15;
-    if (fields.bio && fields.bio.length >= 50) completion += 15;
-    if (fields.location) completion += 10;
-    if (fields.hourlyRate) completion += 10;
-    if (selectedSkills.length >= 3) completion += 15;
-    if (uploadedDocuments.some(d => d.type === "resume")) completion += 10;
-    if (uploadedDocuments.some(d => d.type === "video_intro")) completion += 10;
-    
-    setProfileCompletion(completion);
-  }, [form.watch(), selectedSkills, uploadedDocuments]);
+  // Removed duplicate profile completion calculation - using consolidated system
 
-  // Skills management
-  const toggleSkill = (skillName: string) => {
-    setSelectedSkills(prev => 
-      prev.includes(skillName)
-        ? prev.filter(s => s !== skillName)
-        : [...prev, skillName]
-    );
-  };
+  // Skills management - using consolidated system from hook
 
   // File upload handlers
   const handleResumeUpload = async () => {
@@ -207,22 +164,32 @@ export default function GetHired() {
   const handleUploadComplete = (result: any, type: string) => {
     if (result.successful && result.successful.length > 0) {
       const file = result.successful[0];
-      setUploadedDocuments(prev => [...prev, {
+      const newDocument = {
         id: Math.random().toString(),
-        type,
+        type: type as any,
         fileName: file.name,
         fileUrl: file.uploadURL,
         createdAt: new Date().toISOString()
-      }]);
+      };
+      addDocument(newDocument);
+      uploadDocument(newDocument);
     }
   };
 
-  // Profile form submission
-  const onSubmit = (data: ProfileFormData) => {
-    profileMutation.mutate(data);
+  // Profile form submission using consolidated system
+  const onSubmit = async (data: ProfileFormData) => {
+    try {
+      await updateProfile(data);
+      if (selectedSkills && selectedSkills.length > 0) {
+        await updateSkills();
+      }
+      setCurrentStep(2);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+    }
   };
 
-  if (profileLoading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -390,21 +357,21 @@ export default function GetHired() {
 
                     {/* Skills Selection */}
                     <div>
-                      <Label className="text-base font-medium">Skills ({selectedSkills.length} selected)</Label>
+                      <Label className="text-base font-medium">Skills ({selectedSkills?.length || 0} selected)</Label>
                       <p className="text-sm text-muted-foreground mb-4">
                         Select skills that best represent your expertise
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        {(skills as any[]).slice(0, 20).map((skill: any) => (
+                        {(availableSkills as any[]).slice(0, 20).map((skill: any) => (
                           <Badge
                             key={skill.id}
-                            variant={selectedSkills.includes(skill.name) ? "default" : "outline"}
+                            variant={selectedSkills?.includes(skill.name) ? "default" : "outline"}
                             className="cursor-pointer hover-elevate"
                             onClick={() => toggleSkill(skill.name)}
                             data-testid={`skill-${skill.name.toLowerCase().replace(/\s+/g, "-")}`}
                           >
                             {skill.name}
-                            {selectedSkills.includes(skill.name) && <CheckCircle2 className="w-3 h-3 ml-1" />}
+                            {selectedSkills?.includes(skill.name) && <CheckCircle2 className="w-3 h-3 ml-1" />}
                           </Badge>
                         ))}
                       </div>
@@ -413,10 +380,10 @@ export default function GetHired() {
                     <Button 
                       type="submit" 
                       className="w-full" 
-                      disabled={profileMutation.isPending}
+                      disabled={isUpdating}
                       data-testid="button-save-profile"
                     >
-                      {profileMutation.isPending ? "Saving..." : "Save Profile & Continue"}
+                      {isUpdating ? "Saving..." : "Save Profile & Continue"}
                     </Button>
                   </form>
                 </Form>
@@ -514,7 +481,7 @@ export default function GetHired() {
                     Upload your most recent resume. We'll automatically extract your experience and skills.
                   </p>
                   
-                  {uploadedDocuments.filter(d => d.type === "resume").length === 0 ? (
+                  {(uploadedDocuments || []).filter(d => d.type === "resume").length === 0 ? (
                     <div className="border-2 border-dashed border-muted rounded-lg p-8 text-center">
                       <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                       <h4 className="font-medium mb-2">Upload Your Resume</h4>
@@ -535,7 +502,7 @@ export default function GetHired() {
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {uploadedDocuments.filter(d => d.type === "resume").map((doc) => (
+                      {(uploadedDocuments || []).filter(d => d.type === "resume").map((doc) => (
                         <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg">
                           <div className="flex items-center gap-3">
                             <FileText className="w-5 h-5 text-muted-foreground" />
@@ -576,7 +543,7 @@ export default function GetHired() {
                     Record a 60-90 second video introducing yourself and your skills to potential clients.
                   </p>
                   
-                  {uploadedDocuments.filter(d => d.type === "video_intro").length === 0 ? (
+                  {(uploadedDocuments || []).filter(d => d.type === "video_intro").length === 0 ? (
                     <div className="border-2 border-dashed border-muted rounded-lg p-8 text-center">
                       <Play className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                       <h4 className="font-medium mb-2">Upload Video Introduction</h4>
@@ -597,7 +564,7 @@ export default function GetHired() {
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {uploadedDocuments.filter(d => d.type === "video_intro").map((doc) => (
+                      {(uploadedDocuments || []).filter(d => d.type === "video_intro").map((doc) => (
                         <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg">
                           <div className="flex items-center gap-3">
                             <Play className="w-5 h-5 text-muted-foreground" />
