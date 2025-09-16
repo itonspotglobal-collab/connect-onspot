@@ -53,13 +53,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Check for stored user on mount
   useEffect(() => {
+    console.log('🔒 AuthContext: Checking for stored user...');
     const storedUser = localStorage.getItem('onspot_user');
+    console.log('🔒 Stored user:', storedUser);
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
+        console.log('🔒 Parsed user:', parsedUser);
         setUser(parsedUser);
         setIsAuthenticated(true);
       } catch (error) {
+        console.error('🔒 Error parsing stored user:', error);
         localStorage.removeItem('onspot_user');
       }
     }
