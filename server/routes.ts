@@ -671,6 +671,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Vanessa AI Chat endpoint
+  app.post("/api/chat", async (req, res) => {
+    try {
+      const { messages } = req.body;
+      
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(401).json({ 
+          error: "OpenAI API key not configured. Please add your OPENAI_API_KEY to continue using the AI assistant." 
+        });
+      }
+
+      // Import OpenAI dynamically
+      const { OpenAI } = await import('openai');
+      const openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+      });
+
+      // System prompt for Vanessa
+      const systemMessage = {
+        role: "system" as const,
+        content: `You are Vanessa, an AI assistant for OnSpot, a premium outsourcing company that helps businesses transform their operations through effortless outsourcing to the Philippines.
+
+Key information about OnSpot:
+- OnSpot delivers premium, done-for-you teams that cut costs by up to 70%, unlock time, and fuel 8X business growth
+- They have a proven 4-stage system: Let's Implement → Build Your Team → Start Operations → We Innovate Together
+- Service models: Resourced (you manage), Managed (OnSpot manages everything), and Enterprise (custom at scale)
+- They've served 85+ clients, deployed 500+ team members, and delivered $50M+ in estimated value
+- Leadership: Jake Wainberg (Founder & President, New York) and Nur Laminero (CEO, Manila, Philippines)
+- They specialize in customer support, technical support, virtual assistants, back-office support, and more
+- Average time to deployment: 21 days
+- 96% client satisfaction rate, 94% retention rate
+
+Your personality:
+- Professional but friendly and conversational
+- Knowledgeable about outsourcing and business operations
+- Helpful in guiding users through OnSpot's services
+- Focused on understanding user needs and providing relevant solutions
+- Can discuss ROI, cost savings, and business value
+- Encouraging about the benefits of outsourcing with OnSpot
+
+Keep responses concise (2-3 sentences usually) but informative. Ask follow-up questions to better understand user needs when appropriate.`
+      };
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-3.5-turbo",
+        messages: [systemMessage, ...messages],
+        max_tokens: 250,
+        temperature: 0.7,
+      });
+
+      const assistantMessage = completion.choices[0]?.message?.content || "I apologize, but I'm having trouble responding right now. Please try again.";
+
+      res.json({ message: assistantMessage });
+    } catch (error) {
+      console.error('Chat API error:', error);
+      res.status(500).json({ 
+        error: "I'm experiencing technical difficulties. Please try again in a moment." 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
