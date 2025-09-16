@@ -51,7 +51,7 @@ const managementItems = [
     icon: Users,
   },
   {
-    title: "Service Models",
+    title: "Solution Models",
     url: "/services",
     icon: Target,
   },

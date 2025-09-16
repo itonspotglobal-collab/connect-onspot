@@ -212,7 +212,7 @@ const navigationItems = [
   },
   { title: "Amazing", path: "/amazing" },
   { 
-    title: "Services", 
+    title: "Solutions", 
     path: "/services",
     megaMenu: true,
     services: serviceDetails
