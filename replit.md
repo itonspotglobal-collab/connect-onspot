@@ -1,8 +1,8 @@
-# OnSpot Platform
+# OnSpot
 
 ## Overview
 
-OnSpot Platform is a modern outsourcing management system that bridges BPO services and freelancing with Apple-inspired design principles. The platform serves as an "integrator system" designed to simplify outsourcing for B2B and B2C clients through AI-powered talent matching, performance management, and seamless project coordination. Built with React, TypeScript, Express, and PostgreSQL, it offers a comprehensive solution for managing talent, projects, and client relationships with real-time performance tracking and automated workflows.
+OnSpot is a modern outsourcing management system that bridges BPO services and freelancing with Apple-inspired design principles. The platform serves as an "integrator system" designed to simplify outsourcing for B2B and B2C clients through AI-powered talent matching, performance management, and seamless project coordination. Built with React, TypeScript, Express, and PostgreSQL, it offers a comprehensive solution for managing talent, projects, and client relationships with real-time performance tracking and automated workflows.
 
 ## User Preferences
 

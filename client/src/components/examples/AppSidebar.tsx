@@ -14,7 +14,7 @@ export default function AppSidebarExample() {
         <div className="flex flex-col flex-1">
           <header className="flex items-center justify-between p-2 border-b">
             <SidebarTrigger />
-            <h1 className="text-sm font-medium">OnSpot Platform</h1>
+            <h1 className="text-sm font-medium">OnSpot</h1>
           </header>
           <main className="flex-1 p-4">
             <p className="text-muted-foreground">

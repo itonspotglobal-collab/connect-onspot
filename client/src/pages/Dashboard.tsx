@@ -109,7 +109,7 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold" data-testid="text-dashboard-title">
-            Welcome to OnSpot Platform
+            Welcome to OnSpot
           </h1>
           <p className="text-muted-foreground">
             Making Outsourcing Easy - Built by entrepreneurs, for entrepreneurs. Cut costs by up to 70% and fuel 8X business growth.
