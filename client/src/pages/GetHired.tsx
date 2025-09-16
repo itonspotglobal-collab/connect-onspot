@@ -201,14 +201,26 @@ export default function GetHired() {
 
   // Profile form submission using consolidated system
   const onSubmit = async (data: ProfileFormData) => {
+    console.log('Form submission started with data:', data);
+    console.log('Selected skills:', selectedSkills);
+    console.log('User ID:', user?.id);
+    
     try {
+      console.log('Calling updateProfile...');
       await updateProfile(data);
+      console.log('Profile updated successfully');
+      
       if (selectedSkills && selectedSkills.length > 0) {
+        console.log('Updating skills...');
         await updateSkills();
+        console.log('Skills updated successfully');
       }
+      
+      console.log('Setting current step to 2');
       setCurrentStep(2);
     } catch (error) {
       console.error('Error updating profile:', error);
+      alert('Error saving profile: ' + (error as any).message);
     }
   };
 
@@ -287,7 +299,10 @@ export default function GetHired() {
               </CardHeader>
               <CardContent>
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
+                    console.log('Form validation errors:', errors);
+                    alert('Form validation failed. Check console for details.');
+                  })} className="space-y-6">
                     <div className="grid md:grid-cols-2 gap-6">
                       <FormField
                         control={form.control}
@@ -406,6 +421,7 @@ export default function GetHired() {
                       className="w-full" 
                       disabled={isUpdating}
                       data-testid="button-save-profile"
+                      onClick={() => console.log('Save button clicked!')}
                     >
                       {isUpdating ? "Saving..." : "Save Profile & Continue"}
                     </Button>
