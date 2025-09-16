@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -37,19 +38,20 @@ import { Input } from "@/components/ui/input";
 import { useTalentProfile } from "@/hooks/useTalentProfile";
 import ProfileOnboardingModal from "@/components/ProfileOnboardingModal";
 import ProfileOnboarding from "@/components/ProfileOnboarding";
+import { type Job, type User as DbUser, type UserSkill, type Skill } from "@shared/schema";
 
-interface JobOpportunity {
-  id: string;
-  title: string;
-  company: string;
-  location: string;
-  salary: number;
-  salaryType: "hourly" | "fixed";
-  currency: string;
-  type: "full-time" | "part-time" | "contract";
-  skills: string[];
-  posted: string;
-  matchScore: number;
+// Extended Job type with computed fields for display
+interface JobOpportunity extends Job {
+  company: string; // From client user data
+  location: string; // From client profile or "Remote" 
+  skills: string[]; // From job skills relationship
+  posted: string; // Formatted time ago
+  matchScore: number; // Computed based on skills match
+  displayRate: {
+    amount: number;
+    type: "hourly" | "fixed";
+    currency: string;
+  };
 }
 
 interface Application {
@@ -76,6 +78,14 @@ export default function TalentPortal() {
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
   const [jobSearch, setJobSearch] = useState("");
+  const [jobFilters, setJobFilters] = useState({
+    category: "",
+    contractType: "",
+    experienceLevel: "",
+    minBudget: undefined as number | undefined,
+    maxBudget: undefined as number | undefined,
+    skills: [] as string[]
+  });
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
   
   // Use real profile data from useTalentProfile hook
@@ -86,6 +96,79 @@ export default function TalentPortal() {
     hasCompletedOnboarding,
     isLoading: profileLoading
   } = useTalentProfile();
+
+  // Fetch user skills for job matching with skill names
+  const { data: userSkills = [] } = useQuery<(UserSkill & { skill: { name: string; category: string } | null })[]>({
+    queryKey: ['/api/users', user?.id, 'skills'],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const response = await fetch(`/api/users/${user.id}/skills?includeNames=true`);
+      if (!response.ok) throw new Error('Failed to fetch user skills');
+      return response.json();
+    },
+    enabled: !!user?.id
+  });
+
+  // Real job search with React Query
+  const { data: jobsData = [], isLoading: jobsLoading, error: jobsError } = useQuery<Job[]>({
+    queryKey: ['/api/jobs/search', { ...jobFilters, q: jobSearch }],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.set('status', 'open');
+      
+      // Add text search query
+      if (jobSearch.trim()) params.set('q', jobSearch.trim());
+      
+      if (jobFilters.category) params.set('category', jobFilters.category);
+      if (jobFilters.contractType) params.set('contractType', jobFilters.contractType);
+      if (jobFilters.experienceLevel) params.set('experienceLevel', jobFilters.experienceLevel);
+      if (jobFilters.minBudget) params.set('minBudget', jobFilters.minBudget.toString());
+      if (jobFilters.maxBudget) params.set('maxBudget', jobFilters.maxBudget.toString());
+      if (jobFilters.skills.length > 0) params.set('skills', jobFilters.skills.join(','));
+      
+      const response = await fetch(`/api/jobs/search?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch jobs');
+      }
+      return response.json();
+    },
+    refetchOnWindowFocus: false
+  });
+
+  // Transform backend jobs to display format
+  const transformJobToOpportunity = (job: Job): JobOpportunity => {
+    // Calculate match score based on user skills with proper typing
+    const matchScore = userSkills && userSkills.length > 0 ? 
+      Math.round((userSkills.filter((userSkill) => 
+        userSkill.skill?.name && job.description?.toLowerCase().includes(userSkill.skill.name.toLowerCase())
+      ).length / Math.max(userSkills.length, 1)) * 100) : 0;
+
+    // Format posted time
+    const posted = job.createdAt ? 
+      formatDistanceToNow(new Date(job.createdAt), { addSuffix: true }) : 'Recently';
+
+    // Determine display rate
+    const displayRate = {
+      amount: job.contractType === 'hourly' ? 
+        (job.hourlyRateMin ? parseFloat(job.hourlyRateMin.toString()) : 0) :
+        (job.budget ? parseFloat(job.budget.toString()) : 0),
+      type: job.contractType as 'hourly' | 'fixed',
+      currency: job.budgetCurrency || 'USD'
+    };
+
+    return {
+      ...job,
+      company: 'Client', // Generic fallback for now - real company name would require user join
+      location: job.contractType === 'hourly' ? 'Remote' : 'Location varies', // Default for now
+      skills: [], // Will be populated by separate job skills API call
+      posted,
+      matchScore,
+      displayRate
+    };
+  };
+
+  // Transform jobs data
+  const jobOpportunities: JobOpportunity[] = jobsData.map(transformJobToOpportunity);
 
   // Show onboarding modal for new users
   useEffect(() => {
@@ -114,47 +197,6 @@ export default function TalentPortal() {
     responseTime: "Within 1 hour"
   };
 
-  const mockJobOpportunities: JobOpportunity[] = [
-    {
-      id: "1",
-      title: "Senior React Developer - E-commerce Platform",
-      company: "TechStart Inc",
-      location: "Remote",
-      salary: 35,
-      salaryType: "hourly",
-      currency: "USD",
-      type: "contract",
-      skills: ["React", "TypeScript", "Node.js", "MongoDB"],
-      posted: "2 hours ago",
-      matchScore: 95
-    },
-    {
-      id: "2", 
-      title: "Full Stack Developer - Fintech App",
-      company: "Financial Solutions",
-      location: "Hybrid",
-      salary: 4500,
-      salaryType: "fixed",
-      currency: "USD",
-      type: "full-time",
-      skills: ["React", "Python", "PostgreSQL", "AWS"],
-      posted: "1 day ago",
-      matchScore: 88
-    },
-    {
-      id: "3",
-      title: "Frontend Developer - Marketing Dashboard",
-      company: "Marketing Pro",
-      location: "Remote",
-      salary: 28,
-      salaryType: "hourly",
-      currency: "USD",
-      type: "part-time",
-      skills: ["React", "TypeScript", "Tailwind", "Chart.js"],
-      posted: "3 days ago",
-      matchScore: 82
-    }
-  ];
 
   const mockApplications: Application[] = [
     {
@@ -220,9 +262,12 @@ export default function TalentPortal() {
     }
   };
 
-  const filteredJobs = mockJobOpportunities.filter(job =>
+  // Filter jobs based on search text
+  const filteredJobs = jobOpportunities.filter(job =>
+    jobSearch === "" || 
     job.title.toLowerCase().includes(jobSearch.toLowerCase()) ||
     job.company.toLowerCase().includes(jobSearch.toLowerCase()) ||
+    job.description?.toLowerCase().includes(jobSearch.toLowerCase()) ||
     job.skills.some(skill => skill.toLowerCase().includes(jobSearch.toLowerCase()))
   );
 
@@ -436,7 +481,7 @@ export default function TalentPortal() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {mockJobOpportunities.slice(0, 2).map((job) => (
+                  {jobOpportunities.slice(0, 2).map((job) => (
                     <div key={job.id} className="p-4 border rounded-lg hover-elevate transition-all cursor-pointer">
                       <div className="flex items-start justify-between mb-3">
                         <div>
@@ -448,7 +493,7 @@ export default function TalentPortal() {
                       <div className="flex items-center justify-between">
                         <div className="text-sm">
                           <span className="font-medium">
-                            ${job.salary}{job.salaryType === "hourly" ? "/hr" : " fixed"}
+                            ${job.displayRate.amount}{job.displayRate.type === "hourly" ? "/hr" : " fixed"}
                           </span>
                         </div>
                         <Button size="sm" variant="outline">
@@ -490,9 +535,76 @@ export default function TalentPortal() {
               </div>
             </div>
 
-            <div className="space-y-4">
-              {filteredJobs.map((job) => (
-                <Card key={job.id} className="hover-elevate transition-all cursor-pointer">
+            {/* Loading and Error States */}
+            {jobsLoading && (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <Card key={i} className="animate-pulse">
+                    <CardContent className="p-6">
+                      <div className="space-y-3">
+                        <div className="h-6 bg-muted rounded w-3/4"></div>
+                        <div className="h-4 bg-muted rounded w-1/2"></div>
+                        <div className="flex gap-2">
+                          <div className="h-6 bg-muted rounded w-16"></div>
+                          <div className="h-6 bg-muted rounded w-16"></div>
+                          <div className="h-6 bg-muted rounded w-16"></div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {jobsError && (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Failed to load jobs</h3>
+                  <p className="text-muted-foreground mb-4">There was an error loading job opportunities. Please try again.</p>
+                  <Button 
+                    onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/jobs/search'] })}
+                    data-testid="button-retry-jobs"
+                  >
+                    Try Again
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {!jobsLoading && !jobsError && filteredJobs.length === 0 && (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <Briefcase className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No jobs found</h3>
+                  <p className="text-muted-foreground mb-4">
+                    {jobSearch ? 
+                      `No jobs match your search for "${jobSearch}". Try different keywords or filters.` :
+                      'No job opportunities available at the moment. Check back later for new listings.'
+                    }
+                  </p>
+                  {jobSearch && (
+                    <Button 
+                      variant="outline"
+                      onClick={() => setJobSearch('')}
+                      data-testid="button-clear-search"
+                    >
+                      Clear Search
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Job Listings */}
+            {!jobsLoading && !jobsError && filteredJobs.length > 0 && (
+              <div className="space-y-4">
+                <div className="text-sm text-muted-foreground mb-4">
+                  {filteredJobs.length} job{filteredJobs.length !== 1 ? 's' : ''} found
+                  {jobSearch && ` for "${jobSearch}"`}
+                </div>
+                {filteredJobs.map((job) => (
+                <Card key={job.id} className="hover-elevate transition-all">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
@@ -501,16 +613,17 @@ export default function TalentPortal() {
                           <Badge variant="secondary">{job.matchScore}% match</Badge>
                         </div>
                         <p className="text-muted-foreground mb-3">{job.company} • {job.location}</p>
+                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{job.description}</p>
                         <div className="flex items-center gap-4 text-sm mb-4">
                           <div className="flex items-center gap-1">
                             <DollarSign className="w-4 h-4" />
                             <span className="font-medium">
-                              ${job.salary}{job.salaryType === "hourly" ? "/hr" : " fixed"}
+                              ${job.displayRate.amount}{job.displayRate.type === "hourly" ? "/hr" : " fixed"}
                             </span>
                           </div>
                           <div className="flex items-center gap-1">
                             <Clock className="w-4 h-4" />
-                            <span>{job.type}</span>
+                            <span>{job.contractType}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <Calendar className="w-4 h-4" />
@@ -526,10 +639,25 @@ export default function TalentPortal() {
                         </div>
                       </div>
                       <div className="flex flex-col gap-2 ml-6">
-                        <Button size="sm" data-testid={`apply-job-${job.id}`}>
+                        <Button 
+                          size="sm" 
+                          data-testid={`button-apply-job-${job.id}`}
+                          onClick={() => {
+                            // TODO: Implement application submission
+                            console.log('Apply to job:', job.id);
+                          }}
+                        >
                           Apply Now
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          data-testid={`button-view-job-${job.id}`}
+                          onClick={() => {
+                            // TODO: Navigate to job details page
+                            console.log('View job details:', job.id);
+                          }}
+                        >
                           <Eye className="w-4 h-4 mr-1" />
                           View Details
                         </Button>
@@ -537,8 +665,9 @@ export default function TalentPortal() {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           {/* Applications */}
