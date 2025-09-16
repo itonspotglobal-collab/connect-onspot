@@ -17,6 +17,7 @@ import WhyOnSpotCaseStudies from "@/pages/WhyOnSpotCaseStudies";
 import WhyOnSpotReviews from "@/pages/WhyOnSpotReviews";
 import WhyOnSpotExperience from "@/pages/WhyOnSpotExperience";
 import WhyOnSpotIntegratorSystem from "@/pages/WhyOnSpotIntegratorSystem";
+import WhyOnSpotValueCalculator from "@/pages/WhyOnSpotValueCalculator";
 import Amazing from "@/pages/Amazing";
 import GetHired from "@/pages/GetHired";
 import TalentPortal from "@/pages/TalentPortal";
@@ -42,6 +43,7 @@ function PublicRouter() {
           <Route path="/why-onspot/reviews" component={WhyOnSpotReviews} />
           <Route path="/why-onspot/experience" component={WhyOnSpotExperience} />
           <Route path="/why-onspot/integrator-system" component={WhyOnSpotIntegratorSystem} />
+          <Route path="/why-onspot/value-calculator" component={WhyOnSpotValueCalculator} />
           <Route path="/amazing" component={Amazing} />
           <Route path="/pricing" component={() => <div className="container mx-auto p-8 text-center">Pricing - Coming Soon</div>} />
           <Route path="/enterprise" component={() => <div className="container mx-auto p-8 text-center">Enterprise Solutions - Coming Soon</div>} />
