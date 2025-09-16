@@ -14,6 +14,7 @@ import Dashboard from "@/pages/Dashboard";
 import WhyOnSpot from "@/pages/WhyOnSpot";
 import Amazing from "@/pages/Amazing";
 import GetHired from "@/pages/GetHired";
+import Insights from "@/pages/Insights";
 import NotFound from "@/pages/not-found";
 
 // Public Routes (before login)
@@ -30,7 +31,7 @@ function PublicRouter() {
           <Route path="/amazing" component={Amazing} />
           <Route path="/pricing" component={() => <div className="container mx-auto p-8 text-center">Pricing - Coming Soon</div>} />
           <Route path="/enterprise" component={() => <div className="container mx-auto p-8 text-center">Enterprise Solutions - Coming Soon</div>} />
-          <Route path="/insights" component={() => <div className="container mx-auto p-8 text-center">Insights - Coming Soon</div>} />
+          <Route path="/insights" component={Insights} />
           {/* Legacy routes for backward compatibility */}
           <Route path="/talent" component={TalentSearch} />
           <Route component={NotFound} />
@@ -55,7 +56,7 @@ function ClientRouter() {
         <Route path="/contracts" component={() => <div className="p-6">Contracts Module - Coming Soon</div>} />
         <Route path="/payments" component={() => <div className="p-6">Payments Module - Coming Soon</div>} />
         <Route path="/roi" component={() => <div className="p-6">ROI Analytics Module - Coming Soon</div>} />
-        <Route path="/insights" component={() => <div className="p-6">AI Insights Module - Coming Soon</div>} />
+        <Route path="/insights" component={Insights} />
         <Route path="/settings" component={() => <div className="p-6">Settings Module - Coming Soon</div>} />
         {/* Public routes accessible from client dashboard */}
         <Route path="/hire-talent" component={TalentSearch} />
