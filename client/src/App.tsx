@@ -14,6 +14,7 @@ import Dashboard from "@/pages/Dashboard";
 import WhyOnSpot from "@/pages/WhyOnSpot";
 import Amazing from "@/pages/Amazing";
 import GetHired from "@/pages/GetHired";
+import TalentPortal from "@/pages/TalentPortal";
 import Insights from "@/pages/Insights";
 import NotFound from "@/pages/not-found";
 
@@ -66,10 +67,35 @@ function ClientRouter() {
   );
 }
 
+// Talent Routes (after login as talent)
+function TalentRouter() {
+  return (
+    <div className="min-h-screen bg-background">
+      <Switch>
+        <Route path="/" component={TalentPortal} />
+        <Route path="/get-hired" component={TalentPortal} />
+        <Route path="/talent-portal" component={TalentPortal} />
+        {/* Redirect any other paths to talent portal */}
+        <Route component={TalentPortal} />
+      </Switch>
+    </div>
+  );
+}
+
 function AppContent() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   
-  return isAuthenticated ? <ClientRouter /> : <PublicRouter />;
+  if (!isAuthenticated) {
+    return <PublicRouter />;
+  }
+  
+  // Route to appropriate portal based on user type
+  if (user?.userType === "talent") {
+    return <TalentRouter />;
+  }
+  
+  // Default to client portal
+  return <ClientRouter />;
 }
 
 function App() {

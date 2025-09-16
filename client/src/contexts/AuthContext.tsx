@@ -5,12 +5,13 @@ interface User {
   username: string;
   email: string;
   role: string;
+  userType: "client" | "talent";
 }
 
 interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string, userType?: "client" | "talent" | null) => Promise<boolean>;
   logout: () => void;
 }
 
@@ -20,18 +21,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string, userType: "client" | "talent" | null = "client"): Promise<boolean> => {
     // For now, simulate login - in production this would call your auth API
     if (email && password) {
       const mockUser: User = {
         id: '1',
         username: email.split('@')[0],
         email: email,
-        role: 'client'
+        role: userType || 'client',
+        userType: userType || 'client'
       };
       setUser(mockUser);
       setIsAuthenticated(true);
       localStorage.setItem('onspot_user', JSON.stringify(mockUser));
+      
+      // Navigate to appropriate portal based on user type
+      if (userType === 'talent') {
+        window.location.href = '/get-hired';
+      }
+      
       return true;
     }
     return false;
