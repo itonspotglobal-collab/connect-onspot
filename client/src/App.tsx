@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { TopNavigation } from "@/components/TopNavigation";
 import { ClientLayout } from "@/components/ClientLayout";
 import { Footer } from "@/components/Footer";
+import { VanessaChat } from "@/components/VanessaChat";
 import Home from "@/pages/Home";
 import TalentSearch from "@/pages/TalentSearch";
 import Dashboard from "@/pages/Dashboard";
@@ -54,6 +55,7 @@ function PublicRouter() {
         </Switch>
       </main>
       <Footer />
+      <VanessaChat />
     </div>
   );
 }
@@ -80,6 +82,7 @@ function ClientRouter() {
         <Route path="/find-work/:category" component={FindWork} />
         <Route component={NotFound} />
       </Switch>
+      <VanessaChat />
     </ClientLayout>
   );
 }
@@ -95,6 +98,7 @@ function TalentRouter() {
         {/* Redirect any other paths to talent portal */}
         <Route component={TalentPortal} />
       </Switch>
+      <VanessaChat />
     </div>
   );
 }
