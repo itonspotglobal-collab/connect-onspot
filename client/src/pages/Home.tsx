@@ -152,7 +152,7 @@ export default function Home() {
             muted 
             loop 
             playsInline
-            className="absolute inset-0 w-full h-full object-cover object-center"
+            className="absolute inset-0 w-full h-full object-cover object-center scale-105 hover:scale-100 transition-transform duration-[8s] ease-out"
             onError={(e) => {
               // Fallback to image if video fails to load
               const target = e.target as HTMLVideoElement;
@@ -167,57 +167,92 @@ export default function Home() {
           <img 
             src={heroWorkspaceImage} 
             alt="Creative collaborative workspace" 
-            className="hidden w-full h-full object-cover object-center"
+            className="hidden w-full h-full object-cover object-center scale-105"
             loading="eager"
             decoding="async"
           />
         </div>
         
-        {/* Video Overlay - Dark wash for text readability */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-black/60"></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black/30"></div>
+        {/* Sophisticated Dark Wash - Apple Style */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/60"></div>
+        <div className="absolute inset-0 bg-gradient-radial from-transparent via-black/10 to-black/40"></div>
         
-        {/* Subtle animated accents over video */}
+        {/* Elegant Light Accents */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-white/15 to-primary/10 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-tr from-primary/10 to-white/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
-          <div className="absolute top-1/3 left-1/4 w-72 h-72 bg-gradient-to-bl from-white/10 to-transparent rounded-full blur-3xl animate-pulse delay-500"></div>
+          <div className="absolute top-1/4 left-1/2 w-[800px] h-[800px] bg-gradient-conic from-white/5 via-transparent to-white/5 rounded-full blur-3xl animate-slow-spin transform -translate-x-1/2 -translate-y-1/2"></div>
+          <div className="absolute bottom-1/4 right-1/3 w-[600px] h-[600px] bg-gradient-radial from-white/8 to-transparent rounded-full blur-2xl animate-gentle-float"></div>
         </div>
-        <div className="container mx-auto text-center space-y-12 py-16 px-6 relative z-20">
-          <div className="space-y-8 animate-fade-in">
-            <p className="text-lg font-medium text-white/95 tracking-wide uppercase backdrop-blur-sm bg-white/5 inline-block px-6 py-2 rounded-full border border-white/20">
-              Making Outsourcing Easy
-            </p>
-            <h1 className="text-6xl md:text-8xl lg:text-9xl font-bold tracking-tight text-white drop-shadow-2xl">
-              <span className="bg-gradient-to-r from-white to-white/90 bg-clip-text">
-                Fuel Your Vision
-              </span>
-            </h1>
-            <p className="text-2xl md:text-3xl text-white/95 max-w-4xl mx-auto leading-relaxed font-light tracking-wide drop-shadow-lg backdrop-blur-sm bg-black/10 rounded-2xl p-6">
-              Connect with 50,000+ vetted professionals. Reduce cost by up to 70%. 
-              Scale operations seamlessly with our Performance-Driven System.
-            </p>
+
+        <div className="container mx-auto text-center relative z-20 px-6">
+          <div className="max-w-6xl mx-auto space-y-16">
+            {/* Refined Typography Section */}
+            <div className="space-y-8 hero-content">
+              {/* Elegant Badge */}
+              <div className="inline-flex items-center gap-2 text-sm font-medium text-white/90 tracking-[0.2em] uppercase bg-white/5 backdrop-blur-xl px-8 py-3 rounded-full border border-white/10 shadow-2xl">
+                <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full animate-pulse"></div>
+                Making Outsourcing Effortless
+              </div>
+              
+              {/* Hero Title - Apple Typography */}
+              <div className="space-y-6">
+                <h1 className="hero-title">
+                  <span className="block text-7xl md:text-8xl lg:text-9xl xl:text-[10rem] font-light tracking-tighter leading-[0.85] text-white">
+                    Fuel Your
+                  </span>
+                  <span className="block text-7xl md:text-8xl lg:text-9xl xl:text-[10rem] font-bold tracking-tighter leading-[0.85] bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
+                    Vision
+                  </span>
+                </h1>
+              </div>
+              
+              {/* Refined Description */}
+              <div className="max-w-4xl mx-auto">
+                <p className="text-xl md:text-2xl lg:text-3xl text-white/85 leading-relaxed font-light tracking-wide">
+                  Connect with <span className="font-medium text-white">50,000+ vetted professionals</span>. 
+                  Reduce cost by <span className="font-medium text-white">up to 70%</span>. 
+                  Scale operations seamlessly with our <span className="font-medium text-white">Performance-Driven System</span>.
+                </p>
+              </div>
+            </div>
+            
+            {/* Premium Call-to-Action */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 cta-buttons">
+              <Button 
+                size="lg" 
+                className="group relative overflow-hidden text-lg px-10 py-6 h-auto bg-white text-black hover:bg-gray-50 shadow-2xl hover:shadow-3xl transition-all duration-500 font-medium rounded-2xl border-2 border-white/20 min-w-[220px]" 
+                asChild 
+                data-testid="button-find-talent"
+              >
+                <Link href="/hire-talent">
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+                  <Search className="w-5 h-5 mr-3 transition-transform group-hover:scale-110" />
+                  Find Talent Now
+                </Link>
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                size="lg" 
+                className="group relative overflow-hidden text-lg px-10 py-6 h-auto border-2 border-white/30 text-white hover:bg-white/10 hover:border-white/60 shadow-2xl hover:shadow-3xl transition-all duration-500 font-medium backdrop-blur-xl bg-white/5 rounded-2xl min-w-[220px]" 
+                asChild 
+                data-testid="button-get-hired"
+              >
+                <Link href="/get-hired">
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+                  <Users className="w-5 h-5 mr-3 transition-transform group-hover:scale-110" />
+                  Get Hired
+                </Link>
+              </Button>
+            </div>
           </div>
           
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-8 animate-slide-up">
-            <Button size="lg" className="text-lg px-8 py-4 h-auto bg-white text-primary hover:bg-white/95 shadow-2xl hover:shadow-3xl hover:scale-105 transition-all duration-300 font-semibold backdrop-blur-sm border border-white/20" asChild data-testid="button-find-talent">
-              <Link href="/hire-talent">
-                <Search className="w-6 h-6 mr-3" />
-                Find Talent Now
-              </Link>
-            </Button>
-            <Button variant="outline" size="lg" className="text-lg px-8 py-4 h-auto border-white/60 text-white hover:bg-white/10 hover:border-white hover:scale-105 shadow-2xl hover:shadow-3xl transition-all duration-300 font-semibold backdrop-blur-md bg-white/5" asChild data-testid="button-get-hired">
-              <Link href="/get-hired">
-                <Users className="w-6 h-6 mr-3" />
-                Get Hired
-              </Link>
-            </Button>
-          </div>
-          
-          {/* Video Controls Indicator */}
-          <div className="absolute bottom-8 right-8 flex items-center gap-3 text-white/70 text-sm backdrop-blur-sm bg-black/20 px-4 py-2 rounded-full border border-white/10">
-            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-            <span>Live Preview</span>
+          {/* Minimalist Video Indicator */}
+          <div className="absolute bottom-12 right-12 hidden lg:flex items-center gap-3 text-white/60 text-xs backdrop-blur-xl bg-black/10 px-6 py-3 rounded-full border border-white/5 shadow-xl">
+            <div className="relative">
+              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+              <div className="absolute inset-0 w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
+            </div>
+            <span className="font-medium tracking-wider uppercase">Live Experience</span>
           </div>
         </div>
       </div>
