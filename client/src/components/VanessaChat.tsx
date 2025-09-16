@@ -30,7 +30,7 @@ export function VanessaChat() {
     {
       id: '1',
       role: 'assistant',
-      content: "Hi! I'm Vanessa, your OnSpot AI assistant. I'm here to help you learn about our outsourcing services, calculate potential savings, and guide you through getting started. What would you like to know?",
+      content: "Hi! I'm Vanessa, your OnSpot virtual assistant. I'm here to help you learn about our outsourcing services, calculate potential savings, and guide you through getting started. What would you like to know?",
       timestamp: new Date()
     }
   ]);
@@ -100,7 +100,7 @@ export function VanessaChat() {
       let errorMessage = "I apologize, but I'm having trouble connecting right now. ";
       
       if (needsApiKey || (error instanceof Error && error.message.includes('API key'))) {
-        errorMessage += "It looks like the OpenAI API key needs to be configured. Please contact support or try again later.";
+        errorMessage += "It looks like my services need to be configured. Please contact support or try again later.";
       } else {
         errorMessage += "Please try again in a moment, or feel free to explore our website for information about OnSpot's services.";
       }
@@ -174,12 +174,12 @@ export function VanessaChat() {
                 <div className="font-semibold text-sm">Vanessa</div>
                 <div className="text-xs text-white/80 flex items-center gap-1">
                   <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                  OnSpot AI Assistant
+                  Your Virtual Assistant
                 </div>
               </div>
               <Badge className="bg-[hsl(var(--gold-yellow))] text-primary text-xs">
                 <Sparkles className="w-3 h-3 mr-1" />
-                AI
+                VA
               </Badge>
             </div>
             <div className="flex items-center gap-1">
@@ -225,7 +225,7 @@ export function VanessaChat() {
                     {message.content.includes('API key') && (
                       <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded text-orange-800 text-xs flex items-center gap-1">
                         <AlertCircle className="w-3 h-3" />
-                        API key configuration needed
+                        Service configuration needed
                       </div>
                     )}
                   </div>

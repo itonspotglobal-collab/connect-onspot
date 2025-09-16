@@ -678,7 +678,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!process.env.OPENAI_API_KEY) {
         return res.status(401).json({ 
-          error: "OpenAI API key not configured. Please add your OPENAI_API_KEY to continue using the AI assistant." 
+          error: "Service not configured. Please add your OPENAI_API_KEY to continue using your virtual assistant." 
         });
       }
 
@@ -691,7 +691,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // System prompt for Vanessa
       const systemMessage = {
         role: "system" as const,
-        content: `You are Vanessa, an AI assistant for OnSpot, a premium outsourcing company that helps businesses transform their operations through effortless outsourcing to the Philippines.
+        content: `You are Vanessa, a virtual assistant for OnSpot, a premium outsourcing company that helps businesses transform their operations through effortless outsourcing to the Philippines.
 
 Key information about OnSpot:
 - OnSpot delivers premium, done-for-you teams that cut costs by up to 70%, unlock time, and fuel 8X business growth
