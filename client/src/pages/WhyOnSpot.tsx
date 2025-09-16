@@ -515,43 +515,79 @@ export default function WhyOnSpot() {
       </section>
 
       {/* OnSpot by the Numbers */}
-      <section className="py-32 px-4 relative overflow-hidden bg-gradient-to-br from-foreground/95 via-foreground to-muted-foreground">
-        {/* Animated Background */}
+      <section className="py-40 px-4 relative overflow-hidden" style={{
+        background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)/0.95) 30%, hsl(var(--primary)/0.9) 70%, hsl(var(--primary)/0.85) 100%)'
+      }}>
+        {/* Minimalist Background Elements */}
         <div className="absolute inset-0">
-          <div className="absolute top-20 left-20 w-64 h-64 bg-white/5 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-20 right-20 w-64 h-64 bg-[hsl(var(--gold-yellow))]/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-          <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:100px_100px]"></div>
+          {/* Single elegant geometric element */}
+          <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-[hsl(var(--gold-yellow))]/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-1/4 left-1/4 w-80 h-80 bg-white/5 rounded-full blur-2xl"></div>
+          {/* Subtle grid pattern */}
+          <div className="absolute inset-0 bg-grid-white/[0.01] bg-[size:120px_120px]"></div>
         </div>
         
         <div className="relative z-10 max-w-7xl mx-auto">
-          <div className="text-center mb-20">
-            <div className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-sm rounded-full text-white/90 text-sm font-medium mb-6">
-              <TrendingUp className="w-4 h-4" />
-              Our Impact
+          {/* Simplified Header */}
+          <div className="text-center mb-24">
+            <div className="inline-flex items-center gap-3 px-8 py-4 bg-white/8 backdrop-blur-xl rounded-full text-white/95 text-sm font-medium mb-8 border border-white/10">
+              <div className="w-2 h-2 bg-[hsl(var(--gold-yellow))] rounded-full"></div>
+              Numbers That Matter
             </div>
-            <h2 className="text-5xl md:text-6xl font-bold mb-6 text-white">
-              OnSpot by the <span className="text-transparent bg-clip-text bg-gradient-to-r from-[hsl(var(--gold-yellow))] to-[hsl(45_100%_50%)]">Numbers</span>
+            
+            <h2 className="text-6xl md:text-8xl font-light tracking-tight mb-8 text-white leading-none">
+              OnSpot by the
+              <br />
+              <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-[hsl(var(--gold-yellow))] via-[hsl(var(--gold-yellow))] to-[hsl(var(--gold-yellow)/0.8)]">
+                Numbers
+              </span>
             </h2>
-            <p className="text-xl text-white/80 max-w-3xl mx-auto">
-              Proven results across clients and industries—numbers that speak to our commitment
+            
+            <p className="text-xl text-white/70 max-w-2xl mx-auto font-light leading-relaxed">
+              Results that define excellence. Numbers that build trust.
             </p>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          {/* Apple-inspired Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
             {stats.map((stat, index) => (
-              <Card key={index} className="relative overflow-hidden border-none bg-white/10 backdrop-blur-md hover-elevate transition-all duration-500 group" data-testid={`stat-${index}`}>
-                <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-[hsl(var(--gold-yellow))]/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                <CardContent className="relative p-8 text-center">
-                  <div className="text-5xl md:text-6xl font-bold mb-4 text-white">
-                    {stat.value}
+              <div 
+                key={index} 
+                className="group relative"
+                data-testid={`stat-${index}`}
+              >
+                {/* Floating Card with Apple-like Design */}
+                <div className="relative p-8 md:p-10 bg-white/8 backdrop-blur-xl rounded-3xl border border-white/10 hover:border-[hsl(var(--gold-yellow))]/30 hover:bg-white/12 transition-all duration-700 ease-out hover:scale-105 hover:-translate-y-1">
+                  {/* Subtle Inner Glow */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-[hsl(var(--gold-yellow))]/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  
+                  {/* Content */}
+                  <div className="relative text-center">
+                    {/* Number */}
+                    <div className="text-4xl md:text-5xl lg:text-6xl font-light text-white mb-4 tracking-tight">
+                      {stat.value}
+                    </div>
+                    
+                    {/* Label */}
+                    <p className="text-sm md:text-base text-white/60 leading-tight font-light tracking-wide">
+                      {stat.label}
+                    </p>
+                    
+                    {/* Minimalist accent line */}
+                    <div className="mt-6 w-8 h-0.5 bg-[hsl(var(--gold-yellow))]/40 group-hover:bg-[hsl(var(--gold-yellow))] mx-auto transition-colors duration-500"></div>
                   </div>
-                  <p className="text-sm text-white/80 leading-tight font-medium">
-                    {stat.label}
-                  </p>
-                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-gradient-to-r from-[hsl(var(--gold-yellow))] to-[hsl(45_100%_50%)] rounded-full"></div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             ))}
+          </div>
+          
+          {/* Minimalist Bottom Element */}
+          <div className="text-center mt-20">
+            <div className="inline-flex items-center gap-2 text-white/50 text-sm font-light tracking-wider">
+              <div className="w-12 h-px bg-white/20"></div>
+              PROVEN EXCELLENCE
+              <div className="w-12 h-px bg-white/20"></div>
+            </div>
           </div>
         </div>
       </section>
