@@ -332,34 +332,89 @@
     inset: -1px;
   }
 
-  /* Custom animations for hero video section */
-  @keyframes fade-in {
+  /* Apple-inspired custom animations and effects */
+  @keyframes slow-spin {
+    from {
+      transform: translate(-50%, -50%) rotate(0deg);
+    }
+    to {
+      transform: translate(-50%, -50%) rotate(360deg);
+    }
+  }
+
+  @keyframes gentle-float {
+    0%, 100% {
+      transform: translateY(0px);
+      opacity: 0.6;
+    }
+    50% {
+      transform: translateY(-20px);
+      opacity: 0.8;
+    }
+  }
+
+  @keyframes hero-enter {
     from {
       opacity: 0;
-      transform: translateY(30px);
+      transform: translateY(60px) scale(0.95);
     }
     to {
       opacity: 1;
-      transform: translateY(0);
+      transform: translateY(0px) scale(1);
     }
   }
 
-  @keyframes slide-up {
+  @keyframes cta-enter {
     from {
       opacity: 0;
-      transform: translateY(50px);
+      transform: translateY(40px);
     }
     to {
       opacity: 1;
-      transform: translateY(0);
+      transform: translateY(0px);
     }
   }
 
-  .animate-fade-in {
-    animation: fade-in 1s ease-out forwards;
+  .animate-slow-spin {
+    animation: slow-spin 60s linear infinite;
   }
 
-  .animate-slide-up {
-    animation: slide-up 1s ease-out 0.3s both;
+  .animate-gentle-float {
+    animation: gentle-float 8s ease-in-out infinite;
+  }
+
+  .hero-content {
+    animation: hero-enter 1.2s ease-out forwards;
+  }
+
+  .cta-buttons {
+    animation: cta-enter 1s ease-out 0.5s both;
+  }
+
+  /* Apple-style gradient utilities */
+  .bg-gradient-radial {
+    background: radial-gradient(circle, var(--tw-gradient-stops));
+  }
+
+  .bg-gradient-conic {
+    background: conic-gradient(from 0deg, var(--tw-gradient-stops));
+  }
+
+  /* Enhanced hero typography */
+  .hero-title {
+    text-shadow: 0 4px 32px rgba(0, 0, 0, 0.8), 0 2px 16px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Premium button hover effects */
+  .group:hover .hero-shimmer {
+    transform: translateX(100%);
+  }
+
+  /* Smooth text rendering */
+  .hero-content h1,
+  .hero-content p {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 }
