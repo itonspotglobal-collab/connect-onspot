@@ -58,14 +58,27 @@ export function useTalentProfile() {
 
   // Fetch user profile
   const { data: profile, isLoading: profileLoading, error: profileError } = useQuery<Profile | null>({
-    queryKey: ['/api/profile'],
-    enabled: !!user && user.userType === 'talent'
+    queryKey: ['/api/profiles/user', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const response = await fetch(`/api/profiles/user/${user.id}`);
+      if (response.status === 404) return null; // Profile doesn't exist yet
+      if (!response.ok) throw new Error('Failed to fetch profile');
+      return response.json();
+    },
+    enabled: !!user?.id
   });
 
   // Fetch user skills
   const { data: userSkillsData, isLoading: skillsLoading } = useQuery({
-    queryKey: ['/api/user-skills'],
-    enabled: !!user && user.userType === 'talent'
+    queryKey: ['/api/users', user?.id, 'skills'],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const response = await fetch(`/api/users/${user.id}/skills?includeNames=true`);
+      if (!response.ok) throw new Error('Failed to fetch user skills');
+      return response.json();
+    },
+    enabled: !!user?.id
   });
 
   // Fetch user documents

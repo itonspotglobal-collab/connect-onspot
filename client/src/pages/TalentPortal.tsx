@@ -38,6 +38,7 @@ import { Input } from "@/components/ui/input";
 import { useTalentProfile } from "@/hooks/useTalentProfile";
 import ProfileOnboardingModal from "@/components/ProfileOnboardingModal";
 import ProfileOnboarding from "@/components/ProfileOnboarding";
+import SkillsManagement from "@/components/SkillsManagement";
 import JobApplicationModal from "@/components/JobApplicationModal";
 import { type Job, type User as DbUser, type UserSkill, type Skill, type Proposal } from "@shared/schema";
 
@@ -802,13 +803,17 @@ export default function TalentPortal() {
 
           {/* Profile */}
           <TabsContent value="profile" className="space-y-6">
-            <ProfileOnboarding 
-              mode="full"
-              onComplete={() => {
-                // Refresh profile data when onboarding is complete
-                window.location.reload();
-              }}
-            />
+            <div className="grid gap-6">
+              <ProfileOnboarding 
+                mode="full"
+                onComplete={() => {
+                  // Refresh profile data when onboarding is complete
+                  queryClient.invalidateQueries({ queryKey: ['/api/users', user?.id, 'skills'] });
+                  window.location.reload();
+                }}
+              />
+              <SkillsManagement />
+            </div>
           </TabsContent>
         </Tabs>
       </div>
