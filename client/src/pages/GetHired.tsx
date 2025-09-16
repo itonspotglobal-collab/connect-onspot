@@ -100,12 +100,11 @@ export default function GetHired() {
     defaultValues: getDefaultFormValues()
   });
   
-  // Update form when profile loads
+  // Reset form when profile data loads (only when profile changes, not on every render)
   useEffect(() => {
-    const defaultValues = getDefaultFormValues();
-    Object.keys(defaultValues).forEach(key => {
-      form.setValue(key as any, (defaultValues as any)[key]);
-    });
+    if (profile) {
+      form.reset(getDefaultFormValues());
+    }
   }, [profile, form, getDefaultFormValues]);
 
   // Removed duplicate profile queries - using consolidated system
