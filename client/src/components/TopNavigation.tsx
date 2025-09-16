@@ -7,12 +7,12 @@ import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
 
 const navigationItems = [
   { title: "Hire Talent", path: "/hire-talent" },
-  { title: "Get Hired", path: "/get-hired" },
   { title: "Why OnSpot", path: "/why-onspot" },
   { title: "Amazing", path: "/amazing" },
   { title: "Pricing", path: "/pricing" },
   { title: "Enterprise", path: "/enterprise" },
-  { title: "Insights", path: "/insights" }
+  { title: "Insights", path: "/insights" },
+  { title: "Careers", path: "/get-hired" }
 ];
 
 export function TopNavigation() {
