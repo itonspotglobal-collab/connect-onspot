@@ -4,7 +4,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { calculateProfileCompletion, ProfileCompletionData } from '@/lib/utils';
 import { z } from 'zod';
-import { Profile, InsertProfile, UserSkill, Skill, Document as DocumentType } from '@shared/schema';
+import { Profile, InsertProfile, UserSkill, Skill, Document as DocumentType, PortfolioItem } from '@shared/schema';
 
 // Profile Form Schema
 export const profileFormSchema = z.object({
@@ -46,6 +46,7 @@ export interface TalentProfileData {
   profile?: TalentProfile;
   skills?: string[];
   documents?: Document[];
+  portfolioItems?: PortfolioItem[];
   profileCompletion: number;
   isNewUser: boolean;
   hasCompletedOnboarding: boolean;

@@ -665,6 +665,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/portfolio/:id", async (req, res) => {
+    try {
+      const item = await storage.getPortfolioItem(req.params.id);
+      if (!item) {
+        return res.status(404).json({ error: "Portfolio item not found" });
+      }
+      res.json(item);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get portfolio item" });
+    }
+  });
+
   app.post("/api/portfolio", async (req, res) => {
     try {
       const validated = insertPortfolioItemSchema.parse(req.body);
@@ -675,6 +687,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Validation failed", details: error.errors });
       }
       res.status(500).json({ error: "Failed to create portfolio item" });
+    }
+  });
+
+  app.patch("/api/portfolio/:id", async (req, res) => {
+    try {
+      const updates = insertPortfolioItemSchema.partial().parse(req.body);
+      const item = await storage.updatePortfolioItem(req.params.id, updates);
+      if (!item) {
+        return res.status(404).json({ error: "Portfolio item not found" });
+      }
+      res.json(item);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation failed", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update portfolio item" });
+    }
+  });
+
+  app.delete("/api/portfolio/:id", async (req, res) => {
+    try {
+      const success = await storage.deletePortfolioItem(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Portfolio item not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete portfolio item" });
     }
   });
 
