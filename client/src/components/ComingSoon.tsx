@@ -36,88 +36,82 @@ export function ComingSoon({
         </div>
       </div>
 
-      <div className="container mx-auto px-6 relative z-10">
-        <Card className="max-w-3xl mx-auto bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border-white/30 shadow-xl hover-elevate">
-          <CardContent className="p-8 text-center space-y-6">
-            {/* Compact Illustration */}
-            {showIllustration && (
-              <div className="flex justify-center">
-                <div className="relative">
-                  <img 
-                    src={comingSoonImage} 
-                    alt="Coming Soon Illustration" 
-                    className="w-48 h-auto object-contain drop-shadow-xl hover:scale-105 transition-transform duration-700"
-                    data-testid="img-coming-soon"
-                  />
-                </div>
-              </div>
-            )}
+      <div className="container mx-auto px-6 relative z-10 text-center space-y-8">
+        {/* Compact Illustration */}
+        {showIllustration && (
+          <div className="flex justify-center">
+            <img 
+              src={comingSoonImage} 
+              alt="Coming Soon Illustration" 
+              className="w-48 h-auto object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-700"
+              data-testid="img-coming-soon"
+            />
+          </div>
+        )}
 
-            {/* Elegant Icon & Typography */}
-            <div className="space-y-4">
-              {/* Refined Icon */}
-              <div className="flex justify-center">
-                <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-2xl flex items-center justify-center shadow-xl">
-                  <Sparkles className="w-8 h-8 text-white animate-pulse" data-testid="icon-sparkles" />
-                </div>
-              </div>
-
-              {/* Clean Typography */}
-              <div className="space-y-3">
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight" data-testid="text-title">
-                  <span className="bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                    {title}
-                  </span>
-                  <br />
-                  <span className="text-gray-700 dark:text-gray-300 font-light text-3xl md:text-4xl lg:text-5xl">
-                    {subtitle}
-                  </span>
-                </h1>
-                
-                <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-xl mx-auto leading-relaxed font-light" data-testid="text-message">
-                  {message}
-                </p>
-              </div>
+        {/* Minimalist Icon & Typography */}
+        <div className="space-y-6">
+          {/* Clean Icon */}
+          <div className="flex justify-center">
+            <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-2xl flex items-center justify-center shadow-xl">
+              <Sparkles className="w-8 h-8 text-white animate-pulse" data-testid="icon-sparkles" />
             </div>
+          </div>
 
-            {/* Streamlined Call-to-Action */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
-              <Button 
-                size="lg" 
-                className="group relative overflow-hidden text-base px-6 py-3 h-auto bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-xl hover:shadow-2xl transition-all duration-500 font-medium rounded-xl min-w-[180px]" 
-                asChild
-                data-testid="button-go-home"
-              >
-                <Link href="/">
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                  <Home className="w-4 h-4 mr-2 transition-transform group-hover:scale-110" />
-                  Go Home
-                </Link>
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                size="lg" 
-                className="group relative overflow-hidden text-base px-6 py-3 h-auto border-2 border-purple-300 dark:border-purple-600 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 shadow-lg hover:shadow-xl transition-all duration-500 font-medium rounded-xl min-w-[180px]" 
-                asChild
-                data-testid="button-hire-talent"
-              >
-                <Link href="/hire-talent">
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-100/0 via-purple-100/20 to-purple-100/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                  <Users className="w-4 h-4 mr-2 transition-transform group-hover:scale-110" />
-                  Hire Talent
-                </Link>
-              </Button>
-            </div>
+          {/* Direct Typography */}
+          <div className="space-y-4">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight" data-testid="text-title">
+              <span className="bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                {title}
+              </span>
+              <br />
+              <span className="text-gray-700 dark:text-gray-300 font-light text-3xl md:text-4xl lg:text-5xl">
+                {subtitle}
+              </span>
+            </h1>
+            
+            <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-xl mx-auto leading-relaxed font-light" data-testid="text-message">
+              {message}
+            </p>
+          </div>
+        </div>
 
-            {/* Simple Footer */}
-            <div className="pt-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 font-medium" data-testid="text-footer">
-                ✨ Stay tuned for something extraordinary! ✨
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Simple Call-to-Action */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <Button 
+            size="lg" 
+            className="group relative overflow-hidden text-base px-6 py-3 h-auto bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-xl hover:shadow-2xl transition-all duration-500 font-medium rounded-xl min-w-[180px]" 
+            asChild
+            data-testid="button-go-home"
+          >
+            <Link href="/">
+              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+              <Home className="w-4 h-4 mr-2 transition-transform group-hover:scale-110" />
+              Go Home
+            </Link>
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            size="lg" 
+            className="group relative overflow-hidden text-base px-6 py-3 h-auto border-2 border-white/40 text-gray-700 dark:text-gray-200 hover:bg-white/20 dark:hover:bg-white/10 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-500 font-medium rounded-xl min-w-[180px]" 
+            asChild
+            data-testid="button-hire-talent"
+          >
+            <Link href="/hire-talent">
+              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+              <Users className="w-4 h-4 mr-2 transition-transform group-hover:scale-110" />
+              Hire Talent
+            </Link>
+          </Button>
+        </div>
+
+        {/* Minimal Footer */}
+        <div>
+          <p className="text-sm text-gray-600 dark:text-gray-400 font-medium" data-testid="text-footer">
+            ✨ Stay tuned for something extraordinary! ✨
+          </p>
+        </div>
       </div>
     </div>
   );
