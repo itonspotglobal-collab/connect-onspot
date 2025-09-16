@@ -8,6 +8,7 @@ import {
   Info,
   Settings,
   Layers,
+  Calculator,
   ArrowRight,
   Sparkles,
   CheckCircle2,
@@ -61,6 +62,15 @@ export default function WhyOnSpot() {
       highlights: ["Proven Framework", "Best Practices", "Process Optimization"],
       path: "/why-onspot/integrator-system",
       popular: false
+    },
+    {
+      title: "Value Calculator",
+      subtitle: "Calculate your ROI",
+      description: "Comprehensive calculator to assess your potential ROI and value return from outsourcing",
+      icon: Calculator,
+      highlights: ["ROI Assessment", "Cost Savings Analysis", "Value Projection"],
+      path: "/why-onspot/value-calculator",
+      popular: true
     }
   ];
 
