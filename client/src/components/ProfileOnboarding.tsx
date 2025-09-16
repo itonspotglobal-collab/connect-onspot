@@ -78,12 +78,11 @@ export default function ProfileOnboarding({
     defaultValues: getDefaultFormValues()
   });
 
-  // Update form when profile data loads
+  // Reset form when profile data loads (only when profile changes, not on every render)
   useEffect(() => {
-    const defaultValues = getDefaultFormValues();
-    Object.keys(defaultValues).forEach(key => {
-      form.setValue(key as keyof ProfileFormData, defaultValues[key as keyof ProfileFormData]);
-    });
+    if (profile) {
+      form.reset(getDefaultFormValues());
+    }
   }, [profile, form, getDefaultFormValues]);
 
   // File upload handlers
