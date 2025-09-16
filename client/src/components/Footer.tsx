@@ -74,7 +74,7 @@ export function Footer() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
             {/* Services */}
             <div className="space-y-3">
-              <h3 className="font-semibold text-white text-base tracking-wide border-b border-white/20 pb-2">Services</h3>
+              <h3 className="font-semibold text-white text-base tracking-wide border-b border-white/20 pb-2">Solutions</h3>
               <ul className="space-y-2 text-white/85 text-sm">
                 <li><Link href="/hire-talent" className="hover:text-white transition-all duration-200 hover:translate-x-1" data-testid="footer-hire-talent">Hire Talent</Link></li>
                 <li><Link href="/get-hired" className="hover:text-white transition-all duration-200 hover:translate-x-1" data-testid="footer-careers">Careers</Link></li>
