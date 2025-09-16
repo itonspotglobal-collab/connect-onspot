@@ -126,22 +126,24 @@ export function useTalentProfile() {
   // Profile mutation
   const profileMutation = useMutation({
     mutationFn: async (data: ProfileFormData) => {
+      const profileData = { ...data, userId: user?.id };
       return profile 
-        ? apiRequest('PUT', `/api/profile/${profile.id}`, data)
-        : apiRequest('POST', '/api/profile', data);
+        ? apiRequest('PUT', `/api/profiles/${profile.id}`, profileData)
+        : apiRequest('POST', '/api/profiles', profileData);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/profiles/user', user?.id] });
     }
   });
 
   // Skills mutation
   const skillsMutation = useMutation({
     mutationFn: async (skills: string[]) => {
-      return apiRequest('POST', '/api/user-skills', { skills });
+      if (!user?.id) throw new Error('User not authenticated');
+      return apiRequest('POST', `/api/users/${user.id}/skills`, { skillNames: skills });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/user-skills'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/users', user?.id, 'skills'] });
     }
   });
 
