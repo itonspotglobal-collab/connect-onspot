@@ -209,10 +209,9 @@ export function TopNavigation() {
                   {/* Mega Menu */}
                   {activeDropdown === item.title && item.services && (
                     <div 
-                      className="absolute top-full left-1/2 mt-2 max-w-screen-xl w-[min(95vw,1200px)] rounded-lg border border-white/20 backdrop-blur-md shadow-2xl z-50 -translate-x-1/2"
+                      className="fixed top-16 left-1/2 transform -translate-x-1/2 mt-2 w-[min(100vw-2rem,1400px)] rounded-lg border border-white/20 backdrop-blur-md shadow-2xl z-50 mx-4"
                       style={{ 
-                        background: 'linear-gradient(135deg, #474ead 0%, #5a5dc7 50%, #6366f1 100%)',
-                        left: 'clamp(1rem, 50%, calc(100vw - min(95vw, 1200px) - 1rem))'
+                        background: 'linear-gradient(135deg, #474ead 0%, #5a5dc7 50%, #6366f1 100%)'
                       }}
                       onMouseEnter={handleDropdownMouseEnter}
                       onMouseLeave={handleDropdownMouseLeave}
