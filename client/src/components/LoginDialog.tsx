@@ -44,7 +44,7 @@ export function LoginDialog() {
       if (success) {
         toast({
           title: "Success",
-          description: "Welcome to OnSpot Platform!",
+          description: "Welcome to OnSpot!",
         });
         setOpen(false);
         setEmail("");
