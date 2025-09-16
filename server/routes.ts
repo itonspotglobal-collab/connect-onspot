@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { isAuthenticated } from "./replitAuth";
 import {
   insertUserSchema, insertProfileSchema, insertSkillSchema, insertUserSkillSchema,
   insertJobSchema, insertJobSkillSchema, insertProposalSchema, insertContractSchema,
@@ -11,6 +12,18 @@ import {
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Auth routes
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
   // PHASE 1 PRIORITY ROUTES
 
   // ==================== USERS ====================
@@ -367,14 +380,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/proposals", async (req, res) => {
+  app.post("/api/proposals", isAuthenticated, async (req: any, res) => {
     try {
-      const validated = insertProposalSchema.parse(req.body);
+      // Get authenticated user ID from trusted session
+      const talentId = req.user.claims.sub;
+      
+      if (!talentId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      // Create proposal data with server-derived talentId (ignore any client-supplied talentId)
+      const proposalData = {
+        ...req.body,
+        talentId, // Override any client-supplied talentId with server-derived value
+      };
+      
+      const validated = insertProposalSchema.parse(proposalData);
       const proposal = await storage.createProposal(validated);
       res.status(201).json(proposal);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Validation failed", details: error.errors });
+      }
+      // Handle unique constraint violation for duplicate proposals
+      if (error instanceof Error && error.message.includes('unique') && error.message.includes('proposals_job_talent')) {
+        return res.status(409).json({ error: "You have already submitted a proposal for this job" });
       }
       res.status(500).json({ error: "Failed to create proposal" });
     }
@@ -405,9 +435,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/talents/:talentId/proposals", async (req, res) => {
+  app.get("/api/talents/:talentId/proposals", isAuthenticated, async (req: any, res) => {
     try {
-      const proposals = await storage.listProposalsByTalent(req.params.talentId);
+      // SECURITY: Use authenticated user ID from session, not URL parameter
+      // This prevents user enumeration and unauthorized access to proposals
+      const authenticatedUserId = req.user.claims.sub;
+      
+      if (!authenticatedUserId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      
+      // Only return proposals for the authenticated user (ignore URL parameter)
+      const proposals = await storage.listProposalsByTalent(authenticatedUserId);
       res.json(proposals);
     } catch (error) {
       res.status(500).json({ error: "Failed to get talent proposals" });
