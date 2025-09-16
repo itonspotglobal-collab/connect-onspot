@@ -3,7 +3,7 @@ import { LoginDialog } from "@/components/LoginDialog";
 import { SignUpDialog } from "@/components/SignUpDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect, useRef } from "react";
-import { ChevronDown, Users, Zap, Building, User, Bot, ArrowRight, CheckCircle2, Code, PenTool, BarChart3, Headphones, Globe, Camera, FileText, Star, Info, Settings, Layers } from "lucide-react";
+import { ChevronDown, Users, Zap, Building, User, Bot, ArrowRight, CheckCircle2, Code, PenTool, BarChart3, Headphones, Globe, Camera, FileText, Star, Info, Settings, Layers, Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -184,6 +184,15 @@ const whyOnSpotSections = {
     highlights: ["Proven Framework", "Best Practices", "Process Optimization", "Continuous Improvement"],
     path: "/why-onspot/integrator-system",
     popular: false
+  },
+  valueCalculator: {
+    title: "Value Calculator",
+    subtitle: "Calculate your ROI",
+    description: "Comprehensive calculator to assess your potential ROI and value return from outsourcing",
+    icon: Calculator,
+    highlights: ["ROI Assessment", "Cost Savings Analysis", "Value Projection", "Custom Scenarios"],
+    path: "/why-onspot/value-calculator",
+    popular: true
   }
 };
 
