@@ -201,9 +201,11 @@ export default function GetHired() {
 
   // Profile form submission using consolidated system
   const onSubmit = async (data: ProfileFormData) => {
+    console.log('🔥 FORM SUBMISSION TRIGGERED!');
     console.log('Form submission started with data:', data);
     console.log('Selected skills:', selectedSkills);
     console.log('User ID:', user?.id);
+    console.log('Is updating:', isUpdating);
     
     try {
       console.log('Calling updateProfile...');
@@ -224,13 +226,56 @@ export default function GetHired() {
     }
   };
 
-  // Handle loading state in JSX instead of early return to avoid hooks order violations
+  // Debug form validation errors
+  const onFormError = (errors: any) => {
+    console.log('🚨 FORM VALIDATION ERRORS:', errors);
+    alert('Form validation failed. Check console for details: ' + JSON.stringify(errors, null, 2));
+  };
+
+  // Handle loading state and authentication
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading your profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Authentication required for GetHired page
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center max-w-md">
+          <h1 className="text-2xl font-bold mb-4">Authentication Required</h1>
+          <p className="text-muted-foreground mb-6">
+            Please log in to access the Get Hired page and create your talent profile.
+          </p>
+          <div className="space-y-4">
+            <button
+              onClick={() => {
+                // Create test authentication for development
+                const testUser = {
+                  id: '1',
+                  username: 'testuser',
+                  email: 'talent@test.com',
+                  role: 'talent',
+                  userType: 'talent' as const
+                };
+                localStorage.setItem('onspot_user', JSON.stringify(testUser));
+                window.location.reload();
+              }}
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-3 rounded-md font-medium"
+              data-testid="button-test-login"
+            >
+              🧪 Test Login (Development Only)
+            </button>
+            <p className="text-xs text-muted-foreground">
+              This test login is for development purposes. In production, users would log in through the normal authentication flow.
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -299,10 +344,10 @@ export default function GetHired() {
               </CardHeader>
               <CardContent>
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
-                    console.log('Form validation errors:', errors);
-                    alert('Form validation failed. Check console for details.');
-                  })} className="space-y-6">
+                  <form 
+                    onSubmit={form.handleSubmit(onSubmit, onFormError)} 
+                    className="space-y-6"
+                  >
                     <div className="grid md:grid-cols-2 gap-6">
                       <FormField
                         control={form.control}
@@ -421,7 +466,6 @@ export default function GetHired() {
                       className="w-full" 
                       disabled={isUpdating}
                       data-testid="button-save-profile"
-                      onClick={() => console.log('Save button clicked!')}
                     >
                       {isUpdating ? "Saving..." : "Save Profile & Continue"}
                     </Button>
