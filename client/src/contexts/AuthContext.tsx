@@ -50,23 +50,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const userData = await devLoginResponse.json();
         console.log('✅ Development login successful:', userData);
         
-        // Set authenticated user state
-        const authenticatedUser: User = {
-          id: userData.user.id,
-          email: userData.user.email,
-          firstName: userData.user.firstName,
-          lastName: userData.user.lastName,
-          profileImageUrl: userData.user.profileImageUrl,
-          role: userData.user.role,
-          userType: userData.user.role === 'talent' ? 'talent' : 'client',
-          authProvider: 'dev'
-        };
-        
-        setUser(authenticatedUser);
-        setIsAuthenticated(true);
-        
-        // Clear any localStorage fallback
-        localStorage.removeItem('onspot_user');
+        // CRITICAL: After successful login, refresh auth to sync with server session
+        await refreshAuth();
         
         return true;
       }
