@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Link } from "wouter";
+import BespokeTalentBuilder from "@/components/BespokeTalentBuilder";
 
 interface Profile {
   id: string;
@@ -290,6 +291,9 @@ export default function TalentSearch() {
           </div>
         </div>
       </div>
+
+      {/* Bespoke Talent Builder */}
+      <BespokeTalentBuilder />
 
       {/* Success Metrics */}
       <div className="py-12 bg-muted/30">
