@@ -27,8 +27,13 @@ import {
   ArrowRight,
   Heart,
   Bookmark,
-  CheckCircle2
+  CheckCircle2,
+  Shield,
+  Crown
 } from "lucide-react";
+import { TrustBadge, ClientVerificationBadge } from "@/components/TrustBadges";
+import { PaymentProtectionBadge } from "@/components/PaymentProtectionBadge";
+import { QualityBadge } from "@/components/QualityIndicators";
 
 interface Job {
   id: string;
@@ -53,6 +58,13 @@ interface Job {
   urgent: boolean;
   rating: number;
   reviewCount: number;
+  paymentProtected?: boolean;
+  verificationLevel?: "basic" | "business" | "enterprise";
+  featured?: boolean;
+  responseTime?: string;
+  hireRate?: number;
+  totalSpent?: number;
+  companySize?: "startup" | "scale-up" | "enterprise" | "fortune-500";
 }
 
 const workCategories = [
@@ -90,7 +102,14 @@ export default function FindWork() {
       verified: true,
       urgent: false,
       rating: 4.8,
-      reviewCount: 47
+      reviewCount: 47,
+      paymentProtected: true,
+      verificationLevel: "business",
+      featured: true,
+      responseTime: "< 2 hours",
+      hireRate: 85,
+      totalSpent: 125000,
+      companySize: "scale-up"
     },
     {
       id: "2", 

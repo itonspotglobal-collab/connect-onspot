@@ -26,6 +26,9 @@ import FindWork from "@/pages/FindWork";
 import Insights from "@/pages/Insights";
 import NotFound from "@/pages/not-found";
 import ComingSoon from "@/pages/ComingSoon";
+import PaymentProtection from "@/pages/PaymentProtection";
+import ClientVerification from "@/pages/ClientVerification";
+import TrustSafety from "@/pages/TrustSafety";
 
 // Public Routes (before login)
 function PublicRouter() {
@@ -52,6 +55,9 @@ function PublicRouter() {
           <Route path="/affiliate-marketing" component={ComingSoon} />
           <Route path="/bpo-partner" component={ComingSoon} />
           <Route path="/insights" component={Insights} />
+          <Route path="/payment-protection" component={PaymentProtection} />
+          <Route path="/client-verification" component={ClientVerification} />
+          <Route path="/trust-safety" component={TrustSafety} />
           {/* Legacy routes for backward compatibility */}
           <Route path="/talent" component={TalentSearch} />
           <Route component={NotFound} />
