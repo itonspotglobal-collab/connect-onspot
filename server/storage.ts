@@ -155,6 +155,13 @@ export interface IStorage {
   listNotificationsByUser(userId: string, unreadOnly?: boolean): Promise<Notification[]>;
   markNotificationAsRead(id: string): Promise<boolean>;
   markAllNotificationsAsRead(userId: string): Promise<void>;
+
+  // LinkedIn Integration
+  getLinkedinProfile(id: string): Promise<any | undefined>;
+  getLinkedinProfileByUserId(userId: string): Promise<any | undefined>;
+  createLinkedinProfile(profile: any): Promise<any>;
+  updateLinkedinProfile(id: string, updates: Partial<any>): Promise<any | undefined>;
+  deleteLinkedinProfile(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -176,6 +183,7 @@ export class MemStorage implements IStorage {
   private payments: Map<string, Payment>;
   private disputes: Map<string, Dispute>;
   private notifications: Map<string, Notification>;
+  private linkedinProfiles: Map<string, any>;
 
   // Counter for auto-incrementing IDs
   private skillIdCounter: number = 1;
@@ -201,6 +209,7 @@ export class MemStorage implements IStorage {
     this.payments = new Map();
     this.disputes = new Map();
     this.notifications = new Map();
+    this.linkedinProfiles = new Map();
 
     // Seed default skills for OnSpot marketplace
     this.seedDefaultSkills();
@@ -1180,6 +1189,48 @@ export class MemStorage implements IStorage {
       notification.isRead = true;
       this.notifications.set(notification.id, notification);
     }
+  }
+
+  // LinkedIn Profile Methods
+  async getLinkedinProfile(id: string): Promise<any | undefined> {
+    return this.linkedinProfiles.get(id);
+  }
+
+  async getLinkedinProfileByUserId(userId: string): Promise<any | undefined> {
+    for (const profile of this.linkedinProfiles.values()) {
+      if (profile.userId === userId) {
+        return profile;
+      }
+    }
+    return undefined;
+  }
+
+  async createLinkedinProfile(profile: any): Promise<any> {
+    const newProfile = {
+      id: randomUUID(),
+      ...profile,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.linkedinProfiles.set(newProfile.id, newProfile);
+    return newProfile;
+  }
+
+  async updateLinkedinProfile(id: string, updates: Partial<any>): Promise<any | undefined> {
+    const profile = this.linkedinProfiles.get(id);
+    if (!profile) return undefined;
+
+    const updatedProfile = {
+      ...profile,
+      ...updates,
+      updatedAt: new Date()
+    };
+    this.linkedinProfiles.set(id, updatedProfile);
+    return updatedProfile;
+  }
+
+  async deleteLinkedinProfile(id: string): Promise<boolean> {
+    return this.linkedinProfiles.delete(id);
   }
 }
 
