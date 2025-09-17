@@ -3,6 +3,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Star, MapPin, Clock } from "lucide-react"
+import { TrustBadge, TrustScore, QuickTrustIndicators } from "@/components/TrustBadges"
+import { QualityBadge, QualityStats } from "@/components/QualityIndicators"
 
 interface TalentCardProps {
   id: string
@@ -15,6 +17,14 @@ interface TalentCardProps {
   avatarUrl?: string
   experience: string
   availability: 'available' | 'busy' | 'offline'
+  verified?: boolean
+  featured?: boolean
+  topRated?: boolean
+  paymentProtected?: boolean
+  qualityScore?: number
+  successRate?: number
+  onTimeDelivery?: number
+  totalProjects?: number
   onViewProfile?: (id: string) => void
   onContact?: (id: string) => void
 }
@@ -30,6 +40,14 @@ export function TalentCard({
   avatarUrl,
   experience,
   availability,
+  verified = true,
+  featured = false,
+  topRated = false,
+  paymentProtected = true,
+  qualityScore = 92,
+  successRate = 98,
+  onTimeDelivery = 95,
+  totalProjects = 24,
   onViewProfile,
   onContact
 }: TalentCardProps) {
@@ -69,9 +87,18 @@ export function TalentCard({
             />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold truncate" data-testid={`text-name-${id}`}>
-              {name}
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold truncate" data-testid={`text-name-${id}`}>
+                {name}
+              </h3>
+              <QuickTrustIndicators 
+                showVerified={verified}
+                showPaymentProtected={paymentProtected}
+                showTopRated={topRated}
+                showFeatured={featured}
+                size="sm"
+              />
+            </div>
             <p className="text-sm text-muted-foreground truncate">
               {role}
             </p>
@@ -90,14 +117,47 @@ export function TalentCard({
       </CardHeader>
       <CardContent className="pt-0">
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-1">
-            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-            <span className="text-sm font-medium">{rating}</span>
-          </div>
+          <TrustScore 
+            score={rating} 
+            maxScore={5} 
+            label={`${rating} (${totalProjects} projects)`}
+            size="sm"
+            showStars={true}
+          />
           <div className="text-right">
             <span className="text-lg font-bold">${hourlyRate}</span>
             <span className="text-sm text-muted-foreground">/hr</span>
           </div>
+        </div>
+        
+        {/* Quality indicators */}
+        <div className="grid grid-cols-3 gap-2 text-center mb-3 p-2 bg-muted/20 rounded-lg">
+          <div>
+            <div className="text-sm font-semibold text-green-600 dark:text-green-400">
+              {successRate}%
+            </div>
+            <div className="text-xs text-muted-foreground">Success Rate</div>
+          </div>
+          <div>
+            <div className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+              {onTimeDelivery}%
+            </div>
+            <div className="text-xs text-muted-foreground">On Time</div>
+          </div>
+          <div>
+            <div className="text-sm font-semibold text-purple-600 dark:text-purple-400">
+              {qualityScore}
+            </div>
+            <div className="text-xs text-muted-foreground">Quality</div>
+          </div>
+        </div>
+        
+        {/* Trust badges */}
+        <div className="flex flex-wrap gap-1 mb-3">
+          {verified && <TrustBadge variant="verified" size="sm" />}
+          {paymentProtected && <TrustBadge variant="payment-protected" size="sm" />}
+          {topRated && <QualityBadge variant="top-rated" size="sm" />}
+          {featured && <QualityBadge variant="featured" size="sm" />}
         </div>
         
         <div className="flex flex-wrap gap-1 mb-4">
