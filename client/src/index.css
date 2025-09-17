@@ -48,9 +48,11 @@
 
   --popover-border: 220 13% 85%;
 
-  --primary: 248 46% 56%;
-
-  --primary-foreground: 0 0% 98%;
+  /* Enhanced Professional Primary Colors */
+  --primary: 215 100% 55%;
+  --primary-dark: 215 84% 45%;
+  --primary-light: 215 100% 92%;
+  --primary-foreground: 0 0% 100%;
 
   --secondary: 0 0% 88%;
 
@@ -68,16 +70,35 @@
 
   --destructive-foreground: 0 0% 98%;
 
-  --gold-yellow: 45 100% 60%;
-  --gold-yellow-foreground: 220 9% 15%;
+  /* Premium Brand Colors */
+  --premium-gold: 45 93% 58%;
+  --premium-gold-foreground: 45 30% 15%;
+  --gold-yellow: 45 93% 58%;
+  --gold-yellow-foreground: 45 30% 15%;
+  
+  /* Professional Status Colors */
+  --success: 142 76% 36%;
+  --success-foreground: 0 0% 100%;
+  --warning: 25 95% 53%;
+  --warning-foreground: 25 30% 15%;
+  
+  /* Enhanced Text Colors */
+  --text-secondary: 220 9% 46%;
+  --text-muted: 220 9% 64%;
 
   --input: 220 13% 85%;
   --ring: 248 46% 56%;
-  --chart-1: 220 100% 45%;
-  --chart-2: 200 100% 40%;
-  --chart-3: 160 60% 35%;
-  --chart-4: 30 80% 50%;
-  --chart-5: 280 65% 50%;
+  /* Professional Chart Colors */
+  --chart-1: 215 100% 55%;
+  --chart-2: 142 76% 36%;
+  --chart-3: 45 93% 58%;
+  --chart-4: 25 95% 53%;
+  --chart-5: 280 60% 50%;
+  
+  /* Professional Gradients */
+  --gradient-primary: linear-gradient(135deg, hsl(215 100% 55%) 0%, hsl(215 84% 45%) 100%);
+  --gradient-success: linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(142 60% 30%) 100%);
+  --gradient-premium: linear-gradient(135deg, hsl(45 93% 58%) 0%, hsl(45 85% 50%) 100%);
 
   --font-sans: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-serif: Georgia, serif;
@@ -169,8 +190,10 @@
 
   --popover-border: 220 13% 25%;
 
-  --primary: 212 100% 60%;
-
+  /* Enhanced Dark Mode Primary */
+  --primary: 215 100% 65%;
+  --primary-dark: 215 84% 55%;
+  --primary-light: 215 50% 25%;
   --primary-foreground: 220 13% 9%;
 
   --secondary: 220 13% 17%;
@@ -189,16 +212,35 @@
 
   --destructive-foreground: 220 13% 9%;
 
-  --gold-yellow: 45 100% 65%;
+  /* Premium Dark Mode Colors */
+  --premium-gold: 45 93% 65%;
+  --premium-gold-foreground: 220 13% 9%;
+  --gold-yellow: 45 93% 65%;
   --gold-yellow-foreground: 220 13% 9%;
+  
+  /* Dark Mode Status Colors */
+  --success: 142 76% 45%;
+  --success-foreground: 220 13% 9%;
+  --warning: 25 95% 60%;
+  --warning-foreground: 220 13% 9%;
+  
+  /* Dark Mode Text Colors */
+  --text-secondary: 220 9% 64%;
+  --text-muted: 220 9% 46%;
 
   --input: 220 13% 25%;
   --ring: 212 100% 60%;
-  --chart-1: 220 100% 70%;
-  --chart-2: 200 100% 65%;
-  --chart-3: 160 60% 60%;
-  --chart-4: 30 80% 70%;
-  --chart-5: 280 65% 70%;
+  /* Dark Mode Chart Colors */
+  --chart-1: 215 100% 65%;
+  --chart-2: 142 76% 45%;
+  --chart-3: 45 93% 65%;
+  --chart-4: 25 95% 60%;
+  --chart-5: 280 60% 60%;
+  
+  /* Dark Mode Gradients */
+  --gradient-primary: linear-gradient(135deg, hsl(215 100% 65%) 0%, hsl(215 84% 55%) 100%);
+  --gradient-success: linear-gradient(135deg, hsl(142 76% 45%) 0%, hsl(142 60% 40%) 100%);
+  --gradient-premium: linear-gradient(135deg, hsl(45 93% 65%) 0%, hsl(45 85% 55%) 100%);
 
   --shadow-2xs: 0px 2px 0px 0px hsl(220 13% 19% / 0.00);
   --shadow-xs: 0px 2px 0px 0px hsl(220 13% 19% / 0.00);
@@ -332,7 +374,7 @@
     inset: -1px;
   }
 
-  /* Apple-inspired custom animations and effects */
+  /* Professional marketplace animations and effects */
   @keyframes slow-spin {
     from {
       transform: translate(-50%, -50%) rotate(0deg);
@@ -350,6 +392,46 @@
     50% {
       transform: translateY(-20px);
       opacity: 0.8;
+    }
+  }
+  
+  @keyframes onspot-pulse {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(1.05);
+    }
+  }
+  
+  @keyframes professional-slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes success-bounce {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.1);
+    }
+  }
+  
+  @keyframes progress-fill {
+    from {
+      width: 0%;
+    }
+    to {
+      width: var(--progress-width, 100%);
     }
   }
 
@@ -389,6 +471,67 @@
 
   .cta-buttons {
     animation: cta-enter 1s ease-out 0.5s both;
+  }
+  
+  /* Professional marketplace utility classes */
+  .animate-onspot-pulse {
+    animation: onspot-pulse 2s ease-in-out infinite;
+  }
+  
+  .animate-slide-up {
+    animation: professional-slide-up 0.6s ease-out forwards;
+  }
+  
+  .animate-success-bounce {
+    animation: success-bounce 0.5s ease-out;
+  }
+  
+  .animate-progress-fill {
+    animation: progress-fill 1s ease-out forwards;
+  }
+  
+  /* Professional loading states */
+  .onspot-loading {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .onspot-loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: shimmer 1.5s infinite;
+  }
+  
+  @keyframes shimmer {
+    0% {
+      left: -100%;
+    }
+    100% {
+      left: 100%;
+    }
+  }
+  
+  /* Professional button enhancements */
+  .btn-professional {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-dark)) 100%);
+    border: none;
+    box-shadow: 0 4px 14px 0 rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+  }
+  
+  .btn-professional:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px 0 rgba(0,0,0,0.15);
+  }
+  
+  .btn-professional:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px 0 rgba(0,0,0,0.15);
   }
 
   /* Apple-style gradient utilities */
