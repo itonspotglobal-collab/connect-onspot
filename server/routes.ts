@@ -481,18 +481,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/profiles", 
-    validateRequest(insertProfileSchema),
+    isAuthenticated,
     async (req: any, res) => {
       try {
+        const user = req.user?.user || req.user;
+        const userId = user?.id;
+        
+        if (!userId) {
+          return res.status(401).json({ error: 'unauthorized' });
+        }
+
         console.log(`👤 Creating new profile [${req.requestId}]:`, { 
-          userId: req.body.userId 
+          userId: userId 
         });
         
-        const validated = insertProfileSchema.parse(req.body);
+        // Add userId from authenticated session to the request body
+        const dataWithUserId = {
+          ...req.body,
+          userId: userId
+        };
+        
+        // Now validate the complete data including userId
+        const validated = insertProfileSchema.parse(dataWithUserId);
         const profile = await storage.createProfile(validated);
         
         console.log(`✅ Profile created successfully [${req.requestId}]:`, { profileId: profile.id });
-        res.status(201).json(profile);
+        res.status(201).json({ profile });
       } catch (error) {
         handleRouteError(error, req, res, "Create profile", 500);
       }
