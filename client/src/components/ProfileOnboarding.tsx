@@ -527,11 +527,11 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
                     description: "Your professional profile has been saved."
                   });
                   
-                } catch (error) {
+                } catch (error: any) {
                   console.error('❌ Save error:', error);
                   toast({
                     title: "Error saving profile",
-                    description: error.message || "Please try again later.",
+                    description: error?.message || "Please try again later.",
                     variant: "destructive"
                   });
                 }
