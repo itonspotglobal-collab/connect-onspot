@@ -118,6 +118,68 @@ export const jobSkills = pgTable("job_skills", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Lead Intake - BPO Industry Lead Generation
+export const leadIntakes = pgTable("lead_intakes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  // Contact Information
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  email: varchar("email").notNull(),
+  phoneNumber: text("phone_number"),
+  jobTitle: text("job_title"), // CEO, Operations Manager, etc.
+  
+  // Company Information
+  companyName: text("company_name").notNull(),
+  companySize: text("company_size").notNull(), // 1-10, 11-50, 51-200, 200+
+  industry: text("industry").notNull(),
+  companyWebsite: text("company_website"),
+  
+  // Service Requirements
+  serviceType: text("service_type").notNull(), // customer_support, virtual_assistant, technical_support, etc.
+  serviceVolume: text("service_volume"), // hours per week, calls per day, etc.
+  currentChallenges: text("current_challenges").notNull(),
+  requiredSkills: text("required_skills").array().default([]),
+  
+  // Project Scope
+  urgencyLevel: text("urgency_level").notNull(), // immediate, within_month, within_quarter, planning
+  budgetRange: text("budget_range").notNull(), // <$5k, $5k-20k, $20k-50k, $50k+
+  expectedStartDate: text("expected_start_date"),
+  serviceHours: text("service_hours"), // timezone requirements
+  teamSize: text("team_size"), // number of resources needed
+  
+  // Qualification
+  hasCurrentProvider: boolean("has_current_provider").default(false),
+  currentProviderDetails: text("current_provider_details"),
+  decisionMakerStatus: text("decision_maker_status").notNull(), // decision_maker, influencer, evaluator
+  implementationTimeline: text("implementation_timeline"),
+  
+  // Lead Status
+  status: text("status").notNull().default("new"), // new, qualified, scheduled, contacted, converted, lost
+  leadScore: integer("lead_score").default(0), // 0-100 scoring
+  
+  // Calendar Integration
+  appointmentScheduled: boolean("appointment_scheduled").default(false),
+  appointmentDateTime: timestamp("appointment_date_time"),
+  appointmentType: text("appointment_type"), // discovery_call, demo, consultation
+  calendarEventId: text("calendar_event_id"), // For Outlook integration
+  
+  // UTM and Source Tracking
+  source: text("source").default("website"), // website, referral, social, ads
+  utmSource: text("utm_source"),
+  utmMedium: text("utm_medium"),
+  utmCampaign: text("utm_campaign"),
+  referringPage: text("referring_page"),
+  
+  // Additional Notes
+  additionalNotes: text("additional_notes"),
+  internalNotes: text("internal_notes"), // For sales team use
+  
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  scheduledAt: timestamp("scheduled_at"), // When appointment was scheduled
+});
+
 // Contracts
 export const contracts = pgTable("contracts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -610,6 +672,18 @@ export type LinkedinProfile = typeof linkedinProfiles.$inferSelect;
 
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
 export type Document = typeof documents.$inferSelect;
+
+export const insertLeadIntakeSchema = createInsertSchema(leadIntakes).omit({
+  id: true,
+  status: true,
+  leadScore: true,
+  createdAt: true,
+  updatedAt: true,
+  scheduledAt: true,
+});
+
+export type InsertLeadIntake = z.infer<typeof insertLeadIntakeSchema>;
+export type LeadIntake = typeof leadIntakes.$inferSelect;
 
 export type InsertAssessment = z.infer<typeof insertAssessmentSchema>;
 export type Assessment = typeof assessments.$inferSelect;
