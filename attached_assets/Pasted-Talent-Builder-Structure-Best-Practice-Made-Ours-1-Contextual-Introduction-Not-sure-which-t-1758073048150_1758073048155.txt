@@ -1,0 +1,40 @@
+Talent Builder Structure (Best Practice, Made Ours)
+	1.	Contextual Introduction
+	•	“Not sure which talent you need? Tell us your challenges, and we’ll build a custom solution for you.”
+	•	Keeps it conversational and removes friction.
+	2.	Step 1: Define the Issues
+	•	Prompt: “What problems are you trying to solve?”
+	•	Free-form text area with examples (lead generation, customer support delays, process chaos, high ad costs).
+	•	Best practice: Pre-populated hints so clients feel guided, not lost.
+	3.	Step 2: Budget Constraints
+	•	Input: “What’s your ideal monthly budget?”
+	•	Quick-select ranges (e.g., <$2K, $2K–$5K, $5K+) + custom entry.
+	•	Best practice: Show transparency — “Typical clients save up to 70% compared to in-house.”
+	4.	Step 3: Timeline
+	•	Questions: “When do you need results? How urgent is this?”
+	•	Options: ASAP (0–2 weeks), Soon (1 month), Flexible (2–3 months).
+	•	Best practice: Convert into a delivery expectation: “We can have candidate profiles in 72h.”
+	5.	Step 4: Other Considerations
+	•	Collaboration preferences: Managed by OnSpot vs direct hire.
+	•	Time zone overlap requirements.
+	•	Security (NDA, restricted data, compliance).
+	•	Languages/tools required.
+	•	Best practice: Use toggles/checkboxes to make it lightweight.
+	6.	Dynamic Proposal Preview (Generated Live)
+	•	Headline: “Your Bespoke Proposal”
+	•	Sectioned summary:
+	•	Your Stated Issues (bullet out their text input)
+	•	Recommended Roles & Mix (auto-suggested from issues + budget)
+	•	Plan & Milestones (week 1, week 2, ongoing)
+	•	Pricing Snapshot (budget vs estimated mix cost, savings highlight)
+	•	Risks & Mitigations (show we thought ahead)
+	•	Best practice: Always visualize ROI and risk coverage → reduces hesitation.
+	7.	Call to Action
+	•	Buttons: “Download Proposal” | “Book a Call to Finalize”
+	•	Best practice: Always give two paths: self-serve + human touch.
+	8.	Sales Master Integration (Our Twist)
+	•	The builder isn’t just static; it pulls best-fit solutions from our “Sales Master” knowledge.
+	•	Proposals get smarter over time → client feels like they’re talking to a consultant, not filling a form.
+	•	Differentiator: We don’t just match skills, we integrate performance systems and business outcomes.
+
+⸻
