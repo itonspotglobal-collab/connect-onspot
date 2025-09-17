@@ -113,6 +113,21 @@ export function Footer() {
                   <span>New York, NY<br />Manila, Philippines</span>
                 </li>
               </ul>
+              
+              <div className="mt-4">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="bg-white/10 text-white border-white/30 hover-elevate backdrop-blur-sm w-full"
+                  asChild
+                  data-testid="footer-contact-cta"
+                >
+                  <Link href="/lead-intake">
+                    <Mail className="h-4 w-4 mr-2" />
+                    Contact Us
+                  </Link>
+                </Button>
+              </div>
             </div>
           </div>
         </div>
