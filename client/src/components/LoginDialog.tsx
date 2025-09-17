@@ -14,8 +14,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { LogIn, Eye, EyeOff, Mail, Shield, Zap, Building, User, ArrowLeft, Briefcase } from "lucide-react";
+import { FaGoogle, FaLinkedin } from "react-icons/fa";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { signInWithGoogle, isFirebaseAvailable } from "@/lib/firebase";
 import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
 
 type UserType = "client" | "talent" | null;
@@ -74,6 +76,42 @@ export function LoginDialog() {
       toast({
         title: "Error",
         description: "An error occurred during login",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    if (!isFirebaseAvailable()) {
+      toast({
+        title: "Service Unavailable",
+        description: "Google login is currently unavailable. Please use email/password.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const profileData = await signInWithGoogle(userType || "talent");
+      
+      // Integrate with existing auth context
+      const success = await login(profileData.email, "google-oauth", userType);
+      if (success) {
+        const portalType = userType === "client" ? "Client Portal" : "Talent Portal";
+        toast({
+          title: "Welcome to OnSpot!",
+          description: `Successfully signed in to ${portalType}`,
+        });
+        setOpen(false);
+        resetDialog();
+      }
+    } catch (error: any) {
+      toast({
+        title: "Google Sign-In Failed",
+        description: error.message || "Please try again or use email/password",
         variant: "destructive",
       });
     } finally {
@@ -223,6 +261,54 @@ export function LoginDialog() {
 
         {currentStep === "login" && (
           <>
+            {/* Professional Social Login Options */}
+            <div className="space-y-3 mb-6">
+              <div className="text-center mb-4">
+                <p className="text-sm text-muted-foreground mb-3">
+                  Join {userType === "client" ? "thousands of companies" : "50,000+ professionals"} on OnSpot
+                </p>
+              </div>
+              
+              {isFirebaseAvailable() && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleGoogleLogin}
+                  disabled={isLoading}
+                  className="w-full h-12 border-2 hover:border-primary/50 transition-all duration-200"
+                  data-testid="button-google-login"
+                >
+                  <FaGoogle className="w-5 h-5 mr-3 text-red-500" />
+                  <span className="font-medium">
+                    Continue with Google
+                  </span>
+                </Button>
+              )}
+              
+              <Button
+                type="button"
+                variant="outline"
+                disabled={true}
+                className="w-full h-12 border-2 opacity-75"
+                data-testid="button-linkedin-login"
+              >
+                <FaLinkedin className="w-5 h-5 mr-3 text-blue-600" />
+                <span className="font-medium">
+                  Continue with LinkedIn
+                </span>
+                <span className="ml-2 text-xs bg-muted px-2 py-1 rounded">Soon</span>
+              </Button>
+            </div>
+
+            <div className="relative mb-6">
+              <div className="absolute inset-0 flex items-center">
+                <Separator className="w-full" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">Or continue with email</span>
+              </div>
+            </div>
+
             {/* Benefits for selected user type */}
             <div className="grid grid-cols-3 gap-4 py-4 border-y">
               {userType === "client" ? (
@@ -243,15 +329,15 @@ export function LoginDialog() {
               ) : (
                 <>
                   <div className="text-center">
-                    <Briefcase className="h-6 w-6 mx-auto text-[hsl(var(--gold-yellow)/0.8)] mb-2" />
+                    <Briefcase className="h-6 w-6 mx-auto text-[hsl(var(--premium-gold))] mb-2" />
                     <p className="text-xs text-muted-foreground">Premium Jobs</p>
                   </div>
                   <div className="text-center">
-                    <Shield className="h-6 w-6 mx-auto text-[hsl(var(--gold-yellow)/0.8)] mb-2" />
+                    <Shield className="h-6 w-6 mx-auto text-[hsl(var(--premium-gold))] mb-2" />
                     <p className="text-xs text-muted-foreground">Secure Payments</p>
                   </div>
                   <div className="text-center">
-                    <User className="h-6 w-6 mx-auto text-[hsl(var(--gold-yellow)/0.8)] mb-2" />
+                    <User className="h-6 w-6 mx-auto text-[hsl(var(--premium-gold))] mb-2" />
                     <p className="text-xs text-muted-foreground">Career Growth</p>
                   </div>
                 </>
