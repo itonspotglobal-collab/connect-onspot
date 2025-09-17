@@ -111,12 +111,23 @@ export default function ProfileOnboarding({
 
   // Profile form submission
   const onSubmit = async (data: ProfileFormData) => {
+    console.log('🚀 Save Profile button clicked! Form data:', data);
+    console.log('🔍 Form validation errors:', form.formState.errors);
+    console.log('📊 Current skills selected:', skills);
+    console.log('⚡ Is currently updating:', isUpdating);
+    
     try {
+      console.log('💾 Calling updateProfile...');
       await updateProfile(data);
+      console.log('✅ Profile updated successfully');
+      
       if (skills && skills.length > 0) {
+        console.log('🏷️ Updating skills...');
         await updateSkills();
+        console.log('✅ Skills updated successfully');
       }
       
+      console.log('🎉 Showing success toast...');
       toast({
         title: "Profile updated successfully!",
         description: "Your professional profile has been saved."
@@ -128,6 +139,7 @@ export default function ProfileOnboarding({
         setCurrentStep(2);
       }
     } catch (error) {
+      console.error('❌ Error in onSubmit:', error);
       toast({
         title: "Error updating profile",
         description: "Please try again later.",
