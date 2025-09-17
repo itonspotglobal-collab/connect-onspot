@@ -1,5 +1,6 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
+import * as Sentry from "@sentry/node";
 import { storage } from "./storage";
 import { isAuthenticated } from "./replitAuth";
 import {
@@ -11,12 +12,95 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 
+// Enhanced validation middleware factory
+const validateRequest = (schema: z.ZodSchema, target: 'body' | 'query' | 'params' = 'body') => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const dataToValidate = target === 'body' ? req.body : 
+                            target === 'query' ? req.query : 
+                            req.params;
+      
+      schema.parse(dataToValidate);
+      next();
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const validationErrors = error.errors.map(err => ({
+          field: err.path.join('.'),
+          message: err.message,
+          code: err.code
+        }));
+        
+        console.warn(`🚨 Validation Error [${(req as any).requestId}]:`, {
+          endpoint: req.path,
+          method: req.method,
+          target: target,
+          errors: validationErrors
+        });
+
+        return res.status(400).json({
+          error: "Validation failed",
+          message: `Invalid ${target} data provided`,
+          details: validationErrors,
+          requestId: (req as any).requestId
+        });
+      }
+      next(error);
+    }
+  };
+};
+
+// Enhanced error handler utility
+const handleRouteError = (error: any, req: Request, res: Response, operation: string, statusCode: number = 500) => {
+  const requestId = (req as any).requestId;
+  const userId = (req as any).user?.user?.id || (req as any).user?.claims?.sub;
+  
+  console.error(`🚨 ${operation} Error [${requestId}]:`, {
+    error: error.message,
+    stack: error.stack,
+    userId: userId,
+    endpoint: req.path,
+    method: req.method
+  });
+
+  // Send to Sentry if configured and it's a server error
+  if (process.env.SENTRY_DSN && statusCode >= 500) {
+    Sentry.captureException(error, {
+      tags: {
+        operation: operation,
+        requestId: requestId,
+        endpoint: req.path,
+        method: req.method,
+        userId: userId
+      },
+      user: {
+        id: userId,
+        ip_address: req.ip
+      },
+      extra: {
+        userAgent: req.get('User-Agent')
+      }
+    });
+  }
+
+  // Return appropriate error message
+  const isServerError = statusCode >= 500;
+  res.status(statusCode).json({
+    error: isServerError ? "Internal server error" : error.message || "Operation failed",
+    message: isServerError ? "An unexpected error occurred. Please try again later." : error.message || `Failed to ${operation.toLowerCase()}`,
+    requestId: requestId
+  });
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth routes - Updated for OAuth compatibility
+  // Auth routes - Updated for OAuth compatibility with enhanced error handling
   app.get('/api/auth/user', async (req: any, res) => {
     try {
       if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "Not authenticated" });
+        return res.status(401).json({ 
+          error: "Not authenticated",
+          message: "Please log in to access this resource",
+          requestId: req.requestId
+        });
       }
 
       let user;
@@ -24,21 +108,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Handle OAuth users (Google/LinkedIn)
       if (req.user && req.user.user) {
         user = req.user.user;
-        console.log('OAuth user authenticated:', { id: user.id, email: user.email, provider: req.user.provider });
+        console.log(`✅ OAuth user authenticated [${req.requestId}]:`, { 
+          id: user.id, 
+          email: user.email, 
+          provider: req.user.provider 
+        });
       } 
       // Handle Replit Auth users
       else if (req.user && req.user.claims) {
         const userId = req.user.claims.sub;
         user = await storage.getUser(userId);
-        console.log('Replit Auth user authenticated:', { id: userId });
+        console.log(`✅ Replit Auth user authenticated [${req.requestId}]:`, { id: userId });
       }
       else {
-        console.error('Unknown user type in session:', req.user);
-        return res.status(401).json({ message: "Invalid session" });
+        console.error(`❌ Unknown user type in session [${req.requestId}]:`, req.user);
+        return res.status(401).json({ 
+          error: "Invalid session",
+          message: "Session format not recognized",
+          requestId: req.requestId
+        });
       }
 
       if (!user) {
-        return res.status(404).json({ message: "User not found" });
+        return res.status(404).json({ 
+          error: "User not found",
+          message: "User account not found in database",
+          requestId: req.requestId
+        });
       }
 
       // Return user data with auth provider info
@@ -47,8 +143,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         authProvider: (req.user as any).provider || 'replit'
       });
     } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
+      handleRouteError(error, req, res, "Get current user", 500);
     }
   });
 
@@ -112,54 +207,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // CRITICAL FIX: Development login endpoint for testing without OAuth
-  app.post('/api/dev/login', async (req: any, res) => {
-    // Only allow in development environment
-    if (process.env.NODE_ENV === 'production') {
-      return res.status(403).json({ error: 'Development login not available in production' });
-    }
-
-    try {
-      const { email, userType } = req.body;
-      
-      if (!email) {
-        return res.status(400).json({ error: 'Email required for dev login' });
+  // Enhanced development login endpoint with validation and monitoring
+  app.post('/api/dev/login', 
+    validateRequest(z.object({
+      email: z.string().email("Valid email address required"),
+      userType: z.enum(['talent', 'client']).optional().default('talent')
+    })),
+    async (req: any, res) => {
+      // Only allow in development environment
+      if (process.env.NODE_ENV === 'production') {
+        console.warn(`🚫 Production dev login attempt blocked [${req.requestId}]`, {
+          ip: req.ip,
+          userAgent: req.get('User-Agent')
+        });
+        return res.status(403).json({ 
+          error: 'Development login not available in production',
+          requestId: req.requestId
+        });
       }
 
-      // Create or get mock user for development
-      const mockUserId = `dev_${email.replace('@', '_').replace('.', '_')}`;
-      const mockUser = {
-        id: mockUserId,
-        email: email,
-        firstName: email.split('@')[0],
-        lastName: 'DevUser',
-        role: userType || 'talent',
-        profileImageUrl: null,
-      };
+      try {
+        const { email, userType } = req.body;
 
-      // Store user in database
-      await storage.upsertUser(mockUser);
+        // Create or get mock user for development
+        const mockUserId = `dev_${email.replace('@', '_').replace('.', '_')}`;
+        const mockUser = {
+          id: mockUserId,
+          email: email,
+          firstName: email.split('@')[0],
+          lastName: 'DevUser',
+          role: userType || 'talent',
+          profileImageUrl: null,
+        };
 
-      // CRITICAL: Use req.login() to establish proper server session
-      req.login({ user: mockUser, provider: 'dev' }, (err: any) => {
-        if (err) {
-          console.error('Dev login session error:', err);
-          return res.status(500).json({ error: 'Failed to create session' });
-        }
-        
-        console.log('✅ Dev login successful for:', { email, userId: mockUserId, userType });
-        res.json({
-          success: true,
-          user: mockUser,
-          message: 'Development login successful',
-          sessionEstablished: true
+        // Store user in database
+        await storage.upsertUser(mockUser);
+
+        // CRITICAL: Use req.login() to establish proper server session
+        req.login({ user: mockUser, provider: 'dev' }, (err: any) => {
+          if (err) {
+            console.error(`🚨 Dev login session error [${req.requestId}]:`, err);
+            
+            // Log session creation failure for monitoring
+            if (process.env.SENTRY_DSN) {
+              Sentry.captureException(err, {
+                tags: {
+                  operation: 'dev_login_session',
+                  requestId: req.requestId,
+                  userId: mockUserId
+                }
+              });
+            }
+            
+            return res.status(500).json({ 
+              error: 'Failed to create session',
+              requestId: req.requestId
+            });
+          }
+          
+          console.log(`✅ Dev login successful [${req.requestId}]:`, { 
+            email, 
+            userId: mockUserId, 
+            userType 
+          });
+          
+          res.json({
+            success: true,
+            user: mockUser,
+            message: 'Development login successful',
+            sessionEstablished: true
+          });
         });
-      });
-    } catch (error) {
-      console.error('Dev login error:', error);
-      res.status(500).json({ error: 'Development login failed' });
+      } catch (error) {
+        handleRouteError(error, req, res, "Development login", 500);
+      }
     }
-  });
+  );
 
   // SECURITY FIX: Protected Object Storage Upload URL - Generate presigned URL for file uploads
   app.post('/api/object-storage/upload-url', async (req: any, res) => {
@@ -238,17 +361,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // PHASE 1 PRIORITY ROUTES
 
   // ==================== USERS ====================
-  app.get("/api/users/:id", async (req, res) => {
-    try {
-      const user = await storage.getUser(req.params.id);
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
+  app.get("/api/users/:id", 
+    validateRequest(z.object({ id: z.string().min(1, "User ID required") }), 'params'),
+    async (req: any, res) => {
+      try {
+        console.log(`🔍 Fetching user [${req.requestId}]:`, { userId: req.params.id });
+        const user = await storage.getUser(req.params.id);
+        if (!user) {
+          return res.status(404).json({ 
+            error: "User not found", 
+            message: "No user exists with the provided ID",
+            requestId: req.requestId
+          });
+        }
+        res.json(user);
+      } catch (error) {
+        handleRouteError(error, req, res, "Get user by ID", 500);
       }
-      res.json(user);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to get user" });
     }
-  });
+  );
 
   app.get("/api/users/username/:username", async (req, res) => {
     try {
@@ -262,34 +393,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/users", async (req, res) => {
-    try {
-      const validated = insertUserSchema.parse(req.body);
-      const user = await storage.createUser(validated);
-      res.status(201).json(user);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Validation failed", details: error.errors });
+  app.post("/api/users", 
+    validateRequest(insertUserSchema),
+    async (req: any, res) => {
+      try {
+        console.log(`👤 Creating new user [${req.requestId}]:`, { 
+          email: req.body.email,
+          role: req.body.role 
+        });
+        const validated = insertUserSchema.parse(req.body);
+        const user = await storage.createUser(validated);
+        
+        console.log(`✅ User created successfully [${req.requestId}]:`, { userId: user.id });
+        res.status(201).json(user);
+      } catch (error) {
+        handleRouteError(error, req, res, "Create user", 500);
       }
-      res.status(500).json({ error: "Failed to create user" });
     }
-  });
+  );
 
-  app.patch("/api/users/:id", async (req, res) => {
-    try {
-      const updates = insertUserSchema.partial().parse(req.body);
-      const user = await storage.updateUser(req.params.id, updates);
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
+  app.patch("/api/users/:id", 
+    validateRequest(z.object({ id: z.string().min(1) }), 'params'),
+    validateRequest(insertUserSchema.partial()),
+    async (req: any, res) => {
+      try {
+        console.log(`✏️ Updating user [${req.requestId}]:`, { 
+          userId: req.params.id,
+          updateFields: Object.keys(req.body)
+        });
+        
+        const updates = insertUserSchema.partial().parse(req.body);
+        const user = await storage.updateUser(req.params.id, updates);
+        
+        if (!user) {
+          return res.status(404).json({ 
+            error: "User not found",
+            message: "No user exists with the provided ID",
+            requestId: req.requestId
+          });
+        }
+        
+        console.log(`✅ User updated successfully [${req.requestId}]:`, { userId: user.id });
+        res.json(user);
+      } catch (error) {
+        handleRouteError(error, req, res, "Update user", 500);
       }
-      res.json(user);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Validation failed", details: error.errors });
-      }
-      res.status(500).json({ error: "Failed to update user" });
     }
-  });
+  );
 
   // ==================== PROFILES ====================
   app.get("/api/profiles/:id", async (req, res) => {
@@ -316,34 +466,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/profiles", async (req, res) => {
-    try {
-      const validated = insertProfileSchema.parse(req.body);
-      const profile = await storage.createProfile(validated);
-      res.status(201).json(profile);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Validation failed", details: error.errors });
+  app.post("/api/profiles", 
+    validateRequest(insertProfileSchema),
+    async (req: any, res) => {
+      try {
+        console.log(`👤 Creating new profile [${req.requestId}]:`, { 
+          userId: req.body.userId 
+        });
+        
+        const validated = insertProfileSchema.parse(req.body);
+        const profile = await storage.createProfile(validated);
+        
+        console.log(`✅ Profile created successfully [${req.requestId}]:`, { profileId: profile.id });
+        res.status(201).json(profile);
+      } catch (error) {
+        handleRouteError(error, req, res, "Create profile", 500);
       }
-      res.status(500).json({ error: "Failed to create profile" });
     }
-  });
+  );
 
-  app.patch("/api/profiles/:id", async (req, res) => {
-    try {
-      const updates = insertProfileSchema.partial().parse(req.body);
-      const profile = await storage.updateProfile(req.params.id, updates);
-      if (!profile) {
-        return res.status(404).json({ error: "Profile not found" });
+  app.patch("/api/profiles/:id", 
+    validateRequest(z.object({ id: z.string().min(1) }), 'params'),
+    validateRequest(insertProfileSchema.partial()),
+    async (req: any, res) => {
+      try {
+        console.log(`📝 Updating profile [${req.requestId}]:`, { 
+          profileId: req.params.id,
+          updateFields: Object.keys(req.body)
+        });
+        
+        const updates = insertProfileSchema.partial().parse(req.body);
+        const profile = await storage.updateProfile(req.params.id, updates);
+        
+        if (!profile) {
+          return res.status(404).json({ 
+            error: "Profile not found",
+            message: "No profile exists with the provided ID",
+            requestId: req.requestId
+          });
+        }
+        
+        console.log(`✅ Profile updated successfully [${req.requestId}]:`, { profileId: profile.id });
+        res.json(profile);
+      } catch (error) {
+        handleRouteError(error, req, res, "Update profile", 500);
       }
-      res.json(profile);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Validation failed", details: error.errors });
-      }
-      res.status(500).json({ error: "Failed to update profile" });
     }
-  });
+  );
 
   // Advanced Profile Search - Critical for talent discovery
   app.get("/api/profiles/search", async (req, res) => {
