@@ -1,9 +1,45 @@
 import express, { type Request, Response, NextFunction } from "express";
+import cors from "cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { setupAuth } from "./replitAuth";
 
 const app = express();
+
+// Set up environment variables with fallbacks
+if (!process.env.PUBLIC_BASE_URL && process.env.REPLIT_DEV_DOMAIN) {
+  process.env.PUBLIC_BASE_URL = `https://${process.env.REPLIT_DEV_DOMAIN}`;
+}
+if (!process.env.VITE_API_BASE) {
+  process.env.VITE_API_BASE = "";
+}
+
+// CORS configuration with credentials support
+app.use(cors({
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+    // Allow requests with no origin (mobile apps, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Allow all replit.dev domains and localhost for development
+    const allowedOrigins = [
+      process.env.PUBLIC_BASE_URL,
+      /\.replit\.dev$/,
+      /^https?:\/\/localhost(:\d+)?$/,
+    ].filter(Boolean);
+    
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (typeof allowed === 'string') return origin === allowed;
+      if (allowed instanceof RegExp) return allowed.test(origin);
+      return false;
+    });
+    
+    callback(null, isAllowed);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
