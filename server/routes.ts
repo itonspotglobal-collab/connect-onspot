@@ -105,14 +105,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let user;
       
-      // Handle OAuth users (Google/LinkedIn)
+      // Handle OAuth users (Google/LinkedIn/Dev)
       if (req.user && req.user.user) {
         user = req.user.user;
-        console.log(`✅ OAuth user authenticated [${req.requestId}]:`, { 
+        const provider = req.user.provider || 'unknown';
+        console.log(`✅ ${provider.toUpperCase()} user authenticated [${req.requestId}]:`, { 
           id: user.id, 
           email: user.email, 
-          provider: req.user.provider 
+          provider: provider 
         });
+        
+        // For dev login, make sure user exists in storage
+        if (provider === 'dev') {
+          try {
+            const storedUser = await storage.getUser(user.id);
+            if (!storedUser) {
+              console.warn(`⚠️ Dev user not found in storage, creating: ${user.id}`);
+              await storage.upsertUser(user);
+            }
+          } catch (error) {
+            console.error(`❌ Error checking/creating dev user [${req.requestId}]:`, error);
+          }
+        }
       } 
       // Handle Replit Auth users
       else if (req.user && req.user.claims) {
