@@ -10,7 +10,7 @@ import { TopNavigation } from "@/components/TopNavigation";
 import { ClientLayout } from "@/components/ClientLayout";
 import { Footer } from "@/components/Footer";
 import { VanessaChat } from "@/components/VanessaChat";
-import { ClientProtectedRoute, TalentProtectedRoute } from "@/components/ProtectedRoute";
+import { ClientProtectedRoute, TalentProtectedRoute, AdminProtectedRoute } from "@/components/ProtectedRoute";
 import Home from "@/pages/Home";
 import TalentSearch from "@/pages/TalentSearch";
 import Dashboard from "@/pages/Dashboard";
@@ -32,6 +32,7 @@ import PaymentProtection from "@/pages/PaymentProtection";
 import ClientVerification from "@/pages/ClientVerification";
 import TrustSafety from "@/pages/TrustSafety";
 import LeadIntake from "@/pages/LeadIntake";
+import AdminCSVImport from "@/pages/AdminCSVImport";
 
 // Public Routes - Always available regardless of authentication
 function PublicRouter() {
@@ -107,6 +108,11 @@ function ClientRouter() {
           <Route path="/payments" component={() => <div className="p-6">Payments Module - Coming Soon</div>} />
           <Route path="/roi" component={() => <div className="p-6">ROI Analytics Module - Coming Soon</div>} />
           <Route path="/insights" component={Insights} />
+          <Route path="/admin/csv-import" component={() => (
+            <AdminProtectedRoute>
+              <AdminCSVImport />
+            </AdminProtectedRoute>
+          )} />
           <Route path="/settings" component={() => <div className="p-6">Settings Module - Coming Soon</div>} />
           {/* Public routes accessible from client dashboard */}
           <Route path="/hire-talent" component={TalentSearch} />
