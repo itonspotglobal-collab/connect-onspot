@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import * as Sentry from "@sentry/node";
 import { storage } from "./storage";
 import { isAuthenticated } from "./replitAuth";
+import { ghlService } from "./services/ghlService";
 import {
   insertUserSchema, insertProfileSchema, insertSkillSchema, insertUserSkillSchema,
   insertJobSchema, insertJobSkillSchema, insertProposalSchema, insertContractSchema,
@@ -581,6 +582,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           leadScore: leadIntake.leadScore,
           status: leadIntake.status
         });
+
+        // Send lead to Go-High-Level CRM
+        const ghlResult = await ghlService.sendLeadToGHL(leadIntake);
+        if (ghlResult.success && ghlResult.ghlContactId) {
+          console.log(`🎯 Lead successfully sent to GHL: Contact ID ${ghlResult.ghlContactId}`);
+          // Optionally update the lead with GHL contact ID
+          await storage.updateLeadIntake(leadIntake.id, {
+            internalNotes: `GHL Contact ID: ${ghlResult.ghlContactId}`
+          });
+        } else if (ghlResult.error) {
+          console.warn(`⚠️ Failed to send lead to GHL: ${ghlResult.error}`);
+          // Continue with success response - GHL failure shouldn't break the flow
+        }
 
         // Return success response with lead ID for potential follow-up
         res.status(201).json({
