@@ -111,23 +111,12 @@ export default function ProfileOnboarding({
 
   // Profile form submission
   const onSubmit = async (data: ProfileFormData) => {
-    console.log('🚀 Save Profile button clicked! Form data:', data);
-    console.log('🔍 Form validation errors:', form.formState.errors);
-    console.log('📊 Current skills selected:', skills);
-    console.log('⚡ Is currently updating:', isUpdating);
-    
     try {
-      console.log('💾 Calling updateProfile...');
       await updateProfile(data);
-      console.log('✅ Profile updated successfully');
-      
       if (skills && skills.length > 0) {
-        console.log('🏷️ Updating skills...');
         await updateSkills();
-        console.log('✅ Skills updated successfully');
       }
       
-      console.log('🎉 Showing success toast...');
       toast({
         title: "Profile updated successfully!",
         description: "Your professional profile has been saved."
@@ -139,7 +128,6 @@ export default function ProfileOnboarding({
         setCurrentStep(2);
       }
     } catch (error) {
-      console.error('❌ Error in onSubmit:', error);
       toast({
         title: "Error updating profile",
         description: "Please try again later.",
@@ -493,24 +481,7 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
               </div>
             </div>
 
-            <Button 
-              type="submit" 
-              disabled={isUpdating} 
-              data-testid="button-save-profile"
-              onClick={() => {
-                console.log('🔥 Save Profile button CLICKED!');
-                console.log('🔍 Form validation state:', form.formState);
-                console.log('📝 Form errors:', form.formState.errors);
-                console.log('✅ Form valid?', form.formState.isValid);
-                console.log('📊 Form values:', form.getValues());
-                console.log('🚨 Is button disabled?', isUpdating);
-                
-                // Trigger validation manually
-                form.trigger().then(isValid => {
-                  console.log('🎯 Manual validation result:', isValid);
-                });
-              }}
-            >
+            <Button type="submit" disabled={isUpdating} data-testid="button-save-profile">
               {isUpdating ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
