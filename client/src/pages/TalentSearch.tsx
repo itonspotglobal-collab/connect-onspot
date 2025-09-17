@@ -292,9 +292,6 @@ export default function TalentSearch() {
         </div>
       </div>
 
-      {/* Bespoke Talent Builder */}
-      <BespokeTalentBuilder />
-
       {/* Success Metrics */}
       <div className="py-12 bg-muted/30">
         <div className="container mx-auto px-4">
@@ -359,6 +356,9 @@ export default function TalentSearch() {
           </div>
         </div>
       </div>
+
+      {/* Bespoke Talent Builder */}
+      <BespokeTalentBuilder />
 
       {/* Value Propositions */}
       <div className="py-16 bg-muted/30">
