@@ -743,7 +743,7 @@ export function TopNavigation() {
                       {user.firstName || user.username || user.email.split('@')[0]}
                     </span>
                     <span className="text-xs text-white/70 capitalize">
-                      {user.userType || user.role}
+                      {user.role}
                     </span>
                   </div>
                   <ChevronDown className="w-4 h-4" />
@@ -767,7 +767,7 @@ export function TopNavigation() {
                 <DropdownMenuSeparator />
                 
                 {/* Navigation based on user type */}
-                {user.userType === 'client' ? (
+                {user.role === 'client' ? (
                   <>
                     <DropdownMenuItem asChild>
                       <Link href="/dashboard" className="w-full" data-testid="menu-dashboard">
