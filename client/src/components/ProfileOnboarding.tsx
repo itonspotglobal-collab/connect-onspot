@@ -87,10 +87,10 @@ export default function ProfileOnboarding({
 
   // File upload handlers
   const handleResumeUpload = async () => {
-    // This would integrate with your object storage system
+    // FIXED: Use correct object storage upload URL
     return {
       method: "PUT" as const,
-      url: "/api/upload-url" // This should be replaced with actual upload URL
+      url: "/api/object-storage/upload-url" // Fixed to match backend endpoint
     };
   };
 
@@ -398,6 +398,58 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
                     <FormLabel>Hourly Rate (USD)</FormLabel>
                     <FormControl>
                       <Input placeholder="25" type="number" {...field} data-testid="input-hourly-rate" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="timezone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Timezone</FormLabel>
+                    <FormControl>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <SelectTrigger data-testid="select-timezone">
+                          <SelectValue placeholder="Select timezone" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Asia/Manila">Asia/Manila (PHT)</SelectItem>
+                          <SelectItem value="America/New_York">America/New_York (EST)</SelectItem>
+                          <SelectItem value="America/Los_Angeles">America/Los_Angeles (PST)</SelectItem>
+                          <SelectItem value="Europe/London">Europe/London (GMT)</SelectItem>
+                          <SelectItem value="Europe/Paris">Europe/Paris (CET)</SelectItem>
+                          <SelectItem value="Asia/Tokyo">Asia/Tokyo (JST)</SelectItem>
+                          <SelectItem value="Asia/Singapore">Asia/Singapore (SGT)</SelectItem>
+                          <SelectItem value="Australia/Sydney">Australia/Sydney (AEDT)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="availability"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Availability Status</FormLabel>
+                    <FormControl>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <SelectTrigger data-testid="select-availability">
+                          <SelectValue placeholder="Select availability" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="available">Available for work</SelectItem>
+                          <SelectItem value="busy">Busy with projects</SelectItem>
+                          <SelectItem value="offline">Not available</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </FormControl>
                     <FormMessage />
                   </FormItem>

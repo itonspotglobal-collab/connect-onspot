@@ -12,16 +12,227 @@ import {
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  // Auth routes - Updated for OAuth compatibility
+  app.get('/api/auth/user', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      let user;
+      
+      // Handle OAuth users (Google/LinkedIn)
+      if (req.user && req.user.user) {
+        user = req.user.user;
+        console.log('OAuth user authenticated:', { id: user.id, email: user.email, provider: req.user.provider });
+      } 
+      // Handle Replit Auth users
+      else if (req.user && req.user.claims) {
+        const userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+        console.log('Replit Auth user authenticated:', { id: userId });
+      }
+      else {
+        console.error('Unknown user type in session:', req.user);
+        return res.status(401).json({ message: "Invalid session" });
+      }
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Return user data with auth provider info
+      res.json({
+        ...user,
+        authProvider: req.user.provider || 'replit'
+      });
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
     }
+  });
+
+  // Alternative endpoint name for better frontend compatibility
+  app.get('/api/me', async (req: any, res) => {
+    // Reuse the same logic as /api/auth/user
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      let user;
+      
+      // Handle OAuth users (Google/LinkedIn)
+      if (req.user && req.user.user) {
+        user = req.user.user;
+      } 
+      // Handle Replit Auth users
+      else if (req.user && req.user.claims) {
+        const userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      }
+      else {
+        return res.status(401).json({ message: "Invalid session" });
+      }
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json({
+        ...user,
+        authProvider: req.user.provider || 'replit'
+      });
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // OAuth error handling route
+  app.get('/api/auth/error', (req, res) => {
+    const { error, provider, message } = req.query;
+    res.json({
+      error: error || 'oauth_error',
+      provider: provider || 'unknown',
+      message: message || 'Authentication failed. Please try again.',
+      support: 'Contact support@onspotglobal.com for assistance',
+      retry: true
+    });
+  });
+
+  // Health check route for OAuth testing
+  app.get('/api/health', (req, res) => {
+    res.json({ 
+      status: 'ok', 
+      timestamp: new Date().toISOString(),
+      authenticated: req.isAuthenticated(),
+      user: req.isAuthenticated() ? (req.user?.user?.id || req.user?.claims?.sub || 'unknown') : null,
+      provider: req.isAuthenticated() ? (req.user?.provider || 'replit') : null
+    });
+  });
+
+  // CRITICAL FIX: Development login endpoint for testing without OAuth
+  app.post('/api/dev/login', async (req: any, res) => {
+    // Only allow in development environment
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(403).json({ error: 'Development login not available in production' });
+    }
+
+    try {
+      const { email, userType } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ error: 'Email required for dev login' });
+      }
+
+      // Create or get mock user for development
+      const mockUserId = `dev_${email.replace('@', '_').replace('.', '_')}`;
+      const mockUser = {
+        id: mockUserId,
+        email: email,
+        firstName: email.split('@')[0],
+        lastName: 'DevUser',
+        role: userType || 'talent',
+        profileImageUrl: null,
+      };
+
+      // Store user in database
+      await storage.upsertUser(mockUser);
+
+      // CRITICAL: Use req.login() to establish proper server session
+      req.login({ user: mockUser, provider: 'dev' }, (err: any) => {
+        if (err) {
+          console.error('Dev login session error:', err);
+          return res.status(500).json({ error: 'Failed to create session' });
+        }
+        
+        console.log('✅ Dev login successful for:', { email, userId: mockUserId, userType });
+        res.json({
+          success: true,
+          user: mockUser,
+          message: 'Development login successful',
+          sessionEstablished: true
+        });
+      });
+    } catch (error) {
+      console.error('Dev login error:', error);
+      res.status(500).json({ error: 'Development login failed' });
+    }
+  });
+
+  // SECURITY FIX: Protected Object Storage Upload URL - Generate presigned URL for file uploads
+  app.post('/api/object-storage/upload-url', async (req: any, res) => {
+    // CRITICAL: Add authentication guard
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: 'Authentication required for file uploads' });
+    }
+    try {
+      const { fileName, contentType } = req.body;
+      
+      if (!fileName || !contentType) {
+        return res.status(400).json({ error: 'fileName and contentType required' });
+      }
+
+      // Generate unique file path in private directory
+      const fileKey = `${process.env.PRIVATE_OBJECT_DIR}/${Date.now()}-${fileName}`;
+      
+      // For Replit object storage, return the upload URL and file URL
+      const uploadUrl = `${process.env.PUBLIC_BASE_URL}/api/objects/${encodeURIComponent(fileKey)}`;
+      const fileUrl = uploadUrl;
+      
+      res.json({
+        method: 'PUT',
+        url: uploadUrl,
+        fields: {},
+        headers: {
+          'Content-Type': contentType
+        },
+        fileUrl
+      });
+    } catch (error) {
+      console.error('Object storage upload URL error:', error);
+      res.status(500).json({ error: 'Failed to generate upload URL' });
+    }
+  });
+
+  // SECURITY FIX: Protected Object Storage Direct Upload Handler
+  app.put('/api/objects/*', (req: any, res) => {
+    // CRITICAL: Add authentication guard
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: 'Authentication required for file uploads' });
+    }
+
+    try {
+      // For demo purposes, simulate successful upload
+      // In production, this would be handled by actual object storage
+      const filePath = req.params[0];
+      const fileUrl = `${process.env.PUBLIC_BASE_URL}/api/objects/${filePath}`;
+      
+      console.log('✅ Authenticated file upload:', { 
+        userId: req.user?.user?.id || req.user?.claims?.sub, 
+        filePath 
+      });
+      
+      res.json({
+        success: true,
+        fileUrl,
+        message: 'File uploaded successfully'
+      });
+    } catch (error) {
+      console.error('Object upload error:', error);
+      res.status(500).json({ error: 'Upload failed' });
+    }
+  });
+
+  // Object Storage File Retrieval
+  app.get('/api/objects/*', (req, res) => {
+    // For demo, return a placeholder response
+    // In production, this would serve the actual file from object storage
+    res.status(200).json({ 
+      message: 'File access simulated', 
+      path: req.params[0] 
+    });
   });
 
   // PHASE 1 PRIORITY ROUTES

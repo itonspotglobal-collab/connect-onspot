@@ -88,6 +88,19 @@ export function useTalentProfile() {
     enabled: !!user && user.userType === 'talent'
   });
 
+  // Fetch portfolio items
+  const { data: portfolioItems = [], isLoading: portfolioLoading } = useQuery({
+    queryKey: ['/api/portfolio', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const response = await fetch(`/api/portfolio/user/${user.id}`);
+      if (response.status === 404) return []; // No portfolio items yet
+      if (!response.ok) throw new Error('Failed to fetch portfolio items');
+      return response.json();
+    },
+    enabled: !!user?.id
+  });
+
   // Available skills for selection
   const { data: availableSkills = [] } = useQuery({
     queryKey: ['/api/skills']
@@ -103,12 +116,16 @@ export function useTalentProfile() {
     hourlyRate: profile?.hourlyRate || undefined,
     profilePicture: profile?.profilePicture || undefined,
     selectedSkills,
-    uploadedDocuments
+    uploadedDocuments,
+    portfolioItems
   });
 
-  // Determine if user is new
+  // Determine if user is new and completion status
   const isNewUser = !profile || profileCompletion < 30;
   const hasCompletedOnboarding = profileCompletion >= 70;
+  
+  // Loading state for profile data
+  const isLoading = profileLoading || skillsLoading || documentsLoading || portfolioLoading;
 
   // Update local state when data is fetched
   useEffect(() => {

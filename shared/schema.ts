@@ -628,4 +628,3 @@ export type Notification = typeof notifications.$inferSelect;
 
 // Replit Auth types for user management
 export type UpsertUser = typeof users.$inferInsert;
-export type User = typeof users.$inferSelect;
