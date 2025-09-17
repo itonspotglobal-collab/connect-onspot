@@ -11,8 +11,11 @@ import {
   Target,
   TrendingUp,
   LogOut,
-  User
+  User,
+  Loader2
 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useState } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -154,12 +157,25 @@ function ClientSidebar() {
 }
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
-  const { user, logout } = useAuth();
+  const { user, logout, isLoading } = useAuth();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   
   const sidebarStyle = {
     "--sidebar-width": "18rem",
     "--sidebar-width-icon": "4rem",
   } as React.CSSProperties;
+  
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      console.log('✅ User logged out successfully from client layout');
+    } catch (error) {
+      console.error('❌ Logout failed:', error);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   return (
     <SidebarProvider style={sidebarStyle}>
@@ -177,19 +193,58 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
               </Link>
             </div>
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 text-sm">
-                <User className="w-4 h-4" />
-                <span className="font-medium">{user?.username || user?.email}</span>
-              </div>
+              {/* User Information */}
+              {isLoading ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground" data-testid="user-loading">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Loading...</span>
+                </div>
+              ) : user ? (
+                <div className="flex items-center gap-2 text-sm" data-testid="user-info">
+                  <Avatar className="w-8 h-8">
+                    <AvatarImage src={user.profileImageUrl || undefined} alt={user.firstName || user.email} />
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                      {user.firstName ? user.firstName.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col">
+                    <span className="font-medium">
+                      {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : 
+                       user.firstName || user.username || user.email.split('@')[0]}
+                    </span>
+                    <span className="text-xs text-muted-foreground capitalize">
+                      {user.userType || user.role}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground" data-testid="user-not-found">
+                  <User className="w-4 h-4" />
+                  <span>User not found</span>
+                </div>
+              )}
+              
               <ThemeToggle />
+              
+              {/* Logout Button */}
               <Button
                 variant="outline"
                 size="sm"
-                onClick={logout}
+                onClick={handleLogout}
+                disabled={isLoggingOut || isLoading}
                 data-testid="button-logout"
               >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
+                {isLoggingOut ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Logging out...
+                  </>
+                ) : (
+                  <>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                  </>
+                )}
               </Button>
             </div>
           </header>
