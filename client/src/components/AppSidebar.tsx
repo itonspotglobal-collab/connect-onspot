@@ -8,7 +8,9 @@ import {
   Settings, 
   Users,
   Target,
-  TrendingUp
+  TrendingUp,
+  FileSpreadsheet,
+  Shield
 } from "lucide-react"
 import {
   Sidebar,
@@ -67,6 +69,14 @@ const managementItems = [
   },
 ]
 
+const adminItems = [
+  {
+    title: "CSV Talent Import",
+    url: "/admin/csv-import",
+    icon: FileSpreadsheet,
+  },
+]
+
 const systemItems = [
   {
     title: "Settings",
@@ -105,6 +115,29 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <a href={item.url} data-testid={`link-${item.title.toLowerCase().replace(' ', '-')}`}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>
+            <div className="flex items-center gap-2">
+              <Shield className="w-4 h-4" />
+              Admin Tools
+            </div>
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {adminItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <a href={item.url} data-testid={`link-${item.title.toLowerCase().replace(/\s+/g, '-')}`}>
                       <item.icon />
                       <span>{item.title}</span>
                     </a>

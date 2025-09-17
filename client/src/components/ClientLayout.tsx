@@ -12,7 +12,9 @@ import {
   TrendingUp,
   LogOut,
   User,
-  Loader2
+  Loader2,
+  Shield,
+  Upload
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useState } from "react";
@@ -89,8 +91,18 @@ const systemItems = [
   },
 ];
 
+// Admin Tools (only visible to admin users)
+const adminItems = [
+  {
+    title: "CSV Import",
+    url: "/admin/csv-import",
+    icon: Upload,
+  },
+];
+
 function ClientSidebar() {
   const [location] = useLocation();
+  const { user } = useAuth();
 
   return (
     <Sidebar>
@@ -151,6 +163,30 @@ function ClientSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Admin Tools - Only visible to admin users */}
+        {user?.role === 'admin' && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="flex items-center gap-2">
+              <Shield className="w-3 h-3" />
+              Admin Tools
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {adminItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={location === item.url}>
+                      <Link href={item.url} data-testid={`nav-admin-${item.title.toLowerCase().replace(/\s+/g, "-")}`}>
+                        <item.icon className="w-4 h-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
     </Sidebar>
   );
