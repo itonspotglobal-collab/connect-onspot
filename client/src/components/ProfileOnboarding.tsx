@@ -493,7 +493,24 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
               </div>
             </div>
 
-            <Button type="submit" disabled={isUpdating} data-testid="button-save-profile">
+            <Button 
+              type="submit" 
+              disabled={isUpdating} 
+              data-testid="button-save-profile"
+              onClick={() => {
+                console.log('🔥 Save Profile button CLICKED!');
+                console.log('🔍 Form validation state:', form.formState);
+                console.log('📝 Form errors:', form.formState.errors);
+                console.log('✅ Form valid?', form.formState.isValid);
+                console.log('📊 Form values:', form.getValues());
+                console.log('🚨 Is button disabled?', isUpdating);
+                
+                // Trigger validation manually
+                form.trigger().then(isValid => {
+                  console.log('🎯 Manual validation result:', isValid);
+                });
+              }}
+            >
               {isUpdating ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
