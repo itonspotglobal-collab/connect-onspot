@@ -14,21 +14,64 @@ interface User {
 
 interface AuthContextType {
   isAuthenticated: boolean;
+  isLoading: boolean;
   user: User | null;
+  error: string | null;
   login: (email: string, password: string, userType?: "client" | "talent" | null) => Promise<boolean>;
-  logout: () => void;
+  logout: () => Promise<void>;
+  refreshAuth: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false);
 
   const login = async (email: string, password: string, userType: "client" | "talent" | null = "client"): Promise<boolean> => {
     try {
-      // For demo purposes, still simulate email/password login
-      // In production, this would call your auth API
+      setIsLoading(true);
+      setError(null);
+      
+      // Try development login endpoint first
+      const devLoginResponse = await fetch('/api/dev/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ email, userType })
+      });
+      
+      if (devLoginResponse.ok) {
+        const userData = await devLoginResponse.json();
+        console.log('✅ Development login successful:', userData);
+        
+        // Set authenticated user state
+        const authenticatedUser: User = {
+          id: userData.user.id,
+          email: userData.user.email,
+          firstName: userData.user.firstName,
+          lastName: userData.user.lastName,
+          profileImageUrl: userData.user.profileImageUrl,
+          role: userData.user.role,
+          userType: userData.user.role === 'talent' ? 'talent' : 'client',
+          authProvider: 'dev'
+        };
+        
+        setUser(authenticatedUser);
+        setIsAuthenticated(true);
+        
+        // Clear any localStorage fallback
+        localStorage.removeItem('onspot_user');
+        
+        return true;
+      }
+      
+      // Fallback for demo purposes - email/password simulation
       if (email && password && password !== "google-oauth" && password !== "linkedin-oauth") {
         const mockUser: User = {
           id: '1',
@@ -42,22 +85,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsAuthenticated(true);
         localStorage.setItem('onspot_user', JSON.stringify(mockUser));
         
-        // Navigate to appropriate portal based on user type
-        if (userType === 'talent') {
-          window.location.href = '/get-hired';
-        }
-        
         return true;
       }
+      
       return false;
     } catch (error) {
       console.error('Login error:', error);
+      setError('Login failed. Please try again.');
       return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Check OAuth authentication status with backend
-  const checkOAuthAuth = async (): Promise<User | null> => {
+  // Check authentication status with backend
+  const checkServerAuth = async (): Promise<User | null> => {
     try {
       const response = await fetch('/api/auth/user', {
         method: 'GET',
@@ -69,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (response.ok) {
         const userData = await response.json();
-        console.log('🔐 OAuth user authenticated:', userData);
+        console.log('🔐 Server authenticated user:', userData);
         return {
           id: userData.id,
           email: userData.email || '',
@@ -81,26 +123,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           authProvider: userData.authProvider || 'unknown'
         };
       } else if (response.status === 401) {
-        // Not authenticated
+        console.log('🔒 No active session found');
         return null;
       } else {
         console.error('Failed to check auth status:', response.status);
         return null;
       }
     } catch (error) {
-      console.error('Error checking OAuth auth:', error);
+      console.error('Error checking server auth:', error);
       return null;
     }
   };
 
-  const logout = async () => {
+  const logout = async (): Promise<void> => {
     try {
-      // For OAuth users, call backend logout endpoint
+      setIsLoading(true);
+      
+      // For server-authenticated users, call backend logout endpoint
       if (user?.authProvider !== 'email') {
-        await fetch('/api/logout', {
-          method: 'GET',
-          credentials: 'include',
-        });
+        try {
+          await fetch('/api/logout', {
+            method: 'GET',
+            credentials: 'include',
+          });
+        } catch (logoutError) {
+          console.warn('Backend logout failed:', logoutError);
+          // Continue with local cleanup even if server logout fails
+        }
       }
     } catch (error) {
       console.error('Logout error:', error);
@@ -108,27 +157,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Always clear local state
       setUser(null);
       setIsAuthenticated(false);
+      setError(null);
       localStorage.removeItem('onspot_user');
+      setIsLoading(false);
+      
+      console.log('🚪 User logged out successfully');
     }
   };
 
-  // Check for authentication on mount (both OAuth and local storage)
-  useEffect(() => {
-    const initializeAuth = async () => {
-      console.log('🔒 AuthContext: Initializing authentication...');
+  // Refresh authentication state from server
+  const refreshAuth = async (): Promise<void> => {
+    try {
+      setIsLoading(true);
+      setError(null);
       
-      // First, check if user is OAuth authenticated
-      const oauthUser = await checkOAuthAuth();
-      if (oauthUser) {
-        console.log('🔐 OAuth user found:', oauthUser);
-        setUser(oauthUser);
+      // First, check if user is server authenticated
+      const serverUser = await checkServerAuth();
+      if (serverUser) {
+        console.log('🔐 Server user found:', serverUser);
+        setUser(serverUser);
         setIsAuthenticated(true);
         // Clear any old localStorage data
         localStorage.removeItem('onspot_user');
         return;
       }
 
-      // Fallback to localStorage for email/password users
+      // Fallback to localStorage for email/password users (legacy)
       const storedUser = localStorage.getItem('onspot_user');
       if (storedUser) {
         try {
@@ -140,14 +194,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.error('🔒 Error parsing stored user:', error);
           localStorage.removeItem('onspot_user');
         }
+      } else {
+        // No user found anywhere
+        console.log('🔒 No authenticated user found');
+        setUser(null);
+        setIsAuthenticated(false);
       }
-    };
+    } catch (error) {
+      console.error('Error refreshing auth:', error);
+      setError('Failed to check authentication status');
+      setUser(null);
+      setIsAuthenticated(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    initializeAuth();
-  }, []);
+  // Check for authentication on mount - only once
+  useEffect(() => {
+    if (!initialized) {
+      console.log('🔒 AuthContext: Initializing authentication...');
+      refreshAuth().finally(() => {
+        setInitialized(true);
+      });
+    }
+  }, [initialized]);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
+    <AuthContext.Provider value={{ 
+      isAuthenticated, 
+      isLoading, 
+      user, 
+      error, 
+      login, 
+      logout, 
+      refreshAuth 
+    }}>
       {children}
     </AuthContext.Provider>
   );
