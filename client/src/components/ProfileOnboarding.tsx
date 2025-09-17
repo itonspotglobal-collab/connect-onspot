@@ -530,6 +530,9 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
                   console.log('✅ Save successful:', result);
                   alert('Profile saved successfully!');
                   
+                  // Refresh the page to show updated profile data
+                  window.location.reload();
+                  
                 } catch (error: any) {
                   console.error('❌ Save error:', error);
                   alert(`Error: ${error?.message || "Save failed"}`);
