@@ -1467,6 +1467,7 @@ export class MemStorage implements IStorage {
     const newLeadIntake: LeadIntake = {
       id: randomUUID(),
       ...leadIntake,
+      requiredSkills: leadIntake.requiredSkills || [],
       phoneNumber: leadIntake.phoneNumber || null,
       jobTitle: leadIntake.jobTitle || null,
       companyWebsite: leadIntake.companyWebsite || null,
