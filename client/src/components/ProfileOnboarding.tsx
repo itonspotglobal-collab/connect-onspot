@@ -37,6 +37,7 @@ import { ObjectUploader } from "@/components/ObjectUploader";
 import { useTalentProfile, profileFormSchema, ProfileFormData } from "@/hooks/useTalentProfile";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ProfileOnboardingProps {
   mode?: "full" | "embedded";
@@ -52,6 +53,7 @@ export default function ProfileOnboarding({
   className 
 }: ProfileOnboardingProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const {
     profile,
     skills,
@@ -485,14 +487,54 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
               type="button"
               disabled={isUpdating} 
               data-testid="button-save-profile"
-              onClick={(e) => {
-                console.log('🔥 CLICK DETECTED! Button clicked directly');
-                console.log('🔍 Event:', e);
-                console.log('🚨 Is disabled?', isUpdating);
-                console.log('📝 Form data:', form.getValues());
+              onClick={async () => {
+                console.log('🔥 SAVE PROFILE: Starting save process');
                 
-                // Call form submit manually
-                form.handleSubmit(onSubmit)(e);
+                const formData = form.getValues();
+                console.log('📝 Form data:', formData);
+                console.log('🏷️ Selected skills:', skills);
+                
+                try {
+                  // Build profile payload
+                  const profilePayload = {
+                    ...formData,
+                    userId: user?.id
+                  };
+                  
+                  console.log('📦 Profile payload:', profilePayload);
+                  
+                  // Make direct API call
+                  const response = await fetch('/api/profiles', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(profilePayload)
+                  });
+                  
+                  console.log('🌐 API Response status:', response.status);
+                  
+                  if (!response.ok) {
+                    const errorData = await response.text();
+                    console.error('❌ API Error:', errorData);
+                    throw new Error(`Save failed (${response.status}): ${errorData}`);
+                  }
+                  
+                  const result = await response.json();
+                  console.log('✅ Save successful:', result);
+                  
+                  toast({
+                    title: "Profile saved successfully!",
+                    description: "Your professional profile has been saved."
+                  });
+                  
+                } catch (error) {
+                  console.error('❌ Save error:', error);
+                  toast({
+                    title: "Error saving profile",
+                    description: error.message || "Please try again later.",
+                    variant: "destructive"
+                  });
+                }
               }}
             >
               {isUpdating ? (
