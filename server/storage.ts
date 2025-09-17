@@ -156,6 +156,34 @@ export interface IStorage {
   markNotificationAsRead(id: string): Promise<boolean>;
   markAllNotificationsAsRead(userId: string): Promise<void>;
 
+  // Enhanced job methods with skills
+  getJobWithSkills(jobId: string): Promise<(Job & { skills: string[] }) | undefined>;
+  searchJobsWithSkills(filters: {
+    category?: string;
+    contractType?: string;
+    experienceLevel?: string;
+    minBudget?: number;
+    maxBudget?: number;
+    skills?: string[];
+    status?: string;
+    q?: string;
+  }): Promise<(Job & { skills: string[] })[]>;
+
+  // Job matching algorithm
+  calculateJobMatches(talentId: string, filters?: {
+    skills?: string[];
+    minRate?: number;
+    maxRate?: number;
+    timezone?: string;
+    contractType?: string;
+    category?: string;
+    experienceLevel?: string;
+  }): Promise<Array<{
+    job: Job & { skills: string[] };
+    score: number;
+    overlapSkills: string[];
+  }>>;
+
   // LinkedIn Integration
   getLinkedinProfile(id: string): Promise<any | undefined>;
   getLinkedinProfileByUserId(userId: string): Promise<any | undefined>;
@@ -292,9 +320,13 @@ export class MemStorage implements IStorage {
     const id = randomUUID();
     const now = new Date();
     const user: User = {
-      ...insertUser,
       id,
       role: insertUser.role || "client",
+      email: insertUser.email || null,
+      username: insertUser.username || null,
+      firstName: (insertUser as any).firstName || null,
+      lastName: (insertUser as any).lastName || null,
+      profileImageUrl: (insertUser as any).profileImageUrl || null,
       replitId: insertUser.replitId || null,
       stripeAccountId: insertUser.stripeAccountId || null,
       createdAt: now,
@@ -575,7 +607,24 @@ export class MemStorage implements IStorage {
     return updatedJob;
   }
 
-  async searchJobs(filters: {
+  // Enhanced job with computed skills array
+  async getJobWithSkills(jobId: string): Promise<(Job & { skills: string[] }) | undefined> {
+    const job = this.jobs.get(jobId);
+    if (!job) return undefined;
+
+    const jobSkills = Array.from(this.jobSkills.values())
+      .filter(js => js.jobId === jobId);
+    const skillIds = jobSkills.map(js => js.skillId);
+    const skillNames = skillIds.map(id => this.skills.get(id)?.name).filter(Boolean) as string[];
+
+    return {
+      ...job,
+      skills: skillNames
+    };
+  }
+
+  // Enhanced search with computed skills arrays
+  async searchJobsWithSkills(filters: {
     category?: string;
     contractType?: string;
     experienceLevel?: string;
@@ -584,7 +633,7 @@ export class MemStorage implements IStorage {
     skills?: string[];
     status?: string;
     q?: string; // Text search query
-  }): Promise<Job[]> {
+  }): Promise<(Job & { skills: string[] })[]> {
     let jobs = Array.from(this.jobs.values());
 
     if (filters.category) {
@@ -615,21 +664,6 @@ export class MemStorage implements IStorage {
       );
     }
 
-    if (filters.skills && filters.skills.length > 0) {
-      jobs = jobs.filter(job => {
-        const jobSkills = Array.from(this.jobSkills.values())
-          .filter(js => js.jobId === job.id);
-        const jobSkillIds = jobSkills.map(js => js.skillId);
-        const jobSkillNames = jobSkillIds.map(id => this.skills.get(id)?.name).filter(Boolean);
-        
-        return filters.skills!.some(skillName => 
-          jobSkillNames.some(jobSkill => 
-            jobSkill?.toLowerCase().includes(skillName.toLowerCase())
-          )
-        );
-      });
-    }
-
     // Add text search support
     if (filters.q) {
       const searchQuery = filters.q.toLowerCase();
@@ -640,7 +674,47 @@ export class MemStorage implements IStorage {
       );
     }
 
-    return jobs.sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0));
+    // Enhance jobs with skills arrays
+    const enhancedJobs: (Job & { skills: string[] })[] = jobs.map(job => {
+      const jobSkills = Array.from(this.jobSkills.values())
+        .filter(js => js.jobId === job.id);
+      const skillIds = jobSkills.map(js => js.skillId);
+      const skillNames = skillIds.map(id => this.skills.get(id)?.name).filter(Boolean) as string[];
+      
+      return {
+        ...job,
+        skills: skillNames
+      };
+    });
+
+    // Apply skills filter after enhancement
+    let filteredJobs = enhancedJobs;
+    if (filters.skills && filters.skills.length > 0) {
+      filteredJobs = enhancedJobs.filter(job => {
+        return filters.skills!.some(skillName => 
+          job.skills.some(jobSkill => 
+            jobSkill?.toLowerCase().includes(skillName.toLowerCase())
+          )
+        );
+      });
+    }
+
+    return filteredJobs.sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0));
+  }
+
+  // Keep original method for backward compatibility but delegate to enhanced version
+  async searchJobs(filters: {
+    category?: string;
+    contractType?: string;
+    experienceLevel?: string;
+    minBudget?: number;
+    maxBudget?: number;
+    skills?: string[];
+    status?: string;
+    q?: string; // Text search query
+  }): Promise<Job[]> {
+    const enhancedJobs = await this.searchJobsWithSkills(filters);
+    return enhancedJobs.map(({ skills, ...job }) => job);
   }
 
   async listJobsByClient(clientId: string): Promise<Job[]> {
@@ -668,6 +742,149 @@ export class MemStorage implements IStorage {
 
   async deleteJobSkill(id: number): Promise<boolean> {
     return this.jobSkills.delete(id);
+  }
+
+  // Job matching algorithm implementation
+  async calculateJobMatches(talentId: string, filters?: {
+    skills?: string[];
+    minRate?: number;
+    maxRate?: number;
+    timezone?: string;
+    contractType?: string;
+    category?: string;
+    experienceLevel?: string;
+  }): Promise<Array<{
+    job: Job & { skills: string[] };
+    score: number;
+    overlapSkills: string[];
+  }>> {
+    // Get talent's skills if not provided in filters
+    let talentSkills: string[] = [];
+    if (filters?.skills) {
+      talentSkills = filters.skills;
+    } else {
+      const userSkills = await this.getUserSkillsWithNames(talentId);
+      talentSkills = userSkills.map(us => us.skill?.name || '').filter(Boolean);
+    }
+
+    // Get talent's profile for rate and timezone matching
+    const talentProfile = await this.getProfileByUserId(talentId);
+    
+    // Search for all available jobs with enhanced skills
+    const allJobs = await this.searchJobsWithSkills({
+      status: 'open',
+      ...(filters?.contractType && { contractType: filters.contractType }),
+      ...(filters?.category && { category: filters.category }),
+      ...(filters?.experienceLevel && { experienceLevel: filters.experienceLevel }),
+      ...(filters?.minRate && { minBudget: filters.minRate }),
+      ...(filters?.maxRate && { maxBudget: filters.maxRate }),
+    });
+
+    // Calculate matches with scoring
+    const jobMatches: Array<{
+      job: Job & { skills: string[] };
+      score: number;
+      overlapSkills: string[];
+    }> = [];
+
+    for (const job of allJobs) {
+      // Skills intersection filter - only include jobs with ≥1 overlapping skill
+      const overlapSkills = job.skills.filter(jobSkill => 
+        talentSkills.some(talentSkill => 
+          talentSkill.toLowerCase().includes(jobSkill.toLowerCase()) ||
+          jobSkill.toLowerCase().includes(talentSkill.toLowerCase())
+        )
+      );
+
+      if (overlapSkills.length === 0 && talentSkills.length > 0) {
+        continue; // Skip jobs with no skill overlap
+      }
+
+      // Calculate Jaccard similarity score
+      const skillsUnion = Array.from(new Set([...talentSkills, ...job.skills]));
+      const jaccardScore = skillsUnion.length > 0 ? overlapSkills.length / skillsUnion.length : 0;
+
+      let totalScore = jaccardScore * 100; // Base score from skills similarity (0-100)
+
+      // Rate overlap bonus
+      if (talentProfile?.hourlyRate && job.hourlyRateMin && job.hourlyRateMax) {
+        const talentRate = parseFloat(talentProfile.hourlyRate);
+        const jobMinRate = parseFloat(job.hourlyRateMin);
+        const jobMaxRate = parseFloat(job.hourlyRateMax);
+        
+        if (talentRate >= jobMinRate && talentRate <= jobMaxRate) {
+          totalScore += 20; // Perfect rate match bonus
+        } else if (Math.abs(talentRate - jobMinRate) <= 10 || Math.abs(talentRate - jobMaxRate) <= 10) {
+          totalScore += 10; // Close rate match bonus
+        }
+      }
+
+      // Timezone soft-match bonus
+      if (talentProfile?.timezone && filters?.timezone) {
+        const talentTz = talentProfile.timezone.toLowerCase();
+        const filterTz = filters.timezone.toLowerCase();
+        
+        // Same timezone
+        if (talentTz === filterTz) {
+          totalScore += 15;
+        }
+        // Same region (rough approximation)
+        else if (
+          (talentTz.includes('america') && filterTz.includes('america')) ||
+          (talentTz.includes('europe') && filterTz.includes('europe')) ||
+          (talentTz.includes('asia') && filterTz.includes('asia'))
+        ) {
+          totalScore += 5;
+        }
+      }
+
+      // Recent job bonus
+      if (job.createdAt) {
+        const daysSincePosted = (Date.now() - job.createdAt.getTime()) / (1000 * 60 * 60 * 24);
+        if (daysSincePosted <= 3) {
+          totalScore += 10;
+        } else if (daysSincePosted <= 7) {
+          totalScore += 5;
+        }
+      }
+
+      jobMatches.push({
+        job,
+        score: Math.round(totalScore),
+        overlapSkills
+      });
+    }
+
+    // Sort by score and ensure we have at least 3 results
+    jobMatches.sort((a, b) => b.score - a.score);
+    
+    // If we have less than 3 matches after skill filtering, add top jobs by Jaccard
+    if (jobMatches.length < 3) {
+      const additionalJobs = allJobs
+        .filter(job => !jobMatches.some(match => match.job.id === job.id))
+        .map(job => {
+          const skillsUnion = Array.from(new Set([...talentSkills, ...job.skills]));
+          const overlapSkills = job.skills.filter(jobSkill => 
+            talentSkills.some(talentSkill => 
+              talentSkill.toLowerCase().includes(jobSkill.toLowerCase()) ||
+              jobSkill.toLowerCase().includes(talentSkill.toLowerCase())
+            )
+          );
+          const jaccardScore = skillsUnion.length > 0 ? overlapSkills.length / skillsUnion.length : 0;
+          
+          return {
+            job,
+            score: Math.round(jaccardScore * 50), // Lower score for fallback jobs
+            overlapSkills
+          };
+        })
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3 - jobMatches.length);
+      
+      jobMatches.push(...additionalJobs);
+    }
+
+    return jobMatches.slice(0, 3); // Return top 3 matches
   }
 
   // Proposal Methods
@@ -1197,7 +1414,7 @@ export class MemStorage implements IStorage {
   }
 
   async getLinkedinProfileByUserId(userId: string): Promise<any | undefined> {
-    for (const profile of this.linkedinProfiles.values()) {
+    for (const profile of Array.from(this.linkedinProfiles.values())) {
       if (profile.userId === userId) {
         return profile;
       }

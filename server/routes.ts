@@ -44,7 +44,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Return user data with auth provider info
       res.json({
         ...user,
-        authProvider: req.user.provider || 'replit'
+        authProvider: (req.user as any).provider || 'replit'
       });
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -81,7 +81,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         ...user,
-        authProvider: req.user.provider || 'replit'
+        authProvider: (req.user as any).provider || 'replit'
       });
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -107,8 +107,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       status: 'ok', 
       timestamp: new Date().toISOString(),
       authenticated: req.isAuthenticated(),
-      user: req.isAuthenticated() ? (req.user?.user?.id || req.user?.claims?.sub || 'unknown') : null,
-      provider: req.isAuthenticated() ? (req.user?.provider || 'replit') : null
+      user: req.isAuthenticated() ? ((req.user as any)?.user?.id || (req.user as any)?.claims?.sub || 'unknown') : null,
+      provider: req.isAuthenticated() ? ((req.user as any)?.provider || 'replit') : null
     });
   });
 
@@ -210,7 +210,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const fileUrl = `${process.env.PUBLIC_BASE_URL}/api/objects/${filePath}`;
       
       console.log('✅ Authenticated file upload:', { 
-        userId: req.user?.user?.id || req.user?.claims?.sub, 
+        userId: (req.user as any)?.user?.id || (req.user as any)?.claims?.sub, 
         filePath 
       });
       
@@ -231,7 +231,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // In production, this would serve the actual file from object storage
     res.status(200).json({ 
       message: 'File access simulated', 
-      path: req.params[0] 
+      path: (req.params as any)[0] 
     });
   });
 
@@ -483,21 +483,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: req.query.status as string || 'open',
         q: req.query.q as string, // Text search query
       };
-      const jobs = await storage.searchJobs(filters);
-      res.json(jobs);
+      
+      // Use enhanced search method that includes skills arrays
+      const jobsWithSkills = await storage.searchJobsWithSkills(filters);
+      res.json(jobsWithSkills);
     } catch (error) {
+      console.error("Job search error:", error);
       res.status(500).json({ error: "Failed to search jobs" });
     }
   });
 
   app.get("/api/jobs/:id", async (req, res) => {
     try {
-      const job = await storage.getJob(req.params.id);
-      if (!job) {
+      // Use enhanced method that includes skills array
+      const jobWithSkills = await storage.getJobWithSkills(req.params.id);
+      if (!jobWithSkills) {
         return res.status(404).json({ error: "Job not found" });
       }
-      res.json(job);
+      res.json(jobWithSkills);
     } catch (error) {
+      console.error("Job fetch error:", error);
       res.status(500).json({ error: "Failed to get job" });
     }
   });
@@ -575,6 +580,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete job skill" });
+    }
+  });
+
+  // ==================== JOB MATCHING ====================
+  // Job matching algorithm endpoint - personalized job recommendations
+  app.get("/api/matches", isAuthenticated, async (req: any, res) => {
+    try {
+      // Get talent ID from authenticated user
+      let userId: string;
+      if (req.user.user) {
+        userId = req.user.user.id; // OAuth users
+      } else if (req.user.claims) {
+        userId = req.user.claims.sub; // Replit Auth users
+      } else {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      // Parse optional filters from query parameters
+      const filters = {
+        skills: req.query.skills ? (req.query.skills as string).split(',') : undefined,
+        minRate: req.query.minRate ? Number(req.query.minRate) : undefined,
+        maxRate: req.query.maxRate ? Number(req.query.maxRate) : undefined,
+        timezone: req.query.timezone as string,
+        contractType: req.query.contractType as string,
+        category: req.query.category as string,
+        experienceLevel: req.query.experienceLevel as string,
+      };
+
+      console.log(`🎯 Calculating job matches for user ${userId} with filters:`, filters);
+      
+      // Calculate job matches using the matching algorithm
+      const matches = await storage.calculateJobMatches(userId, filters);
+      
+      console.log(`✅ Found ${matches.length} job matches for user ${userId}`);
+      res.json(matches);
+    } catch (error) {
+      console.error("Job matching error:", error);
+      res.status(500).json({ error: "Failed to calculate job matches" });
     }
   });
 

@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -77,6 +78,7 @@ const workCategories = [
 ];
 
 export default function FindWork() {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedLocation, setSelectedLocation] = useState("all");
@@ -84,141 +86,123 @@ export default function FindWork() {
   const [selectedJobType, setSelectedJobType] = useState("all");
   const [activeTab, setActiveTab] = useState("browse");
 
-  // Mock jobs data - in production this would come from API
-  const mockJobs: Job[] = [
-    {
-      id: "1",
-      title: "Senior Full Stack Developer - React & Node.js",
-      company: "TechStart Solutions",
-      location: "Remote",
-      type: "contract",
-      budget: { min: 50, max: 75, type: "hourly", currency: "USD" },
-      category: "development",
-      skills: ["React", "Node.js", "TypeScript", "PostgreSQL", "AWS"],
-      description: "Looking for an experienced full stack developer to build a modern SaaS platform. You'll work with our team to develop scalable web applications using React and Node.js.",
-      requirements: ["5+ years experience", "React expertise", "Node.js proficiency", "Database design"],
-      postedAt: "2 hours ago",
-      applicants: 12,
-      verified: true,
-      urgent: false,
-      rating: 4.8,
-      reviewCount: 47,
-      paymentProtected: true,
-      verificationLevel: "business",
-      featured: true,
-      responseTime: "< 2 hours",
-      hireRate: 85,
-      totalSpent: 125000,
-      companySize: "scale-up"
-    },
-    {
-      id: "2", 
-      title: "UI/UX Designer for Mobile App",
-      company: "Digital Innovations Inc",
-      location: "San Francisco, CA",
-      type: "freelance",
-      budget: { min: 3000, max: 5000, type: "fixed", currency: "USD" },
-      category: "design",
-      skills: ["Figma", "UI Design", "UX Research", "Prototyping", "Mobile Design"],
-      description: "We need a creative UI/UX designer to redesign our mobile application. The project involves user research, wireframing, and high-fidelity mockups.",
-      requirements: ["Portfolio required", "Mobile design experience", "Figma proficiency", "UX research skills"],
-      postedAt: "1 day ago", 
-      applicants: 28,
-      verified: true,
-      urgent: true,
-      rating: 4.9,
-      reviewCount: 123
-    },
-    {
-      id: "3",
-      title: "Digital Marketing Manager - Growth Focus",
-      company: "E-commerce Pro",
-      location: "Remote",
-      type: "part-time",
-      budget: { min: 25, max: 40, type: "hourly", currency: "USD" },
-      category: "marketing",
-      skills: ["SEO", "Google Ads", "Facebook Ads", "Content Marketing", "Analytics"],
-      description: "Join our team as a part-time digital marketing manager. You'll be responsible for driving growth through various digital channels including SEO, PPC, and social media.",
-      requirements: ["3+ years marketing experience", "Google Ads certified", "SEO expertise", "Analytics proficiency"],
-      postedAt: "3 days ago",
-      applicants: 19,
-      verified: false,
-      urgent: false,
-      rating: 4.6,
-      reviewCount: 34
-    },
-    {
-      id: "4",
-      title: "Virtual Executive Assistant",
-      company: "Business Solutions LLC",
-      location: "Remote",
-      type: "full-time",
-      budget: { min: 15, max: 22, type: "hourly", currency: "USD" },
-      category: "support",
-      skills: ["Administrative Support", "Calendar Management", "Email Management", "Data Entry"],
-      description: "We're looking for a reliable virtual executive assistant to support our CEO. Responsibilities include calendar management, email handling, and administrative tasks.",
-      requirements: ["2+ years EA experience", "Excellent English", "Time management skills", "Professional communication"],
-      postedAt: "5 days ago",
-      applicants: 45,
-      verified: true,
-      urgent: false,
-      rating: 4.7,
-      reviewCount: 89
-    },
-    {
-      id: "5",
-      title: "Content Writer - Tech & SaaS Focus",
-      company: "Content Creators Co",
-      location: "Remote",
-      type: "freelance",
-      budget: { min: 0.10, max: 0.25, type: "hourly", currency: "USD" },
-      category: "writing",
-      skills: ["Content Writing", "Technical Writing", "SEO Writing", "Blog Writing"],
-      description: "Looking for a skilled content writer to create engaging articles and blog posts for tech and SaaS companies. Must understand technical concepts and write for business audiences.",
-      requirements: ["Tech writing portfolio", "SEO knowledge", "Research skills", "Native English"],
-      postedAt: "1 week ago",
-      applicants: 67,
-      verified: true,
-      urgent: false,
-      rating: 4.5,
-      reviewCount: 156
-    },
-    {
-      id: "6",
-      title: "Video Editor for YouTube Channel",
-      company: "Creator Studio",
-      location: "Los Angeles, CA",
-      type: "contract",
-      budget: { min: 500, max: 800, type: "fixed", currency: "USD" },
-      category: "media",
-      skills: ["Video Editing", "After Effects", "Premiere Pro", "Motion Graphics"],
-      description: "We need a talented video editor for our YouTube channel. You'll edit educational content, add graphics, and ensure high-quality output that engages our audience.",
-      requirements: ["Video editing portfolio", "YouTube experience", "Adobe Creative Suite", "Storytelling skills"],
-      postedAt: "4 days ago",
-      applicants: 22,
-      verified: false,
-      urgent: true,
-      rating: 4.4,
-      reviewCount: 78
+  // Build API query parameters from filter state
+  const apiFilters = useMemo(() => {
+    const params = new URLSearchParams();
+    
+    if (searchQuery.trim()) params.append('q', searchQuery.trim());
+    if (selectedCategory !== 'all') params.append('category', selectedCategory);
+    if (selectedJobType !== 'all') params.append('contractType', selectedJobType);
+    
+    // Convert budget range to API parameters
+    if (selectedBudget !== 'all') {
+      switch (selectedBudget) {
+        case 'under-25':
+          params.append('maxBudget', '25');
+          break;
+        case '25-50':
+          params.append('minBudget', '25');
+          params.append('maxBudget', '50');
+          break;
+        case '50-100':
+          params.append('minBudget', '50');
+          params.append('maxBudget', '100');
+          break;
+        case 'over-100':
+          params.append('minBudget', '100');
+          break;
+      }
     }
-  ];
+    
+    return params.toString();
+  }, [searchQuery, selectedCategory, selectedJobType, selectedBudget]);
 
-  // Filter jobs based on current filters
-  const filteredJobs = mockJobs.filter(job => {
-    const matchesSearch = searchQuery === "" || 
-      job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.skills.some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase()));
-    
-    const matchesCategory = selectedCategory === "all" || job.category === selectedCategory;
-    const matchesLocation = selectedLocation === "all" || 
-      (selectedLocation === "remote" && job.location.toLowerCase().includes("remote")) ||
-      (selectedLocation === "us" && job.location.includes("CA") || job.location.includes("NY"));
-    
-    const matchesJobType = selectedJobType === "all" || job.type === selectedJobType;
-    
-    return matchesSearch && matchesCategory && matchesLocation && matchesJobType;
+  // Fetch real jobs from API instead of using mock data
+  const { data: jobsData = [], isLoading: jobsLoading, error: jobsError } = useQuery({
+    queryKey: ['/api/jobs/search', apiFilters],
+    enabled: true, // Always enabled to show available jobs
   });
+
+  // Fetch personalized job matches for authenticated users
+  const { data: matchesData = [], isLoading: matchesLoading } = useQuery({
+    queryKey: ['/api/matches', selectedCategory !== 'all' ? selectedCategory : ''],
+    enabled: !!user, // Only fetch if user is authenticated
+    queryFn: () => {
+      const matchParams = new URLSearchParams();
+      if (selectedCategory !== 'all') matchParams.append('category', selectedCategory);
+      const url = `/api/matches${matchParams.toString() ? '?' + matchParams.toString() : ''}`;
+      return fetch(url).then(res => res.ok ? res.json() : []);
+    }
+  });
+
+  // Transform API jobs data to match the expected Job interface
+  const transformApiJob = useCallback((apiJob: any): Job => {
+    const now = new Date();
+    const postedDate = apiJob.createdAt ? new Date(apiJob.createdAt) : now;
+    const timeAgo = Math.floor((now.getTime() - postedDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    let postedAtText = 'Just posted';
+    if (timeAgo === 0) postedAtText = 'Today';
+    else if (timeAgo === 1) postedAtText = '1 day ago';
+    else if (timeAgo < 7) postedAtText = `${timeAgo} days ago`;
+    else if (timeAgo < 30) postedAtText = `${Math.floor(timeAgo / 7)} weeks ago`;
+    else postedAtText = `${Math.floor(timeAgo / 30)} months ago`;
+
+    return {
+      id: apiJob.id,
+      title: apiJob.title,
+      company: `Client ${apiJob.clientId.slice(0, 8)}`, // Anonymized for privacy
+      location: "Remote", // Default for now
+      type: apiJob.contractType as "full-time" | "part-time" | "contract" | "freelance",
+      budget: {
+        min: apiJob.hourlyRateMin ? parseFloat(apiJob.hourlyRateMin) : (apiJob.budget ? parseFloat(apiJob.budget) : 0),
+        max: apiJob.hourlyRateMax ? parseFloat(apiJob.hourlyRateMax) : (apiJob.budget ? parseFloat(apiJob.budget) : 0),
+        type: apiJob.contractType === 'hourly' ? 'hourly' : 'fixed',
+        currency: apiJob.budgetCurrency || 'USD'
+      },
+      category: apiJob.category,
+      skills: apiJob.skills || [], // This comes from our enhanced API
+      description: apiJob.description,
+      requirements: apiJob.description ? [apiJob.description.slice(0, 100) + '...'] : [], // Simplified
+      postedAt: postedAtText,
+      applicants: apiJob.proposalCount || 0,
+      verified: true, // Assume verified for now
+      urgent: timeAgo <= 1, // Mark as urgent if posted today/yesterday
+      rating: 4.5, // Default rating
+      reviewCount: Math.floor(Math.random() * 100) + 10, // Random for now
+      paymentProtected: true,
+      verificationLevel: "business" as const,
+      featured: timeAgo <= 2, // Featured if very recent
+      responseTime: "< 24 hours",
+      hireRate: 85,
+      totalSpent: 50000,
+      companySize: "scale-up" as const
+    };
+  }, []);
+
+  // Process the real jobs data
+  const allJobs: Job[] = useMemo(() => {
+    if (jobsLoading || jobsError || !jobsData) return [];
+    return Array.isArray(jobsData) ? jobsData.map(transformApiJob) : [];
+  }, [jobsData, jobsLoading, jobsError, transformApiJob]);
+
+  // Jobs are now filtered on the backend via API parameters
+  // Apply only local location filter since it's not in API yet
+  const filteredJobs = useMemo(() => {
+    return allJobs.filter(job => {
+      const matchesLocation = selectedLocation === "all" || 
+        (selectedLocation === "remote" && job.location.toLowerCase().includes("remote")) ||
+        (selectedLocation === "us" && (job.location.includes("CA") || job.location.includes("NY")));
+      
+      return matchesLocation;
+    });
+  }, [allJobs, selectedLocation]);
+
+  // Transform matches data for display
+  const recommendedJobs: Job[] = useMemo(() => {
+    if (!matchesData || !Array.isArray(matchesData)) return [];
+    return matchesData.map((match: any) => transformApiJob(match.job));
+  }, [matchesData, transformApiJob]);
 
   const getJobTypeColor = (type: string) => {
     switch (type) {
@@ -277,9 +261,19 @@ export default function FindWork() {
                   size="lg" 
                   className="bg-[hsl(var(--gold-yellow))] text-black hover:bg-[hsl(var(--gold-yellow)/0.9)] font-semibold"
                   data-testid="button-search-jobs"
+                  disabled={jobsLoading}
                 >
-                  <Search className="w-5 h-5 mr-2" />
-                  Search Jobs
+                  {jobsLoading ? (
+                    <>
+                      <div className="w-5 h-5 mr-2 animate-spin rounded-full border-2 border-black border-t-transparent" />
+                      Searching...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="w-5 h-5 mr-2" />
+                      Search Jobs
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
@@ -306,6 +300,96 @@ export default function FindWork() {
 
           {/* Browse Jobs Tab */}
           <TabsContent value="browse" className="space-y-6">
+            {/* Recommended Jobs Section - Only show for authenticated users */}
+            {user && recommendedJobs.length > 0 && (
+              <div className="bg-gradient-to-r from-primary/5 to-purple-500/5 p-6 rounded-lg border">
+                <div className="flex items-center gap-2 mb-4">
+                  <Crown className="w-5 h-5 text-[hsl(var(--gold-yellow))]" />
+                  <h2 className="text-lg font-semibold">Recommended for You</h2>
+                  <Badge variant="secondary">Based on your skills</Badge>
+                </div>
+                
+                <div className="grid grid-cols-1 gap-4">
+                  {recommendedJobs.slice(0, 2).map((job) => (
+                    <Card key={job.id} className="hover-elevate">
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start gap-3">
+                              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                                {(() => {
+                                  const IconComponent = getCategoryInfo(job.category).icon;
+                                  return IconComponent ? <IconComponent className="w-6 h-6 text-primary" /> : null;
+                                })()}
+                              </div>
+                              
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h3 className="font-semibold truncate" data-testid={`job-title-${job.id}`}>
+                                    {job.title}
+                                  </h3>
+                                  <Badge className="bg-[hsl(var(--gold-yellow))] text-black text-xs">
+                                    Match
+                                  </Badge>
+                                </div>
+                                
+                                <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-2">
+                                  <span>{job.company}</span>
+                                  <span>•</span>
+                                  <span>{job.location}</span>
+                                  <span>•</span>
+                                  <span>{job.postedAt}</span>
+                                </div>
+
+                                <div className="flex flex-wrap gap-1 mb-2">
+                                  {job.skills.slice(0, 3).map((skill) => (
+                                    <Badge key={skill} variant="outline" className="text-xs">
+                                      {skill}
+                                    </Badge>
+                                  ))}
+                                  {job.skills.length > 3 && (
+                                    <Badge variant="outline" className="text-xs">
+                                      +{job.skills.length - 3} more
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex flex-col items-end gap-2 ml-4">
+                            <div className="text-right">
+                              <div className="text-lg font-bold text-green-600">
+                                ${job.budget.type === "hourly" 
+                                  ? `${job.budget.min}-${job.budget.max}/hr` 
+                                  : `${job.budget.min.toLocaleString()}`
+                                }
+                              </div>
+                              <Badge className={`${getJobTypeColor(job.type)} text-xs`}>
+                                {job.type.replace("-", " ")}
+                              </Badge>
+                            </div>
+                            
+                            <Button size="sm" data-testid={`apply-recommended-${job.id}`}>
+                              Apply Now
+                              <ArrowRight className="w-4 h-4 ml-1" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+                
+                {matchesLoading && (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="w-6 h-6 animate-spin rounded-full border-2 border-primary border-t-transparent mr-2" />
+                    Finding your perfect matches...
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Filters */}
             <div className="flex flex-wrap gap-4 items-center justify-between bg-muted/30 p-4 rounded-lg">
               <div className="flex flex-wrap gap-4">
@@ -363,7 +447,10 @@ export default function FindWork() {
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
                             <div className={`w-10 h-10 rounded-lg ${categoryInfo.color} flex items-center justify-center`}>
-                              <categoryInfo.icon className="w-5 h-5 text-white" />
+                              {(() => {
+                                const IconComponent = categoryInfo.icon;
+                                return <IconComponent className="w-5 h-5 text-white" />;
+                              })()}
                             </div>
                             <div>
                               <h3 className="text-xl font-semibold group-hover:text-primary transition-colors">
@@ -456,7 +543,7 @@ export default function FindWork() {
               })}
             </div>
 
-            {filteredJobs.length === 0 && (
+            {!jobsLoading && !jobsError && filteredJobs.length === 0 && (
               <div className="text-center py-12">
                 <div className="w-24 h-24 mx-auto mb-6 bg-muted rounded-full flex items-center justify-center">
                   <Search className="w-12 h-12 text-muted-foreground" />
@@ -484,7 +571,7 @@ export default function FindWork() {
           <TabsContent value="categories" className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {workCategories.map((category) => {
-                const jobsInCategory = mockJobs.filter(job => job.category === category.id);
+                const jobsInCategory = allJobs.filter(job => job.category === category.id);
                 const averageBudget = jobsInCategory.length > 0 
                   ? Math.round(jobsInCategory.reduce((sum, job) => sum + job.budget.min, 0) / jobsInCategory.length)
                   : 0;
@@ -494,7 +581,10 @@ export default function FindWork() {
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <div className={`w-12 h-12 rounded-lg ${category.color} flex items-center justify-center`}>
-                          <category.icon className="w-6 h-6 text-white" />
+                          {(() => {
+                            const IconComponent = category.icon;
+                            return <IconComponent className="w-6 h-6 text-white" />;
+                          })()}
                         </div>
                         <Badge variant="secondary">{jobsInCategory.length} jobs</Badge>
                       </div>
