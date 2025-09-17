@@ -54,6 +54,10 @@ export default function ProfileOnboarding({
 }: ProfileOnboardingProps) {
   const { toast } = useToast();
   const { user } = useAuth();
+  
+  console.log('🔧 ProfileOnboarding: user from auth:', user);
+  console.log('🔧 ProfileOnboarding: toast function:', typeof toast);
+  
   const {
     profile,
     skills,
@@ -489,16 +493,32 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
               data-testid="button-save-profile"
               onClick={async () => {
                 console.log('🔥 SAVE PROFILE: Starting save process');
+                console.log('🔧 Debug: user =', user);
+                console.log('🔧 Debug: toast =', toast);
                 
                 const formData = form.getValues();
                 console.log('📝 Form data:', formData);
                 console.log('🏷️ Selected skills:', skills);
                 
+                // Defensive check for user
+                if (!user?.id) {
+                  console.error('❌ Error: No user ID available');
+                  alert('Error: User not logged in properly. Please refresh and try again.');
+                  return;
+                }
+                
+                // Defensive check for toast
+                if (!toast) {
+                  console.error('❌ Error: Toast function not available');
+                  alert('Profile save starting...');
+                }
+                
                 try {
                   // Build profile payload
                   const profilePayload = {
                     ...formData,
-                    userId: user?.id
+                    userId: user.id,
+                    skills: skills
                   };
                   
                   console.log('📦 Profile payload:', profilePayload);
@@ -522,18 +542,29 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
                   const result = await response.json();
                   console.log('✅ Save successful:', result);
                   
-                  toast({
-                    title: "Profile saved successfully!",
-                    description: "Your professional profile has been saved."
-                  });
+                  // Use toast if available, otherwise alert
+                  if (toast) {
+                    toast({
+                      title: "Profile saved successfully!",
+                      description: "Your professional profile has been saved."
+                    });
+                  } else {
+                    alert('Profile saved successfully!');
+                  }
                   
                 } catch (error: any) {
                   console.error('❌ Save error:', error);
-                  toast({
-                    title: "Error saving profile",
-                    description: error?.message || "Please try again later.",
-                    variant: "destructive"
-                  });
+                  
+                  // Use toast if available, otherwise alert
+                  if (toast) {
+                    toast({
+                      title: "Error saving profile",
+                      description: error?.message || "Please try again later.",
+                      variant: "destructive"
+                    });
+                  } else {
+                    alert(`Error saving profile: ${error?.message || "Please try again later."}`);
+                  }
                 }
               }}
             >
