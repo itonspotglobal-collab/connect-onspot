@@ -146,7 +146,7 @@ export function useTalentProfile() {
     mutationFn: async (data: ProfileFormData) => {
       const profileData = { ...data, userId: user?.id };
       return profile 
-        ? apiRequest('PUT', `/api/profiles/${profile.id}`, profileData)
+        ? apiRequest('PATCH', `/api/profiles/${profile.id}`, profileData)
         : apiRequest('POST', '/api/profiles', profileData);
     },
     onSuccess: () => {
