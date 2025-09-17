@@ -3,7 +3,9 @@ import { LoginDialog } from "@/components/LoginDialog";
 import { SignUpDialog } from "@/components/SignUpDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect, useRef } from "react";
-import { ChevronDown, Users, Zap, Building, User, Bot, ArrowRight, CheckCircle2, Code, PenTool, BarChart3, Headphones, Globe, Camera, FileText, Star, Info, Settings, Layers, Calculator } from "lucide-react";
+import { ChevronDown, Users, Zap, Building, User, Bot, ArrowRight, CheckCircle2, Code, PenTool, BarChart3, Headphones, Globe, Camera, FileText, Star, Info, Settings, Layers, Calculator, LogOut, Loader2 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -221,9 +223,10 @@ const navigationItems = [
 
 export function TopNavigation() {
   const [location] = useLocation();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading, user, logout } = useAuth();
   const [isVisible, setIsVisible] = useState(true);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const lastScrollY = useRef(0);
   const ticking = useRef(false);
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -712,13 +715,136 @@ export function TopNavigation() {
           })}
         </div>
 
-        {/* Auth Buttons - only show if not authenticated */}
-        {!isAuthenticated && (
-          <div className="flex items-center gap-3 relative z-10">
-            <LoginDialog />
-            <SignUpDialog />
-          </div>
-        )}
+        {/* Authentication Section */}
+        <div className="flex items-center gap-3 relative z-10">
+          {isLoading ? (
+            // Loading state during authentication check
+            <div className="flex items-center gap-2 px-3 py-2 text-sm text-white/80" data-testid="auth-loading">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Loading...</span>
+            </div>
+          ) : isAuthenticated && user ? (
+            // Authenticated user menu
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="flex items-center gap-2 px-3 py-2 text-white hover:bg-white/10 border border-white/30 rounded-lg"
+                  data-testid="user-menu-trigger"
+                >
+                  <Avatar className="w-8 h-8">
+                    <AvatarImage src={user.profileImageUrl || undefined} alt={user.firstName || user.email} />
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                      {user.firstName ? user.firstName.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col items-start text-left">
+                    <span className="text-sm font-medium">
+                      {user.firstName || user.username || user.email.split('@')[0]}
+                    </span>
+                    <span className="text-xs text-white/70 capitalize">
+                      {user.userType || user.role}
+                    </span>
+                  </div>
+                  <ChevronDown className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="flex items-center gap-2">
+                  <Avatar className="w-6 h-6">
+                    <AvatarImage src={user.profileImageUrl || undefined} alt={user.firstName || user.email} />
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                      {user.firstName ? user.firstName.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">
+                      {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.firstName || user.username || 'User'}
+                    </span>
+                    <span className="text-xs text-muted-foreground">{user.email}</span>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                
+                {/* Navigation based on user type */}
+                {user.userType === 'client' ? (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard" className="w-full" data-testid="menu-dashboard">
+                        <BarChart3 className="w-4 h-4 mr-2" />
+                        Dashboard
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/talent" className="w-full" data-testid="menu-find-talent">
+                        <Users className="w-4 h-4 mr-2" />
+                        Find Talent
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
+                ) : (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link href="/get-hired" className="w-full" data-testid="menu-talent-portal">
+                        <User className="w-4 h-4 mr-2" />
+                        Talent Portal
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/find-work" className="w-full" data-testid="menu-find-work">
+                        <Zap className="w-4 h-4 mr-2" />
+                        Find Work
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
+                )}
+                
+                <DropdownMenuItem asChild>
+                  <Link href="/settings" className="w-full" data-testid="menu-settings">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Settings
+                  </Link>
+                </DropdownMenuItem>
+                
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={async () => {
+                    setIsLoggingOut(true);
+                    try {
+                      await logout();
+                      console.log('✅ User logged out successfully');
+                    } catch (error) {
+                      console.error('❌ Logout failed:', error);
+                    } finally {
+                      setIsLoggingOut(false);
+                    }
+                  }}
+                  className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950"
+                  data-testid="menu-logout"
+                  disabled={isLoggingOut}
+                >
+                  {isLoggingOut ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Logging out...
+                    </>
+                  ) : (
+                    <>
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Sign Out
+                    </>
+                  )}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            // Not authenticated - show login/signup buttons
+            <>
+              <LoginDialog />
+              <SignUpDialog />
+            </>
+          )}
+        </div>
       </div>
 
       {/* Mobile Navigation */}

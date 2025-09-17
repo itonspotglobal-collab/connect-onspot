@@ -134,28 +134,68 @@ export async function setupAuth(app: Express) {
 
 // Setup Google and LinkedIn OAuth strategies
 async function setupOAuthStrategies(app: Express) {
-  // Update passport serialization to handle OAuth users
+  // CRITICAL FIX: Updated passport serialization to handle all user types consistently
   passport.serializeUser((user: any, cb) => {
+    console.log('🔐 Serializing user:', { 
+      hasUser: !!user.user, 
+      provider: user.provider,
+      userType: typeof user,
+      keys: Object.keys(user)
+    });
+    
     if (user.user) {
-      // OAuth user structure
-      cb(null, { id: user.user.id, provider: user.provider });
-    } else {
+      // OAuth/Dev user structure with nested user object
+      cb(null, { 
+        id: user.user.id, 
+        provider: user.provider || 'unknown',
+        type: 'oauth'
+      });
+    } else if (user.claims) {
       // Replit Auth user structure
-      cb(null, user);
+      cb(null, { 
+        id: user.claims.sub, 
+        provider: 'replit',
+        type: 'replit'
+      });
+    } else {
+      // Fallback - direct user object
+      console.warn('⚠️ Unknown user structure during serialization:', user);
+      cb(null, { 
+        id: user.id || user.sub || 'unknown', 
+        provider: user.provider || 'unknown',
+        type: 'fallback'
+      });
     }
   });
 
   passport.deserializeUser(async (serializedUser: any, cb) => {
     try {
-      if (serializedUser.id && serializedUser.provider) {
-        // OAuth user - fetch from storage
-        const user = await storage.getUser(serializedUser.id);
-        cb(null, user ? { user, provider: serializedUser.provider } : null);
-      } else {
-        // Replit Auth user
-        cb(null, serializedUser);
+      console.log('🔐 Deserializing user:', serializedUser);
+      
+      const { id, provider, type } = serializedUser;
+      
+      if (!id) {
+        console.error('❌ No user ID found during deserialization');
+        return cb(null, null);
       }
+
+      // Fetch user from storage
+      const user = await storage.getUser(id);
+      if (!user) {
+        console.warn(`⚠️ User not found in storage: ${id}`);
+        return cb(null, null);
+      }
+
+      console.log('✅ User successfully deserialized:', { id: user.id, email: user.email, provider });
+      
+      // Return user with consistent structure
+      cb(null, { 
+        user, 
+        provider: provider || 'unknown',
+        type: type || 'unknown'
+      });
     } catch (error) {
+      console.error('❌ Error during user deserialization:', error);
       cb(error, null);
     }
   });
@@ -178,7 +218,7 @@ async function setupOAuthStrategies(app: Express) {
         const email = profile.emails?.[0]?.value;
         if (!email) {
           console.error('Google OAuth: No email found in profile');
-          return done(new Error('Google account must have a verified email address'), null);
+          return done(new Error('Google account must have a verified email address'), false);
         }
 
         // Create or update user in storage
@@ -196,7 +236,7 @@ async function setupOAuthStrategies(app: Express) {
         return done(null, { user, accessToken, provider: 'google' });
       } catch (error) {
         console.error('Google OAuth error:', error);
-        return done(error, null);
+        return done(error, false);
       }
     }));
 
@@ -237,7 +277,7 @@ async function setupOAuthStrategies(app: Express) {
         console.log('LinkedIn OAuth callback triggered for profile:', profile.id);
         
         // Extract user information from LinkedIn profile
-        const email = profile.emails?.[0]?.value || profile.email;
+        const email = profile.emails?.[0]?.value;
         if (!email) {
           console.error('LinkedIn OAuth: No email found in profile');
           return done(new Error('LinkedIn account must have a verified email address. Please ensure your LinkedIn email is verified and public.'), null);
@@ -258,7 +298,7 @@ async function setupOAuthStrategies(app: Express) {
         return done(null, { user, accessToken, provider: 'linkedin' });
       } catch (error) {
         console.error('LinkedIn OAuth error:', error);
-        return done(error, null);
+        return done(error, false);
       }
     }));
 
