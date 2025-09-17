@@ -702,3 +702,81 @@ export type Notification = typeof notifications.$inferSelect;
 
 // Replit Auth types for user management
 export type UpsertUser = typeof users.$inferInsert;
+
+// CSV Talent Import Schemas
+export const csvTalentRowSchema = z.object({
+  firstName: z.string().min(1, "First name is required").max(100),
+  lastName: z.string().min(1, "Last name is required").max(100),
+  email: z.string().email("Valid email address required"),
+  title: z.string().min(1, "Professional title is required").max(200),
+  bio: z.string().min(10, "Bio must be at least 10 characters").max(2000),
+  location: z.string().default("Global").optional(),
+  hourlyRate: z.union([z.string(), z.number()]).transform((val) => {
+    const num = typeof val === 'string' ? parseFloat(val.replace(/[^\d.-]/g, '')) : val;
+    return isNaN(num) ? undefined : num;
+  }).optional(),
+  rateCurrency: z.enum(["USD", "PHP"]).default("USD").optional(),
+  availability: z.enum(["available", "busy", "offline"]).default("available").optional(),
+  phoneNumber: z.string().optional(),
+  languages: z.string().transform((val) => {
+    if (!val) return ["English"];
+    return val.split(',').map(lang => lang.trim()).filter(lang => lang.length > 0);
+  }).default("English").optional(),
+  timezone: z.string().default("Asia/Manila").optional(),
+  skills: z.string().transform((val) => {
+    if (!val) return [];
+    return val.split(',').map(skill => skill.trim()).filter(skill => skill.length > 0);
+  }).default("").optional(),
+});
+
+export const csvBulkImportSchema = z.object({
+  rows: z.array(csvTalentRowSchema).min(1, "At least one talent row is required"),
+  validateOnly: z.boolean().default(false),
+  skipDuplicateEmails: z.boolean().default(true),
+});
+
+export const csvImportResultSchema = z.object({
+  success: z.boolean(),
+  totalRows: z.number(),
+  successfulRows: z.number(),
+  failedRows: z.number(),
+  results: z.array(z.object({
+    rowIndex: z.number(),
+    email: z.string(),
+    success: z.boolean(),
+    userId: z.string().optional(),
+    profileId: z.string().optional(),
+    error: z.string().optional(),
+    warnings: z.array(z.string()).default([]),
+  })),
+  duplicateEmails: z.array(z.string()).default([]),
+  skillsCreated: z.array(z.string()).default([]),
+  summary: z.object({
+    usersCreated: z.number(),
+    profilesCreated: z.number(),
+    skillsLinked: z.number(),
+    duplicatesSkipped: z.number(),
+    errors: z.number(),
+  }),
+});
+
+export const csvTemplateSchema = z.object({
+  headers: z.array(z.string()),
+  sampleData: z.array(z.record(z.string())),
+  fieldDescriptions: z.record(z.string()),
+  requiredFields: z.array(z.string()),
+  optionalFields: z.array(z.string()),
+});
+
+// CSV Import Types
+export type CsvTalentRow = z.infer<typeof csvTalentRowSchema>;
+export type CsvBulkImport = z.infer<typeof csvBulkImportSchema>;
+export type CsvImportResult = z.infer<typeof csvImportResultSchema>;
+export type CsvTemplate = z.infer<typeof csvTemplateSchema>;
+
+// Bulk talent creation helper type
+export type BulkTalentData = {
+  user: InsertUser;
+  profile: Omit<InsertProfile, 'userId'>;
+  skills: string[];
+};

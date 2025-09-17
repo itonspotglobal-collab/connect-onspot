@@ -28,10 +28,10 @@ export function ProtectedRoute({
         return;
       }
 
-      if (requiredRole && user?.userType !== requiredRole) {
-        console.log(`🚫 ProtectedRoute: User role "${user?.userType}" doesn't match required "${requiredRole}"`);
+      if (requiredRole && user?.role !== requiredRole) {
+        console.log(`🚫 ProtectedRoute: User role "${user?.role}" doesn't match required "${requiredRole}"`);
         // Redirect based on user's actual role
-        if (user?.userType === 'talent') {
+        if (user?.role === 'talent') {
           setLocation('/get-hired');
         } else {
           setLocation('/dashboard');
@@ -41,7 +41,7 @@ export function ProtectedRoute({
 
       console.log('✅ ProtectedRoute: Access granted for user:', { 
         id: user?.id, 
-        role: user?.userType,
+        role: user?.role,
         requiredRole 
       });
     }
@@ -65,7 +65,7 @@ export function ProtectedRoute({
   }
 
   // Don't render children if role doesn't match (will be redirected in useEffect)
-  if (requiredRole && user?.userType !== requiredRole) {
+  if (requiredRole && user?.role !== requiredRole) {
     return null;
   }
 
@@ -92,6 +92,18 @@ export function TalentProtectedRoute({ children }: { children: ReactNode }) {
       requiredRole="talent" 
       fallbackPath="/get-hired"
       loadingMessage="Loading talent portal..."
+    >
+      {children}
+    </ProtectedRoute>
+  );
+}
+
+export function AdminProtectedRoute({ children }: { children: ReactNode }) {
+  return (
+    <ProtectedRoute 
+      requiredRole="admin" 
+      fallbackPath="/dashboard"
+      loadingMessage="Verifying admin access..."
     >
       {children}
     </ProtectedRoute>

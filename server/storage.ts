@@ -17,7 +17,8 @@ import {
   type Payment, type InsertPayment,
   type Dispute, type InsertDispute,
   type Notification, type InsertNotification,
-  type LeadIntake, type InsertLeadIntake
+  type LeadIntake, type InsertLeadIntake,
+  type CsvTalentRow, type CsvBulkImport, type CsvImportResult, type CsvTemplate, type BulkTalentData
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -198,6 +199,23 @@ export interface IStorage {
   updateLeadIntake(id: string, updates: Partial<InsertLeadIntake>): Promise<LeadIntake | undefined>;
   searchLeadIntakes(filters: { status?: string; email?: string; createdAfter?: Date }): Promise<LeadIntake[]>;
   listLeadIntakesByStatus(status: string): Promise<LeadIntake[]>;
+
+  // CSV Bulk Talent Import
+  bulkCreateTalents(talentData: BulkTalentData[]): Promise<CsvImportResult>;
+  validateCsvTalentRows(rows: CsvTalentRow[]): Promise<{
+    validRows: BulkTalentData[];
+    errors: Array<{ rowIndex: number; email: string; errors: string[]; }>;
+    duplicateEmails: string[];
+  }>;
+  createTalentFromCsvRow(csvRow: CsvTalentRow, rowIndex: number): Promise<{
+    success: boolean;
+    userId?: string;
+    profileId?: string;
+    error?: string;
+    warnings: string[];
+  }>;
+  ensureSkillsExist(skillNames: string[]): Promise<Skill[]>;
+  getUserByEmail(email: string): Promise<User | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -1569,6 +1587,287 @@ export class MemStorage implements IStorage {
     }
 
     return Math.min(100, score); // Cap at 100
+  }
+
+  // CSV Bulk Talent Import Methods
+  async bulkCreateTalents(talentData: BulkTalentData[]): Promise<CsvImportResult> {
+    const results: CsvImportResult['results'] = [];
+    const duplicateEmails: string[] = [];
+    const skillsCreatedSet = new Set<string>();
+    let usersCreated = 0;
+    let profilesCreated = 0;
+    let skillsLinked = 0;
+    let duplicatesSkipped = 0;
+    let errors = 0;
+
+    for (let i = 0; i < talentData.length; i++) {
+      const talent = talentData[i];
+      try {
+        // Check for duplicate email
+        const existingUser = await this.getUserByEmail(talent.user.email!);
+        if (existingUser) {
+          duplicateEmails.push(talent.user.email!);
+          duplicatesSkipped++;
+          results.push({
+            rowIndex: i,
+            email: talent.user.email!,
+            success: false,
+            error: "Email already exists",
+            warnings: [],
+          });
+          continue;
+        }
+
+        // Create user
+        const newUser = await this.createUser(talent.user);
+        usersCreated++;
+
+        // Create profile
+        const profileData = { ...talent.profile, userId: newUser.id };
+        const newProfile = await this.createProfile(profileData);
+        profilesCreated++;
+
+        // Handle skills if provided
+        if (talent.skills && talent.skills.length > 0) {
+          const skillObjects = await this.ensureSkillsExist(talent.skills);
+          
+          // Create user skills associations
+          for (const skill of skillObjects) {
+            skillsCreatedSet.add(skill.name);
+            await this.createUserSkill({
+              userId: newUser.id,
+              skillId: skill.id,
+              level: "intermediate",
+              yearsExperience: 0,
+            });
+            skillsLinked++;
+          }
+        }
+
+        results.push({
+          rowIndex: i,
+          email: talent.user.email!,
+          success: true,
+          userId: newUser.id,
+          profileId: newProfile.id,
+          warnings: [],
+        });
+
+      } catch (error) {
+        errors++;
+        results.push({
+          rowIndex: i,
+          email: talent.user.email!,
+          success: false,
+          error: error instanceof Error ? error.message : "Unknown error",
+          warnings: [],
+        });
+      }
+    }
+
+    return {
+      success: errors === 0,
+      totalRows: talentData.length,
+      successfulRows: usersCreated,
+      failedRows: errors,
+      results,
+      duplicateEmails,
+      skillsCreated: Array.from(skillsCreatedSet),
+      summary: {
+        usersCreated,
+        profilesCreated,
+        skillsLinked,
+        duplicatesSkipped,
+        errors,
+      },
+    };
+  }
+
+  async validateCsvTalentRows(rows: CsvTalentRow[]): Promise<{
+    validRows: BulkTalentData[];
+    errors: Array<{ rowIndex: number; email: string; errors: string[]; }>;
+    duplicateEmails: string[];
+  }> {
+    const validRows: BulkTalentData[] = [];
+    const errors: Array<{ rowIndex: number; email: string; errors: string[]; }> = [];
+    const duplicateEmails: string[] = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const rowErrors: string[] = [];
+
+      // Check for duplicate email
+      const existingUser = await this.getUserByEmail(row.email);
+      if (existingUser) {
+        duplicateEmails.push(row.email);
+        rowErrors.push("Email already exists");
+      }
+
+      // Validate required fields
+      if (!row.firstName || row.firstName.trim().length === 0) {
+        rowErrors.push("First name is required");
+      }
+      if (!row.lastName || row.lastName.trim().length === 0) {
+        rowErrors.push("Last name is required");
+      }
+      if (!row.title || row.title.trim().length === 0) {
+        rowErrors.push("Professional title is required");
+      }
+      if (!row.bio || row.bio.trim().length < 10) {
+        rowErrors.push("Bio must be at least 10 characters");
+      }
+
+      if (rowErrors.length > 0) {
+        errors.push({ rowIndex: i, email: row.email, errors: rowErrors });
+        continue;
+      }
+
+      // Create valid BulkTalentData
+      const user: InsertUser = {
+        email: row.email,
+        firstName: row.firstName,
+        lastName: row.lastName,
+        role: "talent",
+      };
+
+      const profile: Omit<InsertProfile, 'userId'> = {
+        firstName: row.firstName,
+        lastName: row.lastName,
+        title: row.title,
+        bio: row.bio,
+        location: row.location || "Global",
+        hourlyRate: row.hourlyRate?.toString(),
+        rateCurrency: row.rateCurrency || "USD",
+        availability: row.availability || "available",
+        phoneNumber: row.phoneNumber,
+        languages: row.languages || ["English"],
+        timezone: row.timezone || "Asia/Manila",
+      };
+
+      validRows.push({
+        user,
+        profile,
+        skills: row.skills || [],
+      });
+    }
+
+    return { validRows, errors, duplicateEmails };
+  }
+
+  async createTalentFromCsvRow(csvRow: CsvTalentRow, rowIndex: number): Promise<{
+    success: boolean;
+    userId?: string;
+    profileId?: string;
+    error?: string;
+    warnings: string[];
+  }> {
+    const warnings: string[] = [];
+
+    try {
+      // Check for duplicate email
+      const existingUser = await this.getUserByEmail(csvRow.email);
+      if (existingUser) {
+        return {
+          success: false,
+          error: "Email already exists",
+          warnings,
+        };
+      }
+
+      // Create user
+      const user: InsertUser = {
+        email: csvRow.email,
+        firstName: csvRow.firstName,
+        lastName: csvRow.lastName,
+        role: "talent",
+      };
+
+      const newUser = await this.createUser(user);
+
+      // Create profile
+      const profile: InsertProfile = {
+        userId: newUser.id,
+        firstName: csvRow.firstName,
+        lastName: csvRow.lastName,
+        title: csvRow.title,
+        bio: csvRow.bio,
+        location: csvRow.location || "Global",
+        hourlyRate: csvRow.hourlyRate?.toString(),
+        rateCurrency: csvRow.rateCurrency || "USD",
+        availability: csvRow.availability || "available",
+        phoneNumber: csvRow.phoneNumber,
+        languages: csvRow.languages || ["English"],
+        timezone: csvRow.timezone || "Asia/Manila",
+      };
+
+      const newProfile = await this.createProfile(profile);
+
+      // Handle skills if provided
+      if (csvRow.skills && csvRow.skills.length > 0) {
+        try {
+          const skillObjects = await this.ensureSkillsExist(csvRow.skills);
+          
+          for (const skill of skillObjects) {
+            await this.createUserSkill({
+              userId: newUser.id,
+              skillId: skill.id,
+              level: "intermediate",
+              yearsExperience: 0,
+            });
+          }
+          
+          if (skillObjects.length !== csvRow.skills.length) {
+            warnings.push(`Some skills could not be processed`);
+          }
+        } catch (skillError) {
+          warnings.push(`Error processing skills: ${skillError instanceof Error ? skillError.message : 'Unknown error'}`);
+        }
+      }
+
+      return {
+        success: true,
+        userId: newUser.id,
+        profileId: newProfile.id,
+        warnings,
+      };
+
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+        warnings,
+      };
+    }
+  }
+
+  async ensureSkillsExist(skillNames: string[]): Promise<Skill[]> {
+    const skills: Skill[] = [];
+
+    for (const skillName of skillNames) {
+      const normalizedName = skillName.trim();
+      if (normalizedName.length === 0) continue;
+
+      // Check if skill already exists
+      let existingSkill = await this.getSkillByName(normalizedName);
+      
+      if (!existingSkill) {
+        // Create new skill with default category
+        const newSkill = await this.createSkill({
+          name: normalizedName,
+          category: "Technical", // Default category, could be improved with categorization logic
+        });
+        skills.push(newSkill);
+      } else {
+        skills.push(existingSkill);
+      }
+    }
+
+    return skills;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const allUsers = Array.from(this.users.values());
+    return allUsers.find(user => user.email === email);
   }
 }
 

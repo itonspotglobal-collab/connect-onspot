@@ -4,12 +4,15 @@ import * as Sentry from "@sentry/node";
 import { storage } from "./storage";
 import { isAuthenticated } from "./replitAuth";
 import { ghlService } from "./services/ghlService";
+import multer from "multer";
+import Papa from "papaparse";
 import {
   insertUserSchema, insertProfileSchema, insertSkillSchema, insertUserSkillSchema,
   insertJobSchema, insertJobSkillSchema, insertProposalSchema, insertContractSchema,
   insertMilestoneSchema, insertTimeEntrySchema, insertMessageThreadSchema, insertMessageSchema,
   insertReviewSchema, insertPortfolioItemSchema, insertCertificationSchema, insertPaymentSchema,
-  insertDisputeSchema, insertNotificationSchema, insertLeadIntakeSchema
+  insertDisputeSchema, insertNotificationSchema, insertLeadIntakeSchema,
+  csvTalentRowSchema, csvBulkImportSchema, csvImportResultSchema, csvTemplateSchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -1533,6 +1536,321 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
       });
     }
   });
+
+  // Configure multer for CSV file uploads
+  const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+      fileSize: 10 * 1024 * 1024, // 10MB limit
+    },
+    fileFilter: (req, file, cb) => {
+      if (file.mimetype === 'text/csv' || file.originalname.endsWith('.csv')) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only CSV files are allowed'));
+      }
+    }
+  });
+
+  // CSV Talent Import Routes
+  
+  // Get CSV template for talent import
+  app.get('/api/admin/csv-import/template', async (req: any, res) => {
+    try {
+      // Admin authentication check
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({
+          error: "Authentication required",
+          message: "Please log in to access this resource",
+          requestId: req.requestId
+        });
+      }
+
+      const user = (req.user as any)?.user || await storage.getUser((req.user as any)?.claims?.sub);
+      if (!user || user.role !== 'admin') {
+        return res.status(403).json({
+          error: "Access denied",
+          message: "Admin access required for CSV import",
+          requestId: req.requestId
+        });
+      }
+
+      const template = {
+        headers: [
+          'firstName', 'lastName', 'email', 'title', 'bio', 'location', 
+          'hourlyRate', 'rateCurrency', 'availability', 'phoneNumber', 
+          'languages', 'timezone', 'skills'
+        ],
+        sampleData: [
+          {
+            firstName: 'John',
+            lastName: 'Doe',
+            email: 'john.doe@example.com',
+            title: 'Senior Software Engineer',
+            bio: 'Experienced full-stack developer with expertise in React, Node.js, and cloud technologies. Passionate about building scalable applications.',
+            location: 'Manila, Philippines',
+            hourlyRate: '25.00',
+            rateCurrency: 'USD',
+            availability: 'available',
+            phoneNumber: '+63 9123456789',
+            languages: 'English, Filipino',
+            timezone: 'Asia/Manila',
+            skills: 'JavaScript, React, Node.js, AWS, MongoDB'
+          },
+          {
+            firstName: 'Maria',
+            lastName: 'Santos',
+            email: 'maria.santos@example.com',
+            title: 'Digital Marketing Specialist',
+            bio: 'Creative marketing professional with 5+ years of experience in social media marketing, content creation, and campaign management.',
+            location: 'Cebu, Philippines',
+            hourlyRate: '20.00',
+            rateCurrency: 'USD',
+            availability: 'available',
+            phoneNumber: '+63 9876543210',
+            languages: 'English, Filipino, Cebuano',
+            timezone: 'Asia/Manila',
+            skills: 'Social Media Marketing, Content Writing, Google Ads, SEO, Canva'
+          }
+        ],
+        fieldDescriptions: {
+          firstName: 'Required. First name of the talent (max 100 characters)',
+          lastName: 'Required. Last name of the talent (max 100 characters)',
+          email: 'Required. Valid email address (must be unique)',
+          title: 'Required. Professional title or job position (max 200 characters)',
+          bio: 'Required. Professional biography or summary (minimum 10 characters, max 2000)',
+          location: 'Optional. Geographic location (default: "Global")',
+          hourlyRate: 'Optional. Numeric hourly rate (e.g., "25.00")',
+          rateCurrency: 'Optional. Currency code: "USD" or "PHP" (default: "USD")',
+          availability: 'Optional. Status: "available", "busy", or "offline" (default: "available")',
+          phoneNumber: 'Optional. Contact phone number',
+          languages: 'Optional. Comma-separated languages (default: "English")',
+          timezone: 'Optional. Timezone identifier (default: "Asia/Manila")',
+          skills: 'Optional. Comma-separated list of skills'
+        },
+        requiredFields: ['firstName', 'lastName', 'email', 'title', 'bio'],
+        optionalFields: ['location', 'hourlyRate', 'rateCurrency', 'availability', 'phoneNumber', 'languages', 'timezone', 'skills']
+      };
+
+      res.json(template);
+    } catch (error) {
+      handleRouteError(error, req, res, "Get CSV template", 500);
+    }
+  });
+
+  // Download CSV template file
+  app.get('/api/admin/csv-import/template/download', async (req: any, res) => {
+    try {
+      // Admin authentication check
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({
+          error: "Authentication required",
+          requestId: req.requestId
+        });
+      }
+
+      const user = (req.user as any)?.user || await storage.getUser((req.user as any)?.claims?.sub);
+      if (!user || user.role !== 'admin') {
+        return res.status(403).json({
+          error: "Access denied",
+          message: "Admin access required for CSV import",
+          requestId: req.requestId
+        });
+      }
+
+      const csvHeaders = [
+        'firstName', 'lastName', 'email', 'title', 'bio', 'location',
+        'hourlyRate', 'rateCurrency', 'availability', 'phoneNumber',
+        'languages', 'timezone', 'skills'
+      ];
+
+      const sampleRow = [
+        'John', 'Doe', 'john.doe@example.com', 'Senior Software Engineer',
+        'Experienced full-stack developer with expertise in React and Node.js',
+        'Manila, Philippines', '25.00', 'USD', 'available', '+63 9123456789',
+        'English, Filipino', 'Asia/Manila', 'JavaScript, React, Node.js'
+      ];
+
+      const csvContent = Papa.unparse([csvHeaders, sampleRow]);
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="onspot_talent_import_template.csv"');
+      res.send(csvContent);
+    } catch (error) {
+      handleRouteError(error, req, res, "Download CSV template", 500);
+    }
+  });
+
+  // Validate CSV data before import
+  app.post('/api/admin/csv-import/validate', 
+    upload.single('csvFile'),
+    async (req: any, res) => {
+      try {
+        // Admin authentication check
+        if (!req.isAuthenticated()) {
+          return res.status(401).json({
+            error: "Authentication required",
+            requestId: req.requestId
+          });
+        }
+
+        const user = (req.user as any)?.user || await storage.getUser((req.user as any)?.claims?.sub);
+        if (!user || user.role !== 'admin') {
+          return res.status(403).json({
+            error: "Access denied",
+            message: "Admin access required for CSV import",
+            requestId: req.requestId
+          });
+        }
+
+        if (!req.file) {
+          return res.status(400).json({
+            error: "No CSV file provided",
+            requestId: req.requestId
+          });
+        }
+
+        console.log(`📊 CSV validation started [${req.requestId}]:`, {
+          fileName: req.file.originalname,
+          fileSize: req.file.size,
+          userId: user.id
+        });
+
+        // Parse CSV
+        const csvContent = req.file.buffer.toString('utf-8');
+        const parseResult = Papa.parse(csvContent, {
+          header: true,
+          skipEmptyLines: true,
+          transformHeader: (header) => header.trim(),
+        });
+
+        if (parseResult.errors && parseResult.errors.length > 0) {
+          return res.status(400).json({
+            error: "CSV parsing failed",
+            message: "Invalid CSV format",
+            details: parseResult.errors,
+            requestId: req.requestId
+          });
+        }
+
+        // Validate each row
+        const validationResult = await storage.validateCsvTalentRows(parseResult.data);
+
+        console.log(`✅ CSV validation completed [${req.requestId}]:`, {
+          totalRows: parseResult.data.length,
+          validRows: validationResult.validRows.length,
+          errorRows: validationResult.errors.length,
+          duplicateEmails: validationResult.duplicateEmails.length
+        });
+
+        res.json({
+          success: validationResult.errors.length === 0,
+          totalRows: parseResult.data.length,
+          validRows: validationResult.validRows.length,
+          errorRows: validationResult.errors.length,
+          errors: validationResult.errors,
+          duplicateEmails: validationResult.duplicateEmails,
+          sampleValidRows: validationResult.validRows.slice(0, 3), // Show first 3 for preview
+          requestId: req.requestId
+        });
+
+      } catch (error) {
+        handleRouteError(error, req, res, "Validate CSV data", 500);
+      }
+    }
+  );
+
+  // Import CSV talents
+  app.post('/api/admin/csv-import/import',
+    upload.single('csvFile'),
+    validateRequest(z.object({
+      skipDuplicateEmails: z.string().optional().transform(val => val === 'true')
+    }), 'body'),
+    async (req: any, res) => {
+      try {
+        // Admin authentication check
+        if (!req.isAuthenticated()) {
+          return res.status(401).json({
+            error: "Authentication required",
+            requestId: req.requestId
+          });
+        }
+
+        const user = (req.user as any)?.user || await storage.getUser((req.user as any)?.claims?.sub);
+        if (!user || user.role !== 'admin') {
+          return res.status(403).json({
+            error: "Access denied",
+            message: "Admin access required for CSV import",
+            requestId: req.requestId
+          });
+        }
+
+        if (!req.file) {
+          return res.status(400).json({
+            error: "No CSV file provided",
+            requestId: req.requestId
+          });
+        }
+
+        const { skipDuplicateEmails = true } = req.body;
+
+        console.log(`📈 CSV talent import started [${req.requestId}]:`, {
+          fileName: req.file.originalname,
+          fileSize: req.file.size,
+          skipDuplicateEmails,
+          userId: user.id
+        });
+
+        // Parse CSV
+        const csvContent = req.file.buffer.toString('utf-8');
+        const parseResult = Papa.parse(csvContent, {
+          header: true,
+          skipEmptyLines: true,
+          transformHeader: (header) => header.trim(),
+        });
+
+        if (parseResult.errors && parseResult.errors.length > 0) {
+          return res.status(400).json({
+            error: "CSV parsing failed",
+            message: "Invalid CSV format",
+            details: parseResult.errors,
+            requestId: req.requestId
+          });
+        }
+
+        // Validate and process
+        const validationResult = await storage.validateCsvTalentRows(parseResult.data);
+        
+        // Filter out duplicates if requested
+        let talentDataToImport = validationResult.validRows;
+        if (skipDuplicateEmails) {
+          // Remove rows with duplicate emails from import
+          const duplicateEmailsSet = new Set(validationResult.duplicateEmails);
+          talentDataToImport = validationResult.validRows.filter(row => 
+            !duplicateEmailsSet.has(row.user.email!)
+          );
+        }
+
+        // Perform bulk import
+        const importResult = await storage.bulkCreateTalents(talentDataToImport);
+
+        console.log(`✅ CSV talent import completed [${req.requestId}]:`, {
+          totalProcessed: importResult.totalRows,
+          successful: importResult.successfulRows,
+          failed: importResult.failedRows,
+          duplicatesSkipped: importResult.summary.duplicatesSkipped
+        });
+
+        res.json({
+          ...importResult,
+          requestId: req.requestId
+        });
+
+      } catch (error) {
+        handleRouteError(error, req, res, "Import CSV talents", 500);
+      }
+    }
+  );
 
   const httpServer = createServer(app);
   return httpServer;
