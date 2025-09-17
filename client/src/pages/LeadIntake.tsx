@@ -510,22 +510,40 @@ export default function LeadIntake() {
                   <div>
                     <h3 className="text-xl font-semibold mb-2">Thank You!</h3>
                     <p className="text-muted-foreground mb-4">
-                      We've received your information and our team will contact you within 24 hours to schedule your free consultation.
+                      We've received your information! Ready to take the next step?
                     </p>
-                    <div className="bg-muted/50 p-4 rounded-lg">
+                    <div className="bg-muted/50 p-4 rounded-lg mb-6">
                       <p className="text-sm text-muted-foreground">
                         <strong>What's next?</strong><br/>
-                        Our BPO experts will review your requirements and prepare a custom solution proposal for your consultation call.
+                        Schedule your free consultation call with our BPO experts. We'll review your requirements and prepare a custom solution proposal tailored to your needs.
                       </p>
                     </div>
                   </div>
                   
-                  <Button 
-                    onClick={() => window.location.href = '/'}
-                    data-testid="button-back-home"
-                  >
-                    Back to Home
-                  </Button>
+                  <div className="space-y-4">
+                    <Button 
+                      variant="default"
+                      size="lg"
+                      className="w-full"
+                      onClick={() => window.open('https://calendar.app.google/your-calendar-link', '_blank')}
+                      data-testid="button-schedule-call"
+                    >
+                      <Calendar className="w-5 h-5 mr-2" />
+                      Schedule Your Free Consultation
+                    </Button>
+                    
+                    <div className="text-sm text-muted-foreground">
+                      Or our team will contact you within 24 hours
+                    </div>
+                    
+                    <Button 
+                      variant="outline"
+                      onClick={() => window.location.href = '/'}
+                      data-testid="button-back-home"
+                    >
+                      Back to Home
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>
