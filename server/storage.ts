@@ -16,7 +16,8 @@ import {
   type Certification, type InsertCertification,
   type Payment, type InsertPayment,
   type Dispute, type InsertDispute,
-  type Notification, type InsertNotification
+  type Notification, type InsertNotification,
+  type LeadIntake, type InsertLeadIntake
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -190,6 +191,13 @@ export interface IStorage {
   createLinkedinProfile(profile: any): Promise<any>;
   updateLinkedinProfile(id: string, updates: Partial<any>): Promise<any | undefined>;
   deleteLinkedinProfile(id: string): Promise<boolean>;
+
+  // Lead Intake
+  createLeadIntake(leadIntake: InsertLeadIntake): Promise<LeadIntake>;
+  getLeadIntake(id: string): Promise<LeadIntake | undefined>;
+  updateLeadIntake(id: string, updates: Partial<InsertLeadIntake>): Promise<LeadIntake | undefined>;
+  searchLeadIntakes(filters: { status?: string; email?: string; createdAfter?: Date }): Promise<LeadIntake[]>;
+  listLeadIntakesByStatus(status: string): Promise<LeadIntake[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -212,6 +220,7 @@ export class MemStorage implements IStorage {
   private disputes: Map<string, Dispute>;
   private notifications: Map<string, Notification>;
   private linkedinProfiles: Map<string, any>;
+  private leadIntakes: Map<string, LeadIntake>;
 
   // Counter for auto-incrementing IDs
   private skillIdCounter: number = 1;
@@ -238,6 +247,7 @@ export class MemStorage implements IStorage {
     this.disputes = new Map();
     this.notifications = new Map();
     this.linkedinProfiles = new Map();
+    this.leadIntakes = new Map();
 
     // Seed default skills for OnSpot marketplace
     this.seedDefaultSkills();
@@ -1448,6 +1458,116 @@ export class MemStorage implements IStorage {
 
   async deleteLinkedinProfile(id: string): Promise<boolean> {
     return this.linkedinProfiles.delete(id);
+  }
+
+  // Lead Intake Methods
+  async createLeadIntake(leadIntake: InsertLeadIntake): Promise<LeadIntake> {
+    const leadScore = this.calculateLeadScore(leadIntake);
+    
+    const newLeadIntake: LeadIntake = {
+      id: randomUUID(),
+      ...leadIntake,
+      phoneNumber: leadIntake.phoneNumber || null,
+      jobTitle: leadIntake.jobTitle || null,
+      companyWebsite: leadIntake.companyWebsite || null,
+      serviceVolume: leadIntake.serviceVolume || null,
+      teamSize: leadIntake.teamSize || null,
+      expectedStartDate: leadIntake.expectedStartDate || null,
+      currentProviderDetails: leadIntake.currentProviderDetails || null,
+      implementationTimeline: leadIntake.implementationTimeline || null,
+      additionalNotes: leadIntake.additionalNotes || null,
+      internalNotes: null,
+      utmSource: leadIntake.utmSource || null,
+      utmMedium: leadIntake.utmMedium || null,
+      utmCampaign: leadIntake.utmCampaign || null,
+      referringPage: leadIntake.referringPage || null,
+      appointmentDateTime: null,
+      appointmentType: null,
+      calendarEventId: null,
+      leadScore,
+      status: "new",
+      source: leadIntake.source || "website",
+      appointmentScheduled: false,
+      scheduledAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    
+    this.leadIntakes.set(newLeadIntake.id, newLeadIntake);
+    return newLeadIntake;
+  }
+
+  async getLeadIntake(id: string): Promise<LeadIntake | undefined> {
+    return this.leadIntakes.get(id);
+  }
+
+  async updateLeadIntake(id: string, updates: Partial<InsertLeadIntake>): Promise<LeadIntake | undefined> {
+    const leadIntake = this.leadIntakes.get(id);
+    if (!leadIntake) return undefined;
+
+    const updatedLeadIntake = {
+      ...leadIntake,
+      ...updates,
+      updatedAt: new Date()
+    };
+    
+    this.leadIntakes.set(id, updatedLeadIntake);
+    return updatedLeadIntake;
+  }
+
+  async searchLeadIntakes(filters: { status?: string; email?: string; createdAfter?: Date }): Promise<LeadIntake[]> {
+    const allLeadIntakes = Array.from(this.leadIntakes.values());
+    
+    return allLeadIntakes.filter(lead => {
+      if (filters.status && lead.status !== filters.status) return false;
+      if (filters.email && lead.email !== filters.email) return false;
+      if (filters.createdAfter && lead.createdAt && lead.createdAt < filters.createdAfter) return false;
+      return true;
+    });
+  }
+
+  async listLeadIntakesByStatus(status: string): Promise<LeadIntake[]> {
+    const allLeadIntakes = Array.from(this.leadIntakes.values());
+    return allLeadIntakes.filter(lead => lead.status === status);
+  }
+
+  private calculateLeadScore(leadIntake: InsertLeadIntake): number {
+    let score = 0;
+
+    // Decision maker status scoring
+    if (leadIntake.decisionMakerStatus === "decision_maker") score += 30;
+    else if (leadIntake.decisionMakerStatus === "influencer") score += 20;
+    else if (leadIntake.decisionMakerStatus === "evaluator") score += 10;
+
+    // Urgency scoring
+    if (leadIntake.urgencyLevel === "immediate") score += 20;
+    else if (leadIntake.urgencyLevel === "within_month") score += 15;
+    else if (leadIntake.urgencyLevel === "within_quarter") score += 10;
+    else if (leadIntake.urgencyLevel === "planning") score += 5;
+
+    // Budget range scoring
+    if (leadIntake.budgetRange === "50k+") score += 25;
+    else if (leadIntake.budgetRange === "20k-50k") score += 20;
+    else if (leadIntake.budgetRange === "5k-20k") score += 15;
+    else if (leadIntake.budgetRange === "<5k") score += 10;
+
+    // Company size scoring (larger companies typically have more resources)
+    if (leadIntake.companySize === "500+") score += 15;
+    else if (leadIntake.companySize === "201-500") score += 12;
+    else if (leadIntake.companySize === "51-200") score += 10;
+    else if (leadIntake.companySize === "11-50") score += 8;
+    else if (leadIntake.companySize === "1-10") score += 5;
+
+    // Current provider status (shows they're already outsourcing)
+    if (leadIntake.hasCurrentProvider) score += 10;
+
+    // Service type scoring (some services have higher conversion rates)
+    const highValueServices = ['customer_support', 'technical_support', 'back_office'];
+    if (leadIntake.serviceType && highValueServices.includes(leadIntake.serviceType)) {
+      score += 8;
+    }
+
+    return Math.min(100, score); // Cap at 100
   }
 }
 
