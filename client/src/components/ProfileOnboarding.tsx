@@ -53,8 +53,10 @@ export default function ProfileOnboarding({
   className 
 }: ProfileOnboardingProps) {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const authContext = useAuth();
+  const user = authContext?.user;
   
+  console.log('🔧 ProfileOnboarding: authContext:', authContext);
   console.log('🔧 ProfileOnboarding: user from auth:', user);
   console.log('🔧 ProfileOnboarding: toast function:', typeof toast);
   
@@ -493,7 +495,13 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
               data-testid="button-save-profile"
               onClick={async () => {
                 console.log('🔥 SAVE PROFILE: Starting save process');
-                console.log('🔧 Debug: user =', user);
+                
+                // Get fresh user context to avoid scoping issues
+                const currentAuth = authContext;
+                const currentUser = currentAuth?.user;
+                
+                console.log('🔧 Debug: authContext =', currentAuth);
+                console.log('🔧 Debug: currentUser =', currentUser);
                 console.log('🔧 Debug: toast =', toast);
                 
                 const formData = form.getValues();
@@ -501,8 +509,10 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
                 console.log('🏷️ Selected skills:', skills);
                 
                 // Defensive check for user
-                if (!user?.id) {
+                if (!currentUser?.id) {
                   console.error('❌ Error: No user ID available');
+                  console.error('❌ authContext:', currentAuth);
+                  console.error('❌ currentUser:', currentUser);
                   alert('Error: User not logged in properly. Please refresh and try again.');
                   return;
                 }
@@ -517,7 +527,7 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
                   // Build profile payload
                   const profilePayload = {
                     ...formData,
-                    userId: user.id,
+                    userId: currentUser.id,
                     skills: skills
                   };
                   
