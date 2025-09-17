@@ -216,8 +216,7 @@ const navigationItems = [
     megaMenu: true,
     services: serviceDetails
   },
-  { title: "Amazing", path: "/amazing" },
-  { title: "Insights", path: "/insights" }
+  { title: "Amazing", path: "/amazing" }
 ];
 
 export function TopNavigation() {
