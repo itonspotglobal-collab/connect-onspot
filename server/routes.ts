@@ -1125,7 +1125,7 @@ function parseResumeText(resumeText: string): any {
   }
 
   // Clean up and deduplicate skills
-  parsedData.skills = [...new Set(parsedData.skills)]
+  parsedData.skills = Array.from(new Set(parsedData.skills))
     .filter(skill => skill.length > 1 && skill.length < 30)
     .slice(0, 20); // Limit to 20 skills
 
