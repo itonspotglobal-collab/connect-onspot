@@ -1,5 +1,7 @@
 import * as client from "openid-client";
 import { Strategy, type VerifyFunction } from "openid-client/passport";
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+import { Strategy as LinkedInStrategy } from "passport-linkedin-oauth2";
 
 import passport from "passport";
 import session from "express-session";
@@ -38,7 +40,7 @@ export function getSession() {
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === 'production', // Only secure in production
       maxAge: sessionTtl,
       sameSite: "lax", // Better cross-site compatibility
     },
@@ -73,6 +75,9 @@ export async function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
+  // Setup OAuth strategies first
+  await setupOAuthStrategies(app);
+
   const config = await getOidcConfig();
 
   const verify: VerifyFunction = async (
@@ -99,8 +104,7 @@ export async function setupAuth(app: Express) {
     passport.use(strategy);
   }
 
-  passport.serializeUser((user: Express.User, cb) => cb(null, user));
-  passport.deserializeUser((user: Express.User, cb) => cb(null, user));
+  // Note: Passport serialization is set up in setupOAuthStrategies to handle both OAuth and Replit Auth
 
   app.get("/api/login", (req, res, next) => {
     passport.authenticate(`replitauth:${req.hostname}`, {
@@ -128,31 +132,212 @@ export async function setupAuth(app: Express) {
   });
 }
 
+// Setup Google and LinkedIn OAuth strategies
+async function setupOAuthStrategies(app: Express) {
+  // Update passport serialization to handle OAuth users
+  passport.serializeUser((user: any, cb) => {
+    if (user.user) {
+      // OAuth user structure
+      cb(null, { id: user.user.id, provider: user.provider });
+    } else {
+      // Replit Auth user structure
+      cb(null, user);
+    }
+  });
+
+  passport.deserializeUser(async (serializedUser: any, cb) => {
+    try {
+      if (serializedUser.id && serializedUser.provider) {
+        // OAuth user - fetch from storage
+        const user = await storage.getUser(serializedUser.id);
+        cb(null, user ? { user, provider: serializedUser.provider } : null);
+      } else {
+        // Replit Auth user
+        cb(null, serializedUser);
+      }
+    } catch (error) {
+      cb(error, null);
+    }
+  });
+
+  // Google OAuth Strategy
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    const callbackUrl = process.env.REPLIT_DEV_DOMAIN 
+      ? `https://${process.env.REPLIT_DEV_DOMAIN}/api/auth/google/callback`
+      : `/api/auth/google/callback`;
+
+    passport.use('google', new GoogleStrategy({
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: callbackUrl,
+    }, async (accessToken, refreshToken, profile, done) => {
+      try {
+        console.log('Google OAuth callback triggered for profile:', profile.id);
+        
+        // Extract user information from Google profile
+        const email = profile.emails?.[0]?.value;
+        if (!email) {
+          console.error('Google OAuth: No email found in profile');
+          return done(new Error('Google account must have a verified email address'), null);
+        }
+
+        // Create or update user in storage
+        const userData = {
+          id: `google_${profile.id}`, // Prefix to avoid ID collisions
+          email: email,
+          firstName: profile.name?.givenName || '',
+          lastName: profile.name?.familyName || '',
+          profileImageUrl: profile.photos?.[0]?.value || null,
+          role: 'client', // Default role
+        };
+
+        console.log('Creating/updating user with Google OAuth data:', { email: userData.email, id: userData.id });
+        const user = await storage.upsertUser(userData);
+        return done(null, { user, accessToken, provider: 'google' });
+      } catch (error) {
+        console.error('Google OAuth error:', error);
+        return done(error, null);
+      }
+    }));
+
+    // Google OAuth routes
+    app.get('/api/auth/google', (req, res, next) => {
+      console.log('Initiating Google OAuth...');
+      passport.authenticate('google', { 
+        scope: ['openid', 'email', 'profile']
+      })(req, res, next);
+    });
+
+    app.get('/api/auth/google/callback',
+      passport.authenticate('google', { 
+        failureRedirect: '/?error=oauth&provider=google&message=Google authentication failed'
+      }),
+      (req, res) => {
+        console.log('Google OAuth successful, redirecting to home');
+        res.redirect('/');
+      }
+    );
+  } else {
+    console.warn('Google OAuth not configured - missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET');
+  }
+
+  // LinkedIn OAuth Strategy  
+  if (process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET) {
+    const callbackUrl = process.env.REPLIT_DEV_DOMAIN 
+      ? `https://${process.env.REPLIT_DEV_DOMAIN}/api/auth/linkedin/callback`
+      : `/api/auth/linkedin/callback`;
+
+    passport.use('linkedin', new LinkedInStrategy({
+      clientID: process.env.LINKEDIN_CLIENT_ID,
+      clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
+      callbackURL: callbackUrl,
+      scope: ['r_liteprofile', 'r_emailaddress'],
+    }, async (accessToken, refreshToken, profile, done) => {
+      try {
+        console.log('LinkedIn OAuth callback triggered for profile:', profile.id);
+        
+        // Extract user information from LinkedIn profile
+        const email = profile.emails?.[0]?.value || profile.email;
+        if (!email) {
+          console.error('LinkedIn OAuth: No email found in profile');
+          return done(new Error('LinkedIn account must have a verified email address. Please ensure your LinkedIn email is verified and public.'), null);
+        }
+
+        // Create or update user in storage
+        const userData = {
+          id: `linkedin_${profile.id}`, // Prefix to avoid ID collisions
+          email: email,
+          firstName: profile.name?.givenName || profile.displayName?.split(' ')[0] || '',
+          lastName: profile.name?.familyName || profile.displayName?.split(' ').slice(1).join(' ') || '',
+          profileImageUrl: profile.photos?.[0]?.value || null,
+          role: 'talent', // Default role for LinkedIn users
+        };
+
+        console.log('Creating/updating user with LinkedIn OAuth data:', { email: userData.email, id: userData.id });
+        const user = await storage.upsertUser(userData);
+        return done(null, { user, accessToken, provider: 'linkedin' });
+      } catch (error) {
+        console.error('LinkedIn OAuth error:', error);
+        return done(error, null);
+      }
+    }));
+
+    // LinkedIn OAuth routes
+    app.get('/api/auth/linkedin', (req, res, next) => {
+      console.log('Initiating LinkedIn OAuth...');
+      passport.authenticate('linkedin', {
+        state: Math.random().toString(36).substring(7) // CSRF protection
+      })(req, res, next);
+    });
+
+    app.get('/api/auth/linkedin/callback',
+      passport.authenticate('linkedin', { 
+        failureRedirect: '/?error=oauth&provider=linkedin&message=LinkedIn authentication failed'
+      }),
+      (req, res) => {
+        console.log('LinkedIn OAuth successful, redirecting to home');
+        res.redirect('/');
+      }
+    );
+  } else {
+    console.warn('LinkedIn OAuth not configured - missing LINKEDIN_CLIENT_ID or LINKEDIN_CLIENT_SECRET');
+  }
+}
+
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
-  const user = req.user as any;
+  const sessionUser = req.user as any;
 
-  if (!req.isAuthenticated() || !user.expires_at) {
-    return res.status(401).json({ message: "Unauthorized" });
+  if (!req.isAuthenticated()) {
+    console.log('Authentication check failed: no session');
+    return res.status(401).json({ message: "Not authenticated", code: "NO_SESSION" });
   }
 
-  const now = Math.floor(Date.now() / 1000);
-  if (now <= user.expires_at) {
+  if (!sessionUser) {
+    console.log('Authentication check failed: no user in session');
+    return res.status(401).json({ message: "No user in session", code: "NO_USER" });
+  }
+
+  // Handle OAuth users (Google/LinkedIn) - they have {user, provider} structure
+  if (sessionUser.user && sessionUser.provider) {
+    console.log('OAuth user authenticated:', { id: sessionUser.user.id, provider: sessionUser.provider });
     return next();
   }
 
-  const refreshToken = user.refresh_token;
-  if (!refreshToken) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
+  // Handle Replit Auth users - they have claims and tokens directly
+  if (sessionUser.claims || sessionUser.expires_at) {
+    // Check if Replit Auth token is expired
+    if (sessionUser.expires_at) {
+      const now = Math.floor(Date.now() / 1000);
+      if (now <= sessionUser.expires_at) {
+        console.log('Replit Auth user authenticated (valid token)');
+        return next();
+      }
+
+      // Try to refresh expired token
+      const refreshToken = sessionUser.refresh_token;
+      if (!refreshToken) {
+        console.log('Replit Auth token expired, no refresh token');
+        return res.status(401).json({ message: "Token expired", code: "TOKEN_EXPIRED" });
+      }
+
+      try {
+        const config = await getOidcConfig();
+        const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
+        updateUserSession(sessionUser, tokenResponse);
+        console.log('Replit Auth token refreshed successfully');
+        return next();
+      } catch (error) {
+        console.error('Failed to refresh Replit Auth token:', error);
+        return res.status(401).json({ message: "Failed to refresh token", code: "REFRESH_FAILED" });
+      }
+    } else {
+      // Replit Auth user without expiration (shouldn't happen but allow it)
+      console.log('Replit Auth user authenticated (no expiration)');
+      return next();
+    }
   }
 
-  try {
-    const config = await getOidcConfig();
-    const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
-    updateUserSession(user, tokenResponse);
-    return next();
-  } catch (error) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
-  }
+  // Unknown user structure
+  console.error('Unknown user structure in session:', sessionUser);
+  return res.status(401).json({ message: "Invalid session format", code: "INVALID_SESSION" });
 };

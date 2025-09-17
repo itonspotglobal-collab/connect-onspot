@@ -17,7 +17,6 @@ import { LogIn, Eye, EyeOff, Mail, Shield, Zap, Building, User, ArrowLeft, Brief
 import { FaGoogle, FaLinkedin } from "react-icons/fa";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { signInWithGoogle, isFirebaseAvailable } from "@/lib/firebase";
 import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
 
 type UserType = "client" | "talent" | null;
@@ -84,37 +83,35 @@ export function LoginDialog() {
   };
 
   const handleGoogleLogin = async () => {
-    if (!isFirebaseAvailable()) {
-      toast({
-        title: "Service Unavailable",
-        description: "Google login is currently unavailable. Please use email/password.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsLoading(true);
     try {
-      const profileData = await signInWithGoogle(userType || "talent");
-      
-      // Integrate with existing auth context
-      const success = await login(profileData.email, "google-oauth", userType);
-      if (success) {
-        const portalType = userType === "client" ? "Client Portal" : "Talent Portal";
-        toast({
-          title: "Welcome to OnSpot!",
-          description: `Successfully signed in to ${portalType}`,
-        });
-        setOpen(false);
-        resetDialog();
-      }
+      // Close dialog immediately to prevent UI issues during redirect
+      setOpen(false);
+      // Redirect to backend Google OAuth
+      window.location.href = '/api/auth/google';
     } catch (error: any) {
       toast({
         title: "Google Sign-In Failed",
-        description: error.message || "Please try again or use email/password",
+        description: "Unable to initiate Google sign-in. Please try again.",
         variant: "destructive",
       });
-    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLinkedInLogin = async () => {
+    setIsLoading(true);
+    try {
+      // Close dialog immediately to prevent UI issues during redirect
+      setOpen(false);
+      // Redirect to backend LinkedIn OAuth
+      window.location.href = '/api/auth/linkedin';
+    } catch (error: any) {
+      toast({
+        title: "LinkedIn Sign-In Failed",
+        description: "Unable to initiate LinkedIn sign-in. Please try again.",
+        variant: "destructive",
+      });
       setIsLoading(false);
     }
   };
@@ -269,34 +266,32 @@ export function LoginDialog() {
                 </p>
               </div>
               
-              {isFirebaseAvailable() && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleGoogleLogin}
-                  disabled={isLoading}
-                  className="w-full h-12 border-2 hover:border-primary/50 transition-all duration-200"
-                  data-testid="button-google-login"
-                >
-                  <FaGoogle className="w-5 h-5 mr-3 text-red-500" />
-                  <span className="font-medium">
-                    Continue with Google
-                  </span>
-                </Button>
-              )}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleGoogleLogin}
+                disabled={isLoading}
+                className="w-full h-12 border-2 hover:border-primary/50 transition-all duration-200"
+                data-testid="button-google-login"
+              >
+                <FaGoogle className="w-5 h-5 mr-3 text-red-500" />
+                <span className="font-medium">
+                  Continue with Google
+                </span>
+              </Button>
               
               <Button
                 type="button"
                 variant="outline"
-                disabled={true}
-                className="w-full h-12 border-2 opacity-75"
+                onClick={handleLinkedInLogin}
+                disabled={isLoading}
+                className="w-full h-12 border-2 hover:border-primary/50 transition-all duration-200"
                 data-testid="button-linkedin-login"
               >
                 <FaLinkedin className="w-5 h-5 mr-3 text-blue-600" />
                 <span className="font-medium">
                   Continue with LinkedIn
                 </span>
-                <span className="ml-2 text-xs bg-muted px-2 py-1 rounded">Soon</span>
               </Button>
             </div>
 
