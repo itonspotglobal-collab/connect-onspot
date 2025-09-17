@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { OAuthErrorDialog, useOAuthError } from "@/components/OAuthErrorDialog";
 import { TopNavigation } from "@/components/TopNavigation";
 import { ClientLayout } from "@/components/ClientLayout";
 import { Footer } from "@/components/Footer";
@@ -129,12 +130,15 @@ function AppContent() {
 }
 
 function App() {
+  const oauthError = useOAuthError();
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <ThemeProvider defaultTheme="light" storageKey="onspot-ui-theme">
           <AuthProvider>
             <AppContent />
+            <OAuthErrorDialog {...oauthError} />
             <Toaster />
           </AuthProvider>
         </ThemeProvider>

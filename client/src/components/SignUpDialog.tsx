@@ -17,7 +17,6 @@ import { UserPlus, Eye, EyeOff, Mail, Shield, Zap, Building, User, ArrowLeft, Ar
 import { FaGoogle, FaLinkedin } from "react-icons/fa";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import { signInWithGoogle, isFirebaseAvailable } from "@/lib/firebase";
 import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
 
 type UserType = "client" | "talent" | null;
@@ -122,39 +121,35 @@ export function SignUpDialog() {
   };
 
   const handleGoogleSignup = async () => {
-    if (!isFirebaseAvailable()) {
-      toast({
-        title: "Service Unavailable",
-        description: "Google signup is currently unavailable. Please use email signup.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsLoading(true);
     try {
-      const profileData = await signInWithGoogle(userType || "talent");
-      
-      toast({
-        title: "Welcome to OnSpot!",
-        description: `Your ${userType === "client" ? "client" : "talent"} account has been created successfully.`,
-      });
+      // Close dialog immediately to prevent UI issues during redirect
       setOpen(false);
-      resetDialog();
-      
-      // Navigate user to appropriate page after signup
-      if (userType === "talent") {
-        setLocation("/get-hired");
-      } else if (userType === "client") {
-        setLocation("/hire-talent");
-      }
+      // Redirect to backend Google OAuth
+      window.location.href = '/api/auth/google';
     } catch (error: any) {
       toast({
         title: "Google Sign-Up Failed",
-        description: error.message || "Please try again or use email signup",
+        description: "Unable to initiate Google sign-up. Please try again.",
         variant: "destructive",
       });
-    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLinkedInSignup = async () => {
+    setIsLoading(true);
+    try {
+      // Close dialog immediately to prevent UI issues during redirect
+      setOpen(false);
+      // Redirect to backend LinkedIn OAuth
+      window.location.href = '/api/auth/linkedin';
+    } catch (error: any) {
+      toast({
+        title: "LinkedIn Sign-Up Failed",
+        description: "Unable to initiate LinkedIn sign-up. Please try again.",
+        variant: "destructive",
+      });
       setIsLoading(false);
     }
   };
@@ -331,15 +326,15 @@ export function SignUpDialog() {
               <Button
                 type="button"
                 variant="outline"
-                disabled={true}
-                className="w-full h-12 border-2 opacity-75"
+                onClick={handleLinkedInSignup}
+                disabled={isLoading}
+                className="w-full h-12 border-2 hover:border-primary/50 transition-all duration-200"
                 data-testid="button-linkedin-signup"
               >
                 <FaLinkedin className="w-5 h-5 mr-3 text-blue-600" />
                 <span className="font-medium">
                   Sign up with LinkedIn
                 </span>
-                <span className="ml-2 text-xs bg-muted px-2 py-1 rounded">Soon</span>
               </Button>
             </div>
 
