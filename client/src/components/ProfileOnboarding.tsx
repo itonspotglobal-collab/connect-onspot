@@ -496,44 +496,19 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
               onClick={async () => {
                 console.log('🔥 SAVE PROFILE: Starting save process');
                 
-                // Get fresh user context to avoid scoping issues
-                const currentAuth = authContext;
-                const currentUser = currentAuth?.user;
-                
-                console.log('🔧 Debug: authContext =', currentAuth);
-                console.log('🔧 Debug: currentUser =', currentUser);
-                console.log('🔧 Debug: toast =', toast);
-                
                 const formData = form.getValues();
                 console.log('📝 Form data:', formData);
-                console.log('🏷️ Selected skills:', skills);
-                
-                // Defensive check for user
-                if (!currentUser?.id) {
-                  console.error('❌ Error: No user ID available');
-                  console.error('❌ authContext:', currentAuth);
-                  console.error('❌ currentUser:', currentUser);
-                  alert('Error: User not logged in properly. Please refresh and try again.');
-                  return;
-                }
-                
-                // Defensive check for toast
-                if (!toast) {
-                  console.error('❌ Error: Toast function not available');
-                  alert('Profile save starting...');
-                }
                 
                 try {
-                  // Build profile payload
+                  // Simple payload - just send the form data
                   const profilePayload = {
                     ...formData,
-                    userId: currentUser.id,
                     skills: skills
                   };
                   
                   console.log('📦 Profile payload:', profilePayload);
                   
-                  // Make direct API call
+                  // Make API call
                   const response = await fetch('/api/profiles', {
                     method: 'POST',
                     credentials: 'include',
@@ -542,39 +517,22 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
                   });
                   
                   console.log('🌐 API Response status:', response.status);
+                  console.log('🌐 API Response headers:', response.headers);
                   
                   if (!response.ok) {
                     const errorData = await response.text();
                     console.error('❌ API Error:', errorData);
-                    throw new Error(`Save failed (${response.status}): ${errorData}`);
+                    alert(`Save failed (${response.status}): ${errorData}`);
+                    return;
                   }
                   
                   const result = await response.json();
                   console.log('✅ Save successful:', result);
-                  
-                  // Use toast if available, otherwise alert
-                  if (toast) {
-                    toast({
-                      title: "Profile saved successfully!",
-                      description: "Your professional profile has been saved."
-                    });
-                  } else {
-                    alert('Profile saved successfully!');
-                  }
+                  alert('Profile saved successfully!');
                   
                 } catch (error: any) {
                   console.error('❌ Save error:', error);
-                  
-                  // Use toast if available, otherwise alert
-                  if (toast) {
-                    toast({
-                      title: "Error saving profile",
-                      description: error?.message || "Please try again later.",
-                      variant: "destructive"
-                    });
-                  } else {
-                    alert(`Error saving profile: ${error?.message || "Please try again later."}`);
-                  }
+                  alert(`Error: ${error?.message || "Save failed"}`);
                 }
               }}
             >
