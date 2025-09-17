@@ -210,13 +210,13 @@ const navigationItems = [
     megaMenu: true,
     whyOnSpot: whyOnSpotSections
   },
+  { title: "Amazing", path: "/amazing" },
   { 
     title: "Solutions", 
     path: "/services",
     megaMenu: true,
     services: serviceDetails
   },
-  { title: "Amazing", path: "/amazing" },
   { title: "Insights", path: "/insights" }
 ];
 
