@@ -85,7 +85,7 @@ export function useTalentProfile() {
   // Fetch user documents
   const { data: documentsData, isLoading: documentsLoading } = useQuery({
     queryKey: ['/api/documents'],
-    enabled: !!user && user.userType === 'talent'
+    enabled: !!user && user.role === 'talent'
   });
 
   // Fetch portfolio items
