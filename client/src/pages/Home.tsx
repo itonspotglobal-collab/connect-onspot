@@ -523,13 +523,13 @@ export default function Home() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
             <Button size="lg" asChild data-testid="button-get-started">
-              <Link href="/talent">
+              <Link href="/lead-intake">
                 <Users className="w-5 h-5 mr-2" />
                 Get Started Now
               </Link>
             </Button>
             <Button variant="outline" size="lg" asChild data-testid="button-learn-more">
-              <Link href="/services">
+              <Link href="/lead-intake">
                 <Clock className="w-5 h-5 mr-2" />
                 Schedule Consultation
               </Link>

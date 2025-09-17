@@ -8,7 +8,7 @@ import {
   insertJobSchema, insertJobSkillSchema, insertProposalSchema, insertContractSchema,
   insertMilestoneSchema, insertTimeEntrySchema, insertMessageThreadSchema, insertMessageSchema,
   insertReviewSchema, insertPortfolioItemSchema, insertCertificationSchema, insertPaymentSchema,
-  insertDisputeSchema, insertNotificationSchema
+  insertDisputeSchema, insertNotificationSchema, insertLeadIntakeSchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -557,6 +557,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(profiles);
     } catch (error) {
       res.status(500).json({ error: "Failed to search profiles" });
+    }
+  });
+
+  // ==================== LEAD INTAKE ====================
+  app.post("/api/lead-intake", 
+    validateRequest(insertLeadIntakeSchema), 
+    async (req, res) => {
+      try {
+        console.log(`📝 Lead intake submission started [${(req as any).requestId}]:`, {
+          email: req.body.email,
+          company: req.body.companyName,
+          serviceType: req.body.serviceType,
+          urgencyLevel: req.body.urgencyLevel,
+          budgetRange: req.body.budgetRange
+        });
+
+        // Create lead intake with automatic scoring
+        const leadIntake = await storage.createLeadIntake(req.body);
+        
+        console.log(`✅ Lead intake created successfully [${(req as any).requestId}]:`, { 
+          leadId: leadIntake.id,
+          leadScore: leadIntake.leadScore,
+          status: leadIntake.status
+        });
+
+        // Return success response with lead ID for potential follow-up
+        res.status(201).json({
+          success: true,
+          leadId: leadIntake.id,
+          leadScore: leadIntake.leadScore,
+          message: "Thank you for your interest! We'll contact you within 24 hours.",
+          nextSteps: "Our team will reach out to schedule a discovery call to discuss your specific needs."
+        });
+        
+      } catch (error) {
+        handleRouteError(error, req, res, "Create lead intake", 500);
+      }
+    }
+  );
+
+  app.get("/api/lead-intake/:id", async (req, res) => {
+    try {
+      const leadIntake = await storage.getLeadIntake(req.params.id);
+      if (!leadIntake) {
+        return res.status(404).json({ 
+          error: "Lead intake not found",
+          requestId: (req as any).requestId
+        });
+      }
+      res.json(leadIntake);
+    } catch (error) {
+      handleRouteError(error, req, res, "Get lead intake", 500);
+    }
+  });
+
+  app.get("/api/lead-intake", async (req, res) => {
+    try {
+      const filters = {
+        status: req.query.status as string,
+        email: req.query.email as string,
+        createdAfter: req.query.createdAfter ? new Date(req.query.createdAfter as string) : undefined,
+      };
+      const leadIntakes = await storage.searchLeadIntakes(filters);
+      res.json(leadIntakes);
+    } catch (error) {
+      handleRouteError(error, req, res, "Search lead intakes", 500);
     }
   });
 

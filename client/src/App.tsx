@@ -31,6 +31,7 @@ import ComingSoon from "@/pages/ComingSoon";
 import PaymentProtection from "@/pages/PaymentProtection";
 import ClientVerification from "@/pages/ClientVerification";
 import TrustSafety from "@/pages/TrustSafety";
+import LeadIntake from "@/pages/LeadIntake";
 
 // Public Routes - Always available regardless of authentication
 function PublicRouter() {
@@ -78,6 +79,7 @@ function PublicRouter() {
           <Route path="/payment-protection" component={PaymentProtection} />
           <Route path="/client-verification" component={ClientVerification} />
           <Route path="/trust-safety" component={TrustSafety} />
+          <Route path="/lead-intake" component={LeadIntake} />
           {/* Legacy routes for backward compatibility */}
           <Route path="/talent" component={TalentSearch} />
           <Route component={NotFound} />

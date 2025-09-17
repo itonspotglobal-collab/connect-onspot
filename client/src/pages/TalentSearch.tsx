@@ -263,9 +263,11 @@ export default function TalentSearch() {
               that take your operations to the next level with up to 70% cost savings.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
-              <Button size="lg" className="px-8 py-3 text-lg" data-testid="button-get-started">
-                Get Started Today
-              </Button>
+              <Link href="/lead-intake">
+                <Button size="lg" className="px-8 py-3 text-lg" data-testid="button-get-started">
+                  Get Started Today
+                </Button>
+              </Link>
               <Link href="/why-onspot/value-calculator">
                 <Button variant="outline" size="lg" className="px-8 py-3 text-lg gap-2" data-testid="button-calculate-savings">
                   <Calculator className="w-5 h-5" />
@@ -405,12 +407,16 @@ export default function TalentSearch() {
             Join 85+ companies who have already deployed 500+ team members through OnSpot's proven system.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" variant="secondary" className="px-8 py-3 text-lg">
-              Start Building Your Team
-            </Button>
-            <Button size="lg" variant="outline" className="px-8 py-3 text-lg border-white text-white hover:bg-white hover:text-primary">
-              Schedule a Consultation
-            </Button>
+            <Link href="/lead-intake">
+              <Button size="lg" variant="secondary" className="px-8 py-3 text-lg">
+                Start Building Your Team
+              </Button>
+            </Link>
+            <Link href="/lead-intake">
+              <Button size="lg" variant="outline" className="px-8 py-3 text-lg border-white text-white hover:bg-white hover:text-primary">
+                Schedule a Consultation
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
