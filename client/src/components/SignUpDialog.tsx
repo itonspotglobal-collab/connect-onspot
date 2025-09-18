@@ -17,6 +17,7 @@ import { UserPlus, Eye, EyeOff, Mail, Shield, Zap, Building, User, ArrowLeft, Ar
 import { FaGoogle, FaLinkedin } from "react-icons/fa";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { isFirebaseAvailable } from "@/lib/firebase";
 import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
 
 type UserType = "client" | "talent" | null;
