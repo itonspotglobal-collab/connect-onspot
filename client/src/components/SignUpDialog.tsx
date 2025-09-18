@@ -118,15 +118,21 @@ export function SignUpDialog() {
 
     setIsLoading(true);
     try {
-      // Call the real signup API
+      // Call the real signup API with correct snake_case field names
       const signupData = {
         email: formData.email.trim(),
+        username: formData.email.split('@')[0], // Generate username from email
         password: formData.password,
-        firstName: formData.firstName.trim(),
-        lastName: formData.lastName.trim(),
+        first_name: formData.firstName.trim(),  // Changed to snake_case
+        last_name: formData.lastName.trim(),    // Changed to snake_case
         role: userType, // Now TypeScript knows this is "client" | "talent"
         ...(userType === "client" && { company: formData.company.trim() })
       };
+
+      console.log('🚀 Sending signup request with data:', {
+        ...signupData,
+        password: '[REDACTED]' // Don't log password
+      });
 
       // Use JWT-based signup API
       const signupResponse = await authAPI.signup(signupData);
@@ -169,34 +175,74 @@ export function SignUpDialog() {
               variant: "destructive",
             });
           }
-        } catch (loginError) {
-          console.error("Auto-login error:", loginError);
+        } catch (loginError: any) {
+          console.error("❌ Auto-login error:", {
+            message: loginError.message,
+            response: loginError.response?.data,
+            status: loginError.response?.status
+          });
           toast({
-            title: "Account Created",
-            description: "Account created successfully! Please log in to continue.",
+            title: "Account Created Successfully",
+            description: "Your account was created but automatic login failed. Please log in manually to continue.",
           });
         }
       } else {
+        // Show specific error message from backend
+        const errorMessage = signupResponse.message || "Failed to create account. Please try again.";
+        console.error('❌ Signup failed:', {
+          message: signupResponse.message,
+          response: signupResponse
+        });
+        
         toast({
-          title: "Signup Failed",
-          description: signupResponse.message || "Failed to create account. Please try again.",
+          title: "Account Creation Failed",
+          description: errorMessage,
           variant: "destructive",
         });
       }
     } catch (error: any) {
-      console.error("Signup error:", error);
+      console.error("❌ Signup error:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        statusText: error.response?.statusText
+      });
       
-      // Handle network and other errors
+      // Handle different types of errors with specific messages
       if (error.name === 'TypeError' && error.message.includes('fetch')) {
         toast({
           title: "Network Error",
           description: "Unable to connect to the server. Please check your connection and try again.",
           variant: "destructive",
         });
+      } else if (error.response?.status === 400) {
+        // Backend validation error
+        const errorMessage = error.response.data?.message || "Invalid signup information provided";
+        toast({
+          title: "Validation Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      } else if (error.response?.status === 409) {
+        // Conflict error (user already exists)
+        toast({
+          title: "Account Already Exists",
+          description: "An account with this email already exists. Please log in instead.",
+          variant: "destructive",
+        });
+      } else if (error.response?.status >= 500) {
+        // Server error
+        toast({
+          title: "Server Error",
+          description: "Our servers are experiencing issues. Please try again in a few moments.",
+          variant: "destructive",
+        });
       } else {
+        // Generic error with backend message if available
+        const errorMessage = error.response?.data?.message || error.message || "An unexpected error occurred during signup";
         toast({
           title: "Signup Failed",
-          description: "An unexpected error occurred during signup. Please try again.",
+          description: errorMessage,
           variant: "destructive",
         });
       }
