@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 interface User {
   id: string;
@@ -25,6 +26,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const { toast } = useToast();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
@@ -53,6 +55,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // CRITICAL: After successful login, refresh auth to sync with server session
         await refreshAuth();
         
+        // Show success toast notification
+        toast({
+          title: "Welcome to OnSpot!",
+          description: "Your account has been successfully authenticated.",
+        });
+        
         return true;
       }
       
@@ -69,6 +77,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(mockUser);
         setIsAuthenticated(true);
         localStorage.setItem('onspot_user', JSON.stringify(mockUser));
+        
+        // Show success toast notification
+        toast({
+          title: "Welcome to OnSpot!",
+          description: "Your account has been successfully authenticated.",
+        });
         
         return true;
       }
