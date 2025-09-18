@@ -1,98 +1,107 @@
 import { useState, useEffect } from "react";
-import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
+import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
 import { 
-  User,
-  Briefcase,
-  DollarSign,
-  TrendingUp,
+  ArrowRight,
   Star,
-  Award,
-  MapPin,
-  Clock,
-  Eye,
-  ExternalLink,
-  FileText,
-  Play,
+  Shield,
+  Users,
+  TrendingUp,
   CheckCircle2,
+  Play,
+  Clock,
+  DollarSign,
+  Award,
+  Globe,
+  Zap,
   Target,
+  Crown,
+  PhoneCall,
+  HeadphonesIcon,
+  Lock,
+  FileCheck,
+  UserCheck,
+  Briefcase,
+  Eye,
   Calendar,
   MessageCircle,
-  Bell,
-  Settings,
-  BarChart3,
-  Filter,
-  Search,
-  Plus,
-  AlertCircle,
-  FolderOpen
+  ChevronRight
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { OnSpotLogo } from "@/components/OnSpotLogo";
+import { TestimonialCarousel } from "@/components/TestimonialCarousel";
+import { TrustBadge, QuickTrustIndicators } from "@/components/TrustBadges";
+import { StatisticsBar, DEFAULT_MARKETPLACE_STATS } from "@/components/StatisticsBar";
+import { ClientLogos, DEFAULT_CLIENT_LOGOS } from "@/components/ClientLogos";
+import { PremiumFeatures, DEFAULT_PREMIUM_FEATURES } from "@/components/PremiumFeatures";
 import { useTalentProfile } from "@/hooks/useTalentProfile";
 import ProfileOnboardingModal from "@/components/ProfileOnboardingModal";
-import ProfileOnboarding from "@/components/ProfileOnboarding";
-import SkillsManagement from "@/components/SkillsManagement";
-import JobApplicationModal from "@/components/JobApplicationModal";
-import PortfolioManagement from "@/components/PortfolioManagement";
-import { type Job, type User as DbUser, type UserSkill, type Skill, type Proposal } from "@shared/schema";
+import { cn } from "@/lib/utils";
+import professionalWorkspaceImg from "@assets/generated_images/Professional_workspace_background_ccee2885.png";
+import businessNetworkImg from "@assets/generated_images/Business_network_illustration_d2c6527c.png";
 
-// Extended Job type with computed fields for display
-interface JobOpportunity extends Job {
-  company: string; // From client user data
-  location: string; // From client profile or "Remote" 
-  skills: string[]; // From job skills relationship
-  posted: string; // Formatted time ago
-  matchScore: number; // Computed based on skills match
-  displayRate: {
-    amount: number;
-    type: "hourly" | "fixed";
-    currency: string;
-  };
-}
+// Use imported components with their default data
 
-interface Application {
-  id: string;
-  jobId: string;
-  jobTitle: string;
-  company: string;
-  status: "pending" | "reviewing" | "interview" | "accepted" | "rejected";
-  appliedAt: string;
-  lastUpdate: string;
-}
+// How it works steps
+const HOW_IT_WORKS_STEPS = [
+  {
+    step: 1,
+    title: "Create Profile",
+    description: "Build your professional profile with skills, portfolio, and experience",
+    icon: UserCheck,
+    color: "bg-blue-500"
+  },
+  {
+    step: 2,
+    title: "Get Matched",
+    description: "Our AI matches you with premium clients seeking your exact skills",
+    icon: Target,
+    color: "bg-purple-500"
+  },
+  {
+    step: 3,
+    title: "Start Earning",
+    description: "Work on exciting projects with guaranteed payments and support",
+    icon: TrendingUp,
+    color: "bg-green-500"
+  }
+];
 
-interface Earning {
-  id: string;
-  projectTitle: string;
-  client: string;
-  amount: number;
-  currency: string;
-  status: "pending" | "paid" | "processing";
-  date: string;
-}
+// Trust indicators for legitimacy
+const TRUST_INDICATORS = [
+  {
+    icon: Shield,
+    title: "Payment Protected",
+    description: "100% secure payments via Stripe with escrow protection"
+  },
+  {
+    icon: FileCheck,
+    title: "Verified Clients",
+    description: "All clients undergo thorough background verification"
+  },
+  {
+    icon: Lock,
+    title: "Enterprise Security",
+    description: "Bank-level security with GDPR compliance"
+  },
+  {
+    icon: HeadphonesIcon,
+    title: "24/7 Support",
+    description: "Dedicated success manager and round-the-clock help"
+  }
+];
+
+// Use imported premium features from component
 
 export default function TalentPortal() {
-  const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState("overview");
-  const [jobSearch, setJobSearch] = useState("");
-  const [jobFilters, setJobFilters] = useState({
-    category: "",
-    contractType: "",
-    experienceLevel: "",
-    minBudget: undefined as number | undefined,
-    maxBudget: undefined as number | undefined,
-    skills: [] as string[]
-  });
+  const { user } = useAuth();
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
-  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-  const [showApplicationModal, setShowApplicationModal] = useState(false);
   
   // Use real profile data from useTalentProfile hook
   const {
@@ -103,747 +112,376 @@ export default function TalentPortal() {
     isLoading: profileLoading
   } = useTalentProfile();
 
-  // Fetch user skills for job matching with skill names
-  const { data: userSkills = [] } = useQuery<(UserSkill & { skill: { name: string; category: string } | null })[]>({
-    queryKey: ['/api/users', user?.id, 'skills'],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      const response = await fetch(`/api/users/${user.id}/skills?includeNames=true`);
-      if (!response.ok) throw new Error('Failed to fetch user skills');
-      return response.json();
-    },
-    enabled: !!user?.id
-  });
-
-  // Fetch user's proposals to check application status
-  const { data: userProposals = [] } = useQuery<Proposal[]>({
-    queryKey: ['/api/talents', user?.id, 'proposals'],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      const response = await fetch(`/api/talents/${user.id}/proposals`);
-      if (!response.ok) throw new Error('Failed to fetch proposals');
-      return response.json();
-    },
-    enabled: !!user?.id
-  });
-
-  // Real job search with React Query
-  const { data: jobsData = [], isLoading: jobsLoading, error: jobsError } = useQuery<Job[]>({
-    queryKey: ['/api/jobs/search', { ...jobFilters, q: jobSearch }],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      params.set('status', 'open');
-      
-      // Add text search query
-      if (jobSearch.trim()) params.set('q', jobSearch.trim());
-      
-      if (jobFilters.category) params.set('category', jobFilters.category);
-      if (jobFilters.contractType) params.set('contractType', jobFilters.contractType);
-      if (jobFilters.experienceLevel) params.set('experienceLevel', jobFilters.experienceLevel);
-      if (jobFilters.minBudget) params.set('minBudget', jobFilters.minBudget.toString());
-      if (jobFilters.maxBudget) params.set('maxBudget', jobFilters.maxBudget.toString());
-      if (jobFilters.skills.length > 0) params.set('skills', jobFilters.skills.join(','));
-      
-      const response = await fetch(`/api/jobs/search?${params.toString()}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch jobs');
-      }
-      return response.json();
-    },
-    refetchOnWindowFocus: false
-  });
-
-  // Transform backend jobs to display format
-  const transformJobToOpportunity = (job: Job): JobOpportunity => {
-    // Calculate match score based on user skills with proper typing
-    const matchScore = userSkills && userSkills.length > 0 ? 
-      Math.round((userSkills.filter((userSkill) => 
-        userSkill.skill?.name && job.description?.toLowerCase().includes(userSkill.skill.name.toLowerCase())
-      ).length / Math.max(userSkills.length, 1)) * 100) : 0;
-
-    // Format posted time
-    const posted = job.createdAt ? 
-      formatDistanceToNow(new Date(job.createdAt), { addSuffix: true }) : 'Recently';
-
-    // Determine display rate
-    const displayRate = {
-      amount: job.contractType === 'hourly' ? 
-        (job.hourlyRateMin ? parseFloat(job.hourlyRateMin.toString()) : 0) :
-        (job.budget ? parseFloat(job.budget.toString()) : 0),
-      type: job.contractType as 'hourly' | 'fixed',
-      currency: job.budgetCurrency || 'USD'
-    };
-
-    return {
-      ...job,
-      company: 'Client', // Generic fallback for now - real company name would require user join
-      location: job.contractType === 'hourly' ? 'Remote' : 'Location varies', // Default for now
-      skills: [], // Will be populated by separate job skills API call
-      posted,
-      matchScore,
-      displayRate
-    };
-  };
-
-  // Transform jobs data
-  const jobOpportunities: JobOpportunity[] = jobsData.map(transformJobToOpportunity);
-
-  // Helper function to check if user has applied to a job
-  const hasAppliedToJob = (jobId: string): boolean => {
-    return userProposals.some(proposal => proposal.jobId === jobId);
-  };
-
-  // Handle opening the application modal
-  const handleApplyToJob = (job: Job) => {
-    setSelectedJob(job);
-    setShowApplicationModal(true);
-  };
-
-  // Handle successful application submission
-  const handleApplicationSuccess = () => {
-    // Refresh proposals data to update UI
-    queryClient.invalidateQueries({ queryKey: ['/api/talents', user?.id, 'proposals'] });
-  };
-
-  // Show onboarding modal for new users
+  // Show onboarding modal for new users who haven't completed onboarding
   useEffect(() => {
     if (user?.userType === 'talent' && isNewUser && !hasCompletedOnboarding) {
-      const timer = setTimeout(() => setShowOnboardingModal(true), 1000);
+      const timer = setTimeout(() => setShowOnboardingModal(true), 2000);
       return () => clearTimeout(timer);
     }
   }, [user, isNewUser, hasCompletedOnboarding]);
 
-  // Profile data from useTalentProfile hook, with fallbacks for display
-  const displayProfile = {
-    name: profile ? `${profile.firstName} ${profile.lastName}` : (user?.username || "John Doe"),
-    title: profile?.title || "Professional",
-    avatar: profile?.profilePicture || "",
-    rating: profile?.rating ? parseFloat(profile.rating.toString()) : 0,
-    reviewCount: 0, // Would come from reviews API
-    location: profile?.location || "Global",
-    hourlyRate: profile?.hourlyRate ? parseFloat(profile.hourlyRate.toString()) : 0,
-    currency: profile?.rateCurrency || "USD",
-    completedJobs: 0, // Would come from contracts API
-    totalEarnings: profile?.totalEarnings ? parseFloat(profile.totalEarnings.toString()) : 0,
-    profileCompletion,
-    availability: profile?.availability || "available" as const,
-    skills: [], // Would come from user skills API
-    languages: profile?.languages || ["English"],
-    responseTime: "Within 1 hour"
-  };
-
-
-  const mockApplications: Application[] = [
-    {
-      id: "1",
-      jobId: "1",
-      jobTitle: "Senior React Developer",
-      company: "TechStart Inc",
-      status: "interview",
-      appliedAt: "2024-12-10",
-      lastUpdate: "2024-12-13"
-    },
-    {
-      id: "2",
-      jobId: "2", 
-      jobTitle: "Full Stack Developer",
-      company: "Financial Solutions",
-      status: "reviewing",
-      appliedAt: "2024-12-08",
-      lastUpdate: "2024-12-12"
-    }
-  ];
-
-  const mockEarnings: Earning[] = [
-    {
-      id: "1",
-      projectTitle: "E-commerce Website",
-      client: "Digital Store Co",
-      amount: 2500,
-      currency: "USD",
-      status: "paid",
-      date: "2024-12-01"
-    },
-    {
-      id: "2",
-      projectTitle: "Mobile App Development",
-      client: "App Innovations",
-      amount: 1800,
-      currency: "USD", 
-      status: "processing",
-      date: "2024-12-10"
-    },
-    {
-      id: "3",
-      projectTitle: "Website Redesign",
-      client: "Creative Agency",
-      amount: 3200,
-      currency: "USD",
-      status: "pending",
-      date: "2024-12-15"
-    }
-  ];
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "pending": return "bg-yellow-100 text-yellow-800";
-      case "reviewing": return "bg-blue-100 text-blue-800";
-      case "interview": return "bg-purple-100 text-purple-800";
-      case "accepted": return "bg-green-100 text-green-800";
-      case "rejected": return "bg-red-100 text-red-800";
-      case "paid": return "bg-green-100 text-green-800";
-      case "processing": return "bg-blue-100 text-blue-800";
-      default: return "bg-gray-100 text-gray-800";
+  // Handle authenticated user navigation
+  const [, setLocation] = useLocation();
+  
+  const handleGetStarted = () => {
+    if (user) {
+      // If user is authenticated, take them to complete their profile
+      if (profileCompletion < 100) {
+        setShowOnboardingModal(true);
+      } else {
+        // Profile is complete, take them to job opportunities
+        const opportunitiesSection = document.getElementById('opportunities');
+        if (opportunitiesSection) {
+          opportunitiesSection.scrollIntoView({ behavior: 'smooth' });
+        }
+      }
+    } else {
+      // Not authenticated, trigger sign up flow
+      setLocation('/get-hired');
     }
   };
 
-  // Filter jobs based on search text
-  const filteredJobs = jobOpportunities.filter(job =>
-    jobSearch === "" || 
-    job.title.toLowerCase().includes(jobSearch.toLowerCase()) ||
-    job.company.toLowerCase().includes(jobSearch.toLowerCase()) ||
-    job.description?.toLowerCase().includes(jobSearch.toLowerCase()) ||
-    job.skills.some(skill => skill.toLowerCase().includes(jobSearch.toLowerCase()))
-  );
+  const handleFindProjects = () => {
+    if (user) {
+      const opportunitiesSection = document.getElementById('opportunities');
+      if (opportunitiesSection) {
+        opportunitiesSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      setLocation('/get-hired');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-4">
-                <Avatar className="w-12 h-12">
-                  <AvatarImage src={displayProfile.avatar} />
-                  <AvatarFallback>{displayProfile.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <h1 className="text-2xl font-bold">{displayProfile.name}</h1>
-                  <p className="text-muted-foreground">{displayProfile.title}</p>
-                </div>
-              </div>
-              <div className="hidden md:flex items-center gap-4 text-sm">
-                <div className="flex items-center gap-1">
-                  <Star className="w-4 h-4 text-[hsl(var(--gold-yellow)/0.8)] fill-current" />
-                  <span className="font-medium">{displayProfile.rating || 'N/A'}</span>
-                  <span className="text-muted-foreground">({displayProfile.reviewCount} reviews)</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <MapPin className="w-4 h-4 text-muted-foreground" />
-                  <span>{displayProfile.location}</span>
-                </div>
-                <Badge variant={displayProfile.availability === "available" ? "default" : "secondary"}>
-                  {displayProfile.availability === "available" ? "Available" : "Busy"}
+      {/* Hero Section */}
+      <section className="relative min-h-screen flex items-center bg-gradient-to-br from-primary/5 via-background to-muted/10 overflow-hidden">
+        {/* Background Elements */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-20 right-20 w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-20 left-20 w-64 h-64 bg-purple-500/10 rounded-full blur-2xl"></div>
+        </div>
+        
+        {/* Hero Image */}
+        <div className="absolute right-0 top-0 h-full w-1/2 opacity-30 lg:opacity-60">
+          <img 
+            src={professionalWorkspaceImg} 
+            alt="Professional workspace" 
+            className="w-full h-full object-cover"
+            loading="lazy"
+            data-testid="hero-background-image"
+          />
+          <div className="absolute inset-0 bg-gradient-to-l from-transparent via-background/20 to-background"></div>
+        </div>
+
+        <div className="container mx-auto px-4 py-20 relative z-10">
+          <div className="max-w-4xl">
+            {/* OnSpot Branding */}
+            <div className="mb-8" data-testid="hero-branding">
+              <OnSpotLogo size="lg" className="mb-4" data-testid="onspot-logo" />
+              <div className="flex items-center gap-3 mb-6" data-testid="hero-badges">
+                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 px-4 py-1" data-testid="badge-elite-network">
+                  <Crown className="h-3 w-3 mr-1" />
+                  Elite Talent Network
                 </Badge>
+                <QuickTrustIndicators size="sm" data-testid="quick-trust-indicators" />
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              {profileCompletion < 70 && (
+
+            {/* Value Proposition */}
+            <div className="space-y-6 mb-12">
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-foreground leading-tight">
+                Join <span className="text-primary">50,000+ Elite</span><br />
+                <span className="bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                  Talents Earning
+                </span><br />
+                <span className="text-foreground">Premium Rates</span>
+              </h1>
+              
+              <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-8">
+                <div className="bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-lg px-4 py-2">
+                  <span className="text-green-700 dark:text-green-400 font-semibold text-lg">
+                    Cut costs 70%, grow 8X
+                  </span>
+                </div>
+                <div className="text-muted-foreground text-lg">
+                  Making Outsourcing Easy
+                </div>
+              </div>
+
+              <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed max-w-3xl">
+                Access exclusive opportunities with verified Fortune 500 clients. 
+                Guaranteed payments, premium rates, and career growth support.
+              </p>
+            </div>
+
+            {/* Primary CTA Section */}
+            <div className="space-y-6 mb-12">
+              <div className="flex flex-col sm:flex-row gap-4">
                 <Button 
-                  variant="default" 
-                  size="sm" 
-                  onClick={() => setShowOnboardingModal(true)}
-                  data-testid="button-complete-profile"
+                  size="lg" 
+                  className="text-lg group"
+                  onClick={handleGetStarted}
+                  data-testid="button-get-started"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Complete Profile ({profileCompletion}%)
+                  <span>Start Earning Today</span>
+                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
-              )}
-              <Button variant="outline" size="sm">
-                <Bell className="w-4 h-4" />
-              </Button>
-              <Button variant="outline" size="sm">
-                <Settings className="w-4 h-4" />
-              </Button>
-              <Button variant="outline" size="sm" onClick={logout}>
-                Sign Out
-              </Button>
+                
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="text-lg"
+                  onClick={handleFindProjects}
+                  data-testid="button-find-projects"
+                >
+                  <Eye className="mr-2 h-5 w-5" />
+                  Browse Premium Projects
+                </Button>
+              </div>
+
+              {/* Trust Indicators Below CTA */}
+              <div className="flex items-center gap-6 text-sm text-muted-foreground" data-testid="trust-indicators-cta">
+                <div className="flex items-center gap-2" data-testid="indicator-free-join">
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <span>Free to join</span>
+                </div>
+                <div className="flex items-center gap-2" data-testid="indicator-payment-protected">
+                  <Shield className="h-4 w-4 text-blue-500" />
+                  <span>Payment protected</span>
+                </div>
+                <div className="flex items-center gap-2" data-testid="indicator-quick-match">
+                  <Clock className="h-4 w-4 text-purple-500" />
+                  <span>Get matched in 24hrs</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="container mx-auto px-4 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-6 mb-8">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="opportunities" className="flex items-center gap-2">
-              <Target className="w-4 h-4" />
-              Opportunities
-            </TabsTrigger>
-            <TabsTrigger value="applications" className="flex items-center gap-2">
-              <Briefcase className="w-4 h-4" />
-              Applications
-            </TabsTrigger>
-            <TabsTrigger value="earnings" className="flex items-center gap-2">
-              <DollarSign className="w-4 h-4" />
-              Earnings
-            </TabsTrigger>
-            <TabsTrigger value="portfolio" className="flex items-center gap-2">
-              <FolderOpen className="w-4 h-4" />
-              Portfolio
-            </TabsTrigger>
-            <TabsTrigger value="profile" className="flex items-center gap-2">
-              <User className="w-4 h-4" />
-              Profile
-            </TabsTrigger>
-          </TabsList>
+      {/* Client Logos Section - Social Proof */}
+      <ClientLogos 
+        logos={DEFAULT_CLIENT_LOGOS}
+        variant="default"
+        maxLogos={8}
+        className="border-y"
+      />
 
-          {/* Overview Dashboard */}
-          <TabsContent value="overview" className="space-y-8">
-            {/* Key Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Total Earnings</p>
-                      <p className="text-2xl font-bold">${displayProfile.totalEarnings.toLocaleString()}</p>
-                    </div>
-                    <DollarSign className="w-8 h-8 text-green-600" />
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Completed Jobs</p>
-                      <p className="text-2xl font-bold">{displayProfile.completedJobs}</p>
-                    </div>
-                    <CheckCircle2 className="w-8 h-8 text-blue-600" />
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Success Rate</p>
-                      <p className="text-2xl font-bold">{displayProfile.rating || 0}/5.0</p>
-                    </div>
-                    <Star className="w-8 h-8 text-[hsl(var(--gold-yellow)/0.8)]" />
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Profile Completion</p>
-                      <p className="text-2xl font-bold">{displayProfile.profileCompletion}%</p>
-                    </div>
-                    <User className="w-8 h-8 text-purple-600" />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+      {/* Statistics Bar */}
+      <section className="bg-muted/30">
+        <div className="container mx-auto px-4">
+          <StatisticsBar 
+            statistics={DEFAULT_MARKETPLACE_STATS}
+            variant="default"
+            columns={4}
+            showDescriptions={false}
+            animateOnScroll={false}
+          />
+        </div>
+      </section>
 
-            {/* Profile Completion Progress (for incomplete profiles) */}
-            {profileCompletion < 100 && (
-              <Card className="border-primary/20 bg-primary/5">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                        <User className="w-6 h-6 text-primary" />
+      {/* How It Works Section */}
+      <section className="py-20 bg-background">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Start Earning in 3 Simple Steps
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Join the elite network of verified professionals earning premium rates
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8" data-testid="how-it-works-steps">
+            {HOW_IT_WORKS_STEPS.map((step, index) => (
+              <div key={index} className="relative group" data-testid={`step-${index + 1}`}>
+                <Card className="hover-elevate text-center p-8 h-full" data-testid={`step-card-${index + 1}`}>
+                  <CardContent className="p-0 space-y-6">
+                    <div className="relative">
+                      <div className={cn(
+                        "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4",
+                        step.color
+                      )}>
+                        <step.icon className="h-8 w-8 text-white" />
                       </div>
-                      <div>
-                        <h3 className="font-semibold">Complete Your Profile</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {profileCompletion}% complete • Boost your chances of getting hired
-                        </p>
+                      <div className="absolute -top-2 -right-2 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                        {step.step}
                       </div>
                     </div>
-                    <Button 
-                      onClick={() => setShowOnboardingModal(true)}
-                      data-testid="button-complete-profile-card"
-                    >
-                      Continue Setup
-                    </Button>
-                  </div>
-                  <Progress value={profileCompletion} className="h-2" />
-                  <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
-                    <span>Get started</span>
-                    <span>Profile complete</span>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                    
+                    <h3 className="text-xl font-semibold text-foreground">
+                      {step.title}
+                    </h3>
+                    
+                    <p className="text-muted-foreground leading-relaxed">
+                      {step.description}
+                    </p>
+                  </CardContent>
+                </Card>
 
-            {/* Recent Activity & Quick Actions */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Clock className="w-5 h-5" />
-                    Recent Activity
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                    <CheckCircle2 className="w-5 h-5 text-green-600" />
-                    <div className="flex-1">
-                      <p className="font-medium">Application reviewed</p>
-                      <p className="text-sm text-muted-foreground">TechStart Inc - Senior React Developer</p>
-                    </div>
-                    <span className="text-xs text-muted-foreground">2h ago</span>
+                {/* Connection Arrow for Desktop */}
+                {index < HOW_IT_WORKS_STEPS.length - 1 && (
+                  <div className="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2">
+                    <ChevronRight className="h-8 w-8 text-muted-foreground/50" />
                   </div>
-                  <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                    <DollarSign className="w-5 h-5 text-green-600" />
-                    <div className="flex-1">
-                      <p className="font-medium">Payment received</p>
-                      <p className="text-sm text-muted-foreground">$2,500 from Digital Store Co</p>
-                    </div>
-                    <span className="text-xs text-muted-foreground">1d ago</span>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                    <Star className="w-5 h-5 text-[hsl(var(--gold-yellow)/0.8)]" />
-                    <div className="flex-1">
-                      <p className="font-medium">New review received</p>
-                      <p className="text-sm text-muted-foreground">5-star rating from Creative Agency</p>
-                    </div>
-                    <span className="text-xs text-muted-foreground">3d ago</span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Target className="w-5 h-5" />
-                    Recommended for You
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {jobOpportunities.slice(0, 2).map((job) => (
-                    <div key={job.id} className="p-4 border rounded-lg hover-elevate transition-all cursor-pointer">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <h4 className="font-semibold mb-1">{job.title}</h4>
-                          <p className="text-sm text-muted-foreground">{job.company} • {job.location}</p>
-                        </div>
-                        <Badge variant="secondary">{job.matchScore}% match</Badge>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm">
-                          <span className="font-medium">
-                            ${job.displayRate.amount}{job.displayRate.type === "hourly" ? "/hr" : " fixed"}
-                          </span>
-                        </div>
-                        <Button size="sm" variant="outline">
-                          View Details
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                  <Button variant="ghost" className="w-full">
-                    View All Opportunities →
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* Job Opportunities */}
-          <TabsContent value="opportunities" className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold">Job Opportunities</h2>
-                <p className="text-muted-foreground">Discover jobs matched to your skills</p>
+                )}
               </div>
-              <div className="flex items-center gap-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search jobs..."
-                    value={jobSearch}
-                    onChange={(e) => setJobSearch(e.target.value)}
-                    className="pl-9 w-64"
-                    data-testid="input-job-search"
-                  />
-                </div>
-                <Button variant="outline" size="sm">
-                  <Filter className="w-4 h-4 mr-2" />
-                  Filters
+            ))}
+          </div>
+
+          <div className="text-center mt-12">
+            <Button 
+              size="lg" 
+              onClick={handleGetStarted}
+              className="text-lg"
+              data-testid="button-join-onspot"
+            >
+              Join OnSpot Today
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Trust & Security Section */}
+      <section className="py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Built on Trust & Security
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Your success and security are our top priorities
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8" data-testid="trust-indicators-grid">
+            {TRUST_INDICATORS.map((indicator, index) => (
+              <Card key={index} className="hover-elevate text-center p-6" data-testid={`trust-card-${index + 1}`}>
+                <CardContent className="p-0 space-y-4">
+                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto">
+                    <indicator.icon className="h-6 w-6 text-primary" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-foreground">
+                    {indicator.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {indicator.description}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Premium Features Section */}
+      <PremiumFeatures 
+        features={DEFAULT_PREMIUM_FEATURES}
+        variant="grid"
+        columns={2}
+        showBenefits={false}
+        showCTAs={false}
+        className="bg-background"
+        title="Why OnSpot Beats the Competition"
+        subtitle="Experience the difference of a truly premium talent marketplace"
+        sectionBadge="Premium Marketplace"
+      />
+
+      {/* Testimonials Section */}
+      <section className="py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Success Stories from Our Talent
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              See how OnSpot transformed careers and increased earnings
+            </p>
+          </div>
+
+          <div className="max-w-4xl mx-auto">
+            <TestimonialCarousel 
+              filterBy="talent"
+              showOutcomes={true}
+              variant="featured"
+              autoPlayInterval={8000}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA Section */}
+      <section className="py-20 bg-gradient-to-br from-primary/10 via-background to-purple-500/10">
+        <div className="container mx-auto px-4">
+          <div className="text-center max-w-4xl mx-auto">
+            <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-6">
+              Ready to Join the Elite?
+            </h2>
+            <p className="text-xl md:text-2xl text-muted-foreground mb-12 leading-relaxed">
+              Start your journey with OnSpot today. Join thousands of successful professionals 
+              earning premium rates with verified, high-quality clients.
+            </p>
+            
+            <div className="space-y-8">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button 
+                  size="lg" 
+                  className="text-lg group"
+                  onClick={handleGetStarted}
+                  data-testid="button-final-cta"
+                >
+                  <span>Get Started - It's Free</span>
+                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="text-lg"
+                  onClick={() => window.location.href = 'tel:+1-555-ONSPOT'}
+                  data-testid="button-speak-expert"
+                >
+                  <PhoneCall className="mr-2 h-5 w-5" />
+                  Speak with an Expert
                 </Button>
               </div>
-            </div>
 
-            {/* Loading and Error States */}
-            {jobsLoading && (
-              <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
-                  <Card key={i} className="animate-pulse">
-                    <CardContent className="p-6">
-                      <div className="space-y-3">
-                        <div className="h-6 bg-muted rounded w-3/4"></div>
-                        <div className="h-4 bg-muted rounded w-1/2"></div>
-                        <div className="flex gap-2">
-                          <div className="h-6 bg-muted rounded w-16"></div>
-                          <div className="h-6 bg-muted rounded w-16"></div>
-                          <div className="h-6 bg-muted rounded w-16"></div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-
-            {jobsError && (
-              <Card>
-                <CardContent className="p-6 text-center">
-                  <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Failed to load jobs</h3>
-                  <p className="text-muted-foreground mb-4">There was an error loading job opportunities. Please try again.</p>
-                  <Button 
-                    onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/jobs/search'] })}
-                    data-testid="button-retry-jobs"
-                  >
-                    Try Again
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-
-            {!jobsLoading && !jobsError && filteredJobs.length === 0 && (
-              <Card>
-                <CardContent className="p-6 text-center">
-                  <Briefcase className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No jobs found</h3>
-                  <p className="text-muted-foreground mb-4">
-                    {jobSearch ? 
-                      `No jobs match your search for "${jobSearch}". Try different keywords or filters.` :
-                      'No job opportunities available at the moment. Check back later for new listings.'
-                    }
-                  </p>
-                  {jobSearch && (
-                    <Button 
-                      variant="outline"
-                      onClick={() => setJobSearch('')}
-                      data-testid="button-clear-search"
-                    >
-                      Clear Search
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Job Listings */}
-            {!jobsLoading && !jobsError && filteredJobs.length > 0 && (
-              <div className="space-y-4">
-                <div className="text-sm text-muted-foreground mb-4">
-                  {filteredJobs.length} job{filteredJobs.length !== 1 ? 's' : ''} found
-                  {jobSearch && ` for "${jobSearch}"`}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-muted-foreground" data-testid="final-trust-indicators">
+                <div className="flex items-center gap-2" data-testid="indicator-no-fees">
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <span>No setup fees</span>
                 </div>
-                {filteredJobs.map((job) => (
-                <Card key={job.id} className="hover-elevate transition-all">
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-xl font-semibold">{job.title}</h3>
-                          <Badge variant="secondary">{job.matchScore}% match</Badge>
-                        </div>
-                        <p className="text-muted-foreground mb-3">{job.company} • {job.location}</p>
-                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{job.description}</p>
-                        <div className="flex items-center gap-4 text-sm mb-4">
-                          <div className="flex items-center gap-1">
-                            <DollarSign className="w-4 h-4" />
-                            <span className="font-medium">
-                              ${job.displayRate.amount}{job.displayRate.type === "hourly" ? "/hr" : " fixed"}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="w-4 h-4" />
-                            <span>{job.contractType}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            <span>Posted {job.posted}</span>
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {job.skills.map((skill) => (
-                            <Badge key={skill} variant="outline" className="text-xs">
-                              {skill}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-2 ml-6">
-                        {hasAppliedToJob(job.id) ? (
-                          <Button 
-                            size="sm" 
-                            variant="secondary"
-                            disabled
-                            data-testid={`button-applied-job-${job.id}`}
-                          >
-                            <CheckCircle2 className="w-4 h-4 mr-1" />
-                            Applied
-                          </Button>
-                        ) : (
-                          <Button 
-                            size="sm" 
-                            data-testid={`button-apply-job-${job.id}`}
-                            onClick={() => handleApplyToJob(job)}
-                          >
-                            Apply Now
-                          </Button>
-                        )}
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          data-testid={`button-view-job-${job.id}`}
-                          onClick={() => {
-                            // TODO: Navigate to job details page
-                            console.log('View job details:', job.id);
-                          }}
-                        >
-                          <Eye className="w-4 h-4 mr-1" />
-                          View Details
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          {/* Applications */}
-          <TabsContent value="applications" className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold">My Applications</h2>
-                <p className="text-muted-foreground">Track your job application status</p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              {mockApplications.map((application) => (
-                <Card key={application.id}>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold mb-2">{application.jobTitle}</h3>
-                        <p className="text-muted-foreground mb-3">{application.company}</p>
-                        <div className="flex items-center gap-4 text-sm">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            <span>Applied {new Date(application.appliedAt).toLocaleDateString()}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="w-4 h-4" />
-                            <span>Updated {new Date(application.lastUpdate).toLocaleDateString()}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Badge className={getStatusColor(application.status)}>
-                          {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
-                        </Badge>
-                        <Button variant="outline" size="sm">
-                          <MessageCircle className="w-4 h-4 mr-1" />
-                          Message
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          {/* Earnings */}
-          <TabsContent value="earnings" className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold">Earnings</h2>
-                <p className="text-muted-foreground">Track your income and payments</p>
-              </div>
-              <div className="text-right">
-                <div className="text-sm text-muted-foreground">Total Earnings</div>
-                <div className="text-3xl font-bold text-green-600">
-                  ${displayProfile.totalEarnings.toLocaleString()}
+                <div className="flex items-center gap-2" data-testid="indicator-guaranteed-payments">
+                  <Shield className="h-4 w-4 text-blue-500" />
+                  <span>Guaranteed payments</span>
+                </div>
+                <div className="flex items-center gap-2" data-testid="indicator-join-talent">
+                  <Users className="h-4 w-4 text-purple-500" />
+                  <span>Join 50,000+ talents</span>
                 </div>
               </div>
             </div>
-
-            <div className="space-y-4">
-              {mockEarnings.map((earning) => (
-                <Card key={earning.id}>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold mb-2">{earning.projectTitle}</h3>
-                        <p className="text-muted-foreground mb-3">{earning.client}</p>
-                        <div className="flex items-center gap-1 text-sm">
-                          <Calendar className="w-4 h-4" />
-                          <span>{new Date(earning.date).toLocaleDateString()}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="text-right">
-                          <div className="text-2xl font-bold">
-                            ${earning.amount.toLocaleString()}
-                          </div>
-                          <Badge className={getStatusColor(earning.status)}>
-                            {earning.status.charAt(0).toUpperCase() + earning.status.slice(1)}
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          {/* Portfolio */}
-          <TabsContent value="portfolio" className="space-y-6">
-            <PortfolioManagement talentId={user?.id} />
-          </TabsContent>
-
-          {/* Profile */}
-          <TabsContent value="profile" className="space-y-6">
-            <div className="grid gap-6">
-              <ProfileOnboarding 
-                mode="full"
-                onComplete={() => {
-                  // Refresh profile data when onboarding is complete
-                  queryClient.invalidateQueries({ queryKey: ['/api/users', user?.id, 'skills'] });
-                  window.location.reload();
-                }}
-              />
-              <SkillsManagement />
-            </div>
-          </TabsContent>
-        </Tabs>
-      </div>
+          </div>
+        </div>
+      </section>
 
       {/* Profile Onboarding Modal */}
-      <ProfileOnboardingModal
-        open={showOnboardingModal}
-        onOpenChange={setShowOnboardingModal}
-        onSkip={() => setShowOnboardingModal(false)}
-        onComplete={() => setShowOnboardingModal(false)}
-      />
-
-      {/* Job Application Modal */}
-      <JobApplicationModal
-        open={showApplicationModal}
-        onOpenChange={setShowApplicationModal}
-        job={selectedJob}
-        onSuccess={handleApplicationSuccess}
-      />
+      {showOnboardingModal && (
+        <ProfileOnboardingModal
+          open={showOnboardingModal}
+          onOpenChange={setShowOnboardingModal}
+          onComplete={() => {
+            setShowOnboardingModal(false);
+            // Optionally scroll to opportunities section
+            const opportunitiesSection = document.getElementById('opportunities');
+            if (opportunitiesSection) {
+              opportunitiesSection.scrollIntoView({ behavior: 'smooth' });
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
