@@ -22,6 +22,8 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"), // From Replit Auth
   lastName: varchar("last_name"), // From Replit Auth  
   profileImageUrl: varchar("profile_image_url"), // From Replit Auth
+  password: text("password"), // For email/password auth (nullable for OAuth users)
+  company: text("company"), // Company name for clients and potentially talents
   role: text("role").notNull().default("client"), // client, talent, admin
   replitId: text("replit_id").unique(), // For Replit Auth integration
   stripeAccountId: text("stripe_account_id"), // For talent payouts
