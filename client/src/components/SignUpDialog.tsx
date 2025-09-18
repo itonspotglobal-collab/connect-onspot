@@ -18,6 +18,7 @@ import { FaGoogle, FaLinkedin } from "react-icons/fa";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { isFirebaseAvailable } from "@/lib/firebase";
+import { apiRequest } from "@/lib/queryClient";
 import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
 
 type UserType = "client" | "talent" | null;
@@ -57,9 +58,11 @@ export function SignUpDialog() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Basic required field validation
     if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
       toast({
-        title: "Error",
+        title: "Missing Information",
         description: "Please fill in all required fields",
         variant: "destructive",
       });
@@ -68,7 +71,7 @@ export function SignUpDialog() {
 
     if (userType === "client" && !formData.company) {
       toast({
-        title: "Error",
+        title: "Company Required",
         description: "Company name is required for client accounts",
         variant: "destructive",
       });
@@ -77,8 +80,18 @@ export function SignUpDialog() {
 
     if (formData.password !== formData.confirmPassword) {
       toast({
-        title: "Error",
-        description: "Passwords do not match",
+        title: "Password Mismatch",
+        description: "Passwords do not match. Please check and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Frontend password validation
+    if (formData.password.length < 8) {
+      toast({
+        title: "Password Too Short",
+        description: "Password must be at least 8 characters long",
         variant: "destructive",
       });
       return;
@@ -86,8 +99,8 @@ export function SignUpDialog() {
 
     if (!agreeToTerms) {
       toast({
-        title: "Error",
-        description: "Please agree to the terms and conditions",
+        title: "Terms Required",
+        description: "Please agree to the terms and conditions to continue",
         variant: "destructive",
       });
       return;
@@ -95,27 +108,60 @@ export function SignUpDialog() {
 
     setIsLoading(true);
     try {
-      // Demo signup - in production this would call your auth API
-      const accountType = userType === "client" ? "Client" : "Talent";
-      toast({
-        title: `Welcome to OnSpot!`,
-        description: `Your ${accountType.toLowerCase()} account has been created successfully. Please check your email to verify your account.`,
+      // Call the real signup API
+      const signupData = {
+        email: formData.email.trim(),
+        password: formData.password,
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        role: userType,
+        ...(userType === "client" && { company: formData.company.trim() })
+      };
+
+      const response = await fetch("/api/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        credentials: "include",
+        body: JSON.stringify(signupData)
       });
-      setOpen(false);
-      resetDialog();
-      
-      // Navigate user to appropriate page after signup
-      if (userType === "talent") {
-        setLocation("/get-hired");
-      } else if (userType === "client") {
-        setLocation("/hire-talent");
+
+      if (response.ok) {
+        const responseData = await response.json();
+        const accountType = userType === "client" ? "Client" : "Talent";
+        toast({
+          title: `Welcome to OnSpot!`,
+          description: `Your ${accountType.toLowerCase()} account has been created successfully! You can now log in.`,
+        });
+        
+        setOpen(false);
+        resetDialog();
+        
+        // Navigate user to appropriate page after signup
+        if (userType === "talent") {
+          setLocation("/get-hired");
+        } else if (userType === "client") {
+          setLocation("/hire-talent");
+        }
       }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "An error occurred during signup",
-        variant: "destructive",
-      });
+    } catch (error: any) {
+      console.error("Signup error:", error);
+      
+      // Handle network and other errors
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        toast({
+          title: "Network Error",
+          description: "Unable to connect to the server. Please check your connection and try again.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Signup Failed",
+          description: "An unexpected error occurred during signup. Please try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false);
     }

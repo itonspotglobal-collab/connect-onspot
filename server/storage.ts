@@ -22,6 +22,16 @@ import {
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
+// Type for creating user with password
+export interface CreateUserData {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  role: "client" | "talent";
+  company?: string; // Optional for clients
+}
+
 // modify the interface with any CRUD methods
 // you might need
 
@@ -29,7 +39,9 @@ export interface IStorage {
   // Users
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  createUserWithPassword(userData: CreateUserData): Promise<User>;
   updateUser(id: string, updates: Partial<InsertUser>): Promise<User | undefined>;
   
   // Replit Auth user management
@@ -355,6 +367,7 @@ export class MemStorage implements IStorage {
       firstName: (insertUser as any).firstName || null,
       lastName: (insertUser as any).lastName || null,
       profileImageUrl: (insertUser as any).profileImageUrl || null,
+      password: (insertUser as any).password || null,
       replitId: insertUser.replitId || null,
       stripeAccountId: insertUser.stripeAccountId || null,
       createdAt: now,
@@ -399,6 +412,7 @@ export class MemStorage implements IStorage {
         firstName: userData.firstName || null,
         lastName: userData.lastName || null,
         profileImageUrl: userData.profileImageUrl || null,
+        password: null, // OAuth users don't have passwords
         role: userData.role || "client",
         replitId: userData.replitId || null,
         stripeAccountId: userData.stripeAccountId || null,
@@ -408,6 +422,58 @@ export class MemStorage implements IStorage {
       this.users.set(newUser.id, newUser);
       return newUser;
     }
+  }
+
+  async createUserWithPassword(userData: CreateUserData): Promise<User> {
+    const id = randomUUID();
+    const now = new Date();
+    
+    // Create user with hashed password
+    const user: User = {
+      id,
+      username: null, // Not required for email/password auth
+      email: userData.email,
+      firstName: userData.firstName,
+      lastName: userData.lastName,
+      profileImageUrl: null,
+      password: userData.password, // Password is already hashed by caller
+      company: userData.company || null, // Store company field for clients
+      role: userData.role,
+      replitId: null, // Only for OAuth users
+      stripeAccountId: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    
+    this.users.set(id, user);
+    
+    // Auto-create profile for talent users
+    if (userData.role === "talent") {
+      const profile: Profile = {
+        id: randomUUID(),
+        userId: user.id,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        title: null,
+        bio: null,
+        location: "Global",
+        hourlyRate: null,
+        rateCurrency: "USD",
+        availability: "available",
+        profilePicture: null,
+        phoneNumber: null,
+        languages: ["English"],
+        timezone: "Asia/Manila",
+        rating: "0",
+        totalEarnings: "0",
+        jobSuccessScore: 0,
+        createdAt: now,
+        updatedAt: now,
+      };
+      this.profiles.set(profile.id, profile);
+    }
+    
+    return user;
   }
 
   // Profile Methods
