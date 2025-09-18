@@ -1,9 +1,11 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import * as Sentry from "@sentry/node";
-import { storage } from "./storage";
+import { storage, type CreateUserData } from "./storage";
 import { isAuthenticated } from "./replitAuth";
+import { hashPassword, verifyPassword, validatePasswordStrength, validateEmail } from "./auth-utils";
 import { ghlService } from "./services/ghlService";
+import rateLimit from "express-rate-limit";
 import multer from "multer";
 import Papa from "papaparse";
 import {
@@ -94,6 +96,21 @@ const handleRouteError = (error: any, req: Request, res: Response, operation: st
     requestId: requestId
   });
 };
+
+// Rate limiting middleware for authentication endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 requests per windowMs
+  message: { 
+    success: false, 
+    error: "Too many attempts",
+    message: "Too many login/signup attempts. Please try again later." 
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  skipSuccessfulRequests: false, // Count successful requests
+  skipFailedRequests: false, // Count failed requests
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes - Updated for OAuth compatibility with enhanced error handling
@@ -213,6 +230,179 @@ export async function registerRoutes(app: Express): Promise<Server> {
       retry: true
     });
   });
+
+  // Email/Password Signup endpoint
+  app.post('/api/signup',
+    authLimiter,
+    validateRequest(z.object({
+      email: z.string().email("Valid email address required"),
+      password: z.string().min(8, "Password must be at least 8 characters"),
+      firstName: z.string().min(1, "First name is required"),
+      lastName: z.string().min(1, "Last name is required"),
+      role: z.enum(['client', 'talent'], { required_error: "Role must be either 'client' or 'talent'" }),
+      company: z.string().optional()
+    })),
+    async (req: any, res) => {
+      try {
+        const { email, password, firstName, lastName, role, company } = req.body;
+
+        // Additional validation
+        if (!validateEmail(email)) {
+          return res.status(400).json({
+            error: "Invalid email format",
+            message: "Please enter a valid email address (e.g., name@example.com)",
+            requestId: req.requestId
+          });
+        }
+
+        // Validate password strength
+        const passwordValidation = validatePasswordStrength(password);
+        if (!passwordValidation.isValid) {
+          return res.status(400).json({
+            error: "Password does not meet requirements",
+            message: "Password must meet security requirements",
+            details: passwordValidation.errors,
+            requestId: req.requestId
+          });
+        }
+
+        // Validate company for clients
+        if (role === "client" && (!company || company.trim().length === 0)) {
+          return res.status(400).json({
+            error: "Company name required",
+            message: "Company name is required for client accounts",
+            requestId: req.requestId
+          });
+        }
+
+        // Check if user already exists
+        const existingUser = await storage.getUserByEmail(email);
+        if (existingUser) {
+          return res.status(409).json({
+            error: "Email already exists",
+            message: "An account with this email address already exists. Please try logging in instead.",
+            requestId: req.requestId
+          });
+        }
+
+        // Hash password
+        const hashedPassword = await hashPassword(password);
+
+        // Create user with password
+        const userData: CreateUserData = {
+          email,
+          password: hashedPassword,
+          firstName,
+          lastName,
+          role,
+          company
+        };
+
+        const user = await storage.createUserWithPassword(userData);
+
+        console.log(`✅ User signup successful [${req.requestId}]:`, {
+          userId: user.id,
+          email: user.email,
+          role: user.role,
+          hasProfile: role === "talent"
+        });
+
+        res.status(201).json({
+          success: true,
+          userId: user.id,
+          message: `${role === 'talent' ? 'Talent' : 'Client'} account created successfully!`,
+          user: {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            role: user.role
+          }
+        });
+
+      } catch (error) {
+        handleRouteError(error, req, res, "User signup", 500);
+      }
+    }
+  );
+
+  // Email/Password Login endpoint
+  app.post('/api/login',
+    authLimiter,
+    validateRequest(z.object({
+      email: z.string().email("Valid email address required"),
+      password: z.string().min(1, "Password is required")
+    })),
+    async (req: any, res) => {
+      try {
+        const { email, password } = req.body;
+
+        // Find user by email
+        const user = await storage.getUserByEmail(email);
+        if (!user) {
+          return res.status(401).json({
+            error: "Invalid credentials",
+            message: "The email or password you entered is incorrect",
+            requestId: req.requestId
+          });
+        }
+
+        // Check if user has a password (not OAuth user)
+        if (!user.password) {
+          return res.status(400).json({
+            error: "OAuth account detected",
+            message: "This account was created with social login. Please use Google or LinkedIn to sign in.",
+            requestId: req.requestId
+          });
+        }
+
+        // Verify password
+        const isPasswordValid = await verifyPassword(password, user.password);
+        if (!isPasswordValid) {
+          return res.status(401).json({
+            error: "Invalid credentials", 
+            message: "The email or password you entered is incorrect",
+            requestId: req.requestId
+          });
+        }
+
+        // Create session using passport login
+        req.login({ user: user, provider: 'email' }, (err: any) => {
+          if (err) {
+            console.error(`🚨 Email login session error [${req.requestId}]:`, err);
+            return res.status(500).json({
+              error: "Session creation failed",
+              message: "Failed to establish session. Please try again.",
+              requestId: req.requestId
+            });
+          }
+
+          console.log(`✅ Email login successful [${req.requestId}]:`, {
+            userId: user.id,
+            email: user.email,
+            role: user.role
+          });
+
+          res.json({
+            success: true,
+            message: "Login successful",
+            user: {
+              id: user.id,
+              email: user.email,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              role: user.role,
+              profileImageUrl: user.profileImageUrl
+            },
+            authProvider: 'email'
+          });
+        });
+
+      } catch (error) {
+        handleRouteError(error, req, res, "User login", 500);
+      }
+    }
+  );
 
   // Health check route for OAuth testing
   app.get('/api/health', (req, res) => {

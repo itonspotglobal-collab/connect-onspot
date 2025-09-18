@@ -43,78 +43,67 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       setError(null);
       
-      // Try development login endpoint first
-      const devLoginResponse = await fetch('/api/dev/login', {
+      // Call the real email/password login API
+      const loginResponse = await fetch('/api/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
-        body: JSON.stringify({ email, userType })
+        credentials: 'include', // Important for session cookies
+        body: JSON.stringify({ email, password })
       });
       
-      if (devLoginResponse.ok) {
-        const userData = await devLoginResponse.json();
-        console.log('✅ Development login successful:', userData);
+      if (loginResponse.ok) {
+        const loginData = await loginResponse.json();
+        console.log('✅ Email/password login successful:', loginData);
         
-        // CRITICAL: After successful login, refresh auth to sync with server session
-        await refreshAuth();
+        // The login API returns user data and establishes session
+        const userData = loginData.user;
+        const mappedUser: User = {
+          id: userData.id,
+          username: userData.username,
+          email: userData.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          profileImageUrl: userData.profileImageUrl,
+          role: userData.role,
+          userType: userData.role as "client" | "talent",
+          authProvider: loginData.authProvider || 'email'
+        };
+        
+        setUser(mappedUser);
+        setIsAuthenticated(true);
         
         // Check if this is a new user and handle onboarding
-        const currentUser = await checkServerAuth();
-        if (currentUser) {
-          const isNew = await checkNewUserStatus(currentUser.id);
-          
-          if (isNew) {
-            toast({
-              title: "Welcome to OnSpot!",
-              description: "Let's set up your profile to get started.",
-            });
-            // Redirect to onboarding will be handled by the UI layer
-            setUser({...currentUser, isNewUser: true, needsOnboarding: true});
-          } else {
-            toast({
-              title: "Welcome back!",
-              description: "Your account has been successfully authenticated.",
-            });
-            setUser({...currentUser, isNewUser: false, needsOnboarding: false});
-          }
+        const isNew = await checkNewUserStatus(userData.id);
+        setUser({...mappedUser, isNewUser: isNew, needsOnboarding: isNew});
+        
+        return true;
+      } else {
+        // Handle login errors
+        const errorData = await loginResponse.json();
+        console.error('❌ Login failed:', errorData);
+        
+        if (loginResponse.status === 401) {
+          setError('Invalid email or password');
+        } else if (loginResponse.status === 400) {
+          setError(errorData.message || 'Invalid login information');
+        } else {
+          setError('Login failed. Please try again.');
         }
         
-        return true;
+        return false;
       }
-      
-      // Fallback for demo purposes - email/password simulation
-      if (email && password && password !== "google-oauth" && password !== "linkedin-oauth") {
-        const mockUser: User = {
-          id: '1',
-          username: email.split('@')[0],
-          email: email,
-          role: userType || 'client',
-          userType: userType || 'client',
-          authProvider: 'email'
-        };
-        setUser(mockUser);
-        setIsAuthenticated(true);
-        localStorage.setItem('onspot_user', JSON.stringify(mockUser));
-        
-        // For demo users, consider them new if it's their first login
-        const isNew = !localStorage.getItem(`onboarding_completed_${mockUser.id}`);
-        setUser({...mockUser, isNewUser: isNew, needsOnboarding: isNew});
-        
-        // Show appropriate welcome message
-        toast({
-          title: isNew ? "Welcome to OnSpot!" : "Welcome back!",
-          description: isNew ? "Let's set up your profile to get started." : "Your account has been successfully authenticated.",
-        });
-        
-        return true;
-      }
-      
-      return false;
     } catch (error) {
       console.error('Login error:', error);
-      setError('Login failed. Please try again.');
+      
+      // Handle network errors
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        setError('Network error. Please check your connection and try again.');
+      } else {
+        setError('Login failed. Please try again.');
+      }
+      
       return false;
     } finally {
       setIsLoading(false);
