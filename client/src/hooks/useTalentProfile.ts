@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { calculateProfileCompletion, ProfileCompletionData } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
 import { Profile, InsertProfile, UserSkill, Skill, Document as DocumentType, PortfolioItem } from '@shared/schema';
 
@@ -54,6 +55,7 @@ export interface TalentProfileData {
 
 export function useTalentProfile() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [uploadedDocuments, setUploadedDocuments] = useState<Document[]>([]);
 
@@ -151,6 +153,21 @@ export function useTalentProfile() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/profiles/user', user?.id] });
+      
+      // Show appropriate success message based on whether it's creating or updating
+      if (!profile) {
+        // New profile created
+        toast({
+          title: "Profile Created Successfully!",
+          description: "Welcome to OnSpot! Your talent profile is now active.",
+        });
+      } else {
+        // Existing profile updated
+        toast({
+          title: "Profile Updated!",
+          description: "Your profile information has been saved successfully.",
+        });
+      }
     }
   });
 
@@ -175,6 +192,12 @@ export function useTalentProfile() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users', user?.id, 'skills'] });
+      
+      // Show success message for skills update
+      toast({
+        title: "Skills Updated!",
+        description: "Your skills have been saved successfully.",
+      });
     }
   });
 
@@ -185,6 +208,12 @@ export function useTalentProfile() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
+      
+      // Show success message for document upload
+      toast({
+        title: "Document Uploaded!",
+        description: "Your document has been uploaded successfully.",
+      });
     }
   });
 
@@ -216,6 +245,21 @@ export function useTalentProfile() {
   const uploadDocument = async (document: Omit<Document, 'id' | 'createdAt'>) => {
     return documentMutation.mutateAsync(document);
   };
+
+  // Form helpers - MUST be called at top level before return
+  const getDefaultFormValues = useCallback((): ProfileFormData => ({
+    firstName: profile?.firstName || '',
+    lastName: profile?.lastName || '',
+    title: profile?.title || '',
+    bio: profile?.bio || '',
+    location: profile?.location || 'Manila, Philippines',
+    hourlyRate: profile?.hourlyRate || '',
+    rateCurrency: profile?.rateCurrency || 'USD',
+    availability: profile?.availability || 'available',
+    phoneNumber: profile?.phoneNumber || '',
+    languages: profile?.languages || ['English'],
+    timezone: profile?.timezone || 'Asia/Manila'
+  }), [profile]);
 
   const talentProfileData: TalentProfileData = {
     profile: profile ? {
@@ -267,18 +311,6 @@ export function useTalentProfile() {
     uploadDocument,
     
     // Form helpers
-    getDefaultFormValues: useCallback((): ProfileFormData => ({
-      firstName: profile?.firstName || '',
-      lastName: profile?.lastName || '',
-      title: profile?.title || '',
-      bio: profile?.bio || '',
-      location: profile?.location || 'Manila, Philippines',
-      hourlyRate: profile?.hourlyRate || '',
-      rateCurrency: profile?.rateCurrency || 'USD',
-      availability: profile?.availability || 'available',
-      phoneNumber: profile?.phoneNumber || '',
-      languages: profile?.languages || ['English'],
-      timezone: profile?.timezone || 'Asia/Manila'
-    }), [profile])
+    getDefaultFormValues
   };
 }
