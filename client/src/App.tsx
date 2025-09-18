@@ -11,6 +11,7 @@ import { ClientLayout } from "@/components/ClientLayout";
 import { Footer } from "@/components/Footer";
 import { VanessaChat } from "@/components/VanessaChat";
 import { ClientProtectedRoute, TalentProtectedRoute, AdminProtectedRoute } from "@/components/ProtectedRoute";
+import { NewUserOnboardingWrapper } from "@/components/NewUserOnboardingWrapper";
 import Home from "@/pages/Home";
 import TalentSearch from "@/pages/TalentSearch";
 import Dashboard from "@/pages/Dashboard";
@@ -196,7 +197,9 @@ function App() {
       <TooltipProvider>
         <ThemeProvider defaultTheme="light" storageKey="onspot-ui-theme">
           <AuthProvider>
-            <AppContent />
+            <NewUserOnboardingWrapper>
+              <AppContent />
+            </NewUserOnboardingWrapper>
             <OAuthErrorDialog {...oauthError} open={oauthError.show} />
             <Toaster />
           </AuthProvider>

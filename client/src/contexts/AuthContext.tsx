@@ -11,6 +11,9 @@ interface User {
   role: string;
   userType?: "client" | "talent";
   authProvider?: string;
+  isNewUser?: boolean;
+  profileCompletion?: number;
+  needsOnboarding?: boolean;
 }
 
 interface AuthContextType {
@@ -21,6 +24,8 @@ interface AuthContextType {
   login: (email: string, password: string, userType?: "client" | "talent" | null) => Promise<boolean>;
   logout: () => Promise<void>;
   refreshAuth: () => Promise<void>;
+  checkNewUserStatus: (userId: string) => Promise<boolean>;
+  redirectToOnboarding: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -55,11 +60,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // CRITICAL: After successful login, refresh auth to sync with server session
         await refreshAuth();
         
-        // Show success toast notification
-        toast({
-          title: "Welcome to OnSpot!",
-          description: "Your account has been successfully authenticated.",
-        });
+        // Check if this is a new user and handle onboarding
+        const currentUser = await checkServerAuth();
+        if (currentUser) {
+          const isNew = await checkNewUserStatus(currentUser.id);
+          
+          if (isNew) {
+            toast({
+              title: "Welcome to OnSpot!",
+              description: "Let's set up your profile to get started.",
+            });
+            // Redirect to onboarding will be handled by the UI layer
+            setUser({...currentUser, isNewUser: true, needsOnboarding: true});
+          } else {
+            toast({
+              title: "Welcome back!",
+              description: "Your account has been successfully authenticated.",
+            });
+            setUser({...currentUser, isNewUser: false, needsOnboarding: false});
+          }
+        }
         
         return true;
       }
@@ -78,10 +98,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsAuthenticated(true);
         localStorage.setItem('onspot_user', JSON.stringify(mockUser));
         
-        // Show success toast notification
+        // For demo users, consider them new if it's their first login
+        const isNew = !localStorage.getItem(`onboarding_completed_${mockUser.id}`);
+        setUser({...mockUser, isNewUser: isNew, needsOnboarding: isNew});
+        
+        // Show appropriate welcome message
         toast({
-          title: "Welcome to OnSpot!",
-          description: "Your account has been successfully authenticated.",
+          title: isNew ? "Welcome to OnSpot!" : "Welcome back!",
+          description: isNew ? "Let's set up your profile to get started." : "Your account has been successfully authenticated.",
         });
         
         return true;
@@ -119,7 +143,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           profileImageUrl: userData.profileImageUrl,
           role: userData.role || 'client',
           userType: userData.role === 'talent' ? 'talent' : 'client',
-          authProvider: userData.authProvider || 'unknown'
+          authProvider: userData.authProvider || 'unknown',
+          isNewUser: userData.isNewUser || false,
+          profileCompletion: userData.profileCompletion || 0,
+          needsOnboarding: userData.needsOnboarding || false
         };
       } else if (response.status === 401) {
         console.log('🔒 No active session found');
@@ -209,6 +236,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Check if user is new (needs onboarding)
+  const checkNewUserStatus = async (userId: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`/api/profiles/${userId}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.status === 404) {
+        // No profile found, user is new
+        return true;
+      }
+      
+      if (response.ok) {
+        const profile = await response.json();
+        // Consider user new if profile completion is less than 30%
+        return (profile.profileCompletion || 0) < 30;
+      }
+      
+      return false; // Default to not new if we can't determine
+    } catch (error) {
+      console.error('Error checking new user status:', error);
+      return false;
+    }
+  };
+
+  // Helper to redirect to onboarding
+  const redirectToOnboarding = () => {
+    // This will be handled by the UI layer through the user.needsOnboarding flag
+    console.log('🚀 Redirecting to onboarding flow');
+  };
+
   // Check for authentication on mount - only once
   useEffect(() => {
     if (!initialized) {
@@ -227,7 +289,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       error, 
       login, 
       logout, 
-      refreshAuth 
+      refreshAuth,
+      checkNewUserStatus,
+      redirectToOnboarding
     }}>
       {children}
     </AuthContext.Provider>
