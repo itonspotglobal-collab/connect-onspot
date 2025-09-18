@@ -59,10 +59,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// Sentry request handler middleware (conditional)
-if (process.env.SENTRY_DSN) {
-  app.use(Sentry.setupExpressErrorHandler(app));
-}
+// Sentry request handler middleware will be set up later after routes
 
 // Authentication rate limiting middleware
 const authLimiter = rateLimit({
