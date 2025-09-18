@@ -84,16 +84,30 @@ export function LoginDialog() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate required fields
     if (!email || !password) {
       toast({
-        title: "Error",
-        description: "Please fill in all fields",
+        title: "Missing Information",
+        description: "Please enter both email and password",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Basic email format validation
+    if (!email.includes('@') || !email.includes('.')) {
+      toast({
+        title: "Invalid Email Format",
+        description: "Please enter a valid email address",
         variant: "destructive",
       });
       return;
     }
 
     setIsLoading(true);
+    console.log('🔐 Attempting login for:', email.replace(/^(.{3}).*@/, '$1***@'));
+    
     try {
       const success = await login(email, password, userType);
       if (success) {
@@ -105,29 +119,60 @@ export function LoginDialog() {
         setOpen(false);
         resetDialog();
       } else {
-        // Enhanced error handling with specific messages
-        const errorMessage = getSpecificErrorMessage(email, password);
+        // Use generic message since AuthContext handles specific backend errors
         toast({
-          title: errorMessage.title,
-          description: errorMessage.description,
+          title: "Login Failed",
+          description: "Please check your email and password and try again.",
           variant: "destructive",
         });
       }
     } catch (error: any) {
-      console.error('Login error:', error);
-      let errorMessage = "An unexpected error occurred during login";
-      
-      if (error?.message?.includes('network')) {
-        errorMessage = "Network error - please check your connection and try again";
-      } else if (error?.message?.includes('server')) {
-        errorMessage = "Authentication service temporarily unavailable. Please try again in a moment.";
-      }
-      
-      toast({
-        title: "Authentication Error",
-        description: errorMessage,
-        variant: "destructive",
+      console.error('❌ Login error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        statusText: error.response?.statusText
       });
+      
+      // Handle different types of errors with specific messages
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        toast({
+          title: "Network Error",
+          description: "Unable to connect to the server. Please check your connection and try again.",
+          variant: "destructive",
+        });
+      } else if (error.response?.status === 401) {
+        // Backend authentication error
+        const errorMessage = error.response.data?.message || "Invalid email or password";
+        toast({
+          title: "Authentication Failed",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      } else if (error.response?.status === 400) {
+        // Backend validation error
+        const errorMessage = error.response.data?.message || "Invalid login information provided";
+        toast({
+          title: "Validation Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      } else if (error.response?.status >= 500) {
+        // Server error
+        toast({
+          title: "Server Error",
+          description: "Our servers are experiencing issues. Please try again in a few moments.",
+          variant: "destructive",
+        });
+      } else {
+        // Generic error with backend message if available
+        const errorMessage = error.response?.data?.message || error.message || "An unexpected error occurred during login";
+        toast({
+          title: "Login Failed",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false);
     }

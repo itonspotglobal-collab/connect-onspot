@@ -119,23 +119,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // JWT-based signup route
   app.post('/api/signup', authLimiter, async (req: Request, res: Response) => {
     try {
-      const { email, username, password, firstName, lastName, role, company } = req.body;
+      const { email, username, password, first_name, last_name, role, company } = req.body;
       const requestId = (req as any).requestId;
 
+      console.log(`🔍 Signup request received [${requestId}]:`, {
+        email: email ? '***@' + email.split('@')[1] : 'missing',
+        username: username || 'not provided',
+        first_name: first_name || 'missing',
+        last_name: last_name || 'missing',
+        role: role || 'missing',
+        company: company || 'not provided'
+      });
+
       // Validate required fields
-      if (!email || !password || !firstName || !lastName || !role) {
+      if (!email || !password || !first_name || !last_name || !role) {
+        const missingFields = [];
+        if (!email) missingFields.push('email');
+        if (!password) missingFields.push('password');
+        if (!first_name) missingFields.push('first_name');
+        if (!last_name) missingFields.push('last_name');
+        if (!role) missingFields.push('role');
+        
+        console.error(`❌ Signup validation failed [${requestId}]: Missing fields:`, missingFields);
+        
         return res.status(400).json({
           success: false,
-          message: "Missing required fields: email, password, firstName, lastName, role",
+          message: `Missing required fields: ${missingFields.join(', ')}`,
           requestId
         });
       }
 
       // Validate email format
       if (!validateEmail(email)) {
+        console.error(`❌ Email validation failed [${requestId}]: Invalid format for email:`, email);
         return res.status(400).json({
           success: false,
-          message: "Invalid email format",
+          message: "Please enter a valid email address (e.g., name@example.com)",
           requestId
         });
       }
@@ -143,6 +162,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate password strength
       const passwordValidation = validatePasswordStrength(password);
       if (!passwordValidation.isValid) {
+        console.error(`❌ Password validation failed [${requestId}]:`, passwordValidation.errors);
         return res.status(400).json({
           success: false,
           message: passwordValidation.errors.join(', '),
@@ -151,13 +171,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check if user already exists
-      const existingUserQuery = 'SELECT id FROM users WHERE email = $1 OR username = $2';
+      const existingUserQuery = 'SELECT id, email, username FROM users WHERE email = $1 OR username = $2';
       const existingUser = await query(existingUserQuery, [email, username || email]);
       
       if (existingUser.rows.length > 0) {
+        const existing = existingUser.rows[0];
+        console.error(`❌ User already exists [${requestId}]:`, {
+          existingEmail: existing.email,
+          existingUsername: existing.username,
+          attemptedEmail: email,
+          attemptedUsername: username || email
+        });
+        
         return res.status(400).json({
           success: false,
-          message: "Email or username already exists",
+          message: "An account with this email or username already exists",
           requestId
         });
       }
@@ -165,22 +193,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Hash password
       const passwordHash = await hashPassword(password);
       
+      console.log(`🔐 Password hashed successfully [${requestId}]`);
+      
       // Generate user ID
       const userId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
       // Insert user into database
       const insertUserQuery = `
-        INSERT INTO users (id, email, username, "firstName", "lastName", password, company, role, "createdAt", "updatedAt")
+        INSERT INTO users (id, email, username, "first_name", "last_name", password, company, role, "created_at", "updated_at")
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
-        RETURNING id, email, username, "firstName", "lastName", role
+        RETURNING id, email, username, "first_name" as "firstName", "last_name" as "lastName", role
       `;
+      
+      console.log(`📝 Inserting user into database [${requestId}]:`, {
+        userId,
+        email,
+        username: username || email.split('@')[0],
+        first_name,
+        last_name,
+        role,
+        company: company || null
+      });
       
       const userResult = await query(insertUserQuery, [
         userId,
         email,
         username || email.split('@')[0], // Use email prefix as username if not provided
-        firstName,
-        lastName,
+        first_name,
+        last_name,
         passwordHash,
         company || null,
         role
@@ -192,16 +232,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (role === 'talent') {
         const profileId = `prof_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         const insertProfileQuery = `
-          INSERT INTO profiles (id, "userId", "firstName", "lastName", location, languages, timezone, "createdAt", "updatedAt")
+          INSERT INTO profiles (id, "user_id", "first_name", "last_name", location, languages, timezone, "created_at", "updated_at")
           VALUES ($1, $2, $3, $4, 'Global', ARRAY['English'], 'Asia/Manila', NOW(), NOW())
         `;
+        
+        console.log(`👤 Creating talent profile [${requestId}]:`, {
+          profileId,
+          userId,
+          first_name,
+          last_name
+        });
         
         await query(insertProfileQuery, [
           profileId,
           userId,
-          firstName,
-          lastName
+          first_name,
+          last_name
         ]);
+        
+        console.log(`✅ Talent profile created successfully [${requestId}]`);
       }
 
       console.log(`✅ User signup successful [${requestId}]:`, {
@@ -218,7 +267,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
     } catch (error: any) {
-      console.error(`❌ Signup error [${(req as any).requestId}]:`, error);
+      const requestId = (req as any).requestId;
+      console.error(`❌ Signup error [${requestId}]:`, {
+        message: error.message,
+        stack: error.stack,
+        code: error.code,
+        constraint: error.constraint
+      });
+      
+      // Handle specific database errors
+      if (error.code === '23505') { // Unique violation
+        if (error.constraint?.includes('email')) {
+          return res.status(400).json({
+            success: false,
+            message: "An account with this email already exists",
+            requestId
+          });
+        }
+        if (error.constraint?.includes('username')) {
+          return res.status(400).json({
+            success: false,
+            message: "This username is already taken",
+            requestId
+          });
+        }
+      }
+      
       return handleRouteError(error, req, res, "Signup", 500);
     }
   });
@@ -229,37 +303,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { email, password } = req.body;
       const requestId = (req as any).requestId;
 
+      console.log(`🔐 Login request received [${requestId}]:`, {
+        email: email ? '***@' + email.split('@')[1] : 'missing',
+        hasPassword: !!password
+      });
+
       if (!email || !password) {
+        const missingFields = [];
+        if (!email) missingFields.push('email');
+        if (!password) missingFields.push('password');
+        
+        console.error(`❌ Login validation failed [${requestId}]: Missing fields:`, missingFields);
+        
         return res.status(400).json({
           success: false,
-          message: "Email and password are required",
+          message: `Missing required fields: ${missingFields.join(', ')}`,
+          requestId
+        });
+      }
+      
+      // Basic email format validation
+      if (!validateEmail(email)) {
+        console.error(`❌ Email format validation failed [${requestId}]`);
+        return res.status(400).json({
+          success: false,
+          message: "Please enter a valid email address",
           requestId
         });
       }
 
       // Find user by email
-      const userQuery = 'SELECT * FROM users WHERE email = $1';
+      const userQuery = 'SELECT id, email, username, "first_name" as "firstName", "last_name" as "lastName", password, role, company FROM users WHERE email = $1';
       const userResult = await query(userQuery, [email]);
       
       if (userResult.rows.length === 0) {
+        console.error(`❌ User not found [${requestId}]: No user with email ${email}`);
         return res.status(401).json({
           success: false,
-          message: "Invalid credentials",
+          message: "Invalid email or password",
           requestId
         });
       }
+      
+      console.log(`👤 User found [${requestId}]:`, {
+        userId: userResult.rows[0].id,
+        email: userResult.rows[0].email,
+        role: userResult.rows[0].role
+      });
 
       const user = userResult.rows[0];
       
-      // Verify password
-      const isPasswordValid = await verifyPassword(password, user.password);
-      if (!isPasswordValid) {
+      // Check if user has a password (OAuth users might not)
+      if (!user.password) {
+        console.error(`❌ Password verification failed [${requestId}]: User ${user.id} has no password (OAuth user?)`);
         return res.status(401).json({
           success: false,
-          message: "Invalid credentials",
+          message: "This account was created with social login. Please use Google or LinkedIn to sign in.",
           requestId
         });
       }
+      
+      // Verify password
+      console.log(`🔐 Verifying password [${requestId}]`);
+      const isPasswordValid = await verifyPassword(password, user.password);
+      if (!isPasswordValid) {
+        console.error(`❌ Password verification failed [${requestId}]: Invalid password for user ${user.id}`);
+        return res.status(401).json({
+          success: false,
+          message: "Invalid email or password",
+          requestId
+        });
+      }
+      
+      console.log(`✅ Password verified successfully [${requestId}]`);
 
       // Generate JWT token (with fallback for development)
       const jwtSecret = process.env.JWT_SECRET || 'fallback-jwt-secret-for-development-only-not-for-production';
@@ -303,7 +419,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
     } catch (error: any) {
-      console.error(`❌ Login error [${(req as any).requestId}]:`, error);
+      const requestId = (req as any).requestId;
+      console.error(`❌ Login error [${requestId}]:`, {
+        message: error.message,
+        stack: error.stack,
+        code: error.code
+      });
+      
+      // Handle specific errors
+      if (error.message?.includes('password')) {
+        return res.status(401).json({
+          success: false,
+          message: "Authentication failed",
+          requestId
+        });
+      }
+      
       return handleRouteError(error, req, res, "Login", 500);
     }
   });
