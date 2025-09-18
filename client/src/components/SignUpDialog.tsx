@@ -18,7 +18,7 @@ import { FaGoogle, FaLinkedin } from "react-icons/fa";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { isFirebaseAvailable } from "@/lib/firebase";
-import { apiRequest } from "@/lib/queryClient";
+import { authAPI } from "@/lib/api";
 import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
 
 type UserType = "client" | "talent" | null;
@@ -106,6 +106,16 @@ export function SignUpDialog() {
       return;
     }
 
+    // Ensure userType is not null before proceeding
+    if (!userType) {
+      toast({
+        title: "Account Type Required",
+        description: "Please select an account type (Client or Talent) to continue",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       // Call the real signup API
@@ -114,36 +124,64 @@ export function SignUpDialog() {
         password: formData.password,
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
-        role: userType,
+        role: userType, // Now TypeScript knows this is "client" | "talent"
         ...(userType === "client" && { company: formData.company.trim() })
       };
 
-      const response = await fetch("/api/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        credentials: "include",
-        body: JSON.stringify(signupData)
-      });
-
-      if (response.ok) {
-        const responseData = await response.json();
+      // Use JWT-based signup API
+      const signupResponse = await authAPI.signup(signupData);
+      
+      if (signupResponse.success) {
         const accountType = userType === "client" ? "Client" : "Talent";
+        
         toast({
           title: `Welcome to OnSpot!`,
-          description: `Your ${accountType.toLowerCase()} account has been created successfully! You can now log in.`,
+          description: `Your ${accountType.toLowerCase()} account has been created successfully! Logging you in...`,
         });
         
-        setOpen(false);
-        resetDialog();
-        
-        // Navigate user to appropriate page after signup
-        if (userType === "talent") {
-          setLocation("/get-hired");
-        } else if (userType === "client") {
-          setLocation("/hire-talent");
+        // Automatically log in the user after successful signup
+        try {
+          const loginResponse = await authAPI.login(formData.email.trim(), formData.password);
+          
+          if (loginResponse.success) {
+            // Success! Token and user data are already stored by authAPI.login
+            toast({
+              title: "Logged In Successfully",
+              description: `Welcome to your OnSpot ${accountType.toLowerCase()} portal!`,
+            });
+            
+            setOpen(false);
+            resetDialog();
+            
+            // Trigger auth context refresh
+            window.dispatchEvent(new CustomEvent('auth-changed'));
+            
+            // Navigate user to appropriate page
+            if (userType === "talent") {
+              setLocation("/get-hired");
+            } else if (userType === "client") {
+              setLocation("/hire-talent");
+            }
+          } else {
+            toast({
+              title: "Login Failed",
+              description: "Account created but automatic login failed. Please log in manually.",
+              variant: "destructive",
+            });
+          }
+        } catch (loginError) {
+          console.error("Auto-login error:", loginError);
+          toast({
+            title: "Account Created",
+            description: "Account created successfully! Please log in to continue.",
+          });
         }
+      } else {
+        toast({
+          title: "Signup Failed",
+          description: signupResponse.message || "Failed to create account. Please try again.",
+          variant: "destructive",
+        });
       }
     } catch (error: any) {
       console.error("Signup error:", error);

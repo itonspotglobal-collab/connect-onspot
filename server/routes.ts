@@ -8,6 +8,8 @@ import { ghlService } from "./services/ghlService";
 import rateLimit from "express-rate-limit";
 import multer from "multer";
 import Papa from "papaparse";
+import jwt from "jsonwebtoken";
+import { query } from './db.ts';
 import {
   insertUserSchema, insertProfileSchema, insertSkillSchema, insertUserSkillSchema,
   insertJobSchema, insertJobSkillSchema, insertProposalSchema, insertContractSchema,
@@ -113,6 +115,198 @@ const authLimiter = rateLimit({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+    
+  // JWT-based signup route
+  app.post('/api/signup', authLimiter, async (req: Request, res: Response) => {
+    try {
+      const { email, username, password, firstName, lastName, role, company } = req.body;
+      const requestId = (req as any).requestId;
+
+      // Validate required fields
+      if (!email || !password || !firstName || !lastName || !role) {
+        return res.status(400).json({
+          success: false,
+          message: "Missing required fields: email, password, firstName, lastName, role",
+          requestId
+        });
+      }
+
+      // Validate email format
+      if (!validateEmail(email)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid email format",
+          requestId
+        });
+      }
+
+      // Validate password strength
+      const passwordValidation = validatePasswordStrength(password);
+      if (!passwordValidation.isValid) {
+        return res.status(400).json({
+          success: false,
+          message: passwordValidation.errors.join(', '),
+          requestId
+        });
+      }
+
+      // Check if user already exists
+      const existingUserQuery = 'SELECT id FROM users WHERE email = $1 OR username = $2';
+      const existingUser = await query(existingUserQuery, [email, username || email]);
+      
+      if (existingUser.rows.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Email or username already exists",
+          requestId
+        });
+      }
+
+      // Hash password
+      const passwordHash = await hashPassword(password);
+      
+      // Generate user ID
+      const userId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Insert user into database
+      const insertUserQuery = `
+        INSERT INTO users (id, email, username, "firstName", "lastName", password, company, role, "createdAt", "updatedAt")
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+        RETURNING id, email, username, "firstName", "lastName", role
+      `;
+      
+      const userResult = await query(insertUserQuery, [
+        userId,
+        email,
+        username || email.split('@')[0], // Use email prefix as username if not provided
+        firstName,
+        lastName,
+        passwordHash,
+        company || null,
+        role
+      ]);
+
+      const newUser = userResult.rows[0];
+
+      // If user is talent, create profile entry
+      if (role === 'talent') {
+        const profileId = `prof_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const insertProfileQuery = `
+          INSERT INTO profiles (id, "userId", "firstName", "lastName", location, languages, timezone, "createdAt", "updatedAt")
+          VALUES ($1, $2, $3, $4, 'Global', ARRAY['English'], 'Asia/Manila', NOW(), NOW())
+        `;
+        
+        await query(insertProfileQuery, [
+          profileId,
+          userId,
+          firstName,
+          lastName
+        ]);
+      }
+
+      console.log(`✅ User signup successful [${requestId}]:`, {
+        userId: newUser.id,
+        email: newUser.email,
+        role: newUser.role
+      });
+
+      res.status(200).json({
+        success: true,
+        userId: newUser.id,
+        message: "Account created successfully",
+        requestId
+      });
+
+    } catch (error: any) {
+      console.error(`❌ Signup error [${(req as any).requestId}]:`, error);
+      return handleRouteError(error, req, res, "Signup", 500);
+    }
+  });
+
+  // JWT-based login route
+  app.post('/api/login', authLimiter, async (req: Request, res: Response) => {
+    try {
+      const { email, password } = req.body;
+      const requestId = (req as any).requestId;
+
+      if (!email || !password) {
+        return res.status(400).json({
+          success: false,
+          message: "Email and password are required",
+          requestId
+        });
+      }
+
+      // Find user by email
+      const userQuery = 'SELECT * FROM users WHERE email = $1';
+      const userResult = await query(userQuery, [email]);
+      
+      if (userResult.rows.length === 0) {
+        return res.status(401).json({
+          success: false,
+          message: "Invalid credentials",
+          requestId
+        });
+      }
+
+      const user = userResult.rows[0];
+      
+      // Verify password
+      const isPasswordValid = await verifyPassword(password, user.password);
+      if (!isPasswordValid) {
+        return res.status(401).json({
+          success: false,
+          message: "Invalid credentials",
+          requestId
+        });
+      }
+
+      // Generate JWT token (with fallback for development)
+      const jwtSecret = process.env.JWT_SECRET || 'fallback-jwt-secret-for-development-only-not-for-production';
+      
+      if (!process.env.JWT_SECRET) {
+        console.warn('⚠️ JWT_SECRET environment variable not set, using fallback (not secure for production)');
+      }
+
+      const token = jwt.sign(
+        { 
+          userId: user.id,
+          email: user.email,
+          role: user.role
+        },
+        jwtSecret,
+        { expiresIn: '7d' }
+      );
+
+      const userResponse = {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        company: user.company
+      };
+
+      console.log(`✅ User login successful [${requestId}]:`, {
+        userId: user.id,
+        email: user.email,
+        role: user.role
+      });
+
+      res.status(200).json({
+        success: true,
+        token,
+        user: userResponse,
+        authProvider: 'email',
+        requestId
+      });
+
+    } catch (error: any) {
+      console.error(`❌ Login error [${(req as any).requestId}]:`, error);
+      return handleRouteError(error, req, res, "Login", 500);
+    }
+  });
   // Auth routes - Updated for OAuth compatibility with enhanced error handling
   app.get('/api/auth/user', async (req: any, res) => {
     try {
@@ -1924,7 +2118,7 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
         }
 
         // Validate each row
-        const validationResult = await storage.validateCsvTalentRows(parseResult.data);
+        const validationResult = await storage.validateCsvTalentRows(parseResult.data as any[]);
 
         console.log(`✅ CSV validation completed [${req.requestId}]:`, {
           totalRows: parseResult.data.length,
@@ -2009,7 +2203,7 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
         }
 
         // Validate and process
-        const validationResult = await storage.validateCsvTalentRows(parseResult.data);
+        const validationResult = await storage.validateCsvTalentRows(parseResult.data as any[]);
         
         // Filter out duplicates if requested
         let talentDataToImport = validationResult.validRows;
