@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { authAPI, getCurrentUser, isAuthenticated as checkIsAuthenticated } from '@/lib/api';
 
 interface User {
   id: string;
@@ -14,6 +15,7 @@ interface User {
   isNewUser?: boolean;
   profileCompletion?: number;
   needsOnboarding?: boolean;
+  company?: string;
 }
 
 interface AuthContextType {
@@ -43,62 +45,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       setError(null);
       
-      // Call the real email/password login API
-      const loginResponse = await fetch('/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Important for session cookies
-        body: JSON.stringify({ email, password })
-      });
+      // Use the JWT-based authAPI
+      const loginData = await authAPI.login(email, password);
       
-      if (loginResponse.ok) {
-        const loginData = await loginResponse.json();
-        console.log('✅ Email/password login successful:', loginData);
+      if (loginData.success && loginData.user) {
+        console.log('✅ JWT login successful:', loginData);
         
-        // The login API returns user data and establishes session
-        const userData = loginData.user;
         const mappedUser: User = {
-          id: userData.id,
-          username: userData.username,
-          email: userData.email,
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          profileImageUrl: userData.profileImageUrl,
-          role: userData.role,
-          userType: userData.role as "client" | "talent",
-          authProvider: loginData.authProvider || 'email'
+          id: loginData.user.id,
+          username: loginData.user.username,
+          email: loginData.user.email,
+          firstName: loginData.user.firstName,
+          lastName: loginData.user.lastName,
+          profileImageUrl: loginData.user.profileImageUrl,
+          role: loginData.user.role,
+          userType: loginData.user.role as "client" | "talent",
+          authProvider: loginData.authProvider || 'jwt',
+          company: loginData.user.company
         };
         
         setUser(mappedUser);
         setIsAuthenticated(true);
         
         // Check if this is a new user and handle onboarding
-        const isNew = await checkNewUserStatus(userData.id);
+        const isNew = await checkNewUserStatus(loginData.user.id);
         setUser({...mappedUser, isNewUser: isNew, needsOnboarding: isNew});
         
         return true;
       } else {
-        // Handle login errors
-        const errorData = await loginResponse.json();
-        console.error('❌ Login failed:', errorData);
-        
-        if (loginResponse.status === 401) {
-          setError('Invalid email or password');
-        } else if (loginResponse.status === 400) {
-          setError(errorData.message || 'Invalid login information');
-        } else {
-          setError('Login failed. Please try again.');
-        }
-        
+        setError(loginData.message || 'Login failed. Please try again.');
         return false;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
       
-      // Handle network errors
-      if (error instanceof TypeError && error.message.includes('fetch')) {
+      // Handle specific error responses
+      if (error.response?.status === 401) {
+        setError('Invalid email or password');
+      } else if (error.response?.status === 400) {
+        setError(error.response.data?.message || 'Invalid login information');
+      } else if (error.message?.includes('Network')) {
         setError('Network error. Please check your connection and try again.');
       } else {
         setError('Login failed. Please try again.');
@@ -110,62 +96,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Check authentication status with backend
-  const checkServerAuth = async (): Promise<User | null> => {
-    try {
-      const response = await fetch('/api/auth/user', {
-        method: 'GET',
-        credentials: 'include', // Include cookies for session
-        headers: {
-          'Content-Type': 'application/json',
-        },
+  // Listen for JWT expiration events
+  useEffect(() => {
+    const handleJWTExpired = () => {
+      console.log('🔒 JWT expired, logging out user');
+      logout();
+      toast({
+        title: "Session Expired",
+        description: "Please log in again to continue.",
+        variant: "destructive",
       });
+    };
 
-      if (response.ok) {
-        const userData = await response.json();
-        console.log('🔐 Server authenticated user:', userData);
-        return {
-          id: userData.id,
-          email: userData.email || '',
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          profileImageUrl: userData.profileImageUrl,
-          role: userData.role || 'client',
-          userType: userData.role === 'talent' ? 'talent' : 'client',
-          authProvider: userData.authProvider || 'unknown',
-          isNewUser: userData.isNewUser || false,
-          profileCompletion: userData.profileCompletion || 0,
-          needsOnboarding: userData.needsOnboarding || false
-        };
-      } else if (response.status === 401) {
-        console.log('🔒 No active session found');
-        return null;
-      } else {
-        console.error('Failed to check auth status:', response.status);
-        return null;
-      }
-    } catch (error) {
-      console.error('Error checking server auth:', error);
-      return null;
-    }
-  };
+    window.addEventListener('jwt-expired', handleJWTExpired);
+    return () => {
+      window.removeEventListener('jwt-expired', handleJWTExpired);
+    };
+  }, []);
 
   const logout = async (): Promise<void> => {
     try {
       setIsLoading(true);
       
-      // For server-authenticated users, call backend logout endpoint
-      if (user?.authProvider !== 'email') {
-        try {
-          await fetch('/api/logout', {
-            method: 'GET',
-            credentials: 'include',
-          });
-        } catch (logoutError) {
-          console.warn('Backend logout failed:', logoutError);
-          // Continue with local cleanup even if server logout fails
-        }
-      }
+      // Use JWT logout (clears localStorage)
+      authAPI.logout();
+      
+      console.log('🚪 JWT User logged out successfully');
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
@@ -173,53 +129,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setIsAuthenticated(false);
       setError(null);
-      localStorage.removeItem('onspot_user');
       setIsLoading(false);
-      
-      console.log('🚪 User logged out successfully');
     }
   };
 
-  // Refresh authentication state from server
+  // Refresh authentication state from localStorage (JWT-based)
   const refreshAuth = async (): Promise<void> => {
     try {
       setIsLoading(true);
       setError(null);
       
-      // First, check if user is server authenticated
-      const serverUser = await checkServerAuth();
-      if (serverUser) {
-        console.log('🔐 Server user found:', serverUser);
-        setUser(serverUser);
+      // Check if user has JWT token and user data in localStorage
+      const isAuth = checkIsAuthenticated();
+      const storedUser = getCurrentUser();
+      
+      if (isAuth && storedUser) {
+        console.log('🔐 JWT user found in localStorage:', storedUser);
+        const mappedUser: User = {
+          id: storedUser.id,
+          username: storedUser.username,
+          email: storedUser.email,
+          firstName: storedUser.firstName,
+          lastName: storedUser.lastName,
+          profileImageUrl: storedUser.profileImageUrl,
+          role: storedUser.role,
+          userType: storedUser.role as "client" | "talent",
+          authProvider: 'jwt',
+          company: storedUser.company
+        };
+        
+        setUser(mappedUser);
         setIsAuthenticated(true);
-        // Clear any old localStorage data
-        localStorage.removeItem('onspot_user');
-        return;
-      }
-
-      // Fallback to localStorage for email/password users (legacy)
-      const storedUser = localStorage.getItem('onspot_user');
-      if (storedUser) {
-        try {
-          const parsedUser = JSON.parse(storedUser);
-          console.log('🔒 Local storage user found:', parsedUser);
-          setUser(parsedUser);
-          setIsAuthenticated(true);
-        } catch (error) {
-          console.error('🔒 Error parsing stored user:', error);
-          localStorage.removeItem('onspot_user');
-        }
       } else {
-        // No user found anywhere
-        console.log('🔒 No authenticated user found');
+        // No valid authentication found
+        console.log('🔒 No JWT authentication found');
         setUser(null);
         setIsAuthenticated(false);
       }
     } catch (error) {
-      console.error('Error refreshing auth:', error);
+      console.error('Error refreshing JWT auth:', error);
       setError('Failed to check authentication status');
       setUser(null);
       setIsAuthenticated(false);
+      // Clear potentially corrupted data
+      authAPI.logout();
     } finally {
       setIsLoading(false);
     }
@@ -263,7 +216,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Check for authentication on mount - only once
   useEffect(() => {
     if (!initialized) {
-      console.log('🔒 AuthContext: Initializing authentication...');
+      console.log('🔒 AuthContext: Initializing JWT authentication...');
       refreshAuth().finally(() => {
         setInitialized(true);
       });

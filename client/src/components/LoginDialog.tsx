@@ -99,7 +99,7 @@ export function LoginDialog() {
       if (success) {
         const portalType = userType === "client" ? "Client Portal" : "Talent Portal";
         toast({
-          title: "Success",
+          title: "Login Successful",
           description: `Welcome to OnSpot ${portalType}!`,
         });
         setOpen(false);
