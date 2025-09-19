@@ -73,7 +73,7 @@ export const authAPI = {
   // Login with email and password
   login: async (email: string, password: string) => {
     try {
-      const response = await api.post("/login", { email, password });
+      const response = await api.post("/api/login", { email, password });
 
       if (response.data.success && response.data.token) {
         // Store JWT token in localStorage
@@ -99,7 +99,7 @@ export const authAPI = {
     company?: string;
   }) => {
     try {
-      const response = await api.post("/signup", userData);
+      const response = await api.post("/api/signup", userData);
       return response.data;
     } catch (error) {
       console.error("Signup API error:", error);
