@@ -118,13 +118,13 @@ export function SignUpDialog() {
 
     setIsLoading(true);
     try {
-      // Call the real signup API with correct snake_case field names
+      // Call the real signup API with correct camelCase field names
       const signupData = {
         email: formData.email.trim(),
         username: formData.email.split('@')[0], // Generate username from email
         password: formData.password,
-        first_name: formData.firstName.trim(),  // Changed to snake_case
-        last_name: formData.lastName.trim(),    // Changed to snake_case
+        firstName: formData.firstName.trim(),   // camelCase for API compatibility
+        lastName: formData.lastName.trim(),     // camelCase for API compatibility
         role: userType, // Now TypeScript knows this is "client" | "talent"
         ...(userType === "client" && { company: formData.company.trim() })
       };
