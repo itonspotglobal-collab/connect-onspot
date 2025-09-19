@@ -1,0 +1,47 @@
+Fix the issue where signup in production writes to the database but login fails, even with correct credentials, and ensure auto-login works.
+
+Steps:
+
+1. Database:
+   - Ensure both /signup and /login routes use the same pg Pool connection created with process.env.DATABASE_URL.
+   - Remove any hardcoded or fallback DB URLs in login route.
+   - On server startup, log which DB URL is being used (masking credentials) to confirm consistency.
+
+2. Signup (/signup route):
+   - Accept { email, username, password, first_name, last_name, role }.
+   - Hash password with bcrypt (saltRounds=12) and store it in users.password_hash.
+   - Do not store plain passwords.
+   - Return { success:true, userId, email, role } after insert.
+   - If role === "talent", also insert into profiles with default values.
+
+3. Login (/login route):
+   - Accept { email, password }.
+   - Query SELECT * FROM users WHERE email=$1.
+   - Use bcrypt.compare(password, user.password_hash) to validate.
+   - If valid, sign a JWT with process.env.JWT_SECRET and return:
+     { success:true, token, user:{ id,email,username,role,first_name,last_name } }.
+   - If invalid, return 401 with { success:false, message:"Invalid email or password" }.
+
+4. Frontend (api.ts):
+   - In production, axios baseURL must point to https://connect.onspotglobal.com/api.
+   - In development, use localhost:port or VITE_API_BASE.
+   - Ensure all API calls go through this configured api instance.
+
+5. Frontend (SignUpDialog.tsx):
+   - Stop using raw axios.post('/api/...').
+   - Use the api.ts instance (authAPI) for both signup and login requests.
+   - Example: await authAPI.post('/signup', signupData).
+   - After successful signup, immediately call authAPI.post('/login', { email, password }) to auto-login.
+   - On success, store token + user in localStorage and update AuthContext.
+   - On failure, show message: "Signup succeeded but auto-login failed, please log in manually."
+
+6. Error Handling:
+   - Backend: wrap DB queries in try/catch, log errors with console.error, return { success:false, message:error.message }.
+   - Frontend: show friendly toasts for validation errors (missing fields, password mismatch) and backend errors (duplicate email, invalid login).
+   - Prevent race conditions by awaiting signup before attempting login.
+
+After this fix:
+- Signup always inserts into the correct production database with bcrypt-hashed passwords.
+- Login queries the same production database and validates correctly.
+- Auto-login after signup works immediately in production with the same credentials.
+- If auto-login fails for any reason, the user sees a friendly message and can log in manually.
