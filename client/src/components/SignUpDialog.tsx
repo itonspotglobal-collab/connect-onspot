@@ -20,6 +20,7 @@ import { useLocation } from "wouter";
 import { isFirebaseAvailable } from "@/lib/firebase";
 import { authAPI } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import axios from "axios";
 import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
 
 type UserType = "client" | "talent" | null;
@@ -42,7 +43,7 @@ export function SignUpDialog() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const { login } = useAuth(); // Use AuthContext login method
+  const { login, refreshAuth } = useAuth(); // Get AuthContext methods
 
   const resetDialog = () => {
     setCurrentStep("user-type");
@@ -136,23 +137,37 @@ export function SignUpDialog() {
         password: '[REDACTED]' // Don't log password
       });
 
-      // Use JWT-based signup API
-      const signupResponse = await authAPI.signup(signupData);
+      // Step 1: First call signup API using direct axios.post for exact control
+      console.log('🚀 Step 1: Calling signup API...');
+      const signupResponse = await axios.post('/api/signup', signupData);
       
-      if (signupResponse.success) {
+      if (signupResponse.data.success) {
         const accountType = userType === "client" ? "Client" : "Talent";
+        console.log('✅ Step 1 complete: Signup successful', signupResponse.data);
         
         toast({
           title: `Welcome to OnSpot!`,
           description: `Your ${accountType.toLowerCase()} account has been created successfully! Logging you in...`,
         });
         
-        // Automatically log in the user after successful signup using AuthContext
+        // Step 2: Immediately call login API with email and password
         try {
-          const loginSuccess = await login(formData.email.trim(), formData.password, userType);
+          console.log('🚀 Step 2: Calling login API...');
+          const loginResponse = await axios.post('/api/login', {
+            email: formData.email.trim(),
+            password: formData.password
+          });
           
-          if (loginSuccess) {
-            // Success! Auth context has been updated automatically
+          if (loginResponse.data.success && loginResponse.data.token) {
+            console.log('✅ Step 2 complete: Login successful');
+            
+            // Step 3: Store token and user in AuthContext after login response
+            localStorage.setItem('onspot_jwt_token', loginResponse.data.token);
+            localStorage.setItem('onspot_user', JSON.stringify(loginResponse.data.user));
+            
+            // Refresh AuthContext to pick up the new authentication
+            await refreshAuth();
+            
             toast({
               title: "Logged In Successfully",
               description: `Welcome to your OnSpot ${accountType.toLowerCase()} portal!`,
@@ -168,29 +183,31 @@ export function SignUpDialog() {
               setLocation("/hire-talent");
             }
           } else {
+            console.error('❌ Step 2 failed: Login response missing token', loginResponse.data);
             toast({
-              title: "Login Failed",
-              description: "Account created but automatic login failed. Please log in manually.",
+              title: "Auto-Login Failed",
+              description: "Signup succeeded but auto-login failed, please log in manually.",
               variant: "destructive",
             });
           }
         } catch (loginError: any) {
-          console.error("❌ Auto-login error:", {
+          console.error("❌ Step 2 failed: Auto-login error:", {
             message: loginError.message,
             response: loginError.response?.data,
             status: loginError.response?.status
           });
           toast({
-            title: "Account Created Successfully",
-            description: "Your account was created but automatic login failed. Please log in manually to continue.",
+            title: "Auto-Login Failed",
+            description: "Signup succeeded but auto-login failed, please log in manually.",
+            variant: "destructive",
           });
         }
       } else {
         // Show specific error message from backend
-        const errorMessage = signupResponse.message || "Failed to create account. Please try again.";
-        console.error('❌ Signup failed:', {
-          message: signupResponse.message,
-          response: signupResponse
+        const errorMessage = signupResponse.data.message || "Failed to create account. Please try again.";
+        console.error('❌ Step 1 failed: Signup failed:', {
+          message: signupResponse.data.message,
+          response: signupResponse.data
         });
         
         toast({

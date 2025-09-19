@@ -500,19 +500,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         role: newUser.role
       });
 
-      // Return exact format required by specification - 201 status with userId field
+      // Return exact format required by specification - ONLY { success:true, userId, email, role }
       res.status(201).json({
         success: true,
         userId: newUser.id,
-        user: {
-          id: newUser.id,
-          email: newUser.email,
-          username: newUser.username,
-          role: newUser.role,
-          first_name: newUser.first_name,
-          last_name: newUser.last_name
-        },
-        requestId
+        email: newUser.email,
+        role: newUser.role
       });
 
     } catch (error: any) {
