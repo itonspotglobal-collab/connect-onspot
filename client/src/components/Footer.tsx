@@ -92,6 +92,7 @@ export function Footer() {
                 <li><Link href="/insights" className="hover:text-white transition-all duration-200 hover:translate-x-1" data-testid="footer-insights">Insights</Link></li>
                 <li><Link href="/affiliate-marketing" className="hover:text-white transition-all duration-200 hover:translate-x-1" data-testid="footer-affiliate-marketing">Affiliate Marketing</Link></li>
                 <li><Link href="/bpo-partner" className="hover:text-white transition-all duration-200 hover:translate-x-1" data-testid="footer-bpo-partner">BPO Partner</Link></li>
+                <li><Link href="/investors" className="hover:text-white transition-all duration-200 hover:translate-x-1" data-testid="footer-investors">Investors Corner</Link></li>
                 <li><a href="#" className="hover:text-white transition-all duration-200 hover:translate-x-1" data-testid="footer-about">About Us</a></li>
               </ul>
             </div>

@@ -1,0 +1,134 @@
+Hero Section – Title
+	•	Logo + tagline: Onspot, Making Outsourcing Easy
+OnSpot
+“The Evolution of Outsourcing”
+	•	Visual: Bold OnSpot logo with a global network map in background.
+	•	Subtext: From BPO battleground to global outsourcing empire.
+
+⸻
+
+Slide 2 – The 60-Second Story
+ Nur Laminero is a Filipino entrepreneur, operator, and visionary, serving as the Chief Executive Officer of OnSpot Global. With over two decades of leadership across the BPO, technology, transportation, and education sectors, he has built a reputation for transforming operational chaos into scalable systems. 
+Jake Wainberg is a New York–based serial entrepreneur and the Founder & President of OnSpot Global. Originally from Israel, he built multiple businesses in the U.S. before co-founding OnSpot out of necessity: faced with rising labor costs and hiring challenges in his own ventures, Jake turned to the Philippines for outsourcing — unlocking cost savings and growth that later became the foundation of OnSpot. 
+	•	OnSpot BPO → 3 years in the trenches.
+	•	We survived losses, recoveries, and growth.
+	•	Now: OnSpotConnect prototype → unifying outsourcing.
+	•	Visual: Split image (left: BPO office desks, right: digital platform screenshot).   The 60-Second OnSpot Story (Nur & Jake)
+
+“Jake Wainberg and I didn’t create OnSpot from a whiteboard — we built it from battle scars.
+In New York, we were drowning in operational costs. Teams were burning out, margins were shrinking, and growth stalled. Instead of folding, we created OnSpot — outsourcing made easy, built by entrepreneurs, for entrepreneurs.
+
+Jake brought the street-smart hustle of scaling U.S. businesses. I brought the systems and leadership of building and running full-scale BPO operations in the Philippines. Together, we turned our struggles into a solution: OnSpot.
+
+Three years in, we’ve served over 80 clients, deployed hundreds of resources, and delivered tens of millions in value. We’ve proven outsourcing can cut costs by up to 70%, unlock time, and fuel 8X growth.
+
+OnSpot isn’t theory — it’s survival turned into scale. And now, with OnSpotConnect, we’re unifying BPO and freelancing into the future of outsourcing.”
+
+⸻
+
+Slide 3 – The Problem
+
+Outsourcing today is broken.
+	•	Freelancing platforms = chaotic, unreliable.
+	•	BPO giants = expensive, rigid, slow.
+	•	SMEs bleed time and money trying to scale.
+	•	Visual: “Broken bridge” graphic with freelancing on one side, BPO on the other.
+
+⸻
+
+Slide 4 – The Solution: OnSpotConnect
+
+The Unified Outsourcing Platform.
+	•	Flexibility of freelancing + Reliability of BPO.
+	•	Marketplace + Management layer.
+	•	Instant hiring, payment, and accountability.
+	•	Visual: App prototype screenshot + “bridging the gap” iconography.
+
+⸻
+
+Slide 5 – Proof of Grit (Traction)
+	•	3 years operating as a BPO.
+	•	Clients served: [80].
+	•	Seats operated: [500+].
+	•	Survived downturns and rebounded stronger.
+	•	Prototype: connect.onspotglobal.com (live).
+	•	Visual: Timeline of “3 years survival → prototype → platform.”
+
+⸻
+
+Slide 6 – Market Opportunity
+	•	Global Outsourcing: $250B+.
+	•	Freelancing platforms: Upwork, Fiverr.
+	•	BPO giants: Accenture, Teleperformance.
+	•	SMEs underserved → our wedge.
+	•	Visual: TAM/SAM/SOM chart (highlight SME segment).
+
+Key Data Points (U.S.)
+	•	The U.S. BPO market size in 2022 was about USD 70.66 billion.  
+	•	It’s expected to grow at ~9.1% CAGR from 2023 to 2030, reaching ~USD 139.49 billion by 2030.  
+	•	The U.S. Finance & Accounting BPO market alone was about USD 17.25 billion in 2024, with projections to reach ~USD 28.81 billion by 2030.  
+
+Layer	Definition (for OnSpot)	Estimate (U.S.)
+TAM (Total Addressable Market)	Entire U.S. BPO market + all businesses that could use hybrid outsourcing (freelancers + structured BPO). This includes large enterprises + SMEs spending on BPO, managed services, process outsourcing.	USD ~140B by 2030 is the expected U.S. BPO market size. That is the ceiling if OnSpot could cover almost all standard BPO spend.
+SAM (Serviceable Addressable Market)	Portion of TAM relevant to OnSpot’s model: SME + Mid-market businesses in the U.S. that want flexible, accountable outsourcing, using hybrid models rather than full traditional BPOs. Also limited to service types OnSpot is building (customer service, finance & accounting, HR, technical support).	If SMEs + mid-market make up, say, 30-40% of U.S. BPO spend, then SAM ≈ USD 40-60B in 2030. You might also take current market (2025) values a bit lower, say USD 30-40B depending on uptake.
+SOM (Serviceable Obtainable Market)	What OnSpot can realistically capture in U.S. in near term (3-5 years) given resources, competition, adoption curves, CAC/LTV constraints.	If aiming to get 1-2% of SAM in that period → SOM ≈ USD 400-1,200 million (i.e. $0.4-1.2B). If you’re aggressive and well-executed, maybe you hit 3-4% → $1.2-2.4B.
+⸻
+
+Slide 7 – Competitive Advantage
+	•	Freelancers = cheap, but unreliable.
+	•	BPO = reliable, but inflexible + costly.
+	•	OnSpot = the hybrid model.
+	•	Visual: 3-column table (Freelance | BPO | OnSpot). Show clear middle ground.
+
+⸻
+
+Slide 8 – Business Model
+	•	Revenue Streams:
+	•	SaaS subscription.
+	•	Transaction fees.
+	•	Managed BPO services.
+	•	Cash Flow: Steady from BPO, scalable via platform.
+	•	Visual: Revenue stack diagram.
+
+⸻
+
+Slide 9 – Scale Strategy
+	•	Funnel BPO clients into platform.
+	•	Target SMEs in Southeast Asia → expand globally.
+	•	Use AI for talent matching + workflow automation.
+	•	JT’s network = instant scale into entrepreneur ecosystems worldwide.
+	•	Visual: Map expanding from PH to global.
+
+⸻
+
+Slide 10 – Financials (Projections)
+
+Will be provided by request
+
+⸻
+
+Slide 11 – The Ask (for private conversation)
+	•	$X for Y% equity.
+	•	Funds:
+	•	Finalize platform build.
+	•	Scale client + talent onboarding.
+	•	Expand into [X] new cities in 12 months.
+	•	What we want from JT:
+	•	Capital.
+	•	Global SME introductions.
+	•	Strategic mentorship on scale.
+	•	Visual: Strong, bold “ASK” graphic with icons (money, network, mentorship).
+
+⸻
+
+Slide 12 – Closing (Vision)
+	•	“OnSpot isn’t just another outsourcing company. We’ve proven we can fight, bleed, and win. Now we’re building the platform to dominate the global stage. With your backing, we’ll turn scars into scale — and scale into empire.”
+	•	Visual: Globe with OnSpot logo lighting up markets.
+
+⸻
+
+⚡ Tone for  page Presentation:
+	•	Lead with the battle scars → shows resilience.
+	•	Be ruthless with numbers and market logic.
+	•	Show cash flow today + scalability tomorrow.
+	•	Close with vision + empire language.
