@@ -137,13 +137,13 @@ export function SignUpDialog() {
         password: '[REDACTED]' // Don't log password
       });
 
-      // Step 1: First call signup API using direct axios.post for exact control
+      // Step 1: First call signup API using authAPI for proper URL configuration
       console.log('🚀 Step 1: Calling signup API...');
-      const signupResponse = await axios.post('/api/signup', signupData);
+      const signupResponse = await authAPI.signup(signupData);
       
-      if (signupResponse.data.success) {
+      if (signupResponse.success) {
         const accountType = userType === "client" ? "Client" : "Talent";
-        console.log('✅ Step 1 complete: Signup successful', signupResponse.data);
+        console.log('✅ Step 1 complete: Signup successful', signupResponse);
         
         toast({
           title: `Welcome to OnSpot!`,
@@ -153,17 +153,12 @@ export function SignUpDialog() {
         // Step 2: Immediately call login API with email and password
         try {
           console.log('🚀 Step 2: Calling login API...');
-          const loginResponse = await axios.post('/api/login', {
-            email: formData.email.trim(),
-            password: formData.password
-          });
+          const loginResponse = await authAPI.login(formData.email.trim(), formData.password);
           
-          if (loginResponse.data.success && loginResponse.data.token) {
+          if (loginResponse.success && loginResponse.token) {
             console.log('✅ Step 2 complete: Login successful');
             
-            // Step 3: Store token and user in AuthContext after login response
-            localStorage.setItem('onspot_jwt_token', loginResponse.data.token);
-            localStorage.setItem('onspot_user', JSON.stringify(loginResponse.data.user));
+            // Step 3: Token and user are already stored by authAPI.login
             
             // Refresh AuthContext to pick up the new authentication
             await refreshAuth();
@@ -183,7 +178,7 @@ export function SignUpDialog() {
               setLocation("/hire-talent");
             }
           } else {
-            console.error('❌ Step 2 failed: Login response missing token', loginResponse.data);
+            console.error('❌ Step 2 failed: Login response missing token', loginResponse);
             toast({
               title: "Auto-Login Failed",
               description: "Signup succeeded but auto-login failed, please log in manually.",
@@ -204,10 +199,10 @@ export function SignUpDialog() {
         }
       } else {
         // Show specific error message from backend
-        const errorMessage = signupResponse.data.message || "Failed to create account. Please try again.";
+        const errorMessage = signupResponse.message || "Failed to create account. Please try again.";
         console.error('❌ Step 1 failed: Signup failed:', {
-          message: signupResponse.data.message,
-          response: signupResponse.data
+          message: signupResponse.message,
+          response: signupResponse
         });
         
         toast({

@@ -132,6 +132,18 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: false }));
 
+// Log database connection info on startup for debugging
+const logDatabaseConnection = () => {
+  const dbUrl = process.env.DATABASE_URL;
+  if (dbUrl) {
+    // Mask credentials for security
+    const maskedUrl = dbUrl.replace(/:([^:]+)@/, ':***@');
+    console.log(`🔗 Database connected: ${maskedUrl}`);
+  } else {
+    console.error('❌ DATABASE_URL not configured!');
+  }
+};
+
 // Enhanced logging middleware with request ID tracking
 app.use((req, res, next) => {
   const start = Date.now();
@@ -190,6 +202,9 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Log database connection on startup
+  logDatabaseConnection();
+  
   // Setup authentication first before routes
   await setupAuth(app);
   
