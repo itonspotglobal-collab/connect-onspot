@@ -53,15 +53,18 @@ const authenticateJWT = async (req: Request, res: Response, next: NextFunction) 
       });
     }
     
-    // Strict JWT secret validation - no fallbacks allowed
-    const jwtSecret = process.env.JWT_SECRET;
+    // Get JWT secret
+    let jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
-      console.error('❌ JWT_SECRET not configured - authentication cannot proceed');
-      return res.status(500).json({
-        success: false,
-        message: "Server misconfiguration",
-        requestId: (req as any).requestId
-      });
+      if (process.env.NODE_ENV === 'development') {
+        jwtSecret = 'development-fallback-secret-not-for-production';
+      } else {
+        console.error('❌ JWT_SECRET not configured for production');
+        return res.status(500).json({
+          error: "Server configuration error",
+          requestId: (req as any).requestId
+        });
+      }
     }
     
     // Verify and decode JWT
@@ -277,8 +280,20 @@ const handleRouteError = (error: any, req: Request, res: Response, operation: st
   });
 };
 
-// Rate limiting middleware is configured in server/index.ts for consistency
-// All auth endpoints use the same rate limiting configuration with proper 429 responses
+// Rate limiting middleware for authentication endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 requests per windowMs
+  message: { 
+    success: false, 
+    error: "Too many attempts",
+    message: "Too many login/signup attempts. Please try again later." 
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  skipSuccessfulRequests: false, // Count successful requests
+  skipFailedRequests: false, // Count failed requests
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -342,8 +357,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
     
-  // JWT-based signup route (rate limiting applied at middleware level)
-  app.post('/api/signup', async (req: Request, res: Response) => {
+  // JWT-based signup route
+  app.post('/api/signup', authLimiter, async (req: Request, res: Response) => {
     try {
       const { email, username, password, first_name, last_name, role, company } = req.body;
       const requestId = (req as any).requestId;
@@ -479,14 +494,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`✅ Talent profile created successfully [${requestId}]`);
       }
 
-      const dbEnvironment = process.env.NODE_ENV === 'production' ? 'PRODUCTION' : 'DEVELOPMENT';
       console.log(`✅ User signup successful [${requestId}]:`, {
         userId: newUser.id,
         email: newUser.email,
-        role: newUser.role,
-        database: dbEnvironment,
-        timestamp: new Date().toISOString(),
-        hasProfile: role === 'talent' ? 'Yes (talent profile created)' : 'No (client user)'
+        role: newUser.role
       });
 
       // Return exact format required by specification - 201 status with userId field
@@ -506,20 +517,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     } catch (error: any) {
       const requestId = (req as any).requestId;
-      const dbEnvironment = process.env.NODE_ENV === 'production' ? 'PRODUCTION' : 'DEVELOPMENT';
-      
-      // Log error internally with full details
-      console.error(`❌ Signup system error [${requestId}]:`, {
+      console.error(`❌ Signup error [${requestId}]:`, {
         message: error.message,
+        stack: error.stack,
         code: error.code,
-        constraint: error.constraint,
-        database: dbEnvironment,
-        timestamp: new Date().toISOString(),
-        // Only log stack trace in development
-        ...(process.env.NODE_ENV !== 'production' && { stack: error.stack })
+        constraint: error.constraint
       });
       
-      // Handle specific database errors with user-friendly messages (no stack traces)
+      // Handle specific database errors
       if (error.code === '23505') { // Unique violation
         if (error.constraint?.includes('email')) {
           return res.status(409).json({
@@ -535,166 +540,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             requestId
           });
         }
-        // Generic unique constraint error
-        return res.status(409).json({
-          success: false,
-          message: "An account with these details already exists",
-          requestId
-        });
       }
       
-      // Handle password hashing errors
-      if (error.message?.includes('bcrypt') || error.message?.includes('hash')) {
-        return res.status(500).json({
-          success: false,
-          message: "Password processing error. Please try again.",
-          requestId
-        });
-      }
-      
-      // Handle database connection errors
-      if (error.message?.includes('database') || error.message?.includes('connection') || error.code?.startsWith('08')) {
-        return res.status(500).json({
-          success: false,
-          message: "Database connection error. Please try again later.",
-          requestId
-        });
-      }
-      
-      // Generic server error (no sensitive information leaked)
-      return res.status(500).json({
-        success: false,
-        message: "An unexpected error occurred during signup. Please try again.",
-        requestId
-      });
+      return handleRouteError(error, req, res, "Signup", 500);
     }
   });
 
-  // Health Check Endpoint for Production Deployment Readiness
-  app.get('/api/health', async (req: Request, res: Response) => {
-    try {
-      const requestId = (req as any).requestId;
-      const startTime = Date.now();
-      
-      console.log(`🩺 Health check requested [${requestId}]`);
-      
-      // Environment detection
-      const environment = process.env.NODE_ENV || 'development';
-      const isProduction = environment === 'production';
-      
-      // Critical environment variables check
-      const envChecks = {
-        DATABASE_URL: !!process.env.DATABASE_URL,
-        JWT_SECRET: !!process.env.JWT_SECRET,
-        PORT: !!process.env.PORT,
-        PUBLIC_BASE_URL: !!process.env.PUBLIC_BASE_URL,
-        NODE_ENV: !!process.env.NODE_ENV
-      };
-      
-      const criticalEnvMissing = Object.entries(envChecks)
-        .filter(([key, exists]) => !exists && ['DATABASE_URL', 'JWT_SECRET', 'PORT'].includes(key))
-        .map(([key]) => key);
-      
-      // Database connectivity check
-      let dbStatus = 'unknown';
-      let dbInfo = null;
-      let dbError = null;
-      
-      try {
-        const dbResult = await query('SELECT current_database() as database, version() as version, NOW() as timestamp');
-        dbInfo = dbResult.rows[0];
-        dbStatus = 'connected';
-      } catch (error: any) {
-        dbStatus = 'error';
-        dbError = error.message;
-      }
-      
-      // JWT Secret validation
-      let jwtStatus = 'valid';
-      if (!process.env.JWT_SECRET) {
-        jwtStatus = isProduction ? 'missing-critical' : 'development-fallback';
-      } else if (process.env.JWT_SECRET === 'development-fallback-secret-not-for-production' && isProduction) {
-        jwtStatus = 'insecure-in-production';
-      }
-      
-      // CORS configuration check
-      const corsStatus = {
-        productionDomainConfigured: true, // We added https://connect.onspotglobal.com
-        publicBaseUrl: process.env.PUBLIC_BASE_URL || 'not-set'
-      };
-      
-      // Overall health determination
-      const isHealthy = dbStatus === 'connected' && 
-                       criticalEnvMissing.length === 0 && 
-                       jwtStatus !== 'missing-critical' && 
-                       jwtStatus !== 'insecure-in-production';
-      
-      const responseTime = Date.now() - startTime;
-      
-      // Health check response
-      const healthResponse = {
-        status: isHealthy ? 'healthy' : 'unhealthy',
-        environment: environment,
-        timestamp: new Date().toISOString(),
-        responseTime: `${responseTime}ms`,
-        checks: {
-          database: {
-            status: dbStatus,
-            ...(dbInfo && {
-              database: dbInfo.database,
-              version: dbInfo.version.split(' ')[0] + ' ' + dbInfo.version.split(' ')[1],
-              timestamp: dbInfo.timestamp
-            }),
-            ...(dbError && { error: dbError })
-          },
-          environment: {
-            status: criticalEnvMissing.length === 0 ? 'valid' : 'missing-critical',
-            missing: criticalEnvMissing,
-            present: Object.entries(envChecks).filter(([,exists]) => exists).map(([key]) => key)
-          },
-          jwt: {
-            status: jwtStatus,
-            configured: !!process.env.JWT_SECRET
-          },
-          cors: corsStatus
-        },
-        requestId
-      };
-      
-      // Log health check result
-      console.log(`🩺 Health check completed [${requestId}]:`, {
-        status: healthResponse.status,
-        environment: environment,
-        dbStatus: dbStatus,
-        jwtStatus: jwtStatus,
-        responseTime: responseTime,
-        criticalEnvMissing: criticalEnvMissing.length
-      });
-      
-      // Return appropriate HTTP status
-      const statusCode = isHealthy ? 200 : 503; // Service Unavailable if unhealthy
-      res.status(statusCode).json(healthResponse);
-      
-    } catch (error: any) {
-      const requestId = (req as any).requestId;
-      console.error(`❌ Health check error [${requestId}]:`, {
-        message: error.message,
-        ...(process.env.NODE_ENV !== 'production' && { stack: error.stack })
-      });
-      
-      res.status(500).json({
-        status: 'error',
-        environment: process.env.NODE_ENV || 'development',
-        timestamp: new Date().toISOString(),
-        error: 'Health check failed',
-        message: 'Unable to perform health check',
-        requestId
-      });
-    }
-  });
-
-  // JWT-based login route (rate limiting applied at middleware level)
-  app.post('/api/login', async (req: Request, res: Response) => {
+  // JWT-based login route
+  app.post('/api/login', authLimiter, async (req: Request, res: Response) => {
     try {
       const { email, password } = req.body;
       const requestId = (req as any).requestId;
@@ -733,17 +586,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userResult = await query(userQuery, [email]);
       
       if (userResult.rows.length === 0) {
-        const dbEnvironment = process.env.NODE_ENV === 'production' ? 'PRODUCTION' : 'DEVELOPMENT';
-        console.error(`❌ Login failed - User not found [${requestId}]:`, {
-          email: '***@' + email.split('@')[1],
-          database: dbEnvironment,
-          timestamp: new Date().toISOString()
-        });
+        console.error(`❌ User not found [${requestId}]: No user with email ${email}`);
         return res.status(401).json({
           success: false,
-          message: process.env.NODE_ENV === 'production' 
-            ? "User not found in production database"
-            : "Invalid email or password",
+          message: "Invalid email or password",
           requestId
         });
       }
@@ -770,32 +616,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`🔐 Verifying password [${requestId}]`);
       const isPasswordValid = await verifyPassword(password, user.password_hash);
       if (!isPasswordValid) {
-        const dbEnvironment = process.env.NODE_ENV === 'production' ? 'PRODUCTION' : 'DEVELOPMENT';
-        console.error(`❌ Login failed - Password verification failed [${requestId}]:`, {
-          userId: user.id,
-          email: '***@' + user.email.split('@')[1],
-          database: dbEnvironment,
-          timestamp: new Date().toISOString()
-        });
+        console.error(`❌ Password verification failed [${requestId}]: Invalid password for user ${user.id}`);
         return res.status(401).json({
           success: false,
-          message: "Invalid password",
+          message: "Invalid email or password",
           requestId
         });
       }
       
       console.log(`✅ Password verified successfully [${requestId}]`);
 
-      // Strict JWT token generation - no fallbacks allowed
-      const jwtSecret = process.env.JWT_SECRET;
+      // Generate JWT token with proper secret handling and development fallback
+      let jwtSecret = process.env.JWT_SECRET;
       
       if (!jwtSecret) {
-        console.error('❌ JWT_SECRET environment variable not set! Token generation cannot proceed.');
-        return res.status(500).json({
-          success: false,
-          message: "Server misconfiguration",
-          requestId
-        });
+        // Development fallback with warning
+        if (process.env.NODE_ENV === 'development') {
+          jwtSecret = 'development-fallback-secret-not-for-production';
+          console.warn('⚠️  Using development fallback JWT_SECRET. Please set JWT_SECRET environment variable for production!');
+        } else {
+          console.error('❌ JWT_SECRET environment variable not set! This is required for secure authentication.');
+          return res.status(500).json({
+            success: false,
+            message: "Server configuration error",
+            requestId
+          });
+        }
       }
 
       const token = jwt.sign(
@@ -818,14 +664,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         last_name: user.last_name
       };
 
-      const dbEnvironment = process.env.NODE_ENV === 'production' ? 'PRODUCTION' : 'DEVELOPMENT';
       console.log(`✅ User login successful [${requestId}]:`, {
         userId: user.id,
         email: user.email,
-        role: user.role,
-        database: dbEnvironment,
-        timestamp: new Date().toISOString(),
-        jwtExpires: '7 days'
+        role: user.role
       });
 
       res.status(200).json({
@@ -836,20 +678,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     } catch (error: any) {
       const requestId = (req as any).requestId;
-      const dbEnvironment = process.env.NODE_ENV === 'production' ? 'PRODUCTION' : 'DEVELOPMENT';
-      
-      // Log error internally with full details
-      console.error(`❌ Login system error [${requestId}]:`, {
+      console.error(`❌ Login error [${requestId}]:`, {
         message: error.message,
-        code: error.code,
-        database: dbEnvironment,
-        timestamp: new Date().toISOString(),
-        // Only log stack trace in development
-        ...(process.env.NODE_ENV !== 'production' && { stack: error.stack })
+        stack: error.stack,
+        code: error.code
       });
       
-      // Handle specific errors with user-friendly messages (no stack traces)
-      if (error.message?.includes('password') || error.message?.includes('bcrypt')) {
+      // Handle specific errors
+      if (error.message?.includes('password')) {
         return res.status(401).json({
           success: false,
           message: "Authentication failed",
@@ -857,20 +693,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      if (error.message?.includes('database') || error.message?.includes('connection')) {
-        return res.status(500).json({
-          success: false,
-          message: "Database connection error. Please try again.",
-          requestId
-        });
-      }
-      
-      // Generic server error (no sensitive information leaked)
-      return res.status(500).json({
-        success: false,
-        message: "An unexpected error occurred during login. Please try again.",
-        requestId
-      });
+      return handleRouteError(error, req, res, "Login", 500);
     }
   });
   // Protected Lead Intake - Client Only
@@ -1016,8 +839,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Email/Password Signup endpoint (rate limiting applied at middleware level)
+  // Email/Password Signup endpoint
   app.post('/api/signup',
+    authLimiter,
     validateRequest(z.object({
       email: z.string().email("Valid email address required"),
       password: z.string().min(8, "Password must be at least 8 characters"),
