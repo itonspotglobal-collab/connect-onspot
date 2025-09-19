@@ -1,0 +1,87 @@
+Fix the signup → login → onboarding flow so it works end-to-end with our existing PostgreSQL schema and no duplicate modals or accessibility warnings.
+
+Context:
+- DB tables already exist: users, profiles, user_skills, linkedin_profiles.
+- Frontend is React + TypeScript using Radix UI Dialog and axios.
+- We saw 400 on /signup, 401 on /login, Radix Dialog a11y warnings, and a duplicate “Welcome to OnSpot” modal.
+
+Deliverables (implement all):
+
+A) Backend (Express + pg + bcrypt + JWT)
+1) Server setup
+   - Use Express with cors and express.json().
+   - Connect to PostgreSQL via node-postgres (pg) using process.env.DATABASE_URL.
+   - Add health route GET /health returning { ok: true }.
+
+2) /signup (POST)
+   - Accept JSON body EXACTLY: { email, username, password, first_name, last_name, role } where role ∈ ["client","talent"].
+   - Validate: all fields required; email format; password length ≥ 8.
+   - Hash password with bcrypt (saltRounds=12). Store in users.password_hash (add column if missing).
+   - INSERT INTO users (email, username, first_name, last_name, role, password_hash) VALUES (...)
+     RETURNING id, email, username, role, first_name, last_name, created_at.
+   - If role === "talent": INSERT INTO profiles (user_id, first_name, last_name) VALUES (returned id, first_name, last_name) with other columns using defaults.
+   - Handle unique violations (email/username) gracefully: return 409 with { success:false, message:"Email or username already exists" }.
+   - On success return 201 with { success:true, userId, user:{ id,email,username,role,first_name,last_name } }.
+
+3) /login (POST)
+   - Accept JSON body EXACTLY: { email, password }.
+   - SELECT id,email,username,role,first_name,last_name,password_hash FROM users WHERE email=$1.
+   - Compare bcrypt.compare(password, password_hash). If fail → 401 { success:false, message:"Invalid email or password" }.
+   - If ok, sign JWT (HS256) with process.env.JWT_SECRET, expiresIn: "7d".
+   - Return 200 { success:true, token, user:{ id,email,username,role,first_name,last_name } }.
+
+4) Middleware
+   - Add auth middleware that validates Bearer token for any protected routes (keep simple).
+   - Log all errors with console.error and always return JSON (never HTML error pages).
+
+5) CORS/Env
+   - Enable CORS for the frontend origin (Replit preview URL).
+   - Document required env vars in a comment: DATABASE_URL, JWT_SECRET.
+
+B) Frontend (React + TS)
+1) API client
+   - Create src/lib/api.ts exporting axios instance with baseURL pointing to the Express server.
+   - Add interceptor to attach Authorization: Bearer <token> from localStorage if present.
+
+2) AuthContext
+   - Create src/contexts/AuthContext.tsx with { user, token, newUser, login(), logout(), setNewUser() }.
+   - Persist token and user in localStorage. On mount, hydrate from storage.
+
+3) SignUpDialog.tsx
+   - Ensure the dialog is accessible: every <DialogContent> has <DialogTitle> and <DialogDescription>.
+     If UI design hides them, wrap text in <VisuallyHidden>.
+   - Form fields: email, username, password, first_name, last_name. Hidden role is set by which card was clicked ("client" or "talent").
+   - On submit:
+       const payload = { email, username, password, first_name, last_name, role }
+       await axios.post("/signup", payload)
+       then immediately await axios.post("/login", { email, password })
+       store token + user in AuthContext; setNewUser(true); close SignUpDialog.
+   - Show inline errors from backend messages (400/409) instead of alerts.
+
+4) LoginDialog.tsx
+   - Fields: email, password. POST to /login and store token + user in AuthContext.
+   - Show inline error on 401.
+
+5) Onboarding / Welcome modal (IMPORTANT: render ONLY ONCE)
+   - Create <WelcomeDialog /> and render it in a single global place (AuthProvider or NewUserOnboardingWrapper).
+   - It opens if AuthContext.newUser === true. Closing it sets newUser=false.
+   - Remove ANY WelcomeDialog rendering from SignUpDialog (no duplicates).
+
+6) Fix Radix a11y warnings everywhere a Dialog is used:
+   - Provide <DialogTitle> and <DialogDescription> (wrap with <VisuallyHidden> if visually hidden).
+   - Ensure aria-describedby is defined (Radix handles this when DialogDescription exists).
+
+C) Acceptance tests / manual checks (add temporary console logs where helpful)
+- After signup with role="talent":
+  1) Row exists in users with correct email/username/role and a bcrypt hash (starts with "$2b$").
+  2) Row exists in profiles with matching user_id.
+- Login with same credentials returns 200 and a JWT; invalid password returns 401.
+- Frontend flow:
+  - Submit signup → auto-login → Welcome modal shows exactly ONCE → close hides it and it does not reappear on refresh.
+  - No Radix Dialog warnings in console.
+
+Please generate/modify the following files with complete code:
+- server: /index.js (Express app), /db.js (pg Pool), /routes/auth.js (signup, login)
+- frontend: /src/lib/api.ts, /src/contexts/AuthContext.tsx, /src/components/SignUpDialog.tsx, /src/components/LoginDialog.tsx, /src/components/WelcomeDialog.tsx (or use existing OnboardingWrapper), and ensure duplicate WelcomeDialog renders are removed.
+
+Ensure everything runs in Replit with npm scripts. Provide any small migration needed (e.g., users.password_hash) if it’s missing. 

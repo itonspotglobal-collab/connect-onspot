@@ -7,7 +7,20 @@ interface NewUserOnboardingWrapperProps {
 }
 
 export function NewUserOnboardingWrapper({ children }: NewUserOnboardingWrapperProps) {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  // Add safety check for useAuth hook
+  let isAuthenticated = false;
+  let isLoading = true;
+  let user = null;
+  
+  try {
+    const authContext = useAuth();
+    isAuthenticated = authContext.isAuthenticated;
+    isLoading = authContext.isLoading;
+    user = authContext.user;
+  } catch (error) {
+    // Context not available yet, use defaults
+    console.warn('AuthContext not available yet in NewUserOnboardingWrapper, using defaults');
+  }
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {

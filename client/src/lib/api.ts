@@ -79,8 +79,8 @@ export const authAPI = {
     email: string;
     username?: string;
     password: string;
-    firstName: string;
-    lastName: string;
+    first_name: string;
+    last_name: string;
     role: 'client' | 'talent';
     company?: string;
   }) => {
