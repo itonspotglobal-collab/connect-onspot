@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import heroWorkspaceImage from "@assets/generated_images/Professional_workspace_background_ccee2885.png";
+import dashboardImage from "@assets/image_1758287669145.png";
 
 const tractionStats = [
   {
@@ -436,12 +437,7 @@ export default function InvestorsCorner() {
                 {/* If you have a dashboard image, uncomment and replace src:
                 <img src="/onspot-dashboard.png" alt="OnSpotConnect dashboard" className="rounded-lg w-full object-cover" />
                 */}
-                <div className="rounded-lg border border-dashed border-[hsl(var(--brand-foreground))]/30 bg-[hsl(var(--brand-foreground))]/5 w-full aspect-[16/10] grid place-items-center">
-                  <div className="text-center px-6">
-                    <p className="text-sm text-[hsl(var(--brand-foreground))]/90 font-medium">Product Mockup</p>
-                    <p className="text-xs text-[hsl(var(--brand-foreground))]/70">Replace with OnSpotConnect dashboard or a simple "Freelance ↔ OnSpot ↔ BPO" diagram.</p>
-                  </div>
-                </div>
+                <img src={dashboardImage} alt="OnSpot dashboard showing client metrics, ROI analysis, and platform overview" className="rounded-lg w-full object-cover aspect-[16/10]" />
 
                 {/* Highlight metrics (count-up) */}
                 <div className="mt-5 grid grid-cols-3 gap-3">
