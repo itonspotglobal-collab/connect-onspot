@@ -1,8 +1,21 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 
+// Determine the correct API base URL based on environment
+const getAPIBaseURL = (): string => {
+  // Check if we're in production by looking at the current origin
+  const isProduction = window.location.origin.includes('onspotglobal.com');
+  
+  if (isProduction) {
+    return 'https://connect.onspotglobal.com/api';
+  }
+  
+  // Development - use environment variable or relative URLs
+  return import.meta.env.VITE_API_BASE || '';
+};
+
 // Create axios instance with base configuration
 const api: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE || '', // Uses the existing API base from environment
+  baseURL: getAPIBaseURL(),
   headers: {
     'Content-Type': 'application/json',
   },
