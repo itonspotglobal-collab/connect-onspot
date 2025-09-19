@@ -12,6 +12,7 @@ import { Footer } from "@/components/Footer";
 import { VanessaChat } from "@/components/VanessaChat";
 import { ClientProtectedRoute, TalentProtectedRoute, AdminProtectedRoute } from "@/components/ProtectedRoute";
 import { NewUserOnboardingWrapper } from "@/components/NewUserOnboardingWrapper";
+import { PostLoginPortalSelection } from "@/components/PostLoginPortalSelection";
 import Home from "@/pages/Home";
 import TalentSearch from "@/pages/TalentSearch";
 import Dashboard from "@/pages/Dashboard";
@@ -45,13 +46,20 @@ function PublicRouter() {
       <main>
         <Switch>
           <Route path="/" component={() => {
-            // Redirect authenticated users to their appropriate dashboard
             if (isAuthenticated) {
-              if (user?.userType === 'talent') {
-                return <TalentPortal />;
-              } else {
-                return <Dashboard />;
-              }
+              return <PostLoginPortalSelection />;
+            }
+            return <Home />;
+          }} />
+          <Route path="/client-dashboard" component={() => {
+            if (isAuthenticated) {
+              return <PostLoginPortalSelection />;
+            }
+            return <Home />;
+          }} />
+          <Route path="/talent-dashboard" component={() => {
+            if (isAuthenticated) {
+              return <PostLoginPortalSelection />;
             }
             return <Home />;
           }} />
