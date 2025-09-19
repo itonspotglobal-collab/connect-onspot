@@ -20,6 +20,187 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 
+// JWT Authentication Types
+interface JWTPayload {
+  userId: string;
+  email: string;
+  role: string;
+  iat?: number;
+  exp?: number;
+}
+
+// Custom Request type for JWT authenticated routes
+type AuthenticatedRequest = Request & {
+  user?: {
+    id: string;
+    email: string;
+    role: string;
+  };
+}
+
+// JWT Authentication Middleware
+const authenticateJWT = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    
+    if (!token) {
+      console.log(`🔒 JWT Auth failed: No token provided [${(req as any).requestId}]`);
+      return res.status(401).json({
+        error: "Authentication required",
+        message: "No authentication token provided",
+        requestId: (req as any).requestId
+      });
+    }
+    
+    // Get JWT secret
+    let jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      if (process.env.NODE_ENV === 'development') {
+        jwtSecret = 'development-fallback-secret-not-for-production';
+      } else {
+        console.error('❌ JWT_SECRET not configured for production');
+        return res.status(500).json({
+          error: "Server configuration error",
+          requestId: (req as any).requestId
+        });
+      }
+    }
+    
+    // Verify and decode JWT
+    const decoded = jwt.verify(token, jwtSecret) as JWTPayload;
+    
+    // Validate JWT payload structure
+    if (!decoded.userId || !decoded.email || !decoded.role) {
+      console.error(`❌ JWT Auth failed: Invalid token payload [${(req as any).requestId}]:`, {
+        hasUserId: !!decoded.userId,
+        hasEmail: !!decoded.email,
+        hasRole: !!decoded.role
+      });
+      return res.status(401).json({
+        error: "Invalid token",
+        message: "Token missing required claims",
+        requestId: (req as any).requestId
+      });
+    }
+    
+    // Verify user still exists in database
+    const userQuery = 'SELECT id, email, role FROM users WHERE id = $1';
+    const userResult = await query(userQuery, [decoded.userId]);
+    
+    if (userResult.rows.length === 0) {
+      console.error(`❌ JWT Auth failed: User not found in database [${(req as any).requestId}]: ${decoded.userId}`);
+      return res.status(401).json({
+        error: "Invalid token",
+        message: "User account no longer exists",
+        requestId: (req as any).requestId
+      });
+    }
+    
+    const dbUser = userResult.rows[0];
+    
+    // Verify role hasn't changed
+    if (dbUser.role !== decoded.role) {
+      console.error(`❌ JWT Auth failed: Role mismatch [${(req as any).requestId}]:`, {
+        tokenRole: decoded.role,
+        dbRole: dbUser.role,
+        userId: decoded.userId
+      });
+      return res.status(401).json({
+        error: "Invalid token",
+        message: "User role has changed, please log in again",
+        requestId: (req as any).requestId
+      });
+    }
+    
+    // Add user to request object
+    (req as any).user = {
+      id: decoded.userId,
+      email: decoded.email,
+      role: decoded.role
+    };
+    
+    console.log(`✅ JWT Auth successful [${(req as any).requestId}]:`, {
+      userId: decoded.userId,
+      role: decoded.role
+    });
+    
+    next();
+  } catch (error: any) {
+    const requestId = (req as any).requestId;
+    console.error(`❌ JWT Auth error [${requestId}]:`, {
+      error: error.message,
+      name: error.name
+    });
+    
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        error: "Token expired",
+        message: "Your session has expired, please log in again",
+        requestId
+      });
+    }
+    
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({
+        error: "Invalid token",
+        message: "Authentication token is invalid",
+        requestId
+      });
+    }
+    
+    return res.status(500).json({
+      error: "Authentication error",
+      message: "Failed to authenticate token",
+      requestId
+    });
+  }
+};
+
+// Role-Based Access Control Middleware
+const requireRole = (allowedRoles: string[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const requestId = (req as any).requestId;
+    
+    if (!(req as any).user) {
+      console.error(`❌ RBAC failed: No user in request [${requestId}]`);
+      return res.status(401).json({
+        error: "Authentication required",
+        message: "User not authenticated",
+        requestId
+      });
+    }
+    
+    if (!allowedRoles.includes((req as any).user.role)) {
+      console.error(`❌ RBAC failed: Insufficient permissions [${requestId}]:`, {
+        userRole: (req as any).user.role,
+        allowedRoles,
+        userId: (req as any).user.id
+      });
+      return res.status(403).json({
+        error: "Insufficient permissions",
+        message: `Access denied. Required role: ${allowedRoles.join(' or ')}`,
+        requestId
+      });
+    }
+    
+    console.log(`✅ RBAC check passed [${requestId}]:`, {
+      userId: (req as any).user.id,
+      userRole: (req as any).user.role,
+      allowedRoles
+    });
+    
+    next();
+  };
+};
+
+// Convenience middleware functions
+const requireClient = requireRole(['client']);
+const requireTalent = requireRole(['talent']);
+const requireAdmin = requireRole(['admin']);
+const requireClientOrTalent = requireRole(['client', 'talent']);
+const requireAnyRole = requireRole(['client', 'talent', 'admin']);
+
 // Enhanced validation middleware factory
 const validateRequest = (schema: z.ZodSchema, target: 'body' | 'query' | 'params' = 'body') => {
   return (req: Request, res: Response, next: NextFunction) => {
@@ -115,6 +296,66 @@ const authLimiter = rateLimit({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  
+  // Protected Dashboard Routes with Role-Based Access Control
+  // These routes serve the dashboard content with server-side validation
+  app.get('/client-dashboard', authenticateJWT, requireClient, (req: Request, res: Response) => {
+    console.log(`🏠 Client dashboard access [${(req as any).requestId}]:`, {
+      userId: (req as any).user?.id,
+      role: (req as any).user?.role
+    });
+    // In a production app, this would render the client dashboard or return appropriate data
+    res.json({ 
+      success: true, 
+      message: 'Client dashboard access granted',
+      userRole: (req as any).user?.role,
+      userId: (req as any).user?.id
+    });
+  });
+  
+  app.get('/talent-dashboard', authenticateJWT, requireTalent, (req: Request, res: Response) => {
+    console.log(`🎯 Talent dashboard access [${(req as any).requestId}]:`, {
+      userId: (req as any).user?.id,
+      role: (req as any).user?.role
+    });
+    // In a production app, this would render the talent dashboard or return appropriate data
+    res.json({ 
+      success: true, 
+      message: 'Talent dashboard access granted',
+      userRole: (req as any).user?.role,
+      userId: (req as any).user?.id
+    });
+  });
+  
+  // Protected API Route Validation Endpoint
+  app.get('/api/validate-access', authenticateJWT, (req: Request, res: Response) => {
+    console.log(`✅ Access validation [${(req as any).requestId}]:`, {
+      userId: (req as any).user?.id,
+      role: (req as any).user?.role
+    });
+    res.json({
+      success: true,
+      user: (req as any).user,
+      message: 'Access validated successfully'
+    });
+  });
+  
+  // Role-specific API validation endpoints for testing
+  app.get('/api/client-only', authenticateJWT, requireClient, (req: Request, res: Response) => {
+    res.json({ 
+      success: true, 
+      message: 'Client-only API access granted',
+      role: (req as any).user?.role
+    });
+  });
+  
+  app.get('/api/talent-only', authenticateJWT, requireTalent, (req: Request, res: Response) => {
+    res.json({ 
+      success: true, 
+      message: 'Talent-only API access granted',
+      role: (req as any).user?.role
+    });
+  });
     
   // JWT-based signup route
   app.post('/api/signup', authLimiter, async (req: Request, res: Response) => {
@@ -455,6 +696,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return handleRouteError(error, req, res, "Login", 500);
     }
   });
+  // Protected Lead Intake - Client Only
+  app.get('/api/lead-intakes', authenticateJWT, requireClient, async (req: Request, res: Response) => {
+    try {
+      const leads = await storage.searchLeadIntakes({});
+      console.log(`📋 Lead intakes accessed [${(req as any).requestId}]:`, {
+        userId: (req as any).user?.id,
+        role: (req as any).user?.role,
+        count: leads.length
+      });
+      res.json({ success: true, leads });
+    } catch (error: any) {
+      handleRouteError(error, req as Request, res, "Get Lead Intakes", 500);
+    }
+  });
+  
+  // Protected User Profile Routes
+  app.get('/api/user/profile', authenticateJWT, requireAnyRole, async (req: Request, res: Response) => {
+    try {
+      const profile = await storage.getProfileByUserId((req as any).user!.id);
+      res.json({ success: true, profile });
+    } catch (error: any) {
+      handleRouteError(error, req as Request, res, "Get User Profile", 500);
+    }
+  });
+  
   // Auth routes - Updated for OAuth compatibility with enhanced error handling
   app.get('/api/auth/user', async (req: any, res) => {
     try {
@@ -861,8 +1127,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/users", 
+    authenticateJWT,
+    requireAdmin,
     validateRequest(insertUserSchema),
-    async (req: any, res) => {
+    async (req: Request, res: Response) => {
       try {
         console.log(`👤 Creating new user [${req.requestId}]:`, { 
           email: req.body.email,
@@ -934,11 +1202,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/profiles", 
-    isAuthenticated,
-    async (req: any, res) => {
+    authenticateJWT,
+    requireAnyRole,
+    async (req: Request, res: Response) => {
       try {
-        const user = req.user?.user || req.user;
-        const userId = user?.id;
+        const userId = (req as any).user?.id;
         
         if (!userId) {
           return res.status(401).json({ error: 'unauthorized' });
@@ -1236,7 +1504,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/jobs", async (req, res) => {
+  app.post("/api/jobs", 
+    authenticateJWT,
+    requireClient,
+    async (req: Request, res: Response) => {
     try {
       const validated = insertJobSchema.parse(req.body);
       const job = await storage.createJob(validated);
