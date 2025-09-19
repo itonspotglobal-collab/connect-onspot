@@ -586,9 +586,9 @@
     position:absolute; 
     inset-inline:0; 
     bottom:-1px; 
-    height:6rem; 
+    height:3rem; 
     pointer-events:none; 
-    background: linear-gradient(to bottom, transparent 0%, hsl(var(--background)) 100%); 
+    background: linear-gradient(to bottom, transparent 0%, transparent 30%, hsl(var(--background)) 100%); 
   }
   .nav-over-hero { 
     position:fixed; 

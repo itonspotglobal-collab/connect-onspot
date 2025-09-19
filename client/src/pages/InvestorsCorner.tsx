@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -243,6 +243,50 @@ const Section = ({ id, icon: Icon, title, kicker, children }: {
   );
 };
 
+const CountUpNumber = ({ target, suffix = "", duration = 2000 }: { target: number; suffix?: string; duration?: number }) => {
+  const [count, setCount] = useState(0);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (!isVisible) return;
+    
+    let startTime: number;
+    const startValue = 0;
+    const endValue = target;
+    
+    const animate = (currentTime: number) => {
+      if (!startTime) startTime = currentTime;
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Ease out animation
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+      const currentValue = Math.floor(startValue + (endValue - startValue) * easeOut);
+      
+      setCount(currentValue);
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+    
+    requestAnimationFrame(animate);
+  }, [isVisible, target, duration]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.5 }}
+      onViewportEnter={() => setIsVisible(true)}
+      className="text-lg font-bold text-[hsl(var(--brand-foreground))]"
+    >
+      {count}{suffix}
+    </motion.div>
+  );
+};
+
 const HeroMetric = ({ icon: Icon, label, value, suffix }: {
   icon: any;
   label: string;
@@ -336,12 +380,12 @@ export default function InvestorsCorner() {
       <section id="hero" className="hero-investor text-white pt-28 pb-20">
         <div className="container mx-auto px-6">
           <div className="relative">
-          <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full blur-3xl opacity-20 pointer-events-none"
-               style={{ background: "radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 40%, transparent 70%)" }} />
-          <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full blur-3xl opacity-15 pointer-events-none"
-               style={{ background: "radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.05) 40%, transparent 70%)" }} />
+          <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full blur-3xl opacity-8 pointer-events-none"
+               style={{ background: "radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 40%, transparent 70%)" }} />
+          <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full blur-3xl opacity-6 pointer-events-none"
+               style={{ background: "radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.03) 40%, transparent 70%)" }} />
 
-          <div className="grid md:grid-cols-12 gap-8 items-center p-6 md:p-10">
+          <div className="grid md:grid-cols-12 gap-12 items-center p-8 md:p-12">
             {/* LEFT: copy + CTAs */}
             <div className="md:col-span-6 lg:col-span-7">
               <motion.h1
@@ -395,11 +439,11 @@ export default function InvestorsCorner() {
                 transition={{ duration: 0.5, delay: 0.4 }}
                 className="mt-8 flex flex-wrap gap-4"
               >
-                <a href="#ask" className="inline-flex items-center gap-3 px-6 py-3 rounded-xl bg-[hsl(var(--brand-foreground))] text-primary font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 hover:bg-[hsl(var(--brand-foreground))]/95">
-                  <Handshake className="w-5 h-5" /> Partner with OnSpot
+                <a href="#ask" className="inline-flex items-center gap-3 px-8 py-4 rounded-xl bg-[hsl(var(--brand-foreground))] text-primary font-semibold shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:bg-[hsl(var(--brand-foreground))]/95 hover:scale-105 group" data-testid="cta-partner">
+                  <Handshake className="w-5 h-5 group-hover:rotate-12 transition-transform duration-300" /> Partner with OnSpot
                 </a>
-                <a href="#solution" className="inline-flex items-center gap-3 px-6 py-3 rounded-xl border-2 border-[hsl(var(--brand-foreground))]/30 text-[hsl(var(--brand-foreground))] font-semibold backdrop-blur-sm hover:bg-[hsl(var(--brand-foreground))]/10 transition-all duration-300 hover:-translate-y-1">
-                  <Rocket className="w-5 h-5" /> See OnSpotConnect in Action
+                <a href="https://connect.onspotglobal.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 px-8 py-4 rounded-xl border-2 border-[hsl(var(--brand-foreground))]/30 text-[hsl(var(--brand-foreground))] font-semibold backdrop-blur-sm hover:bg-[hsl(var(--brand-foreground))]/15 hover:border-[hsl(var(--brand-foreground))]/50 transition-all duration-300 hover:-translate-y-1 hover:scale-105 group" data-testid="cta-onspotconnect">
+                  <Rocket className="w-5 h-5 group-hover:rotate-12 transition-transform duration-300" /> See OnSpotConnect in Action
                 </a>
               </motion.div>
               <motion.p 
@@ -409,7 +453,7 @@ export default function InvestorsCorner() {
                 transition={{ duration: 0.5, delay: 0.5 }}
                 className="mt-3 text-sm text-[hsl(var(--brand-foreground))]/80 font-medium"
               >
-                Prototype live • 80+ clients served
+                Prototype live
               </motion.p>
 
               {/* Trust strip */}
@@ -432,48 +476,51 @@ export default function InvestorsCorner() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.4 }}
                 transition={{ duration: 0.5 }}
-                className="bg-[hsl(var(--brand-foreground))]/10 backdrop-blur-md border border-[hsl(var(--brand-foreground))]/20 rounded-2xl shadow-xl p-4 md:p-5"
+                className="bg-[hsl(var(--brand-foreground))]/10 backdrop-blur-md border border-[hsl(var(--brand-foreground))]/20 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-[1.02] p-6 md:p-8"
               >
                 {/* If you have a dashboard image, uncomment and replace src:
                 <img src="/onspot-dashboard.png" alt="OnSpotConnect dashboard" className="rounded-lg w-full object-cover" />
                 */}
-                <img src={dashboardImage} alt="OnSpot dashboard showing client metrics, ROI analysis, and platform overview" className="rounded-lg w-full object-cover aspect-[16/10]" />
+                <img src={dashboardImage} alt="OnSpot dashboard showing client metrics, ROI analysis, and platform overview" className="rounded-lg w-full h-auto object-cover aspect-[16/10] hover:scale-105 transition-transform duration-500" />
 
-                {/* Highlight metrics (count-up) */}
-                <div className="mt-5 grid grid-cols-3 gap-3">
-                  <div className="text-center">
-                    <div className="w-8 h-8 mx-auto mb-2 text-[hsl(var(--brand-foreground))]">
+                {/* Highlight metrics with count-up animations */}
+                <div className="mt-6 grid grid-cols-3 gap-4">
+                  <motion.div 
+                    className="text-center hover:scale-110 transition-transform duration-300"
+                    whileHover={{ y: -4 }}
+                  >
+                    <div className="w-10 h-10 mx-auto mb-3 text-[hsl(var(--brand-foreground))]">
                       <Users className="w-full h-full" />
                     </div>
-                    <div className="text-lg font-bold text-[hsl(var(--brand-foreground))]">
-                      80+
-                    </div>
-                    <div className="text-xs text-[hsl(var(--brand-foreground))]/80">Clients</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-8 h-8 mx-auto mb-2 text-[hsl(var(--brand-foreground))]">
+                    <CountUpNumber target={80} suffix="+" duration={2000} />
+                    <div className="text-xs text-[hsl(var(--brand-foreground))]/80 font-medium">Clients</div>
+                  </motion.div>
+                  <motion.div 
+                    className="text-center hover:scale-110 transition-transform duration-300"
+                    whileHover={{ y: -4 }}
+                  >
+                    <div className="w-10 h-10 mx-auto mb-3 text-[hsl(var(--brand-foreground))]">
                       <Briefcase className="w-full h-full" />
                     </div>
-                    <div className="text-lg font-bold text-[hsl(var(--brand-foreground))]">
-                      500+
-                    </div>
-                    <div className="text-xs text-[hsl(var(--brand-foreground))]/80">Seats</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-8 h-8 mx-auto mb-2 text-[hsl(var(--brand-foreground))]">
+                    <CountUpNumber target={500} suffix="+" duration={2500} />
+                    <div className="text-xs text-[hsl(var(--brand-foreground))]/80 font-medium">Seats</div>
+                  </motion.div>
+                  <motion.div 
+                    className="text-center hover:scale-110 transition-transform duration-300"
+                    whileHover={{ y: -4 }}
+                  >
+                    <div className="w-10 h-10 mx-auto mb-3 text-[hsl(var(--brand-foreground))]">
                       <PieChart className="w-full h-full" />
                     </div>
-                    <div className="text-lg font-bold text-[hsl(var(--brand-foreground))]">
-                      55%
-                    </div>
-                    <div className="text-xs text-[hsl(var(--brand-foreground))]/80">Gross Margin</div>
-                  </div>
+                    <CountUpNumber target={55} suffix="%" duration={1800} />
+                    <div className="text-xs text-[hsl(var(--brand-foreground))]/80 font-medium">Gross Margin</div>
+                  </motion.div>
                 </div>
 
-                {/* Footer note */}
-                <div className="mt-3 flex items-center justify-between">
-                  <p className="text-[11px] text-[hsl(var(--brand-foreground))]/60">As of Sept 2025</p>
-                  <p className="text-[11px] text-[hsl(var(--brand-foreground))]/60">Last updated Sept 2025</p>
+                {/* Dashboard Label */}
+                <div className="mt-3 text-center">
+                  <p className="text-sm text-[hsl(var(--brand-foreground))]/70 font-medium">OnSpotConnect Platform Dashboard</p>
+                  <p className="text-xs text-[hsl(var(--brand-foreground))]/60">Live metrics and performance overview</p>
                 </div>
               </motion.div>
             </div>
