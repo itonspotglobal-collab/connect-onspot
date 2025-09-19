@@ -64,12 +64,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           company: loginData.user.company
         };
         
-        setUser(mappedUser);
-        setIsAuthenticated(true);
-        
         // Check if this is a new user and handle onboarding
         const isNew = await checkNewUserStatus(loginData.user.id);
-        setUser({...mappedUser, isNewUser: isNew, needsOnboarding: isNew});
+        
+        // Set user with all data at once to prevent double renders
+        const finalUser = {...mappedUser, isNewUser: isNew, needsOnboarding: isNew};
+        setUser(finalUser);
+        setIsAuthenticated(true);
         
         return true;
       } else {
