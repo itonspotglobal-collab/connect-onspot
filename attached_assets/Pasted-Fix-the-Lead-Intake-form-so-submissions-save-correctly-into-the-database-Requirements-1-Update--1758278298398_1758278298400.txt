@@ -1,0 +1,49 @@
+Fix the Lead Intake form so submissions save correctly into the database.
+
+Requirements:
+
+1. Update `LeadIntake.tsx`:
+   - In the `onSubmit` handler, map the form data from camelCase to snake_case so it matches the `lead_intake` table schema.
+   - Build a `payload` object like this:
+
+     const payload = {
+       first_name: data.firstName,
+       last_name: data.lastName,
+       email: data.email,
+       phone_number: data.phoneNumber,
+       job_title: data.jobTitle,
+       company_name: data.companyName,
+       company_size: data.companySize,
+       industry: data.industry,
+       company_website: data.companyWebsite,
+       service_type: data.serviceType,
+       current_challenges: data.currentChallenges,
+       service_volume: data.serviceVolume,
+       required_skills: data.requiredSkills,
+       urgency_level: data.urgencyLevel,
+       budget_range: data.budgetRange,
+       expected_start_date: data.expectedStartDate,
+       team_size: data.teamSize,
+       has_current_provider: data.hasCurrentProvider,
+       current_provider_details: data.currentProviderDetails,
+       decision_maker_status: data.decisionMakerStatus,
+       implementation_timeline: data.implementationTimeline,
+       additional_notes: data.additionalNotes
+     };
+
+   - Replace `body: JSON.stringify(data)` with `body: JSON.stringify(payload)` in the fetch call.
+
+2. Add better error handling:
+   - If `response.ok` is false, parse `await response.json()` and show the server’s error message in the toast instead of a generic “Something went wrong”.
+   - Log the full response JSON to `console.error` for debugging.
+
+3. Verify:
+   - When submitting the form in production, the request body matches the database column names exactly.
+   - The backend accepts and inserts the record into `lead_intake`.
+   - On success, the toast still shows “Success! Thank you for your interest…”.
+   - On failure, the toast shows the specific backend error message.
+
+After this fix:
+- Form submissions will be stored in the `lead_intake` table.
+- You will see detailed errors if the submission fails.
+- No more silent failures from mismatched field names.
