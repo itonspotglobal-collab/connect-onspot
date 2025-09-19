@@ -332,14 +332,16 @@ export default function InvestorsCorner() {
   return (
     <div className="space-y-0 overflow-hidden">
       {/* HERO */}
-      <Section id="hero">
-        {/* Professional background with company brand colors */}
-        <div className="relative overflow-hidden rounded-2xl">
-          <div className="absolute inset-0 -z-10" 
+      <section id="hero" className="py-24 relative overflow-hidden" 
                style={{ 
-                 background: 'linear-gradient(135deg, #474ead 0%, #5a5dc7 50%, #6366f1 100%)',
-                 boxShadow: '0 20px 40px rgba(71, 74, 173, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)' 
-               }} />
+                 background: 'var(--gradient-primary)'
+               }}>
+        <div className="container mx-auto px-6">
+          <div className="relative">
+            <div className="absolute inset-0 -z-10" 
+                 style={{ 
+                   boxShadow: '0 20px 40px rgba(71, 74, 173, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)' 
+                 }} />
           <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full blur-3xl opacity-20 pointer-events-none"
                style={{ background: "radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 40%, transparent 70%)" }} />
           <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full blur-3xl opacity-15 pointer-events-none"
@@ -488,7 +490,8 @@ export default function InvestorsCorner() {
             </div>
           </div>
         </div>
-      </Section>
+      </div>
+      </section>
 
       {/* The 60-Second Story */}
       <div className="bg-muted/30 py-24">
