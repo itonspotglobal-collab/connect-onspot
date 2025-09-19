@@ -1,0 +1,92 @@
+{/* HERO */}
+<Section id="hero" icon={Globe2} title="OnSpot — The Evolution of Outsourcing" kicker="Overview">
+  {/* Decorative background for depth */}
+  <div className="relative overflow-hidden rounded-2xl">
+    <div className="absolute inset-0 -z-10 bg-gradient-to-br from-white via-zinc-50 to-zinc-100" />
+    <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl opacity-30 pointer-events-none"
+         style={{ background: "radial-gradient(60% 60% at 50% 50%, #0ea5e9 0%, rgba(14,165,233,0.35) 35%, transparent 70%)" }} />
+    <div className="absolute -bottom-24 -right-24 h-72 w-72 rounded-full blur-3xl opacity-20 pointer-events-none"
+         style={{ background: "radial-gradient(60% 60% at 50% 50%, #111 0%, rgba(17,17,17,0.35) 40%, transparent 70%)" }} />
+
+    <div className="grid md:grid-cols-12 gap-8 items-center p-6 md:p-10">
+      {/* LEFT: copy + CTAs */}
+      <div className="md:col-span-6 lg:col-span-7">
+        <motion.h2
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.5 }}
+          transition={{ duration: 0.5 }}
+          className="text-2xl md:text-4xl font-semibold tracking-tight"
+        >
+          OnSpot — The Evolution of Outsourcing
+        </motion.h2>
+
+        <motion.p
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.5 }}
+          transition={{ duration: 0.6, delay: 0.05 }}
+          className="mt-3 text-base md:text-lg text-zinc-700 max-w-xl"
+        >
+          From 3 years in the BPO trenches to the world’s first hybrid outsourcing platform.
+        </motion.p>
+
+        <ul className="mt-5 space-y-2">
+          <Bullet><strong>Hybrid model:</strong> Bridging freelancing chaos and BPO rigidity.</Bullet>
+          <Bullet><strong>Built for scale:</strong> 3 years of BPO ops, now productized.</Bullet>
+        </ul>
+
+        {/* CTAs */}
+        <div className="mt-6 flex flex-wrap gap-3">
+          <a href="#ask" className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-black text-white shadow-sm transition-transform hover:-translate-y-0.5">
+            <Handshake className="w-4 h-4" /> Partner with OnSpot
+          </a>
+          <a href="#solution" className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-zinc-300 text-zinc-900 transition-transform hover:-translate-y-0.5">
+            <Rocket className="w-4 h-4" /> See OnSpotConnect in Action
+          </a>
+        </div>
+        <p className="mt-2 text-xs text-zinc-500">Prototype live • 80+ clients served</p>
+
+        {/* Trust strip */}
+        <p className="mt-5 text-sm text-zinc-600">
+          80+ clients • 500+ resources deployed • $50M+ in value delivered
+        </p>
+      </div>
+
+      {/* RIGHT: product mock or highlight metrics */}
+      <div className="md:col-span-6 lg:col-span-5">
+        {/* Product mockup placeholder – swap src with your real screenshot */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.4 }}
+          transition={{ duration: 0.5 }}
+          className="bg-white border border-zinc-200 rounded-2xl shadow-sm p-4 md:p-5"
+        >
+          {/* If you have a dashboard image, uncomment and replace src:
+          <img src="/onspot-dashboard.png" alt="OnSpotConnect dashboard" className="rounded-lg w-full object-cover" />
+          */}
+          <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 w-full aspect-[16/10] grid place-items-center">
+            <div className="text-center px-6">
+              <p className="text-sm text-zinc-500">Product Mockup</p>
+              <p className="text-xs text-zinc-400">Replace with OnSpotConnect dashboard or a simple “Freelance ↔ OnSpot ↔ BPO” diagram.</p>
+            </div>
+          </div>
+
+          {/* Highlight metrics (count-up) */}
+          <div className="mt-5 grid grid-cols-3 gap-3">
+            <HeroMetric icon={Users} label="Clients" value={80} suffix="+" />
+            <HeroMetric icon={Briefcase} label="Seats" value={500} suffix="+" />
+            <HeroMetric icon={PieChart} label="Gross Margin" value={55} suffix="%" />
+          </div>
+
+          {/* Footer note */}
+          <div className="mt-3 flex items-center justify-between">
+            <p className="text-[11px] text-zinc-500">As of Sept 2025</p>
+            <p className="text-[11px] text-zinc-500">Last updated Sept 2025</p>
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  </div>
+</Section>
