@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { motion } from "framer-motion";
 import { 
   TrendingUp, 
   Users, 
@@ -25,7 +26,9 @@ import {
   Mail,
   Phone,
   Calendar,
-  User
+  User,
+  Handshake,
+  Rocket
 } from "lucide-react";
 import { Link } from "wouter";
 import heroWorkspaceImage from "@assets/generated_images/Professional_workspace_background_ccee2885.png";
@@ -213,6 +216,72 @@ const problemSolutions = [
   }
 ];
 
+// Required components for the enhanced HERO section
+const Section = ({ id, icon: Icon, title, kicker, children }: {
+  id?: string;
+  icon?: any;
+  title?: string;
+  kicker?: string;
+  children: React.ReactNode;
+}) => {
+  return (
+    <section id={id} className="py-24">
+      <div className="container mx-auto px-6">
+        {title && (
+          <div className="text-center space-y-6 mb-16">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              {Icon && <Icon className="w-6 h-6 text-primary" />}
+              {kicker && <span className="text-sm text-muted-foreground uppercase tracking-wider">{kicker}</span>}
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold">{title}</h2>
+          </div>
+        )}
+        {children}
+      </div>
+    </section>
+  );
+};
+
+const HeroMetric = ({ icon: Icon, label, value, suffix }: {
+  icon: any;
+  label: string;
+  value: number;
+  suffix?: string;
+}) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.5 }}
+      className="text-center"
+    >
+      <div className="w-8 h-8 mx-auto mb-2 text-primary">
+        <Icon className="w-full h-full" />
+      </div>
+      <div className="text-lg font-bold text-foreground">
+        {value}{suffix}
+      </div>
+      <div className="text-xs text-muted-foreground">{label}</div>
+    </motion.div>
+  );
+};
+
+const Bullet = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <motion.li
+      initial={{ opacity: 0, x: -8 }}
+      whileInView={{ opacity: 1, x: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.4 }}
+      className="flex items-start gap-2"
+    >
+      <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+      <span className="text-sm text-muted-foreground">{children}</span>
+    </motion.li>
+  );
+};
+
 export default function InvestorsCorner() {
   // SEO Meta Tags for Investors Page
   useEffect(() => {
@@ -262,132 +331,98 @@ export default function InvestorsCorner() {
   
   return (
     <div className="space-y-0 overflow-hidden">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden min-h-screen flex items-center justify-center">
-        {/* Background Image */}
-        <div className="absolute inset-0">
-          <img 
-            src={heroWorkspaceImage} 
-            alt="Professional workspace" 
-            className="w-full h-full object-cover object-center scale-105"
-            loading="eager"
-            decoding="async"
-          />
-        </div>
-        
-        {/* Sophisticated Dark Wash - Apple Style */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/70"></div>
-        <div className="absolute inset-0 bg-gradient-radial from-transparent via-black/20 to-black/50"></div>
-        
-        {/* Elegant Light Accents */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/4 right-1/4 w-[600px] h-[600px] bg-gradient-conic from-white/8 via-transparent to-white/8 rounded-full blur-3xl animate-slow-spin transform -translate-x-1/2 -translate-y-1/2"></div>
-          <div className="absolute bottom-1/3 left-1/3 w-[400px] h-[400px] bg-gradient-radial from-white/12 to-transparent rounded-full blur-2xl animate-gentle-float"></div>
-        </div>
+      {/* HERO */}
+      <Section id="hero" icon={Globe2} title="OnSpot — The Evolution of Outsourcing" kicker="Overview">
+        {/* Decorative background for depth */}
+        <div className="relative overflow-hidden rounded-2xl">
+          <div className="absolute inset-0 -z-10 bg-gradient-to-br from-white via-zinc-50 to-zinc-100" />
+          <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl opacity-30 pointer-events-none"
+               style={{ background: "radial-gradient(60% 60% at 50% 50%, #0ea5e9 0%, rgba(14,165,233,0.35) 35%, transparent 70%)" }} />
+          <div className="absolute -bottom-24 -right-24 h-72 w-72 rounded-full blur-3xl opacity-20 pointer-events-none"
+               style={{ background: "radial-gradient(60% 60% at 50% 50%, #111 0%, rgba(17,17,17,0.35) 40%, transparent 70%)" }} />
 
-        <div className="container mx-auto text-center relative z-20 px-6">
-          <div className="max-w-6xl mx-auto space-y-8">
-            {/* Refined Typography Section */}
-            <div className="space-y-8 hero-content">
-              {/* Elegant Badge */}
-              <div className="inline-flex items-center gap-3 text-sm font-medium text-white/95 tracking-[0.15em] uppercase bg-white/8 backdrop-blur-xl px-8 py-3 rounded-full border border-white/20 shadow-2xl">
-                <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full animate-pulse"></div>
-                Investors Corner
-              </div>
-              
-              {/* Hero Title - Apple Typography */}
-              <div className="space-y-4">
-                <h1 className="hero-title">
-                  <span className="block text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-light tracking-tighter leading-[0.9] text-white">
-                    OnSpot: The
-                  </span>
-                  <span className="block text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold tracking-tighter leading-[0.9] bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
-                    Evolution of Outsourcing
-                  </span>
-                </h1>
-              </div>
-              
-              {/* Refined Description */}
-              <div className="max-w-4xl mx-auto">
-                <p className="text-lg md:text-xl lg:text-2xl text-white/90 leading-relaxed font-light tracking-wide">
-                  Built by entrepreneurs, for entrepreneurs. OnSpot delivers premium, done-for-you teams 
-                  that <span className="font-medium text-white">cut costs by up to 70%</span>, unlock your time, 
-                  and fuel <span className="font-medium text-white">8X business growth</span>.
-                </p>
-              </div>
-
-              {/* Key Value Props */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mt-12">
-                <div className="text-center space-y-2" data-testid="stat-clients-served">
-                  <div className="text-3xl md:text-4xl font-bold text-white">80+</div>
-                  <div className="text-white/80 text-sm uppercase tracking-wider">Clients Served</div>
-                </div>
-                <div className="text-center space-y-2" data-testid="stat-value-delivered">
-                  <div className="text-3xl md:text-4xl font-bold text-white">$50M+</div>
-                  <div className="text-white/80 text-sm uppercase tracking-wider">Value Delivered</div>
-                </div>
-                <div className="text-center space-y-2" data-testid="stat-resources-deployed">
-                  <div className="text-3xl md:text-4xl font-bold text-white">500+</div>
-                  <div className="text-white/80 text-sm uppercase tracking-wider">Resources Deployed</div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Prototype Link - Prominent Display */}
-            <div className="mb-8">
-              <div className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-600/20 to-purple-600/20 backdrop-blur-xl px-6 py-3 rounded-full border border-white/30">
-                <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-white/90 text-sm font-medium">Live Prototype Available</span>
-              </div>
-              <div className="mt-4">
-                <Button 
-                  size="lg" 
-                  variant="outline"
-                  className="group relative overflow-hidden text-base px-8 py-4 h-auto border-2 border-blue-400/50 text-white hover:bg-blue-400/10 hover:border-blue-400 shadow-2xl hover:shadow-3xl transition-all duration-500 font-medium backdrop-blur-xl bg-blue-400/10 rounded-xl min-w-[260px]" 
-                  asChild 
-                  data-testid="link-prototype"
-                >
-                  <a href="https://connect.onspotglobal.com" target="_blank" rel="noopener noreferrer">
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-400/0 via-blue-400/10 to-blue-400/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                    <Zap className="w-5 h-5 mr-2 transition-transform group-hover:scale-110" />
-                    Try OnSpotConnect Live Demo
-                  </a>
-                </Button>
-              </div>
-            </div>
-
-            {/* Premium Call-to-Action */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 cta-buttons">
-              <Button 
-                size="lg" 
-                className="group relative overflow-hidden text-base px-8 py-4 h-auto bg-white text-black hover:bg-gray-50 shadow-2xl hover:shadow-3xl transition-all duration-500 font-medium rounded-xl border-2 border-white/20 min-w-[220px]" 
-                asChild 
-                data-testid="button-contact-investors"
+          <div className="grid md:grid-cols-12 gap-8 items-center p-6 md:p-10">
+            {/* LEFT: copy + CTAs */}
+            <div className="md:col-span-6 lg:col-span-7">
+              <motion.h2
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.5 }}
+                transition={{ duration: 0.5 }}
+                className="text-2xl md:text-4xl font-semibold tracking-tight"
               >
-                <Link href="/lead-intake">
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                  <Mail className="w-4 h-4 mr-2 transition-transform group-hover:scale-110" />
-                  Contact for Investment
-                </Link>
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                size="lg" 
-                className="group relative overflow-hidden text-base px-8 py-4 h-auto border-2 border-white/30 text-white hover:bg-white/10 hover:border-white/60 shadow-2xl hover:shadow-3xl transition-all duration-500 font-medium backdrop-blur-xl bg-white/8 rounded-xl min-w-[200px]" 
-                asChild 
-                data-testid="button-download-deck"
+                OnSpot — The Evolution of Outsourcing
+              </motion.h2>
+
+              <motion.p
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.5 }}
+                transition={{ duration: 0.6, delay: 0.05 }}
+                className="mt-3 text-base md:text-lg text-zinc-700 max-w-xl"
               >
-                <a href="#download-deck">
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                  <BarChart3 className="w-4 h-4 mr-2 transition-transform group-hover:scale-110" />
-                  Download Pitch Deck
+                From 3 years in the BPO trenches to the world's first hybrid outsourcing platform.
+              </motion.p>
+
+              <ul className="mt-5 space-y-2">
+                <Bullet><strong>Hybrid model:</strong> Bridging freelancing chaos and BPO rigidity.</Bullet>
+                <Bullet><strong>Built for scale:</strong> 3 years of BPO ops, now productized.</Bullet>
+              </ul>
+
+              {/* CTAs */}
+              <div className="mt-6 flex flex-wrap gap-3">
+                <a href="#ask" className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-black text-white shadow-sm transition-transform hover:-translate-y-0.5">
+                  <Handshake className="w-4 h-4" /> Partner with OnSpot
                 </a>
-              </Button>
+                <a href="#solution" className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-zinc-300 text-zinc-900 transition-transform hover:-translate-y-0.5">
+                  <Rocket className="w-4 h-4" /> See OnSpotConnect in Action
+                </a>
+              </div>
+              <p className="mt-2 text-xs text-zinc-500">Prototype live • 80+ clients served</p>
+
+              {/* Trust strip */}
+              <p className="mt-5 text-sm text-zinc-600">
+                80+ clients • 500+ resources deployed • $50M+ in value delivered
+              </p>
+            </div>
+
+            {/* RIGHT: product mock or highlight metrics */}
+            <div className="md:col-span-6 lg:col-span-5">
+              {/* Product mockup placeholder – swap src with your real screenshot */}
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.4 }}
+                transition={{ duration: 0.5 }}
+                className="bg-white border border-zinc-200 rounded-2xl shadow-sm p-4 md:p-5"
+              >
+                {/* If you have a dashboard image, uncomment and replace src:
+                <img src="/onspot-dashboard.png" alt="OnSpotConnect dashboard" className="rounded-lg w-full object-cover" />
+                */}
+                <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 w-full aspect-[16/10] grid place-items-center">
+                  <div className="text-center px-6">
+                    <p className="text-sm text-zinc-500">Product Mockup</p>
+                    <p className="text-xs text-zinc-400">Replace with OnSpotConnect dashboard or a simple "Freelance ↔ OnSpot ↔ BPO" diagram.</p>
+                  </div>
+                </div>
+
+                {/* Highlight metrics (count-up) */}
+                <div className="mt-5 grid grid-cols-3 gap-3">
+                  <HeroMetric icon={Users} label="Clients" value={80} suffix="+" />
+                  <HeroMetric icon={Briefcase} label="Seats" value={500} suffix="+" />
+                  <HeroMetric icon={PieChart} label="Gross Margin" value={55} suffix="%" />
+                </div>
+
+                {/* Footer note */}
+                <div className="mt-3 flex items-center justify-between">
+                  <p className="text-[11px] text-zinc-500">As of Sept 2025</p>
+                  <p className="text-[11px] text-zinc-500">Last updated Sept 2025</p>
+                </div>
+              </motion.div>
             </div>
           </div>
         </div>
-      </div>
+      </Section>
 
       {/* The 60-Second Story */}
       <div className="bg-muted/30 py-24">
