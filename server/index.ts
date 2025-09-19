@@ -6,7 +6,6 @@ import { v4 as uuidv4 } from "uuid";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { setupAuth } from "./replitAuth";
-import { query, initializeDatabase } from "./db";
 
 // Extend Request interface to include requestId
 declare global {
@@ -15,126 +14,6 @@ declare global {
       requestId?: string;
     }
   }
-}
-
-// Environment validation and logging function
-async function validateEnvironmentAndLog(): Promise<void> {
-  console.log('🔍 Environment Configuration Validation Starting...');
-  console.log(`🌍 NODE_ENV: ${process.env.NODE_ENV || 'not set (defaulting to development)'}`);
-  console.log(`🖥️  Running in ${process.env.NODE_ENV === 'production' ? 'PRODUCTION' : 'DEVELOPMENT'} mode`);
-
-  // Critical environment variables validation
-  const criticalEnvVars = {
-    'DATABASE_URL': process.env.DATABASE_URL,
-    'JWT_SECRET': process.env.JWT_SECRET,
-    'PORT': process.env.PORT
-  };
-
-  const optionalEnvVars = {
-    'SENTRY_DSN': process.env.SENTRY_DSN,
-    'PUBLIC_BASE_URL': process.env.PUBLIC_BASE_URL,
-    'VITE_API_BASE': process.env.VITE_API_BASE,
-    'REPLIT_DEV_DOMAIN': process.env.REPLIT_DEV_DOMAIN
-  };
-
-  // Validate critical environment variables
-  let hasAllCriticalVars = true;
-  for (const [key, value] of Object.entries(criticalEnvVars)) {
-    if (!value) {
-      console.error(`❌ CRITICAL: ${key} is not set!`);
-      hasAllCriticalVars = false;
-    } else {
-      if (key === 'JWT_SECRET') {
-        if (process.env.NODE_ENV === 'production' && value === 'development-fallback-secret-not-for-production') {
-          console.error('❌ CRITICAL: Using development JWT_SECRET in production!');
-          hasAllCriticalVars = false;
-        } else {
-          console.log(`✅ ${key}: configured (${value.length} characters)`);
-        }
-      } else if (key === 'DATABASE_URL') {
-        const maskedUrl = value.replace(/(\/\/[^:]+:)([^@]+)(@)/, '$1***$3');
-        console.log(`✅ ${key}: ${maskedUrl}`);
-      } else {
-        console.log(`✅ ${key}: ${value}`);
-      }
-    }
-  }
-
-  // Log optional environment variables
-  console.log('\n📋 Optional Environment Variables:');
-  for (const [key, value] of Object.entries(optionalEnvVars)) {
-    if (value) {
-      console.log(`✅ ${key}: ${value}`);
-    } else {
-      console.log(`⚠️  ${key}: not set`);
-    }
-  }
-
-  // Strict JWT Secret validation - no fallbacks allowed
-  if (!process.env.JWT_SECRET) {
-    console.error('❌ CRITICAL: JWT_SECRET is not set!');
-    console.error('❌ CRITICAL: Application cannot start without JWT_SECRET environment variable');
-    console.error('❌ CRITICAL: Please set JWT_SECRET before starting the application');
-    process.exit(1);
-  }
-
-  // Database connection verification with proper initialization
-  console.log('\n🗄️  Database Connection Verification:');
-  try {
-    // Initialize database connection first
-    initializeDatabase();
-    
-    const dbTestResult = await query('SELECT 1 as test, current_database() as database_name, version() as version');
-    const dbInfo = dbTestResult.rows[0];
-    console.log(`✅ Database connection successful`);
-    console.log(`📊 Database: ${dbInfo.database_name}`);
-    console.log(`🔧 Version: ${dbInfo.version.split(' ')[0]} ${dbInfo.version.split(' ')[1]}`);
-    
-    // Check if we're using the right database environment
-    const isProductionDb = dbInfo.database_name?.includes('prod') || 
-                          process.env.DATABASE_URL?.includes('prod') ||
-                          process.env.DATABASE_URL?.includes('production');
-    
-    if (process.env.NODE_ENV === 'production' && !isProductionDb) {
-      console.warn('⚠️  WARNING: Running in production mode but database appears to be non-production');
-    }
-    if (process.env.NODE_ENV !== 'production' && isProductionDb) {
-      console.warn('⚠️  WARNING: Running in development mode but database appears to be production');
-    }
-    
-    console.log(`🏷️  Database Environment: ${isProductionDb ? 'PRODUCTION' : 'DEVELOPMENT'}`);
-  } catch (error: any) {
-    console.error('❌ Database connection failed:', error.message);
-    if (process.env.NODE_ENV === 'production') {
-      console.error('❌ CRITICAL: Database connection is required in production');
-      process.exit(1);
-    } else {
-      console.warn('⚠️  Database connection failed in development, some features may not work');
-    }
-  }
-
-  // Production-specific validations
-  if (process.env.NODE_ENV === 'production') {
-    console.log('\n🔒 Production Environment Checks:');
-    
-    if (!process.env.PUBLIC_BASE_URL) {
-      console.error('❌ CRITICAL: PUBLIC_BASE_URL must be set in production');
-      hasAllCriticalVars = false;
-    }
-    
-    if (!process.env.SENTRY_DSN) {
-      console.warn('⚠️  SENTRY_DSN not set - error tracking disabled');
-    }
-  }
-
-  // Exit if critical variables are missing in production
-  if (process.env.NODE_ENV === 'production' && !hasAllCriticalVars) {
-    console.error('❌ CRITICAL: Missing required environment variables for production');
-    process.exit(1);
-  }
-
-  console.log('\n✅ Environment validation completed successfully');
-  console.log('─'.repeat(60));
 }
 
 const app = express();
@@ -219,11 +98,9 @@ const authLimiter = rateLimit({
   }
 });
 
-// Apply rate limiting to all authentication endpoints for security
+// Apply rate limiting to authentication endpoints only
 app.use('/api/auth', authLimiter);
 app.use('/api/dev/login', authLimiter); // Also apply to development login
-app.use('/api/login', authLimiter); // Apply to main login endpoint
-app.use('/api/signup', authLimiter); // Apply to main signup endpoint
 
 // CORS configuration with credentials support
 app.use(cors({
@@ -231,13 +108,11 @@ app.use(cors({
     // Allow requests with no origin (mobile apps, etc.)
     if (!origin) return callback(null, true);
     
-    // Allow all replit.dev domains, localhost for development, and production domain
+    // Allow all replit.dev domains and localhost for development
     const allowedOrigins = [
       process.env.PUBLIC_BASE_URL,
-      'https://connect.onspotglobal.com', // Production domain
       /\.replit\.dev$/,
       /^https?:\/\/localhost(:\d+)?$/,
-      /^https?:\/\/.*\.onspotglobal\.com$/,
     ].filter(Boolean);
     
     const isAllowed = allowedOrigins.some(allowed => {
@@ -315,9 +190,6 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Validate environment variables and log configuration
-  await validateEnvironmentAndLog();
-  
   // Setup authentication first before routes
   await setupAuth(app);
   

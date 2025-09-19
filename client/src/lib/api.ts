@@ -1,46 +1,12 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 
-// Environment detection and baseURL configuration
-function getAPIBaseURL(): string {
-  // Check for explicit environment variable first
-  if (import.meta.env.VITE_API_BASE) {
-    return import.meta.env.VITE_API_BASE;
-  }
-
-  // Detect environment based on window location
-  const hostname = window.location.hostname;
-  const origin = window.location.origin;
-
-  // Production environment detection
-  if (hostname === 'connect.onspotglobal.com' || 
-      hostname.includes('onspotglobal.com') ||
-      import.meta.env.PROD) {
-    console.log('🌐 Production environment detected, using production API URL');
-    return 'https://connect.onspotglobal.com';
-  }
-
-  // Development environment (localhost, replit.dev, etc.)
-  if (hostname === 'localhost' || 
-      hostname.includes('replit.dev') ||
-      hostname.includes('127.0.0.1') ||
-      import.meta.env.DEV) {
-    console.log('🛠️  Development environment detected, using relative API URLs');
-    return ''; // Use relative URLs for development (same origin)
-  }
-
-  // Fallback to current origin
-  console.log('🔍 Environment detection fallback, using current origin:', origin);
-  return origin;
-}
-
-// Create axios instance with smart environment-based configuration
+// Create axios instance with base configuration
 const api: AxiosInstance = axios.create({
-  baseURL: getAPIBaseURL(),
+  baseURL: import.meta.env.VITE_API_BASE || '', // Uses the existing API base from environment
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // Important for session cookies and CORS
-  timeout: 30000, // 30 second timeout
+  withCredentials: true, // Important for session cookies if needed
 });
 
 // Request interceptor to add JWT token to requests
