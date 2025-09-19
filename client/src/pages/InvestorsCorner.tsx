@@ -481,7 +481,7 @@ export default function InvestorsCorner() {
                 {/* If you have a dashboard image, uncomment and replace src:
                 <img src="/onspot-dashboard.png" alt="OnSpotConnect dashboard" className="rounded-lg w-full object-cover" />
                 */}
-                <img src={dashboardImage} alt="OnSpot dashboard showing client metrics, ROI analysis, and platform overview" className="rounded-lg w-full h-auto object-cover aspect-[16/10] hover:scale-105 transition-transform duration-500" />
+                <img src={dashboardImage} alt="OnSpot dashboard showing client metrics, ROI analysis, and platform overview" className="rounded-lg w-full h-auto object-contain hover:scale-105 transition-transform duration-500" />
 
                 {/* Highlight metrics with count-up animations */}
                 <div className="mt-6 grid grid-cols-3 gap-4">
