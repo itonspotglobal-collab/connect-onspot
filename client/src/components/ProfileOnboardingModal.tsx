@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -143,6 +144,14 @@ interface WelcomeStepProps {
 function WelcomeStep({ onContinue, onSkip }: WelcomeStepProps) {
   return (
     <div className="p-8 text-center animate-slide-up">
+      <DialogHeader>
+        <VisuallyHidden>
+          <DialogTitle>Welcome to OnSpot</DialogTitle>
+          <DialogDescription>
+            Join the global talent marketplace trusted by Fortune 500 companies
+          </DialogDescription>
+        </VisuallyHidden>
+      </DialogHeader>
       <div className="mb-8">
         <div className="w-20 h-20 bg-gradient-to-br from-primary to-primary-dark rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg animate-onspot-pulse">
           <Star className="w-10 h-10 text-white" />

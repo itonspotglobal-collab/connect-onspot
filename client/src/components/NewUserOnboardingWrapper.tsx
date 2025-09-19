@@ -13,26 +13,32 @@ export function NewUserOnboardingWrapper({ children }: NewUserOnboardingWrapperP
   useEffect(() => {
     // Only show onboarding for authenticated users who need it
     if (isAuthenticated && !isLoading && user) {
+      // Check if onboarding was already completed or skipped
+      const hasCompleted = localStorage.getItem(`onboarding_completed_${user.id}`) === 'true';
+      const hasSkipped = localStorage.getItem(`onboarding_skipped_${user.id}`) === 'true';
+      
       const shouldShowOnboarding = 
-        user.needsOnboarding || 
-        user.isNewUser || 
-        // Fallback check for users without explicit flags
-        (user.userType === 'talent' && !localStorage.getItem(`onboarding_completed_${user.id}`));
+        !hasCompleted && 
+        !hasSkipped && 
+        (user.needsOnboarding || user.isNewUser) &&
+        user.userType === 'talent'; // Only show for talent users
       
-      setShowOnboarding(shouldShowOnboarding);
-      
-      if (shouldShowOnboarding) {
-        console.log('🚀 New user detected, showing onboarding flow:', {
-          userType: user.userType,
-          needsOnboarding: user.needsOnboarding,
-          isNewUser: user.isNewUser,
-          userId: user.id
-        });
+      if (shouldShowOnboarding !== showOnboarding) {
+        setShowOnboarding(shouldShowOnboarding || false);
+        
+        if (shouldShowOnboarding) {
+          console.log('🚀 New user detected, showing onboarding flow:', {
+            userType: user.userType,
+            needsOnboarding: user.needsOnboarding,
+            isNewUser: user.isNewUser,
+            userId: user.id
+          });
+        }
       }
     } else {
       setShowOnboarding(false);
     }
-  }, [isAuthenticated, isLoading, user]);
+  }, [isAuthenticated, isLoading, user, showOnboarding]);
 
   const handleOnboardingComplete = () => {
     console.log('✅ Onboarding completed for user:', user?.id);
