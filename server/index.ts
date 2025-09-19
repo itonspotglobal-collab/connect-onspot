@@ -70,15 +70,12 @@ async function validateEnvironmentAndLog(): Promise<void> {
     }
   }
 
-  // JWT Secret validation and fallback handling
+  // Strict JWT Secret validation - no fallbacks allowed
   if (!process.env.JWT_SECRET) {
-    if (process.env.NODE_ENV === 'production') {
-      console.error('❌ CRITICAL: JWT_SECRET must be set in production!');
-      process.exit(1);
-    } else {
-      console.warn('⚠️  JWT_SECRET not set, using development fallback');
-      process.env.JWT_SECRET = 'development-fallback-secret-not-for-production';
-    }
+    console.error('❌ CRITICAL: JWT_SECRET is not set!');
+    console.error('❌ CRITICAL: Application cannot start without JWT_SECRET environment variable');
+    console.error('❌ CRITICAL: Please set JWT_SECRET before starting the application');
+    process.exit(1);
   }
 
   // Database connection verification with proper initialization
