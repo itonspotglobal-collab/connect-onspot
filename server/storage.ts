@@ -25,7 +25,7 @@ import { randomUUID } from "crypto";
 // Type for creating user with password
 export interface CreateUserData {
   email: string;
-  password: string;
+  password: string; // Will be hashed before storing as passwordHash
   firstName: string;
   lastName: string;
   role: "client" | "talent";
@@ -367,7 +367,7 @@ export class MemStorage implements IStorage {
       firstName: (insertUser as any).firstName || null,
       lastName: (insertUser as any).lastName || null,
       profileImageUrl: (insertUser as any).profileImageUrl || null,
-      password: (insertUser as any).password || null,
+      passwordHash: (insertUser as any).passwordHash || null,
       replitId: insertUser.replitId || null,
       stripeAccountId: insertUser.stripeAccountId || null,
       createdAt: now,
@@ -412,7 +412,7 @@ export class MemStorage implements IStorage {
         firstName: userData.firstName || null,
         lastName: userData.lastName || null,
         profileImageUrl: userData.profileImageUrl || null,
-        password: null, // OAuth users don't have passwords
+        passwordHash: null, // OAuth users don't have passwords
         role: userData.role || "client",
         replitId: userData.replitId || null,
         stripeAccountId: userData.stripeAccountId || null,
@@ -436,7 +436,7 @@ export class MemStorage implements IStorage {
       firstName: userData.firstName,
       lastName: userData.lastName,
       profileImageUrl: null,
-      password: userData.password, // Password is already hashed by caller
+      passwordHash: userData.password, // Password is already hashed by caller
       company: userData.company || null, // Store company field for clients
       role: userData.role,
       replitId: null, // Only for OAuth users

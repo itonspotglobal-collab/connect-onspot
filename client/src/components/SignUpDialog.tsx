@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { isFirebaseAvailable } from "@/lib/firebase";
 import { authAPI } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
 
 type UserType = "client" | "talent" | null;
@@ -41,6 +42,7 @@ export function SignUpDialog() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const { login } = useAuth(); // Use AuthContext login method
 
   const resetDialog = () => {
     setCurrentStep("user-type");
@@ -118,13 +120,13 @@ export function SignUpDialog() {
 
     setIsLoading(true);
     try {
-      // Call the real signup API with correct camelCase field names
+      // Call the real signup API with correct snake_case field names as required by backend
       const signupData = {
         email: formData.email.trim(),
         username: formData.email.split('@')[0], // Generate username from email
         password: formData.password,
-        firstName: formData.firstName.trim(),   // camelCase for API compatibility
-        lastName: formData.lastName.trim(),     // camelCase for API compatibility
+        first_name: formData.firstName.trim(),   // snake_case as required by backend API
+        last_name: formData.lastName.trim(),     // snake_case as required by backend API
         role: userType, // Now TypeScript knows this is "client" | "talent"
         ...(userType === "client" && { company: formData.company.trim() })
       };
@@ -145,12 +147,12 @@ export function SignUpDialog() {
           description: `Your ${accountType.toLowerCase()} account has been created successfully! Logging you in...`,
         });
         
-        // Automatically log in the user after successful signup
+        // Automatically log in the user after successful signup using AuthContext
         try {
-          const loginResponse = await authAPI.login(formData.email.trim(), formData.password);
+          const loginSuccess = await login(formData.email.trim(), formData.password, userType);
           
-          if (loginResponse.success) {
-            // Success! Token and user data are already stored by authAPI.login
+          if (loginSuccess) {
+            // Success! Auth context has been updated automatically
             toast({
               title: "Logged In Successfully",
               description: `Welcome to your OnSpot ${accountType.toLowerCase()} portal!`,
@@ -158,9 +160,6 @@ export function SignUpDialog() {
             
             setOpen(false);
             resetDialog();
-            
-            // Trigger auth context refresh
-            window.dispatchEvent(new CustomEvent('auth-changed'));
             
             // Navigate user to appropriate page
             if (userType === "talent") {

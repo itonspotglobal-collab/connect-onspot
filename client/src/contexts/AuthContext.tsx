@@ -55,8 +55,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: loginData.user.id,
           username: loginData.user.username,
           email: loginData.user.email,
-          firstName: loginData.user.firstName,
-          lastName: loginData.user.lastName,
+          firstName: loginData.user.first_name,
+          lastName: loginData.user.last_name,
           profileImageUrl: loginData.user.profileImageUrl,
           role: loginData.user.role,
           userType: loginData.user.role as "client" | "talent",
@@ -67,8 +67,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Check if this is a new user and handle onboarding
         const isNew = await checkNewUserStatus(loginData.user.id);
         
+        // Check if onboarding was already completed or skipped
+        const hasCompleted = localStorage.getItem(`onboarding_completed_${loginData.user.id}`) === 'true';
+        const hasSkipped = localStorage.getItem(`onboarding_skipped_${loginData.user.id}`) === 'true';
+        const needsOnboarding = isNew && !hasCompleted && !hasSkipped;
+        
         // Set user with all data at once to prevent double renders
-        const finalUser = {...mappedUser, isNewUser: isNew, needsOnboarding: isNew};
+        const finalUser = {
+          ...mappedUser, 
+          isNewUser: isNew, 
+          needsOnboarding: needsOnboarding
+        };
         setUser(finalUser);
         setIsAuthenticated(true);
         
@@ -146,17 +155,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (isAuth && storedUser) {
         console.log('🔐 JWT user found in localStorage:', storedUser);
+        
+        // Check if onboarding was already completed or skipped
+        const hasCompleted = localStorage.getItem(`onboarding_completed_${storedUser.id}`) === 'true';
+        const hasSkipped = localStorage.getItem(`onboarding_skipped_${storedUser.id}`) === 'true';
+        
         const mappedUser: User = {
           id: storedUser.id,
           username: storedUser.username,
           email: storedUser.email,
-          firstName: storedUser.firstName,
-          lastName: storedUser.lastName,
+          firstName: storedUser.first_name || storedUser.firstName,
+          lastName: storedUser.last_name || storedUser.lastName,
           profileImageUrl: storedUser.profileImageUrl,
           role: storedUser.role,
           userType: storedUser.role as "client" | "talent",
           authProvider: 'jwt',
-          company: storedUser.company
+          company: storedUser.company,
+          // Only mark as needing onboarding if they haven't completed or skipped it
+          needsOnboarding: !hasCompleted && !hasSkipped && storedUser.role === 'talent'
         };
         
         setUser(mappedUser);
@@ -182,7 +198,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Check if user is new (needs onboarding)
   const checkNewUserStatus = async (userId: string): Promise<boolean> => {
     try {
-      const response = await fetch(`/api/profiles/${userId}`, {
+      const response = await fetch(`/api/profiles/user/${userId}`, {
         method: 'GET',
         credentials: 'include',
         headers: {

@@ -183,7 +183,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           attemptedUsername: username || email
         });
         
-        return res.status(400).json({
+        return res.status(409).json({
           success: false,
           message: "An account with this email or username already exists",
           requestId
@@ -200,9 +200,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Insert user into database
       const insertUserQuery = `
-        INSERT INTO users (id, email, username, "first_name", "last_name", password, company, role, "created_at", "updated_at")
+        INSERT INTO users (id, email, username, "first_name", "last_name", "password_hash", company, role, "created_at", "updated_at")
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
-        RETURNING id, email, username, "first_name" as "firstName", "last_name" as "lastName", role
+        RETURNING id, email, username, "first_name", "last_name", role
       `;
       
       console.log(`📝 Inserting user into database [${requestId}]:`, {
@@ -259,10 +259,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         role: newUser.role
       });
 
-      res.status(200).json({
+      // Return exact format required by specification - 201 status with userId field
+      res.status(201).json({
         success: true,
         userId: newUser.id,
-        message: "Account created successfully",
+        user: {
+          id: newUser.id,
+          email: newUser.email,
+          username: newUser.username,
+          role: newUser.role,
+          first_name: newUser.first_name,
+          last_name: newUser.last_name
+        },
         requestId
       });
 
@@ -278,14 +286,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Handle specific database errors
       if (error.code === '23505') { // Unique violation
         if (error.constraint?.includes('email')) {
-          return res.status(400).json({
+          return res.status(409).json({
             success: false,
             message: "An account with this email already exists",
             requestId
           });
         }
         if (error.constraint?.includes('username')) {
-          return res.status(400).json({
+          return res.status(409).json({
             success: false,
             message: "This username is already taken",
             requestId
@@ -333,7 +341,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Find user by email
-      const userQuery = 'SELECT id, email, username, "first_name" as "firstName", "last_name" as "lastName", password, role, company FROM users WHERE email = $1';
+      const userQuery = 'SELECT id, email, username, "first_name", "last_name", "password_hash", role, company FROM users WHERE email = $1';
       const userResult = await query(userQuery, [email]);
       
       if (userResult.rows.length === 0) {
@@ -354,7 +362,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = userResult.rows[0];
       
       // Check if user has a password (OAuth users might not)
-      if (!user.password) {
+      if (!user.password_hash) {
         console.error(`❌ Password verification failed [${requestId}]: User ${user.id} has no password (OAuth user?)`);
         return res.status(401).json({
           success: false,
@@ -365,7 +373,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Verify password
       console.log(`🔐 Verifying password [${requestId}]`);
-      const isPasswordValid = await verifyPassword(password, user.password);
+      const isPasswordValid = await verifyPassword(password, user.password_hash);
       if (!isPasswordValid) {
         console.error(`❌ Password verification failed [${requestId}]: Invalid password for user ${user.id}`);
         return res.status(401).json({
@@ -377,11 +385,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`✅ Password verified successfully [${requestId}]`);
 
-      // Generate JWT token (with fallback for development)
-      const jwtSecret = process.env.JWT_SECRET || 'fallback-jwt-secret-for-development-only-not-for-production';
+      // Generate JWT token with proper secret handling and development fallback
+      let jwtSecret = process.env.JWT_SECRET;
       
-      if (!process.env.JWT_SECRET) {
-        console.warn('⚠️ JWT_SECRET environment variable not set, using fallback (not secure for production)');
+      if (!jwtSecret) {
+        // Development fallback with warning
+        if (process.env.NODE_ENV === 'development') {
+          jwtSecret = 'development-fallback-secret-not-for-production';
+          console.warn('⚠️  Using development fallback JWT_SECRET. Please set JWT_SECRET environment variable for production!');
+        } else {
+          console.error('❌ JWT_SECRET environment variable not set! This is required for secure authentication.');
+          return res.status(500).json({
+            success: false,
+            message: "Server configuration error",
+            requestId
+          });
+        }
       }
 
       const token = jwt.sign(
@@ -394,14 +413,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         { expiresIn: '7d' }
       );
 
+      // Return exact format required by specification - snake_case as per spec
       const userResponse = {
         id: user.id,
         email: user.email,
         username: user.username,
-        firstName: user.firstName,
-        lastName: user.lastName,
         role: user.role,
-        company: user.company
+        first_name: user.first_name,
+        last_name: user.last_name
       };
 
       console.log(`✅ User login successful [${requestId}]:`, {
@@ -413,9 +432,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(200).json({
         success: true,
         token,
-        user: userResponse,
-        authProvider: 'email',
-        requestId
+        user: userResponse
       });
 
     } catch (error: any) {
@@ -651,93 +668,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  // Email/Password Login endpoint
-  app.post('/api/login',
-    authLimiter,
-    validateRequest(z.object({
-      email: z.string().email("Valid email address required"),
-      password: z.string().min(1, "Password is required")
-    })),
-    async (req: any, res) => {
-      try {
-        const { email, password } = req.body;
 
-        // Find user by email
-        const user = await storage.getUserByEmail(email);
-        if (!user) {
-          return res.status(401).json({
-            error: "Invalid credentials",
-            message: "The email or password you entered is incorrect",
-            requestId: req.requestId
-          });
-        }
-
-        // Check if user has a password (not OAuth user)
-        if (!user.password) {
-          return res.status(400).json({
-            error: "OAuth account detected",
-            message: "This account was created with social login. Please use Google or LinkedIn to sign in.",
-            requestId: req.requestId
-          });
-        }
-
-        // Verify password
-        const isPasswordValid = await verifyPassword(password, user.password);
-        if (!isPasswordValid) {
-          return res.status(401).json({
-            error: "Invalid credentials", 
-            message: "The email or password you entered is incorrect",
-            requestId: req.requestId
-          });
-        }
-
-        // Create session using passport login
-        req.login({ user: user, provider: 'email' }, (err: any) => {
-          if (err) {
-            console.error(`🚨 Email login session error [${req.requestId}]:`, err);
-            return res.status(500).json({
-              error: "Session creation failed",
-              message: "Failed to establish session. Please try again.",
-              requestId: req.requestId
-            });
-          }
-
-          console.log(`✅ Email login successful [${req.requestId}]:`, {
-            userId: user.id,
-            email: user.email,
-            role: user.role
-          });
-
-          res.json({
-            success: true,
-            message: "Login successful",
-            user: {
-              id: user.id,
-              email: user.email,
-              firstName: user.firstName,
-              lastName: user.lastName,
-              role: user.role,
-              profileImageUrl: user.profileImageUrl
-            },
-            authProvider: 'email'
-          });
-        });
-
-      } catch (error) {
-        handleRouteError(error, req, res, "User login", 500);
-      }
-    }
-  );
-
-  // Health check route for OAuth testing
+  // Health check route returning exact format required by specification
   app.get('/api/health', (req, res) => {
-    res.json({ 
-      status: 'ok', 
-      timestamp: new Date().toISOString(),
-      authenticated: req.isAuthenticated(),
-      user: req.isAuthenticated() ? ((req.user as any)?.user?.id || (req.user as any)?.claims?.sub || 'unknown') : null,
-      provider: req.isAuthenticated() ? ((req.user as any)?.provider || 'replit') : null
-    });
+    res.json({ ok: true });
   });
 
   // Enhanced development login endpoint with validation and monitoring
