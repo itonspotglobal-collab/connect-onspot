@@ -595,14 +595,14 @@
     inset:0 auto auto 0; 
     width:100%; 
     z-index:1000; 
-    background:transparent; 
+    background: var(--gradient-investor-hero); 
     border-color:transparent; 
     backdrop-filter:saturate(1.2) blur(0px); 
     transition:background .25s ease,border-color .25s ease,backdrop-filter .25s ease; 
   }
   .nav-over-hero[data-scrolled="true"] { 
-    background: hsl(var(--background) / 0.8); 
-    border-bottom:1px solid hsl(var(--border)); 
+    background: var(--gradient-investor-hero); 
+    border-bottom:1px solid hsl(var(--brand-foreground) / 0.1); 
     backdrop-filter:saturate(1.2) blur(8px); 
   }
 }
