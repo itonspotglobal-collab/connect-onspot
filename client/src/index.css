@@ -581,15 +581,6 @@
     background: var(--gradient-investor-hero); 
     position: relative; 
   }
-  .hero-investor::after { 
-    content:""; 
-    position:absolute; 
-    inset-inline:0; 
-    bottom:-1px; 
-    height:3rem; 
-    pointer-events:none; 
-    background: linear-gradient(to bottom, transparent 0%, transparent 30%, hsl(var(--background)) 100%); 
-  }
   .nav-over-hero { 
     position:fixed; 
     inset:0 auto auto 0; 
