@@ -35,6 +35,7 @@ import ClientVerification from "@/pages/ClientVerification";
 import TrustSafety from "@/pages/TrustSafety";
 import LeadIntake from "@/pages/LeadIntake";
 import AdminCSVImport from "@/pages/AdminCSVImport";
+import InvestorsCorner from "@/pages/InvestorsCorner";
 
 // Public Routes - Always available regardless of authentication
 function PublicRouter() {
@@ -90,6 +91,7 @@ function PublicRouter() {
           <Route path="/client-verification" component={ClientVerification} />
           <Route path="/trust-safety" component={TrustSafety} />
           <Route path="/lead-intake" component={LeadIntake} />
+          <Route path="/investors" component={InvestorsCorner} />
           {/* Legacy routes for backward compatibility */}
           <Route path="/talent" component={TalentSearch} />
           <Route component={NotFound} />
@@ -176,6 +178,8 @@ function AppContent() {
       <Route path="/payment-protection" component={PublicRouter} />
       <Route path="/client-verification" component={PublicRouter} />
       <Route path="/trust-safety" component={PublicRouter} />
+      <Route path="/lead-intake" component={PublicRouter} />
+      <Route path="/investors" component={PublicRouter} />
       <Route path="/talent" component={PublicRouter} />
       
       {/* Client Protected Routes */}
