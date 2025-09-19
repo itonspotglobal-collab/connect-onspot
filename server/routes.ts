@@ -53,18 +53,15 @@ const authenticateJWT = async (req: Request, res: Response, next: NextFunction) 
       });
     }
     
-    // Get JWT secret
-    let jwtSecret = process.env.JWT_SECRET;
+    // Strict JWT secret validation - no fallbacks allowed
+    const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
-      if (process.env.NODE_ENV === 'development') {
-        jwtSecret = 'development-fallback-secret-not-for-production';
-      } else {
-        console.error('❌ JWT_SECRET not configured for production');
-        return res.status(500).json({
-          error: "Server configuration error",
-          requestId: (req as any).requestId
-        });
-      }
+      console.error('❌ JWT_SECRET not configured - authentication cannot proceed');
+      return res.status(500).json({
+        success: false,
+        message: "Server misconfiguration",
+        requestId: (req as any).requestId
+      });
     }
     
     // Verify and decode JWT
@@ -789,22 +786,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`✅ Password verified successfully [${requestId}]`);
 
-      // Generate JWT token with proper secret handling and development fallback
-      let jwtSecret = process.env.JWT_SECRET;
+      // Strict JWT token generation - no fallbacks allowed
+      const jwtSecret = process.env.JWT_SECRET;
       
       if (!jwtSecret) {
-        // Development fallback with warning
-        if (process.env.NODE_ENV === 'development') {
-          jwtSecret = 'development-fallback-secret-not-for-production';
-          console.warn('⚠️  Using development fallback JWT_SECRET. Please set JWT_SECRET environment variable for production!');
-        } else {
-          console.error('❌ JWT_SECRET environment variable not set! This is required for secure authentication.');
-          return res.status(500).json({
-            success: false,
-            message: "Server configuration error",
-            requestId
-          });
-        }
+        console.error('❌ JWT_SECRET environment variable not set! Token generation cannot proceed.');
+        return res.status(500).json({
+          success: false,
+          message: "Server misconfiguration",
+          requestId
+        });
       }
 
       const token = jwt.sign(
