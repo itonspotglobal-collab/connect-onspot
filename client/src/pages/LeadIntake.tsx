@@ -114,12 +114,38 @@ export default function LeadIntake() {
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
+      // Build payload with snake_case field names matching database schema
+      const payload = {
+        first_name: data.firstName,
+        last_name: data.lastName,
+        email: data.email,
+        phone_number: data.phoneNumber,
+        job_title: data.jobTitle,
+        company_name: data.companyName,
+        company_size: data.companySize,
+        industry: data.industry,
+        company_website: data.companyWebsite,
+        service_type: data.serviceType,
+        current_challenges: data.currentChallenges,
+        service_volume: data.serviceVolume,
+        required_skills: data.requiredSkills,
+        urgency_level: data.urgencyLevel,
+        budget_range: data.budgetRange,
+        expected_start_date: data.expectedStartDate,
+        team_size: data.teamSize,
+        has_current_provider: data.hasCurrentProvider,
+        current_provider_details: data.currentProviderDetails,
+        decision_maker_status: data.decisionMakerStatus,
+        implementation_timeline: data.implementationTimeline,
+        additional_notes: data.additionalNotes
+      };
+
       const response = await fetch('/api/lead-intake', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
@@ -129,12 +155,27 @@ export default function LeadIntake() {
         });
         setCurrentStep(5); // Go to scheduling step
       } else {
-        throw new Error('Submission failed');
+        // Parse server error response for specific error message
+        let errorMessage = "Something went wrong. Please try again.";
+        try {
+          const errorResponse = await response.json();
+          console.error('Server error response:', errorResponse);
+          errorMessage = errorResponse.message || errorResponse.error || errorMessage;
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError);
+        }
+        
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
       }
     } catch (error) {
+      console.error('Network or JSON parsing error:', error);
       toast({
         title: "Error",
-        description: "Something went wrong. Please try again.",
+        description: "Network error. Please check your connection and try again.",
         variant: "destructive",
       });
     } finally {
