@@ -100,6 +100,17 @@
   --gradient-success: linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(142 60% 30%) 100%);
   --gradient-premium: linear-gradient(135deg, hsl(45 93% 58%) 0%, hsl(45 85% 50%) 100%);
 
+  /* Brand Colors for Investor Hero */
+  --brand: 236 42% 48%;
+  --brand-600: 236 42% 48%;
+  --brand-700: 236 50% 36%;
+  --brand-500: 236 42% 58%;
+  --brand-foreground: 0 0% 100%;
+  --gradient-investor-hero: 
+    radial-gradient(1200px 600px at 20% -10%, hsl(var(--brand)/0.35) 0%, transparent 60%),
+    radial-gradient(900px 500px at 90% 10%, hsl(220 100% 60% / 0.18) 0%, transparent 55%),
+    linear-gradient(160deg, hsl(var(--brand)) 0%, hsl(var(--brand-700)) 65%);
+
   --font-sans: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: Menlo, monospace;
@@ -241,6 +252,10 @@
   --gradient-primary: linear-gradient(135deg, hsl(215 100% 65%) 0%, hsl(215 84% 55%) 100%);
   --gradient-success: linear-gradient(135deg, hsl(142 76% 45%) 0%, hsl(142 60% 40%) 100%);
   --gradient-premium: linear-gradient(135deg, hsl(45 93% 65%) 0%, hsl(45 85% 55%) 100%);
+
+  /* Dark Mode Brand Colors */
+  --brand: 236 42% 54%;
+  --brand-700: 236 50% 44%;
 
   --shadow-2xs: 0px 2px 0px 0px hsl(220 13% 19% / 0.00);
   --shadow-xs: 0px 2px 0px 0px hsl(220 13% 19% / 0.00);
@@ -559,5 +574,35 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+  }
+
+  /* Investor Hero Section Utilities */
+  .hero-investor { 
+    background: var(--gradient-investor-hero); 
+    position: relative; 
+  }
+  .hero-investor::after { 
+    content:""; 
+    position:absolute; 
+    inset-inline:0; 
+    bottom:-1px; 
+    height:6rem; 
+    pointer-events:none; 
+    background: linear-gradient(to bottom, transparent 0%, hsl(var(--background)) 100%); 
+  }
+  .nav-over-hero { 
+    position:fixed; 
+    inset:0 auto auto 0; 
+    width:100%; 
+    z-index:1000; 
+    background:transparent; 
+    border-color:transparent; 
+    backdrop-filter:saturate(1.2) blur(0px); 
+    transition:background .25s ease,border-color .25s ease,backdrop-filter .25s ease; 
+  }
+  .nav-over-hero[data-scrolled="true"] { 
+    background: hsl(var(--background) / 0.8); 
+    border-bottom:1px solid hsl(var(--border)); 
+    backdrop-filter:saturate(1.2) blur(8px); 
   }
 }

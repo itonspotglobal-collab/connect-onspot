@@ -226,6 +226,7 @@ export function TopNavigation() {
   const [location] = useLocation();
   const { isAuthenticated, isLoading, user, logout } = useAuth();
   const [isVisible, setIsVisible] = useState(true);
+  const [isScrolled, setIsScrolled] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const lastScrollY = useRef(0);
@@ -236,6 +237,9 @@ export function TopNavigation() {
     const controlNavbar = () => {
       const currentScrollY = Math.max(0, window.scrollY);
       const scrollDelta = Math.abs(currentScrollY - lastScrollY.current);
+      
+      // Update scrolled state for nav-over-hero styling
+      setIsScrolled(currentScrollY > 16);
       
       // Only process if scroll delta is significant (prevents flicker)
       if (scrollDelta < 10) {
@@ -301,13 +305,10 @@ export function TopNavigation() {
       <div className="h-16" aria-hidden="true" />
       
       <nav 
-        className={`fixed top-0 z-50 w-full border-b border-white/20 backdrop-blur-md transition-transform duration-300 ease-in-out ${
+        className={`nav-over-hero transition-transform duration-300 ease-in-out ${
           isVisible ? 'translate-y-0' : '-translate-y-full'
-        }`} 
-        style={{ 
-          background: 'linear-gradient(135deg, #474ead 0%, #5a5dc7 50%, #6366f1 100%)',
-          boxShadow: isVisible ? '0 8px 32px rgba(71, 74, 173, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1)' : 'none'
-        }}
+        }`}
+        data-scrolled={isScrolled}
       >
       <div className="container flex h-16 items-center justify-between px-4 relative">
         {/* Logo */}
@@ -355,7 +356,7 @@ export function TopNavigation() {
                     <div 
                       className="fixed top-16 left-1/2 transform -translate-x-1/2 mt-2 w-[min(100vw-2rem,1400px)] rounded-lg border border-white/20 backdrop-blur-md shadow-2xl z-50 mx-4"
                       style={{ 
-                        background: 'linear-gradient(135deg, #474ead 0%, #5a5dc7 50%, #6366f1 100%)'
+                        background: 'var(--gradient-investor-hero)'
                       }}
                       onMouseEnter={handleDropdownMouseEnter}
                       onMouseLeave={handleDropdownMouseLeave}

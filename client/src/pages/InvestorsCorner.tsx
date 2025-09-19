@@ -332,16 +332,9 @@ export default function InvestorsCorner() {
   return (
     <div className="space-y-0 overflow-hidden">
       {/* HERO */}
-      <section id="hero" className="py-24 relative overflow-hidden" 
-               style={{ 
-                 background: 'var(--gradient-primary)'
-               }}>
+      <section id="hero" className="hero-investor text-white pt-28 pb-20">
         <div className="container mx-auto px-6">
           <div className="relative">
-            <div className="absolute inset-0 -z-10" 
-                 style={{ 
-                   boxShadow: '0 20px 40px rgba(71, 74, 173, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)' 
-                 }} />
           <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full blur-3xl opacity-20 pointer-events-none"
                style={{ background: "radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 40%, transparent 70%)" }} />
           <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full blur-3xl opacity-15 pointer-events-none"
@@ -355,7 +348,7 @@ export default function InvestorsCorner() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.5 }}
                 transition={{ duration: 0.5 }}
-                className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white drop-shadow-lg"
+                className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight text-[hsl(var(--brand-foreground))] drop-shadow-lg"
               >
                 OnSpot — The Evolution of Outsourcing
               </motion.h1>
@@ -365,7 +358,7 @@ export default function InvestorsCorner() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.5 }}
                 transition={{ duration: 0.6, delay: 0.1 }}
-                className="mt-6 text-xl md:text-2xl lg:text-3xl font-medium text-white/95 max-w-4xl leading-relaxed drop-shadow-md"
+                className="mt-6 text-xl md:text-2xl lg:text-3xl font-medium text-[hsl(var(--brand-foreground))]/95 max-w-4xl leading-relaxed drop-shadow-md"
               >
                 From 3 years in the BPO trenches to the world's first hybrid outsourcing platform.
               </motion.p>
@@ -378,8 +371,8 @@ export default function InvestorsCorner() {
                   transition={{ duration: 0.4, delay: 0.2 }}
                   className="flex items-start gap-3"
                 >
-                  <div className="w-2 h-2 rounded-full bg-white/90 mt-2.5 flex-shrink-0" />
-                  <span className="text-base text-white/90"><strong className="text-white">Hybrid model:</strong> Bridging freelancing chaos and BPO rigidity.</span>
+                  <div className="w-2 h-2 rounded-full bg-[hsl(var(--brand-foreground))]/90 mt-2.5 flex-shrink-0" />
+                  <span className="text-base text-[hsl(var(--brand-foreground))]/90"><strong className="text-[hsl(var(--brand-foreground))]">Hybrid model:</strong> Bridging freelancing chaos and BPO rigidity.</span>
                 </motion.li>
                 <motion.li
                   initial={{ opacity: 0, x: -8 }}
@@ -388,8 +381,8 @@ export default function InvestorsCorner() {
                   transition={{ duration: 0.4, delay: 0.3 }}
                   className="flex items-start gap-3"
                 >
-                  <div className="w-2 h-2 rounded-full bg-white/90 mt-2.5 flex-shrink-0" />
-                  <span className="text-base text-white/90"><strong className="text-white">Built for scale:</strong> 3 years of BPO ops, now productized.</span>
+                  <div className="w-2 h-2 rounded-full bg-[hsl(var(--brand-foreground))]/90 mt-2.5 flex-shrink-0" />
+                  <span className="text-base text-[hsl(var(--brand-foreground))]/90"><strong className="text-[hsl(var(--brand-foreground))]">Built for scale:</strong> 3 years of BPO ops, now productized.</span>
                 </motion.li>
               </ul>
 
@@ -401,10 +394,10 @@ export default function InvestorsCorner() {
                 transition={{ duration: 0.5, delay: 0.4 }}
                 className="mt-8 flex flex-wrap gap-4"
               >
-                <a href="#ask" className="inline-flex items-center gap-3 px-6 py-3 rounded-xl bg-white text-primary font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 hover:bg-white/95">
+                <a href="#ask" className="inline-flex items-center gap-3 px-6 py-3 rounded-xl bg-[hsl(var(--brand-foreground))] text-primary font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 hover:bg-[hsl(var(--brand-foreground))]/95">
                   <Handshake className="w-5 h-5" /> Partner with OnSpot
                 </a>
-                <a href="#solution" className="inline-flex items-center gap-3 px-6 py-3 rounded-xl border-2 border-white/30 text-white font-semibold backdrop-blur-sm hover:bg-white/10 transition-all duration-300 hover:-translate-y-1">
+                <a href="#solution" className="inline-flex items-center gap-3 px-6 py-3 rounded-xl border-2 border-[hsl(var(--brand-foreground))]/30 text-[hsl(var(--brand-foreground))] font-semibold backdrop-blur-sm hover:bg-[hsl(var(--brand-foreground))]/10 transition-all duration-300 hover:-translate-y-1">
                   <Rocket className="w-5 h-5" /> See OnSpotConnect in Action
                 </a>
               </motion.div>
@@ -413,7 +406,7 @@ export default function InvestorsCorner() {
                 whileInView={{ opacity: 1 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.5 }}
-                className="mt-3 text-sm text-white/80 font-medium"
+                className="mt-3 text-sm text-[hsl(var(--brand-foreground))]/80 font-medium"
               >
                 Prototype live • 80+ clients served
               </motion.p>
@@ -424,7 +417,7 @@ export default function InvestorsCorner() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.6 }}
-                className="mt-6 text-base text-white/90 font-medium"
+                className="mt-6 text-base text-[hsl(var(--brand-foreground))]/90 font-medium"
               >
                 80+ clients • 500+ resources deployed • $50M+ in value delivered
               </motion.p>
@@ -438,53 +431,53 @@ export default function InvestorsCorner() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.4 }}
                 transition={{ duration: 0.5 }}
-                className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-xl p-4 md:p-5"
+                className="bg-[hsl(var(--brand-foreground))]/10 backdrop-blur-md border border-[hsl(var(--brand-foreground))]/20 rounded-2xl shadow-xl p-4 md:p-5"
               >
                 {/* If you have a dashboard image, uncomment and replace src:
                 <img src="/onspot-dashboard.png" alt="OnSpotConnect dashboard" className="rounded-lg w-full object-cover" />
                 */}
-                <div className="rounded-lg border border-dashed border-white/30 bg-white/5 w-full aspect-[16/10] grid place-items-center">
+                <div className="rounded-lg border border-dashed border-[hsl(var(--brand-foreground))]/30 bg-[hsl(var(--brand-foreground))]/5 w-full aspect-[16/10] grid place-items-center">
                   <div className="text-center px-6">
-                    <p className="text-sm text-white/90 font-medium">Product Mockup</p>
-                    <p className="text-xs text-white/70">Replace with OnSpotConnect dashboard or a simple "Freelance ↔ OnSpot ↔ BPO" diagram.</p>
+                    <p className="text-sm text-[hsl(var(--brand-foreground))]/90 font-medium">Product Mockup</p>
+                    <p className="text-xs text-[hsl(var(--brand-foreground))]/70">Replace with OnSpotConnect dashboard or a simple "Freelance ↔ OnSpot ↔ BPO" diagram.</p>
                   </div>
                 </div>
 
                 {/* Highlight metrics (count-up) */}
                 <div className="mt-5 grid grid-cols-3 gap-3">
                   <div className="text-center">
-                    <div className="w-8 h-8 mx-auto mb-2 text-white">
+                    <div className="w-8 h-8 mx-auto mb-2 text-[hsl(var(--brand-foreground))]">
                       <Users className="w-full h-full" />
                     </div>
-                    <div className="text-lg font-bold text-white">
+                    <div className="text-lg font-bold text-[hsl(var(--brand-foreground))]">
                       80+
                     </div>
-                    <div className="text-xs text-white/80">Clients</div>
+                    <div className="text-xs text-[hsl(var(--brand-foreground))]/80">Clients</div>
                   </div>
                   <div className="text-center">
-                    <div className="w-8 h-8 mx-auto mb-2 text-white">
+                    <div className="w-8 h-8 mx-auto mb-2 text-[hsl(var(--brand-foreground))]">
                       <Briefcase className="w-full h-full" />
                     </div>
-                    <div className="text-lg font-bold text-white">
+                    <div className="text-lg font-bold text-[hsl(var(--brand-foreground))]">
                       500+
                     </div>
-                    <div className="text-xs text-white/80">Seats</div>
+                    <div className="text-xs text-[hsl(var(--brand-foreground))]/80">Seats</div>
                   </div>
                   <div className="text-center">
-                    <div className="w-8 h-8 mx-auto mb-2 text-white">
+                    <div className="w-8 h-8 mx-auto mb-2 text-[hsl(var(--brand-foreground))]">
                       <PieChart className="w-full h-full" />
                     </div>
-                    <div className="text-lg font-bold text-white">
+                    <div className="text-lg font-bold text-[hsl(var(--brand-foreground))]">
                       55%
                     </div>
-                    <div className="text-xs text-white/80">Gross Margin</div>
+                    <div className="text-xs text-[hsl(var(--brand-foreground))]/80">Gross Margin</div>
                   </div>
                 </div>
 
                 {/* Footer note */}
                 <div className="mt-3 flex items-center justify-between">
-                  <p className="text-[11px] text-white/60">As of Sept 2025</p>
-                  <p className="text-[11px] text-white/60">Last updated Sept 2025</p>
+                  <p className="text-[11px] text-[hsl(var(--brand-foreground))]/60">As of Sept 2025</p>
+                  <p className="text-[11px] text-[hsl(var(--brand-foreground))]/60">Last updated Sept 2025</p>
                 </div>
               </motion.div>
             </div>
