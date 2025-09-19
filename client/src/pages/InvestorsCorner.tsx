@@ -405,7 +405,7 @@ export default function InvestorsCorner() {
                 transition={{ duration: 0.6, delay: 0.1 }}
                 className="mt-6 text-xl md:text-2xl lg:text-3xl font-medium text-[hsl(var(--brand-foreground))]/95 max-w-4xl leading-relaxed drop-shadow-md"
               >
-                From decades of BPO experience to the world's first hybrid outsourcing platform.
+                From decades of BPO experience to the world's first unified outsourcing platform.
               </motion.p>
 
               <ul className="mt-8 space-y-3">
@@ -417,7 +417,7 @@ export default function InvestorsCorner() {
                   className="flex items-start gap-3"
                 >
                   <div className="w-2 h-2 rounded-full bg-[hsl(var(--brand-foreground))]/90 mt-2.5 flex-shrink-0" />
-                  <span className="text-base text-[hsl(var(--brand-foreground))]/90"><strong className="text-[hsl(var(--brand-foreground))]">Hybrid model:</strong> Bridging freelancing chaos and BPO rigidity.</span>
+                  <span className="text-base text-[hsl(var(--brand-foreground))]/90"><strong className="text-[hsl(var(--brand-foreground))]">Unified platform:</strong> Bringing the best of freelancing flexibility and BPO reliability into one system.</span>
                 </motion.li>
                 <motion.li
                   initial={{ opacity: 0, x: -8 }}
