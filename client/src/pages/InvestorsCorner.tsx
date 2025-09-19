@@ -405,7 +405,7 @@ export default function InvestorsCorner() {
                 transition={{ duration: 0.6, delay: 0.1 }}
                 className="mt-6 text-xl md:text-2xl lg:text-3xl font-medium text-[hsl(var(--brand-foreground))]/95 max-w-4xl leading-relaxed drop-shadow-md"
               >
-                From 3 years in the BPO trenches to the world's first hybrid outsourcing platform.
+                From decades of BPO experience to the world's first hybrid outsourcing platform.
               </motion.p>
 
               <ul className="mt-8 space-y-3">
@@ -427,7 +427,7 @@ export default function InvestorsCorner() {
                   className="flex items-start gap-3"
                 >
                   <div className="w-2 h-2 rounded-full bg-[hsl(var(--brand-foreground))]/90 mt-2.5 flex-shrink-0" />
-                  <span className="text-base text-[hsl(var(--brand-foreground))]/90"><strong className="text-[hsl(var(--brand-foreground))]">Built for scale:</strong> 3 years of BPO ops, now productized.</span>
+                  <span className="text-base text-[hsl(var(--brand-foreground))]/90"><strong className="text-[hsl(var(--brand-foreground))]">Built for scale:</strong> decades of BPO ops, now productized.</span>
                 </motion.li>
               </ul>
 
@@ -550,7 +550,7 @@ export default function InvestorsCorner() {
                   <br /><br />
                   Jake brought the street-smart hustle of scaling U.S. businesses. I brought the systems and leadership of building and running full-scale BPO operations in the Philippines. Together, we turned our struggles into a solution: OnSpot.
                   <br /><br />
-                  Three years in, we've served over 80 clients, deployed hundreds of resources, and delivered tens of millions in value. We've proven outsourcing can cut costs by up to 70%, unlock time, and fuel 8X growth.
+                  To date, we've served over 80 clients, deployed hundreds of resources, and delivered tens of millions in value. We've proven outsourcing can cut costs by up to 70%, unlock time, and fuel 8X growth.
                   <br /><br />
                   OnSpot isn't theory — it's survival turned into scale. And now, with OnSpotConnect, we're unifying BPO and freelancing into the future of outsourcing.
                   <span className="text-2xl text-primary">"</span>
@@ -711,7 +711,7 @@ export default function InvestorsCorner() {
           <div className="text-center space-y-6 mb-16">
             <h2 className="text-4xl md:text-5xl font-bold">Proof of Grit</h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              3 years of battle-tested growth. These numbers don't lie—they represent real businesses we've transformed.
+              Battle-tested growth with proven results. These numbers don't lie—they represent real businesses we've transformed.
             </p>
           </div>
 
@@ -738,13 +738,13 @@ export default function InvestorsCorner() {
 
           {/* Timeline Visual - 3 Years Journey */}
           <div className="bg-gradient-to-r from-primary/5 to-green-500/5 rounded-xl p-8 mb-8" data-testid="timeline-visual">
-            <h3 className="text-2xl font-bold text-center mb-8">3 Years: Survival → Prototype → Platform</h3>
+            <h3 className="text-2xl font-bold text-center mb-8">The Journey: Experience → Prototype → Platform</h3>
             <div className="flex items-center justify-between max-w-4xl mx-auto">
               <div className="text-center space-y-2">
                 <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 text-red-600 rounded-full flex items-center justify-center mx-auto">
                   <Shield className="w-8 h-8" />
                 </div>
-                <div className="font-bold text-sm">3 Years BPO</div>
+                <div className="font-bold text-sm">Decades BPO</div>
                 <div className="text-xs text-muted-foreground">Battle-tested survival</div>
               </div>
               
@@ -1135,7 +1135,7 @@ export default function InvestorsCorner() {
             <div className="text-center space-y-6 mb-16">
               <h2 className="text-4xl md:text-5xl font-bold">Our Journey: From Battle Scars to Scale</h2>
               <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-                Three years of proven growth and market validation
+                Years of proven growth and market validation
               </p>
             </div>
             
@@ -1389,7 +1389,7 @@ export default function InvestorsCorner() {
               </blockquote>
               
               <p className="text-lg text-muted-foreground leading-relaxed text-center max-w-3xl mx-auto">
-                Every battle scar from our 3-year BPO journey has been transformed into competitive advantages. 
+                Every battle scar from our BPO journey has been transformed into competitive advantages. 
                 Every lesson learned in the trenches now powers systems that scale. We're not theorizing — we're building from proven resilience.
               </p>
             </div>
