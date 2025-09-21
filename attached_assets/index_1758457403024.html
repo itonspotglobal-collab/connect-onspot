@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hero Section — Amazing Stories</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#474ead] text-white">
+  <section class="grid grid-cols-12 items-center min-h-[90vh] relative overflow-hidden">
+    <!-- Left: Text -->
+    <div class="col-span-12 md:col-span-6 p-8 md:p-16 z-10 space-y-6">
+      <!-- Label -->
+      <span class="inline-flex items-center px-4 py-1.5 rounded-full bg-white/10 text-sm font-medium text-white/80">
+        ✨ Amazing Stories
+      </span>
+
+      <!-- Heading -->
+      <h1 class="text-5xl md:text-6xl font-bold leading-tight tracking-tight">
+        We love our <span class="text-[#FFD700]">people</span><br class="hidden md:block">
+        and they love us
+      </h1>
+
+      <!-- Subheading -->
+      <p class="text-xl md:text-2xl font-medium text-white/90 max-w-xl">
+        Amazing results. Amazing stories. It's not just about the numbers, it's about the feeling.
+      </p>
+
+      <!-- Supporting -->
+      <p class="text-base md:text-lg text-white/70 max-w-lg leading-relaxed">
+        The sheer thrill of seeing our people achieve what they once thought impossible?
+        That's the amazingness we strive for.
+      </p>
+    </div>
+
+    <!-- Right: Photo scaled 1.6, bottom aligned -->
+    <div class="hidden md:flex col-span-6 relative h-full items-end overflow-visible">
+      <img
+        src="Vertex Team.png"
+        alt="OnSpot Team"
+        class="w-full h-auto object-cover object-bottom scale-[1.6] transform origin-bottom"
+        style="
+          -webkit-mask-image: linear-gradient(to left, black 75%, transparent 100%);
+          mask-image: linear-gradient(to left, black 75%, transparent 100%);
+        "
+      />
+    </div>
+  </section>
+</body>
+</html>
