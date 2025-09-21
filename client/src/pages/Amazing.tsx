@@ -172,7 +172,7 @@ export default function Amazing() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.4 }}
                 transition={{ duration: 0.6 }}
-                className="relative w-full max-w-lg"
+                className="relative w-full max-w-2xl"
               >
                 <img 
                   src={teamPhoto} 
