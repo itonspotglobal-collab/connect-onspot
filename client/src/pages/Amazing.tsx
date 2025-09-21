@@ -179,12 +179,12 @@ export default function Amazing() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.4 }}
                   transition={{ duration: 0.5 }}
-                  className="rounded-2xl overflow-hidden"
+                  className="relative"
                 >
                   <img 
                     src={teamPhoto} 
                     alt="OnSpot team working together" 
-                    className="w-full h-auto object-contain"
+                    className="w-full h-auto object-contain opacity-90 mix-blend-soft-light"
                   />
                 </motion.div>
               </div>
