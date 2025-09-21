@@ -114,79 +114,75 @@ export default function Amazing() {
   return (
     <div className="space-y-0 overflow-hidden">
       {/* Hero Section */}
-      <section className="hero-investor text-white pt-28 relative min-h-[90vh] overflow-hidden">
-        {/* Photo aligned to section bottom */}
-        <div className="hidden md:block absolute bottom-0 right-0 w-1/2 h-full">
-          <motion.img
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1.0 }}
-            viewport={{ once: true, amount: 0.4 }}
-            transition={{ duration: 0.8 }}
-            src={teamPhoto}
-            alt="OnSpot team working together"
-            className="h-full w-auto object-cover object-bottom ml-auto"
-            style={{
-              WebkitMaskImage: 'radial-gradient(ellipse 120% 100% at 100% 50%, black 75%, transparent 100%)',
-              maskImage: 'radial-gradient(ellipse 120% 100% at 100% 50%, black 75%, transparent 100%)',
-              filter: 'contrast(1.1) saturate(1.1) brightness(1.05)'
-            }}
-            loading="eager"
-            fetchPriority="high"
-            decoding="async"
-          />
-        </div>
-        
-        <div className="container mx-auto px-6 relative z-10">
-          <div className="grid md:grid-cols-12 items-center min-h-[90vh]">
-              {/* LEFT: Text content */}
-              <div className="col-span-12 md:col-span-6 p-8 md:p-16 z-10 space-y-6">
-                <motion.div
-                  initial={{ opacity: 0, y: 12 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.5 }}
-                  transition={{ duration: 0.5 }}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-[hsl(var(--brand-foreground))]/20 backdrop-blur-sm rounded-full text-[hsl(var(--brand-foreground))]/95 text-sm font-medium mb-8"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  Amazing Stories
-                </motion.div>
-                
-                <motion.h1
-                  initial={{ opacity: 0, y: 12 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.5 }}
-                  transition={{ duration: 0.6, delay: 0.1 }}
-                  className="text-3xl md:text-4xl lg:text-5xl font-light tracking-tight mb-6 text-[hsl(var(--brand-foreground))] leading-none drop-shadow-xl"
-                >
-                  We love our
-                  <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-[hsl(var(--gold-yellow))] via-[hsl(var(--gold-yellow))] to-[hsl(var(--gold-yellow)/0.8)] drop-shadow-lg">
-                    {" "}people
-                  </span>
-                  <br />and they love us
-                </motion.h1>
-                
-                <motion.p
-                  initial={{ opacity: 0, y: 12 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.5 }}
-                  transition={{ duration: 0.7, delay: 0.2 }}
-                  className="text-lg md:text-xl text-[hsl(var(--brand-foreground))]/95 mb-6 leading-relaxed font-light drop-shadow-lg"
-                >
-                  Amazing results. Amazing stories. It's not just about the numbers, it's about the feeling.
-                </motion.p>
-                
-                <motion.p
-                  initial={{ opacity: 0, y: 12 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.5 }}
-                  transition={{ duration: 0.8, delay: 0.3 }}
-                  className="text-base text-[hsl(var(--brand-foreground))]/90 mb-8 font-light drop-shadow-md"
-                >
-                  The sheer thrill of seeing our people achieve what they once thought impossible? That's the amazingness we strive for.
-                </motion.p>
-              </div>
+      <section className="hero-investor text-white pt-28 pb-20">
+        <div className="container mx-auto px-6">
+          <div className="grid md:grid-cols-12 gap-12 items-center min-h-[80vh]">
+            {/* LEFT: Text content */}
+            <div className="col-span-12 md:col-span-6 space-y-6">
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.5 }}
+                transition={{ duration: 0.5 }}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-[hsl(var(--brand-foreground))]/20 backdrop-blur-sm rounded-full text-[hsl(var(--brand-foreground))]/95 text-sm font-medium mb-8"
+              >
+                <Sparkles className="w-4 h-4" />
+                Amazing Stories
+              </motion.div>
+              
+              <motion.h1
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.5 }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                className="text-3xl md:text-4xl lg:text-5xl font-light tracking-tight mb-6 text-[hsl(var(--brand-foreground))] leading-none drop-shadow-xl"
+              >
+                We love our
+                <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-[hsl(var(--gold-yellow))] via-[hsl(var(--gold-yellow))] to-[hsl(var(--gold-yellow)/0.8)] drop-shadow-lg">
+                  {" "}people
+                </span>
+                <br />and they love us
+              </motion.h1>
+              
+              <motion.p
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.5 }}
+                transition={{ duration: 0.7, delay: 0.2 }}
+                className="text-lg md:text-xl text-[hsl(var(--brand-foreground))]/95 mb-6 leading-relaxed font-light drop-shadow-lg"
+              >
+                Amazing results. Amazing stories. It's not just about the numbers, it's about the feeling.
+              </motion.p>
+              
+              <motion.p
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.5 }}
+                transition={{ duration: 0.8, delay: 0.3 }}
+                className="text-base text-[hsl(var(--brand-foreground))]/90 mb-8 font-light drop-shadow-md"
+              >
+                The sheer thrill of seeing our people achieve what they once thought impossible? That's the amazingness we strive for.
+              </motion.p>
+            </div>
+
+            {/* RIGHT: Team Photo */}
+            <div className="col-span-12 md:col-span-6 flex items-center justify-center">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.4 }}
+                transition={{ duration: 0.6 }}
+                className="relative w-full max-w-lg"
+              >
+                <img 
+                  src={teamPhoto} 
+                  alt="OnSpot team working together" 
+                  className="w-full h-auto object-contain rounded-2xl shadow-xl"
+                />
+              </motion.div>
             </div>
           </div>
+        </div>
       </section>
 
       {/* Amazing Stories - Testimonials */}
