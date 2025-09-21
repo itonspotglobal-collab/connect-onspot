@@ -118,9 +118,9 @@ export default function Amazing() {
         <div className="container mx-auto px-6">
           <div className="relative">
 
-            <div className="grid md:grid-cols-12 gap-12 items-center p-8 md:p-12">
+            <div className="grid md:grid-cols-12 items-center min-h-[90vh] relative overflow-hidden">
               {/* LEFT: Text content */}
-              <div className="md:col-span-5 lg:col-span-4">
+              <div className="col-span-12 md:col-span-6 p-8 md:p-16 z-10 space-y-6">
                 <motion.div
                   initial={{ opacity: 0, y: 12 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -168,20 +168,20 @@ export default function Amazing() {
               </div>
 
               {/* RIGHT: Team Photo */}
-              <div className="md:col-span-7 lg:col-span-8">
-                <motion.div
-                  initial={{ opacity: 0, y: 12 }}
-                  whileInView={{ opacity: 1, y: 0 }}
+              <div className="hidden md:flex md:col-span-6 relative h-full items-end overflow-visible">
+                <motion.img
+                  initial={{ opacity: 0, scale: 1.4 }}
+                  whileInView={{ opacity: 1, scale: 1.6 }}
                   viewport={{ once: true, amount: 0.4 }}
-                  transition={{ duration: 0.5 }}
-                  className="relative"
-                >
-                  <img 
-                    src={teamPhoto} 
-                    alt="OnSpot team working together" 
-                    className="w-full h-auto object-contain rounded-2xl"
-                  />
-                </motion.div>
+                  transition={{ duration: 0.8 }}
+                  src={teamPhoto}
+                  alt="OnSpot team working together"
+                  className="w-full h-auto object-cover object-bottom transform origin-bottom"
+                  style={{
+                    WebkitMaskImage: 'linear-gradient(to left, black 75%, transparent 100%)',
+                    maskImage: 'linear-gradient(to left, black 75%, transparent 100%)'
+                  }}
+                />
               </div>
             </div>
           </div>
