@@ -118,7 +118,7 @@ export default function Amazing() {
         <div className="container mx-auto px-6">
           <div className="grid md:grid-cols-12 gap-12 items-center min-h-[80vh]">
             {/* LEFT: Text content */}
-            <div className="col-span-12 md:col-span-6 space-y-6">
+            <div className="col-span-12 md:col-span-6 xl:col-span-5 space-y-6">
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -166,13 +166,13 @@ export default function Amazing() {
             </div>
 
             {/* RIGHT: Team Photo */}
-            <div className="col-span-12 md:col-span-6 flex items-center justify-center">
+            <div className="col-span-12 md:col-span-6 xl:col-span-7 flex items-center justify-center">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.4 }}
                 transition={{ duration: 0.6 }}
-                className="relative w-full max-w-2xl"
+                className="relative w-full"
               >
                 <img 
                   src={teamPhoto} 
