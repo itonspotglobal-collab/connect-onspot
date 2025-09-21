@@ -125,7 +125,7 @@ export default function Amazing() {
 
             <div className="grid md:grid-cols-12 gap-12 items-center p-8 md:p-12">
               {/* LEFT: Text content */}
-              <div className="md:col-span-6 lg:col-span-7">
+              <div className="md:col-span-5 lg:col-span-4">
                 <motion.div
                   initial={{ opacity: 0, y: 12 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -173,25 +173,19 @@ export default function Amazing() {
               </div>
 
               {/* RIGHT: Team Photo */}
-              <div className="md:col-span-6 lg:col-span-5">
+              <div className="md:col-span-7 lg:col-span-8">
                 <motion.div
                   initial={{ opacity: 0, y: 12 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.4 }}
                   transition={{ duration: 0.5 }}
-                  className="bg-[hsl(var(--brand-foreground))]/10 backdrop-blur-md border border-[hsl(var(--brand-foreground))]/20 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-[1.02] p-6 md:p-8"
+                  className="rounded-2xl overflow-hidden"
                 >
                   <img 
                     src={teamPhoto} 
                     alt="OnSpot team working together" 
-                    className="rounded-lg w-full h-auto object-contain hover:scale-105 transition-transform duration-500"
+                    className="w-full h-auto object-contain"
                   />
-                  
-                  {/* Team Photo Label */}
-                  <div className="mt-4 text-center">
-                    <p className="text-sm text-[hsl(var(--brand-foreground))]/70 font-medium">Our Amazing Team</p>
-                    <p className="text-xs text-[hsl(var(--brand-foreground))]/60">The people behind the magic</p>
-                  </div>
                 </motion.div>
               </div>
             </div>
