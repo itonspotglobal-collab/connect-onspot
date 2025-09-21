@@ -107,9 +107,10 @@
   --brand-500: 236 42% 58%;
   --brand-foreground: 0 0% 100%;
   --gradient-investor-hero: 
-    radial-gradient(1200px 600px at 20% -10%, hsl(var(--brand)/0.35) 0%, transparent 60%),
-    radial-gradient(900px 500px at 90% 10%, hsl(220 100% 60% / 0.18) 0%, transparent 55%),
-    linear-gradient(160deg, hsl(var(--brand)) 0%, hsl(var(--brand-700)) 65%);
+    radial-gradient(1400px 700px at 15% -15%, hsl(var(--brand)/0.4) 0%, transparent 65%),
+    radial-gradient(1000px 600px at 85% 5%, hsl(220 100% 65% / 0.25) 0%, transparent 60%),
+    radial-gradient(800px 400px at 95% 100%, hsl(280 80% 45% / 0.15) 0%, transparent 50%),
+    linear-gradient(155deg, hsl(var(--brand)) 0%, hsl(var(--brand-700)) 45%, hsl(240 45% 25%) 100%);
 
   --font-sans: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-serif: Georgia, serif;
