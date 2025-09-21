@@ -138,9 +138,9 @@ export default function Amazing() {
                   transition={{ duration: 0.6, delay: 0.1 }}
                   className="text-3xl md:text-4xl lg:text-5xl font-light tracking-tight mb-6 text-[hsl(var(--brand-foreground))] leading-none drop-shadow-xl"
                 >
-                  We love our 
+                  We love our
                   <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-[hsl(var(--gold-yellow))] via-[hsl(var(--gold-yellow))] to-[hsl(var(--gold-yellow)/0.8)] drop-shadow-lg">
-                    {" "}people{" "}
+                    {" "}people
                   </span>
                   <br />and they love us
                 </motion.h1>
