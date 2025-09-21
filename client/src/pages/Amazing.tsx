@@ -112,20 +112,15 @@ export default function Amazing() {
     : galleryImages.filter(img => img.category === galleryFilter);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
+    <div className="space-y-0 overflow-hidden">
       {/* Hero Section */}
-      <section className="hero-investor text-white pt-28 pb-20 relative overflow-hidden">
+      <section className="hero-investor text-white pt-28 pb-20">
         <div className="container mx-auto px-6">
           <div className="relative">
-            {/* Clean decorative background elements */}
-            <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full blur-3xl opacity-8 pointer-events-none"
-                 style={{ background: "radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 40%, transparent 70%)" }} />
-            <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full blur-3xl opacity-6 pointer-events-none"
-                 style={{ background: "radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.03) 40%, transparent 70%)" }} />
 
             <div className="grid md:grid-cols-12 gap-12 items-center p-8 md:p-12">
               {/* LEFT: Text content */}
-              <div className="md:col-span-5 lg:col-span-4">
+              <div className="md:col-span-7 lg:col-span-7">
                 <motion.div
                   initial={{ opacity: 0, y: 12 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -173,18 +168,18 @@ export default function Amazing() {
               </div>
 
               {/* RIGHT: Team Photo */}
-              <div className="md:col-span-7 lg:col-span-8">
+              <div className="md:col-span-5 lg:col-span-5">
                 <motion.div
                   initial={{ opacity: 0, y: 12 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.4 }}
                   transition={{ duration: 0.5 }}
-                  className="relative"
+                  className="relative max-w-[480px] mx-auto md:mx-0"
                 >
                   <img 
                     src={teamPhoto} 
                     alt="OnSpot team working together" 
-                    className="w-full h-auto object-contain opacity-90 mix-blend-soft-light"
+                    className="w-full h-auto object-contain"
                   />
                 </motion.div>
               </div>
