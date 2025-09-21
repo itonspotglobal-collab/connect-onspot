@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import teamPhoto from "@assets/Vertex Team_1758431750784.png";
 
 export default function Amazing() {
   const [galleryFilter, setGalleryFilter] = useState("All");
@@ -120,7 +119,7 @@ export default function Amazing() {
 
             <div className="grid md:grid-cols-12 gap-12 items-center p-8 md:p-12">
               {/* LEFT: Text content */}
-              <div className="md:col-span-7 lg:col-span-7">
+              <div className="md:col-span-5 lg:col-span-4">
                 <motion.div
                   initial={{ opacity: 0, y: 12 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -137,7 +136,7 @@ export default function Amazing() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.5 }}
                   transition={{ duration: 0.6, delay: 0.1 }}
-                  className="text-4xl md:text-6xl lg:text-7xl font-light tracking-tight mb-8 text-[hsl(var(--brand-foreground))] leading-none drop-shadow-xl"
+                  className="text-3xl md:text-4xl lg:text-5xl font-light tracking-tight mb-6 text-[hsl(var(--brand-foreground))] leading-none drop-shadow-xl"
                 >
                   We love our 
                   <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-[hsl(var(--gold-yellow))] via-[hsl(var(--gold-yellow))] to-[hsl(var(--gold-yellow)/0.8)] drop-shadow-lg">
@@ -151,7 +150,7 @@ export default function Amazing() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.5 }}
                   transition={{ duration: 0.7, delay: 0.2 }}
-                  className="text-xl md:text-2xl text-[hsl(var(--brand-foreground))]/95 mb-8 max-w-4xl leading-relaxed font-light drop-shadow-lg"
+                  className="text-lg md:text-xl text-[hsl(var(--brand-foreground))]/95 mb-6 leading-relaxed font-light drop-shadow-lg"
                 >
                   Amazing results. Amazing stories. It's not just about the numbers, it's about the feeling.
                 </motion.p>
@@ -161,26 +160,26 @@ export default function Amazing() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.5 }}
                   transition={{ duration: 0.8, delay: 0.3 }}
-                  className="text-lg text-[hsl(var(--brand-foreground))]/90 mb-12 max-w-3xl font-light drop-shadow-md"
+                  className="text-base text-[hsl(var(--brand-foreground))]/90 mb-8 font-light drop-shadow-md"
                 >
                   The sheer thrill of seeing our people achieve what they once thought impossible? That's the amazingness we strive for.
                 </motion.p>
               </div>
 
               {/* RIGHT: Team Photo */}
-              <div className="md:col-span-5 lg:col-span-5">
+              <div className="md:col-span-7 lg:col-span-8">
                 <motion.div
                   initial={{ opacity: 0, y: 12 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.4 }}
                   transition={{ duration: 0.5 }}
-                  className="relative max-w-[480px] mx-auto md:mx-0"
+                  className="relative w-full h-[400px] md:h-[500px] bg-[hsl(var(--brand-foreground))]/10 backdrop-blur-sm border border-[hsl(var(--brand-foreground))]/20 rounded-2xl flex items-center justify-center"
                 >
-                  <img 
-                    src={teamPhoto} 
-                    alt="OnSpot team working together" 
-                    className="w-full h-auto object-contain"
-                  />
+                  <div className="text-center">
+                    <Camera className="w-16 h-16 text-[hsl(var(--brand-foreground))]/40 mx-auto mb-4" />
+                    <p className="text-[hsl(var(--brand-foreground))]/60 text-lg font-medium">Team Photo</p>
+                    <p className="text-[hsl(var(--brand-foreground))]/40 text-sm">Coming Soon</p>
+                  </div>
                 </motion.div>
               </div>
             </div>
