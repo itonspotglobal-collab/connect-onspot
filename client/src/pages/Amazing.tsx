@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import teamPhoto from "@assets/Vertex Team_1758430238474.png";
+import teamPhoto from "@assets/Vertex Team_1758431750784.png";
 
 export default function Amazing() {
   const [galleryFilter, setGalleryFilter] = useState("All");
@@ -115,25 +115,33 @@ export default function Amazing() {
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
       {/* Hero Section */}
       <section className="hero-investor text-white pt-28 pb-20 relative overflow-hidden">
-        {/* Team Photo Background */}
+        {/* Enhanced Team Photo Background */}
         <div className="absolute inset-0 z-0">
           <img 
             src={teamPhoto} 
             alt="" 
             aria-hidden="true"
-            className="absolute inset-0 w-full h-full object-cover opacity-60 filter brightness-75 object-[center_10%] sm:object-[center_15%] md:object-[center_20%] lg:object-[center_25%]"
+            className="absolute inset-0 w-full h-full object-cover opacity-75 filter brightness-90 saturate-110 contrast-105 object-[center_10%] sm:object-[center_15%] md:object-[center_20%] lg:object-[center_25%]"
           />
-          {/* Enhanced overlay for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[hsl(var(--brand-background))]/85 via-[hsl(var(--brand-background))]/70 to-[hsl(var(--brand-background))]/60"></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-[hsl(var(--brand-background))]/80 via-transparent to-[hsl(var(--brand-background))]/40"></div>
+          {/* Enhanced multi-layered gradient overlays for vibrant impact */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[hsl(var(--brand))]/75 via-[hsl(var(--brand))]/60 to-[hsl(var(--brand))]/45"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-[hsl(var(--brand))]/70 via-transparent to-[hsl(var(--brand))]/30"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--primary))]/20 via-transparent to-[hsl(var(--gold-yellow))]/15"></div>
+          {/* Additional vibrant color wash */}
+          <div className="absolute inset-0 bg-gradient-to-tr from-purple-600/15 via-transparent to-blue-500/10"></div>
         </div>
 
-        {/* Subtle decorative background elements */}
+        {/* Enhanced decorative background elements */}
         <div className="absolute inset-0 z-10">
-          <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full blur-3xl opacity-8 pointer-events-none"
-               style={{ background: "radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 40%, transparent 70%)" }} />
-          <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full blur-3xl opacity-6 pointer-events-none"
-               style={{ background: "radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.03) 40%, transparent 70%)" }} />
+          <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full blur-3xl opacity-12 pointer-events-none"
+               style={{ background: "radial-gradient(circle, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.08) 40%, transparent 70%)" }} />
+          <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full blur-3xl opacity-10 pointer-events-none"
+               style={{ background: "radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.06) 40%, transparent 70%)" }} />
+          {/* Additional vibrant glow elements */}
+          <div className="absolute top-1/4 right-1/4 h-64 w-64 rounded-full blur-3xl opacity-8 pointer-events-none"
+               style={{ background: "radial-gradient(circle, rgba(139,92,246,0.3) 0%, rgba(59,130,246,0.2) 50%, transparent 80%)" }} />
+          <div className="absolute bottom-1/3 left-1/3 h-80 w-80 rounded-full blur-3xl opacity-6 pointer-events-none"
+               style={{ background: "radial-gradient(circle, rgba(245,158,11,0.2) 0%, rgba(139,92,246,0.15) 60%, transparent 85%)" }} />
         </div>
 
         {/* Content - Full Width */}
