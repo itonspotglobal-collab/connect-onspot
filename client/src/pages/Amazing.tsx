@@ -17,6 +17,8 @@ import {
   ArrowRight
 } from "lucide-react";
 import { useState } from "react";
+import { motion } from "framer-motion";
+import teamPhoto from "@assets/Vertex Team_1758430238474.png";
 
 export default function Amazing() {
   const [galleryFilter, setGalleryFilter] = useState("All");
@@ -112,37 +114,90 @@ export default function Amazing() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
       {/* Hero Section */}
-      <section className="py-24 px-4 text-center relative overflow-hidden" style={{
-        background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)/0.95) 50%, hsl(var(--primary)/0.9) 100%)'
-      }}>
-        {/* Background Elements */}
+      <section className="hero-investor text-white pt-28 pb-20 relative overflow-hidden">
+        {/* Subtle background elements */}
         <div className="absolute inset-0">
-          <div className="absolute top-20 right-20 w-64 h-64 bg-[hsl(var(--gold-yellow))]/10 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-20 left-20 w-80 h-80 bg-white/5 rounded-full blur-2xl"></div>
-          <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:100px_100px]"></div>
+          <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full blur-3xl opacity-8 pointer-events-none"
+               style={{ background: "radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 40%, transparent 70%)" }} />
+          <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full blur-3xl opacity-6 pointer-events-none"
+               style={{ background: "radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.03) 40%, transparent 70%)" }} />
         </div>
 
-        <div className="relative z-10 max-w-6xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-sm rounded-full text-white/90 text-sm font-medium mb-8">
-            <Sparkles className="w-4 h-4" />
-            Amazing Stories
+        <div className="container mx-auto px-6">
+          <div className="grid md:grid-cols-12 gap-12 items-center p-8 md:p-12">
+            {/* LEFT: Content */}
+            <div className="md:col-span-7 lg:col-span-8">
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.5 }}
+                transition={{ duration: 0.5 }}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-[hsl(var(--brand-foreground))]/10 backdrop-blur-sm rounded-full text-[hsl(var(--brand-foreground))]/90 text-sm font-medium mb-8"
+              >
+                <Sparkles className="w-4 h-4" />
+                Amazing Stories
+              </motion.div>
+              
+              <motion.h1
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.5 }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                className="text-4xl md:text-6xl lg:text-7xl font-light tracking-tight mb-8 text-[hsl(var(--brand-foreground))] leading-none drop-shadow-lg"
+              >
+                We love our 
+                <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-[hsl(var(--gold-yellow))] via-[hsl(var(--gold-yellow))] to-[hsl(var(--gold-yellow)/0.8)]">
+                  {" "}people{" "}
+                </span>
+                <br />and they love us
+              </motion.h1>
+              
+              <motion.p
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.5 }}
+                transition={{ duration: 0.7, delay: 0.2 }}
+                className="text-xl md:text-2xl text-[hsl(var(--brand-foreground))]/90 mb-8 max-w-4xl leading-relaxed font-light drop-shadow-md"
+              >
+                Amazing results. Amazing stories. It's not just about the numbers, it's about the feeling.
+              </motion.p>
+              
+              <motion.p
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.5 }}
+                transition={{ duration: 0.8, delay: 0.3 }}
+                className="text-lg text-[hsl(var(--brand-foreground))]/80 mb-12 max-w-3xl font-light"
+              >
+                The sheer thrill of seeing our people achieve what they once thought impossible? That's the amazingness we strive for.
+              </motion.p>
+            </div>
+
+            {/* RIGHT: Team Photo */}
+            <div className="md:col-span-5 lg:col-span-4">
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.4 }}
+                transition={{ duration: 0.7, delay: 0.4 }}
+                className="relative"
+              >
+                <div className="bg-[hsl(var(--brand-foreground))]/10 backdrop-blur-md border border-[hsl(var(--brand-foreground))]/20 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-[1.02] p-6 md:p-8">
+                  <img 
+                    src={teamPhoto} 
+                    alt="OnSpot Vertex Team - Amazing people delivering amazing results" 
+                    className="rounded-xl w-full h-auto object-cover hover:scale-105 transition-transform duration-500 shadow-lg"
+                  />
+                  <div className="mt-6 text-center">
+                    <h3 className="text-lg font-semibold text-[hsl(var(--brand-foreground))] mb-2">The Vertex Team</h3>
+                    <p className="text-sm text-[hsl(var(--brand-foreground))]/80 font-medium">
+                      Amazing people creating amazing stories every day
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
           </div>
-          
-          <h1 className="text-6xl md:text-8xl font-light tracking-tight mb-8 text-white leading-none">
-            We love our 
-            <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-[hsl(var(--gold-yellow))] via-[hsl(var(--gold-yellow))] to-[hsl(var(--gold-yellow)/0.8)]">
-              {" "}people{" "}
-            </span>
-            <br />and they love us
-          </h1>
-          
-          <p className="text-xl text-white/80 mb-8 max-w-4xl mx-auto leading-relaxed font-light">
-            Amazing results. Amazing stories. It's not just about the numbers, it's about the feeling.
-          </p>
-          
-          <p className="text-lg text-white/70 mb-12 max-w-3xl mx-auto font-light">
-            The sheer thrill of seeing our people achieve what they once thought impossible? That's the amazingness we strive for.
-          </p>
         </div>
       </section>
 
@@ -311,34 +366,53 @@ export default function Amazing() {
       </section>
 
       {/* Call to Action */}
-      <section className="py-20 px-4 relative overflow-hidden" style={{
-        background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)/0.95) 50%, hsl(var(--primary)/0.9) 100%)'
-      }}>
+      <section className="hero-investor py-20 px-4 relative overflow-hidden">
         <div className="absolute inset-0">
-          <div className="absolute top-20 left-20 w-64 h-64 bg-[hsl(var(--gold-yellow))]/10 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-20 right-20 w-80 h-80 bg-white/5 rounded-full blur-2xl"></div>
+          <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full blur-3xl opacity-8 pointer-events-none"
+               style={{ background: "radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 40%, transparent 70%)" }} />
+          <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full blur-3xl opacity-6 pointer-events-none"
+               style={{ background: "radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.03) 40%, transparent 70%)" }} />
         </div>
 
-        <div className="relative z-10 max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl md:text-5xl font-light text-white mb-6">
+        <div className="relative z-10 max-w-4xl mx-auto text-center container">
+          <motion.h2
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.5 }}
+            transition={{ duration: 0.6 }}
+            className="text-4xl md:text-5xl font-light text-[hsl(var(--brand-foreground))] mb-6 drop-shadow-lg"
+          >
             Ready to create your own 
             <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-[hsl(var(--gold-yellow))] to-[hsl(var(--gold-yellow)/0.8)]">
               {" "}amazing story
             </span>?
-          </h2>
-          <p className="text-xl text-white/80 mb-8 max-w-2xl mx-auto">
-            Join hundreds of businesses who've transformed their operations with OnSpot's talented professionals.
-          </p>
+          </motion.h2>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-white text-primary hover:bg-white/90 px-8" data-testid="button-get-started">
+          <motion.p
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.5 }}
+            transition={{ duration: 0.7, delay: 0.1 }}
+            className="text-xl text-[hsl(var(--brand-foreground))]/90 mb-8 max-w-2xl mx-auto drop-shadow-md"
+          >
+            Join hundreds of businesses who've transformed their operations with OnSpot's talented professionals.
+          </motion.p>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.5 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="flex flex-col sm:flex-row gap-4 justify-center"
+          >
+            <Button size="lg" className="bg-[hsl(var(--brand-foreground))] text-primary hover:bg-[hsl(var(--brand-foreground))]/90 px-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1" data-testid="button-get-started">
               Get Started Today
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
-            <Button size="lg" variant="outline" className="border-white/50 text-white hover:bg-white/10 px-8">
+            <Button size="lg" variant="outline" className="border-[hsl(var(--brand-foreground))]/30 text-[hsl(var(--brand-foreground))] hover:bg-[hsl(var(--brand-foreground))]/15 hover:border-[hsl(var(--brand-foreground))]/50 px-8 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1">
               View Our Services
             </Button>
-          </div>
+          </motion.div>
         </div>
       </section>
     </div>
