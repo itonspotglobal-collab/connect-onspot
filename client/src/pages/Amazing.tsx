@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import teamPhoto from "@assets/Vertex Team_1758456949998.png";
+import teamPhoto from "@assets/vertex team_1758457968487.png";
 
 export default function Amazing() {
   const [galleryFilter, setGalleryFilter] = useState("All");
@@ -114,11 +114,30 @@ export default function Amazing() {
   return (
     <div className="space-y-0 overflow-hidden">
       {/* Hero Section */}
-      <section className="hero-investor text-white pt-28 pb-20">
-        <div className="container mx-auto px-6">
-          <div className="relative">
-
-            <div className="grid md:grid-cols-12 items-center min-h-[90vh] relative overflow-hidden">
+      <section className="hero-investor text-white pt-28 relative min-h-[90vh] overflow-hidden">
+        {/* Photo aligned to section bottom */}
+        <div className="hidden md:block absolute bottom-0 right-0 w-1/2 h-full">
+          <motion.img
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1.0 }}
+            viewport={{ once: true, amount: 0.4 }}
+            transition={{ duration: 0.8 }}
+            src={teamPhoto}
+            alt="OnSpot team working together"
+            className="h-full w-auto object-cover object-bottom ml-auto"
+            style={{
+              WebkitMaskImage: 'radial-gradient(ellipse 120% 100% at 100% 50%, black 75%, transparent 100%)',
+              maskImage: 'radial-gradient(ellipse 120% 100% at 100% 50%, black 75%, transparent 100%)',
+              filter: 'contrast(1.1) saturate(1.1) brightness(1.05)'
+            }}
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
+          />
+        </div>
+        
+        <div className="container mx-auto px-6 relative z-10">
+          <div className="grid md:grid-cols-12 items-center min-h-[90vh]">
               {/* LEFT: Text content */}
               <div className="col-span-12 md:col-span-6 p-8 md:p-16 z-10 space-y-6">
                 <motion.div
@@ -166,26 +185,8 @@ export default function Amazing() {
                   The sheer thrill of seeing our people achieve what they once thought impossible? That's the amazingness we strive for.
                 </motion.p>
               </div>
-
-              {/* RIGHT: Team Photo */}
-              <div className="hidden md:flex md:col-span-6 relative h-full items-end overflow-visible">
-                <motion.img
-                  initial={{ opacity: 0, scale: 1.4 }}
-                  whileInView={{ opacity: 1, scale: 1.6 }}
-                  viewport={{ once: true, amount: 0.4 }}
-                  transition={{ duration: 0.8 }}
-                  src={teamPhoto}
-                  alt="OnSpot team working together"
-                  className="w-full h-auto object-cover object-bottom transform origin-bottom"
-                  style={{
-                    WebkitMaskImage: 'linear-gradient(to left, black 75%, transparent 100%)',
-                    maskImage: 'linear-gradient(to left, black 75%, transparent 100%)'
-                  }}
-                />
-              </div>
             </div>
           </div>
-        </div>
       </section>
 
       {/* Amazing Stories - Testimonials */}
