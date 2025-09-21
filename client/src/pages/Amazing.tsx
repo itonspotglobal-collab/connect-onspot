@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { motion } from "framer-motion";
+import teamPhoto from "@assets/Vertex Team_1758456949998.png";
 
 export default function Amazing() {
   const [galleryFilter, setGalleryFilter] = useState("All");
@@ -173,13 +174,13 @@ export default function Amazing() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.4 }}
                   transition={{ duration: 0.5 }}
-                  className="relative w-full h-[400px] md:h-[500px] bg-[hsl(var(--brand-foreground))]/10 backdrop-blur-sm border border-[hsl(var(--brand-foreground))]/20 rounded-2xl flex items-center justify-center"
+                  className="relative"
                 >
-                  <div className="text-center">
-                    <Camera className="w-16 h-16 text-[hsl(var(--brand-foreground))]/40 mx-auto mb-4" />
-                    <p className="text-[hsl(var(--brand-foreground))]/60 text-lg font-medium">Team Photo</p>
-                    <p className="text-[hsl(var(--brand-foreground))]/40 text-sm">Coming Soon</p>
-                  </div>
+                  <img 
+                    src={teamPhoto} 
+                    alt="OnSpot team working together" 
+                    className="w-full h-auto object-contain rounded-2xl"
+                  />
                 </motion.div>
               </div>
             </div>
