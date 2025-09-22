@@ -468,6 +468,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ]);
 
       const newUser = userResult.rows[0];
+      console.log(`🔍 Debug [${requestId}]: User inserted into database = true`);
 
       // If user is talent, create profile entry
       if (role === 'talent') {
@@ -609,15 +610,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`🔐 Verifying password [${requestId}]`);
       const isPasswordValid = await verifyPassword(password, user.password_hash);
       if (!isPasswordValid) {
-        console.error(`❌ Password verification failed [${requestId}]: Invalid password for user ${user.id}`);
+        console.error(`❌ Password verification failed [${requestId}]: Password did not match for user ${user.id}`);
+        console.log(`🔍 Debug [${requestId}]: Password matched = false`);
         return res.status(401).json({
           success: false,
-          message: "Invalid email or password",
-          requestId
+          message: "Invalid email or password"
         });
       }
       
       console.log(`✅ Password verified successfully [${requestId}]`);
+      console.log(`🔍 Debug [${requestId}]: Password matched = true`);
 
       // Generate JWT token with proper secret handling and development fallback
       let jwtSecret = process.env.JWT_SECRET;
@@ -631,8 +633,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error('❌ JWT_SECRET environment variable not set! This is required for secure authentication.');
           return res.status(500).json({
             success: false,
-            message: "Server configuration error",
-            requestId
+            message: "JWT not configured"
           });
         }
       }
@@ -646,6 +647,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         jwtSecret,
         { expiresIn: '7d' }
       );
+      
+      console.log(`🔍 Debug [${requestId}]: JWT signed = true`);
 
       // Return exact format required by specification - snake_case as per spec
       const userResponse = {
@@ -2557,18 +2560,19 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
       console.log(`🔐 Verifying password [${requestId}]`);
       const isPasswordValid = await verifyPassword(password, user.password_hash);
       if (!isPasswordValid) {
-        console.error(`❌ Password verification failed [${requestId}]: Invalid password for user ${user.id}`);
+        console.error(`❌ Password verification failed [${requestId}]: Password did not match for user ${user.id}`);
+        console.log(`🔍 Debug [${requestId}]: Password matched = false`);
         if (process.env.NODE_ENV === 'production') {
           console.log(`🌐 Production login failed: Invalid password [${requestId}]`);
         }
         return res.status(401).json({
           success: false,
-          message: "Invalid email or password",
-          requestId
+          message: "Invalid email or password"
         });
       }
       
       console.log(`✅ Password verified successfully [${requestId}]`);
+      console.log(`🔍 Debug [${requestId}]: Password matched = true`);
       
       // Get JWT secret with graceful error handling
       let jwtSecret = process.env.JWT_SECRET;
@@ -2580,8 +2584,7 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
           console.error(`❌ JWT_SECRET not configured for production [${requestId}]`);
           return res.status(500).json({
             success: false,
-            message: "Server configuration error - authentication unavailable",
-            requestId
+            message: "JWT not configured"
           });
         }
       }
@@ -2594,6 +2597,8 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
       };
       
       const token = jwt.sign(tokenPayload, jwtSecret, { expiresIn: '7d' });
+      
+      console.log(`🔍 Debug [${requestId}]: JWT signed = true`);
       
       console.log(`✅ JWT token generated successfully [${requestId}]:`, {
         userId: user.id,
@@ -2767,6 +2772,7 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
       ]);
 
       const newUser = userResult.rows[0];
+      console.log(`🔍 Debug [${requestId}]: User inserted into database = true`);
 
       // If user is talent, create profile entry
       if (role === 'talent') {
