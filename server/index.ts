@@ -144,16 +144,18 @@ const logDatabaseConnection = () => {
   }
 };
 
-// Log JWT configuration on startup for debugging
+// Log JWT configuration on startup for debugging  
 const logJWTConfiguration = () => {
   const jwtSecret = process.env.JWT_SECRET;
   if (jwtSecret) {
-    console.log(`🔐 JWT_SECRET configured: ***${jwtSecret.slice(-4)}`);
+    console.log(`✅ JWT_SECRET loaded`);
   } else {
     if (process.env.NODE_ENV === 'development') {
       console.log(`⚠️  JWT_SECRET not set, using development fallback`);
     } else {
       console.error('❌ JWT_SECRET not configured for production!');
+      // Fail fast in production if JWT_SECRET is missing
+      process.exit(1);
     }
   }
 };
@@ -244,6 +246,12 @@ app.use((req, res, next) => {
 
     // Send to Sentry if configured and it's a server error
     if (process.env.SENTRY_DSN && status >= 500) {
+      // Redact sensitive fields from request body before sending to Sentry
+      const sanitizedBody = req.body ? { ...req.body } : {};
+      if (sanitizedBody.password) delete sanitizedBody.password;
+      if (sanitizedBody.token) delete sanitizedBody.token;
+      if (sanitizedBody.secret) delete sanitizedBody.secret;
+      
       Sentry.captureException(err, {
         tags: {
           requestId: requestId,
@@ -256,7 +264,7 @@ app.use((req, res, next) => {
         },
         extra: {
           userAgent: req.get('User-Agent'),
-          body: req.body
+          body: sanitizedBody
         }
       });
     }
