@@ -2471,6 +2471,396 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
     }
   );
 
+  // Production-friendly routes without /api prefix (prevents double /api in production URLs)
+  // These are identical to the /api routes but without the prefix for production baseURL compatibility
+  
+  // Production login route (without /api prefix)
+  app.post('/login', authLimiter, async (req: Request, res: Response) => {
+    try {
+      const { email, password } = req.body;
+      const requestId = (req as any).requestId;
+
+      // Production diagnostics logging
+      if (process.env.NODE_ENV === 'production') {
+        console.log(`🌐 Production login attempt [${requestId}]:`, {
+          email: email ? '***@' + email.split('@')[1] : 'missing',
+          hasPassword: !!password,
+          userAgent: req.get('User-Agent')?.substring(0, 50) + '...',
+          ip: req.ip
+        });
+      }
+
+      console.log(`🔐 Login request received [${requestId}]:`, {
+        email: email ? '***@' + email.split('@')[1] : 'missing',
+        hasPassword: !!password
+      });
+
+      if (!email || !password) {
+        const missingFields = [];
+        if (!email) missingFields.push('email');
+        if (!password) missingFields.push('password');
+        
+        console.error(`❌ Login validation failed [${requestId}]: Missing fields:`, missingFields);
+        
+        return res.status(400).json({
+          success: false,
+          message: `Missing required fields: ${missingFields.join(', ')}`,
+          requestId
+        });
+      }
+      
+      // Basic email format validation
+      if (!validateEmail(email)) {
+        console.error(`❌ Email format validation failed [${requestId}]`);
+        return res.status(400).json({
+          success: false,
+          message: "Please enter a valid email address",
+          requestId
+        });
+      }
+
+      // Find user by email
+      const userQuery = 'SELECT id, email, username, "first_name", "last_name", "password_hash", role, company FROM users WHERE email = $1';
+      const userResult = await query(userQuery, [email]);
+      
+      if (userResult.rows.length === 0) {
+        console.error(`❌ User not found [${requestId}]: No user with email ${email}`);
+        if (process.env.NODE_ENV === 'production') {
+          console.log(`🌐 Production login failed: User not found [${requestId}]`);
+        }
+        return res.status(401).json({
+          success: false,
+          message: "Invalid email or password",
+          requestId
+        });
+      }
+      
+      console.log(`👤 User found [${requestId}]:`, {
+        userId: userResult.rows[0].id,
+        email: userResult.rows[0].email,
+        role: userResult.rows[0].role
+      });
+
+      const user = userResult.rows[0];
+      
+      // Check if user has a password (OAuth users might not)
+      if (!user.password_hash) {
+        console.error(`❌ Password verification failed [${requestId}]: User ${user.id} has no password (OAuth user?)`);
+        return res.status(401).json({
+          success: false,
+          message: "This account was created with social login. Please use Google or LinkedIn to sign in.",
+          requestId
+        });
+      }
+      
+      // Verify password
+      console.log(`🔐 Verifying password [${requestId}]`);
+      const isPasswordValid = await verifyPassword(password, user.password_hash);
+      if (!isPasswordValid) {
+        console.error(`❌ Password verification failed [${requestId}]: Invalid password for user ${user.id}`);
+        if (process.env.NODE_ENV === 'production') {
+          console.log(`🌐 Production login failed: Invalid password [${requestId}]`);
+        }
+        return res.status(401).json({
+          success: false,
+          message: "Invalid email or password",
+          requestId
+        });
+      }
+      
+      console.log(`✅ Password verified successfully [${requestId}]`);
+      
+      // Get JWT secret with graceful error handling
+      let jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) {
+        if (process.env.NODE_ENV === 'development') {
+          jwtSecret = 'development-fallback-secret-not-for-production';
+          console.warn(`⚠️ Using development fallback JWT secret [${requestId}]`);
+        } else {
+          console.error(`❌ JWT_SECRET not configured for production [${requestId}]`);
+          return res.status(500).json({
+            success: false,
+            message: "Server configuration error - authentication unavailable",
+            requestId
+          });
+        }
+      }
+      
+      // Generate JWT token
+      const tokenPayload = {
+        userId: user.id,
+        email: user.email,
+        role: user.role
+      };
+      
+      const token = jwt.sign(tokenPayload, jwtSecret, { expiresIn: '7d' });
+      
+      console.log(`✅ JWT token generated successfully [${requestId}]:`, {
+        userId: user.id,
+        role: user.role,
+        expiresIn: '7d'
+      });
+
+      if (process.env.NODE_ENV === 'production') {
+        console.log(`🌐 Production login successful [${requestId}]:`, {
+          userId: user.id,
+          role: user.role,
+          jwtSigned: !!token
+        });
+      }
+      
+      // Return successful login response
+      res.json({
+        success: true,
+        message: "Login successful",
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          role: user.role,
+          company: user.company
+        },
+        authProvider: 'jwt',
+        requestId
+      });
+      
+    } catch (error: any) {
+      const requestId = (req as any).requestId;
+      console.error(`❌ Login error [${requestId}]:`, {
+        error: error.message,
+        stack: error.stack?.split('\n')[0]
+      });
+      
+      if (process.env.NODE_ENV === 'production') {
+        console.log(`🌐 Production login error [${requestId}]: ${error.message}`);
+      }
+      
+      return res.status(500).json({
+        success: false,
+        message: "Login failed due to server error",
+        requestId
+      });
+    }
+  });
+
+  // Production signup route (without /api prefix)
+  app.post('/signup', authLimiter, async (req: Request, res: Response) => {
+    try {
+      const { email, username, password, first_name, last_name, role, company } = req.body;
+      const requestId = (req as any).requestId;
+
+      // Production diagnostics logging
+      if (process.env.NODE_ENV === 'production') {
+        console.log(`🌐 Production signup attempt [${requestId}]:`, {
+          email: email ? '***@' + email.split('@')[1] : 'missing',
+          role: role || 'missing',
+          userAgent: req.get('User-Agent')?.substring(0, 50) + '...',
+          ip: req.ip
+        });
+      }
+
+      console.log(`🔍 Signup request received [${requestId}]:`, {
+        email: email ? '***@' + email.split('@')[1] : 'missing',
+        username: username || 'not provided',
+        first_name: first_name || 'missing',
+        last_name: last_name || 'missing',
+        role: role || 'missing',
+        company: company || 'not provided'
+      });
+
+      // Validate required fields
+      if (!email || !password || !first_name || !last_name || !role) {
+        const missingFields = [];
+        if (!email) missingFields.push('email');
+        if (!password) missingFields.push('password');
+        if (!first_name) missingFields.push('first_name');
+        if (!last_name) missingFields.push('last_name');
+        if (!role) missingFields.push('role');
+        
+        console.error(`❌ Signup validation failed [${requestId}]: Missing fields:`, missingFields);
+        
+        return res.status(400).json({
+          success: false,
+          message: `Missing required fields: ${missingFields.join(', ')}`,
+          requestId
+        });
+      }
+
+      // Validate email format
+      if (!validateEmail(email)) {
+        console.error(`❌ Email validation failed [${requestId}]: Invalid format for email:`, email);
+        return res.status(400).json({
+          success: false,
+          message: "Please enter a valid email address (e.g., name@example.com)",
+          requestId
+        });
+      }
+
+      // Validate password strength
+      const passwordValidation = validatePasswordStrength(password);
+      if (!passwordValidation.isValid) {
+        console.error(`❌ Password validation failed [${requestId}]:`, passwordValidation.errors);
+        return res.status(400).json({
+          success: false,
+          message: passwordValidation.errors.join(', '),
+          requestId
+        });
+      }
+
+      // Check for existing user
+      const existingUserQuery = 'SELECT id, email, username FROM users WHERE email = $1 OR username = $2';
+      const existingUser = await query(existingUserQuery, [email, username || email]);
+      
+      if (existingUser.rows.length > 0) {
+        const existing = existingUser.rows[0];
+        console.error(`❌ User already exists [${requestId}]:`, {
+          existingEmail: existing.email,
+          existingUsername: existing.username,
+          attemptedEmail: email,
+          attemptedUsername: username || email
+        });
+        
+        return res.status(409).json({
+          success: false,
+          message: "An account with this email or username already exists",
+          requestId
+        });
+      }
+
+      // Hash password (using bcrypt with 12 salt rounds)
+      const passwordHash = await hashPassword(password);
+      
+      console.log(`🔐 Password hashed successfully [${requestId}]`);
+      
+      // Generate user ID
+      const userId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Insert user into database
+      const insertUserQuery = `
+        INSERT INTO users (id, email, username, "first_name", "last_name", "password_hash", company, role, "created_at", "updated_at")
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+        RETURNING id, email, username, "first_name", "last_name", role
+      `;
+      
+      console.log(`📝 Inserting user into database [${requestId}]:`, {
+        userId,
+        email,
+        username: username || email.split('@')[0],
+        first_name,
+        last_name,
+        role,
+        company: company || null
+      });
+      
+      const userResult = await query(insertUserQuery, [
+        userId,
+        email,
+        username || email.split('@')[0], // Use email prefix as username if not provided
+        first_name,
+        last_name,
+        passwordHash,
+        company || null,
+        role
+      ]);
+
+      const newUser = userResult.rows[0];
+
+      // If user is talent, create profile entry
+      if (role === 'talent') {
+        const profileId = `prof_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const insertProfileQuery = `
+          INSERT INTO profiles (id, "user_id", "first_name", "last_name", location, languages, timezone, "created_at", "updated_at")
+          VALUES ($1, $2, $3, $4, 'Global', ARRAY['English'], 'Asia/Manila', NOW(), NOW())
+        `;
+        
+        console.log(`👤 Creating talent profile [${requestId}]:`, {
+          profileId,
+          userId,
+          first_name,
+          last_name
+        });
+        
+        await query(insertProfileQuery, [profileId, userId, first_name, last_name]);
+      }
+
+      // Get JWT secret with graceful error handling
+      let jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) {
+        if (process.env.NODE_ENV === 'development') {
+          jwtSecret = 'development-fallback-secret-not-for-production';
+          console.warn(`⚠️ Using development fallback JWT secret [${requestId}]`);
+        } else {
+          console.error(`❌ JWT_SECRET not configured for production [${requestId}]`);
+          return res.status(500).json({
+            success: false,
+            message: "Server configuration error - authentication unavailable",
+            requestId
+          });
+        }
+      }
+
+      // Generate JWT token for auto-login
+      const tokenPayload = {
+        userId: newUser.id,
+        email: newUser.email,
+        role: newUser.role
+      };
+      
+      const token = jwt.sign(tokenPayload, jwtSecret, { expiresIn: '7d' });
+      
+      console.log(`✅ User signup completed successfully [${requestId}]:`, {
+        userId: newUser.id,
+        email: newUser.email,
+        role: newUser.role,
+        hasProfile: role === 'talent'
+      });
+
+      if (process.env.NODE_ENV === 'production') {
+        console.log(`🌐 Production signup successful [${requestId}]:`, {
+          userId: newUser.id,
+          role: newUser.role,
+          jwtSigned: !!token
+        });
+      }
+      
+      res.status(201).json({
+        success: true,
+        message: "Account created successfully",
+        token,
+        user: {
+          id: newUser.id,
+          email: newUser.email,
+          username: newUser.username,
+          first_name: newUser.first_name,
+          last_name: newUser.last_name,
+          role: newUser.role
+        },
+        authProvider: 'jwt',
+        requestId
+      });
+      
+    } catch (error: any) {
+      const requestId = (req as any).requestId;
+      console.error(`❌ Signup error [${requestId}]:`, {
+        error: error.message,
+        stack: error.stack?.split('\n')[0]
+      });
+      
+      if (process.env.NODE_ENV === 'production') {
+        console.log(`🌐 Production signup error [${requestId}]: ${error.message}`);
+      }
+      
+      return res.status(500).json({
+        success: false,
+        message: "Signup failed due to server error",
+        requestId
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
