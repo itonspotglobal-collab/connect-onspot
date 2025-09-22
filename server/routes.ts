@@ -363,6 +363,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { email, username, password, first_name, last_name, role, company } = req.body;
       const requestId = (req as any).requestId;
 
+      // Debug: Log DATABASE_URL being used (mask password)
+      const dbUrl = process.env.DATABASE_URL;
+      if (dbUrl) {
+        const maskedDbUrl = dbUrl.replace(/:([^:]+)@/, ':***@');
+        console.log(`🗄️ Debug [${requestId}]: Using DATABASE_URL = ${maskedDbUrl}`);
+      } else {
+        console.error(`❌ Debug [${requestId}]: DATABASE_URL not set!`);
+      }
+
+      // Debug: Log JWT_SECRET status
+      const hasJwtSecret = !!process.env.JWT_SECRET;
+      console.log(`🔑 Debug [${requestId}]: JWT_SECRET loaded = ${hasJwtSecret}`);
+
       console.log(`🔍 Signup request received [${requestId}]:`, {
         email: email ? '***@' + email.split('@')[1] : 'missing',
         username: username || 'not provided',
@@ -546,6 +559,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { email, password } = req.body;
       const requestId = (req as any).requestId;
 
+      // Debug: Log DATABASE_URL being used (mask password)
+      const dbUrl = process.env.DATABASE_URL;
+      if (dbUrl) {
+        const maskedDbUrl = dbUrl.replace(/:([^:]+)@/, ':***@');
+        console.log(`🗄️ Debug [${requestId}]: Using DATABASE_URL = ${maskedDbUrl}`);
+      } else {
+        console.error(`❌ Debug [${requestId}]: DATABASE_URL not set!`);
+      }
+
+      // Debug: Log JWT_SECRET status
+      const hasJwtSecret = !!process.env.JWT_SECRET;
+      console.log(`🔑 Debug [${requestId}]: JWT_SECRET loaded = ${hasJwtSecret}`);
+
       console.log(`🔐 Login request received [${requestId}]:`, {
         email: email ? '***@' + email.split('@')[1] : 'missing',
         hasPassword: !!password
@@ -581,6 +607,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (userResult.rows.length === 0) {
         console.error(`❌ User not found [${requestId}]: No user with email ${email}`);
+        console.log(`🔍 Debug [${requestId}]: User record found = false`);
         return res.status(401).json({
           success: false,
           message: "Invalid email or password",
@@ -593,6 +620,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email: userResult.rows[0].email,
         role: userResult.rows[0].role
       });
+      console.log(`🔍 Debug [${requestId}]: User record found = true`);
 
       const user = userResult.rows[0];
       
@@ -611,15 +639,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isPasswordValid = await verifyPassword(password, user.password_hash);
       if (!isPasswordValid) {
         console.error(`❌ Password verification failed [${requestId}]: Password did not match for user ${user.id}`);
-        console.log(`🔍 Debug [${requestId}]: Password matched = false`);
+        console.log(`🔍 Debug [${requestId}]: bcrypt.compare result = false`);
         return res.status(401).json({
           success: false,
-          message: "Invalid email or password"
+          message: "Invalid email or password",
+          requestId
         });
       }
       
       console.log(`✅ Password verified successfully [${requestId}]`);
-      console.log(`🔍 Debug [${requestId}]: Password matched = true`);
+      console.log(`🔍 Debug [${requestId}]: bcrypt.compare result = true`);
 
       // Generate JWT token with proper secret handling and development fallback
       let jwtSecret = process.env.JWT_SECRET;
@@ -648,7 +677,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         { expiresIn: '7d' }
       );
       
-      console.log(`🔍 Debug [${requestId}]: JWT signed = true`);
+      console.log(`🔍 Debug [${requestId}]: JWT signing status = true`);
 
       // Return exact format required by specification - snake_case as per spec
       const userResponse = {
@@ -2474,6 +2503,40 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
     }
   );
 
+  // Debug endpoint to check environment configuration (development only for security)
+  app.get('/debug/env', (req: Request, res: Response) => {
+    // Security: Only allow in development environment
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(404).json({
+        success: false,
+        message: 'Not found'
+      });
+    }
+    
+    const requestId = (req as any).requestId;
+    
+    // Mask sensitive values
+    const dbUrl = process.env.DATABASE_URL;
+    const maskedDbUrl = dbUrl ? dbUrl.replace(/:([^:]+)@/, ':***@') : 'NOT_SET';
+    
+    const envDebugInfo = {
+      requestId,
+      timestamp: new Date().toISOString(),
+      nodeEnv: process.env.NODE_ENV || 'NOT_SET',
+      hasJwtSecret: !!process.env.JWT_SECRET,
+      databaseUrl: maskedDbUrl,
+      port: process.env.PORT || 'NOT_SET',
+      frontendBaseUrl: process.env.VITE_API_BASE || 'NOT_SET'
+    };
+    
+    console.log(`🔍 Debug environment info requested [${requestId}] (development only):`, envDebugInfo);
+    
+    res.json({
+      success: true,
+      environment: envDebugInfo
+    });
+  });
+
   // Production-friendly routes without /api prefix (prevents double /api in production URLs)
   // These are identical to the /api routes but without the prefix for production baseURL compatibility
   
@@ -2482,6 +2545,19 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
     try {
       const { email, password } = req.body;
       const requestId = (req as any).requestId;
+
+      // Debug: Log DATABASE_URL being used (mask password)
+      const dbUrl = process.env.DATABASE_URL;
+      if (dbUrl) {
+        const maskedDbUrl = dbUrl.replace(/:([^:]+)@/, ':***@');
+        console.log(`🗄️ Debug [${requestId}]: Using DATABASE_URL = ${maskedDbUrl}`);
+      } else {
+        console.error(`❌ Debug [${requestId}]: DATABASE_URL not set!`);
+      }
+
+      // Debug: Log JWT_SECRET status
+      const hasJwtSecret = !!process.env.JWT_SECRET;
+      console.log(`🔑 Debug [${requestId}]: JWT_SECRET loaded = ${hasJwtSecret}`);
 
       // Production diagnostics logging
       if (process.env.NODE_ENV === 'production') {
@@ -2528,6 +2604,7 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
       
       if (userResult.rows.length === 0) {
         console.error(`❌ User not found [${requestId}]: No user with email ${email}`);
+        console.log(`🔍 Debug [${requestId}]: User record found = false`);
         if (process.env.NODE_ENV === 'production') {
           console.log(`🌐 Production login failed: User not found [${requestId}]`);
         }
@@ -2543,6 +2620,7 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
         email: userResult.rows[0].email,
         role: userResult.rows[0].role
       });
+      console.log(`🔍 Debug [${requestId}]: User record found = true`);
 
       const user = userResult.rows[0];
       
@@ -2561,18 +2639,19 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
       const isPasswordValid = await verifyPassword(password, user.password_hash);
       if (!isPasswordValid) {
         console.error(`❌ Password verification failed [${requestId}]: Password did not match for user ${user.id}`);
-        console.log(`🔍 Debug [${requestId}]: Password matched = false`);
+        console.log(`🔍 Debug [${requestId}]: bcrypt.compare result = false`);
         if (process.env.NODE_ENV === 'production') {
           console.log(`🌐 Production login failed: Invalid password [${requestId}]`);
         }
         return res.status(401).json({
           success: false,
-          message: "Invalid email or password"
+          message: "Invalid email or password",
+          requestId
         });
       }
       
       console.log(`✅ Password verified successfully [${requestId}]`);
-      console.log(`🔍 Debug [${requestId}]: Password matched = true`);
+      console.log(`🔍 Debug [${requestId}]: bcrypt.compare result = true`);
       
       // Get JWT secret with graceful error handling
       let jwtSecret = process.env.JWT_SECRET;
@@ -2656,6 +2735,19 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
     try {
       const { email, username, password, first_name, last_name, role, company } = req.body;
       const requestId = (req as any).requestId;
+
+      // Debug: Log DATABASE_URL being used (mask password)
+      const dbUrl = process.env.DATABASE_URL;
+      if (dbUrl) {
+        const maskedDbUrl = dbUrl.replace(/:([^:]+)@/, ':***@');
+        console.log(`🗄️ Debug [${requestId}]: Using DATABASE_URL = ${maskedDbUrl}`);
+      } else {
+        console.error(`❌ Debug [${requestId}]: DATABASE_URL not set!`);
+      }
+
+      // Debug: Log JWT_SECRET status
+      const hasJwtSecret = !!process.env.JWT_SECRET;
+      console.log(`🔑 Debug [${requestId}]: JWT_SECRET loaded = ${hasJwtSecret}`);
 
       // Production diagnostics logging
       if (process.env.NODE_ENV === 'production') {
