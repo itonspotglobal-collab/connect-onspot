@@ -144,6 +144,20 @@ const logDatabaseConnection = () => {
   }
 };
 
+// Log JWT configuration on startup for debugging
+const logJWTConfiguration = () => {
+  const jwtSecret = process.env.JWT_SECRET;
+  if (jwtSecret) {
+    console.log(`🔐 JWT_SECRET configured: ***${jwtSecret.slice(-4)}`);
+  } else {
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`⚠️  JWT_SECRET not set, using development fallback`);
+    } else {
+      console.error('❌ JWT_SECRET not configured for production!');
+    }
+  }
+};
+
 // Enhanced logging middleware with request ID tracking
 app.use((req, res, next) => {
   const start = Date.now();
@@ -204,6 +218,7 @@ app.use((req, res, next) => {
 (async () => {
   // Log database connection on startup
   logDatabaseConnection();
+  logJWTConfiguration();
   
   // Setup authentication first before routes
   await setupAuth(app);
@@ -257,6 +272,10 @@ app.use((req, res, next) => {
   if (process.env.SENTRY_DSN) {
     app.use(Sentry.expressErrorHandler());
   }
+
+  // Log environment info on startup
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🚀 Frontend baseURL: ${process.env.VITE_API_BASE || 'relative URLs'}`);
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
