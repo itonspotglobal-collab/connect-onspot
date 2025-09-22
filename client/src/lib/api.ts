@@ -6,11 +6,14 @@ const getAPIBaseURL = (): string => {
   const isProduction = window.location.origin.includes("onspotglobal.com");
 
   if (isProduction) {
-    return "https://connect.onspotglobal.com/api";
+    console.log('🚀 Production API baseURL: https://connect.onspotglobal.com');
+    return "https://connect.onspotglobal.com";
   }
 
   // Development - use environment variable or relative URLs
-  return import.meta.env.VITE_API_BASE || "";
+  const baseURL = import.meta.env.VITE_API_BASE || "";
+  console.log(`🛠️ Development API baseURL: ${baseURL || 'relative URLs'}`);
+  return baseURL;
 };
 
 // Create axios instance with base configuration
@@ -73,7 +76,7 @@ export const authAPI = {
   // Login with email and password
   login: async (email: string, password: string) => {
     try {
-      const response = await api.post("/api/login", { email, password });
+      const response = await api.post("/login", { email, password });
 
       if (response.data.success && response.data.token) {
         // Store JWT token in localStorage
@@ -99,7 +102,7 @@ export const authAPI = {
     company?: string;
   }) => {
     try {
-      const response = await api.post("/api/signup", userData);
+      const response = await api.post("/signup", userData);
       return response.data;
     } catch (error) {
       console.error("Signup API error:", error);
