@@ -119,6 +119,16 @@ export default function ProfileOnboarding({
 
   // Profile form submission
   const onSubmit = async (data: ProfileFormData) => {
+    // Check authentication before saving
+    if (!authContext?.isAuthenticated || !user?.id) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign up or log in to save your profile.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       await updateProfile(data);
       if (skills && skills.length > 0) {
@@ -168,6 +178,23 @@ export default function ProfileOnboarding({
 
   return (
     <div className={cn("w-full", className)}>
+      {/* Authentication Status Banner */}
+      {!authContext?.isAuthenticated && (
+        <div className="mb-6 p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+            <div>
+              <p className="text-sm font-medium text-orange-800 dark:text-orange-200">
+                Authentication Required
+              </p>
+              <p className="text-xs text-orange-600 dark:text-orange-300">
+                Please sign up or log in to save your profile changes.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {mode === "full" && (
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
