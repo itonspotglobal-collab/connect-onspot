@@ -80,18 +80,32 @@ export default function ProfileOnboarding({
   const [currentStep, setCurrentStep] = useState(defaultStep);
   const [isLinkedInConnected, setIsLinkedInConnected] = useState(false);
 
-  // Form setup
+  // Form setup with stable default values
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileFormSchema),
-    defaultValues: getDefaultFormValues()
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      title: '',
+      bio: '',
+      location: 'Manila, Philippines',
+      hourlyRate: '',
+      rateCurrency: 'USD',
+      availability: 'available',
+      phoneNumber: '',
+      languages: ['English'],
+      timezone: 'Asia/Manila'
+    }
   });
 
-  // Reset form when profile data loads (only when profile changes, not on every render)
+  // Initialize form with profile data once when profile first loads
+  const [hasInitialized, setHasInitialized] = useState(false);
   useEffect(() => {
-    if (profile) {
+    if (profile && !hasInitialized) {
       form.reset(getDefaultFormValues());
+      setHasInitialized(true);
     }
-  }, [profile, form, getDefaultFormValues]);
+  }, [profile, form, getDefaultFormValues, hasInitialized]);
 
   // File upload handlers
   const handleResumeUpload = async () => {
