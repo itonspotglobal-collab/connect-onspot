@@ -60,13 +60,13 @@ export function useTalentProfile() {
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [uploadedDocuments, setUploadedDocuments] = useState<Document[]>([]);
 
-  // Fetch user profile using authAPI
+  // Fetch user profile using new /api/profiles/me endpoint
   const { data: profileResponse, isLoading: profileLoading, error: profileError } = useQuery<{success: boolean, profile?: Profile} | null>({
-    queryKey: ['/api/profiles/user', user?.id],
+    queryKey: ['/api/profiles/me'],
     queryFn: async () => {
       if (!user?.id) return null;
       try {
-        const response = await api.get(`/api/profiles/user/${user.id}`);
+        const response = await api.get('/api/profiles/me');
         return response.data;
       } catch (error: any) {
         if (error.response?.status === 404) {
@@ -86,9 +86,8 @@ export function useTalentProfile() {
     queryKey: ['/api/users', user?.id, 'skills'],
     queryFn: async () => {
       if (!user?.id) return [];
-      const response = await fetch(`/api/users/${user.id}/skills?includeNames=true`);
-      if (!response.ok) throw new Error('Failed to fetch user skills');
-      return response.json();
+      const response = await api.get(`/api/users/${user.id}/skills?includeNames=true`);
+      return response.data;
     },
     enabled: !!user?.id
   });
@@ -104,10 +103,13 @@ export function useTalentProfile() {
     queryKey: ['/api/portfolio', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      const response = await fetch(`/api/portfolio/user/${user.id}`);
-      if (response.status === 404) return []; // No portfolio items yet
-      if (!response.ok) throw new Error('Failed to fetch portfolio items');
-      return response.json();
+      try {
+        const response = await api.get(`/api/portfolio/user/${user.id}`);
+        return response.data;
+      } catch (error: any) {
+        if (error.response?.status === 404) return []; // No portfolio items yet
+        throw error;
+      }
     },
     enabled: !!user?.id
   });
@@ -155,13 +157,12 @@ export function useTalentProfile() {
   // Profile mutation
   const profileMutation = useMutation({
     mutationFn: async (data: ProfileFormData) => {
-      const profileData = { ...data, userId: user?.id };
-      // Always use POST for profile creation/update as backend handles upsert logic
-      const response = await api.post('/api/profiles', profileData);
+      // Don't send userId - backend will use JWT user ID
+      const response = await api.post('/api/profiles', data);
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/profiles/user', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['/api/profiles/me'] });
       
       // Show appropriate success message based on whether it's creating or updating
       if (!profile) {
@@ -180,32 +181,44 @@ export function useTalentProfile() {
     }
   });
 
-  // Skills mutation
+  // Skills mutation - Updated to use new /api/profiles/skills endpoint with correct payload
   const skillsMutation = useMutation({
     mutationFn: async (skillNames: string[]) => {
       if (!user?.id) throw new Error('User not authenticated');
       
-      // Convert skill names to skill IDs
-      const skillPromises = skillNames.map(async (skillName) => {
+      // Convert skill names to skill objects with proper camelCase format
+      const skillsToSave = skillNames.map((skillName) => {
         const skill = (availableSkills as any[]).find(s => s.name === skillName);
         if (!skill) throw new Error(`Skill not found: ${skillName}`);
         
-        return apiRequest('POST', `/api/users/${user.id}/skills`, {
+        return {
           skillId: skill.id,
           level: 'intermediate', // Default level
-          yearsExperience: 1 // Default experience
-        });
+          yearsExperience: 0 // Default experience (camelCase)
+        };
       });
       
-      return Promise.all(skillPromises);
+      // Use the new /api/profiles/skills endpoint for batch replace operation
+      return api.post('/api/profiles/skills', { skills: skillsToSave });
     },
     onSuccess: () => {
+      // Invalidate both the skills cache and the profile cache
       queryClient.invalidateQueries({ queryKey: ['/api/users', user?.id, 'skills'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/profiles/me'] });
       
       // Show success message for skills update
       toast({
         title: "Skills Updated!",
         description: "Your skills have been saved successfully.",
+      });
+    },
+    onError: (error: any) => {
+      // Show error message for skills update
+      toast({
+        title: "Failed to Update Skills",
+        description: error?.message || "There was an error updating your skills. Please try again.",
+        variant: "destructive",
+        duration: 6000,
       });
     }
   });
