@@ -62,11 +62,11 @@ export function useTalentProfile() {
 
   // Fetch user profile using authAPI
   const { data: profileResponse, isLoading: profileLoading, error: profileError } = useQuery<{success: boolean, profile?: Profile} | null>({
-    queryKey: ['/api/profiles/user', user?.id],
+    queryKey: ['/api/profiles/me'],
     queryFn: async () => {
       if (!user?.id) return null;
       try {
-        const response = await api.get(`/api/profiles/user/${user.id}`);
+        const response = await api.get('/api/profiles/me');
         return response.data;
       } catch (error: any) {
         if (error.response?.status === 404) {
@@ -155,13 +155,12 @@ export function useTalentProfile() {
   // Profile mutation
   const profileMutation = useMutation({
     mutationFn: async (data: ProfileFormData) => {
-      const profileData = { ...data, userId: user?.id };
-      // Always use POST for profile creation/update as backend handles upsert logic
-      const response = await api.post('/api/profiles', profileData);
+      // Use PUT /api/profiles/me - no need to send userId as it's from JWT token
+      const response = await api.put('/api/profiles/me', data);
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/profiles/user', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['/api/profiles/me'] });
       
       // Show appropriate success message based on whether it's creating or updating
       if (!profile) {
