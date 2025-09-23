@@ -1324,6 +1324,179 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
+  // ==================== PROFILES /ME ENDPOINTS ====================
+  // GET /api/profiles/me - Returns current user's profile based on JWT
+  app.get("/api/profiles/me", 
+    authenticateJWT,
+    requireAnyRole,
+    async (req: Request, res: Response) => {
+      try {
+        const userId = (req as any).user?.id;
+        const requestId = (req as any).requestId;
+        
+        console.log(`👤 Fetching current user's profile [${requestId}]:`, { userId });
+        
+        // Query database directly for profile
+        const profileQuery = `
+          SELECT id, user_id, first_name, last_name, title, bio, location, 
+                 hourly_rate, rate_currency, availability, profile_picture, 
+                 phone_number, languages, timezone, rating, total_earnings, 
+                 job_success_score, created_at, updated_at
+          FROM profiles 
+          WHERE user_id = $1
+        `;
+        
+        const result = await query(profileQuery, [userId]);
+        
+        if (result.rows.length === 0) {
+          return res.status(404).json({ 
+            success: false,
+            message: "Profile not found",
+            requestId
+          });
+        }
+        
+        const profile = result.rows[0];
+        console.log(`✅ Profile fetched successfully [${requestId}]:`, { profileId: profile.id });
+        
+        res.json({ 
+          success: true,
+          profile 
+        });
+      } catch (error: any) {
+        const requestId = (req as any).requestId;
+        console.error(`❌ Failed to fetch current user's profile [${requestId}]:`, error.message);
+        res.status(500).json({ 
+          success: false,
+          message: error.message,
+          requestId
+        });
+      }
+    }
+  );
+
+  // PUT /api/profiles/me - Updates current user's profile based on JWT
+  app.put("/api/profiles/me", 
+    authenticateJWT,
+    requireAnyRole,
+    validateRequest(insertProfileSchema.partial()),
+    async (req: Request, res: Response) => {
+      try {
+        const userId = (req as any).user?.id;
+        const requestId = (req as any).requestId;
+        
+        console.log(`📝 Updating current user's profile [${requestId}]:`, { 
+          userId,
+          updateFields: Object.keys(req.body)
+        });
+        
+        const validated = insertProfileSchema.partial().parse(req.body);
+        
+        // Check if profile exists first
+        const existingProfileQuery = 'SELECT id FROM profiles WHERE user_id = $1';
+        const existingResult = await query(existingProfileQuery, [userId]);
+        
+        if (existingResult.rows.length === 0) {
+          // Create new profile if it doesn't exist
+          const profileId = `prof_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          
+          const insertQuery = `
+            INSERT INTO profiles (
+              id, user_id, first_name, last_name, title, bio, location, 
+              hourly_rate, rate_currency, availability, phone_number, 
+              languages, timezone, created_at, updated_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
+            RETURNING id, user_id, first_name, last_name, title, bio, location, 
+                     hourly_rate, rate_currency, availability, profile_picture, 
+                     phone_number, languages, timezone, rating, total_earnings, 
+                     job_success_score, created_at, updated_at
+          `;
+          
+          const insertParams = [
+            profileId,
+            userId,
+            validated.firstName,
+            validated.lastName,
+            validated.title,
+            validated.bio,
+            validated.location || 'Global',
+            validated.hourlyRate,
+            validated.rateCurrency || 'USD', 
+            validated.availability || 'available',
+            validated.phoneNumber,
+            validated.languages || ['English'],
+            validated.timezone || 'Asia/Manila'
+          ];
+          
+          const insertResult = await query(insertQuery, insertParams);
+          const profile = insertResult.rows[0];
+          
+          console.log(`✅ Profile created successfully [${requestId}]:`, { profileId: profile.id });
+          return res.status(201).json({ 
+            success: true,
+            profile 
+          });
+        } else {
+          // Update existing profile
+          const profileId = existingResult.rows[0].id;
+          
+          // Build dynamic update query based on provided fields
+          const updateFields = [];
+          const updateValues = [];
+          let paramCount = 1;
+          
+          Object.entries(validated).forEach(([key, value]) => {
+            if (value !== undefined) {
+              // Convert camelCase to snake_case for database columns
+              const dbField = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+              updateFields.push(`"${dbField}" = $${paramCount}`);
+              updateValues.push(value);
+              paramCount++;
+            }
+          });
+          
+          if (updateFields.length === 0) {
+            return res.status(400).json({
+              success: false,
+              message: "No valid fields provided for update",
+              requestId
+            });
+          }
+          
+          updateFields.push(`"updated_at" = NOW()`);
+          updateValues.push(profileId);
+          
+          const updateQuery = `
+            UPDATE profiles 
+            SET ${updateFields.join(', ')}
+            WHERE id = $${paramCount}
+            RETURNING id, user_id, first_name, last_name, title, bio, location, 
+                     hourly_rate, rate_currency, availability, profile_picture, 
+                     phone_number, languages, timezone, rating, total_earnings, 
+                     job_success_score, created_at, updated_at
+          `;
+          
+          const updateResult = await query(updateQuery, updateValues);
+          const profile = updateResult.rows[0];
+          
+          console.log(`✅ Profile updated successfully [${requestId}]:`, { profileId: profile.id });
+          res.json({ 
+            success: true,
+            profile 
+          });
+        }
+      } catch (error: any) {
+        const requestId = (req as any).requestId;
+        console.error(`❌ Failed to update current user's profile [${requestId}]:`, error.message);
+        res.status(500).json({ 
+          success: false,
+          message: error.message,
+          requestId
+        });
+      }
+    }
+  );
+
   // Advanced Profile Search - Critical for talent discovery
   app.get("/api/profiles/search", async (req, res) => {
     try {
