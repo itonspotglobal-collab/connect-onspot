@@ -530,9 +530,11 @@ export function SignUpDialog() {
                   <Label htmlFor="firstName">First Name</Label>
                   <Input
                     id="firstName"
+                    name="firstName"
                     value={formData.firstName}
                     onChange={(e) => setFormData({...formData, firstName: e.target.value})}
                     placeholder="Enter your first name"
+                    autoComplete="given-name"
                     data-testid="input-first-name"
                   />
                 </div>
@@ -540,9 +542,11 @@ export function SignUpDialog() {
                   <Label htmlFor="lastName">Last Name</Label>
                   <Input
                     id="lastName"
+                    name="lastName"
                     value={formData.lastName}
                     onChange={(e) => setFormData({...formData, lastName: e.target.value})}
                     placeholder="Enter your last name"
+                    autoComplete="family-name"
                     data-testid="input-last-name"
                   />
                 </div>
@@ -553,9 +557,11 @@ export function SignUpDialog() {
                   <Label htmlFor="company">Company Name</Label>
                   <Input
                     id="company"
+                    name="company"
                     value={formData.company}
                     onChange={(e) => setFormData({...formData, company: e.target.value})}
                     placeholder="Enter your company name"
+                    autoComplete="organization"
                     data-testid="input-company"
                   />
                 </div>
@@ -565,10 +571,12 @@ export function SignUpDialog() {
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
+                  name="email"
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
                   placeholder="Enter your email"
+                  autoComplete="email"
                   data-testid="input-signup-email"
                 />
               </div>
@@ -578,10 +586,12 @@ export function SignUpDialog() {
                 <div className="relative">
                   <Input
                     id="password"
+                    name="password"
                     type={showPassword ? "text" : "password"}
                     value={formData.password}
                     onChange={(e) => setFormData({...formData, password: e.target.value})}
                     placeholder="Create a password"
+                    autoComplete="new-password"
                     data-testid="input-signup-password"
                   />
                   <Button
@@ -604,10 +614,12 @@ export function SignUpDialog() {
                 <Label htmlFor="confirmPassword">Confirm Password</Label>
                 <Input
                   id="confirmPassword"
+                  name="confirmPassword"
                   type="password"
                   value={formData.confirmPassword}
                   onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
                   placeholder="Confirm your password"
+                  autoComplete="new-password"
                   data-testid="input-confirm-password"
                 />
               </div>
