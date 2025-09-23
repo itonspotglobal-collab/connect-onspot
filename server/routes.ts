@@ -1402,6 +1402,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Save user skills - Requirement endpoint 
   app.post("/api/profiles/skills", 
     authenticateJWT,
+    requireTalent,
     async (req: Request, res: Response) => {
       try {
         const userId = (req as any).user?.id;
@@ -1429,42 +1430,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
           skillsCount: skills.length 
         });
         
-        // Remove existing user_skills for this user
-        const deleteQuery = `DELETE FROM user_skills WHERE user_id = $1`;
-        await query(deleteQuery, [userId]);
-        console.log(`🗑️ Removed existing skills for user [${requestId}]`);
-        
-        // Insert new skills
-        if (skills.length > 0) {
-          for (const skill of skills) {
-            let skillId = skill.skill_id || skill.skillId || skill.id;
-            
-            // If skill is provided by name, find its ID
-            if (!skillId && skill.name) {
-              const skillQuery = `SELECT id FROM skills WHERE name = $1`;
-              const skillResult = await query(skillQuery, [skill.name]);
-              if (skillResult.rows.length > 0) {
-                skillId = skillResult.rows[0].id;
-              } else {
-                console.warn(`⚠️ Skill not found [${requestId}]:`, skill.name);
-                continue; // Skip this skill if not found
+        // Use transaction for atomic replace operation
+        try {
+          await query('BEGIN');
+          
+          // Remove existing user_skills for this user
+          const deleteQuery = `DELETE FROM user_skills WHERE user_id = $1`;
+          await query(deleteQuery, [userId]);
+          console.log(`🗑️ Removed existing skills for user [${requestId}]`);
+          
+          // Insert new skills
+          if (skills.length > 0) {
+            for (const skill of skills) {
+              // Handle both camelCase (frontend) and snake_case (legacy) formats
+              let skillId = skill.skillId || skill.skill_id || skill.id;
+              
+              // If skill is provided by name, find its ID
+              if (!skillId && skill.name) {
+                const skillQuery = `SELECT id FROM skills WHERE name = $1`;
+                const skillResult = await query(skillQuery, [skill.name]);
+                if (skillResult.rows.length > 0) {
+                  skillId = skillResult.rows[0].id;
+                } else {
+                  console.warn(`⚠️ Skill not found [${requestId}]:`, skill.name);
+                  continue; // Skip this skill if not found
+                }
+              }
+              
+              if (skillId) {
+                const insertQuery = `
+                  INSERT INTO user_skills (user_id, skill_id, level, years_experience, created_at)
+                  VALUES ($1, $2, $3, $4, NOW())
+                `;
+                const insertParams = [
+                  userId,
+                  skillId,
+                  skill.level || 'intermediate',
+                  // Handle both camelCase and snake_case
+                  skill.yearsExperience || skill.years_experience || 0
+                ];
+                await query(insertQuery, insertParams);
               }
             }
-            
-            if (skillId) {
-              const insertQuery = `
-                INSERT INTO user_skills (user_id, skill_id, level, years_experience, created_at)
-                VALUES ($1, $2, $3, $4, NOW())
-              `;
-              const insertParams = [
-                userId,
-                skillId,
-                skill.level || 'intermediate',
-                skill.years_experience || 0
-              ];
-              await query(insertQuery, insertParams);
-            }
           }
+          
+          // Commit transaction
+          await query('COMMIT');
+          console.log(`✅ Transaction committed successfully [${requestId}]`);
+        } catch (error) {
+          // Ensure rollback happens on any error
+          try {
+            await query('ROLLBACK');
+            console.log(`🔄 Transaction rolled back [${requestId}]`);
+          } catch (rollbackError) {
+            console.error(`❌ Failed to rollback transaction [${requestId}]:`, rollbackError);
+          }
+          console.error(`❌ Skills update failed [${requestId}]:`, error);
+          throw error;
         }
         
         // Return updated skills
