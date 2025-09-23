@@ -1375,29 +1375,148 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  // PUT /api/profiles/me - Updates current user's profile based on JWT
+  // PUT /api/profiles/me - Creates or updates current user's profile based on JWT
   app.put("/api/profiles/me", 
     authenticateJWT,
     requireAnyRole,
-    validateRequest(insertProfileSchema.partial()),
     async (req: Request, res: Response) => {
       try {
         const userId = (req as any).user?.id;
         const requestId = (req as any).requestId;
         
-        console.log(`📝 Updating current user's profile [${requestId}]:`, { 
+        console.log(`📝 Creating/updating current user's profile [${requestId}]:`, { 
           userId,
           updateFields: Object.keys(req.body)
         });
         
-        const validated = insertProfileSchema.partial().parse(req.body);
+        // Enhanced validation with proper type coercion and 400 error handling
+        const validationSchema = insertProfileSchema.partial().extend({
+          hourlyRate: z.union([z.string(), z.number()]).transform(val => {
+            if (typeof val === 'string') {
+              const parsed = parseFloat(val);
+              return isNaN(parsed) ? undefined : parsed;
+            }
+            return val;
+          }).optional(),
+          languages: z.array(z.string()).optional()
+        });
         
-        // Check if profile exists first
+        let validated;
+        try {
+          validated = validationSchema.parse(req.body);
+        } catch (error) {
+          if (error instanceof z.ZodError) {
+            const validationErrors = error.errors.map(err => ({
+              field: err.path.join('.'),
+              message: err.message,
+              code: err.code
+            }));
+            
+            console.warn(`🚨 Validation Error [${requestId}]:`, {
+              endpoint: req.path,
+              method: req.method,
+              errors: validationErrors
+            });
+
+            return res.status(400).json({
+              error: "Validation failed",
+              message: "Invalid profile data provided",
+              details: validationErrors,
+              requestId
+            });
+          }
+          throw error;
+        }
+        
+        // Check if profile exists
         const existingProfileQuery = 'SELECT id FROM profiles WHERE user_id = $1';
         const existingResult = await query(existingProfileQuery, [userId]);
         
-        if (existingResult.rows.length === 0) {
-          // Create new profile if it doesn't exist
+        if (existingResult.rows.length > 0) {
+          // Update existing profile - only update provided fields
+          const profileId = existingResult.rows[0].id;
+          const updateFields = [];
+          const updateValues = [];
+          let paramIndex = 1;
+          
+          if (validated.firstName !== undefined) {
+            updateFields.push(`first_name = $${paramIndex++}`);
+            updateValues.push(validated.firstName);
+          }
+          if (validated.lastName !== undefined) {
+            updateFields.push(`last_name = $${paramIndex++}`);
+            updateValues.push(validated.lastName);
+          }
+          if (validated.title !== undefined) {
+            updateFields.push(`title = $${paramIndex++}`);
+            updateValues.push(validated.title);
+          }
+          if (validated.bio !== undefined) {
+            updateFields.push(`bio = $${paramIndex++}`);
+            updateValues.push(validated.bio);
+          }
+          if (validated.location !== undefined) {
+            updateFields.push(`location = $${paramIndex++}`);
+            updateValues.push(validated.location);
+          }
+          if (validated.hourlyRate !== undefined) {
+            updateFields.push(`hourly_rate = $${paramIndex++}`);
+            updateValues.push(validated.hourlyRate);
+          }
+          if (validated.rateCurrency !== undefined) {
+            updateFields.push(`rate_currency = $${paramIndex++}`);
+            updateValues.push(validated.rateCurrency);
+          }
+          if (validated.availability !== undefined) {
+            updateFields.push(`availability = $${paramIndex++}`);
+            updateValues.push(validated.availability);
+          }
+          if (validated.phoneNumber !== undefined) {
+            updateFields.push(`phone_number = $${paramIndex++}`);
+            updateValues.push(validated.phoneNumber);
+          }
+          if (validated.languages !== undefined) {
+            updateFields.push(`languages = $${paramIndex++}`);
+            updateValues.push(validated.languages);
+          }
+          if (validated.timezone !== undefined) {
+            updateFields.push(`timezone = $${paramIndex++}`);
+            updateValues.push(validated.timezone);
+          }
+          
+          if (updateFields.length === 0) {
+            return res.status(400).json({
+              success: false,
+              message: "No valid fields provided for update",
+              requestId
+            });
+          }
+          
+          // Always update timestamp and add profile ID as last parameter
+          updateFields.push('updated_at = NOW()');
+          updateValues.push(profileId);
+          
+          const updateQuery = `
+            UPDATE profiles 
+            SET ${updateFields.join(', ')}
+            WHERE id = $${paramIndex}
+            RETURNING id, user_id, first_name, last_name, title, bio, location, 
+                     hourly_rate, rate_currency, availability, profile_picture, 
+                     phone_number, languages, timezone, rating, total_earnings, 
+                     job_success_score, created_at, updated_at
+          `;
+          
+          const updateResult = await query(updateQuery, updateValues);
+          const profile = updateResult.rows[0];
+          
+          console.log(`✅ Profile updated successfully [${requestId}]:`, { profileId: profile.id });
+          
+          res.json({ 
+            success: true,
+            profile 
+          });
+        } else {
+          // Create new profile with defaults for missing required fields
           const profileId = `prof_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
           
           const insertQuery = `
@@ -1415,15 +1534,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const insertParams = [
             profileId,
             userId,
-            validated.firstName,
-            validated.lastName,
-            validated.title,
-            validated.bio,
+            validated.firstName || '',
+            validated.lastName || '',
+            validated.title || '',
+            validated.bio || '',
             validated.location || 'Global',
-            validated.hourlyRate,
-            validated.rateCurrency || 'USD', 
+            validated.hourlyRate || null,
+            validated.rateCurrency || 'USD',
             validated.availability || 'available',
-            validated.phoneNumber,
+            validated.phoneNumber || null,
             validated.languages || ['English'],
             validated.timezone || 'Asia/Manila'
           ];
@@ -1432,62 +1551,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const profile = insertResult.rows[0];
           
           console.log(`✅ Profile created successfully [${requestId}]:`, { profileId: profile.id });
-          return res.status(201).json({ 
-            success: true,
-            profile 
-          });
-        } else {
-          // Update existing profile
-          const profileId = existingResult.rows[0].id;
           
-          // Build dynamic update query based on provided fields
-          const updateFields = [];
-          const updateValues = [];
-          let paramCount = 1;
-          
-          Object.entries(validated).forEach(([key, value]) => {
-            if (value !== undefined) {
-              // Convert camelCase to snake_case for database columns
-              const dbField = key.replace(/([A-Z])/g, '_$1').toLowerCase();
-              updateFields.push(`"${dbField}" = $${paramCount}`);
-              updateValues.push(value);
-              paramCount++;
-            }
-          });
-          
-          if (updateFields.length === 0) {
-            return res.status(400).json({
-              success: false,
-              message: "No valid fields provided for update",
-              requestId
-            });
-          }
-          
-          updateFields.push(`"updated_at" = NOW()`);
-          updateValues.push(profileId);
-          
-          const updateQuery = `
-            UPDATE profiles 
-            SET ${updateFields.join(', ')}
-            WHERE id = $${paramCount}
-            RETURNING id, user_id, first_name, last_name, title, bio, location, 
-                     hourly_rate, rate_currency, availability, profile_picture, 
-                     phone_number, languages, timezone, rating, total_earnings, 
-                     job_success_score, created_at, updated_at
-          `;
-          
-          const updateResult = await query(updateQuery, updateValues);
-          const profile = updateResult.rows[0];
-          
-          console.log(`✅ Profile updated successfully [${requestId}]:`, { profileId: profile.id });
-          res.json({ 
+          res.status(201).json({ 
             success: true,
             profile 
           });
         }
       } catch (error: any) {
         const requestId = (req as any).requestId;
-        console.error(`❌ Failed to update current user's profile [${requestId}]:`, error.message);
+        console.error(`❌ Failed to save current user's profile [${requestId}]:`, error.message);
         res.status(500).json({ 
           success: false,
           message: error.message,
