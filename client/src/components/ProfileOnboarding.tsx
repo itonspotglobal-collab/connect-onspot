@@ -490,54 +490,9 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
             </div>
 
             <Button 
-              type="button"
+              type="submit"
               disabled={isUpdating} 
               data-testid="button-save-profile"
-              onClick={async () => {
-                console.log('🔥 SAVE PROFILE: Starting save process');
-                
-                const formData = form.getValues();
-                console.log('📝 Form data:', formData);
-                
-                try {
-                  // Simple payload - just send the form data
-                  const profilePayload = {
-                    ...formData,
-                    skills: skills
-                  };
-                  
-                  console.log('📦 Profile payload:', profilePayload);
-                  
-                  // Make API call
-                  const response = await fetch('/api/profiles', {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(profilePayload)
-                  });
-                  
-                  console.log('🌐 API Response status:', response.status);
-                  console.log('🌐 API Response headers:', response.headers);
-                  
-                  if (!response.ok) {
-                    const errorData = await response.text();
-                    console.error('❌ API Error:', errorData);
-                    alert(`Save failed (${response.status}): ${errorData}`);
-                    return;
-                  }
-                  
-                  const result = await response.json();
-                  console.log('✅ Save successful:', result);
-                  alert('Profile saved successfully!');
-                  
-                  // Refresh the page to show updated profile data
-                  window.location.reload();
-                  
-                } catch (error: any) {
-                  console.error('❌ Save error:', error);
-                  alert(`Error: ${error?.message || "Save failed"}`);
-                }
-              }}
             >
               {isUpdating ? (
                 <>

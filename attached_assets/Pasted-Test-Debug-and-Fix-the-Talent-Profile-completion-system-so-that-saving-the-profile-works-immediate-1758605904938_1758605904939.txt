@@ -1,0 +1,51 @@
+Test, Debug, and Fix the Talent Profile completion system so that saving the profile works immediately after account creation in both Development and Production. Currently, saving fails with 401 "No authentication token provided".
+
+Steps:
+
+1. **Frontend – Ensure JWT Token is Sent**
+   - In the profile save API call (`/api/profile` or similar), always attach the token:
+     const token = localStorage.getItem('onspot_jwt_token');
+     headers: { Authorization: `Bearer ${token}` }.
+   - Update the Talent profile completion component to use the shared `authAPI` (from api.ts) so Dev and Prod use the correct baseURL.
+   - If no token exists, redirect to login.
+
+2. **Backend – Enforce JWT Middleware**
+   - Add/verify middleware for `/api/profile` routes:
+     • Extract Authorization header (Bearer <token>).
+     • Use `jwt.verify(token, process.env.JWT_SECRET)` to decode.
+     • Attach decoded user info to `req.user`.
+     • If missing/invalid, return 401 { success:false, message:"Authentication required" }.
+
+3. **Profile Save Route**
+   - Implement POST/PUT `/api/profile`:
+     • Require `req.user.id` from JWT.
+     • If profile already exists for that user_id, update it.
+     • Otherwise, insert new profile row into `profiles` table.
+     • Return { success:true, profile }.
+
+4. **Database Integration**
+   - Map form fields correctly:
+     • first_name → profiles.first_name
+     • last_name → profiles.last_name
+     • title → profiles.title
+     • location → profiles.location
+     • hourly_rate → profiles.hourly_rate
+     • timezone → profiles.timezone
+     • skills[] → profiles.languages or related table
+   - Ensure `profiles.user_id` is linked to `users.id` from the JWT.
+
+5. **Error Handling**
+   - On backend: catch DB errors and return JSON { success:false, message:error.message }.
+   - On frontend: replace the raw alert with toast:
+     "Failed to save profile. Please check your connection or login again."
+
+6. **Testing**
+   - In Development:
+     • Signup as Talent → Complete Profile → Save.
+     • Verify row is created in `profiles` table with correct user_id.
+     • Refresh page, confirm profile loads.
+   - In Production:
+     • Repeat flow, confirm save works with token from JWT_SECRET.
+     • Verify 401 occurs only when no/invalid token is provided.
+
+Deliverable: A working Talent Profile completion flow that persists to the `profiles` table, with JWT authentication enforced, in both Dev and Prod.

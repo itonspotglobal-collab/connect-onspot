@@ -18,14 +18,17 @@ export async function apiRequest(
     headers["Content-Type"] = "application/json";
   }
   
-  // Authentication is now handled by server-side sessions via cookies
-  // No client-controlled headers needed - this fixes the spoofable x-user-id vulnerability
+  // Add JWT token from localStorage if available
+  const token = localStorage.getItem("onspot_jwt_token");
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
   
   const res = await fetch(url, {
     method,
     headers,
     body: data ? JSON.stringify(data) : undefined,
-    credentials: "include", // Include session cookies
+    credentials: "include", // Include session cookies for compatibility
   });
 
   await throwIfResNotOk(res);
@@ -38,7 +41,16 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
+    const headers: Record<string, string> = {};
+    
+    // Add JWT token from localStorage if available
+    const token = localStorage.getItem("onspot_jwt_token");
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    
     const res = await fetch(queryKey.join("/") as string, {
+      headers,
       credentials: "include",
     });
 

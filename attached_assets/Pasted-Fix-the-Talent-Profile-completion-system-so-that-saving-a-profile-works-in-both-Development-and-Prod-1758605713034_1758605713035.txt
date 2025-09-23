@@ -1,0 +1,44 @@
+Fix the Talent Profile completion system so that saving a profile works in both Development and Production environments. Currently saving fails with 401 "No authentication token provided".
+
+Steps:
+
+1. **Frontend – Add Authorization Header**
+   - In the Talent profile save API call, always include the JWT token from localStorage:
+     const token = localStorage.getItem('onspot_jwt_token');
+     headers: { Authorization: `Bearer ${token}` }.
+   - Ensure the save request uses the configured `authAPI` instance (from api.ts) so the correct baseURL is used for Dev and Prod.
+   - If no token exists, redirect the user to the login page.
+
+2. **Backend – Auth Middleware**
+   - Verify that `/api/profile` and any profile update routes require authentication.
+   - Middleware must:
+     • Extract `Authorization` header (Bearer <token>).
+     • Call `jwt.verify(token, process.env.JWT_SECRET)`.
+     • Attach decoded user info to `req.user`.
+     • If missing or invalid, return 401 { success:false, message:"Authentication required" }.
+
+3. **Profiles Route**
+   - Implement or fix POST/PUT `/api/profile`:
+     • Require `req.user.id`.
+     • Insert or update row in `profiles` table using submitted data.
+     • Link to correct `user_id` from JWT.
+     • Return { success:true, profile }.
+
+4. **Database**
+   - Confirm schema matches: profiles.user_id is unique and references users.id.
+   - Ensure save request maps fields correctly (first_name, last_name, title, location, hourly_rate, timezone, skills, etc.).
+
+5. **Error Handling**
+   - On frontend, replace the raw popup error with a toast notification:
+     "Failed to save profile. Please check your connection or login again."
+   - On backend, catch DB errors and return JSON { success:false, message:error.message }.
+
+6. **Testing**
+   - Test end-to-end:
+     • Signup/login as Talent → Complete Profile → Save.
+     • Verify row is created in `profiles` table linked to user_id.
+     • Reload page, confirm data persists.
+     • Verify Client accounts cannot overwrite Talent profiles.
+     • Confirm 401 occurs only when no/invalid token is provided.
+
+Deliverable: A working Talent Profile completion flow with JWT authentication, database persistence, and proper error handling in both Development and Production.
