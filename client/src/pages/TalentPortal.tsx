@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
@@ -41,7 +41,6 @@ import { StatisticsBar, DEFAULT_MARKETPLACE_STATS } from "@/components/Statistic
 import { ClientLogos, DEFAULT_CLIENT_LOGOS } from "@/components/ClientLogos";
 import { PremiumFeatures, DEFAULT_PREMIUM_FEATURES } from "@/components/PremiumFeatures";
 import { useTalentProfile } from "@/hooks/useTalentProfile";
-import ProfileOnboardingModal from "@/components/ProfileOnboardingModal";
 import { cn } from "@/lib/utils";
 import professionalWorkspaceImg from "@assets/generated_images/Professional_workspace_background_ccee2885.png";
 import businessNetworkImg from "@assets/generated_images/Business_network_illustration_d2c6527c.png";
@@ -101,8 +100,6 @@ const TRUST_INDICATORS = [
 
 export default function TalentPortal() {
   const { user } = useAuth();
-  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
-  
   // Use real profile data from useTalentProfile hook
   const {
     profile,
@@ -112,28 +109,19 @@ export default function TalentPortal() {
     isLoading: profileLoading
   } = useTalentProfile();
 
-  // Show onboarding modal for new users who haven't completed onboarding
-  useEffect(() => {
-    if (user?.userType === 'talent' && isNewUser && !hasCompletedOnboarding) {
-      const timer = setTimeout(() => setShowOnboardingModal(true), 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [user, isNewUser, hasCompletedOnboarding]);
+  // Note: Onboarding modal is now handled globally by NewUserOnboardingWrapper
+  // Removed duplicate modal logic that was causing the modal to appear twice
 
   // Handle authenticated user navigation
   const [, setLocation] = useLocation();
   
   const handleGetStarted = () => {
     if (user) {
-      // If user is authenticated, take them to complete their profile
-      if (profileCompletion < 100) {
-        setShowOnboardingModal(true);
-      } else {
-        // Profile is complete, take them to job opportunities
-        const opportunitiesSection = document.getElementById('opportunities');
-        if (opportunitiesSection) {
-          opportunitiesSection.scrollIntoView({ behavior: 'smooth' });
-        }
+      // Profile completion is now handled by NewUserOnboardingWrapper
+      // Just scroll to opportunities for authenticated users
+      const opportunitiesSection = document.getElementById('opportunities');
+      if (opportunitiesSection) {
+        opportunitiesSection.scrollIntoView({ behavior: 'smooth' });
       }
     } else {
       // Not authenticated, trigger sign up flow
@@ -467,21 +455,6 @@ export default function TalentPortal() {
         </div>
       </section>
 
-      {/* Profile Onboarding Modal */}
-      {showOnboardingModal && (
-        <ProfileOnboardingModal
-          open={showOnboardingModal}
-          onOpenChange={setShowOnboardingModal}
-          onComplete={() => {
-            setShowOnboardingModal(false);
-            // Optionally scroll to opportunities section
-            const opportunitiesSection = document.getElementById('opportunities');
-            if (opportunitiesSection) {
-              opportunitiesSection.scrollIntoView({ behavior: 'smooth' });
-            }
-          }}
-        />
-      )}
     </div>
   );
 }
