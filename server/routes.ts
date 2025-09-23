@@ -1120,17 +1120,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/profiles/user/:userId", async (req, res) => {
-    try {
-      const profile = await storage.getProfileByUserId(req.params.userId);
-      if (!profile) {
-        return res.status(404).json({ error: "Profile not found" });
+  app.get("/api/profiles/user/:userId", 
+    authenticateJWT,
+    async (req: Request, res: Response) => {
+      try {
+        const requestId = (req as any).requestId;
+        const userId = req.params.userId;
+        const authUserId = (req as any).user?.id;
+        
+        // Users can only access their own profile (or admins can access any)
+        if (authUserId !== userId && (req as any).user?.role !== 'admin') {
+          return res.status(403).json({ 
+            success: false,
+            message: "Access denied",
+            requestId
+          });
+        }
+
+        console.log(`👤 Fetching profile [${requestId}]:`, { userId });
+        
+        // Query database directly for profile
+        const profileQuery = `
+          SELECT id, user_id, first_name, last_name, title, bio, location, 
+                 hourly_rate, rate_currency, availability, profile_picture, 
+                 phone_number, languages, timezone, rating, total_earnings, 
+                 job_success_score, created_at, updated_at
+          FROM profiles 
+          WHERE user_id = $1
+        `;
+        
+        const result = await query(profileQuery, [userId]);
+        
+        if (result.rows.length === 0) {
+          return res.status(404).json({ 
+            success: false,
+            message: "Profile not found",
+            requestId
+          });
+        }
+        
+        const profile = result.rows[0];
+        console.log(`✅ Profile fetched successfully [${requestId}]:`, { profileId: profile.id });
+        
+        res.json({ 
+          success: true,
+          profile 
+        });
+      } catch (error: any) {
+        const requestId = (req as any).requestId;
+        console.error(`❌ Failed to fetch profile [${requestId}]:`, error.message);
+        res.status(500).json({ 
+          success: false,
+          message: error.message,
+          requestId
+        });
       }
-      res.json(profile);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to get profile" });
     }
-  });
+  );
 
   app.post("/api/profiles", 
     authenticateJWT,
@@ -1138,12 +1184,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: Request, res: Response) => {
       try {
         const userId = (req as any).user?.id;
+        const requestId = (req as any).requestId;
         
         if (!userId) {
-          return res.status(401).json({ error: 'unauthorized' });
+          return res.status(401).json({ 
+            success: false,
+            message: "Authentication required",
+            requestId
+          });
         }
 
-        console.log(`👤 Creating new profile [${req.requestId}]:`, { 
+        console.log(`👤 Creating/updating profile [${requestId}]:`, { 
           userId: userId 
         });
         
@@ -1153,14 +1204,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId: userId
         };
         
-        // Now validate the complete data including userId
+        // Validate the complete data including userId
         const validated = insertProfileSchema.parse(dataWithUserId);
-        const profile = await storage.createProfile(validated);
         
-        console.log(`✅ Profile created successfully [${req.requestId}]:`, { profileId: profile.id });
-        res.status(201).json({ profile });
-      } catch (error) {
-        handleRouteError(error, req, res, "Create profile", 500);
+        // Check if profile already exists for this user
+        const existingProfileQuery = `
+          SELECT id FROM profiles WHERE user_id = $1
+        `;
+        const existingResult = await query(existingProfileQuery, [userId]);
+        
+        let profile;
+        
+        if (existingResult.rows.length > 0) {
+          // Update existing profile
+          const profileId = existingResult.rows[0].id;
+          console.log(`📝 Updating existing profile [${requestId}]:`, { profileId });
+          
+          const updateQuery = `
+            UPDATE profiles 
+            SET first_name = $2, last_name = $3, title = $4, bio = $5, 
+                location = $6, hourly_rate = $7, rate_currency = $8, 
+                availability = $9, phone_number = $10, languages = $11, 
+                timezone = $12, updated_at = NOW()
+            WHERE id = $1
+            RETURNING *
+          `;
+          
+          const updateParams = [
+            profileId,
+            validated.firstName,
+            validated.lastName, 
+            validated.title,
+            validated.bio,
+            validated.location || 'Global',
+            validated.hourlyRate,
+            validated.rateCurrency || 'USD',
+            validated.availability || 'available',
+            validated.phoneNumber,
+            validated.languages || ['English'],
+            validated.timezone || 'Asia/Manila'
+          ];
+          
+          const updateResult = await query(updateQuery, updateParams);
+          profile = updateResult.rows[0];
+        } else {
+          // Create new profile
+          console.log(`➕ Creating new profile [${requestId}]`);
+          
+          const insertQuery = `
+            INSERT INTO profiles (user_id, first_name, last_name, title, bio, 
+                                location, hourly_rate, rate_currency, availability, 
+                                phone_number, languages, timezone, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
+            RETURNING *
+          `;
+          
+          const insertParams = [
+            userId,
+            validated.firstName,
+            validated.lastName,
+            validated.title,
+            validated.bio,
+            validated.location || 'Global',
+            validated.hourlyRate,
+            validated.rateCurrency || 'USD', 
+            validated.availability || 'available',
+            validated.phoneNumber,
+            validated.languages || ['English'],
+            validated.timezone || 'Asia/Manila'
+          ];
+          
+          const insertResult = await query(insertQuery, insertParams);
+          profile = insertResult.rows[0];
+        }
+        
+        console.log(`✅ Profile saved successfully [${requestId}]:`, { profileId: profile.id });
+        res.status(201).json({ 
+          success: true,
+          profile 
+        });
+      } catch (error: any) {
+        const requestId = (req as any).requestId;
+        console.error(`❌ Failed to save profile [${requestId}]:`, error.message);
+        res.status(500).json({ 
+          success: false,
+          message: error.message,
+          requestId
+        });
       }
     }
   );

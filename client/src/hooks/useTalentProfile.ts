@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import api from '@/lib/api';
 import { calculateProfileCompletion, ProfileCompletionData } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
@@ -59,18 +60,26 @@ export function useTalentProfile() {
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [uploadedDocuments, setUploadedDocuments] = useState<Document[]>([]);
 
-  // Fetch user profile
-  const { data: profile, isLoading: profileLoading, error: profileError } = useQuery<Profile | null>({
+  // Fetch user profile using authAPI
+  const { data: profileResponse, isLoading: profileLoading, error: profileError } = useQuery<{success: boolean, profile?: Profile} | null>({
     queryKey: ['/api/profiles/user', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
-      const response = await fetch(`/api/profiles/user/${user.id}`);
-      if (response.status === 404) return null; // Profile doesn't exist yet
-      if (!response.ok) throw new Error('Failed to fetch profile');
-      return response.json();
+      try {
+        const response = await api.get(`/api/profiles/user/${user.id}`);
+        return response.data;
+      } catch (error: any) {
+        if (error.response?.status === 404) {
+          return { success: false, profile: undefined }; // Profile doesn't exist yet
+        }
+        throw error;
+      }
     },
     enabled: !!user?.id
   });
+
+  // Extract profile from response
+  const profile = profileResponse?.profile;
 
   // Fetch user skills
   const { data: userSkillsData, isLoading: skillsLoading } = useQuery({
@@ -147,9 +156,9 @@ export function useTalentProfile() {
   const profileMutation = useMutation({
     mutationFn: async (data: ProfileFormData) => {
       const profileData = { ...data, userId: user?.id };
-      return profile 
-        ? apiRequest('PATCH', `/api/profiles/${profile.id}`, profileData)
-        : apiRequest('POST', '/api/profiles', profileData);
+      // Always use POST for profile creation/update as backend handles upsert logic
+      const response = await api.post('/api/profiles', profileData);
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/profiles/user', user?.id] });
