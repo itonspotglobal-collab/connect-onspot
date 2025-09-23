@@ -35,10 +35,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { useTalentProfile, profileFormSchema, ProfileFormData } from "@/hooks/useTalentProfile";
-import { cn, calculateProfileCompletion } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { queryClient } from "@/lib/queryClient";
 
 interface ProfileOnboardingProps {
   mode?: "full" | "embedded";
@@ -153,32 +152,20 @@ export default function ProfileOnboarding({
         await updateSkills();
       }
       
-      // Wait for fresh profile data to be refetched after mutations
-      await queryClient.refetchQueries({ queryKey: ['/api/profiles/me'] });
+      // Show success with more detailed feedback  
+      toast({
+        title: "Profile Saved Successfully!",
+        description: `Your profile is now ${profileCompletion}% complete. ${profileCompletion >= 70 ? 'Great job!' : 'Keep going to attract more opportunities!'}`,
+        duration: 5000,
+      });
       
-      // Get fresh profile completion data after refetch
-      const freshProfileData = queryClient.getQueryData(['/api/profiles/me']) as any;
-      const freshCompletion = freshProfileData?.profile ? calculateProfileCompletion({
-        firstName: freshProfileData.profile.firstName,
-        lastName: freshProfileData.profile.lastName,
-        title: freshProfileData.profile.title,
-        bio: freshProfileData.profile.bio,
-        location: freshProfileData.profile.location,
-        hourlyRate: freshProfileData.profile.hourlyRate,
-        profilePicture: freshProfileData.profile.profilePicture,
-        selectedSkills: skills,
-        uploadedDocuments: documents || [],
-        portfolioItems: []
-      }) : profileCompletion;
-      
-      if (mode === "embedded" && freshCompletion >= 70) {
+      if (mode === "embedded" && profileCompletion >= 70) {
         onComplete?.();
       } else if (mode === "full") {
         setCurrentStep(2);
       }
     } catch (error: any) {
-      // Error feedback is now handled by the hook's mutations  
-      // Only show this toast if the hook mutations didn't already show one
+      // Enhanced error feedback with more detail
       const errorMessage = error?.message || "Unknown error occurred";
       toast({
         title: "Failed to Save Profile",
