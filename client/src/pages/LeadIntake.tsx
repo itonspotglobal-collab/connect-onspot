@@ -255,6 +255,7 @@ export default function LeadIntake() {
                         data-testid="input-first-name"
                         {...form.register('firstName')}
                         placeholder="Your first name"
+                        autoComplete="given-name"
                       />
                       {form.formState.errors.firstName && (
                         <p className="text-sm text-red-600 mt-1">{form.formState.errors.firstName.message}</p>
@@ -268,6 +269,7 @@ export default function LeadIntake() {
                         data-testid="input-last-name"
                         {...form.register('lastName')}
                         placeholder="Your last name"
+                        autoComplete="family-name"
                       />
                       {form.formState.errors.lastName && (
                         <p className="text-sm text-red-600 mt-1">{form.formState.errors.lastName.message}</p>
@@ -283,6 +285,7 @@ export default function LeadIntake() {
                       type="email"
                       {...form.register('email')}
                       placeholder="your.email@company.com"
+                      autoComplete="email"
                     />
                     {form.formState.errors.email && (
                       <p className="text-sm text-red-600 mt-1">{form.formState.errors.email.message}</p>
@@ -295,8 +298,10 @@ export default function LeadIntake() {
                       <Input 
                         id="phoneNumber"
                         data-testid="input-phone"
+                        type="tel"
                         {...form.register('phoneNumber')}
                         placeholder="+1 (555) 123-4567"
+                        autoComplete="tel"
                       />
                     </div>
                     
@@ -307,6 +312,7 @@ export default function LeadIntake() {
                         data-testid="input-job-title"
                         {...form.register('jobTitle')}
                         placeholder="CEO, Operations Manager, etc."
+                        autoComplete="organization-title"
                       />
                       {form.formState.errors.jobTitle && (
                         <p className="text-sm text-red-600 mt-1">{form.formState.errors.jobTitle.message}</p>
