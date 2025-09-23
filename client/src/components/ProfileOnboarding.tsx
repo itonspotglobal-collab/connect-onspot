@@ -355,7 +355,13 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
                   <FormItem>
                     <FormLabel>First Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="John" {...field} data-testid="input-first-name" />
+                      <Input 
+                        id="firstName"
+                        placeholder="John" 
+                        autoComplete="given-name"
+                        {...field} 
+                        data-testid="input-first-name" 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -368,7 +374,13 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
                   <FormItem>
                     <FormLabel>Last Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Doe" {...field} data-testid="input-last-name" />
+                      <Input 
+                        id="lastName"
+                        placeholder="Doe" 
+                        autoComplete="family-name"
+                        {...field} 
+                        data-testid="input-last-name" 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -383,7 +395,13 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
                 <FormItem>
                   <FormLabel>Professional Title</FormLabel>
                   <FormControl>
-                    <Input placeholder="Full Stack Developer" {...field} data-testid="input-title" />
+                    <Input 
+                      id="title"
+                      placeholder="Full Stack Developer" 
+                      autoComplete="organization-title"
+                      {...field} 
+                      data-testid="input-title" 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -399,6 +417,7 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
                     <FormLabel>Professional Bio</FormLabel>
                     <FormControl>
                       <Textarea 
+                        id="bio"
                         placeholder="Tell clients about your experience, skills, and what makes you unique..."
                         className="min-h-32"
                         {...field}
@@ -419,7 +438,13 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
                   <FormItem>
                     <FormLabel>Location</FormLabel>
                     <FormControl>
-                      <Input placeholder="Manila, Philippines" {...field} data-testid="input-location" />
+                      <Input 
+                        id="location"
+                        placeholder="Manila, Philippines" 
+                        autoComplete="address-level2"
+                        {...field} 
+                        data-testid="input-location" 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -432,7 +457,15 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
                   <FormItem>
                     <FormLabel>Hourly Rate (USD)</FormLabel>
                     <FormControl>
-                      <Input placeholder="25" type="number" {...field} data-testid="input-hourly-rate" />
+                      <Input 
+                        id="hourlyRate"
+                        placeholder="25" 
+                        type="number"
+                        min="1"
+                        max="1000"
+                        {...field} 
+                        data-testid="input-hourly-rate" 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -449,7 +482,7 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
                     <FormLabel>Timezone</FormLabel>
                     <FormControl>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger data-testid="select-timezone">
+                        <SelectTrigger id="timezone" data-testid="select-timezone">
                           <SelectValue placeholder="Select timezone" />
                         </SelectTrigger>
                         <SelectContent>
@@ -476,7 +509,7 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
                     <FormLabel>Availability Status</FormLabel>
                     <FormControl>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger data-testid="select-availability">
+                        <SelectTrigger id="availability" data-testid="select-availability">
                           <SelectValue placeholder="Select availability" />
                         </SelectTrigger>
                         <SelectContent>
