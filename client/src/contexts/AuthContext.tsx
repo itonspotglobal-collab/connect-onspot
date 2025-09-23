@@ -154,6 +154,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const isAuth = checkIsAuthenticated();
       const storedUser = getCurrentUser();
       
+      console.log('🔍 Debug - Auth check results:', { 
+        isAuth, 
+        hasStoredUser: !!storedUser, 
+        storedUser: storedUser ? 'exists' : 'null',
+        jwtToken: localStorage.getItem("onspot_jwt_token") ? 'exists' : 'missing',
+        userInStorage: localStorage.getItem("onspot_user") ? 'exists' : 'missing'
+      });
+      
       if (isAuth && storedUser) {
         console.log('🔐 JWT user found in localStorage:', storedUser);
         
