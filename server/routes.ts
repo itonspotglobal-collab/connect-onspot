@@ -1342,6 +1342,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         console.log(`👤 Fetching profile with skills for current user [${requestId}]:`, { userId });
         
+        // Debug: First check if any profiles exist for debugging
+        const debugQuery = `SELECT user_id FROM profiles LIMIT 5`;
+        const debugResult = await query(debugQuery);
+        console.log(`🔍 Debug - Sample profile user_ids [${requestId}]:`, debugResult.rows.map(r => r.user_id));
+        
         // Get profile
         const profileQuery = `
           SELECT id, user_id, first_name, last_name, title, bio, location, 
@@ -1351,7 +1356,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           FROM profiles 
           WHERE user_id = $1
         `;
+        console.log(`🔍 Debug - Executing profile query [${requestId}]:`, { query: profileQuery, userId, userIdType: typeof userId });
         const profileResult = await query(profileQuery, [userId]);
+        console.log(`🔍 Debug - Profile query result [${requestId}]:`, { rowCount: profileResult.rows.length, rows: profileResult.rows });
         
         if (profileResult.rows.length === 0) {
           return res.status(404).json({ 
