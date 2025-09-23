@@ -56,9 +56,6 @@ export default function ProfileOnboarding({
   const authContext = useAuth();
   const user = authContext?.user;
   
-  console.log('🔧 ProfileOnboarding: authContext:', authContext);
-  console.log('🔧 ProfileOnboarding: user from auth:', user);
-  console.log('🔧 ProfileOnboarding: toast function:', typeof toast);
   
   const {
     profile,
@@ -131,7 +128,7 @@ export default function ProfileOnboarding({
     }
   };
 
-  // Profile form submission
+  // Profile form submission with enhanced status feedback
   const onSubmit = async (data: ProfileFormData) => {
     // Check authentication before saving
     if (!authContext?.isAuthenticated || !user?.id) {
@@ -143,15 +140,23 @@ export default function ProfileOnboarding({
       return;
     }
 
+    // Show saving status immediately
+    toast({
+      title: "Saving Profile...",
+      description: "Please wait while we save your professional profile.",
+    });
+
     try {
       await updateProfile(data);
       if (skills && skills.length > 0) {
         await updateSkills();
       }
       
+      // Show success with more detailed feedback  
       toast({
-        title: "Profile updated successfully!",
-        description: "Your professional profile has been saved."
+        title: "Profile Saved Successfully!",
+        description: `Your profile is now ${profileCompletion}% complete. ${profileCompletion >= 70 ? 'Great job!' : 'Keep going to attract more opportunities!'}`,
+        duration: 5000,
       });
       
       if (mode === "embedded" && profileCompletion >= 70) {
@@ -159,11 +164,14 @@ export default function ProfileOnboarding({
       } else if (mode === "full") {
         setCurrentStep(2);
       }
-    } catch (error) {
+    } catch (error: any) {
+      // Enhanced error feedback with more detail
+      const errorMessage = error?.message || "Unknown error occurred";
       toast({
-        title: "Error updating profile",
-        description: "Please try again later.",
-        variant: "destructive"
+        title: "Failed to Save Profile",
+        description: `Error: ${errorMessage}. Please check your connection and try again.`,
+        variant: "destructive",
+        duration: 6000,
       });
     }
   };
