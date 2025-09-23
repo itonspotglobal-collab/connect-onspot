@@ -1324,6 +1324,182 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
+  // Get current user's profile with skills - Requirement endpoint
+  app.get("/api/profiles/me", 
+    authenticateJWT,
+    async (req: Request, res: Response) => {
+      try {
+        const userId = (req as any).user?.id;
+        const requestId = (req as any).requestId;
+        
+        if (!userId) {
+          return res.status(401).json({ 
+            success: false,
+            message: "Authentication required",
+            requestId
+          });
+        }
+
+        console.log(`👤 Fetching profile with skills for current user [${requestId}]:`, { userId });
+        
+        // Get profile
+        const profileQuery = `
+          SELECT id, user_id, first_name, last_name, title, bio, location, 
+                 hourly_rate, rate_currency, availability, profile_picture,
+                 phone_number, languages, timezone, rating, total_earnings, 
+                 job_success_score, created_at, updated_at
+          FROM profiles 
+          WHERE user_id = $1
+        `;
+        const profileResult = await query(profileQuery, [userId]);
+        
+        if (profileResult.rows.length === 0) {
+          return res.status(404).json({ 
+            success: false,
+            message: "Profile not found",
+            requestId
+          });
+        }
+        
+        const profile = profileResult.rows[0];
+        
+        // Get associated skills
+        const skillsQuery = `
+          SELECT us.id, us.skill_id, us.level, us.years_experience, 
+                 s.name as skill_name, s.category
+          FROM user_skills us
+          JOIN skills s ON us.skill_id = s.id
+          WHERE us.user_id = $1
+          ORDER BY s.name
+        `;
+        const skillsResult = await query(skillsQuery, [userId]);
+        const skills = skillsResult.rows;
+        
+        console.log(`✅ Profile with skills fetched successfully [${requestId}]:`, { 
+          profileId: profile.id, 
+          skillsCount: skills.length 
+        });
+        
+        res.json({ 
+          success: true,
+          profile: {
+            ...profile,
+            skills
+          }
+        });
+      } catch (error: any) {
+        const requestId = (req as any).requestId;
+        console.error(`❌ Failed to fetch profile with skills [${requestId}]:`, error.message);
+        res.status(500).json({ 
+          success: false,
+          message: error.message,
+          requestId
+        });
+      }
+    }
+  );
+
+  // Save user skills - Requirement endpoint 
+  app.post("/api/profiles/skills", 
+    authenticateJWT,
+    async (req: Request, res: Response) => {
+      try {
+        const userId = (req as any).user?.id;
+        const requestId = (req as any).requestId;
+        const { skills } = req.body;
+        
+        if (!userId) {
+          return res.status(401).json({ 
+            success: false,
+            message: "Authentication required",
+            requestId
+          });
+        }
+
+        if (!Array.isArray(skills)) {
+          return res.status(400).json({ 
+            success: false,
+            message: "Skills must be an array",
+            requestId
+          });
+        }
+
+        console.log(`🔧 Updating user skills [${requestId}]:`, { 
+          userId, 
+          skillsCount: skills.length 
+        });
+        
+        // Remove existing user_skills for this user
+        const deleteQuery = `DELETE FROM user_skills WHERE user_id = $1`;
+        await query(deleteQuery, [userId]);
+        console.log(`🗑️ Removed existing skills for user [${requestId}]`);
+        
+        // Insert new skills
+        if (skills.length > 0) {
+          for (const skill of skills) {
+            let skillId = skill.skill_id || skill.skillId || skill.id;
+            
+            // If skill is provided by name, find its ID
+            if (!skillId && skill.name) {
+              const skillQuery = `SELECT id FROM skills WHERE name = $1`;
+              const skillResult = await query(skillQuery, [skill.name]);
+              if (skillResult.rows.length > 0) {
+                skillId = skillResult.rows[0].id;
+              } else {
+                console.warn(`⚠️ Skill not found [${requestId}]:`, skill.name);
+                continue; // Skip this skill if not found
+              }
+            }
+            
+            if (skillId) {
+              const insertQuery = `
+                INSERT INTO user_skills (user_id, skill_id, level, years_experience, created_at)
+                VALUES ($1, $2, $3, $4, NOW())
+              `;
+              const insertParams = [
+                userId,
+                skillId,
+                skill.level || 'intermediate',
+                skill.years_experience || 0
+              ];
+              await query(insertQuery, insertParams);
+            }
+          }
+        }
+        
+        // Return updated skills
+        const updatedSkillsQuery = `
+          SELECT us.id, us.skill_id, us.level, us.years_experience, 
+                 s.name as skill_name, s.category
+          FROM user_skills us
+          JOIN skills s ON us.skill_id = s.id
+          WHERE us.user_id = $1
+          ORDER BY s.name
+        `;
+        const updatedSkillsResult = await query(updatedSkillsQuery, [userId]);
+        const updatedSkills = updatedSkillsResult.rows;
+        
+        console.log(`✅ User skills updated successfully [${requestId}]:`, { 
+          userId, 
+          skillsCount: updatedSkills.length 
+        });
+        
+        res.json({ 
+          success: true,
+          skills: updatedSkills
+        });
+      } catch (error: any) {
+        const requestId = (req as any).requestId;
+        console.error(`❌ Failed to update user skills [${requestId}]:`, error.message);
+        res.status(500).json({ 
+          success: false,
+          message: error.message,
+          requestId
+        });
+      }
+    }
+  );
+
   // Advanced Profile Search - Critical for talent discovery
   app.get("/api/profiles/search", async (req, res) => {
     try {
