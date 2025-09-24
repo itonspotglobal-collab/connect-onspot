@@ -1324,6 +1324,238 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
+  // GET /api/profiles/me - Get current user's profile
+  app.get("/api/profiles/me", 
+    authenticateJWT,
+    async (req: Request, res: Response) => {
+      try {
+        const requestId = (req as any).requestId;
+        const userId = (req as any).user?.id;
+        
+        if (!userId) {
+          return res.status(401).json({
+            error: "Authentication required",
+            message: "User not authenticated",
+            requestId
+          });
+        }
+
+        console.log(`👤 Fetching current user profile [${requestId}]:`, { userId });
+        
+        // Query database directly for profile
+        const profileQuery = `
+          SELECT id, user_id, first_name, last_name, title, bio, location, 
+                 hourly_rate, rate_currency, availability, profile_picture, 
+                 phone_number, languages, timezone, rating, total_earnings, 
+                 job_success_score, created_at, updated_at
+          FROM profiles 
+          WHERE user_id = $1
+        `;
+        
+        const result = await query(profileQuery, [userId]);
+        
+        if (result.rows.length === 0) {
+          return res.status(404).json({ 
+            success: false,
+            message: "Profile not found",
+            requestId
+          });
+        }
+        
+        const profile = result.rows[0];
+        
+        // Convert snake_case to camelCase for frontend
+        const camelCaseProfile = {
+          id: profile.id,
+          userId: profile.user_id,
+          firstName: profile.first_name,
+          lastName: profile.last_name,
+          title: profile.title,
+          bio: profile.bio,
+          location: profile.location,
+          hourlyRate: profile.hourly_rate,
+          rateCurrency: profile.rate_currency,
+          availability: profile.availability,
+          profilePicture: profile.profile_picture,
+          phoneNumber: profile.phone_number,
+          languages: profile.languages,
+          timezone: profile.timezone,
+          rating: profile.rating,
+          totalEarnings: profile.total_earnings,
+          jobSuccessScore: profile.job_success_score,
+          createdAt: profile.created_at,
+          updatedAt: profile.updated_at
+        };
+        
+        console.log(`✅ Current user profile fetched successfully [${requestId}]:`, { profileId: profile.id });
+        
+        res.json({ 
+          success: true,
+          profile: camelCaseProfile
+        });
+      } catch (error: any) {
+        const requestId = (req as any).requestId;
+        console.error(`❌ Failed to fetch current user profile [${requestId}]:`, error.message);
+        res.status(500).json({ 
+          success: false,
+          message: error.message,
+          requestId
+        });
+      }
+    }
+  );
+
+  // PUT /api/profiles/me - Update current user's profile
+  app.put("/api/profiles/me", 
+    authenticateJWT,
+    async (req: Request, res: Response) => {
+      try {
+        const userId = (req as any).user?.id;
+        const requestId = (req as any).requestId;
+        
+        if (!userId) {
+          return res.status(401).json({
+            error: "Authentication required",
+            message: "User not authenticated",
+            requestId
+          });
+        }
+
+        console.log(`👤 Updating current user profile [${requestId}]:`, { 
+          userId: userId,
+          updateFields: Object.keys(req.body)
+        });
+        
+        // Accept camelCase input and convert to validation schema format
+        const profileData = {
+          firstName: req.body.firstName,
+          lastName: req.body.lastName,
+          title: req.body.title,
+          bio: req.body.bio,
+          location: req.body.location,
+          hourlyRate: req.body.hourlyRate,
+          rateCurrency: req.body.rateCurrency,
+          availability: req.body.availability,
+          phoneNumber: req.body.phoneNumber,
+          languages: req.body.languages,
+          timezone: req.body.timezone,
+          userId: userId // Add userId from authenticated session
+        };
+        
+        // Validate the data
+        const validated = insertProfileSchema.parse(profileData);
+        
+        // Check if profile already exists for this user
+        const existingProfileQuery = `
+          SELECT id FROM profiles WHERE user_id = $1
+        `;
+        const existingResult = await query(existingProfileQuery, [userId]);
+        
+        let profile;
+        
+        if (existingResult.rows.length > 0) {
+          // Update existing profile
+          const profileId = existingResult.rows[0].id;
+          console.log(`📝 Updating existing profile [${requestId}]:`, { profileId });
+          
+          const updateQuery = `
+            UPDATE profiles 
+            SET first_name = $2, last_name = $3, title = $4, bio = $5, 
+                location = $6, hourly_rate = $7, rate_currency = $8, 
+                availability = $9, phone_number = $10, languages = $11, 
+                timezone = $12, updated_at = NOW()
+            WHERE id = $1
+            RETURNING *
+          `;
+          
+          const updateParams = [
+            profileId,
+            validated.firstName,
+            validated.lastName, 
+            validated.title,
+            validated.bio,
+            validated.location || 'Global',
+            validated.hourlyRate,
+            validated.rateCurrency || 'USD',
+            validated.availability || 'available',
+            validated.phoneNumber,
+            validated.languages || ['English'],
+            validated.timezone || 'Asia/Manila'
+          ];
+          
+          const updateResult = await query(updateQuery, updateParams);
+          profile = updateResult.rows[0];
+        } else {
+          // Create new profile
+          console.log(`➕ Creating new profile [${requestId}]`);
+          
+          const insertQuery = `
+            INSERT INTO profiles (user_id, first_name, last_name, title, bio, 
+                                location, hourly_rate, rate_currency, availability, 
+                                phone_number, languages, timezone, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
+            RETURNING *
+          `;
+          
+          const insertParams = [
+            userId,
+            validated.firstName,
+            validated.lastName,
+            validated.title,
+            validated.bio,
+            validated.location || 'Global',
+            validated.hourlyRate,
+            validated.rateCurrency || 'USD', 
+            validated.availability || 'available',
+            validated.phoneNumber,
+            validated.languages || ['English'],
+            validated.timezone || 'Asia/Manila'
+          ];
+          
+          const insertResult = await query(insertQuery, insertParams);
+          profile = insertResult.rows[0];
+        }
+        
+        // Convert snake_case to camelCase for frontend response
+        const camelCaseProfile = {
+          id: profile.id,
+          userId: profile.user_id,
+          firstName: profile.first_name,
+          lastName: profile.last_name,
+          title: profile.title,
+          bio: profile.bio,
+          location: profile.location,
+          hourlyRate: profile.hourly_rate,
+          rateCurrency: profile.rate_currency,
+          availability: profile.availability,
+          profilePicture: profile.profile_picture,
+          phoneNumber: profile.phone_number,
+          languages: profile.languages,
+          timezone: profile.timezone,
+          rating: profile.rating,
+          totalEarnings: profile.total_earnings,
+          jobSuccessScore: profile.job_success_score,
+          createdAt: profile.created_at,
+          updatedAt: profile.updated_at
+        };
+        
+        console.log(`✅ Current user profile updated successfully [${requestId}]:`, { profileId: profile.id });
+        res.json({ 
+          success: true,
+          profile: camelCaseProfile
+        });
+      } catch (error: any) {
+        const requestId = (req as any).requestId;
+        console.error(`❌ Failed to update current user profile [${requestId}]:`, error.message);
+        res.status(500).json({ 
+          success: false,
+          message: error.message,
+          requestId
+        });
+      }
+    }
+  );
+
   // Advanced Profile Search - Critical for talent discovery
   app.get("/api/profiles/search", async (req, res) => {
     try {
