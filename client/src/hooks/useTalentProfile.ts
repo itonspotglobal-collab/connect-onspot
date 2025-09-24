@@ -60,67 +60,22 @@ export function useTalentProfile() {
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [uploadedDocuments, setUploadedDocuments] = useState<Document[]>([]);
 
-  // Fetch user profile using authAPI with enhanced error handling
+  // Fetch user profile using authAPI
   const { data: profileResponse, isLoading: profileLoading, error: profileError } = useQuery<{success: boolean, profile?: Profile} | null>({
     queryKey: ['/api/profiles/me'],
     queryFn: async () => {
       if (!user?.id) return null;
-      
-      // Debug authentication before making request
-      const token = localStorage.getItem("onspot_jwt_token");
-      const storedUser = localStorage.getItem("onspot_user");
-      
-      console.log('🔍 Profile API Debug:', {
-        userId: user.id,
-        hasToken: !!token,
-        hasStoredUser: !!storedUser,
-        environment: window.location.origin,
-        apiEndpoint: '/api/profiles/me'
-        // Token details intentionally excluded to prevent exposure
-      });
-      
       try {
         const response = await api.get('/api/profiles/me');
-        console.log('✅ Profile API Success:', response.data);
         return response.data;
       } catch (error: any) {
-        console.error('🚨 Profile API Error:', {
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          message: error.message,
-          url: error.config?.url,
-          method: error.config?.method,
-          hasToken: !!token,
-          environment: window.location.origin
-          // Response data and headers excluded to prevent token/sensitive data exposure
-        });
-        
         if (error.response?.status === 404) {
-          console.log('📝 Profile not found - will create on first save');
           return { success: false, profile: undefined }; // Profile doesn't exist yet
         }
-        
-        if (error.response?.status === 401) {
-          console.warn('🔒 Authentication failed for profile request');
-          // Clear invalid authentication
-          localStorage.removeItem("onspot_jwt_token");
-          localStorage.removeItem("onspot_user");
-          window.dispatchEvent(new CustomEvent("jwt-expired"));
-        }
-        
         throw error;
       }
     },
-    enabled: !!user?.id,
-    retry: (failureCount, error: any) => {
-      // Don't retry 401/403 errors (authentication issues)
-      if (error?.response?.status === 401 || error?.response?.status === 403) {
-        return false;
-      }
-      // Retry other errors up to 2 times
-      return failureCount < 2;
-    },
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000)
+    enabled: !!user?.id
   });
 
   // Extract profile from response

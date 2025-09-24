@@ -297,40 +297,6 @@ const authLimiter = rateLimit({
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
-  // ==================== PRODUCTION-SAFE DIAGNOSTICS ====================
-  // Enhanced request logging middleware for all API routes
-  app.use('/api', (req: Request, res: Response, next: NextFunction) => {
-    const startTime = Date.now();
-    const requestId = (req as any).requestId;
-    
-    // Log incoming request with full route path
-    console.log(`🌐 API Request [${requestId}]:`, {
-      method: req.method,
-      fullPath: req.originalUrl,
-      ip: req.ip,
-      userAgent: req.get('User-Agent'),
-      hasAuth: !!req.headers.authorization,
-      contentType: req.get('Content-Type'),
-      timestamp: new Date().toISOString()
-    });
-    
-    // Override res.json to log response
-    const originalJson = res.json;
-    res.json = function(data) {
-      const duration = Date.now() - startTime;
-      console.log(`📤 API Response [${requestId}]:`, {
-        statusCode: res.statusCode,
-        duration: `${duration}ms`,
-        fullPath: req.originalUrl,
-        method: req.method,
-        success: res.statusCode < 400
-      });
-      return originalJson.call(this, data);
-    };
-    
-    next();
-  });
-  
   // Protected Dashboard Routes with Role-Based Access Control
   // These routes serve the dashboard content with server-side validation
   app.get('/client-dashboard', authenticateJWT, requireClient, (req: Request, res: Response) => {
@@ -900,20 +866,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
-  // Health check route with enhanced diagnostics
+  // Health check route returning exact format required by specification
   app.get('/api/health', (req, res) => {
-    const requestId = (req as any).requestId;
-    console.log(`🏥 Health check request [${requestId}] from ${req.ip}`);
-    
-    res.json({
-      ok: true,
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      environment: process.env.NODE_ENV || 'unknown',
-      server: 'OnSpot API Server',
-      requestId,
-      version: '1.0.0'
-    });
+    res.json({ ok: true });
   });
 
   // Enhanced development login endpoint with validation and monitoring
