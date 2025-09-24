@@ -69,6 +69,7 @@ export interface IStorage {
   searchSkills(query: string): Promise<Skill[]>;
 
   // User Skills
+  getUserSkill(id: number): Promise<UserSkill | undefined>;
   getUserSkills(userId: string): Promise<UserSkill[]>;
   getUserSkillsWithNames(userId: string): Promise<(UserSkill & { skill: { name: string; category: string } | null })[]>;
   createUserSkill(userSkill: InsertUserSkill): Promise<UserSkill>;
@@ -620,6 +621,10 @@ export class MemStorage implements IStorage {
   }
 
   // User Skill Methods
+  async getUserSkill(id: number): Promise<UserSkill | undefined> {
+    return Array.from(this.userSkills.values()).find(us => us.id === id);
+  }
+
   async getUserSkills(userId: string): Promise<UserSkill[]> {
     return Array.from(this.userSkills.values()).filter(us => us.userId === userId);
   }
