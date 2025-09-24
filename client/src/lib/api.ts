@@ -115,6 +115,27 @@ export const authAPI = {
     localStorage.removeItem("onspot_jwt_token");
     localStorage.removeItem("onspot_user");
   },
+
+  // Profile operations with proper JWT authentication
+  get: async (url: string) => {
+    try {
+      const response = await api.get(url);
+      return response.data;
+    } catch (error) {
+      console.error("AuthAPI GET error:", error);
+      throw error;
+    }
+  },
+
+  put: async (url: string, data: any) => {
+    try {
+      const response = await api.put(url, data);
+      return response.data;
+    } catch (error) {
+      console.error("AuthAPI PUT error:", error);
+      throw error;
+    }
+  },
 };
 
 // Export the configured axios instance for other API calls
