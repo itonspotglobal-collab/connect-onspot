@@ -136,6 +136,16 @@ export const authAPI = {
       throw error;
     }
   },
+
+  post: async (url: string, data: any) => {
+    try {
+      const response = await api.post(url, data);
+      return response.data;
+    } catch (error) {
+      console.error("AuthAPI POST error:", error);
+      throw error;
+    }
+  },
 };
 
 // Export the configured axios instance for other API calls
