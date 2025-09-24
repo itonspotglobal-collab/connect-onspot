@@ -1715,8 +1715,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/users/:userId/skills", async (req, res) => {
+  app.post("/api/users/:userId/skills", 
+    authenticateJWT,
+    async (req, res) => {
     try {
+      const authenticatedUserId = (req as any).user?.id;
+      const requestId = (req as any).requestId;
+      
+      // Ensure users can only add skills to their own profile
+      if (authenticatedUserId !== req.params.userId) {
+        return res.status(403).json({
+          error: "Forbidden",
+          message: "You can only modify your own skills",
+          requestId
+        });
+      }
+      
       const validated = insertUserSkillSchema.parse({
         ...req.body,
         userId: req.params.userId
@@ -1731,8 +1745,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/user-skills/:id", async (req, res) => {
+  app.patch("/api/user-skills/:id", 
+    authenticateJWT,
+    async (req, res) => {
     try {
+      const authenticatedUserId = (req as any).user?.id;
+      const requestId = (req as any).requestId;
+      
+      // First, get the existing user skill to verify ownership
+      const existingUserSkill = await storage.getUserSkill(Number(req.params.id));
+      if (!existingUserSkill) {
+        return res.status(404).json({ 
+          error: "User skill not found",
+          requestId 
+        });
+      }
+      
+      // Ensure users can only modify their own skills
+      if (authenticatedUserId !== existingUserSkill.userId) {
+        return res.status(403).json({
+          error: "Forbidden",
+          message: "You can only modify your own skills",
+          requestId
+        });
+      }
+      
       const updates = insertUserSkillSchema.partial().parse(req.body);
       const userSkill = await storage.updateUserSkill(Number(req.params.id), updates);
       if (!userSkill) {
@@ -1747,8 +1784,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/user-skills/:id", async (req, res) => {
+  app.delete("/api/user-skills/:id", 
+    authenticateJWT,
+    async (req, res) => {
     try {
+      const authenticatedUserId = (req as any).user?.id;
+      const requestId = (req as any).requestId;
+      
+      // First, get the existing user skill to verify ownership
+      const existingUserSkill = await storage.getUserSkill(Number(req.params.id));
+      if (!existingUserSkill) {
+        return res.status(404).json({ 
+          error: "User skill not found",
+          requestId 
+        });
+      }
+      
+      // Ensure users can only delete their own skills
+      if (authenticatedUserId !== existingUserSkill.userId) {
+        return res.status(403).json({
+          error: "Forbidden",
+          message: "You can only delete your own skills",
+          requestId
+        });
+      }
+      
       const deleted = await storage.deleteUserSkill(Number(req.params.id));
       if (!deleted) {
         return res.status(404).json({ error: "User skill not found" });
