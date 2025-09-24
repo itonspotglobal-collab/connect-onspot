@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import api from '@/lib/api';
+import api, { authAPI } from '@/lib/api';
 import { calculateProfileCompletion, ProfileCompletionData } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
@@ -62,12 +62,13 @@ export function useTalentProfile() {
 
   // Fetch user profile using authAPI
   const { data: profileResponse, isLoading: profileLoading, error: profileError } = useQuery<{success: boolean, profile?: Profile} | null>({
-    queryKey: ['/api/profiles/user', user?.id],
+    queryKey: ['/api/profiles/me'],
     queryFn: async () => {
       if (!user?.id) return null;
       try {
-        const response = await api.get(`/api/profiles/user/${user.id}`);
-        return response.data;
+        // authAPI.get returns response.data directly
+        const data = await authAPI.get('/api/profiles/me');
+        return data;
       } catch (error: any) {
         if (error.response?.status === 404) {
           return { success: false, profile: undefined }; // Profile doesn't exist yet
@@ -86,9 +87,9 @@ export function useTalentProfile() {
     queryKey: ['/api/users', user?.id, 'skills'],
     queryFn: async () => {
       if (!user?.id) return [];
-      const response = await fetch(`/api/users/${user.id}/skills?includeNames=true`);
-      if (!response.ok) throw new Error('Failed to fetch user skills');
-      return response.json();
+      // authAPI.get returns response.data directly
+      const data = await authAPI.get(`/api/users/${user.id}/skills?includeNames=true`);
+      return data;
     },
     enabled: !!user?.id
   });
@@ -96,6 +97,17 @@ export function useTalentProfile() {
   // Fetch user documents
   const { data: documentsData, isLoading: documentsLoading } = useQuery({
     queryKey: ['/api/documents'],
+    queryFn: async () => {
+      if (!user || user.role !== 'talent') return [];
+      try {
+        // authAPI.get returns response.data directly
+        const data = await authAPI.get('/api/documents');
+        return data;
+      } catch (error: any) {
+        if (error.response?.status === 404) return []; // No documents yet
+        throw error;
+      }
+    },
     enabled: !!user && user.role === 'talent'
   });
 
@@ -104,17 +116,26 @@ export function useTalentProfile() {
     queryKey: ['/api/portfolio', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      const response = await fetch(`/api/portfolio/user/${user.id}`);
-      if (response.status === 404) return []; // No portfolio items yet
-      if (!response.ok) throw new Error('Failed to fetch portfolio items');
-      return response.json();
+      try {
+        // authAPI.get returns response.data directly
+        const data = await authAPI.get(`/api/portfolio/user/${user.id}`);
+        return data;
+      } catch (error: any) {
+        if (error.response?.status === 404) return []; // No portfolio items yet
+        throw error;
+      }
     },
     enabled: !!user?.id
   });
 
   // Available skills for selection
   const { data: availableSkills = [] } = useQuery({
-    queryKey: ['/api/skills']
+    queryKey: ['/api/skills'],
+    queryFn: async () => {
+      // Skills endpoint is public, so we can use regular api
+      const data = await authAPI.get('/api/skills');
+      return data;
+    }
   });
 
   // Calculate profile completion
@@ -155,13 +176,13 @@ export function useTalentProfile() {
   // Profile mutation
   const profileMutation = useMutation({
     mutationFn: async (data: ProfileFormData) => {
-      const profileData = { ...data, userId: user?.id };
-      // Always use POST for profile creation/update as backend handles upsert logic
-      const response = await api.post('/api/profiles', profileData);
-      return response.data;
+      // Use the new /api/profiles/me endpoint with PUT for updates
+      // authAPI.put returns response.data directly
+      const data_response = await authAPI.put('/api/profiles/me', data);
+      return data_response;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/profiles/user', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['/api/profiles/me'] });
       
       // Show appropriate success message based on whether it's creating or updating
       if (!profile) {
@@ -190,7 +211,7 @@ export function useTalentProfile() {
         const skill = (availableSkills as any[]).find(s => s.name === skillName);
         if (!skill) throw new Error(`Skill not found: ${skillName}`);
         
-        return apiRequest('POST', `/api/users/${user.id}/skills`, {
+        return authAPI.post(`/api/users/${user.id}/skills`, {
           skillId: skill.id,
           level: 'intermediate', // Default level
           yearsExperience: 1 // Default experience
@@ -213,7 +234,7 @@ export function useTalentProfile() {
   // Document upload mutation
   const documentMutation = useMutation({
     mutationFn: async (document: Omit<Document, 'id' | 'createdAt'>) => {
-      return apiRequest('POST', '/api/documents', document);
+      return authAPI.post('/api/documents', document);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
