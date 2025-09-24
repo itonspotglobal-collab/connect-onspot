@@ -297,6 +297,40 @@ const authLimiter = rateLimit({
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
+  // ==================== PRODUCTION-SAFE DIAGNOSTICS ====================
+  // Enhanced request logging middleware for all API routes
+  app.use('/api', (req: Request, res: Response, next: NextFunction) => {
+    const startTime = Date.now();
+    const requestId = (req as any).requestId;
+    
+    // Log incoming request with full route path
+    console.log(`🌐 API Request [${requestId}]:`, {
+      method: req.method,
+      fullPath: req.originalUrl,
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      hasAuth: !!req.headers.authorization,
+      contentType: req.get('Content-Type'),
+      timestamp: new Date().toISOString()
+    });
+    
+    // Override res.json to log response
+    const originalJson = res.json;
+    res.json = function(data) {
+      const duration = Date.now() - startTime;
+      console.log(`📤 API Response [${requestId}]:`, {
+        statusCode: res.statusCode,
+        duration: `${duration}ms`,
+        fullPath: req.originalUrl,
+        method: req.method,
+        success: res.statusCode < 400
+      });
+      return originalJson.call(this, data);
+    };
+    
+    next();
+  });
+  
   // Protected Dashboard Routes with Role-Based Access Control
   // These routes serve the dashboard content with server-side validation
   app.get('/client-dashboard', authenticateJWT, requireClient, (req: Request, res: Response) => {
@@ -866,9 +900,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
-  // Health check route returning exact format required by specification
+  // Health check route with enhanced diagnostics
   app.get('/api/health', (req, res) => {
-    res.json({ ok: true });
+    const requestId = (req as any).requestId;
+    console.log(`🏥 Health check request [${requestId}] from ${req.ip}`);
+    
+    res.json({
+      ok: true,
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'unknown',
+      server: 'OnSpot API Server',
+      requestId,
+      version: '1.0.0'
+    });
   });
 
   // Enhanced development login endpoint with validation and monitoring
@@ -1324,23 +1369,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  // GET /api/profiles/me - Get current user's profile
+  // ==================== PROFILES /ME ENDPOINTS ====================
+  // GET /api/profiles/me - Returns current user's profile based on JWT
   app.get("/api/profiles/me", 
     authenticateJWT,
+    requireAnyRole,
     async (req: Request, res: Response) => {
       try {
-        const requestId = (req as any).requestId;
         const userId = (req as any).user?.id;
+        const requestId = (req as any).requestId;
         
-        if (!userId) {
-          return res.status(401).json({
-            error: "Authentication required",
-            message: "User not authenticated",
-            requestId
-          });
-        }
-
-        console.log(`👤 Fetching current user profile [${requestId}]:`, { userId });
+        console.log(`👤 Fetching current user's profile [${requestId}]:`, { userId });
         
         // Query database directly for profile
         const profileQuery = `
@@ -1363,39 +1402,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         const profile = result.rows[0];
-        
-        // Convert snake_case to camelCase for frontend
-        const camelCaseProfile = {
-          id: profile.id,
-          userId: profile.user_id,
-          firstName: profile.first_name,
-          lastName: profile.last_name,
-          title: profile.title,
-          bio: profile.bio,
-          location: profile.location,
-          hourlyRate: profile.hourly_rate,
-          rateCurrency: profile.rate_currency,
-          availability: profile.availability,
-          profilePicture: profile.profile_picture,
-          phoneNumber: profile.phone_number,
-          languages: profile.languages,
-          timezone: profile.timezone,
-          rating: profile.rating,
-          totalEarnings: profile.total_earnings,
-          jobSuccessScore: profile.job_success_score,
-          createdAt: profile.created_at,
-          updatedAt: profile.updated_at
-        };
-        
-        console.log(`✅ Current user profile fetched successfully [${requestId}]:`, { profileId: profile.id });
+        console.log(`✅ Profile fetched successfully [${requestId}]:`, { profileId: profile.id });
         
         res.json({ 
           success: true,
-          profile: camelCaseProfile
+          profile 
         });
       } catch (error: any) {
         const requestId = (req as any).requestId;
-        console.error(`❌ Failed to fetch current user profile [${requestId}]:`, error.message);
+        console.error(`❌ Failed to fetch current user's profile [${requestId}]:`, error.message);
         res.status(500).json({ 
           success: false,
           message: error.message,
@@ -1405,148 +1420,191 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  // PUT /api/profiles/me - Update current user's profile
+  // PUT /api/profiles/me - Creates or updates current user's profile based on JWT
   app.put("/api/profiles/me", 
     authenticateJWT,
+    requireAnyRole,
     async (req: Request, res: Response) => {
       try {
         const userId = (req as any).user?.id;
         const requestId = (req as any).requestId;
         
-        if (!userId) {
-          return res.status(401).json({
-            error: "Authentication required",
-            message: "User not authenticated",
-            requestId
-          });
-        }
-
-        console.log(`👤 Updating current user profile [${requestId}]:`, { 
-          userId: userId,
+        console.log(`📝 Creating/updating current user's profile [${requestId}]:`, { 
+          userId,
           updateFields: Object.keys(req.body)
         });
         
-        // Accept camelCase input and convert to validation schema format
-        const profileData = {
-          firstName: req.body.firstName,
-          lastName: req.body.lastName,
-          title: req.body.title,
-          bio: req.body.bio,
-          location: req.body.location,
-          hourlyRate: req.body.hourlyRate,
-          rateCurrency: req.body.rateCurrency,
-          availability: req.body.availability,
-          phoneNumber: req.body.phoneNumber,
-          languages: req.body.languages,
-          timezone: req.body.timezone,
-          userId: userId // Add userId from authenticated session
-        };
+        // Enhanced validation with proper type coercion and 400 error handling
+        const validationSchema = insertProfileSchema.partial().extend({
+          hourlyRate: z.union([z.string(), z.number()]).transform(val => {
+            if (typeof val === 'string') {
+              const parsed = parseFloat(val);
+              return isNaN(parsed) ? undefined : parsed;
+            }
+            return val;
+          }).optional(),
+          languages: z.array(z.string()).optional()
+        });
         
-        // Validate the data
-        const validated = insertProfileSchema.parse(profileData);
+        let validated;
+        try {
+          validated = validationSchema.parse(req.body);
+        } catch (error) {
+          if (error instanceof z.ZodError) {
+            const validationErrors = error.errors.map(err => ({
+              field: err.path.join('.'),
+              message: err.message,
+              code: err.code
+            }));
+            
+            console.warn(`🚨 Validation Error [${requestId}]:`, {
+              endpoint: req.path,
+              method: req.method,
+              errors: validationErrors
+            });
+
+            return res.status(400).json({
+              error: "Validation failed",
+              message: "Invalid profile data provided",
+              details: validationErrors,
+              requestId
+            });
+          }
+          throw error;
+        }
         
-        // Check if profile already exists for this user
-        const existingProfileQuery = `
-          SELECT id FROM profiles WHERE user_id = $1
-        `;
+        // Check if profile exists
+        const existingProfileQuery = 'SELECT id FROM profiles WHERE user_id = $1';
         const existingResult = await query(existingProfileQuery, [userId]);
         
-        let profile;
-        
         if (existingResult.rows.length > 0) {
-          // Update existing profile
+          // Update existing profile - only update provided fields
           const profileId = existingResult.rows[0].id;
-          console.log(`📝 Updating existing profile [${requestId}]:`, { profileId });
+          const updateFields = [];
+          const updateValues = [];
+          let paramIndex = 1;
+          
+          if (validated.firstName !== undefined) {
+            updateFields.push(`first_name = $${paramIndex++}`);
+            updateValues.push(validated.firstName);
+          }
+          if (validated.lastName !== undefined) {
+            updateFields.push(`last_name = $${paramIndex++}`);
+            updateValues.push(validated.lastName);
+          }
+          if (validated.title !== undefined) {
+            updateFields.push(`title = $${paramIndex++}`);
+            updateValues.push(validated.title);
+          }
+          if (validated.bio !== undefined) {
+            updateFields.push(`bio = $${paramIndex++}`);
+            updateValues.push(validated.bio);
+          }
+          if (validated.location !== undefined) {
+            updateFields.push(`location = $${paramIndex++}`);
+            updateValues.push(validated.location);
+          }
+          if (validated.hourlyRate !== undefined) {
+            updateFields.push(`hourly_rate = $${paramIndex++}`);
+            updateValues.push(validated.hourlyRate);
+          }
+          if (validated.rateCurrency !== undefined) {
+            updateFields.push(`rate_currency = $${paramIndex++}`);
+            updateValues.push(validated.rateCurrency);
+          }
+          if (validated.availability !== undefined) {
+            updateFields.push(`availability = $${paramIndex++}`);
+            updateValues.push(validated.availability);
+          }
+          if (validated.phoneNumber !== undefined) {
+            updateFields.push(`phone_number = $${paramIndex++}`);
+            updateValues.push(validated.phoneNumber);
+          }
+          if (validated.languages !== undefined) {
+            updateFields.push(`languages = $${paramIndex++}`);
+            updateValues.push(validated.languages);
+          }
+          if (validated.timezone !== undefined) {
+            updateFields.push(`timezone = $${paramIndex++}`);
+            updateValues.push(validated.timezone);
+          }
+          
+          if (updateFields.length === 0) {
+            return res.status(400).json({
+              success: false,
+              message: "No valid fields provided for update",
+              requestId
+            });
+          }
+          
+          // Always update timestamp and add profile ID as last parameter
+          updateFields.push('updated_at = NOW()');
+          updateValues.push(profileId);
           
           const updateQuery = `
             UPDATE profiles 
-            SET first_name = $2, last_name = $3, title = $4, bio = $5, 
-                location = $6, hourly_rate = $7, rate_currency = $8, 
-                availability = $9, phone_number = $10, languages = $11, 
-                timezone = $12, updated_at = NOW()
-            WHERE id = $1
-            RETURNING *
+            SET ${updateFields.join(', ')}
+            WHERE id = $${paramIndex}
+            RETURNING id, user_id, first_name, last_name, title, bio, location, 
+                     hourly_rate, rate_currency, availability, profile_picture, 
+                     phone_number, languages, timezone, rating, total_earnings, 
+                     job_success_score, created_at, updated_at
           `;
           
-          const updateParams = [
-            profileId,
-            validated.firstName,
-            validated.lastName, 
-            validated.title,
-            validated.bio,
-            validated.location || 'Global',
-            validated.hourlyRate,
-            validated.rateCurrency || 'USD',
-            validated.availability || 'available',
-            validated.phoneNumber,
-            validated.languages || ['English'],
-            validated.timezone || 'Asia/Manila'
-          ];
+          const updateResult = await query(updateQuery, updateValues);
+          const profile = updateResult.rows[0];
           
-          const updateResult = await query(updateQuery, updateParams);
-          profile = updateResult.rows[0];
+          console.log(`✅ Profile updated successfully [${requestId}]:`, { profileId: profile.id });
+          
+          res.json({ 
+            success: true,
+            profile 
+          });
         } else {
-          // Create new profile
-          console.log(`➕ Creating new profile [${requestId}]`);
+          // Create new profile with defaults for missing required fields
+          const profileId = `prof_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
           
           const insertQuery = `
-            INSERT INTO profiles (user_id, first_name, last_name, title, bio, 
-                                location, hourly_rate, rate_currency, availability, 
-                                phone_number, languages, timezone, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
-            RETURNING *
+            INSERT INTO profiles (
+              id, user_id, first_name, last_name, title, bio, location, 
+              hourly_rate, rate_currency, availability, phone_number, 
+              languages, timezone, created_at, updated_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
+            RETURNING id, user_id, first_name, last_name, title, bio, location, 
+                     hourly_rate, rate_currency, availability, profile_picture, 
+                     phone_number, languages, timezone, rating, total_earnings, 
+                     job_success_score, created_at, updated_at
           `;
           
           const insertParams = [
+            profileId,
             userId,
-            validated.firstName,
-            validated.lastName,
-            validated.title,
-            validated.bio,
+            validated.firstName || '',
+            validated.lastName || '',
+            validated.title || '',
+            validated.bio || '',
             validated.location || 'Global',
-            validated.hourlyRate,
-            validated.rateCurrency || 'USD', 
+            validated.hourlyRate || null,
+            validated.rateCurrency || 'USD',
             validated.availability || 'available',
-            validated.phoneNumber,
+            validated.phoneNumber || null,
             validated.languages || ['English'],
             validated.timezone || 'Asia/Manila'
           ];
           
           const insertResult = await query(insertQuery, insertParams);
-          profile = insertResult.rows[0];
+          const profile = insertResult.rows[0];
+          
+          console.log(`✅ Profile created successfully [${requestId}]:`, { profileId: profile.id });
+          
+          res.status(201).json({ 
+            success: true,
+            profile 
+          });
         }
-        
-        // Convert snake_case to camelCase for frontend response
-        const camelCaseProfile = {
-          id: profile.id,
-          userId: profile.user_id,
-          firstName: profile.first_name,
-          lastName: profile.last_name,
-          title: profile.title,
-          bio: profile.bio,
-          location: profile.location,
-          hourlyRate: profile.hourly_rate,
-          rateCurrency: profile.rate_currency,
-          availability: profile.availability,
-          profilePicture: profile.profile_picture,
-          phoneNumber: profile.phone_number,
-          languages: profile.languages,
-          timezone: profile.timezone,
-          rating: profile.rating,
-          totalEarnings: profile.total_earnings,
-          jobSuccessScore: profile.job_success_score,
-          createdAt: profile.created_at,
-          updatedAt: profile.updated_at
-        };
-        
-        console.log(`✅ Current user profile updated successfully [${requestId}]:`, { profileId: profile.id });
-        res.json({ 
-          success: true,
-          profile: camelCaseProfile
-        });
       } catch (error: any) {
         const requestId = (req as any).requestId;
-        console.error(`❌ Failed to update current user profile [${requestId}]:`, error.message);
+        console.error(`❌ Failed to save current user's profile [${requestId}]:`, error.message);
         res.status(500).json({ 
           success: false,
           message: error.message,

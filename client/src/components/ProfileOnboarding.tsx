@@ -65,6 +65,7 @@ export default function ProfileOnboarding({
     profileCompletion,
     isLoading,
     isUpdating,
+    error: profileError,
     toggleSkill,
     addDocument,
     removeDocument,
@@ -128,7 +129,7 @@ export default function ProfileOnboarding({
     }
   };
 
-  // Profile form submission with enhanced status feedback
+  // Profile form submission with enhanced status feedback and production debugging
   const onSubmit = async (data: ProfileFormData) => {
     // Check authentication before saving
     if (!authContext?.isAuthenticated || !user?.id) {
@@ -139,6 +140,19 @@ export default function ProfileOnboarding({
       });
       return;
     }
+
+    // Debug authentication status (without exposing sensitive data)
+    const token = localStorage.getItem("onspot_jwt_token");
+    const storedUser = localStorage.getItem("onspot_user");
+    console.log('🔍 ProfileOnboarding Debug:', {
+      isAuthenticated: authContext?.isAuthenticated,
+      hasUser: !!user,
+      userId: user?.id,
+      hasToken: !!token,
+      hasStoredUser: !!storedUser,
+      environment: window.location.origin
+      // Token and user data intentionally not logged to prevent exposure
+    });
 
     // Show saving status immediately
     toast({
@@ -165,13 +179,50 @@ export default function ProfileOnboarding({
         setCurrentStep(2);
       }
     } catch (error: any) {
-      // Enhanced error feedback with more detail
-      const errorMessage = error?.message || "Unknown error occurred";
+      console.error('🚨 ProfileOnboarding Save Error:', {
+        error: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        url: error.config?.url,
+        method: error.config?.method,
+        environment: window.location.origin,
+        diagnosis: error.response?.status === 404 ? 'User has valid auth but no profile record in database' : 'Unknown error'
+        // Headers intentionally excluded to prevent token exposure
+      });
+      
+      // Enhanced error feedback with specific handling for different error types
+      let errorTitle = "Failed to Save Profile";
+      let errorDescription = "Please try again or contact support if the issue persists.";
+      
+      if (error.response?.status === 404) {
+        errorTitle = "Profile Setup Required";
+        errorDescription = "No profile found for your account. Let's create your profile to get started on OnSpot!";
+      } else if (error.response?.status === 401) {
+        errorTitle = "Authentication Expired";
+        errorDescription = "Your session has expired. Please log in again to save your profile.";
+        // Clear authentication and redirect to login
+        localStorage.removeItem("onspot_jwt_token");
+        localStorage.removeItem("onspot_user");
+        window.dispatchEvent(new CustomEvent("jwt-expired"));
+      } else if (error.response?.status === 403) {
+        errorTitle = "Access Denied";
+        errorDescription = "You don't have permission to save this profile. Please check your account status.";
+      } else if (error.response?.status >= 500) {
+        errorTitle = "Server Error";
+        errorDescription = "Our servers are experiencing issues. Please try again in a few minutes.";
+      } else if (error.message?.includes('Network Error') || !error.response) {
+        errorTitle = "Connection Error";
+        errorDescription = "Unable to connect to the server. Please check your internet connection and try again.";
+      } else {
+        const errorMessage = error?.response?.data?.message || error?.message || "Unknown error occurred";
+        errorDescription = `Error: ${errorMessage}`;
+      }
+      
       toast({
-        title: "Failed to Save Profile",
-        description: `Error: ${errorMessage}. Please check your connection and try again.`,
+        title: errorTitle,
+        description: errorDescription,
         variant: "destructive",
-        duration: 6000,
+        duration: 8000,
       });
     }
   };
@@ -190,6 +241,36 @@ export default function ProfileOnboarding({
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading your profile...</p>
+          {/* Debug info for production issues */}
+          {import.meta.env.MODE !== 'production' && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Debug: {user?.id ? `User ID: ${user.id}` : 'No user ID'}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+  
+  // Show error state for profile loading errors
+  if (profileError) {
+    return (
+      <div className="flex items-center justify-center min-h-64">
+        <div className="text-center max-w-md">
+          <div className="w-12 h-12 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-destructive text-xl">⚠️</span>
+          </div>
+          <h3 className="text-lg font-semibold mb-2">Profile Loading Error</h3>
+          <p className="text-muted-foreground mb-4">
+            We're having trouble loading your profile. This might be a temporary issue.
+          </p>
+          <Button 
+            onClick={() => window.location.reload()} 
+            variant="outline"
+            data-testid="button-reload-profile"
+          >
+            Refresh Page
+          </Button>
         </div>
       </div>
     );
