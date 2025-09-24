@@ -55,34 +55,22 @@ export interface TalentProfileData {
 }
 
 export function useTalentProfile() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [uploadedDocuments, setUploadedDocuments] = useState<Document[]>([]);
 
   // Fetch user profile using authAPI
   const { data: profileResponse, isLoading: profileLoading, error: profileError } = useQuery<{success: boolean, profile?: Profile} | null>({
-    queryKey: ['/api/profiles/me'],
+    queryKey: ['/api/profiles/user', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
       try {
-        const response = await api.get('/api/profiles/me');
+        const response = await api.get(`/api/profiles/user/${user.id}`);
         return response.data;
       } catch (error: any) {
         if (error.response?.status === 404) {
           return { success: false, profile: undefined }; // Profile doesn't exist yet
-        }
-        // Handle authentication errors - corrupted/invalid token
-        if (error.response?.status === 401 || error.response?.status === 403) {
-          console.log('🔒 Authentication failed - clearing corrupted token');
-          toast({
-            title: "Session Invalid",
-            description: "Your session has expired or is invalid. Please log in again.",
-            variant: "destructive",
-          });
-          // Trigger logout to clear corrupted localStorage
-          setTimeout(() => logout(), 1000);
-          return null;
         }
         throw error;
       }
@@ -167,12 +155,13 @@ export function useTalentProfile() {
   // Profile mutation
   const profileMutation = useMutation({
     mutationFn: async (data: ProfileFormData) => {
-      // Use PUT /api/profiles/me - no need to send userId as it's from JWT token
-      const response = await api.put('/api/profiles/me', data);
+      const profileData = { ...data, userId: user?.id };
+      // Always use POST for profile creation/update as backend handles upsert logic
+      const response = await api.post('/api/profiles', profileData);
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/profiles/me'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/profiles/user', user?.id] });
       
       // Show appropriate success message based on whether it's creating or updating
       if (!profile) {
