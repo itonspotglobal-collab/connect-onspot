@@ -55,7 +55,7 @@ export interface TalentProfileData {
 }
 
 export function useTalentProfile() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { toast } = useToast();
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [uploadedDocuments, setUploadedDocuments] = useState<Document[]>([]);
@@ -71,6 +71,18 @@ export function useTalentProfile() {
       } catch (error: any) {
         if (error.response?.status === 404) {
           return { success: false, profile: undefined }; // Profile doesn't exist yet
+        }
+        // Handle authentication errors - corrupted/invalid token
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          console.log('🔒 Authentication failed - clearing corrupted token');
+          toast({
+            title: "Session Invalid",
+            description: "Your session has expired or is invalid. Please log in again.",
+            variant: "destructive",
+          });
+          // Trigger logout to clear corrupted localStorage
+          setTimeout(() => logout(), 1000);
+          return null;
         }
         throw error;
       }
