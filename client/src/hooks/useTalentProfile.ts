@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import api, { authAPI } from '@/lib/api';
+import api from '@/lib/api';
 import { calculateProfileCompletion, ProfileCompletionData } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
@@ -60,23 +60,67 @@ export function useTalentProfile() {
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [uploadedDocuments, setUploadedDocuments] = useState<Document[]>([]);
 
-  // Fetch user profile using authAPI
+  // Fetch user profile using authAPI with enhanced error handling
   const { data: profileResponse, isLoading: profileLoading, error: profileError } = useQuery<{success: boolean, profile?: Profile} | null>({
     queryKey: ['/api/profiles/me'],
     queryFn: async () => {
       if (!user?.id) return null;
+      
+      // Debug authentication before making request
+      const token = localStorage.getItem("onspot_jwt_token");
+      const storedUser = localStorage.getItem("onspot_user");
+      
+      console.log('🔍 Profile API Debug:', {
+        userId: user.id,
+        hasToken: !!token,
+        hasStoredUser: !!storedUser,
+        environment: window.location.origin,
+        apiEndpoint: '/api/profiles/me'
+        // Token details intentionally excluded to prevent exposure
+      });
+      
       try {
-        // authAPI.get returns response.data directly
-        const data = await authAPI.get('/api/profiles/me');
-        return data;
+        const response = await api.get('/api/profiles/me');
+        console.log('✅ Profile API Success:', response.data);
+        return response.data;
       } catch (error: any) {
+        console.error('🚨 Profile API Error:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          message: error.message,
+          url: error.config?.url,
+          method: error.config?.method,
+          hasToken: !!token,
+          environment: window.location.origin
+          // Response data and headers excluded to prevent token/sensitive data exposure
+        });
+        
         if (error.response?.status === 404) {
+          console.log('📝 Profile not found - will create on first save');
           return { success: false, profile: undefined }; // Profile doesn't exist yet
         }
+        
+        if (error.response?.status === 401) {
+          console.warn('🔒 Authentication failed for profile request');
+          // Clear invalid authentication
+          localStorage.removeItem("onspot_jwt_token");
+          localStorage.removeItem("onspot_user");
+          window.dispatchEvent(new CustomEvent("jwt-expired"));
+        }
+        
         throw error;
       }
     },
-    enabled: !!user?.id
+    enabled: !!user?.id,
+    retry: (failureCount, error: any) => {
+      // Don't retry 401/403 errors (authentication issues)
+      if (error?.response?.status === 401 || error?.response?.status === 403) {
+        return false;
+      }
+      // Retry other errors up to 2 times
+      return failureCount < 2;
+    },
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000)
   });
 
   // Extract profile from response
@@ -87,9 +131,9 @@ export function useTalentProfile() {
     queryKey: ['/api/users', user?.id, 'skills'],
     queryFn: async () => {
       if (!user?.id) return [];
-      // authAPI.get returns response.data directly
-      const data = await authAPI.get(`/api/users/${user.id}/skills?includeNames=true`);
-      return data;
+      const response = await fetch(`/api/users/${user.id}/skills?includeNames=true`);
+      if (!response.ok) throw new Error('Failed to fetch user skills');
+      return response.json();
     },
     enabled: !!user?.id
   });
@@ -97,17 +141,6 @@ export function useTalentProfile() {
   // Fetch user documents
   const { data: documentsData, isLoading: documentsLoading } = useQuery({
     queryKey: ['/api/documents'],
-    queryFn: async () => {
-      if (!user || user.role !== 'talent') return [];
-      try {
-        // authAPI.get returns response.data directly
-        const data = await authAPI.get('/api/documents');
-        return data;
-      } catch (error: any) {
-        if (error.response?.status === 404) return []; // No documents yet
-        throw error;
-      }
-    },
     enabled: !!user && user.role === 'talent'
   });
 
@@ -116,26 +149,17 @@ export function useTalentProfile() {
     queryKey: ['/api/portfolio', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      try {
-        // authAPI.get returns response.data directly
-        const data = await authAPI.get(`/api/portfolio/user/${user.id}`);
-        return data;
-      } catch (error: any) {
-        if (error.response?.status === 404) return []; // No portfolio items yet
-        throw error;
-      }
+      const response = await fetch(`/api/portfolio/user/${user.id}`);
+      if (response.status === 404) return []; // No portfolio items yet
+      if (!response.ok) throw new Error('Failed to fetch portfolio items');
+      return response.json();
     },
     enabled: !!user?.id
   });
 
   // Available skills for selection
   const { data: availableSkills = [] } = useQuery({
-    queryKey: ['/api/skills'],
-    queryFn: async () => {
-      // Skills endpoint is public, so we can use regular api
-      const data = await authAPI.get('/api/skills');
-      return data;
-    }
+    queryKey: ['/api/skills']
   });
 
   // Calculate profile completion
@@ -176,10 +200,9 @@ export function useTalentProfile() {
   // Profile mutation
   const profileMutation = useMutation({
     mutationFn: async (data: ProfileFormData) => {
-      // Use the new /api/profiles/me endpoint with PUT for updates
-      // authAPI.put returns response.data directly
-      const data_response = await authAPI.put('/api/profiles/me', data);
-      return data_response;
+      // Use PUT /api/profiles/me - no need to send userId as it's from JWT token
+      const response = await api.put('/api/profiles/me', data);
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/profiles/me'] });
@@ -211,7 +234,7 @@ export function useTalentProfile() {
         const skill = (availableSkills as any[]).find(s => s.name === skillName);
         if (!skill) throw new Error(`Skill not found: ${skillName}`);
         
-        return authAPI.post(`/api/users/${user.id}/skills`, {
+        return apiRequest('POST', `/api/users/${user.id}/skills`, {
           skillId: skill.id,
           level: 'intermediate', // Default level
           yearsExperience: 1 // Default experience
@@ -234,7 +257,7 @@ export function useTalentProfile() {
   // Document upload mutation
   const documentMutation = useMutation({
     mutationFn: async (document: Omit<Document, 'id' | 'createdAt'>) => {
-      return authAPI.post('/api/documents', document);
+      return apiRequest('POST', '/api/documents', document);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
