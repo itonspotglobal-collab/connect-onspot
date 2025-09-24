@@ -2,7 +2,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Link } from "wouter";
 import { 
   TrendingUp, 
   DollarSign, 
@@ -249,19 +248,10 @@ export default function WhyOnSpotCaseStudies() {
                       </div>
                       
                       <div className="mt-8">
-                        {index === 0 ? (
-                          <Link to="/why-onspot/case-studies/techflow-solutions">
-                            <Button className="w-full" data-testid={`button-learn-more-${index}`}>
-                              View Detailed Case Study
-                              <ArrowRight className="w-4 h-4 ml-2" />
-                            </Button>
-                          </Link>
-                        ) : (
-                          <Button className="w-full" disabled data-testid={`button-learn-more-${index}`}>
-                            View Detailed Case Study
-                            <ArrowRight className="w-4 h-4 ml-2" />
-                          </Button>
-                        )}
+                        <Button className="w-full" data-testid={`button-learn-more-${index}`}>
+                          View Detailed Case Study
+                          <ArrowRight className="w-4 h-4 ml-2" />
+                        </Button>
                       </div>
                     </div>
                   </div>
