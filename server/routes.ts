@@ -45,7 +45,7 @@ const authenticateJWT = async (req: Request, res: Response, next: NextFunction) 
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
     
     if (!token) {
-      console.log(`🔒 JWT Auth failed: No token provided [${(req as any).requestId}]`);
+      console.log(`🔒 JWT Auth failed: No token provided [${(req as any).requestId}] for ${req.method} ${req.path}`);
       return res.status(401).json({
         error: "Authentication required",
         message: "No authentication token provided",
@@ -296,6 +296,7 @@ const authLimiter = rateLimit({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  console.log('🔗 Registering API routes...');
   
   // Protected Dashboard Routes with Role-Based Access Control
   // These routes serve the dashboard content with server-side validation
@@ -1406,6 +1407,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // PUT /api/profiles/me - Update current user's profile
+  console.log('✅ Registered route: PUT /api/profiles/me');
   app.put("/api/profiles/me", 
     authenticateJWT,
     async (req: Request, res: Response) => {
@@ -1542,7 +1544,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`✅ Current user profile updated successfully [${requestId}]:`, { profileId: profile.id });
         res.json({ 
           success: true,
-          profile: camelCaseProfile
+          profile: camelCaseProfile,
+          message: "Profile saved successfully"
         });
       } catch (error: any) {
         const requestId = (req as any).requestId;
