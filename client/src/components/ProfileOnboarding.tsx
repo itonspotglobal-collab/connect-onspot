@@ -185,7 +185,8 @@ export default function ProfileOnboarding({
         statusText: error.response?.statusText,
         url: error.config?.url,
         method: error.config?.method,
-        environment: window.location.origin
+        environment: window.location.origin,
+        diagnosis: error.response?.status === 404 ? 'User has valid auth but no profile record in database' : 'Unknown error'
         // Headers intentionally excluded to prevent token exposure
       });
       
@@ -194,8 +195,8 @@ export default function ProfileOnboarding({
       let errorDescription = "Please try again or contact support if the issue persists.";
       
       if (error.response?.status === 404) {
-        errorTitle = "Profile Service Not Found";
-        errorDescription = "The profile service is temporarily unavailable. Please try refreshing the page and logging in again.";
+        errorTitle = "Profile Setup Required";
+        errorDescription = "No profile found for your account. Let's create your profile to get started on OnSpot!";
       } else if (error.response?.status === 401) {
         errorTitle = "Authentication Expired";
         errorDescription = "Your session has expired. Please log in again to save your profile.";
