@@ -19,6 +19,7 @@ import Dashboard from "@/pages/Dashboard";
 import WhyOnSpot from "@/pages/WhyOnSpot";
 import WhyOnSpotAbout from "@/pages/WhyOnSpotAbout";
 import WhyOnSpotCaseStudies from "@/pages/WhyOnSpotCaseStudies";
+import TechFlowCaseStudy from "@/pages/TechFlowCaseStudy";
 import WhyOnSpotReviews from "@/pages/WhyOnSpotReviews";
 import WhyOnSpotExperience from "@/pages/WhyOnSpotExperience";
 import WhyOnSpotIntegratorSystem from "@/pages/WhyOnSpotIntegratorSystem";
@@ -77,6 +78,7 @@ function PublicRouter() {
           <Route path="/why-onspot" component={WhyOnSpot} />
           <Route path="/why-onspot/about" component={WhyOnSpotAbout} />
           <Route path="/why-onspot/case-studies" component={WhyOnSpotCaseStudies} />
+          <Route path="/why-onspot/case-studies/techflow-solutions" component={TechFlowCaseStudy} />
           <Route path="/why-onspot/reviews" component={WhyOnSpotReviews} />
           <Route path="/why-onspot/experience" component={WhyOnSpotExperience} />
           <Route path="/why-onspot/integrator-system" component={WhyOnSpotIntegratorSystem} />
