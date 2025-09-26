@@ -95,14 +95,15 @@ export default function ProfileOnboarding({
     }
   });
 
-  // Initialize form with profile data once when profile first loads
+  // Initialize form with profile data or user data once when data loads
   const [hasInitialized, setHasInitialized] = useState(false);
   useEffect(() => {
-    if (profile && !hasInitialized) {
+    // Reset form when we have profile data OR when we have user data but no profile (fallback)
+    if ((profile && !hasInitialized) || (user && !profile && !hasInitialized && !isLoading)) {
       form.reset(getDefaultFormValues());
       setHasInitialized(true);
     }
-  }, [profile, form, getDefaultFormValues, hasInitialized]);
+  }, [profile, user, isLoading, form, getDefaultFormValues, hasInitialized]);
 
   // File upload handlers
   const handleResumeUpload = async () => {

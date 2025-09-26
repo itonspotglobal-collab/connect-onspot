@@ -79,8 +79,20 @@ export function useTalentProfile() {
     enabled: !!user?.id
   });
 
-  // Extract profile from response
-  const profile = profileResponse?.profile;
+  // Extract and normalize profile from response (snake_case to camelCase)
+  const profile = profileResponse?.profile ? {
+    ...profileResponse.profile,
+    firstName: profileResponse.profile.first_name || profileResponse.profile.firstName,
+    lastName: profileResponse.profile.last_name || profileResponse.profile.lastName,
+    hourlyRate: profileResponse.profile.hourly_rate || profileResponse.profile.hourlyRate,
+    rateCurrency: profileResponse.profile.rate_currency || profileResponse.profile.rateCurrency,
+    phoneNumber: profileResponse.profile.phone_number || profileResponse.profile.phoneNumber,
+    profilePicture: profileResponse.profile.profile_picture || profileResponse.profile.profilePicture,
+    totalEarnings: profileResponse.profile.total_earnings || profileResponse.profile.totalEarnings,
+    jobSuccessScore: profileResponse.profile.job_success_score || profileResponse.profile.jobSuccessScore,
+    createdAt: profileResponse.profile.created_at || profileResponse.profile.createdAt,
+    updatedAt: profileResponse.profile.updated_at || profileResponse.profile.updatedAt
+  } : undefined;
 
   // Fetch user skills
   const { data: userSkillsData, isLoading: skillsLoading } = useQuery({
@@ -278,8 +290,8 @@ export function useTalentProfile() {
 
   // Form helpers - MUST be called at top level before return
   const getDefaultFormValues = useCallback((): ProfileFormData => ({
-    firstName: profile?.firstName || '',
-    lastName: profile?.lastName || '',
+    firstName: profile?.firstName || user?.firstName || user?.first_name || '',
+    lastName: profile?.lastName || user?.lastName || user?.last_name || '',
     title: profile?.title || '',
     bio: profile?.bio || '',
     location: profile?.location || 'Manila, Philippines',
@@ -289,7 +301,7 @@ export function useTalentProfile() {
     phoneNumber: profile?.phoneNumber || '',
     languages: profile?.languages || ['English'],
     timezone: profile?.timezone || 'Asia/Manila'
-  }), [profile]);
+  }), [profile, user]);
 
   const talentProfileData: TalentProfileData = {
     profile: profile ? {
