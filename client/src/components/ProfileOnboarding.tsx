@@ -149,6 +149,7 @@ export default function ProfileOnboarding({
 
     try {
       await updateProfile(data);
+      // Update skills if there are any selected skills
       if (skills && skills.length > 0) {
         await updateSkills();
       }

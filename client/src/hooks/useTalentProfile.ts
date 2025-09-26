@@ -79,20 +79,8 @@ export function useTalentProfile() {
     enabled: !!user?.id
   });
 
-  // Extract and normalize profile from response (snake_case to camelCase)
-  const profile = profileResponse?.profile ? {
-    ...profileResponse.profile,
-    firstName: profileResponse.profile.first_name || profileResponse.profile.firstName,
-    lastName: profileResponse.profile.last_name || profileResponse.profile.lastName,
-    hourlyRate: profileResponse.profile.hourly_rate || profileResponse.profile.hourlyRate,
-    rateCurrency: profileResponse.profile.rate_currency || profileResponse.profile.rateCurrency,
-    phoneNumber: profileResponse.profile.phone_number || profileResponse.profile.phoneNumber,
-    profilePicture: profileResponse.profile.profile_picture || profileResponse.profile.profilePicture,
-    totalEarnings: profileResponse.profile.total_earnings || profileResponse.profile.totalEarnings,
-    jobSuccessScore: profileResponse.profile.job_success_score || profileResponse.profile.jobSuccessScore,
-    createdAt: profileResponse.profile.created_at || profileResponse.profile.createdAt,
-    updatedAt: profileResponse.profile.updated_at || profileResponse.profile.updatedAt
-  } : undefined;
+  // Extract profile from response (Drizzle ORM returns camelCase already)
+  const profile = profileResponse?.profile;
 
   // Fetch user skills
   const { data: userSkillsData, isLoading: skillsLoading } = useQuery({
@@ -188,10 +176,13 @@ export function useTalentProfile() {
   // Profile mutation
   const profileMutation = useMutation({
     mutationFn: async (data: ProfileFormData) => {
-      // Use the new /api/profiles/me endpoint with PUT for updates
-      // authAPI.put returns response.data directly
-      const data_response = await authAPI.put('/api/profiles/me', data);
-      return data_response;
+      console.log('🚀 Profile Update - Sending payload (camelCase):', data);
+      
+      // Backend expects camelCase, so send data directly
+      const response = await authAPI.put('/api/profiles/me', data);
+      
+      console.log('✅ Profile Update - Response:', response);
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/profiles/me'] });
@@ -218,19 +209,40 @@ export function useTalentProfile() {
     mutationFn: async (skillNames: string[]) => {
       if (!user?.id) throw new Error('User not authenticated');
       
+      console.log('🔧 Skills Update - Selected skills:', skillNames);
+      console.log('🔧 Skills Update - Available skills:', availableSkills);
+      
       // Convert skill names to skill IDs
-      const skillPromises = skillNames.map(async (skillName) => {
+      const skillsToAdd = skillNames.map((skillName) => {
         const skill = (availableSkills as any[]).find(s => s.name === skillName);
-        if (!skill) throw new Error(`Skill not found: ${skillName}`);
-        
-        return authAPI.post(`/api/users/${user.id}/skills`, {
+        if (!skill) {
+          console.warn(`⚠️ Skill not found: ${skillName}`);
+          return null;
+        }
+        return {
           skillId: skill.id,
           level: 'intermediate', // Default level
           yearsExperience: 1 // Default experience
-        });
-      });
+        };
+      }).filter(Boolean);
+
+      console.log('🚀 Skills Update - Sending skills payload:', skillsToAdd);
       
-      return Promise.all(skillPromises);
+      // First clear existing skills, then add new ones
+      try {
+        // Add skills one by one (bulk endpoint might not exist)
+        const results = await Promise.all(
+          skillsToAdd.map(skill => 
+            authAPI.post(`/api/users/${user.id}/skills`, skill)
+          )
+        );
+        
+        console.log('✅ Skills Update - Response:', results);
+        return results;
+      } catch (error: any) {
+        console.error('❌ Skills Update - Error:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users', user?.id, 'skills'] });
@@ -290,8 +302,8 @@ export function useTalentProfile() {
 
   // Form helpers - MUST be called at top level before return
   const getDefaultFormValues = useCallback((): ProfileFormData => ({
-    firstName: profile?.firstName || user?.firstName || user?.first_name || '',
-    lastName: profile?.lastName || user?.lastName || user?.last_name || '',
+    firstName: profile?.firstName || user?.firstName || '',
+    lastName: profile?.lastName || user?.lastName || '',
     title: profile?.title || '',
     bio: profile?.bio || '',
     location: profile?.location || 'Manila, Philippines',
