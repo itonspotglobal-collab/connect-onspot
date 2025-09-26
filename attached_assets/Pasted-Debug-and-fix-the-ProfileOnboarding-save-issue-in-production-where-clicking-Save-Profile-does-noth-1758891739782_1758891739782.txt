@@ -1,0 +1,39 @@
+Debug and fix the ProfileOnboarding save issue in production where clicking "Save Profile" does nothing. The problem is that the frontend payload field names (camelCase) don’t match the backend/database schema fields (snake_case).
+
+Steps:
+1. Trace the full data flow:
+   - client/src/components/ProfileOnboarding.tsx → calls onSubmit → updateProfile(data)
+   - client/src/hooks/useTalentProfile.ts → uses authAPI.put('/api/profiles/me', data)
+   - server/routes.ts → handles PUT /api/profiles/me and maps request body → DB `profiles` table
+
+2. Fix payload field mapping:
+   - Ensure the frontend sends snake_case fields (first_name, last_name, hourly_rate, phone_number, profile_picture, etc.) to the backend, matching the database schema.
+   - Add a mapping layer in `useTalentProfile.updateProfile` (or before the axios call) that converts camelCase → snake_case automatically.
+   - Example:
+     ```
+     {
+       firstName → first_name,
+       lastName → last_name,
+       hourlyRate → hourly_rate,
+       phoneNumber → phone_number,
+       profilePicture → profile_picture,
+       rateCurrency → rate_currency,
+       decisionMakerStatus → decision_maker_status,
+       etc.
+     }
+     ```
+   - Verify ALL profile-related fields map consistently.
+
+3. Backend validation:
+   - Confirm `/api/profiles/me` correctly extracts snake_case fields and writes them to the `profiles` table.
+   - If backend expects camelCase, adjust it to normalize payloads into snake_case before insertion.
+
+4. Testing:
+   - In development: Save profile and check DB values update (`hourly_rate`, `title`, `bio`, etc.).
+   - In production: Ensure request succeeds (200) and profile changes persist in `profiles`.
+   - Add console.log or safe logging of transformed payload on both frontend and backend for verification.
+
+After this fix:
+- Submitting ProfileOnboarding will save all fields correctly in production.
+- No more silent failures from 404/401 or ignored fields.
+- Data in DB `profiles` table matches user input consistently.
