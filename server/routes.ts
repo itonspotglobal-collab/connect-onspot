@@ -9,9 +9,10 @@ import rateLimit from "express-rate-limit";
 import multer from "multer";
 import Papa from "papaparse";
 import jwt from "jsonwebtoken";
-import { query } from './db.ts';
+import { query, db } from './db.ts';
+import { eq } from 'drizzle-orm';
 import {
-  insertUserSchema, insertProfileSchema, insertSkillSchema, insertUserSkillSchema,
+  insertUserSchema, insertProfileSchema, insertSkillSchema, insertUserSkillSchema, profiles,
   insertJobSchema, insertJobSkillSchema, insertProposalSchema, insertContractSchema,
   insertMilestoneSchema, insertTimeEntrySchema, insertMessageThreadSchema, insertMessageSchema,
   insertReviewSchema, insertPortfolioItemSchema, insertCertificationSchema, insertPaymentSchema,
@@ -1343,103 +1344,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         console.log(`👤 Fetching current user profile [${requestId}]:`, { userId });
         
-        // Query database directly for profile
-        const profileQuery = `
-          SELECT id, user_id, first_name, last_name, title, bio, location, 
-                 hourly_rate, rate_currency, availability, profile_picture, 
-                 phone_number, languages, timezone, rating, total_earnings, 
-                 job_success_score, created_at, updated_at
-          FROM profiles 
-          WHERE user_id = $1
-        `;
+        // Query database using Drizzle ORM
+        const result = await db.select().from(profiles).where(eq(profiles.userId, userId));
         
-        const result = await query(profileQuery, [userId]);
-        
-        if (result.rows.length === 0) {
+        if (result.length === 0) {
           // Create a default profile for the user instead of returning 404
           console.log(`➕ Creating default profile for new user [${requestId}]:`, { userId });
           
-          const insertQuery = `
-            INSERT INTO profiles (user_id, first_name, last_name, location, rate_currency, availability, languages, timezone, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
-            RETURNING *
-          `;
-          
-          const insertParams = [
-            userId,
-            '', // Default empty first_name
-            '', // Default empty last_name 
-            'Global',
-            'USD',
-            'available',
-            ['English'],
-            'Asia/Manila'
-          ];
-          
-          const insertResult = await query(insertQuery, insertParams);
-          const newProfile = insertResult.rows[0];
-          
-          // Convert snake_case to camelCase for frontend
-          const camelCaseProfile = {
-            id: newProfile.id,
-            userId: newProfile.user_id,
-            firstName: newProfile.first_name,
-            lastName: newProfile.last_name,
-            title: newProfile.title,
-            bio: newProfile.bio,
-            location: newProfile.location,
-            hourlyRate: newProfile.hourly_rate,
-            rateCurrency: newProfile.rate_currency,
-            availability: newProfile.availability,
-            profilePicture: newProfile.profile_picture,
-            phoneNumber: newProfile.phone_number,
-            languages: newProfile.languages,
-            timezone: newProfile.timezone,
-            rating: newProfile.rating,
-            totalEarnings: newProfile.total_earnings,
-            jobSuccessScore: newProfile.job_success_score,
-            createdAt: newProfile.created_at,
-            updatedAt: newProfile.updated_at
+          const defaultProfileData = {
+            userId: userId,
+            firstName: '',
+            lastName: '',
+            location: 'Global',
+            rateCurrency: 'USD',
+            availability: 'available',
+            languages: ['English'],
+            timezone: 'Asia/Manila'
           };
           
-          console.log(`✅ Default profile created successfully [${requestId}]:`, { profileId: newProfile.id });
+          const newProfile = await db.insert(profiles).values(defaultProfileData).returning();
+          const profile = newProfile[0];
+          
+          console.log(`✅ Default profile created successfully [${requestId}]:`, { profileId: profile.id });
           
           return res.json({ 
             success: true,
-            profile: camelCaseProfile
+            profile: profile // Drizzle automatically returns camelCase
           });
         }
         
-        const profile = result.rows[0];
-        
-        // Convert snake_case to camelCase for frontend
-        const camelCaseProfile = {
-          id: profile.id,
-          userId: profile.user_id,
-          firstName: profile.first_name,
-          lastName: profile.last_name,
-          title: profile.title,
-          bio: profile.bio,
-          location: profile.location,
-          hourlyRate: profile.hourly_rate,
-          rateCurrency: profile.rate_currency,
-          availability: profile.availability,
-          profilePicture: profile.profile_picture,
-          phoneNumber: profile.phone_number,
-          languages: profile.languages,
-          timezone: profile.timezone,
-          rating: profile.rating,
-          totalEarnings: profile.total_earnings,
-          jobSuccessScore: profile.job_success_score,
-          createdAt: profile.created_at,
-          updatedAt: profile.updated_at
-        };
+        const profile = result[0];
         
         console.log(`✅ Current user profile fetched successfully [${requestId}]:`, { profileId: profile.id });
         
         res.json({ 
           success: true,
-          profile: camelCaseProfile
+          profile: profile // Drizzle automatically returns camelCase
         });
       } catch (error: any) {
         const requestId = (req as any).requestId;
@@ -1476,7 +1416,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           bodyData: req.body
         });
         
-        // Convert camelCase frontend input to snake_case for database validation
+        // Prepare profile data (already in camelCase, which Drizzle expects)
         const profileData = {
           userId: userId, // Add userId from authenticated session
           firstName: req.body.firstName,
@@ -1495,107 +1435,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         console.log(`🔍 Profile data for validation [${requestId}]:`, profileData);
         
-        // Validate the data
+        // Validate the data using Drizzle schema
         const validated = insertProfileSchema.parse(profileData);
         
-        // Check if profile already exists for this user
-        const existingProfileQuery = `
-          SELECT id FROM profiles WHERE user_id = $1
-        `;
-        const existingResult = await query(existingProfileQuery, [userId]);
+        // Check if profile already exists for this user using Drizzle ORM
+        const existingProfile = await db.select().from(profiles).where(eq(profiles.userId, userId));
         
         let profile;
         
-        if (existingResult.rows.length > 0) {
+        if (existingProfile.length > 0) {
           // Update existing profile
-          const profileId = existingResult.rows[0].id;
-          console.log(`📝 Updating existing profile [${requestId}]:`, { profileId });
+          console.log(`📝 Updating existing profile [${requestId}]:`, { profileId: existingProfile[0].id });
           
-          const updateQuery = `
-            UPDATE profiles 
-            SET first_name = $2, last_name = $3, title = $4, bio = $5, 
-                location = $6, hourly_rate = $7, rate_currency = $8, 
-                availability = $9, phone_number = $10, languages = $11, 
-                timezone = $12, updated_at = NOW()
-            WHERE id = $1
-            RETURNING *
-          `;
+          // Prepare update data with defaults
+          const updateData = {
+            firstName: validated.firstName,
+            lastName: validated.lastName,
+            title: validated.title,
+            bio: validated.bio,
+            location: validated.location || 'Global',
+            hourlyRate: validated.hourlyRate,
+            rateCurrency: validated.rateCurrency || 'USD',
+            availability: validated.availability || 'available',
+            profilePicture: validated.profilePicture,
+            phoneNumber: validated.phoneNumber,
+            languages: validated.languages || ['English'],
+            timezone: validated.timezone || 'Asia/Manila'
+          };
           
-          const updateParams = [
-            profileId,
-            validated.firstName,
-            validated.lastName, 
-            validated.title,
-            validated.bio,
-            validated.location || 'Global',
-            validated.hourlyRate,
-            validated.rateCurrency || 'USD',
-            validated.availability || 'available',
-            validated.phoneNumber,
-            validated.languages || ['English'],
-            validated.timezone || 'Asia/Manila'
-          ];
-          
-          const updateResult = await query(updateQuery, updateParams);
-          profile = updateResult.rows[0];
+          const updatedProfiles = await db
+            .update(profiles)
+            .set(updateData)
+            .where(eq(profiles.userId, userId))
+            .returning();
+            
+          profile = updatedProfiles[0];
         } else {
           // Create new profile
           console.log(`➕ Creating new profile [${requestId}]`);
           
-          const insertQuery = `
-            INSERT INTO profiles (user_id, first_name, last_name, title, bio, 
-                                location, hourly_rate, rate_currency, availability, 
-                                phone_number, languages, timezone, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
-            RETURNING *
-          `;
+          // Set defaults for required fields
+          const insertData = {
+            userId: userId,
+            firstName: validated.firstName,
+            lastName: validated.lastName,
+            title: validated.title,
+            bio: validated.bio,
+            location: validated.location || 'Global',
+            hourlyRate: validated.hourlyRate,
+            rateCurrency: validated.rateCurrency || 'USD',
+            availability: validated.availability || 'available',
+            profilePicture: validated.profilePicture,
+            phoneNumber: validated.phoneNumber,
+            languages: validated.languages || ['English'],
+            timezone: validated.timezone || 'Asia/Manila'
+          };
           
-          const insertParams = [
-            userId,
-            validated.firstName,
-            validated.lastName,
-            validated.title,
-            validated.bio,
-            validated.location || 'Global',
-            validated.hourlyRate,
-            validated.rateCurrency || 'USD', 
-            validated.availability || 'available',
-            validated.phoneNumber,
-            validated.languages || ['English'],
-            validated.timezone || 'Asia/Manila'
-          ];
-          
-          const insertResult = await query(insertQuery, insertParams);
-          profile = insertResult.rows[0];
+          const insertedProfiles = await db.insert(profiles).values(insertData).returning();
+          profile = insertedProfiles[0];
         }
-        
-        // Convert snake_case to camelCase for frontend response
-        const camelCaseProfile = {
-          id: profile.id,
-          userId: profile.user_id,
-          firstName: profile.first_name,
-          lastName: profile.last_name,
-          title: profile.title,
-          bio: profile.bio,
-          location: profile.location,
-          hourlyRate: profile.hourly_rate,
-          rateCurrency: profile.rate_currency,
-          availability: profile.availability,
-          profilePicture: profile.profile_picture,
-          phoneNumber: profile.phone_number,
-          languages: profile.languages,
-          timezone: profile.timezone,
-          rating: profile.rating,
-          totalEarnings: profile.total_earnings,
-          jobSuccessScore: profile.job_success_score,
-          createdAt: profile.created_at,
-          updatedAt: profile.updated_at
-        };
         
         console.log(`✅ Current user profile updated successfully [${requestId}]:`, { profileId: profile.id });
         res.json({ 
           success: true,
-          profile: camelCaseProfile,
+          profile: profile, // Drizzle automatically returns camelCase
           message: "Profile saved successfully"
         });
       } catch (error: any) {
