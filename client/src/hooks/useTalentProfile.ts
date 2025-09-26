@@ -1,19 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import api, { authAPI } from "@/lib/api";
-import { calculateProfileCompletion, ProfileCompletionData } from "@/lib/utils";
+import { queryClient } from "@/lib/queryClient";
+import { authAPI } from "@/lib/api";
+import { calculateProfileCompletion } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import {
-  Profile,
-  InsertProfile,
-  UserSkill,
-  Skill,
-  Document as DocumentType,
-  PortfolioItem,
-} from "@shared/schema";
+import { Profile, Skill, PortfolioItem } from "@shared/schema";
 
 // ---------------------
 // Schema + Types
@@ -64,26 +57,26 @@ export interface TalentProfileData {
 }
 
 // ---------------------
-// Helper: normalize data for backend
+// Normalize profile payload for backend
 // ---------------------
 function normalizeProfileData(data: ProfileFormData) {
   return {
     first_name: data.firstName,
     last_name: data.lastName,
     title: data.title,
-    bio: data.bio,
+    bio: data.bio ?? "",
     location: data.location,
-    hourly_rate: parseFloat(data.hourlyRate),
+    hourly_rate: parseFloat(data.hourlyRate) || 0,
     rate_currency: data.rateCurrency,
     availability: data.availability,
-    phone_number: data.phoneNumber,
+    phone_number: data.phoneNumber ?? "",
     languages: data.languages,
     timezone: data.timezone,
   };
 }
 
 // ---------------------
-// Hook implementation
+// Hook Implementation
 // ---------------------
 export function useTalentProfile() {
   const { user } = useAuth();
@@ -101,8 +94,7 @@ export function useTalentProfile() {
     queryFn: async () => {
       if (!user?.id) return null;
       try {
-        const data = await authAPI.get("/api/profiles/me");
-        return data;
+        return await authAPI.get("/api/profiles/me");
       } catch (error: any) {
         if (error.response?.status === 404) {
           return { success: false, profile: undefined };
@@ -112,6 +104,7 @@ export function useTalentProfile() {
     },
     enabled: !!user?.id,
   });
+
   const profile = profileResponse?.profile;
 
   // ---- Fetch skills ----
@@ -119,10 +112,9 @@ export function useTalentProfile() {
     queryKey: ["/api/users", user?.id, "skills"],
     queryFn: async () => {
       if (!user?.id) return [];
-      const data = await authAPI.get(
+      return await authAPI.get(
         `/api/users/${user.id}/skills?includeNames=true`,
       );
-      return data;
     },
     enabled: !!user?.id,
   });
@@ -133,8 +125,7 @@ export function useTalentProfile() {
     queryFn: async () => {
       if (!user || user.role !== "talent") return [];
       try {
-        const data = await authAPI.get("/api/documents");
-        return data;
+        return await authAPI.get("/api/documents");
       } catch (error: any) {
         if (error.response?.status === 404) return [];
         throw error;
@@ -146,21 +137,18 @@ export function useTalentProfile() {
   // ---- Fetch available skills ----
   const { data: availableSkills = [] } = useQuery({
     queryKey: ["/api/skills"],
-    queryFn: async () => {
-      const data = await authAPI.get("/api/skills");
-      return data;
-    },
+    queryFn: async () => authAPI.get("/api/skills"),
   });
 
   // ---- Derived states ----
   const profileCompletion = calculateProfileCompletion({
-    firstName: profile?.firstName || undefined,
-    lastName: profile?.lastName || undefined,
-    title: profile?.title || undefined,
-    bio: profile?.bio || undefined,
-    location: profile?.location || undefined,
-    hourlyRate: profile?.hourlyRate || undefined,
-    profilePicture: profile?.profilePicture || undefined,
+    firstName: profile?.firstName,
+    lastName: profile?.lastName,
+    title: profile?.title,
+    bio: profile?.bio,
+    location: profile?.location,
+    hourlyRate: profile?.hourlyRate,
+    profilePicture: profile?.profilePicture,
     selectedSkills,
     uploadedDocuments,
     portfolioItems: [],
@@ -189,11 +177,9 @@ export function useTalentProfile() {
   // ---- Mutations ----
   const profileMutation = useMutation({
     mutationFn: async (data: ProfileFormData) => {
-      console.log("🚀 Profile Update Payload (camelCase):", data);
-      // Send camelCase data directly - backend expects camelCase
-      const response = await authAPI.put("/api/profiles/me", data);
-      console.log("✅ Profile Update Response:", response);
-      return response;
+      const payload = normalizeProfileData(data);
+      console.log("🚀 Profile Update Payload:", payload);
+      return await authAPI.put("/api/profiles/me", payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
@@ -215,34 +201,25 @@ export function useTalentProfile() {
   const skillsMutation = useMutation({
     mutationFn: async (skillNames: string[]) => {
       if (!user?.id) throw new Error("User not authenticated");
-      
-      console.log("🔧 Skills Update - Selected skills:", skillNames);
-      console.log("🔧 Skills Update - Available skills:", availableSkills);
-      
+
       const skillsToAdd = skillNames
         .map((skillName) => {
-          const skill = (availableSkills as any[]).find(
+          const skill = (availableSkills as Skill[]).find(
             (s) => s.name === skillName,
           );
-          if (!skill) {
-            console.warn(`⚠️ Skill not found: ${skillName}`);
-            return null;
-          }
-          return { skillId: skill.id, level: "intermediate", yearsExperience: 1 };
+          return skill
+            ? { skillId: skill.id, level: "intermediate", yearsExperience: 1 }
+            : null;
         })
         .filter(Boolean);
-      
+
       console.log("🚀 Skills Update Payload:", skillsToAdd);
-      
-      // Add skills one by one (in case bulk endpoint doesn't exist)
-      const results = await Promise.all(
-        skillsToAdd.map(skill => 
-          authAPI.post(`/api/users/${user.id}/skills`, skill)
-        )
+
+      return await Promise.all(
+        skillsToAdd.map((skill) =>
+          authAPI.post(`/api/users/${user.id}/skills`, skill),
+        ),
       );
-      
-      console.log("✅ Skills Update Response:", results);
-      return results;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -256,9 +233,9 @@ export function useTalentProfile() {
   });
 
   // ---- Exposed helpers ----
-  const updateProfile = async (data: ProfileFormData) =>
+  const updateProfile = (data: ProfileFormData) =>
     profileMutation.mutateAsync(data);
-  const updateSkills = async () => skillsMutation.mutateAsync(selectedSkills);
+  const updateSkills = () => skillsMutation.mutateAsync(selectedSkills);
 
   const getDefaultFormValues = useCallback(
     (): ProfileFormData => ({
