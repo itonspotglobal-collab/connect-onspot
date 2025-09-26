@@ -1356,10 +1356,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const result = await query(profileQuery, [userId]);
         
         if (result.rows.length === 0) {
-          return res.status(404).json({ 
-            success: false,
-            message: "Profile not found",
-            requestId
+          // Create a default profile for the user instead of returning 404
+          console.log(`➕ Creating default profile for new user [${requestId}]:`, { userId });
+          
+          const insertQuery = `
+            INSERT INTO profiles (user_id, first_name, last_name, location, rate_currency, availability, languages, timezone, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+            RETURNING *
+          `;
+          
+          const insertParams = [
+            userId,
+            '', // Default empty first_name
+            '', // Default empty last_name 
+            'Global',
+            'USD',
+            'available',
+            ['English'],
+            'Asia/Manila'
+          ];
+          
+          const insertResult = await query(insertQuery, insertParams);
+          const newProfile = insertResult.rows[0];
+          
+          // Convert snake_case to camelCase for frontend
+          const camelCaseProfile = {
+            id: newProfile.id,
+            userId: newProfile.user_id,
+            firstName: newProfile.first_name,
+            lastName: newProfile.last_name,
+            title: newProfile.title,
+            bio: newProfile.bio,
+            location: newProfile.location,
+            hourlyRate: newProfile.hourly_rate,
+            rateCurrency: newProfile.rate_currency,
+            availability: newProfile.availability,
+            profilePicture: newProfile.profile_picture,
+            phoneNumber: newProfile.phone_number,
+            languages: newProfile.languages,
+            timezone: newProfile.timezone,
+            rating: newProfile.rating,
+            totalEarnings: newProfile.total_earnings,
+            jobSuccessScore: newProfile.job_success_score,
+            createdAt: newProfile.created_at,
+            updatedAt: newProfile.updated_at
+          };
+          
+          console.log(`✅ Default profile created successfully [${requestId}]:`, { profileId: newProfile.id });
+          
+          return res.json({ 
+            success: true,
+            profile: camelCaseProfile
           });
         }
         
@@ -1425,24 +1472,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         console.log(`👤 Updating current user profile [${requestId}]:`, { 
           userId: userId,
-          updateFields: Object.keys(req.body)
+          updateFields: Object.keys(req.body),
+          bodyData: req.body
         });
         
-        // Accept camelCase input and convert to validation schema format
+        // Convert camelCase frontend input to snake_case for database validation
         const profileData = {
+          userId: userId, // Add userId from authenticated session
           firstName: req.body.firstName,
           lastName: req.body.lastName,
           title: req.body.title,
           bio: req.body.bio,
           location: req.body.location,
-          hourlyRate: req.body.hourlyRate,
+          hourlyRate: req.body.hourlyRate ? String(req.body.hourlyRate) : null,
           rateCurrency: req.body.rateCurrency,
           availability: req.body.availability,
+          profilePicture: req.body.profilePicture,
           phoneNumber: req.body.phoneNumber,
           languages: req.body.languages,
-          timezone: req.body.timezone,
-          userId: userId // Add userId from authenticated session
+          timezone: req.body.timezone
         };
+        
+        console.log(`🔍 Profile data for validation [${requestId}]:`, profileData);
         
         // Validate the data
         const validated = insertProfileSchema.parse(profileData);
