@@ -1,26 +1,35 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { apiRequest, queryClient } from '@/lib/queryClient';
-import api, { authAPI } from '@/lib/api';
-import { calculateProfileCompletion, ProfileCompletionData } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
-import { z } from 'zod';
-import { Profile, InsertProfile, UserSkill, Skill, Document as DocumentType, PortfolioItem } from '@shared/schema';
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import api, { authAPI } from "@/lib/api";
+import { calculateProfileCompletion, ProfileCompletionData } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { z } from "zod";
+import {
+  Profile,
+  InsertProfile,
+  UserSkill,
+  Skill,
+  Document as DocumentType,
+  PortfolioItem,
+} from "@shared/schema";
 
-// Profile Form Schema
+// ---------------------
+// Schema + Types
+// ---------------------
 export const profileFormSchema = z.object({
   firstName: z.string().min(2, "First name is required"),
   lastName: z.string().min(2, "Last name is required"),
-  title: z.string().min(5, "Professional title is required"),
-  bio: z.string().min(50, "Bio must be at least 50 characters"),
+  title: z.string().min(2, "Professional title is required"),
+  bio: z.string().optional(),
   location: z.string().min(2, "Location is required"),
   hourlyRate: z.string().min(1, "Hourly rate is required"),
   rateCurrency: z.string().default("USD"),
   availability: z.string().default("available"),
   phoneNumber: z.string().optional(),
   languages: z.array(z.string()).min(1, "At least one language is required"),
-  timezone: z.string().default("Asia/Manila")
+  timezone: z.string().default("Asia/Manila"),
 });
 
 export type ProfileFormData = z.infer<typeof profileFormSchema>;
@@ -38,7 +47,7 @@ export interface TalentProfile extends ProfileFormData {
 
 export interface Document {
   id: string;
-  type: 'resume' | 'video_intro' | 'cover_letter' | 'portfolio_file';
+  type: "resume" | "video_intro" | "cover_letter" | "portfolio_file";
   fileName: string;
   fileUrl: string;
   createdAt: string;
@@ -54,91 +63,96 @@ export interface TalentProfileData {
   hasCompletedOnboarding: boolean;
 }
 
+// ---------------------
+// Helper: normalize data for backend
+// ---------------------
+function normalizeProfileData(data: ProfileFormData) {
+  return {
+    first_name: data.firstName,
+    last_name: data.lastName,
+    title: data.title,
+    bio: data.bio,
+    location: data.location,
+    hourly_rate: parseFloat(data.hourlyRate),
+    rate_currency: data.rateCurrency,
+    availability: data.availability,
+    phone_number: data.phoneNumber,
+    languages: data.languages,
+    timezone: data.timezone,
+  };
+}
+
+// ---------------------
+// Hook implementation
+// ---------------------
 export function useTalentProfile() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [uploadedDocuments, setUploadedDocuments] = useState<Document[]>([]);
 
-  // Fetch user profile using authAPI
-  const { data: profileResponse, isLoading: profileLoading, error: profileError } = useQuery<{success: boolean, profile?: Profile} | null>({
-    queryKey: ['/api/profiles/me'],
+  // ---- Fetch profile ----
+  const {
+    data: profileResponse,
+    isLoading: profileLoading,
+    error: profileError,
+  } = useQuery<{ success: boolean; profile?: Profile } | null>({
+    queryKey: ["/api/profiles/me"],
     queryFn: async () => {
       if (!user?.id) return null;
       try {
-        // authAPI.get returns response.data directly
-        const data = await authAPI.get('/api/profiles/me');
+        const data = await authAPI.get("/api/profiles/me");
         return data;
       } catch (error: any) {
         if (error.response?.status === 404) {
-          return { success: false, profile: undefined }; // Profile doesn't exist yet
+          return { success: false, profile: undefined };
         }
         throw error;
       }
     },
-    enabled: !!user?.id
+    enabled: !!user?.id,
   });
-
-  // Extract profile from response (Drizzle ORM returns camelCase already)
   const profile = profileResponse?.profile;
 
-  // Fetch user skills
-  const { data: userSkillsData, isLoading: skillsLoading } = useQuery({
-    queryKey: ['/api/users', user?.id, 'skills'],
+  // ---- Fetch skills ----
+  const { data: userSkillsData } = useQuery({
+    queryKey: ["/api/users", user?.id, "skills"],
     queryFn: async () => {
       if (!user?.id) return [];
-      // authAPI.get returns response.data directly
-      const data = await authAPI.get(`/api/users/${user.id}/skills?includeNames=true`);
+      const data = await authAPI.get(
+        `/api/users/${user.id}/skills?includeNames=true`,
+      );
       return data;
     },
-    enabled: !!user?.id
+    enabled: !!user?.id,
   });
 
-  // Fetch user documents
-  const { data: documentsData, isLoading: documentsLoading } = useQuery({
-    queryKey: ['/api/documents'],
+  // ---- Fetch documents ----
+  const { data: documentsData } = useQuery({
+    queryKey: ["/api/documents"],
     queryFn: async () => {
-      if (!user || user.role !== 'talent') return [];
+      if (!user || user.role !== "talent") return [];
       try {
-        // authAPI.get returns response.data directly
-        const data = await authAPI.get('/api/documents');
+        const data = await authAPI.get("/api/documents");
         return data;
       } catch (error: any) {
-        if (error.response?.status === 404) return []; // No documents yet
+        if (error.response?.status === 404) return [];
         throw error;
       }
     },
-    enabled: !!user && user.role === 'talent'
+    enabled: !!user && user.role === "talent",
   });
 
-  // Fetch portfolio items
-  const { data: portfolioItems = [], isLoading: portfolioLoading } = useQuery({
-    queryKey: ['/api/portfolio', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      try {
-        // authAPI.get returns response.data directly
-        const data = await authAPI.get(`/api/portfolio/user/${user.id}`);
-        return data;
-      } catch (error: any) {
-        if (error.response?.status === 404) return []; // No portfolio items yet
-        throw error;
-      }
-    },
-    enabled: !!user?.id
-  });
-
-  // Available skills for selection
+  // ---- Fetch available skills ----
   const { data: availableSkills = [] } = useQuery({
-    queryKey: ['/api/skills'],
+    queryKey: ["/api/skills"],
     queryFn: async () => {
-      // Skills endpoint is public, so we can use regular api
-      const data = await authAPI.get('/api/skills');
+      const data = await authAPI.get("/api/skills");
       return data;
-    }
+    },
   });
 
-  // Calculate profile completion
+  // ---- Derived states ----
   const profileCompletion = calculateProfileCompletion({
     firstName: profile?.firstName || undefined,
     lastName: profile?.lastName || undefined,
@@ -149,20 +163,19 @@ export function useTalentProfile() {
     profilePicture: profile?.profilePicture || undefined,
     selectedSkills,
     uploadedDocuments,
-    portfolioItems
+    portfolioItems: [],
   });
 
-  // Determine if user is new and completion status
   const isNewUser = !profile || profileCompletion < 30;
   const hasCompletedOnboarding = profileCompletion >= 70;
-  
-  // Loading state for profile data
-  const isLoading = profileLoading || skillsLoading || documentsLoading || portfolioLoading;
+  const isLoading = profileLoading;
 
-  // Update local state when data is fetched
+  // ---- Effects ----
   useEffect(() => {
     if (userSkillsData && Array.isArray(userSkillsData)) {
-      const skillNames = userSkillsData.map((us: any) => us.skill?.name).filter(Boolean);
+      const skillNames = userSkillsData
+        .map((us: any) => us.skill?.name)
+        .filter(Boolean);
       setSelectedSkills(skillNames);
     }
   }, [userSkillsData]);
@@ -173,198 +186,116 @@ export function useTalentProfile() {
     }
   }, [documentsData]);
 
-  // Profile mutation
+  // ---- Mutations ----
   const profileMutation = useMutation({
     mutationFn: async (data: ProfileFormData) => {
-      console.log('🚀 Profile Update - Sending payload (camelCase):', data);
-      
-      // Backend expects camelCase, so send data directly
-      const response = await authAPI.put('/api/profiles/me', data);
-      
-      console.log('✅ Profile Update - Response:', response);
+      console.log("🚀 Profile Update Payload (camelCase):", data);
+      // Send camelCase data directly - backend expects camelCase
+      const response = await authAPI.put("/api/profiles/me", data);
+      console.log("✅ Profile Update Response:", response);
       return response;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/profiles/me'] });
-      
-      // Show appropriate success message based on whether it's creating or updating
-      if (!profile) {
-        // New profile created
-        toast({
-          title: "Profile Created Successfully!",
-          description: "Welcome to OnSpot! Your talent profile is now active.",
-        });
-      } else {
-        // Existing profile updated
-        toast({
-          title: "Profile Updated!",
-          description: "Your profile information has been saved successfully.",
-        });
-      }
-    }
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
+      toast({
+        title: "Profile Saved!",
+        description: "Your profile information has been saved successfully.",
+      });
+    },
+    onError: (error: any) => {
+      console.error("❌ Profile Update Error:", error);
+      toast({
+        title: "Profile Save Failed",
+        description: error?.message || "Could not save profile",
+        variant: "destructive",
+      });
+    },
   });
 
-  // Skills mutation
   const skillsMutation = useMutation({
     mutationFn: async (skillNames: string[]) => {
-      if (!user?.id) throw new Error('User not authenticated');
+      if (!user?.id) throw new Error("User not authenticated");
       
-      console.log('🔧 Skills Update - Selected skills:', skillNames);
-      console.log('🔧 Skills Update - Available skills:', availableSkills);
+      console.log("🔧 Skills Update - Selected skills:", skillNames);
+      console.log("🔧 Skills Update - Available skills:", availableSkills);
       
-      // Convert skill names to skill IDs
-      const skillsToAdd = skillNames.map((skillName) => {
-        const skill = (availableSkills as any[]).find(s => s.name === skillName);
-        if (!skill) {
-          console.warn(`⚠️ Skill not found: ${skillName}`);
-          return null;
-        }
-        return {
-          skillId: skill.id,
-          level: 'intermediate', // Default level
-          yearsExperience: 1 // Default experience
-        };
-      }).filter(Boolean);
-
-      console.log('🚀 Skills Update - Sending skills payload:', skillsToAdd);
+      const skillsToAdd = skillNames
+        .map((skillName) => {
+          const skill = (availableSkills as any[]).find(
+            (s) => s.name === skillName,
+          );
+          if (!skill) {
+            console.warn(`⚠️ Skill not found: ${skillName}`);
+            return null;
+          }
+          return { skillId: skill.id, level: "intermediate", yearsExperience: 1 };
+        })
+        .filter(Boolean);
       
-      // First clear existing skills, then add new ones
-      try {
-        // Add skills one by one (bulk endpoint might not exist)
-        const results = await Promise.all(
-          skillsToAdd.map(skill => 
-            authAPI.post(`/api/users/${user.id}/skills`, skill)
-          )
-        );
-        
-        console.log('✅ Skills Update - Response:', results);
-        return results;
-      } catch (error: any) {
-        console.error('❌ Skills Update - Error:', error);
-        throw error;
-      }
+      console.log("🚀 Skills Update Payload:", skillsToAdd);
+      
+      // Add skills one by one (in case bulk endpoint doesn't exist)
+      const results = await Promise.all(
+        skillsToAdd.map(skill => 
+          authAPI.post(`/api/users/${user.id}/skills`, skill)
+        )
+      );
+      
+      console.log("✅ Skills Update Response:", results);
+      return results;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/users', user?.id, 'skills'] });
-      
-      // Show success message for skills update
+      queryClient.invalidateQueries({
+        queryKey: ["/api/users", user?.id, "skills"],
+      });
       toast({
         title: "Skills Updated!",
         description: "Your skills have been saved successfully.",
       });
-    }
-  });
-
-  // Document upload mutation
-  const documentMutation = useMutation({
-    mutationFn: async (document: Omit<Document, 'id' | 'createdAt'>) => {
-      return authAPI.post('/api/documents', document);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
-      
-      // Show success message for document upload
-      toast({
-        title: "Document Uploaded!",
-        description: "Your document has been uploaded successfully.",
-      });
-    }
   });
 
-  // Helper functions
-  const toggleSkill = (skillName: string) => {
-    setSelectedSkills(prev => 
-      prev.includes(skillName)
-        ? prev.filter(s => s !== skillName)
-        : [...prev, skillName]
-    );
-  };
+  // ---- Exposed helpers ----
+  const updateProfile = async (data: ProfileFormData) =>
+    profileMutation.mutateAsync(data);
+  const updateSkills = async () => skillsMutation.mutateAsync(selectedSkills);
 
-  const addDocument = (document: Document) => {
-    setUploadedDocuments(prev => [...prev, document]);
-  };
-
-  const removeDocument = (documentId: string) => {
-    setUploadedDocuments(prev => prev.filter(d => d.id !== documentId));
-  };
-
-  const updateProfile = async (data: ProfileFormData) => {
-    return profileMutation.mutateAsync(data);
-  };
-
-  const updateSkills = async () => {
-    return skillsMutation.mutateAsync(selectedSkills);
-  };
-
-  const uploadDocument = async (document: Omit<Document, 'id' | 'createdAt'>) => {
-    return documentMutation.mutateAsync(document);
-  };
-
-  // Form helpers - MUST be called at top level before return
-  const getDefaultFormValues = useCallback((): ProfileFormData => ({
-    firstName: profile?.firstName || user?.firstName || '',
-    lastName: profile?.lastName || user?.lastName || '',
-    title: profile?.title || '',
-    bio: profile?.bio || '',
-    location: profile?.location || 'Manila, Philippines',
-    hourlyRate: profile?.hourlyRate || '',
-    rateCurrency: profile?.rateCurrency || 'USD',
-    availability: profile?.availability || 'available',
-    phoneNumber: profile?.phoneNumber || '',
-    languages: profile?.languages || ['English'],
-    timezone: profile?.timezone || 'Asia/Manila'
-  }), [profile, user]);
-
-  const talentProfileData: TalentProfileData = {
-    profile: profile ? {
-      id: profile.id,
-      userId: profile.userId,
-      firstName: profile.firstName,
-      lastName: profile.lastName,
-      title: profile.title || '',
-      bio: profile.bio || '',
-      location: profile.location || 'Manila, Philippines',
-      hourlyRate: profile.hourlyRate || '',
-      rateCurrency: profile.rateCurrency || 'USD',
-      availability: profile.availability || 'available',
-      phoneNumber: profile.phoneNumber || '',
-      languages: profile.languages || ['English'],
-      timezone: profile.timezone || 'Asia/Manila',
-      profilePicture: profile.profilePicture || '',
-      rating: profile.rating || '0',
-      totalEarnings: profile.totalEarnings || '0',
-      jobSuccessScore: profile.jobSuccessScore || 0,
-      createdAt: profile.createdAt?.toString(),
-      updatedAt: profile.updatedAt?.toString()
-    } as TalentProfile : undefined,
-    skills: selectedSkills,
-    documents: uploadedDocuments,
-    profileCompletion,
-    isNewUser,
-    hasCompletedOnboarding
-  };
+  const getDefaultFormValues = useCallback(
+    (): ProfileFormData => ({
+      firstName: profile?.firstName || user?.firstName || "",
+      lastName: profile?.lastName || user?.lastName || "",
+      title: profile?.title || "",
+      bio: profile?.bio || "",
+      location: profile?.location || "Manila, Philippines",
+      hourlyRate: profile?.hourlyRate?.toString() || "",
+      rateCurrency: profile?.rateCurrency || "USD",
+      availability: profile?.availability || "available",
+      phoneNumber: profile?.phoneNumber || "",
+      languages: profile?.languages || ["English"],
+      timezone: profile?.timezone || "Asia/Manila",
+    }),
+    [profile, user],
+  );
 
   return {
-    // Data
-    ...talentProfileData,
+    profile,
+    skills: selectedSkills,
+    documents: uploadedDocuments,
     availableSkills,
-    
-    // Loading states
-    isLoading: profileLoading || skillsLoading || documentsLoading,
-    isUpdating: profileMutation.isPending || skillsMutation.isPending || documentMutation.isPending,
-    
-    // Error states
+    profileCompletion,
+    isNewUser,
+    hasCompletedOnboarding,
+    isLoading,
+    isUpdating: profileMutation.isPending || skillsMutation.isPending,
     error: profileError,
-    
-    // Actions
-    toggleSkill,
-    addDocument,
-    removeDocument,
     updateProfile,
     updateSkills,
-    uploadDocument,
-    
-    // Form helpers
-    getDefaultFormValues
+    getDefaultFormValues,
+    toggleSkill: (skill: string) =>
+      setSelectedSkills((prev) =>
+        prev.includes(skill)
+          ? prev.filter((s) => s !== skill)
+          : [...prev, skill],
+      ),
   };
 }

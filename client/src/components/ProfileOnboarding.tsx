@@ -66,11 +66,8 @@ export default function ProfileOnboarding({
     isLoading,
     isUpdating,
     toggleSkill,
-    addDocument,
-    removeDocument,
     updateProfile,
     updateSkills,
-    uploadDocument,
     getDefaultFormValues
   } = useTalentProfile();
 
@@ -124,9 +121,14 @@ export default function ProfileOnboarding({
         fileUrl: file.uploadURL,
         createdAt: new Date().toISOString()
       };
-      addDocument(newDocument);
-      uploadDocument(newDocument);
+      // Handle file upload completion
+      console.log('File uploaded:', newDocument);
     }
+  };
+
+  const removeDocument = (documentId: string) => {
+    console.log('Remove document:', documentId);
+    // TODO: Implement document removal
   };
 
   // Profile form submission with enhanced status feedback
