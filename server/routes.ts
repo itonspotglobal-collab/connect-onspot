@@ -951,33 +951,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  // SECURITY FIX: Protected Object Storage Upload URL - Generate presigned URL for file uploads
+  // Protected Object Storage Upload URL - Generate presigned URL for file uploads
   app.post('/api/object-storage/upload-url', authenticateJWT, async (req: any, res) => {
     try {
       const { fileName, contentType } = req.body;
       
+      console.log(`📤 Upload URL request [${req.requestId}]:`, { fileName, contentType });
+      
       if (!fileName || !contentType) {
+        console.error(`❌ Missing parameters [${req.requestId}]:`, { fileName: !!fileName, contentType: !!contentType });
         return res.status(400).json({ error: 'fileName and contentType required' });
       }
 
       // Generate unique file path in private directory
-      const fileKey = `${process.env.PRIVATE_OBJECT_DIR}/${Date.now()}-${fileName}`;
+      const timestamp = Date.now();
+      const fileKey = `${process.env.PRIVATE_OBJECT_DIR || '.private'}/${timestamp}-${fileName}`;
       
-      // For Replit object storage, return the upload URL and file URL
-      const uploadUrl = `${process.env.PUBLIC_BASE_URL}/api/objects/${encodeURIComponent(fileKey)}`;
-      const fileUrl = uploadUrl;
+      // For Replit/development environment, create upload URL
+      // In production with real object storage (S3, GCS), you would generate actual signed URLs
+      const baseUrl = process.env.PUBLIC_BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
+      const uploadUrl = `${baseUrl}/api/objects/${encodeURIComponent(fileKey)}`;
+      const fileUrl = uploadUrl; // Same URL for both upload and access in this implementation
       
-      res.json({
-        method: 'PUT',
+      const response = {
         url: uploadUrl,
-        fields: {},
+        method: 'PUT',
         headers: {
           'Content-Type': contentType
         },
         fileUrl
+      };
+      
+      console.log(`✅ Upload URL generated [${req.requestId}]:`, { 
+        fileKey, 
+        uploadUrlLength: uploadUrl.length,
+        responseKeys: Object.keys(response)
       });
-    } catch (error) {
-      console.error('Object storage upload URL error:', error);
+      
+      res.json(response);
+    } catch (error: any) {
+      console.error(`❌ Upload URL generation failed [${req.requestId}]:`, error);
       res.status(500).json({ error: 'Failed to generate upload URL' });
     }
   });
