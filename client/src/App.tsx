@@ -121,6 +121,16 @@ function ClientRouter() {
           <Route path="/payments" component={() => <div className="p-6">Payments Module - Coming Soon</div>} />
           <Route path="/roi" component={() => <div className="p-6">ROI Analytics Module - Coming Soon</div>} />
           <Route path="/insights" component={Insights} />
+          <Route path="/admin/csv-import" component={() => (
+            <AdminProtectedRoute>
+              <AdminCSVImport />
+            </AdminProtectedRoute>
+          )} />
+          <Route path="/admin/dashboard" component={() => (
+            <AdminProtectedRoute>
+              <AdminDashboard />
+            </AdminProtectedRoute>
+          )} />
           <Route path="/settings" component={ProfileSettings} />
           {/* Public routes accessible from client dashboard */}
           <Route path="/hire-talent" component={TalentSearch} />
@@ -190,18 +200,6 @@ function AppContent() {
       <Route path="/roi" component={ClientRouter} />
       {/* Talent Protected Routes */}
       <Route path="/talent-portal" component={TalentRouter} />
-      
-      {/* Admin Protected Routes */}
-      <Route path="/admin/dashboard" component={() => (
-        <AdminProtectedRoute>
-          <AdminDashboard />
-        </AdminProtectedRoute>
-      )} />
-      <Route path="/admin/csv-import" component={() => (
-        <AdminProtectedRoute>
-          <AdminCSVImport />
-        </AdminProtectedRoute>
-      )} />
       
       {/* Settings Routes - Available for both client and talent */}
       <Route path="/settings" component={() => {
