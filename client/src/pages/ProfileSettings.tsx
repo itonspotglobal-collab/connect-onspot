@@ -771,10 +771,7 @@ export default function ProfileSettings() {
                           }}
                           buttonClassName="w-full"
                         >
-                          {/* IMPORTANT: prevent it acting like a submit */}
-                          <button type="button" className="w-full">
-                            Upload Resume (PDF, DOC, DOCX - max 10MB)
-                          </button>
+                          Upload Resume (PDF, DOC, DOCX - max 10MB)
                         </ObjectUploader>
                       )}
                     </div>
@@ -822,6 +819,7 @@ export default function ProfileSettings() {
                                   <Button
                                     size="sm"
                                     variant="destructive"
+                                    type="button"
                                     onClick={() => removeDocument(doc.id)}
                                   >
                                     <X className="w-4 h-4" />
