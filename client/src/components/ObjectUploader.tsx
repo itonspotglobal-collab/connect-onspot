@@ -76,21 +76,42 @@ export function ObjectUploader({
       })
   );
 
+  const handleButtonClick = () => {
+    console.log("🎯 ObjectUploader button clicked, opening modal...");
+    setShowModal(true);
+    console.log("📁 Modal state set to true");
+  };
+
+  const handleModalClose = () => {
+    console.log("❌ Closing upload modal");
+    setShowModal(false);
+  };
+
   return (
     <div>
       <Button 
         type="button" 
-        onClick={() => setShowModal(true)} 
+        onClick={handleButtonClick}
         className={buttonClassName}
       >
         {children}
       </Button>
 
+      {showModal && (
+        <div>
+          <p style={{ color: 'red', fontSize: '12px', marginTop: '4px' }}>
+            Debug: Modal should be visible (showModal: {showModal.toString()})
+          </p>
+        </div>
+      )}
+
       <DashboardModal
         uppy={uppy}
         open={showModal}
-        onRequestClose={() => setShowModal(false)}
+        onRequestClose={handleModalClose}
         proudlyDisplayPoweredByUppy={false}
+        width={750}
+        height={550}
       />
     </div>
   );
