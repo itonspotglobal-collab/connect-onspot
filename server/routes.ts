@@ -1017,6 +1017,223 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Talent Import from Resume/CSV
+  app.post('/api/talent/import', authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { fileUrl, fileName, type, fileContent } = req.body;
+      
+      if (!fileName) {
+        return res.status(400).json({ 
+          success: false,
+          error: 'fileName is required' 
+        });
+      }
+
+      // Support either fileUrl (for production) or fileContent (for development/testing)
+      if (!fileUrl && !fileContent) {
+        return res.status(400).json({ 
+          success: false,
+          error: 'Either fileUrl or fileContent is required' 
+        });
+      }
+
+      console.log(`📥 Starting talent profile import [${req.requestId}]:`, { 
+        userId, 
+        fileName, 
+        type 
+      });
+
+      // Get the user's existing profile
+      const existingProfile = await storage.getProfileByUserId(userId);
+      
+      // Determine file type from fileName
+      const fileExtension = fileName.toLowerCase().split('.').pop();
+      let parsedData: any = {};
+
+      // Parse based on file type
+      if (fileExtension === 'csv') {
+        // For CSV files, we expect structured data
+        console.log(`📊 Parsing CSV file: ${fileName}`);
+        
+        // Get CSV content from either provided content or fetch from URL
+        let csvContent: string;
+        try {
+          if (fileContent) {
+            // Development/testing: content provided directly
+            csvContent = fileContent;
+            console.log(`📄 Using provided CSV content (${csvContent.length} bytes)`);
+          } else {
+            // Production: fetch from object storage URL
+            console.log(`📥 Fetching CSV from: ${fileUrl}`);
+            const fetchResponse = await fetch(fileUrl);
+            if (!fetchResponse.ok) {
+              throw new Error(`Failed to fetch file: ${fetchResponse.statusText}`);
+            }
+            csvContent = await fetchResponse.text();
+            console.log(`📄 CSV content fetched (${csvContent.length} bytes)`);
+          }
+        } catch (fetchError: any) {
+          console.error('❌ Failed to fetch/read file:', fetchError);
+          return res.status(400).json({
+            success: false,
+            error: `Failed to fetch uploaded file: ${fetchError.message}`
+          });
+        }
+        
+        const parseResult = Papa.parse(csvContent, {
+          header: true,
+          skipEmptyLines: true,
+          transformHeader: (header) => header.trim(),
+        });
+
+        if (parseResult.errors && parseResult.errors.length > 0) {
+          return res.status(400).json({
+            success: false,
+            error: "CSV parsing failed",
+            details: parseResult.errors
+          });
+        }
+
+        // Extract first row of data (for single talent import)
+        const row = parseResult.data[0] as any;
+        if (!row) {
+          return res.status(400).json({
+            success: false,
+            error: "No data found in CSV file"
+          });
+        }
+
+        parsedData = {
+          firstName: row.first_name?.trim(),
+          lastName: row.last_name?.trim(),
+          title: row.title?.trim(),
+          bio: row.bio?.trim(),
+          location: row.location?.trim() || 'Global',
+          hourlyRate: row.hourly_rate ? parseFloat(row.hourly_rate) : undefined,
+          phoneNumber: row.phone_number?.trim(),
+          skills: row.skills ? row.skills.split(',').map((s: string) => s.trim()).filter(Boolean) : [],
+          languages: row.languages ? row.languages.split(',').map((l: string) => l.trim()).filter(Boolean) : ['English'],
+        };
+
+      } else if (fileExtension === 'pdf' || fileExtension === 'docx' || fileExtension === 'doc') {
+        // For resume files, extract basic information
+        // Note: Full PDF/DOCX parsing requires additional libraries like pdf-parse or mammoth
+        console.log(`📄 Processing resume file: ${fileName}`);
+        
+        // Advanced parsing would require:
+        // 1. Install pdf-parse: npm install pdf-parse
+        // 2. Install mammoth (for DOCX): npm install mammoth
+        // 3. Extract text from the file
+        // 4. Use NLP/regex to find: name, contact info, skills, experience
+        // 5. Map extracted data to profile fields
+        
+        console.log(`⚠️ PDF/DOCX parsing requires additional libraries (pdf-parse, mammoth).`);
+        console.log(`💡 To test profile enrichment, upload a CSV file with this format:`);
+        console.log(`   first_name,last_name,title,bio,location,hourly_rate,phone_number,skills,languages`);
+        
+        return res.status(200).json({
+          success: true,
+          message: "Resume uploaded successfully. For automatic profile enrichment, please upload a CSV file instead, or update your profile manually.",
+          profile: existingProfile,
+          requiresManualUpdate: true,
+          csvTemplate: {
+            columns: ['first_name', 'last_name', 'title', 'bio', 'location', 'hourly_rate', 'phone_number', 'skills', 'languages'],
+            example: 'John,Doe,Full Stack Developer,"5 years experience",Philippines,35,+63-123-4567,"JavaScript,React,Node.js","English,Tagalog"'
+          }
+        });
+
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: `Unsupported file type: .${fileExtension}. Please upload CSV, PDF, or DOCX files.`
+        });
+      }
+
+      // Update or create profile with parsed data
+      const profileData: any = {
+        userId,
+        firstName: parsedData.firstName || existingProfile?.firstName || 'Unknown',
+        lastName: parsedData.lastName || existingProfile?.lastName || 'User',
+      };
+
+      // Add optional fields if they exist
+      if (parsedData.title) profileData.title = parsedData.title;
+      if (parsedData.bio) profileData.bio = parsedData.bio;
+      if (parsedData.location) profileData.location = parsedData.location;
+      if (parsedData.hourlyRate) profileData.hourlyRate = parsedData.hourlyRate.toString();
+      if (parsedData.phoneNumber) profileData.phoneNumber = parsedData.phoneNumber;
+      if (parsedData.languages) profileData.languages = parsedData.languages;
+
+      // Update or create profile
+      let updatedProfile;
+      if (existingProfile) {
+        updatedProfile = await storage.updateProfile(existingProfile.id, profileData);
+      } else {
+        updatedProfile = await storage.createProfile(profileData);
+      }
+
+      // Handle skills if provided
+      if (parsedData.skills && parsedData.skills.length > 0) {
+        console.log(`🎯 Processing skills:`, parsedData.skills);
+        
+        // Get existing user skills to avoid duplicates
+        const existingUserSkills = await storage.getUserSkills(userId);
+        const existingSkillIds = new Set(existingUserSkills.map(us => us.skillId));
+        
+        // Get or create skills and link them to user
+        for (const skillName of parsedData.skills) {
+          try {
+            // Find or create skill
+            let skill = await storage.getSkillByName(skillName);
+            if (!skill) {
+              skill = await storage.createSkill({
+                name: skillName,
+                category: 'Technical' // Default category
+              });
+            }
+
+            // Add skill to user if not already added
+            if (!existingSkillIds.has(skill.id)) {
+              await storage.createUserSkill({
+                userId,
+                skillId: skill.id,
+                level: 'intermediate', // Default level
+                yearsExperience: 0
+              });
+            }
+          } catch (error) {
+            console.error(`❌ Error processing skill ${skillName}:`, error);
+            // Continue with other skills even if one fails
+          }
+        }
+      }
+
+      console.log(`✅ Talent profile import completed [${req.requestId}]:`, {
+        profileId: updatedProfile?.id,
+        skillsProcessed: parsedData.skills?.length || 0
+      });
+
+      res.json({
+        success: true,
+        message: "Talent profile updated from uploaded file",
+        profile: updatedProfile || existingProfile,
+        skillsAdded: parsedData.skills?.length || 0
+      });
+
+    } catch (error: any) {
+      console.error(`❌ Talent import failed [${req.requestId}]:`, error);
+      res.status(500).json({ 
+        success: false,
+        error: error.message || "Failed to import talent profile"
+      });
+    }
+  });
+
   // PHASE 1 PRIORITY ROUTES
 
   // ==================== DOCUMENTS ====================

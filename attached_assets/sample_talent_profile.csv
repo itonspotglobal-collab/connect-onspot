@@ -1,0 +1,2 @@
+first_name,last_name,title,bio,location,hourly_rate,phone_number,skills,languages
+John,Doe,Full Stack Developer,"Experienced developer with 5+ years in web development. Specialized in React and Node.js applications.",Philippines,35,+63-123-4567,"JavaScript,React,Node.js,TypeScript,PostgreSQL","English,Tagalog"
