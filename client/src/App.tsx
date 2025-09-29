@@ -36,6 +36,7 @@ import TrustSafety from "@/pages/TrustSafety";
 import LeadIntake from "@/pages/LeadIntake";
 import AdminCSVImport from "@/pages/AdminCSVImport";
 import InvestorsCorner from "@/pages/InvestorsCorner";
+import ProfileSettings from "@/pages/ProfileSettings";
 
 // Public Routes - Always available regardless of authentication
 function PublicRouter() {
@@ -124,7 +125,7 @@ function ClientRouter() {
               <AdminCSVImport />
             </AdminProtectedRoute>
           )} />
-          <Route path="/settings" component={() => <div className="p-6">Settings Module - Coming Soon</div>} />
+          <Route path="/settings" component={ProfileSettings} />
           {/* Public routes accessible from client dashboard */}
           <Route path="/hire-talent" component={TalentSearch} />
           <Route path="/find-work" component={FindWork} />
@@ -146,6 +147,7 @@ function TalentRouter() {
           <Route path="/" component={TalentPortal} />
           <Route path="/get-hired" component={TalentPortal} />
           <Route path="/talent-portal" component={TalentPortal} />
+          <Route path="/settings" component={ProfileSettings} />
           {/* Redirect any other paths to talent portal */}
           <Route component={TalentPortal} />
         </Switch>
@@ -190,10 +192,33 @@ function AppContent() {
       <Route path="/contracts" component={ClientRouter} />
       <Route path="/payments" component={ClientRouter} />
       <Route path="/roi" component={ClientRouter} />
-      <Route path="/settings" component={ClientRouter} />
-      
       {/* Talent Protected Routes */}
       <Route path="/talent-portal" component={TalentRouter} />
+      
+      {/* Settings Route - Available for both client and talent */}
+      <Route path="/settings" component={() => {
+        const { user } = useAuth();
+        if (user?.role === "client") {
+          return (
+            <ClientProtectedRoute>
+              <ClientLayout>
+                <ProfileSettings />
+                <VanessaChat />
+              </ClientLayout>
+            </ClientProtectedRoute>
+          );
+        } else if (user?.role === "talent") {
+          return (
+            <TalentProtectedRoute>
+              <div className="min-h-screen bg-background">
+                <ProfileSettings />
+                <VanessaChat />
+              </div>
+            </TalentProtectedRoute>
+          );
+        }
+        return <PublicRouter />;
+      }} />
       
       {/* Catch all */}
       <Route component={() => <PublicRouter />} />
