@@ -127,4 +127,82 @@ export function ObjectUploader({
                 ? "Resume Uploaded"
                 : "Profile Updated",
               description:
-                importResult.m
+                importResult.message ||
+                "Your profile has been updated from the uploaded file.",
+            });
+          }
+        } catch (importError: any) {
+          console.error("❌ Talent import failed:", importError);
+          toast({
+            title: "Import Failed",
+            description:
+              importError.response?.data?.error ||
+              "File uploaded but profile import failed. Please update manually.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "Upload Successful",
+          description: `${file.name} uploaded successfully.`,
+        });
+      }
+
+      if (onComplete) {
+        await onComplete({
+          successful: [
+            {
+              name: file.name,
+              type: file.type,
+              size: file.size,
+              uploadURL: fileUrl,
+            },
+          ],
+          failed: [],
+          importResult,
+        });
+      }
+    } catch (error: any) {
+      console.error("❌ Upload failed:", error);
+      toast({
+        title: "Upload Failed",
+        description:
+          error?.message ||
+          "Failed to upload file. Please check server response and try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  return (
+    <div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        style={{ display: "none" }}
+        onChange={handleFileSelection}
+        multiple={maxNumberOfFiles > 1}
+        accept=".pdf,.doc,.docx,.csv,.mp4,.mov,.avi,.webm"
+      />
+
+      <Button
+        type="button"
+        onClick={handleButtonClick}
+        className={buttonClassName}
+        disabled={isUploading}
+      >
+        {isUploading ? (
+          <>
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+            Uploading...
+          </>
+        ) : (
+          children
+        )}
+      </Button>
+    </div>
+  );
+}
