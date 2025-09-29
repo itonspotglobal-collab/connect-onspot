@@ -1,12 +1,8 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import type { ReactNode } from "react";
-import Uppy from "@uppy/core";
-import { DashboardModal } from "@uppy/react";
-// CSS imports removed due to package compatibility issues
-// The component will work without styling for now
-import AwsS3 from "@uppy/aws-s3";
-import type { UploadResult } from "@uppy/core";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { authAPI } from "@/lib/api";
 
 interface ObjectUploaderProps {
   maxNumberOfFiles?: number;
@@ -15,40 +11,19 @@ interface ObjectUploaderProps {
     method: "PUT";
     url: string;
   }>;
-  onComplete?: (
-    result: UploadResult<Record<string, unknown>, Record<string, unknown>>
-  ) => void;
+  onComplete?: (result: any) => void;
   buttonClassName?: string;
   children: ReactNode;
 }
 
 /**
- * A file upload component that renders as a button and provides a modal interface for
- * file management.
+ * A simple file upload component that uses native file input for better reliability.
  * 
  * Features:
- * - Renders as a customizable button that opens a file upload modal
- * - Provides a modal interface for:
- *   - File selection
- *   - File preview
- *   - Upload progress tracking
- *   - Upload status display
- * 
- * The component uses Uppy under the hood to handle all file upload functionality.
- * All file management features are automatically handled by the Uppy dashboard modal.
- * 
- * @param props - Component props
- * @param props.maxNumberOfFiles - Maximum number of files allowed to be uploaded
- *   (default: 1)
- * @param props.maxFileSize - Maximum file size in bytes (default: 10MB)
- * @param props.onGetUploadParameters - Function to get upload parameters (method and URL).
- *   Typically used to fetch a presigned URL from the backend server for direct-to-S3
- *   uploads.
- * @param props.onComplete - Callback function called when upload is complete. Typically
- *   used to make post-upload API calls to update server state and set object ACL
- *   policies.
- * @param props.buttonClassName - Optional CSS class name for the button
- * @param props.children - Content to be rendered inside the button
+ * - Simple file selection via native file input
+ * - Direct upload to object storage
+ * - Progress indication
+ * - Error handling
  */
 export function ObjectUploader({
   maxNumberOfFiles = 1,
@@ -58,61 +33,128 @@ export function ObjectUploader({
   buttonClassName,
   children,
 }: ObjectUploaderProps) {
-  const [showModal, setShowModal] = useState(false);
-  const [uppy] = useState(() =>
-    new Uppy({
-      restrictions: {
-        maxNumberOfFiles,
-        maxFileSize,
-      },
-      autoProceed: false,
-    })
-      .use(AwsS3, {
-        shouldUseMultipart: false,
-        getUploadParameters: onGetUploadParameters,
-      })
-      .on("complete", (result) => {
-        onComplete?.(result);
-      })
-  );
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const handleButtonClick = () => {
-    console.log("🎯 ObjectUploader button clicked, opening modal...");
-    setShowModal(true);
-    console.log("📁 Modal state set to true");
+    console.log("🎯 ObjectUploader button clicked, opening file picker...");
+    fileInputRef.current?.click();
   };
 
-  const handleModalClose = () => {
-    console.log("❌ Closing upload modal");
-    setShowModal(false);
+  const handleFileSelection = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0]; // Take first file for single upload
+    console.log("📁 File selected:", file.name, "Size:", file.size);
+
+    // Validate file size
+    if (file.size > maxFileSize) {
+      toast({
+        title: "File Too Large",
+        description: `File size (${Math.round(file.size / 1024 / 1024)}MB) exceeds the maximum allowed size (${Math.round(maxFileSize / 1024 / 1024)}MB).`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      // Get upload parameters from backend
+      console.log("🔗 Getting upload parameters...");
+      const uploadParams = await onGetUploadParameters();
+      
+      // Get signed upload URL
+      console.log("📤 Requesting signed upload URL...");
+      const response = await authAPI.post(uploadParams.url, {
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+      });
+
+      const { uploadURL } = response;
+      console.log("✅ Got signed URL:", uploadURL);
+
+      // Upload file directly to object storage
+      console.log("⬆️ Uploading file to object storage...");
+      const uploadResponse = await fetch(uploadURL, {
+        method: "PUT",
+        body: file,
+        headers: {
+          'Content-Type': file.type,
+        },
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error(`Upload failed: ${uploadResponse.statusText}`);
+      }
+
+      console.log("🎉 File uploaded successfully!");
+
+      // Call completion callback with mock result structure
+      if (onComplete) {
+        const mockResult = {
+          successful: [{
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            uploadURL: uploadURL,
+          }],
+          failed: [],
+        };
+        
+        await onComplete(mockResult);
+      }
+
+      toast({
+        title: "Upload Successful",
+        description: `${file.name} has been uploaded successfully.`,
+      });
+
+    } catch (error: any) {
+      console.error("❌ Upload failed:", error);
+      toast({
+        title: "Upload Failed",
+        description: error.message || "Failed to upload file. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+      // Clear the file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
 
   return (
     <div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        style={{ display: 'none' }}
+        onChange={handleFileSelection}
+        multiple={maxNumberOfFiles > 1}
+        accept=".pdf,.doc,.docx,.mp4,.mov,.avi,.webm"
+      />
+      
       <Button 
         type="button" 
         onClick={handleButtonClick}
         className={buttonClassName}
+        disabled={isUploading}
       >
-        {children}
+        {isUploading ? (
+          <>
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+            Uploading...
+          </>
+        ) : (
+          children
+        )}
       </Button>
-
-      {showModal && (
-        <div>
-          <p style={{ color: 'red', fontSize: '12px', marginTop: '4px' }}>
-            Debug: Modal should be visible (showModal: {showModal.toString()})
-          </p>
-        </div>
-      )}
-
-      <DashboardModal
-        uppy={uppy}
-        open={showModal}
-        onRequestClose={handleModalClose}
-        proudlyDisplayPoweredByUppy={false}
-        width={750}
-        height={550}
-      />
     </div>
   );
 }
