@@ -8,7 +8,7 @@ interface ObjectUploaderProps {
   maxNumberOfFiles?: number;
   maxFileSize?: number;
   onGetUploadParameters: () => Promise<{
-    method: "PUT";
+    method: "POST" | "PUT";
     url: string;
   }>;
   onComplete?: (result: any) => void;
@@ -74,7 +74,18 @@ export function ObjectUploader({
         contentType: file.type,
       });
 
+      // Check if response and response.data exist
+      if (!response || !response.data) {
+        throw new Error("Invalid response from upload URL endpoint");
+      }
+
       const { url, method, headers, fileUrl } = response.data;
+      
+      // Validate required response properties
+      if (!url) {
+        throw new Error("Upload URL not returned by server");
+      }
+
       console.log("✅ Got signed upload URL:", url);
 
       // Upload file directly to the signed URL
@@ -116,9 +127,25 @@ export function ObjectUploader({
 
     } catch (error: any) {
       console.error("❌ Upload failed:", error);
+      
+      // Provide user-friendly error messages
+      let errorMessage = "Failed to upload file. Please try again.";
+      
+      if (error.message) {
+        if (error.message.includes("Upload URL not returned")) {
+          errorMessage = "Server error: Upload URL not received. Please try again.";
+        } else if (error.message.includes("Invalid response")) {
+          errorMessage = "Server communication error. Please try again.";
+        } else if (error.message.includes("Upload failed:")) {
+          errorMessage = `Upload failed: ${error.message.split(': ')[1] || 'Unknown error'}`;
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Upload Failed",
-        description: error.message || "Failed to upload file. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
