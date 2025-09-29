@@ -731,7 +731,7 @@ export default function ProfileSettings() {
                           maxFileSize={10485760} // 10MB
                           onGetUploadParameters={async () => {
                             return {
-                              method: "PUT" as const,
+                              method: "POST" as const,
                               url: "/api/object-storage/upload-url",
                             };
                           }}
@@ -833,7 +833,7 @@ export default function ProfileSettings() {
                           maxNumberOfFiles={1}
                           maxFileSize={52428800}
                           onGetUploadParameters={async () => ({
-                            method: "PUT" as const,
+                            method: "POST" as const,
                             url: "/api/object-storage/upload-url",
                           })}
                           onComplete={(result: any) =>
