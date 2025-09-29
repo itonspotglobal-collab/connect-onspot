@@ -195,8 +195,33 @@ function AppContent() {
       {/* Talent Protected Routes */}
       <Route path="/talent-portal" component={TalentRouter} />
       
-      {/* Settings Route - Available for both client and talent */}
+      {/* Settings Routes - Available for both client and talent */}
       <Route path="/settings" component={() => {
+        const { user } = useAuth();
+        if (user?.role === "client") {
+          return (
+            <ClientProtectedRoute>
+              <ClientLayout>
+                <ProfileSettings />
+                <VanessaChat />
+              </ClientLayout>
+            </ClientProtectedRoute>
+          );
+        } else if (user?.role === "talent") {
+          return (
+            <TalentProtectedRoute>
+              <div className="min-h-screen bg-background">
+                <ProfileSettings />
+                <VanessaChat />
+              </div>
+            </TalentProtectedRoute>
+          );
+        }
+        return <PublicRouter />;
+      }} />
+      
+      {/* Profile Settings Route - Alias for /settings */}
+      <Route path="/profile-settings" component={() => {
         const { user } = useAuth();
         if (user?.role === "client") {
           return (
