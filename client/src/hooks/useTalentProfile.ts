@@ -2,16 +2,11 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
-import api, { authAPI } from "@/lib/api";
+import { authAPI } from "@/lib/api";
 import { calculateProfileCompletion } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import {
-  Profile,
-  Skill,
-  Document as DocumentType,
-  PortfolioItem,
-} from "@shared/schema";
+import { Profile, PortfolioItem } from "@shared/schema";
 
 // ---------------------
 // Schema + Types
@@ -26,6 +21,7 @@ export const profileFormSchema = z.object({
   rateCurrency: z.string().default("USD"),
   availability: z.string().default("available"),
   phoneNumber: z.string().optional(),
+  // ✅ Fix: languages MUST be an array of strings
   languages: z.array(z.string()).min(1, "At least one language is required"),
   timezone: z.string().default("Asia/Manila"),
 });
@@ -59,25 +55,6 @@ export interface TalentProfileData {
   profileCompletion: number;
   isNewUser: boolean;
   hasCompletedOnboarding: boolean;
-}
-
-// ---------------------
-// Helper: normalize data for backend
-// ---------------------
-function normalizeProfileData(data: ProfileFormData) {
-  return {
-    first_name: data.firstName,
-    last_name: data.lastName,
-    title: data.title,
-    bio: data.bio,
-    location: data.location,
-    hourly_rate: parseFloat(data.hourlyRate),
-    rate_currency: data.rateCurrency,
-    availability: data.availability,
-    phone_number: data.phoneNumber,
-    languages: data.languages,
-    timezone: data.timezone,
-  };
 }
 
 // ---------------------
@@ -187,14 +164,17 @@ export function useTalentProfile() {
   // ---- Mutations ----
   const profileMutation = useMutation({
     mutationFn: async (data: ProfileFormData) => {
-      console.log(
-        "🚀 Profile Update Payload (normalized):",
-        normalizeProfileData(data),
-      );
-      const response = await authAPI.put(
-        "/api/profiles/me",
-        normalizeProfileData(data),
-      );
+      // ✅ Ensure languages is ALWAYS an array
+      const normalizedData = {
+        ...data,
+        languages: Array.isArray(data.languages)
+          ? data.languages
+          : [data.languages || "English"],
+      };
+
+      console.log("🚀 Profile Update Payload:", normalizedData);
+
+      const response = await authAPI.put("/api/profiles/me", normalizedData);
       console.log("✅ Profile Update Response:", response);
       return response;
     },
@@ -202,11 +182,11 @@ export function useTalentProfile() {
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
       toast({
         title: "Profile Saved!",
-        description: "Your profile information has been updated successfully.",
+        description: "Your profile information has been saved successfully.",
       });
     },
     onError: (error: any) => {
-      console.error("❌ Profile update failed:", error);
+      console.error("❌ Profile Update Error:", error);
       toast({
         title: "Profile Save Failed",
         description: error?.message || "Could not save profile",
@@ -219,18 +199,12 @@ export function useTalentProfile() {
     mutationFn: async (skillNames: string[]) => {
       if (!user?.id) throw new Error("User not authenticated");
 
-      console.log("🔧 Skills Update - Selected skills:", skillNames);
-      console.log("🔧 Skills Update - Available skills:", availableSkills);
-
       const skillsToAdd = skillNames
         .map((skillName) => {
           const skill = (availableSkills as any[]).find(
             (s) => s.name === skillName,
           );
-          if (!skill) {
-            console.warn(`⚠️ Skill not found: ${skillName}`);
-            return null;
-          }
+          if (!skill) return null;
           return {
             skillId: skill.id,
             level: "intermediate",
@@ -239,15 +213,12 @@ export function useTalentProfile() {
         })
         .filter(Boolean);
 
-      console.log("🚀 Skills Update Payload:", skillsToAdd);
-
       const results = await Promise.all(
         skillsToAdd.map((skill) =>
           authAPI.post(`/api/users/${user.id}/skills`, skill),
         ),
       );
 
-      console.log("✅ Skills Update Response:", results);
       return results;
     },
     onSuccess: () => {
@@ -277,7 +248,10 @@ export function useTalentProfile() {
       rateCurrency: profile?.rateCurrency || "USD",
       availability: profile?.availability || "available",
       phoneNumber: profile?.phoneNumber || "",
-      languages: profile?.languages || ["English"],
+      // ✅ Always return an array for languages
+      languages: Array.isArray(profile?.languages)
+        ? profile.languages
+        : ["English"],
       timezone: profile?.timezone || "Asia/Manila",
     }),
     [profile, user],
