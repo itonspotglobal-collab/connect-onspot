@@ -35,6 +35,7 @@ import ClientVerification from "@/pages/ClientVerification";
 import TrustSafety from "@/pages/TrustSafety";
 import LeadIntake from "@/pages/LeadIntake";
 import AdminCSVImport from "@/pages/AdminCSVImport";
+import AdminDashboard from "@/pages/AdminDashboard";
 import InvestorsCorner from "@/pages/InvestorsCorner";
 import ProfileSettings from "@/pages/ProfileSettings";
 
@@ -123,6 +124,11 @@ function ClientRouter() {
           <Route path="/admin/csv-import" component={() => (
             <AdminProtectedRoute>
               <AdminCSVImport />
+            </AdminProtectedRoute>
+          )} />
+          <Route path="/admin/dashboard" component={() => (
+            <AdminProtectedRoute>
+              <AdminDashboard />
             </AdminProtectedRoute>
           )} />
           <Route path="/settings" component={ProfileSettings} />
