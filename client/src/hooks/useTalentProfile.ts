@@ -57,25 +57,6 @@ export interface TalentProfileData {
 }
 
 // ---------------------
-// Normalize profile payload for backend
-// ---------------------
-function normalizeProfileData(data: ProfileFormData) {
-  return {
-    first_name: data.firstName,
-    last_name: data.lastName,
-    title: data.title,
-    bio: data.bio ?? "",
-    location: data.location,
-    hourly_rate: parseFloat(data.hourlyRate) || 0,
-    rate_currency: data.rateCurrency,
-    availability: data.availability,
-    phone_number: data.phoneNumber ?? "",
-    languages: data.languages,
-    timezone: data.timezone,
-  };
-}
-
-// ---------------------
 // Hook Implementation
 // ---------------------
 export function useTalentProfile() {
@@ -142,13 +123,13 @@ export function useTalentProfile() {
 
   // ---- Derived states ----
   const profileCompletion = calculateProfileCompletion({
-    firstName: profile?.firstName,
-    lastName: profile?.lastName,
-    title: profile?.title,
-    bio: profile?.bio,
-    location: profile?.location,
-    hourlyRate: profile?.hourlyRate,
-    profilePicture: profile?.profilePicture,
+    firstName: profile?.firstName || undefined,
+    lastName: profile?.lastName || undefined,
+    title: profile?.title || undefined,
+    bio: profile?.bio || undefined,
+    location: profile?.location || undefined,
+    hourlyRate: profile?.hourlyRate || undefined,
+    profilePicture: profile?.profilePicture || undefined,
     selectedSkills,
     uploadedDocuments,
     portfolioItems: [],
@@ -177,9 +158,8 @@ export function useTalentProfile() {
   // ---- Mutations ----
   const profileMutation = useMutation({
     mutationFn: async (data: ProfileFormData) => {
-      const payload = normalizeProfileData(data);
-      console.log("🚀 Profile Update Payload:", payload);
-      return await authAPI.put("/api/profiles/me", payload);
+      // Send camelCase data directly - backend expects camelCase
+      return await authAPI.put("/api/profiles/me", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
@@ -189,7 +169,6 @@ export function useTalentProfile() {
       });
     },
     onError: (error: any) => {
-      console.error("❌ Profile Update Error:", error);
       toast({
         title: "Profile Save Failed",
         description: error?.message || "Could not save profile",
@@ -212,8 +191,6 @@ export function useTalentProfile() {
             : null;
         })
         .filter(Boolean);
-
-      console.log("🚀 Skills Update Payload:", skillsToAdd);
 
       return await Promise.all(
         skillsToAdd.map((skill) =>

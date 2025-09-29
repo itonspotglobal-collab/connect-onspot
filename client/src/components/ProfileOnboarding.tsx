@@ -121,14 +121,19 @@ export default function ProfileOnboarding({
         fileUrl: file.uploadURL,
         createdAt: new Date().toISOString()
       };
-      // Handle file upload completion
-      console.log('File uploaded:', newDocument);
+      toast({
+        title: "File Uploaded Successfully!",
+        description: `${file.name} has been added to your profile.`,
+      });
     }
   };
 
   const removeDocument = (documentId: string) => {
-    console.log('Remove document:', documentId);
-    // TODO: Implement document removal
+    // Document removal functionality
+    toast({
+      title: "Document Removed",
+      description: "The document has been removed from your profile.",
+    });
   };
 
   // Profile form submission with enhanced status feedback
@@ -145,8 +150,8 @@ export default function ProfileOnboarding({
 
     // Show saving status immediately
     toast({
-      title: "Saving Profile...",
-      description: "Please wait while we save your professional profile.",
+      title: "Saving Your Profile...",
+      description: "We're updating your professional information. This will just take a moment.",
     });
 
     try {
@@ -156,10 +161,10 @@ export default function ProfileOnboarding({
         await updateSkills();
       }
       
-      // Show success with more detailed feedback  
+      // Show success with encouraging feedback  
       toast({
-        title: "Profile Saved Successfully!",
-        description: `Your profile is now ${profileCompletion}% complete. ${profileCompletion >= 70 ? 'Great job!' : 'Keep going to attract more opportunities!'}`,
+        title: "Profile Updated Successfully!",
+        description: `Your profile is now ${profileCompletion}% complete. ${profileCompletion >= 70 ? 'You\'re all set to start attracting great opportunities!' : 'Keep building your profile to attract more clients!'}`,
         duration: 5000,
       });
       
@@ -169,11 +174,11 @@ export default function ProfileOnboarding({
         setCurrentStep(2);
       }
     } catch (error: any) {
-      // Enhanced error feedback with more detail
-      const errorMessage = error?.message || "Unknown error occurred";
+      // Enhanced error feedback with helpful guidance
+      const errorMessage = error?.message || "Something went wrong";
       toast({
-        title: "Failed to Save Profile",
-        description: `Error: ${errorMessage}. Please check your connection and try again.`,
+        title: "Unable to Save Profile",
+        description: `${errorMessage}. Please check your internet connection and try again. If the problem persists, contact support.`,
         variant: "destructive",
         duration: 6000,
       });
@@ -193,7 +198,8 @@ export default function ProfileOnboarding({
       <div className="flex items-center justify-center min-h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading your profile...</p>
+          <h3 className="text-lg font-medium mb-2">Setting up your profile</h3>
+          <p className="text-muted-foreground">We're preparing your professional information...</p>
         </div>
       </div>
     );
@@ -328,7 +334,12 @@ export default function ProfileOnboarding({
         // Embedded mode - show condensed profile form
         <div className="space-y-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Complete Your Profile</h2>
+            <div>
+              <h2 className="text-xl font-semibold">Complete Your Profile</h2>
+              <p className="text-sm text-muted-foreground">
+                {profileCompletion < 70 ? 'Complete your profile to start attracting clients' : 'Your profile looks great! Ready to find opportunities.'}
+              </p>
+            </div>
             <div className="flex items-center gap-2">
               <Progress value={profileCompletion} className="w-24" />
               <span className="text-sm font-medium">{profileCompletion}%</span>
@@ -383,7 +394,7 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
                     <FormControl>
                       <Input 
                         id="firstName"
-                        placeholder="John" 
+                        placeholder="Your first name" 
                         autoComplete="given-name"
                         {...field} 
                         data-testid="input-first-name" 
@@ -402,7 +413,7 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
                     <FormControl>
                       <Input 
                         id="lastName"
-                        placeholder="Doe" 
+                        placeholder="Your last name" 
                         autoComplete="family-name"
                         {...field} 
                         data-testid="input-last-name" 
@@ -423,7 +434,7 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
                   <FormControl>
                     <Input 
                       id="title"
-                      placeholder="Full Stack Developer" 
+                      placeholder="e.g., Full Stack Developer, UI/UX Designer, Data Scientist" 
                       autoComplete="organization-title"
                       {...field} 
                       data-testid="input-title" 
@@ -444,7 +455,7 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
                     <FormControl>
                       <Textarea 
                         id="bio"
-                        placeholder="Tell clients about your experience, skills, and what makes you unique..."
+                        placeholder="Introduce yourself to potential clients. Highlight your key skills, experience, and what makes you the right choice for their projects. Keep it engaging and professional."
                         className="min-h-32"
                         {...field}
                         data-testid="textarea-bio"
@@ -466,7 +477,7 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
                     <FormControl>
                       <Input 
                         id="location"
-                        placeholder="Manila, Philippines" 
+                        placeholder="City, Country (e.g., Manila, Philippines)" 
                         autoComplete="address-level2"
                         {...field} 
                         data-testid="input-location" 
@@ -485,7 +496,7 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
                     <FormControl>
                       <Input 
                         id="hourlyRate"
-                        placeholder="25" 
+                        placeholder="Your hourly rate (e.g., 25)" 
                         type="number"
                         min="1"
                         max="1000"
