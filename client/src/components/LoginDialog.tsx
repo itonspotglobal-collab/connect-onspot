@@ -13,13 +13,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { LogIn, Eye, EyeOff, Mail, Shield, Zap, Building, User, ArrowLeft, Briefcase, Lock, CheckCircle } from "lucide-react";
+import { LogIn, Eye, EyeOff, Mail, Shield, Zap, Building, User, Users, ArrowLeft, Briefcase, Lock, CheckCircle } from "lucide-react";
 import { FaGoogle, FaLinkedin } from "react-icons/fa";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
 
-type UserType = "client" | "talent" | null;
+type UserType = "client" | "talent" | "admin" | null;
 type LoginStep = "user-type" | "login";
 
 export function LoginDialog() {
@@ -109,15 +109,23 @@ export function LoginDialog() {
     console.log('🔐 Attempting login for:', email.replace(/^(.{3}).*@/, '$1***@'));
     
     try {
-      const success = await login(email, password, userType);
+      // For admin users, pass null to login function since backend doesn't expect "admin" userType
+      const loginUserType = userType === "admin" ? null : userType;
+      const success = await login(email, password, loginUserType);
       if (success) {
-        const portalType = userType === "client" ? "Client Portal" : "Talent Portal";
+        const portalType = userType === "client" ? "Client Portal" : 
+                          userType === "talent" ? "Talent Portal" : "Admin Portal";
         toast({
           title: "Login Successful",
           description: `Welcome to OnSpot ${portalType}!`,
         });
         setOpen(false);
         resetDialog();
+        
+        // Redirect admin users to admin dashboard
+        if (userType === "admin") {
+          window.location.href = '/admin/dashboard';
+        }
       } else {
         // Use generic message since AuthContext handles specific backend errors
         toast({
@@ -271,12 +279,15 @@ export function LoginDialog() {
                 </Button>
                 <div className="text-center">
                   <DialogTitle className="text-2xl">
-                    {userType === "client" ? "Client Portal" : "Talent Portal"}
+                    {userType === "client" ? "Client Portal" : 
+                     userType === "talent" ? "Talent Portal" : "Admin Portal"}
                   </DialogTitle>
                   <DialogDescription className="text-base">
                     {userType === "client" 
                       ? "Access your client dashboard" 
-                      : "Access your talent dashboard"
+                      : userType === "talent" 
+                        ? "Access your talent dashboard"
+                        : "Access the admin dashboard"
                     }
                   </DialogDescription>
                 </div>
@@ -348,6 +359,19 @@ export function LoginDialog() {
                   </div>
                 </CardContent>
               </Card>
+            </div>
+            
+            {/* Admin Portal Button */}
+            <div className="mt-6 flex justify-center">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => handleSelectUserType("admin")}
+                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                data-testid="button-admin-login"
+              >
+                🔑 Admin Portal
+              </Button>
             </div>
           </div>
         )}
@@ -430,7 +454,7 @@ export function LoginDialog() {
                     <p className="text-xs text-muted-foreground">24/7 Support</p>
                   </div>
                 </>
-              ) : (
+              ) : userType === "talent" ? (
                 <>
                   <div className="text-center">
                     <Briefcase className="h-6 w-6 mx-auto text-[hsl(var(--premium-gold))] mb-2" />
@@ -443,6 +467,21 @@ export function LoginDialog() {
                   <div className="text-center">
                     <User className="h-6 w-6 mx-auto text-[hsl(var(--premium-gold))] mb-2" />
                     <p className="text-xs text-muted-foreground">Career Growth</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-center">
+                    <Shield className="h-6 w-6 mx-auto text-red-600 mb-2" />
+                    <p className="text-xs text-muted-foreground">System Control</p>
+                  </div>
+                  <div className="text-center">
+                    <Users className="h-6 w-6 mx-auto text-red-600 mb-2" />
+                    <p className="text-xs text-muted-foreground">User Management</p>
+                  </div>
+                  <div className="text-center">
+                    <Lock className="h-6 w-6 mx-auto text-red-600 mb-2" />
+                    <p className="text-xs text-muted-foreground">Admin Access</p>
                   </div>
                 </>
               )}
@@ -509,7 +548,8 @@ export function LoginDialog() {
               <div className="flex flex-col gap-2">
                 <Button type="submit" disabled={isLoading} className="w-full" data-testid="button-submit-login">
                   {isLoading ? "Signing in..." : 
-                    userType === "client" ? "Access Client Portal" : "Access Talent Portal"
+                    userType === "client" ? "Access Client Portal" : 
+                    userType === "talent" ? "Access Talent Portal" : "Access Admin Portal"
                   }
                 </Button>
                 <Button type="button" variant="outline" onClick={handleBackToUserType}>
