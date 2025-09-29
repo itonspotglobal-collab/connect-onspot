@@ -18,7 +18,8 @@ import {
   type Dispute, type InsertDispute,
   type Notification, type InsertNotification,
   type LeadIntake, type InsertLeadIntake,
-  type CsvTalentRow, type CsvBulkImport, type CsvImportResult, type CsvTemplate, type BulkTalentData
+  type CsvTalentRow, type CsvBulkImport, type CsvImportResult, type CsvTemplate, type BulkTalentData,
+  type Document, type InsertDocument
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -229,6 +230,13 @@ export interface IStorage {
   }>;
   ensureSkillsExist(skillNames: string[]): Promise<Skill[]>;
   getUserByEmail(email: string): Promise<User | undefined>;
+
+  // Documents
+  getDocument(id: string): Promise<Document | undefined>;
+  getUserDocuments(userId: string): Promise<Document[]>;
+  createDocument(document: InsertDocument): Promise<Document>;
+  updateDocument(id: string, updates: Partial<InsertDocument>): Promise<Document | undefined>;
+  deleteDocument(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -252,6 +260,7 @@ export class MemStorage implements IStorage {
   private notifications: Map<string, Notification>;
   private linkedinProfiles: Map<string, any>;
   private leadIntakes: Map<string, LeadIntake>;
+  private documents: Map<string, Document>;
 
   // Counter for auto-incrementing IDs
   private skillIdCounter: number = 1;
@@ -279,6 +288,7 @@ export class MemStorage implements IStorage {
     this.notifications = new Map();
     this.linkedinProfiles = new Map();
     this.leadIntakes = new Map();
+    this.documents = new Map();
 
     // Seed default skills for OnSpot marketplace
     this.seedDefaultSkills();
@@ -1939,6 +1949,44 @@ export class MemStorage implements IStorage {
   async getUserByEmail(email: string): Promise<User | undefined> {
     const allUsers = Array.from(this.users.values());
     return allUsers.find(user => user.email === email);
+  }
+
+  // Document Methods
+  async getDocument(id: string): Promise<Document | undefined> {
+    return this.documents.get(id);
+  }
+
+  async getUserDocuments(userId: string): Promise<Document[]> {
+    return Array.from(this.documents.values()).filter(doc => doc.userId === userId);
+  }
+
+  async createDocument(insertDocument: InsertDocument): Promise<Document> {
+    const id = randomUUID();
+    const document: Document = {
+      id,
+      ...insertDocument,
+      isPublic: insertDocument.isPublic ?? false,
+      isPrimary: insertDocument.isPrimary ?? false,
+      fileSize: insertDocument.fileSize ?? null,
+      mimeType: insertDocument.mimeType ?? null,
+      extractedText: insertDocument.extractedText ?? null,
+      createdAt: new Date(),
+    };
+    this.documents.set(id, document);
+    return document;
+  }
+
+  async updateDocument(id: string, updates: Partial<InsertDocument>): Promise<Document | undefined> {
+    const document = this.documents.get(id);
+    if (!document) return undefined;
+
+    const updatedDocument: Document = { ...document, ...updates };
+    this.documents.set(id, updatedDocument);
+    return updatedDocument;
+  }
+
+  async deleteDocument(id: string): Promise<boolean> {
+    return this.documents.delete(id);
   }
 }
 

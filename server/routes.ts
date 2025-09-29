@@ -17,7 +17,8 @@ import {
   insertMilestoneSchema, insertTimeEntrySchema, insertMessageThreadSchema, insertMessageSchema,
   insertReviewSchema, insertPortfolioItemSchema, insertCertificationSchema, insertPaymentSchema,
   insertDisputeSchema, insertNotificationSchema, insertLeadIntakeSchema,
-  csvTalentRowSchema, csvBulkImportSchema, csvImportResultSchema, csvTemplateSchema
+  csvTalentRowSchema, csvBulkImportSchema, csvImportResultSchema, csvTemplateSchema,
+  insertDocumentSchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -1025,6 +1026,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PHASE 1 PRIORITY ROUTES
+
+  // ==================== DOCUMENTS ====================
+  // GET /api/documents - Get user's documents
+  app.get("/api/documents", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      console.log(`🔍 Fetching documents [${req.requestId}]:`, { userId });
+      const documents = await storage.getUserDocuments(userId);
+      res.json(documents);
+    } catch (error) {
+      handleRouteError(error, req, res, "Get user documents", 500);
+    }
+  });
+
+  // POST /api/documents - Create new document
+  app.post("/api/documents", 
+    authenticateJWT,
+    validateRequest(insertDocumentSchema.omit({ userId: true }), 'body'),
+    async (req: any, res) => {
+      try {
+        const userId = req.user?.id;
+        if (!userId) {
+          return res.status(401).json({ error: "Authentication required" });
+        }
+
+        console.log(`📄 Creating document [${req.requestId}]:`, { userId, type: req.body.type });
+        const document = await storage.createDocument({
+          ...req.body,
+          userId
+        });
+        res.status(201).json(document);
+      } catch (error) {
+        handleRouteError(error, req, res, "Create document", 500);
+      }
+    }
+  );
+
+  // PUT /api/documents/:id - Update document
+  app.put("/api/documents/:id",
+    authenticateJWT,
+    validateRequest(z.object({ id: z.string().min(1) }), 'params'),
+    validateRequest(insertDocumentSchema.omit({ userId: true }).partial(), 'body'),
+    async (req: any, res) => {
+      try {
+        const userId = req.user?.id;
+        const { id } = req.params;
+        
+        // Check if document exists and belongs to user
+        const existingDoc = await storage.getDocument(id);
+        if (!existingDoc) {
+          return res.status(404).json({ error: "Document not found" });
+        }
+        if (existingDoc.userId !== userId) {
+          return res.status(403).json({ error: "Access denied" });
+        }
+
+        // Security: Remove userId from update data to prevent reassignment
+        const { userId: _, ...updateData } = req.body;
+
+        console.log(`📝 Updating document [${req.requestId}]:`, { userId, documentId: id });
+        const document = await storage.updateDocument(id, updateData);
+        res.json(document);
+      } catch (error) {
+        handleRouteError(error, req, res, "Update document", 500);
+      }
+    }
+  );
+
+  // DELETE /api/documents/:id - Delete document
+  app.delete("/api/documents/:id",
+    authenticateJWT,
+    validateRequest(z.object({ id: z.string().min(1) }), 'params'),
+    async (req: any, res) => {
+      try {
+        const userId = req.user?.id;
+        const { id } = req.params;
+        
+        // Check if document exists and belongs to user
+        const existingDoc = await storage.getDocument(id);
+        if (!existingDoc) {
+          return res.status(404).json({ error: "Document not found" });
+        }
+        if (existingDoc.userId !== userId) {
+          return res.status(403).json({ error: "Access denied" });
+        }
+
+        console.log(`🗑️ Deleting document [${req.requestId}]:`, { userId, documentId: id });
+        const deleted = await storage.deleteDocument(id);
+        if (deleted) {
+          res.json({ success: true, message: "Document deleted successfully" });
+        } else {
+          res.status(500).json({ error: "Failed to delete document" });
+        }
+      } catch (error) {
+        handleRouteError(error, req, res, "Delete document", 500);
+      }
+    }
+  );
 
   // ==================== USERS ====================
   app.get("/api/users/:id", 

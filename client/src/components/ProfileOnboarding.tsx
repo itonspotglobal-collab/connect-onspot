@@ -38,6 +38,8 @@ import { useTalentProfile, profileFormSchema, ProfileFormData } from "@/hooks/us
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { authAPI } from "@/lib/api";
+import { queryClient } from "@/lib/queryClient";
 
 interface ProfileOnboardingProps {
   mode?: "full" | "embedded";
@@ -111,29 +113,64 @@ export default function ProfileOnboarding({
     };
   };
 
-  const handleUploadComplete = (result: any, type: string) => {
+  const handleUploadComplete = async (result: any, type: string) => {
     if (result.successful && result.successful.length > 0) {
       const file = result.successful[0];
-      const newDocument = {
-        id: Math.random().toString(),
-        type: type as any,
-        fileName: file.name,
-        fileUrl: file.uploadURL,
-        createdAt: new Date().toISOString()
-      };
-      toast({
-        title: "File Uploaded Successfully!",
-        description: `${file.name} has been added to your profile.`,
-      });
+      
+      try {
+        // Create document record in backend
+        const documentData = {
+          type: type,
+          fileName: file.name,
+          fileUrl: file.uploadURL,
+          fileSize: file.size || null,
+          mimeType: file.type || null,
+          isPublic: false,
+          isPrimary: false
+        };
+
+        const newDocument = await authAPI.post("/api/documents", documentData);
+        
+        // Update local state by invalidating queries
+        queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
+        
+        toast({
+          title: "File Uploaded Successfully!",
+          description: `${file.name} has been added to your profile.`,
+        });
+      } catch (error: any) {
+        console.error("Failed to save document:", error);
+        toast({
+          title: "Upload Error",
+          description: "File uploaded but failed to save to your profile. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
-  const removeDocument = (documentId: string) => {
-    // Document removal functionality
-    toast({
-      title: "Document Removed",
-      description: "The document has been removed from your profile.",
-    });
+  const removeDocument = async (documentId: string) => {
+    try {
+      // Remove document from backend
+      await authAPI.delete(`/api/documents/${documentId}`);
+      
+      // Update local state by invalidating queries
+      queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
+      
+      toast({
+        title: "Document Removed",
+        description: "The document has been removed from your profile.",
+      });
+    } catch (error: any) {
+      console.error("Failed to remove document:", error);
+      toast({
+        title: "Removal Error",
+        description: "Failed to remove the document. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Profile form submission with enhanced status feedback
@@ -161,10 +198,13 @@ export default function ProfileOnboarding({
         await updateSkills();
       }
       
-      // Show success with encouraging feedback  
+      // Invalidate queries and wait for refetch
+      await queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
+      
+      // Show success with encouraging feedback - completion will be updated on next render
       toast({
         title: "Profile Updated Successfully!",
-        description: `Your profile is now ${profileCompletion}% complete. ${profileCompletion >= 70 ? 'You\'re all set to start attracting great opportunities!' : 'Keep building your profile to attract more clients!'}`,
+        description: "Your profile has been saved successfully. Keep building your profile to attract more opportunities!",
         duration: 5000,
       });
       
