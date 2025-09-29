@@ -1,0 +1,39 @@
+page in `client/src/pages/AdminDashboard.tsx` for the OnSpot app.  
+
+Requirements:  
+1. **Admin-only Access**  
+   - Use `useAuth()` context to get the current user.  
+   - If the user is not logged in or `user.role !== "admin"`, redirect them to `/login`.  
+
+2. **Layout**  
+   - Use shadcn/ui `Card`, `Button`, `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent` for a clean dashboard UI.  
+   - Tabs:  
+     - **Users & Passwords** (change password for admin or other users)  
+     - **Resumes** (upload multiple resumes, view, delete)  
+     - **Convert Resumes to Talent** (list resumes, and a button to convert each resume into a Talent account).  
+
+3. **Change Password (Users & Passwords Tab)**  
+   - Form with `currentPassword` (only required if changing admin’s own password), `newPassword`, `confirmPassword`.  
+   - On submit: call `authAPI.put("/api/users/:userId/password", { currentPassword, newPassword })`.  
+   - If admin is changing another user’s password, skip `currentPassword`.  
+   - Show success/error toast messages.  
+
+4. **Resumes Tab**  
+   - File uploader using `ObjectUploader`.  
+   - Allow uploading multiple files (PDF, DOCX, max 10MB each).  
+   - On complete, call `authAPI.post("/api/admin/resumes", { fileName, fileUrl, candidateEmail })`.  
+   - Show list of uploaded resumes with filename, size, delete button.  
+   - Delete button: calls `authAPI.delete("/api/documents/:id")`.  
+
+5. **Convert Resumes Tab**  
+   - Fetch resumes via `useQuery` from `/api/admin/resumes`.  
+   - For each resume: show candidateEmail, file link, and a button **Convert to Talent**.  
+   - Convert button calls: `authAPI.post("/api/admin/convert-resume/:resumeId")`.  
+   - On success: show toast “Resume converted to Talent profile successfully.”  
+
+6. **General**  
+   - Use `useToast` for feedback.  
+   - Use `queryClient.invalidateQueries` to refresh data after updates.  
+   - Make the UI consistent with `ProfileSettings.tsx` (cards, clean layout, spacing).  
+
+The file should export default function `AdminDashboard()`.
