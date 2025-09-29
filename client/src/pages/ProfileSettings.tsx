@@ -711,6 +711,7 @@ export default function ProfileSettings() {
                                   </div>
                                 </div>
                                 <div className="flex gap-2">
+                                  {/* View */}
                                   <Button size="sm" variant="outline" asChild>
                                     <a
                                       href={doc.fileUrl}
@@ -720,6 +721,7 @@ export default function ProfileSettings() {
                                       <Eye className="w-4 h-4" />
                                     </a>
                                   </Button>
+                                  {/* Delete */}
                                   <Button
                                     size="sm"
                                     variant="destructive"
@@ -734,14 +736,61 @@ export default function ProfileSettings() {
                       ) : (
                         <ObjectUploader
                           maxNumberOfFiles={1}
-                          maxFileSize={10485760}
-                          onGetUploadParameters={async () => ({
-                            method: "PUT" as const,
-                            url: "/api/object-storage/upload-url",
-                          })}
-                          onComplete={(result: any) =>
-                            handleUploadComplete(result, "resume")
-                          }
+                          maxFileSize={10485760} // 10MB
+                          onGetUploadParameters={async () => {
+                            // Ask backend for a signed upload URL
+                            return {
+                              method: "PUT" as const,
+                              url: "/api/object-storage/upload-url",
+                            };
+                          }}
+                          onComplete={async (result: any) => {
+                            if (
+                              result.successful &&
+                              result.successful.length > 0
+                            ) {
+                              const file = result.successful[0];
+                              try {
+                                const documentData = {
+                                  type: "resume",
+                                  fileName: file.name,
+                                  fileUrl: file.uploadURL,
+                                  fileSize: file.size || null,
+                                  mimeType: file.type || null,
+                                  isPublic: false,
+                                  isPrimary: false,
+                                };
+
+                                // Save document metadata
+                                await authAPI.post(
+                                  "/api/documents",
+                                  documentData,
+                                );
+
+                                // Refresh queries
+                                queryClient.invalidateQueries({
+                                  queryKey: ["/api/documents"],
+                                });
+                                queryClient.invalidateQueries({
+                                  queryKey: ["/api/profiles/me"],
+                                });
+
+                                toast({
+                                  title: "Resume Uploaded",
+                                  description:
+                                    "Your resume has been uploaded successfully.",
+                                });
+                              } catch (error: any) {
+                                console.error("❌ Resume save failed:", error);
+                                toast({
+                                  title: "Upload Error",
+                                  description:
+                                    "Resume uploaded but failed to save to your profile. Please try again.",
+                                  variant: "destructive",
+                                });
+                              }
+                            }
+                          }}
                           buttonClassName="w-full"
                         >
                           Upload Resume (PDF, DOC, DOCX - max 10MB)
