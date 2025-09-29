@@ -35,7 +35,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { useTalentProfile, profileFormSchema, ProfileFormData } from "@/hooks/useTalentProfile";
-import { cn } from "@/lib/utils";
+import { cn, calculateProfileCompletion } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { authAPI } from "@/lib/api";
@@ -198,17 +198,31 @@ export default function ProfileOnboarding({
         await updateSkills();
       }
       
-      // Invalidate queries and wait for refetch
+      // Calculate updated completion based on the form data just saved
+      const updatedCompletion = calculateProfileCompletion({
+        firstName: data.firstName || profile?.firstName,
+        lastName: data.lastName || profile?.lastName,
+        title: data.title || profile?.title,
+        bio: data.bio || profile?.bio,
+        location: data.location || profile?.location,
+        hourlyRate: data.hourlyRate || profile?.hourlyRate,
+        profilePicture: data.profilePicture || profile?.profilePicture,
+        selectedSkills: skills,
+        uploadedDocuments,
+        portfolioItems: [],
+      });
+      
+      // Invalidate queries to refresh data for future renders
       await queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
       
-      // Show success with encouraging feedback - completion will be updated on next render
+      // Show success with accurate completion percentage
       toast({
         title: "Profile Updated Successfully!",
-        description: "Your profile has been saved successfully. Keep building your profile to attract more opportunities!",
+        description: `Your profile is now ${updatedCompletion}% complete. ${updatedCompletion >= 70 ? 'You\'re all set to start attracting great opportunities!' : 'Keep building your profile to attract more clients!'}`,
         duration: 5000,
       });
       
-      if (mode === "embedded" && profileCompletion >= 70) {
+      if (mode === "embedded" && updatedCompletion >= 70) {
         onComplete?.();
       } else if (mode === "full") {
         setCurrentStep(2);
