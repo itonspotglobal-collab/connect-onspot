@@ -33,15 +33,27 @@ export function PostLoginPortalSelection() {
     const isDashboardPath = location === '/client-dashboard' || 
                            location === '/talent-dashboard' || 
                            location === '/dashboard' || 
-                           location === '/talent-portal';
+                           location === '/talent-portal' ||
+                           location === '/admin/dashboard';
+
+    // Admin users skip portal selection and go directly to admin dashboard
+    if (user.role === 'admin') {
+      if (location === '/' || !location.startsWith('/admin')) {
+        console.log('🔀 Redirecting admin user to admin dashboard:', user.id);
+        setLocation('/admin/dashboard');
+      }
+      return;
+    }
 
     if (!hasCompletedSelection && !isDashboardPath && !hasSelectedPortal) {
-      // Show portal selection dialog
+      // Show portal selection dialog (only for client/talent users)
       console.log('🚪 Showing portal selection for authenticated user:', user.id);
       setShowPortalSelection(true);
     } else if (hasCompletedSelection || hasSelectedPortal) {
       // User has already selected portal, redirect appropriately
-      const targetPath = user.role === 'client' ? '/client-dashboard' : '/talent-dashboard';
+      const targetPath = user.role === 'client' ? '/client-dashboard' : 
+                        user.role === 'talent' ? '/talent-dashboard' :
+                        user.role === 'admin' ? '/admin/dashboard' : '/';
       if (location === '/' && !isDashboardPath) {
         console.log('🔀 Redirecting to saved portal selection:', targetPath);
         setLocation(targetPath);
@@ -133,7 +145,8 @@ export function PostLoginPortalSelection() {
       });
       
       // Redirect to appropriate dashboard based on actual role
-      const correctPath = user.role === 'talent' ? '/talent-dashboard' : '/';
+      const correctPath = user.role === 'talent' ? '/talent-dashboard' : 
+                         user.role === 'admin' ? '/admin/dashboard' : '/';
       setLocation(correctPath);
       return null;
     }
@@ -158,7 +171,8 @@ export function PostLoginPortalSelection() {
       });
       
       // Redirect to appropriate dashboard based on actual role
-      const correctPath = user.role === 'client' ? '/client-dashboard' : '/';
+      const correctPath = user.role === 'client' ? '/client-dashboard' : 
+                         user.role === 'admin' ? '/admin/dashboard' : '/';
       setLocation(correctPath);
       return null;
     }
@@ -166,12 +180,23 @@ export function PostLoginPortalSelection() {
   }
 
   // Default: redirect to appropriate dashboard based on role
-  const defaultPath = user.role === 'client' ? '/client-dashboard' : '/talent-dashboard';
+  const defaultPath = user.role === 'client' ? '/client-dashboard' : 
+                     user.role === 'talent' ? '/talent-dashboard' :
+                     user.role === 'admin' ? '/admin/dashboard' : '/';
   if (currentPath === '/' || !currentPath.startsWith('/')) {
     setLocation(defaultPath);
     return null;
   }
 
   // Fallback: show appropriate dashboard for the user's role
-  return user.role === 'client' ? <Dashboard /> : <TalentPortal />;
+  if (user.role === 'client') return <Dashboard />;
+  if (user.role === 'talent') return <TalentPortal />;
+  if (user.role === 'admin') {
+    // Admin users should be handled by the routing system, redirect them
+    setLocation('/admin/dashboard');
+    return null;
+  }
+  
+  // Unknown role fallback
+  return null;
 }
