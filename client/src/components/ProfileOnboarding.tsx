@@ -75,6 +75,10 @@ export default function ProfileOnboarding({
 
   const [currentStep, setCurrentStep] = useState(defaultStep);
   const [isLinkedInConnected, setIsLinkedInConnected] = useState(false);
+  const [latestCompletion, setLatestCompletion] = useState<number | null>(null);
+  
+  // Use latest completion if available, otherwise fall back to hook's profileCompletion
+  const displayCompletion = latestCompletion !== null ? latestCompletion : profileCompletion;
 
   // Form setup with stable default values
   const form = useForm<ProfileFormData>({
@@ -103,6 +107,14 @@ export default function ProfileOnboarding({
       setHasInitialized(true);
     }
   }, [profile, user, isLoading, form, getDefaultFormValues, hasInitialized]);
+
+  // Reset local completion when profile data updates to ensure fresh data is displayed
+  useEffect(() => {
+    if (profile && latestCompletion !== null) {
+      // Clear local completion after query has refreshed to use hook's profileCompletion
+      setLatestCompletion(null);
+    }
+  }, [profile, profileCompletion, latestCompletion]);
 
   // File upload handlers
   const handleResumeUpload = async () => {
@@ -212,6 +224,9 @@ export default function ProfileOnboarding({
         portfolioItems: [],
       });
       
+      // Update local completion state for immediate UI feedback
+      setLatestCompletion(updatedCompletion);
+      
       // Invalidate queries to refresh data for future renders
       await queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
       
@@ -293,8 +308,8 @@ export default function ProfileOnboarding({
             <div className="text-right">
               <div className="text-sm text-muted-foreground mb-2">Profile Completion</div>
               <div className="flex items-center gap-3">
-                <Progress value={profileCompletion} className="w-32" />
-                <span className="text-2xl font-bold text-primary">{profileCompletion}%</span>
+                <Progress value={displayCompletion} className="w-32" />
+                <span className="text-2xl font-bold text-primary">{displayCompletion}%</span>
               </div>
             </div>
           </div>
@@ -391,12 +406,12 @@ export default function ProfileOnboarding({
             <div>
               <h2 className="text-xl font-semibold">Complete Your Profile</h2>
               <p className="text-sm text-muted-foreground">
-                {profileCompletion < 70 ? 'Complete your profile to start attracting clients' : 'Your profile looks great! Ready to find opportunities.'}
+                {displayCompletion < 70 ? 'Complete your profile to start attracting clients' : 'Your profile looks great! Ready to find opportunities.'}
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <Progress value={profileCompletion} className="w-24" />
-              <span className="text-sm font-medium">{profileCompletion}%</span>
+              <Progress value={displayCompletion} className="w-24" />
+              <span className="text-sm font-medium">{displayCompletion}%</span>
             </div>
           </div>
           
