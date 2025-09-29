@@ -62,28 +62,29 @@ export function ObjectUploader({
     setIsUploading(true);
 
     try {
-      // Get upload parameters from backend
+      // Get upload parameters endpoint from onGetUploadParameters 
       console.log("🔗 Getting upload parameters...");
       const uploadParams = await onGetUploadParameters();
       
-      // Get signed upload URL
-      console.log("📤 Requesting signed upload URL...");
+      console.log("📤 Requesting signed upload URL from:", uploadParams.url);
+      
+      // Request signed upload URL from backend
       const response = await authAPI.post(uploadParams.url, {
         fileName: file.name,
-        fileType: file.type,
-        fileSize: file.size,
+        contentType: file.type,
       });
 
-      const { uploadURL } = response;
-      console.log("✅ Got signed URL:", uploadURL);
+      const { url, method, headers, fileUrl } = response.data;
+      console.log("✅ Got signed upload URL:", url);
 
-      // Upload file directly to object storage
+      // Upload file directly to the signed URL
       console.log("⬆️ Uploading file to object storage...");
-      const uploadResponse = await fetch(uploadURL, {
-        method: "PUT",
+      const uploadResponse = await fetch(url, {
+        method: method || 'PUT',
         body: file,
         headers: {
           'Content-Type': file.type,
+          ...(headers || {}),
         },
       });
 
@@ -93,19 +94,19 @@ export function ObjectUploader({
 
       console.log("🎉 File uploaded successfully!");
 
-      // Call completion callback with mock result structure
+      // Call completion callback with result structure matching original Uppy format
       if (onComplete) {
-        const mockResult = {
+        const result = {
           successful: [{
             name: file.name,
             type: file.type,
             size: file.size,
-            uploadURL: uploadURL,
+            uploadURL: fileUrl || url, // Use permanent fileUrl if available, fallback to upload URL
           }],
           failed: [],
         };
         
-        await onComplete(mockResult);
+        await onComplete(result);
       }
 
       toast({

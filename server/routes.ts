@@ -952,11 +952,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // SECURITY FIX: Protected Object Storage Upload URL - Generate presigned URL for file uploads
-  app.post('/api/object-storage/upload-url', async (req: any, res) => {
-    // CRITICAL: Add authentication guard
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ error: 'Authentication required for file uploads' });
-    }
+  app.post('/api/object-storage/upload-url', authenticateJWT, async (req: any, res) => {
     try {
       const { fileName, contentType } = req.body;
       
@@ -987,11 +983,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // SECURITY FIX: Protected Object Storage Direct Upload Handler
-  app.put('/api/objects/*', (req: any, res) => {
-    // CRITICAL: Add authentication guard
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ error: 'Authentication required for file uploads' });
-    }
+  app.put('/api/objects/*', authenticateJWT, (req: any, res) => {
 
     try {
       // For demo purposes, simulate successful upload
