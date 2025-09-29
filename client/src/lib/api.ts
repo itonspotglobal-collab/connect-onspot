@@ -146,6 +146,16 @@ export const authAPI = {
       throw error;
     }
   },
+
+  delete: async (url: string) => {
+    try {
+      const response = await api.delete(url);
+      return response.data;
+    } catch (error) {
+      console.error("AuthAPI DELETE error:", error);
+      throw error;
+    }
+  },
 };
 
 // Export the configured axios instance for other API calls
