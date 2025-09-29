@@ -687,68 +687,56 @@ export default function ProfileSettings() {
                     {/* Resume Upload */}
                     <div className="space-y-3">
                       <Label className="text-sm font-medium">Resume / CV</Label>
-                      {documents?.filter((doc) => doc.type === "resume")
-                        .length > 0 ? (
+                      {documents?.filter(doc => doc.type === "resume").length > 0 ? (
                         <div className="space-y-2">
-                          {documents
-                            .filter((doc) => doc.type === "resume")
-                            .map((doc) => (
-                              <div
-                                key={doc.id}
-                                className="flex items-center justify-between p-3 border rounded-lg"
-                              >
-                                <div className="flex items-center gap-3">
-                                  <FileText className="w-5 h-5 text-muted-foreground" />
-                                  <div>
-                                    <p className="font-medium">
-                                      {doc.fileName}
-                                    </p>
-                                    <p className="text-sm text-muted-foreground">
-                                      {(doc as any).fileSize
-                                        ? `${Math.round((doc as any).fileSize / 1024)} KB`
-                                        : "Unknown size"}
-                                    </p>
-                                  </div>
-                                </div>
-                                <div className="flex gap-2">
-                                  {/* View */}
-                                  <Button size="sm" variant="outline" asChild>
-                                    <a
-                                      href={doc.fileUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                    >
-                                      <Eye className="w-4 h-4" />
-                                    </a>
-                                  </Button>
-                                  {/* Delete */}
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    onClick={() => removeDocument(doc.id)}
-                                  >
-                                    <X className="w-4 h-4" />
-                                  </Button>
+                          {documents.filter(doc => doc.type === "resume").map((doc) => (
+                            <div
+                              key={doc.id}
+                              className="flex items-center justify-between p-3 border rounded-lg"
+                            >
+                              <div className="flex items-center gap-3">
+                                <FileText className="w-5 h-5 text-muted-foreground" />
+                                <div>
+                                  <p className="font-medium">{doc.fileName}</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {(doc as any).fileSize
+                                      ? `${Math.round((doc as any).fileSize / 1024)} KB`
+                                      : "Unknown size"}
+                                  </p>
                                 </div>
                               </div>
-                            ))}
+                              <div className="flex gap-2">
+                                {/* View */}
+                                <Button size="sm" variant="outline" asChild type="button">
+                                  <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer">
+                                    <Eye className="w-4 h-4" />
+                                  </a>
+                                </Button>
+                                {/* Delete */}
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  type="button"
+                                  onClick={() => removeDocument(doc.id)}
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       ) : (
                         <ObjectUploader
                           maxNumberOfFiles={1}
                           maxFileSize={10485760} // 10MB
                           onGetUploadParameters={async () => {
-                            // Ask backend for a signed upload URL
                             return {
                               method: "PUT" as const,
                               url: "/api/object-storage/upload-url",
                             };
                           }}
                           onComplete={async (result: any) => {
-                            if (
-                              result.successful &&
-                              result.successful.length > 0
-                            ) {
+                            if (result.successful && result.successful.length > 0) {
                               const file = result.successful[0];
                               try {
                                 const documentData = {
@@ -761,24 +749,14 @@ export default function ProfileSettings() {
                                   isPrimary: false,
                                 };
 
-                                // Save document metadata
-                                await authAPI.post(
-                                  "/api/documents",
-                                  documentData,
-                                );
+                                await authAPI.post("/api/documents", documentData);
 
-                                // Refresh queries
-                                queryClient.invalidateQueries({
-                                  queryKey: ["/api/documents"],
-                                });
-                                queryClient.invalidateQueries({
-                                  queryKey: ["/api/profiles/me"],
-                                });
+                                queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
+                                queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
 
                                 toast({
                                   title: "Resume Uploaded",
-                                  description:
-                                    "Your resume has been uploaded successfully.",
+                                  description: "Your resume has been uploaded successfully.",
                                 });
                               } catch (error: any) {
                                 console.error("❌ Resume save failed:", error);
@@ -793,7 +771,10 @@ export default function ProfileSettings() {
                           }}
                           buttonClassName="w-full"
                         >
-                          Upload Resume (PDF, DOC, DOCX - max 10MB)
+                          {/* IMPORTANT: prevent it acting like a submit */}
+                          <button type="button" className="w-full">
+                            Upload Resume (PDF, DOC, DOCX - max 10MB)
+                          </button>
                         </ObjectUploader>
                       )}
                     </div>
