@@ -207,7 +207,7 @@ export default function AdminDashboard() {
   // Convert resume to talent mutation
   const convertResumeMutation = useMutation({
     mutationFn: async (resumeId: string) => {
-      return await authAPI.post(`/api/admin/convert-resume/${resumeId}`);
+      return await authAPI.post(`/api/admin/convert-resume/${resumeId}`, {});
     },
     onSuccess: () => {
       toast({
