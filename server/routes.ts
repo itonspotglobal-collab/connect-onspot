@@ -1213,6 +1213,194 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // ==================== PROFILES ====================
+  
+  // GET /api/profiles/me - Get current user's profile (must come before /:id route)
+  app.get("/api/profiles/me", 
+    authenticateJWT,
+    async (req: Request, res: Response) => {
+      try {
+        const requestId = (req as any).requestId;
+        const userId = (req as any).user?.id;
+        
+        if (!userId) {
+          return res.status(401).json({
+            error: "Authentication required",
+            message: "User not authenticated",
+            requestId
+          });
+        }
+
+        console.log(`👤 Fetching current user profile [${requestId}]:`, { userId });
+        
+        // Query database using Drizzle ORM
+        const result = await db.select().from(profiles).where(eq(profiles.userId, userId));
+        
+        if (result.length === 0) {
+          // Create a default profile for the user instead of returning 404
+          console.log(`➕ Creating default profile for new user [${requestId}]:`, { userId });
+          
+          const defaultProfileData = {
+            userId: userId,
+            firstName: '',
+            lastName: '',
+            location: 'Global',
+            rateCurrency: 'USD',
+            availability: 'available',
+            languages: ['English'],
+            timezone: 'Asia/Manila'
+          };
+          
+          const newProfile = await db.insert(profiles).values(defaultProfileData).returning();
+          const profile = newProfile[0];
+          
+          console.log(`✅ Default profile created successfully [${requestId}]:`, { profileId: profile.id });
+          
+          return res.json({ 
+            success: true,
+            profile: profile // Drizzle automatically returns camelCase
+          });
+        }
+        
+        const profile = result[0];
+        
+        console.log(`✅ Current user profile fetched successfully [${requestId}]:`, { profileId: profile.id });
+        
+        res.json({ 
+          success: true,
+          profile: profile // Drizzle automatically returns camelCase
+        });
+      } catch (error: any) {
+        const requestId = (req as any).requestId;
+        console.error(`❌ Failed to fetch current user profile [${requestId}]:`, error.message);
+        res.status(500).json({ 
+          success: false,
+          message: error.message,
+          requestId
+        });
+      }
+    }
+  );
+
+  // PUT /api/profiles/me - Update current user's profile (must come before /:id route)
+  console.log('✅ Registered route: PUT /api/profiles/me');
+  app.put("/api/profiles/me", 
+    authenticateJWT,
+    async (req: Request, res: Response) => {
+      try {
+        const userId = (req as any).user?.id;
+        const requestId = (req as any).requestId;
+        
+        if (!userId) {
+          return res.status(401).json({
+            error: "Authentication required",
+            message: "User not authenticated",
+            requestId
+          });
+        }
+
+        console.log(`👤 Updating current user profile [${requestId}]:`, { 
+          userId: userId,
+          updateFields: Object.keys(req.body),
+          bodyData: req.body
+        });
+        
+        // Prepare profile data (already in camelCase, which Drizzle expects)
+        const profileData = {
+          userId: userId, // Add userId from authenticated session
+          firstName: req.body.firstName,
+          lastName: req.body.lastName,
+          title: req.body.title,
+          bio: req.body.bio,
+          location: req.body.location,
+          hourlyRate: req.body.hourlyRate ? String(req.body.hourlyRate) : null,
+          rateCurrency: req.body.rateCurrency,
+          availability: req.body.availability,
+          profilePicture: req.body.profilePicture,
+          phoneNumber: req.body.phoneNumber,
+          languages: req.body.languages,
+          timezone: req.body.timezone
+        };
+        
+        console.log(`🔍 Profile data for validation [${requestId}]:`, profileData);
+        
+        // Validate the data using Drizzle schema
+        const validated = insertProfileSchema.parse(profileData);
+        
+        // Check if profile already exists for this user using Drizzle ORM
+        const existingProfile = await db.select().from(profiles).where(eq(profiles.userId, userId));
+        
+        let profile;
+        
+        if (existingProfile.length > 0) {
+          // Update existing profile
+          console.log(`📝 Updating existing profile [${requestId}]:`, { profileId: existingProfile[0].id });
+          
+          // Prepare update data with defaults
+          const updateData = {
+            firstName: validated.firstName,
+            lastName: validated.lastName,
+            title: validated.title,
+            bio: validated.bio,
+            location: validated.location || 'Global',
+            hourlyRate: validated.hourlyRate,
+            rateCurrency: validated.rateCurrency || 'USD',
+            availability: validated.availability || 'available',
+            profilePicture: validated.profilePicture,
+            phoneNumber: validated.phoneNumber,
+            languages: validated.languages || ['English'],
+            timezone: validated.timezone || 'Asia/Manila'
+          };
+          
+          const updatedProfiles = await db
+            .update(profiles)
+            .set(updateData)
+            .where(eq(profiles.userId, userId))
+            .returning();
+            
+          profile = updatedProfiles[0];
+        } else {
+          // Create new profile
+          console.log(`➕ Creating new profile [${requestId}]`);
+          
+          // Set defaults for required fields
+          const insertData = {
+            userId: userId,
+            firstName: validated.firstName,
+            lastName: validated.lastName,
+            title: validated.title,
+            bio: validated.bio,
+            location: validated.location || 'Global',
+            hourlyRate: validated.hourlyRate,
+            rateCurrency: validated.rateCurrency || 'USD',
+            availability: validated.availability || 'available',
+            profilePicture: validated.profilePicture,
+            phoneNumber: validated.phoneNumber,
+            languages: validated.languages || ['English'],
+            timezone: validated.timezone || 'Asia/Manila'
+          };
+          
+          const insertedProfiles = await db.insert(profiles).values(insertData).returning();
+          profile = insertedProfiles[0];
+        }
+        
+        console.log(`✅ Current user profile updated successfully [${requestId}]:`, { profileId: profile.id });
+        res.json({ 
+          success: true,
+          profile: profile, // Drizzle automatically returns camelCase
+          message: "Profile saved successfully"
+        });
+      } catch (error: any) {
+        const requestId = (req as any).requestId;
+        console.error(`❌ Failed to update current user profile [${requestId}]:`, error.message);
+        res.status(500).json({ 
+          success: false,
+          message: error.message,
+          requestId
+        });
+      }
+    }
+  );
+
   app.get("/api/profiles/:id", async (req, res) => {
     try {
       const profile = await storage.getProfile(req.params.id);
@@ -1429,192 +1617,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  // GET /api/profiles/me - Get current user's profile
-  app.get("/api/profiles/me", 
-    authenticateJWT,
-    async (req: Request, res: Response) => {
-      try {
-        const requestId = (req as any).requestId;
-        const userId = (req as any).user?.id;
-        
-        if (!userId) {
-          return res.status(401).json({
-            error: "Authentication required",
-            message: "User not authenticated",
-            requestId
-          });
-        }
-
-        console.log(`👤 Fetching current user profile [${requestId}]:`, { userId });
-        
-        // Query database using Drizzle ORM
-        const result = await db.select().from(profiles).where(eq(profiles.userId, userId));
-        
-        if (result.length === 0) {
-          // Create a default profile for the user instead of returning 404
-          console.log(`➕ Creating default profile for new user [${requestId}]:`, { userId });
-          
-          const defaultProfileData = {
-            userId: userId,
-            firstName: '',
-            lastName: '',
-            location: 'Global',
-            rateCurrency: 'USD',
-            availability: 'available',
-            languages: ['English'],
-            timezone: 'Asia/Manila'
-          };
-          
-          const newProfile = await db.insert(profiles).values(defaultProfileData).returning();
-          const profile = newProfile[0];
-          
-          console.log(`✅ Default profile created successfully [${requestId}]:`, { profileId: profile.id });
-          
-          return res.json({ 
-            success: true,
-            profile: profile // Drizzle automatically returns camelCase
-          });
-        }
-        
-        const profile = result[0];
-        
-        console.log(`✅ Current user profile fetched successfully [${requestId}]:`, { profileId: profile.id });
-        
-        res.json({ 
-          success: true,
-          profile: profile // Drizzle automatically returns camelCase
-        });
-      } catch (error: any) {
-        const requestId = (req as any).requestId;
-        console.error(`❌ Failed to fetch current user profile [${requestId}]:`, error.message);
-        res.status(500).json({ 
-          success: false,
-          message: error.message,
-          requestId
-        });
-      }
-    }
-  );
-
-  // PUT /api/profiles/me - Update current user's profile
-  console.log('✅ Registered route: PUT /api/profiles/me');
-  app.put("/api/profiles/me", 
-    authenticateJWT,
-    async (req: Request, res: Response) => {
-      try {
-        const userId = (req as any).user?.id;
-        const requestId = (req as any).requestId;
-        
-        if (!userId) {
-          return res.status(401).json({
-            error: "Authentication required",
-            message: "User not authenticated",
-            requestId
-          });
-        }
-
-        console.log(`👤 Updating current user profile [${requestId}]:`, { 
-          userId: userId,
-          updateFields: Object.keys(req.body),
-          bodyData: req.body
-        });
-        
-        // Prepare profile data (already in camelCase, which Drizzle expects)
-        const profileData = {
-          userId: userId, // Add userId from authenticated session
-          firstName: req.body.firstName,
-          lastName: req.body.lastName,
-          title: req.body.title,
-          bio: req.body.bio,
-          location: req.body.location,
-          hourlyRate: req.body.hourlyRate ? String(req.body.hourlyRate) : null,
-          rateCurrency: req.body.rateCurrency,
-          availability: req.body.availability,
-          profilePicture: req.body.profilePicture,
-          phoneNumber: req.body.phoneNumber,
-          languages: req.body.languages,
-          timezone: req.body.timezone
-        };
-        
-        console.log(`🔍 Profile data for validation [${requestId}]:`, profileData);
-        
-        // Validate the data using Drizzle schema
-        const validated = insertProfileSchema.parse(profileData);
-        
-        // Check if profile already exists for this user using Drizzle ORM
-        const existingProfile = await db.select().from(profiles).where(eq(profiles.userId, userId));
-        
-        let profile;
-        
-        if (existingProfile.length > 0) {
-          // Update existing profile
-          console.log(`📝 Updating existing profile [${requestId}]:`, { profileId: existingProfile[0].id });
-          
-          // Prepare update data with defaults
-          const updateData = {
-            firstName: validated.firstName,
-            lastName: validated.lastName,
-            title: validated.title,
-            bio: validated.bio,
-            location: validated.location || 'Global',
-            hourlyRate: validated.hourlyRate,
-            rateCurrency: validated.rateCurrency || 'USD',
-            availability: validated.availability || 'available',
-            profilePicture: validated.profilePicture,
-            phoneNumber: validated.phoneNumber,
-            languages: validated.languages || ['English'],
-            timezone: validated.timezone || 'Asia/Manila'
-          };
-          
-          const updatedProfiles = await db
-            .update(profiles)
-            .set(updateData)
-            .where(eq(profiles.userId, userId))
-            .returning();
-            
-          profile = updatedProfiles[0];
-        } else {
-          // Create new profile
-          console.log(`➕ Creating new profile [${requestId}]`);
-          
-          // Set defaults for required fields
-          const insertData = {
-            userId: userId,
-            firstName: validated.firstName,
-            lastName: validated.lastName,
-            title: validated.title,
-            bio: validated.bio,
-            location: validated.location || 'Global',
-            hourlyRate: validated.hourlyRate,
-            rateCurrency: validated.rateCurrency || 'USD',
-            availability: validated.availability || 'available',
-            profilePicture: validated.profilePicture,
-            phoneNumber: validated.phoneNumber,
-            languages: validated.languages || ['English'],
-            timezone: validated.timezone || 'Asia/Manila'
-          };
-          
-          const insertedProfiles = await db.insert(profiles).values(insertData).returning();
-          profile = insertedProfiles[0];
-        }
-        
-        console.log(`✅ Current user profile updated successfully [${requestId}]:`, { profileId: profile.id });
-        res.json({ 
-          success: true,
-          profile: profile, // Drizzle automatically returns camelCase
-          message: "Profile saved successfully"
-        });
-      } catch (error: any) {
-        const requestId = (req as any).requestId;
-        console.error(`❌ Failed to update current user profile [${requestId}]:`, error.message);
-        res.status(500).json({ 
-          success: false,
-          message: error.message,
-          requestId
-        });
-      }
-    }
-  );
 
   // Advanced Profile Search - Critical for talent discovery
   app.get("/api/profiles/search", async (req, res) => {
