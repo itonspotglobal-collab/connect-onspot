@@ -200,15 +200,15 @@ export default function ProfileOnboarding({
       
       // Calculate updated completion based on the form data just saved
       const updatedCompletion = calculateProfileCompletion({
-        firstName: data.firstName || profile?.firstName,
-        lastName: data.lastName || profile?.lastName,
-        title: data.title || profile?.title,
-        bio: data.bio || profile?.bio,
-        location: data.location || profile?.location,
-        hourlyRate: data.hourlyRate || profile?.hourlyRate,
-        profilePicture: data.profilePicture || profile?.profilePicture,
-        selectedSkills: skills,
-        uploadedDocuments,
+        firstName: data.firstName || profile?.firstName || undefined,
+        lastName: data.lastName || profile?.lastName || undefined,
+        title: data.title || profile?.title || undefined,
+        bio: data.bio || profile?.bio || undefined,
+        location: data.location || profile?.location || undefined,
+        hourlyRate: data.hourlyRate || profile?.hourlyRate || undefined,
+        profilePicture: undefined, // Profile picture not in current profile type
+        selectedSkills: skills || [],
+        uploadedDocuments: documents || [],
         portfolioItems: [],
       });
       
