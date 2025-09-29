@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { 
+import {
   User,
   Upload,
   FileText,
@@ -20,14 +20,31 @@ import {
   Plus,
   X,
   Eye,
-  Download
+  Download,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ObjectUploader } from "@/components/ObjectUploader";
-import { useTalentProfile, profileFormSchema, ProfileFormData } from "@/hooks/useTalentProfile";
+import {
+  useTalentProfile,
+  profileFormSchema,
+  ProfileFormData,
+} from "@/hooks/useTalentProfile";
 import { Document } from "@shared/schema";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -39,7 +56,7 @@ export default function ProfileSettings() {
   const { toast } = useToast();
   const authContext = useAuth();
   const user = authContext?.user;
-  
+
   const {
     profile,
     skills,
@@ -51,7 +68,7 @@ export default function ProfileSettings() {
     toggleSkill,
     updateProfile,
     updateSkills,
-    getDefaultFormValues
+    getDefaultFormValues,
   } = useTalentProfile();
 
   const [activeSection, setActiveSection] = useState("basic");
@@ -60,7 +77,7 @@ export default function ProfileSettings() {
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: getDefaultFormValues(),
-    values: getDefaultFormValues() // This ensures form updates when profile data loads
+    values: getDefaultFormValues(), // This ensures form updates when profile data loads
   });
 
   // Save profile data
@@ -81,12 +98,12 @@ export default function ProfileSettings() {
 
     try {
       await updateProfile(data);
-      
+
       // Update skills if there are any selected skills
       if (skills && skills.length > 0) {
         await updateSkills();
       }
-      
+
       toast({
         title: "Profile Settings Saved!",
         description: "Your profile information has been updated successfully.",
@@ -109,7 +126,7 @@ export default function ProfileSettings() {
       await authAPI.delete(`/api/documents/${documentId}`);
       queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
-      
+
       toast({
         title: "Document Removed",
         description: "The document has been removed from your profile.",
@@ -128,7 +145,7 @@ export default function ProfileSettings() {
   const handleUploadComplete = async (result: any, type: string) => {
     if (result.successful && result.successful.length > 0) {
       const file = result.successful[0];
-      
+
       try {
         const documentData = {
           type: type,
@@ -137,13 +154,13 @@ export default function ProfileSettings() {
           fileSize: file.size || null,
           mimeType: file.type || null,
           isPublic: false,
-          isPrimary: false
+          isPrimary: false,
         };
 
         await authAPI.post("/api/documents", documentData);
         queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
         queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
-        
+
         toast({
           title: "Document Uploaded",
           description: `Your ${type === "resume" ? "resume" : "video introduction"} has been uploaded successfully.`,
@@ -151,8 +168,9 @@ export default function ProfileSettings() {
       } catch (error: any) {
         console.error("Failed to save document:", error);
         toast({
-          title: "Upload Error", 
-          description: "Document uploaded but failed to save to your profile. Please try again.",
+          title: "Upload Error",
+          description:
+            "Document uploaded but failed to save to your profile. Please try again.",
           variant: "destructive",
         });
       }
@@ -165,7 +183,9 @@ export default function ProfileSettings() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <h3 className="text-lg font-medium mb-2">Loading your settings</h3>
-          <p className="text-muted-foreground">Please wait while we load your profile information...</p>
+          <p className="text-muted-foreground">
+            Please wait while we load your profile information...
+          </p>
         </div>
       </div>
     );
@@ -183,7 +203,8 @@ export default function ProfileSettings() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Profile Settings</h1>
         <p className="text-muted-foreground">
-          Manage your profile information and preferences. Keep your information up to date to attract better opportunities.
+          Manage your profile information and preferences. Keep your information
+          up to date to attract better opportunities.
         </p>
       </div>
 
@@ -221,20 +242,23 @@ export default function ProfileSettings() {
             <CardContent>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Completion</span>
-                  <span className="text-sm font-medium">{profileCompletion}%</span>
+                  <span className="text-sm text-muted-foreground">
+                    Completion
+                  </span>
+                  <span className="text-sm font-medium">
+                    {profileCompletion}%
+                  </span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2">
-                  <div 
+                  <div
                     className="bg-primary h-2 rounded-full transition-all duration-300"
                     style={{ width: `${profileCompletion}%` }}
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {profileCompletion >= 70 
-                    ? "Your profile looks great! Ready to attract opportunities." 
-                    : "Complete your profile to attract more clients."
-                  }
+                  {profileCompletion >= 70
+                    ? "Your profile looks great! Ready to attract opportunities."
+                    : "Complete your profile to attract more clients."}
                 </p>
               </div>
             </CardContent>
@@ -245,7 +269,6 @@ export default function ProfileSettings() {
         <div className="lg:col-span-3">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              
               {/* Basic Information */}
               {activeSection === "basic" && (
                 <Card>
@@ -267,9 +290,9 @@ export default function ProfileSettings() {
                           <FormItem>
                             <FormLabel>First Name *</FormLabel>
                             <FormControl>
-                              <Input 
-                                placeholder="Enter your first name" 
-                                {...field} 
+                              <Input
+                                placeholder="Enter your first name"
+                                {...field}
                                 data-testid="input-first-name"
                               />
                             </FormControl>
@@ -277,7 +300,7 @@ export default function ProfileSettings() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={form.control}
                         name="lastName"
@@ -285,9 +308,9 @@ export default function ProfileSettings() {
                           <FormItem>
                             <FormLabel>Last Name *</FormLabel>
                             <FormControl>
-                              <Input 
-                                placeholder="Enter your last name" 
-                                {...field} 
+                              <Input
+                                placeholder="Enter your last name"
+                                {...field}
                                 data-testid="input-last-name"
                               />
                             </FormControl>
@@ -307,9 +330,9 @@ export default function ProfileSettings() {
                             Phone Number
                           </FormLabel>
                           <FormControl>
-                            <Input 
-                              placeholder="Enter your phone number" 
-                              {...field} 
+                            <Input
+                              placeholder="Enter your phone number"
+                              {...field}
                               data-testid="input-phone"
                             />
                           </FormControl>
@@ -329,9 +352,9 @@ export default function ProfileSettings() {
                               Location
                             </FormLabel>
                             <FormControl>
-                              <Input 
-                                placeholder="City, Country" 
-                                {...field} 
+                              <Input
+                                placeholder="City, Country"
+                                {...field}
                                 data-testid="input-location"
                               />
                             </FormControl>
@@ -349,18 +372,31 @@ export default function ProfileSettings() {
                               <Clock className="w-4 h-4" />
                               Timezone
                             </FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
+                            <Select
+                              onValueChange={field.onChange}
+                              value={field.value}
+                            >
                               <FormControl>
                                 <SelectTrigger data-testid="select-timezone">
                                   <SelectValue placeholder="Select timezone" />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="Asia/Manila">Asia/Manila (GMT+8)</SelectItem>
-                                <SelectItem value="America/New_York">America/New_York (GMT-5)</SelectItem>
-                                <SelectItem value="Europe/London">Europe/London (GMT+0)</SelectItem>
-                                <SelectItem value="Asia/Tokyo">Asia/Tokyo (GMT+9)</SelectItem>
-                                <SelectItem value="Australia/Sydney">Australia/Sydney (GMT+10)</SelectItem>
+                                <SelectItem value="Asia/Manila">
+                                  Asia/Manila (GMT+8)
+                                </SelectItem>
+                                <SelectItem value="America/New_York">
+                                  America/New_York (GMT-5)
+                                </SelectItem>
+                                <SelectItem value="Europe/London">
+                                  Europe/London (GMT+0)
+                                </SelectItem>
+                                <SelectItem value="Asia/Tokyo">
+                                  Asia/Tokyo (GMT+9)
+                                </SelectItem>
+                                <SelectItem value="Australia/Sydney">
+                                  Australia/Sydney (GMT+10)
+                                </SelectItem>
                               </SelectContent>
                             </Select>
                             <FormMessage />
@@ -380,30 +416,50 @@ export default function ProfileSettings() {
                           </FormLabel>
                           <FormControl>
                             <div className="space-y-2">
+                              {/* ✅ Display selected languages as chips */}
                               <div className="flex flex-wrap gap-2">
                                 {field.value?.map((lang, index) => (
-                                  <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                                  <Badge
+                                    key={index}
+                                    variant="secondary"
+                                    className="flex items-center gap-1 whitespace-nowrap"
+                                  >
                                     {lang}
-                                    <X 
-                                      className="w-3 h-3 cursor-pointer hover:text-destructive" 
+                                    <X
+                                      className="w-3 h-3 cursor-pointer hover:text-destructive"
                                       onClick={() => {
-                                        const newLangs = field.value?.filter((_, i) => i !== index) || [];
+                                        const newLangs =
+                                          field.value?.filter(
+                                            (_, i) => i !== index,
+                                          ) || [];
                                         field.onChange(newLangs);
                                       }}
                                     />
                                   </Badge>
                                 ))}
                               </div>
-                              <Input 
+
+                              {/* ✅ Input for adding new languages */}
+                              <Input
                                 placeholder="Type a language and press Enter"
                                 onKeyDown={(e) => {
-                                  if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                                  if (
+                                    e.key === "Enter" &&
+                                    e.currentTarget.value.trim()
+                                  ) {
                                     e.preventDefault();
-                                    const newLang = e.currentTarget.value.trim();
+                                    const newLang =
+                                      e.currentTarget.value.trim();
+
+                                    // Ensure uniqueness
                                     if (!field.value?.includes(newLang)) {
-                                      field.onChange([...(field.value || []), newLang]);
+                                      field.onChange([
+                                        ...(field.value || []),
+                                        newLang,
+                                      ]);
                                     }
-                                    e.currentTarget.value = '';
+
+                                    e.currentTarget.value = "";
                                   }
                                 }}
                                 data-testid="input-languages"
@@ -438,9 +494,9 @@ export default function ProfileSettings() {
                         <FormItem>
                           <FormLabel>Professional Title *</FormLabel>
                           <FormControl>
-                            <Input 
-                              placeholder="e.g., Full Stack Developer, Virtual Assistant" 
-                              {...field} 
+                            <Input
+                              placeholder="e.g., Full Stack Developer, Virtual Assistant"
+                              {...field}
                               data-testid="input-title"
                             />
                           </FormControl>
@@ -456,15 +512,16 @@ export default function ProfileSettings() {
                         <FormItem>
                           <FormLabel>Professional Bio</FormLabel>
                           <FormControl>
-                            <Textarea 
+                            <Textarea
                               placeholder="Tell clients about your experience, skills, and what makes you unique..."
                               className="min-h-32"
-                              {...field} 
+                              {...field}
                               data-testid="input-bio"
                             />
                           </FormControl>
                           <p className="text-xs text-muted-foreground">
-                            {field.value?.length || 0} characters (minimum 50 characters recommended)
+                            {field.value?.length || 0} characters (minimum 50
+                            characters recommended)
                           </p>
                           <FormMessage />
                         </FormItem>
@@ -482,10 +539,10 @@ export default function ProfileSettings() {
                               Hourly Rate
                             </FormLabel>
                             <FormControl>
-                              <Input 
+                              <Input
                                 type="number"
-                                placeholder="25" 
-                                {...field} 
+                                placeholder="25"
+                                {...field}
                                 data-testid="input-hourly-rate"
                               />
                             </FormControl>
@@ -500,7 +557,10 @@ export default function ProfileSettings() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Currency</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
+                            <Select
+                              onValueChange={field.onChange}
+                              value={field.value}
+                            >
                               <FormControl>
                                 <SelectTrigger data-testid="select-currency">
                                   <SelectValue />
@@ -524,16 +584,23 @@ export default function ProfileSettings() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Availability</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
+                            <Select
+                              onValueChange={field.onChange}
+                              value={field.value}
+                            >
                               <FormControl>
                                 <SelectTrigger data-testid="select-availability">
                                   <SelectValue />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="available">Available Now</SelectItem>
+                                <SelectItem value="available">
+                                  Available Now
+                                </SelectItem>
                                 <SelectItem value="busy">Busy</SelectItem>
-                                <SelectItem value="unavailable">Unavailable</SelectItem>
+                                <SelectItem value="unavailable">
+                                  Unavailable
+                                </SelectItem>
                               </SelectContent>
                             </Select>
                             <FormMessage />
@@ -554,32 +621,41 @@ export default function ProfileSettings() {
                       Skills & Expertise
                     </CardTitle>
                     <p className="text-sm text-muted-foreground">
-                      Select your skills to help clients find you for relevant projects.
+                      Select your skills to help clients find you for relevant
+                      projects.
                     </p>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
                       <div className="flex flex-wrap gap-2">
                         {skills?.map((skill) => (
-                          <Badge key={skill} variant="default" className="flex items-center gap-1">
+                          <Badge
+                            key={skill}
+                            variant="default"
+                            className="flex items-center gap-1"
+                          >
                             {skill}
-                            <X 
-                              className="w-3 h-3 cursor-pointer hover:text-destructive" 
+                            <X
+                              className="w-3 h-3 cursor-pointer hover:text-destructive"
                               onClick={() => toggleSkill(skill)}
                             />
                           </Badge>
                         ))}
                       </div>
-                      
+
                       <div>
-                        <Label className="text-sm font-medium mb-2 block">Available Skills</Label>
+                        <Label className="text-sm font-medium mb-2 block">
+                          Available Skills
+                        </Label>
                         <div className="flex flex-wrap gap-2">
                           {availableSkills
-                            ?.filter((skill: any) => !skills?.includes(skill.name))
+                            ?.filter(
+                              (skill: any) => !skills?.includes(skill.name),
+                            )
                             ?.map((skill: any) => (
-                              <Badge 
-                                key={skill.id} 
-                                variant="outline" 
+                              <Badge
+                                key={skill.id}
+                                variant="outline"
                                 className="cursor-pointer hover-elevate"
                                 onClick={() => toggleSkill(skill.name)}
                               >
@@ -603,42 +679,57 @@ export default function ProfileSettings() {
                       Documents
                     </CardTitle>
                     <p className="text-sm text-muted-foreground">
-                      Upload your resume and video introduction to showcase your qualifications.
+                      Upload your resume and video introduction to showcase your
+                      qualifications.
                     </p>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     {/* Resume Upload */}
                     <div className="space-y-3">
                       <Label className="text-sm font-medium">Resume / CV</Label>
-                      {documents?.filter(doc => doc.type === "resume").length > 0 ? (
+                      {documents?.filter((doc) => doc.type === "resume")
+                        .length > 0 ? (
                         <div className="space-y-2">
-                          {documents.filter(doc => doc.type === "resume").map((doc) => (
-                            <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg">
-                              <div className="flex items-center gap-3">
-                                <FileText className="w-5 h-5 text-muted-foreground" />
-                                <div>
-                                  <p className="font-medium">{doc.fileName}</p>
-                                  <p className="text-sm text-muted-foreground">
-                                    {(doc as any).fileSize ? `${Math.round((doc as any).fileSize / 1024)} KB` : 'Unknown size'}
-                                  </p>
+                          {documents
+                            .filter((doc) => doc.type === "resume")
+                            .map((doc) => (
+                              <div
+                                key={doc.id}
+                                className="flex items-center justify-between p-3 border rounded-lg"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <FileText className="w-5 h-5 text-muted-foreground" />
+                                  <div>
+                                    <p className="font-medium">
+                                      {doc.fileName}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">
+                                      {(doc as any).fileSize
+                                        ? `${Math.round((doc as any).fileSize / 1024)} KB`
+                                        : "Unknown size"}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button size="sm" variant="outline" asChild>
+                                    <a
+                                      href={doc.fileUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                    >
+                                      <Eye className="w-4 h-4" />
+                                    </a>
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => removeDocument(doc.id)}
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </Button>
                                 </div>
                               </div>
-                              <div className="flex gap-2">
-                                <Button size="sm" variant="outline" asChild>
-                                  <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer">
-                                    <Eye className="w-4 h-4" />
-                                  </a>
-                                </Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="destructive"
-                                  onClick={() => removeDocument(doc.id)}
-                                >
-                                  <X className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
+                            ))}
                         </div>
                       ) : (
                         <ObjectUploader
@@ -646,9 +737,11 @@ export default function ProfileSettings() {
                           maxFileSize={10485760}
                           onGetUploadParameters={async () => ({
                             method: "PUT" as const,
-                            url: "/api/object-storage/upload-url"
+                            url: "/api/object-storage/upload-url",
                           })}
-                          onComplete={(result: any) => handleUploadComplete(result, "resume")}
+                          onComplete={(result: any) =>
+                            handleUploadComplete(result, "resume")
+                          }
                           buttonClassName="w-full"
                         >
                           Upload Resume (PDF, DOC, DOCX - max 10MB)
@@ -660,36 +753,52 @@ export default function ProfileSettings() {
 
                     {/* Video Introduction Upload */}
                     <div className="space-y-3">
-                      <Label className="text-sm font-medium">Video Introduction (Optional)</Label>
-                      {documents?.filter(doc => doc.type === "video_intro").length > 0 ? (
+                      <Label className="text-sm font-medium">
+                        Video Introduction (Optional)
+                      </Label>
+                      {documents?.filter((doc) => doc.type === "video_intro")
+                        .length > 0 ? (
                         <div className="space-y-2">
-                          {documents.filter(doc => doc.type === "video_intro").map((doc) => (
-                            <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg">
-                              <div className="flex items-center gap-3">
-                                <FileText className="w-5 h-5 text-muted-foreground" />
-                                <div>
-                                  <p className="font-medium">{doc.fileName}</p>
-                                  <p className="text-sm text-muted-foreground">
-                                    {(doc as any).fileSize ? `${Math.round((doc as any).fileSize / 1024 / 1024)} MB` : 'Unknown size'}
-                                  </p>
+                          {documents
+                            .filter((doc) => doc.type === "video_intro")
+                            .map((doc) => (
+                              <div
+                                key={doc.id}
+                                className="flex items-center justify-between p-3 border rounded-lg"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <FileText className="w-5 h-5 text-muted-foreground" />
+                                  <div>
+                                    <p className="font-medium">
+                                      {doc.fileName}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">
+                                      {(doc as any).fileSize
+                                        ? `${Math.round((doc as any).fileSize / 1024 / 1024)} MB`
+                                        : "Unknown size"}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button size="sm" variant="outline" asChild>
+                                    <a
+                                      href={doc.fileUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                    >
+                                      <Eye className="w-4 h-4" />
+                                    </a>
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => removeDocument(doc.id)}
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </Button>
                                 </div>
                               </div>
-                              <div className="flex gap-2">
-                                <Button size="sm" variant="outline" asChild>
-                                  <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer">
-                                    <Eye className="w-4 h-4" />
-                                  </a>
-                                </Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="destructive"
-                                  onClick={() => removeDocument(doc.id)}
-                                >
-                                  <X className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
+                            ))}
                         </div>
                       ) : (
                         <ObjectUploader
@@ -697,12 +806,15 @@ export default function ProfileSettings() {
                           maxFileSize={52428800}
                           onGetUploadParameters={async () => ({
                             method: "PUT" as const,
-                            url: "/api/object-storage/upload-url"
+                            url: "/api/object-storage/upload-url",
                           })}
-                          onComplete={(result: any) => handleUploadComplete(result, "video_intro")}
+                          onComplete={(result: any) =>
+                            handleUploadComplete(result, "video_intro")
+                          }
                           buttonClassName="w-full"
                         >
-                          Upload Video Introduction (MP4, MOV, AVI, WEBM - max 50MB)
+                          Upload Video Introduction (MP4, MOV, AVI, WEBM - max
+                          50MB)
                         </ObjectUploader>
                       )}
                     </div>
@@ -712,9 +824,9 @@ export default function ProfileSettings() {
 
               {/* Save Button */}
               <div className="flex justify-end pt-6">
-                <Button 
-                  type="submit" 
-                  size="lg" 
+                <Button
+                  type="submit"
+                  size="lg"
                   disabled={isUpdating}
                   className="min-w-32"
                   data-testid="button-save-settings"
