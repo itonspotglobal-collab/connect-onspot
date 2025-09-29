@@ -729,6 +729,8 @@ export default function ProfileSettings() {
                         <ObjectUploader
                           maxNumberOfFiles={1}
                           maxFileSize={10485760} // 10MB
+                          enableTalentImport={true}
+                          importType="resume"
                           onGetUploadParameters={async () => {
                             return {
                               method: "POST" as const,
@@ -739,6 +741,7 @@ export default function ProfileSettings() {
                             if (result.successful && result.successful.length > 0) {
                               const file = result.successful[0];
                               try {
+                                // Save document metadata
                                 const documentData = {
                                   type: "resume",
                                   fileName: file.name,
@@ -751,19 +754,18 @@ export default function ProfileSettings() {
 
                                 await authAPI.post("/api/documents", documentData);
 
+                                // Refresh all relevant queries to show updated profile and skills
                                 queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
                                 queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
-
-                                toast({
-                                  title: "Resume Uploaded",
-                                  description: "Your resume has been uploaded successfully.",
-                                });
+                                if (user?.id) {
+                                  queryClient.invalidateQueries({ queryKey: ["/api/users", user.id, "skills"] });
+                                }
                               } catch (error: any) {
-                                console.error("❌ Resume save failed:", error);
+                                console.error("❌ Resume metadata save failed:", error);
                                 toast({
-                                  title: "Upload Error",
+                                  title: "Metadata Save Error",
                                   description:
-                                    "Resume uploaded but failed to save to your profile. Please try again.",
+                                    "Resume imported but failed to save document metadata.",
                                   variant: "destructive",
                                 });
                               }
@@ -771,7 +773,7 @@ export default function ProfileSettings() {
                           }}
                           buttonClassName="w-full"
                         >
-                          Upload Resume (PDF, DOC, DOCX - max 10MB)
+                          Upload Resume (PDF, DOC, DOCX, CSV - max 10MB)
                         </ObjectUploader>
                       )}
                     </div>
