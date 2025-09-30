@@ -951,13 +951,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  // Protected Object Storage Upload URL - Generate presigned S3 URL for file uploads
+  // POST /api/object-storage/upload-url - Generate presigned S3 URL for file uploads
   app.post('/api/object-storage/upload-url', authenticateJWT, async (req: any, res) => {
     try {
       const { fileName, contentType } = req.body;
       
       console.log(`📤 Upload URL request [${req.requestId}]:`, { fileName, contentType });
       
+      // Validate required parameters
       if (!fileName || !contentType) {
         console.error(`❌ Missing parameters [${req.requestId}]:`, { fileName: !!fileName, contentType: !!contentType });
         return res.status(400).json({ error: 'fileName and contentType required' });
@@ -970,27 +971,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const awsSecretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
 
       if (!awsRegion || !awsBucket || !awsAccessKeyId || !awsSecretAccessKey) {
-        console.warn(`⚠️ AWS S3 not configured [${req.requestId}] - using fallback local storage`);
-        
-        // Fallback to local/development storage
-        const timestamp = Date.now();
-        const fileKey = `${process.env.PRIVATE_OBJECT_DIR || '.private'}/${timestamp}-${fileName}`;
-        const baseUrl = process.env.PUBLIC_BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
-        const uploadUrl = `${baseUrl}/api/objects/${encodeURIComponent(fileKey)}`;
-        
-        const response = {
-          url: uploadUrl,
-          method: 'PUT' as const,
-          headers: {
-            'Content-Type': contentType
-          },
-          fileUrl: uploadUrl
-        };
-        
-        return res.json(response);
+        console.error(`❌ S3 not configured [${req.requestId}]:`, { 
+          hasRegion: !!awsRegion, 
+          hasBucket: !!awsBucket, 
+          hasAccessKey: !!awsAccessKeyId, 
+          hasSecretKey: !!awsSecretAccessKey 
+        });
+        return res.status(500).json({ error: 'S3 not configured' });
       }
 
-      // AWS S3 Integration
+      // Import AWS SDK modules
       const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3');
       const { getSignedUrl } = await import('@aws-sdk/s3-request-presigner');
 
@@ -1037,7 +1027,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(response);
     } catch (error: any) {
-      console.error(`❌ Upload URL generation failed [${req.requestId}]:`, error);
+      console.error(`❌ S3 upload URL generation failed [${req.requestId}]:`, {
+        error: error.message,
+        stack: error.stack
+      });
       res.status(500).json({ error: 'Failed to generate upload URL' });
     }
   });
