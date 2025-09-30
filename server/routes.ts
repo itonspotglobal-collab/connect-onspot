@@ -951,7 +951,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  // Protected Object Storage Upload URL - Generate presigned URL for file uploads
+  // Protected Object Storage Upload URL - Generate presigned S3 URL for file uploads
   app.post('/api/object-storage/upload-url', authenticateJWT, async (req: any, res) => {
     try {
       const { fileName, contentType } = req.body;
@@ -963,31 +963,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'fileName and contentType required' });
       }
 
-      // Generate unique file path in private directory
+      // Check if AWS credentials are configured
+      const awsRegion = process.env.AWS_REGION;
+      const awsBucket = process.env.AWS_BUCKET_NAME;
+      const awsAccessKeyId = process.env.AWS_ACCESS_KEY_ID;
+      const awsSecretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
+
+      if (!awsRegion || !awsBucket || !awsAccessKeyId || !awsSecretAccessKey) {
+        console.warn(`⚠️ AWS S3 not configured [${req.requestId}] - using fallback local storage`);
+        
+        // Fallback to local/development storage
+        const timestamp = Date.now();
+        const fileKey = `${process.env.PRIVATE_OBJECT_DIR || '.private'}/${timestamp}-${fileName}`;
+        const baseUrl = process.env.PUBLIC_BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
+        const uploadUrl = `${baseUrl}/api/objects/${encodeURIComponent(fileKey)}`;
+        
+        const response = {
+          url: uploadUrl,
+          method: 'PUT' as const,
+          headers: {
+            'Content-Type': contentType
+          },
+          fileUrl: uploadUrl
+        };
+        
+        return res.json(response);
+      }
+
+      // AWS S3 Integration
+      const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3');
+      const { getSignedUrl } = await import('@aws-sdk/s3-request-presigner');
+
+      // Initialize S3 client
+      const s3Client = new S3Client({
+        region: awsRegion,
+        credentials: {
+          accessKeyId: awsAccessKeyId,
+          secretAccessKey: awsSecretAccessKey,
+        },
+      });
+
+      // Generate unique key with timestamp prefix
       const timestamp = Date.now();
-      const fileKey = `${process.env.PRIVATE_OBJECT_DIR || '.private'}/${timestamp}-${fileName}`;
-      
-      // For Replit/development environment, create upload URL
-      // In production with real object storage (S3, GCS), you would generate actual signed URLs
-      const baseUrl = process.env.PUBLIC_BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
-      const uploadUrl = `${baseUrl}/api/objects/${encodeURIComponent(fileKey)}`;
-      const fileUrl = uploadUrl; // Same URL for both upload and access in this implementation
-      
+      const key = `uploads/${timestamp}-${fileName}`;
+
+      // Create command for presigned URL
+      const command = new PutObjectCommand({
+        Bucket: awsBucket,
+        Key: key,
+        ContentType: contentType,
+      });
+
+      // Generate presigned URL (expires in 5 minutes)
+      const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+
+      // Construct permanent file URL
+      const fileUrl = `https://${awsBucket}.s3.${awsRegion}.amazonaws.com/${key}`;
+
       const response = {
-        url: uploadUrl,
-        method: 'PUT',
+        url: signedUrl,
+        method: 'PUT' as const,
         headers: {
           'Content-Type': contentType
         },
         fileUrl
       };
-      
-      console.log(`✅ Upload URL generated [${req.requestId}]:`, { 
-        fileKey, 
-        uploadUrlLength: uploadUrl.length,
-        responseKeys: Object.keys(response)
+
+      console.log(`✅ S3 upload URL generated [${req.requestId}]:`, { 
+        bucket: awsBucket,
+        key, 
+        region: awsRegion
       });
-      
+
       res.json(response);
     } catch (error: any) {
       console.error(`❌ Upload URL generation failed [${req.requestId}]:`, error);
