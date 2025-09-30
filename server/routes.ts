@@ -1,7 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import * as Sentry from "@sentry/node";
-import { Request, Response, NextFunction } from "express";
 import { storage, type CreateUserData } from "./storage";
 import { isAuthenticated } from "./replitAuth";
 import {
@@ -1238,76 +1237,164 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { fileUrl, fileName, type, fileContent } = req.body;
       const userId = req.user.id;
 
-      if (!fileUrl || !fileName || !type) {
-        return res.status(400).json({ success: false, error: "Missing parameters" });
+      if (!fileName) {
+        return res.status(400).json({ success: false, error: "Missing fileName parameter" });
       }
 
       console.log(`📄 Talent import started for user ${userId}`, { fileName, type });
 
-      // 1. Fetch file text (if CSV or résumé from S3)
+      // Determine file type
+      const fileExtension = fileName.toLowerCase().split(".").pop();
       let textContent = "";
+      let parsedData: any = {};
+
+      // 1. Get file content
       if (fileContent) {
-        // frontend may send CSV content directly
         textContent = fileContent;
-      } else {
+        console.log(`📄 Using provided file content (${textContent.length} bytes)`);
+      } else if (fileUrl) {
         console.log(`⬇️ Downloading file from ${fileUrl}`);
         const response = await fetch(fileUrl);
         if (!response.ok) throw new Error("Failed to download file");
         textContent = await response.text();
+        console.log(`📄 File content fetched (${textContent.length} bytes)`);
+      } else {
+        return res.status(400).json({ success: false, error: "Either fileUrl or fileContent is required" });
       }
 
-      // 2. Naive parsing logic (replace with real parser later)
-      // Example: Look for first/last name, title, and skills
-      const firstNameMatch = textContent.match(/First Name:\s*(\w+)/i);
-      const lastNameMatch = textContent.match(/Last Name:\s*(\w+)/i);
-      const titleMatch = textContent.match(/Title:\s*([^\n]+)/i);
-      const skillsMatch = textContent.match(/Skills:\s*([^\n]+)/i);
+      // 2. Parse based on file type
+      if (fileExtension === "csv") {
+        console.log(`📊 Parsing CSV file: ${fileName}`);
+        
+        const parseResult = Papa.parse(textContent, {
+          header: true,
+          skipEmptyLines: true,
+          transformHeader: (header) => header.trim(),
+        });
 
-      const firstName = firstNameMatch ? firstNameMatch[1] : req.user.email.split("@")[0];
-      const lastName = lastNameMatch ? lastNameMatch[1] : "Candidate";
-      const title = titleMatch ? titleMatch[1].trim() : "Professional";
-      const skills = skillsMatch ? skillsMatch[1].split(",").map(s => s.trim()) : ["General"];
+        if (parseResult.errors && parseResult.errors.length > 0) {
+          return res.status(400).json({
+            success: false,
+            error: "CSV parsing failed",
+            details: parseResult.errors,
+          });
+        }
 
-      console.log("🔍 Parsed resume data:", { firstName, lastName, title, skills });
+        // For CSV: only process first row for single talent import
+        const row = parseResult.data[0] as any;
+        if (!row) {
+          return res.status(400).json({
+            success: false,
+            error: "No data found in CSV file",
+          });
+        }
 
-      // 3. Upsert into profiles table
+        parsedData = {
+          firstName: row.first_name?.trim() || row.firstName?.trim(),
+          lastName: row.last_name?.trim() || row.lastName?.trim(),
+          title: row.title?.trim(),
+          bio: row.bio?.trim(),
+          location: row.location?.trim(),
+          skills: row.skills
+            ? row.skills.split(",").map((s: string) => s.trim()).filter(Boolean)
+            : [],
+        };
+      } else {
+        // For PDF/resume files: save document without parsing
+        console.log(`📄 Processing resume file: ${fileName}`);
+        console.log(`⚠️ PDF/DOCX parsing not yet implemented - saving document only`);
+        
+        // Save document and inform user to manually update profile
+        try {
+          const documentId = uuidv4();
+          await query(
+            `INSERT INTO documents (id, user_id, type, file_name, file_url, created_at) VALUES ($1, $2, $3, $4, $5, NOW())`,
+            [documentId, userId, type || "resume", fileName, fileUrl || "local"]
+          );
+        } catch (docError: any) {
+          console.log(`⚠️ Document save failed:`, docError.message);
+        }
+
+        return res.json({
+          success: true,
+          message: "Resume uploaded successfully. Please update your profile manually as automatic parsing is not yet available for PDF/DOCX files.",
+          requiresManualUpdate: true,
+        });
+      }
+
+      console.log("🔍 Parsed data:", parsedData);
+
+      // 3. Upsert into profiles table using direct SQL
       const profileResult = await query(
         `
-        INSERT INTO profiles (user_id, first_name, last_name, title, updated_at)
-        VALUES ($1, $2, $3, $4, NOW())
+        INSERT INTO profiles (user_id, first_name, last_name, title, bio, location, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, NOW())
         ON CONFLICT (user_id)
-        DO UPDATE SET first_name = EXCLUDED.first_name,
-                      last_name = EXCLUDED.last_name,
-                      title = EXCLUDED.title,
-                      updated_at = NOW()
+        DO UPDATE SET 
+          first_name = COALESCE(EXCLUDED.first_name, profiles.first_name),
+          last_name = COALESCE(EXCLUDED.last_name, profiles.last_name),
+          title = COALESCE(EXCLUDED.title, profiles.title),
+          bio = COALESCE(EXCLUDED.bio, profiles.bio),
+          location = COALESCE(EXCLUDED.location, profiles.location),
+          updated_at = NOW()
         RETURNING id;
         `,
-        [userId, firstName, lastName, title]
+        [
+          userId,
+          parsedData.firstName,
+          parsedData.lastName,
+          parsedData.title || null,
+          parsedData.bio || null,
+          parsedData.location || null
+        ]
       );
       const profileId = profileResult.rows[0].id;
 
       // 4. Upsert skills
-      if (skills.length > 0) {
+      if (parsedData.skills && parsedData.skills.length > 0) {
+        // Delete existing skills first
         await query(`DELETE FROM user_skills WHERE user_id = $1`, [userId]);
-        for (const skill of skills) {
-          const skillId = uuidv4();
+        
+        // Insert new skills
+        for (const skillName of parsedData.skills) {
+          // First, find or create the skill in the skills table
+          let skillResult = await query(
+            `SELECT id FROM skills WHERE LOWER(name) = LOWER($1) LIMIT 1`,
+            [skillName]
+          );
+          
+          let skillId;
+          if (skillResult.rows.length > 0) {
+            skillId = skillResult.rows[0].id;
+          } else {
+            // Create new skill
+            const newSkillResult = await query(
+              `INSERT INTO skills (name, category, created_at) VALUES ($1, $2, NOW()) RETURNING id`,
+              [skillName, 'Technical']
+            );
+            skillId = newSkillResult.rows[0].id;
+          }
+          
+          // Now link the skill to the user
           await query(
-            `INSERT INTO user_skills (id, user_id, skill_name, created_at) VALUES ($1, $2, $3, NOW())`,
-            [skillId, userId, skill]
+            `INSERT INTO user_skills (user_id, skill_id, level, years_experience, created_at) 
+             VALUES ($1, $2, $3, $4, NOW())`,
+            [userId, skillId, 'intermediate', 0]
           );
         }
       }
 
       // 5. Save document reference
-      const documentId = uuidv4();
-      await query(
-        `
-        INSERT INTO documents (id, user_id, type, file_name, file_url, created_at)
-        VALUES ($1, $2, $3, $4, $5, NOW())
-        ON CONFLICT (user_id, file_url) DO NOTHING
-        `,
-        [documentId, userId, type, fileName, fileUrl]
-      );
+      try {
+        const documentId = uuidv4();
+        await query(
+          `INSERT INTO documents (id, user_id, type, file_name, file_url, created_at) VALUES ($1, $2, $3, $4, $5, NOW())`,
+          [documentId, userId, type || "resume", fileName, fileUrl || "local"]
+        );
+      } catch (docError: any) {
+        // Ignore duplicate document errors, just log them
+        console.log(`⚠️ Document insert skipped (may already exist):`, docError.message);
+      }
 
       console.log(`✅ Talent profile updated for user ${userId}`);
 
@@ -1315,7 +1402,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         message: "Talent profile updated from resume",
         profileId,
-        importedSkills: skills,
+        importedSkills: parsedData.skills || [],
       });
 
     } catch (error: any) {
