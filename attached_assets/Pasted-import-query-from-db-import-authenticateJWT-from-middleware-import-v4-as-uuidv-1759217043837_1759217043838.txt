@@ -1,0 +1,99 @@
+import { query } from "./db"; 
+import { authenticateJWT } from "./middleware"; 
+import { v4 as uuidv4 } from "uuid";
+import fetch from "node-fetch"; // if not available, install via npm install node-fetch
+
+// POST /api/talent/import
+app.post("/api/talent/import", authenticateJWT, async (req: any, res) => {
+  try {
+    const { fileUrl, fileName, type, fileContent } = req.body;
+    const userId = req.user.id;
+
+    if (!fileUrl || !fileName || !type) {
+      return res.status(400).json({ success: false, error: "Missing parameters" });
+    }
+
+    console.log(`📄 Talent import started for user ${userId}`, { fileName, type });
+
+    // 1. Fetch file text (if CSV or résumé from S3)
+    let textContent = "";
+    if (fileContent) {
+      // frontend may send CSV content directly
+      textContent = fileContent;
+    } else {
+      console.log(`⬇️ Downloading file from ${fileUrl}`);
+      const response = await fetch(fileUrl);
+      if (!response.ok) throw new Error("Failed to download file");
+      textContent = await response.text();
+    }
+
+    // 2. Naive parsing logic (replace with real parser later)
+    // Example: Look for first/last name, title, and skills
+    const firstNameMatch = textContent.match(/First Name:\s*(\w+)/i);
+    const lastNameMatch = textContent.match(/Last Name:\s*(\w+)/i);
+    const titleMatch = textContent.match(/Title:\s*([^\n]+)/i);
+    const skillsMatch = textContent.match(/Skills:\s*([^\n]+)/i);
+
+    const firstName = firstNameMatch ? firstNameMatch[1] : req.user.email.split("@")[0];
+    const lastName = lastNameMatch ? lastNameMatch[1] : "Candidate";
+    const title = titleMatch ? titleMatch[1].trim() : "Professional";
+    const skills = skillsMatch ? skillsMatch[1].split(",").map(s => s.trim()) : ["General"];
+
+    console.log("🔍 Parsed resume data:", { firstName, lastName, title, skills });
+
+    // 3. Upsert into profiles table
+    const profileResult = await query(
+      `
+      INSERT INTO profiles (user_id, first_name, last_name, title, updated_at)
+      VALUES ($1, $2, $3, $4, NOW())
+      ON CONFLICT (user_id)
+      DO UPDATE SET first_name = EXCLUDED.first_name,
+                    last_name = EXCLUDED.last_name,
+                    title = EXCLUDED.title,
+                    updated_at = NOW()
+      RETURNING id;
+      `,
+      [userId, firstName, lastName, title]
+    );
+    const profileId = profileResult.rows[0].id;
+
+    // 4. Upsert skills
+    if (skills.length > 0) {
+      await query(`DELETE FROM user_skills WHERE user_id = $1`, [userId]);
+      for (const skill of skills) {
+        const skillId = uuidv4();
+        await query(
+          `INSERT INTO user_skills (id, user_id, skill_name, created_at) VALUES ($1, $2, $3, NOW())`,
+          [skillId, userId, skill]
+        );
+      }
+    }
+
+    // 5. Save document reference
+    const documentId = uuidv4();
+    await query(
+      `
+      INSERT INTO documents (id, user_id, type, file_name, file_url, created_at)
+      VALUES ($1, $2, $3, $4, $5, NOW())
+      ON CONFLICT (user_id, file_url) DO NOTHING
+      `,
+      [documentId, userId, type, fileName, fileUrl]
+    );
+
+    console.log(`✅ Talent profile updated for user ${userId}`);
+
+    res.json({
+      success: true,
+      message: "Talent profile updated from resume",
+      profileId,
+      importedSkills: skills,
+    });
+
+  } catch (error: any) {
+    console.error("❌ Talent import failed:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Failed to import resume",
+    });
+  }
+});

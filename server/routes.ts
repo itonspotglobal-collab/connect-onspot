@@ -1,26 +1,51 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import * as Sentry from "@sentry/node";
+import { Request, Response, NextFunction } from "express";
 import { storage, type CreateUserData } from "./storage";
 import { isAuthenticated } from "./replitAuth";
-import { hashPassword, verifyPassword, validatePasswordStrength, validateEmail } from "./auth-utils";
+import {
+  hashPassword,
+  verifyPassword,
+  validatePasswordStrength,
+  validateEmail,
+} from "./auth-utils";
 import { ghlService } from "./services/ghlService";
 import rateLimit from "express-rate-limit";
 import multer from "multer";
 import Papa from "papaparse";
 import jwt from "jsonwebtoken";
-import { query, db } from './db.ts';
-import { eq } from 'drizzle-orm';
+import { query, db } from "./db.ts";
+import { eq } from "drizzle-orm";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { v4 as uuidv4 } from "uuid";
 import {
-  insertUserSchema, insertProfileSchema, insertSkillSchema, insertUserSkillSchema, profiles,
-  insertJobSchema, insertJobSkillSchema, insertProposalSchema, insertContractSchema,
-  insertMilestoneSchema, insertTimeEntrySchema, insertMessageThreadSchema, insertMessageSchema,
-  insertReviewSchema, insertPortfolioItemSchema, insertCertificationSchema, insertPaymentSchema,
-  insertDisputeSchema, insertNotificationSchema, insertLeadIntakeSchema,
-  csvTalentRowSchema, csvBulkImportSchema, csvImportResultSchema, csvTemplateSchema,
-  insertDocumentSchema
+  insertUserSchema,
+  insertProfileSchema,
+  insertSkillSchema,
+  insertUserSkillSchema,
+  profiles,
+  insertJobSchema,
+  insertJobSkillSchema,
+  insertProposalSchema,
+  insertContractSchema,
+  insertMilestoneSchema,
+  insertTimeEntrySchema,
+  insertMessageThreadSchema,
+  insertMessageSchema,
+  insertReviewSchema,
+  insertPortfolioItemSchema,
+  insertCertificationSchema,
+  insertPaymentSchema,
+  insertDisputeSchema,
+  insertNotificationSchema,
+  insertLeadIntakeSchema,
+  csvTalentRowSchema,
+  csvBulkImportSchema,
+  csvImportResultSchema,
+  csvTemplateSchema,
+  insertDocumentSchema,
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -40,123 +65,137 @@ type AuthenticatedRequest = Request & {
     email: string;
     role: string;
   };
-}
+};
 
 // JWT Authentication Middleware
-const authenticateJWT = async (req: Request, res: Response, next: NextFunction) => {
+const authenticateJWT = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
-    
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+
     if (!token) {
-      console.log(`🔒 JWT Auth failed: No token provided [${(req as any).requestId}] for ${req.method} ${req.path}`);
+      console.log(
+        `🔒 JWT Auth failed: No token provided [${(req as any).requestId}] for ${req.method} ${req.path}`,
+      );
       return res.status(401).json({
         error: "Authentication required",
         message: "No authentication token provided",
-        requestId: (req as any).requestId
+        requestId: (req as any).requestId,
       });
     }
-    
+
     // Get JWT secret
     let jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
-      if (process.env.NODE_ENV === 'development') {
-        jwtSecret = 'development-fallback-secret-not-for-production';
+      if (process.env.NODE_ENV === "development") {
+        jwtSecret = "development-fallback-secret-not-for-production";
       } else {
-        console.error('❌ JWT_SECRET not configured for production');
+        console.error("❌ JWT_SECRET not configured for production");
         return res.status(500).json({
           error: "Server configuration error",
-          requestId: (req as any).requestId
+          requestId: (req as any).requestId,
         });
       }
     }
-    
+
     // Verify and decode JWT
     const decoded = jwt.verify(token, jwtSecret) as JWTPayload;
-    
+
     // Validate JWT payload structure
     if (!decoded.userId || !decoded.email || !decoded.role) {
-      console.error(`❌ JWT Auth failed: Invalid token payload [${(req as any).requestId}]:`, {
-        hasUserId: !!decoded.userId,
-        hasEmail: !!decoded.email,
-        hasRole: !!decoded.role
-      });
+      console.error(
+        `❌ JWT Auth failed: Invalid token payload [${(req as any).requestId}]:`,
+        {
+          hasUserId: !!decoded.userId,
+          hasEmail: !!decoded.email,
+          hasRole: !!decoded.role,
+        },
+      );
       return res.status(401).json({
         error: "Invalid token",
         message: "Token missing required claims",
-        requestId: (req as any).requestId
+        requestId: (req as any).requestId,
       });
     }
-    
+
     // Verify user still exists in database
-    const userQuery = 'SELECT id, email, role FROM users WHERE id = $1';
+    const userQuery = "SELECT id, email, role FROM users WHERE id = $1";
     const userResult = await query(userQuery, [decoded.userId]);
-    
+
     if (userResult.rows.length === 0) {
-      console.error(`❌ JWT Auth failed: User not found in database [${(req as any).requestId}]: ${decoded.userId}`);
+      console.error(
+        `❌ JWT Auth failed: User not found in database [${(req as any).requestId}]: ${decoded.userId}`,
+      );
       return res.status(401).json({
         error: "Invalid token",
         message: "User account no longer exists",
-        requestId: (req as any).requestId
+        requestId: (req as any).requestId,
       });
     }
-    
+
     const dbUser = userResult.rows[0];
-    
+
     // Verify role hasn't changed
     if (dbUser.role !== decoded.role) {
-      console.error(`❌ JWT Auth failed: Role mismatch [${(req as any).requestId}]:`, {
-        tokenRole: decoded.role,
-        dbRole: dbUser.role,
-        userId: decoded.userId
-      });
+      console.error(
+        `❌ JWT Auth failed: Role mismatch [${(req as any).requestId}]:`,
+        {
+          tokenRole: decoded.role,
+          dbRole: dbUser.role,
+          userId: decoded.userId,
+        },
+      );
       return res.status(401).json({
         error: "Invalid token",
         message: "User role has changed, please log in again",
-        requestId: (req as any).requestId
+        requestId: (req as any).requestId,
       });
     }
-    
+
     // Add user to request object
     (req as any).user = {
       id: decoded.userId,
       email: decoded.email,
-      role: decoded.role
+      role: decoded.role,
     };
-    
+
     console.log(`✅ JWT Auth successful [${(req as any).requestId}]:`, {
       userId: decoded.userId,
-      role: decoded.role
+      role: decoded.role,
     });
-    
+
     next();
   } catch (error: any) {
     const requestId = (req as any).requestId;
     console.error(`❌ JWT Auth error [${requestId}]:`, {
       error: error.message,
-      name: error.name
+      name: error.name,
     });
-    
-    if (error.name === 'TokenExpiredError') {
+
+    if (error.name === "TokenExpiredError") {
       return res.status(401).json({
         error: "Token expired",
         message: "Your session has expired, please log in again",
-        requestId
+        requestId,
       });
     }
-    
-    if (error.name === 'JsonWebTokenError') {
+
+    if (error.name === "JsonWebTokenError") {
       return res.status(401).json({
         error: "Invalid token",
         message: "Authentication token is invalid",
-        requestId
+        requestId,
       });
     }
-    
+
     return res.status(500).json({
       error: "Authentication error",
       message: "Failed to authenticate token",
-      requestId
+      requestId,
     });
   }
 };
@@ -165,76 +204,85 @@ const authenticateJWT = async (req: Request, res: Response, next: NextFunction) 
 const requireRole = (allowedRoles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     const requestId = (req as any).requestId;
-    
+
     if (!(req as any).user) {
       console.error(`❌ RBAC failed: No user in request [${requestId}]`);
       return res.status(401).json({
         error: "Authentication required",
         message: "User not authenticated",
-        requestId
+        requestId,
       });
     }
-    
+
     if (!allowedRoles.includes((req as any).user.role)) {
-      console.error(`❌ RBAC failed: Insufficient permissions [${requestId}]:`, {
-        userRole: (req as any).user.role,
-        allowedRoles,
-        userId: (req as any).user.id
-      });
+      console.error(
+        `❌ RBAC failed: Insufficient permissions [${requestId}]:`,
+        {
+          userRole: (req as any).user.role,
+          allowedRoles,
+          userId: (req as any).user.id,
+        },
+      );
       return res.status(403).json({
         error: "Insufficient permissions",
-        message: `Access denied. Required role: ${allowedRoles.join(' or ')}`,
-        requestId
+        message: `Access denied. Required role: ${allowedRoles.join(" or ")}`,
+        requestId,
       });
     }
-    
+
     console.log(`✅ RBAC check passed [${requestId}]:`, {
       userId: (req as any).user.id,
       userRole: (req as any).user.role,
-      allowedRoles
+      allowedRoles,
     });
-    
+
     next();
   };
 };
 
 // Convenience middleware functions
-const requireClient = requireRole(['client']);
-const requireTalent = requireRole(['talent']);
-const requireAdmin = requireRole(['admin']);
-const requireClientOrTalent = requireRole(['client', 'talent']);
-const requireAnyRole = requireRole(['client', 'talent', 'admin']);
+const requireClient = requireRole(["client"]);
+const requireTalent = requireRole(["talent"]);
+const requireAdmin = requireRole(["admin"]);
+const requireClientOrTalent = requireRole(["client", "talent"]);
+const requireAnyRole = requireRole(["client", "talent", "admin"]);
 
 // Enhanced validation middleware factory
-const validateRequest = (schema: z.ZodSchema, target: 'body' | 'query' | 'params' = 'body') => {
+const validateRequest = (
+  schema: z.ZodSchema,
+  target: "body" | "query" | "params" = "body",
+) => {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
-      const dataToValidate = target === 'body' ? req.body : 
-                            target === 'query' ? req.query : 
-                            req.params;
-      
+      const dataToValidate =
+        target === "body"
+          ? req.body
+          : target === "query"
+            ? req.query
+            : req.params;
+
       schema.parse(dataToValidate);
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const validationErrors = error.errors.map(err => ({
-          field: err.path.join('.'),
+        const validationErrors = error.errors.map((err) => ({
+          field: err.path.join("."),
           message: err.message,
-          code: err.code
+          code: err.code,
         }));
-        
+
         console.warn(`🚨 Validation Error [${(req as any).requestId}]:`, {
           endpoint: req.path,
           method: req.method,
           target: target,
-          errors: validationErrors
+          errors: validationErrors,
         });
 
         return res.status(400).json({
           error: "Validation failed",
           message: `Invalid ${target} data provided`,
           details: validationErrors,
-          requestId: (req as any).requestId
+          requestId: (req as any).requestId,
         });
       }
       next(error);
@@ -243,16 +291,22 @@ const validateRequest = (schema: z.ZodSchema, target: 'body' | 'query' | 'params
 };
 
 // Enhanced error handler utility
-const handleRouteError = (error: any, req: Request, res: Response, operation: string, statusCode: number = 500) => {
+const handleRouteError = (
+  error: any,
+  req: Request,
+  res: Response,
+  operation: string,
+  statusCode: number = 500,
+) => {
   const requestId = (req as any).requestId;
-  const userId = (req as any).user?.user?.id || (req as any).user?.claims?.sub;
-  
+  const userId = (req as any).user?.id || (req as any).user?.claims?.sub;
+
   console.error(`🚨 ${operation} Error [${requestId}]:`, {
     error: error.message,
     stack: error.stack,
     userId: userId,
     endpoint: req.path,
-    method: req.method
+    method: req.method,
   });
 
   // Send to Sentry if configured and it's a server error
@@ -263,24 +317,28 @@ const handleRouteError = (error: any, req: Request, res: Response, operation: st
         requestId: requestId,
         endpoint: req.path,
         method: req.method,
-        userId: userId
+        userId: userId,
       },
       user: {
         id: userId,
-        ip_address: req.ip
+        ip_address: req.ip,
       },
       extra: {
-        userAgent: req.get('User-Agent')
-      }
+        userAgent: req.get("User-Agent"),
+      },
     });
   }
 
   // Return appropriate error message
   const isServerError = statusCode >= 500;
   res.status(statusCode).json({
-    error: isServerError ? "Internal server error" : error.message || "Operation failed",
-    message: isServerError ? "An unexpected error occurred. Please try again later." : error.message || `Failed to ${operation.toLowerCase()}`,
-    requestId: requestId
+    error: isServerError
+      ? "Internal server error"
+      : error.message || "Operation failed",
+    message: isServerError
+      ? "An unexpected error occurred. Please try again later."
+      : error.message || `Failed to ${operation.toLowerCase()}`,
+    requestId: requestId,
   });
 };
 
@@ -288,10 +346,10 @@ const handleRouteError = (error: any, req: Request, res: Response, operation: st
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // limit each IP to 5 requests per windowMs
-  message: { 
-    success: false, 
+  message: {
+    success: false,
     error: "Too many attempts",
-    message: "Too many login/signup attempts. Please try again later." 
+    message: "Too many login/signup attempts. Please try again later.",
   },
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
@@ -300,223 +358,275 @@ const authLimiter = rateLimit({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  console.log('🔗 Registering API routes...');
-  
+  console.log("🔗 Registering API routes...");
+
   // Protected Dashboard Routes with Role-Based Access Control
   // These routes serve the dashboard content with server-side validation
-  app.get('/client-dashboard', authenticateJWT, requireClient, (req: Request, res: Response) => {
-    console.log(`🏠 Client dashboard access [${(req as any).requestId}]:`, {
-      userId: (req as any).user?.id,
-      role: (req as any).user?.role
-    });
-    // In a production app, this would render the client dashboard or return appropriate data
-    res.json({ 
-      success: true, 
-      message: 'Client dashboard access granted',
-      userRole: (req as any).user?.role,
-      userId: (req as any).user?.id
-    });
-  });
-  
-  app.get('/talent-dashboard', authenticateJWT, requireTalent, (req: Request, res: Response) => {
-    console.log(`🎯 Talent dashboard access [${(req as any).requestId}]:`, {
-      userId: (req as any).user?.id,
-      role: (req as any).user?.role
-    });
-    // In a production app, this would render the talent dashboard or return appropriate data
-    res.json({ 
-      success: true, 
-      message: 'Talent dashboard access granted',
-      userRole: (req as any).user?.role,
-      userId: (req as any).user?.id
-    });
-  });
-  
+  app.get(
+    "/client-dashboard",
+    authenticateJWT,
+    requireClient,
+    (req: Request, res: Response) => {
+      console.log(`🏠 Client dashboard access [${(req as any).requestId}]:`, {
+        userId: (req as any).user?.id,
+        role: (req as any).user?.role,
+      });
+      // In a production app, this would render the client dashboard or return appropriate data
+      res.json({
+        success: true,
+        message: "Client dashboard access granted",
+        userRole: (req as any).user?.role,
+        userId: (req as any).user?.id,
+      });
+    },
+  );
+
+  app.get(
+    "/talent-dashboard",
+    authenticateJWT,
+    requireTalent,
+    (req: Request, res: Response) => {
+      console.log(`🎯 Talent dashboard access [${(req as any).requestId}]:`, {
+        userId: (req as any).user?.id,
+        role: (req as any).user?.role,
+      });
+      // In a production app, this would render the talent dashboard or return appropriate data
+      res.json({
+        success: true,
+        message: "Talent dashboard access granted",
+        userRole: (req as any).user?.role,
+        userId: (req as any).user?.id,
+      });
+    },
+  );
+
   // Protected API Route Validation Endpoint
-  app.get('/api/validate-access', authenticateJWT, (req: Request, res: Response) => {
-    console.log(`✅ Access validation [${(req as any).requestId}]:`, {
-      userId: (req as any).user?.id,
-      role: (req as any).user?.role
-    });
-    res.json({
-      success: true,
-      user: (req as any).user,
-      message: 'Access validated successfully'
-    });
-  });
-  
+  app.get(
+    "/api/validate-access",
+    authenticateJWT,
+    (req: Request, res: Response) => {
+      console.log(`✅ Access validation [${(req as any).requestId}]:`, {
+        userId: (req as any).user?.id,
+        role: (req as any).user?.role,
+      });
+      res.json({
+        success: true,
+        user: (req as any).user,
+        message: "Access validated successfully",
+      });
+    },
+  );
+
   // Role-specific API validation endpoints for testing
-  app.get('/api/client-only', authenticateJWT, requireClient, (req: Request, res: Response) => {
-    res.json({ 
-      success: true, 
-      message: 'Client-only API access granted',
-      role: (req as any).user?.role
-    });
-  });
-  
-  app.get('/api/talent-only', authenticateJWT, requireTalent, (req: Request, res: Response) => {
-    res.json({ 
-      success: true, 
-      message: 'Talent-only API access granted',
-      role: (req as any).user?.role
-    });
-  });
-    
+  app.get(
+    "/api/client-only",
+    authenticateJWT,
+    requireClient,
+    (req: Request, res: Response) => {
+      res.json({
+        success: true,
+        message: "Client-only API access granted",
+        role: (req as any).user?.role,
+      });
+    },
+  );
+
+  app.get(
+    "/api/talent-only",
+    authenticateJWT,
+    requireTalent,
+    (req: Request, res: Response) => {
+      res.json({
+        success: true,
+        message: "Talent-only API access granted",
+        role: (req as any).user?.role,
+      });
+    },
+  );
+
   // JWT-based signup route
-  app.post('/api/signup', authLimiter, async (req: Request, res: Response) => {
+  app.post("/api/signup", authLimiter, async (req: Request, res: Response) => {
     try {
-      const { email, username, password, first_name, last_name, role, company } = req.body;
+      const {
+        email,
+        username,
+        password,
+        first_name,
+        last_name,
+        role,
+        company,
+      } = req.body;
       const requestId = (req as any).requestId;
 
       // Debug: Log DATABASE_URL being used (mask password)
       const dbUrl = process.env.DATABASE_URL;
       if (dbUrl) {
-        const maskedDbUrl = dbUrl.replace(/:([^:]+)@/, ':***@');
-        console.log(`🗄️ Debug [${requestId}]: Using DATABASE_URL = ${maskedDbUrl}`);
+        const maskedDbUrl = dbUrl.replace(/:([^:]+)@/, ":***@");
+        console.log(
+          `🗄️ Debug [${requestId}]: Using DATABASE_URL = ${maskedDbUrl}`,
+        );
       } else {
         console.error(`❌ Debug [${requestId}]: DATABASE_URL not set!`);
       }
 
       // Debug: Log JWT_SECRET status
       const hasJwtSecret = !!process.env.JWT_SECRET;
-      console.log(`🔑 Debug [${requestId}]: JWT_SECRET loaded = ${hasJwtSecret}`);
+      console.log(
+        `🔑 Debug [${requestId}]: JWT_SECRET loaded = ${hasJwtSecret}`,
+      );
 
       console.log(`🔍 Signup request received [${requestId}]:`, {
-        email: email ? '***@' + email.split('@')[1] : 'missing',
-        username: username || 'not provided',
-        first_name: first_name || 'missing',
-        last_name: last_name || 'missing',
-        role: role || 'missing',
-        company: company || 'not provided'
+        email: email ? "***@" + email.split("@")[1] : "missing",
+        username: username || "not provided",
+        first_name: first_name || "missing",
+        last_name: last_name || "missing",
+        role: role || "missing",
+        company: company || "not provided",
       });
 
       // Validate required fields
       if (!email || !password || !first_name || !last_name || !role) {
         const missingFields = [];
-        if (!email) missingFields.push('email');
-        if (!password) missingFields.push('password');
-        if (!first_name) missingFields.push('first_name');
-        if (!last_name) missingFields.push('last_name');
-        if (!role) missingFields.push('role');
-        
-        console.error(`❌ Signup validation failed [${requestId}]: Missing fields:`, missingFields);
-        
+        if (!email) missingFields.push("email");
+        if (!password) missingFields.push("password");
+        if (!first_name) missingFields.push("first_name");
+        if (!last_name) missingFields.push("last_name");
+        if (!role) missingFields.push("role");
+
+        console.error(
+          `❌ Signup validation failed [${requestId}]: Missing fields:`,
+          missingFields,
+        );
+
         return res.status(400).json({
           success: false,
-          message: `Missing required fields: ${missingFields.join(', ')}`,
-          requestId
+          message: `Missing required fields: ${missingFields.join(", ")}`,
+          requestId,
         });
       }
 
       // Validate email format
       if (!validateEmail(email)) {
-        console.error(`❌ Email validation failed [${requestId}]: Invalid format for email:`, email);
+        console.error(
+          `❌ Email validation failed [${requestId}]: Invalid format for email:`,
+          email,
+        );
         return res.status(400).json({
           success: false,
-          message: "Please enter a valid email address (e.g., name@example.com)",
-          requestId
+          message:
+            "Please enter a valid email address (e.g., name@example.com)",
+          requestId,
         });
       }
 
       // Validate password strength
       const passwordValidation = validatePasswordStrength(password);
       if (!passwordValidation.isValid) {
-        console.error(`❌ Password validation failed [${requestId}]:`, passwordValidation.errors);
+        console.error(
+          `❌ Password validation failed [${requestId}]:`,
+          passwordValidation.errors,
+        );
         return res.status(400).json({
           success: false,
-          message: passwordValidation.errors.join(', '),
-          requestId
+          message: passwordValidation.errors.join(", "),
+          requestId,
         });
       }
 
       // Check if user already exists
-      const existingUserQuery = 'SELECT id, email, username FROM users WHERE email = $1 OR username = $2';
-      const existingUser = await query(existingUserQuery, [email, username || email]);
-      
+      const existingUserQuery =
+        "SELECT id, email, username FROM users WHERE email = $1 OR username = $2";
+      const existingUser = await query(existingUserQuery, [
+        email,
+        username || email,
+      ]);
+
       if (existingUser.rows.length > 0) {
         const existing = existingUser.rows[0];
         console.error(`❌ User already exists [${requestId}]:`, {
           existingEmail: existing.email,
           existingUsername: existing.username,
           attemptedEmail: email,
-          attemptedUsername: username || email
+          attemptedUsername: username || email,
         });
-        
+
         return res.status(409).json({
           success: false,
           message: "An account with this email or username already exists",
-          requestId
+          requestId,
         });
       }
 
       // Hash password
       const passwordHash = await hashPassword(password);
-      
+
       console.log(`🔐 Password hashed successfully [${requestId}]`);
-      
+
       // Generate user ID
       const userId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
+
       // Insert user into database
       const insertUserQuery = `
         INSERT INTO users (id, email, username, "first_name", "last_name", "password_hash", company, role, "created_at", "updated_at")
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
         RETURNING id, email, username, "first_name", "last_name", role
       `;
-      
+
       console.log(`📝 Inserting user into database [${requestId}]:`, {
         userId,
         email,
-        username: username || email.split('@')[0],
+        username: username || email.split("@")[0],
         first_name,
         last_name,
         role,
-        company: company || null
+        company: company || null,
       });
-      
+
       const userResult = await query(insertUserQuery, [
         userId,
         email,
-        username || email.split('@')[0], // Use email prefix as username if not provided
+        username || email.split("@")[0], // Use email prefix as username if not provided
         first_name,
         last_name,
         passwordHash,
         company || null,
-        role
+        role,
       ]);
 
       const newUser = userResult.rows[0];
-      console.log(`🔍 Debug [${requestId}]: User inserted into database = true`);
+      console.log(
+        `🔍 Debug [${requestId}]: User inserted into database = true`,
+      );
 
       // If user is talent, create profile entry
-      if (role === 'talent') {
+      if (role === "talent") {
         const profileId = `prof_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         const insertProfileQuery = `
           INSERT INTO profiles (id, "user_id", "first_name", "last_name", location, languages, timezone, "created_at", "updated_at")
           VALUES ($1, $2, $3, $4, 'Global', ARRAY['English'], 'Asia/Manila', NOW(), NOW())
         `;
-        
+
         console.log(`👤 Creating talent profile [${requestId}]:`, {
           profileId,
           userId,
           first_name,
-          last_name
+          last_name,
         });
-        
+
         await query(insertProfileQuery, [
           profileId,
           userId,
           first_name,
-          last_name
+          last_name,
         ]);
-        
+
         console.log(`✅ Talent profile created successfully [${requestId}]`);
       }
 
       console.log(`✅ User signup successful [${requestId}]:`, {
         userId: newUser.id,
         email: newUser.email,
-        role: newUser.role
+        role: newUser.role,
       });
 
       // Return exact format required by specification - ONLY { success:true, userId, email, role }
@@ -524,42 +634,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         userId: newUser.id,
         email: newUser.email,
-        role: newUser.role
+        role: newUser.role,
       });
-
     } catch (error: any) {
       const requestId = (req as any).requestId;
       console.error(`❌ Signup error [${requestId}]:`, {
         message: error.message,
         stack: error.stack,
         code: error.code,
-        constraint: error.constraint
+        constraint: error.constraint,
       });
-      
+
       // Handle specific database errors
-      if (error.code === '23505') { // Unique violation
-        if (error.constraint?.includes('email')) {
+      if (error.code === "23505") {
+        // Unique violation
+        if (error.constraint?.includes("email")) {
           return res.status(409).json({
             success: false,
             message: "An account with this email already exists",
-            requestId
+            requestId,
           });
         }
-        if (error.constraint?.includes('username')) {
+        if (error.constraint?.includes("username")) {
           return res.status(409).json({
             success: false,
             message: "This username is already taken",
-            requestId
+            requestId,
           });
         }
       }
-      
+
       return handleRouteError(error, req, res, "Signup", 500);
     }
   });
 
   // JWT-based login route
-  app.post('/api/login', authLimiter, async (req: Request, res: Response) => {
+  app.post("/api/login", authLimiter, async (req: Request, res: Response) => {
     try {
       const { email, password } = req.body;
       const requestId = (req as any).requestId;
@@ -567,121 +677,143 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Debug: Log DATABASE_URL being used (mask password)
       const dbUrl = process.env.DATABASE_URL;
       if (dbUrl) {
-        const maskedDbUrl = dbUrl.replace(/:([^:]+)@/, ':***@');
-        console.log(`🗄️ Debug [${requestId}]: Using DATABASE_URL = ${maskedDbUrl}`);
+        const maskedDbUrl = dbUrl.replace(/:([^:]+)@/, ":***@");
+        console.log(
+          `🗄️ Debug [${requestId}]: Using DATABASE_URL = ${maskedDbUrl}`,
+        );
       } else {
         console.error(`❌ Debug [${requestId}]: DATABASE_URL not set!`);
       }
 
       // Debug: Log JWT_SECRET status
       const hasJwtSecret = !!process.env.JWT_SECRET;
-      console.log(`🔑 Debug [${requestId}]: JWT_SECRET loaded = ${hasJwtSecret}`);
+      console.log(
+        `🔑 Debug [${requestId}]: JWT_SECRET loaded = ${hasJwtSecret}`,
+      );
 
       console.log(`🔐 Login request received [${requestId}]:`, {
-        email: email ? '***@' + email.split('@')[1] : 'missing',
-        hasPassword: !!password
+        email: email ? "***@" + email.split("@")[1] : "missing",
+        hasPassword: !!password,
       });
 
       if (!email || !password) {
         const missingFields = [];
-        if (!email) missingFields.push('email');
-        if (!password) missingFields.push('password');
-        
-        console.error(`❌ Login validation failed [${requestId}]: Missing fields:`, missingFields);
-        
+        if (!email) missingFields.push("email");
+        if (!password) missingFields.push("password");
+
+        console.error(
+          `❌ Login validation failed [${requestId}]: Missing fields:`,
+          missingFields,
+        );
+
         return res.status(400).json({
           success: false,
-          message: `Missing required fields: ${missingFields.join(', ')}`,
-          requestId
+          message: `Missing required fields: ${missingFields.join(", ")}`,
+          requestId,
         });
       }
-      
+
       // Basic email format validation
       if (!validateEmail(email)) {
         console.error(`❌ Email format validation failed [${requestId}]`);
         return res.status(400).json({
           success: false,
           message: "Please enter a valid email address",
-          requestId
+          requestId,
         });
       }
 
       // Find user by email
-      const userQuery = 'SELECT id, email, username, "first_name", "last_name", "password_hash", role, company FROM users WHERE email = $1';
+      const userQuery =
+        'SELECT id, email, username, "first_name", "last_name", "password_hash", role, company FROM users WHERE email = $1';
       const userResult = await query(userQuery, [email]);
-      
+
       if (userResult.rows.length === 0) {
-        console.error(`❌ User not found [${requestId}]: No user with email ${email}`);
+        console.error(
+          `❌ User not found [${requestId}]: No user with email ${email}`,
+        );
         console.log(`🔍 Debug [${requestId}]: User record found = false`);
         return res.status(401).json({
           success: false,
           message: "Invalid email or password",
-          requestId
+          requestId,
         });
       }
-      
+
       console.log(`👤 User found [${requestId}]:`, {
         userId: userResult.rows[0].id,
         email: userResult.rows[0].email,
-        role: userResult.rows[0].role
+        role: userResult.rows[0].role,
       });
       console.log(`🔍 Debug [${requestId}]: User record found = true`);
 
       const user = userResult.rows[0];
-      
+
       // Check if user has a password (OAuth users might not)
       if (!user.password_hash) {
-        console.error(`❌ Password verification failed [${requestId}]: User ${user.id} has no password (OAuth user?)`);
+        console.error(
+          `❌ Password verification failed [${requestId}]: User ${user.id} has no password (OAuth user?)`,
+        );
         return res.status(401).json({
           success: false,
-          message: "This account was created with social login. Please use Google or LinkedIn to sign in.",
-          requestId
+          message:
+            "This account was created with social login. Please use Google or LinkedIn to sign in.",
+          requestId,
         });
       }
-      
+
       // Verify password
       console.log(`🔐 Verifying password [${requestId}]`);
-      const isPasswordValid = await verifyPassword(password, user.password_hash);
+      const isPasswordValid = await verifyPassword(
+        password,
+        user.password_hash,
+      );
       if (!isPasswordValid) {
-        console.error(`❌ Password verification failed [${requestId}]: Password did not match for user ${user.id}`);
+        console.error(
+          `❌ Password verification failed [${requestId}]: Password did not match for user ${user.id}`,
+        );
         console.log(`🔍 Debug [${requestId}]: bcrypt.compare result = false`);
         return res.status(401).json({
           success: false,
           message: "Invalid email or password",
-          requestId
+          requestId,
         });
       }
-      
+
       console.log(`✅ Password verified successfully [${requestId}]`);
       console.log(`🔍 Debug [${requestId}]: bcrypt.compare result = true`);
 
       // Generate JWT token with proper secret handling and development fallback
       let jwtSecret = process.env.JWT_SECRET;
-      
+
       if (!jwtSecret) {
         // Development fallback with warning
-        if (process.env.NODE_ENV === 'development') {
-          jwtSecret = 'development-fallback-secret-not-for-production';
-          console.warn('⚠️  Using development fallback JWT_SECRET. Please set JWT_SECRET environment variable for production!');
+        if (process.env.NODE_ENV === "development") {
+          jwtSecret = "development-fallback-secret-not-for-production";
+          console.warn(
+            "⚠️  Using development fallback JWT_SECRET. Please set JWT_SECRET environment variable for production!",
+          );
         } else {
-          console.error('❌ JWT_SECRET environment variable not set! This is required for secure authentication.');
+          console.error(
+            "❌ JWT_SECRET environment variable not set! This is required for secure authentication.",
+          );
           return res.status(500).json({
             success: false,
-            message: "JWT not configured"
+            message: "JWT not configured",
           });
         }
       }
 
       const token = jwt.sign(
-        { 
+        {
           userId: user.id,
           email: user.email,
-          role: user.role
+          role: user.role,
         },
         jwtSecret,
-        { expiresIn: '7d' }
+        { expiresIn: "7d" },
       );
-      
+
       console.log(`🔍 Debug [${requestId}]: JWT signing status = true`);
 
       // Return exact format required by specification - snake_case as per spec
@@ -691,129 +823,150 @@ export async function registerRoutes(app: Express): Promise<Server> {
         username: user.username,
         role: user.role,
         first_name: user.first_name,
-        last_name: user.last_name
+        last_name: user.last_name,
       };
 
       console.log(`✅ User login successful [${requestId}]:`, {
         userId: user.id,
         email: user.email,
-        role: user.role
+        role: user.role,
       });
 
       res.status(200).json({
         success: true,
         token,
-        user: userResponse
+        user: userResponse,
       });
-
     } catch (error: any) {
       const requestId = (req as any).requestId;
       console.error(`❌ Login error [${requestId}]:`, {
         message: error.message,
         stack: error.stack,
-        code: error.code
+        code: error.code,
       });
-      
+
       // Handle specific errors
-      if (error.message?.includes('password')) {
+      if (error.message?.includes("password")) {
         return res.status(401).json({
           success: false,
           message: "Authentication failed",
-          requestId
+          requestId,
         });
       }
-      
+
       return handleRouteError(error, req, res, "Login", 500);
     }
   });
   // Protected Lead Intake - Client Only
-  app.get('/api/lead-intakes', authenticateJWT, requireClient, async (req: Request, res: Response) => {
-    try {
-      const leads = await storage.searchLeadIntakes({});
-      console.log(`📋 Lead intakes accessed [${(req as any).requestId}]:`, {
-        userId: (req as any).user?.id,
-        role: (req as any).user?.role,
-        count: leads.length
-      });
-      res.json({ success: true, leads });
-    } catch (error: any) {
-      handleRouteError(error, req as Request, res, "Get Lead Intakes", 500);
-    }
-  });
-  
+  app.get(
+    "/api/lead-intakes",
+    authenticateJWT,
+    requireClient,
+    async (req: Request, res: Response) => {
+      try {
+        const leads = await storage.searchLeadIntakes({});
+        console.log(`📋 Lead intakes accessed [${(req as any).requestId}]:`, {
+          userId: (req as any).user?.id,
+          role: (req as any).user?.role,
+          count: leads.length,
+        });
+        res.json({ success: true, leads });
+      } catch (error: any) {
+        handleRouteError(error, req as Request, res, "Get Lead Intakes", 500);
+      }
+    },
+  );
+
   // Protected User Profile Routes
-  app.get('/api/user/profile', authenticateJWT, requireAnyRole, async (req: Request, res: Response) => {
-    try {
-      const profile = await storage.getProfileByUserId((req as any).user!.id);
-      res.json({ success: true, profile });
-    } catch (error: any) {
-      handleRouteError(error, req as Request, res, "Get User Profile", 500);
-    }
-  });
-  
+  app.get(
+    "/api/user/profile",
+    authenticateJWT,
+    requireAnyRole,
+    async (req: Request, res: Response) => {
+      try {
+        const profile = await storage.getProfileByUserId((req as any).user!.id);
+        res.json({ success: true, profile });
+      } catch (error: any) {
+        handleRouteError(error, req as Request, res, "Get User Profile", 500);
+      }
+    },
+  );
+
   // Auth routes - Updated for OAuth compatibility with enhanced error handling
-  app.get('/api/auth/user', async (req: any, res) => {
+  app.get("/api/auth/user", async (req: any, res) => {
     try {
       if (!req.isAuthenticated()) {
-        return res.status(401).json({ 
+        return res.status(401).json({
           error: "Not authenticated",
           message: "Please log in to access this resource",
-          requestId: req.requestId
+          requestId: req.requestId,
         });
       }
 
       let user;
-      
+
       // Handle OAuth users (Google/LinkedIn/Dev)
       if (req.user && req.user.user) {
         user = req.user.user;
-        const provider = req.user.provider || 'unknown';
-        console.log(`✅ ${provider.toUpperCase()} user authenticated [${req.requestId}]:`, { 
-          id: user.id, 
-          email: user.email, 
-          provider: provider 
-        });
-        
+        const provider = req.user.provider || "unknown";
+        console.log(
+          `✅ ${provider.toUpperCase()} user authenticated [${req.requestId}]:`,
+          {
+            id: user.id,
+            email: user.email,
+            provider: provider,
+          },
+        );
+
         // For dev login, make sure user exists in storage
-        if (provider === 'dev') {
+        if (provider === "dev") {
           try {
             const storedUser = await storage.getUser(user.id);
             if (!storedUser) {
-              console.warn(`⚠️ Dev user not found in storage, creating: ${user.id}`);
+              console.warn(
+                `⚠️ Dev user not found in storage, creating: ${user.id}`,
+              );
               await storage.upsertUser(user);
             }
           } catch (error) {
-            console.error(`❌ Error checking/creating dev user [${req.requestId}]:`, error);
+            console.error(
+              `❌ Error checking/creating dev user [${req.requestId}]:`,
+              error,
+            );
           }
         }
-      } 
+      }
       // Handle Replit Auth users
       else if (req.user && req.user.claims) {
         const userId = req.user.claims.sub;
         user = await storage.getUser(userId);
-        console.log(`✅ Replit Auth user authenticated [${req.requestId}]:`, { id: userId });
-      }
-      else {
-        console.error(`❌ Unknown user type in session [${req.requestId}]:`, req.user);
-        return res.status(401).json({ 
+        console.log(`✅ Replit Auth user authenticated [${req.requestId}]:`, {
+          id: userId,
+        });
+      } else {
+        console.error(
+          `❌ Unknown user type in session [${req.requestId}]:`,
+          req.user,
+        );
+        return res.status(401).json({
           error: "Invalid session",
           message: "Session format not recognized",
-          requestId: req.requestId
+          requestId: req.requestId,
         });
       }
 
       if (!user) {
-        return res.status(404).json({ 
+        return res.status(404).json({
           error: "User not found",
           message: "User account not found in database",
-          requestId: req.requestId
+          requestId: req.requestId,
         });
       }
 
       // Return user data with auth provider info
       res.json({
         ...user,
-        authProvider: (req.user as any).provider || 'replit'
+        authProvider: (req.user as any).provider || "replit",
       });
     } catch (error) {
       handleRouteError(error, req, res, "Get current user", 500);
@@ -821,7 +974,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Alternative endpoint name for better frontend compatibility
-  app.get('/api/me', async (req: any, res) => {
+  app.get("/api/me", async (req: any, res) => {
     // Reuse the same logic as /api/auth/user
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Not authenticated" });
@@ -829,17 +982,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       let user;
-      
+
       // Handle OAuth users (Google/LinkedIn)
       if (req.user && req.user.user) {
         user = req.user.user;
-      } 
+      }
       // Handle Replit Auth users
       else if (req.user && req.user.claims) {
         const userId = req.user.claims.sub;
         user = await storage.getUser(userId);
-      }
-      else {
+      } else {
         return res.status(401).json({ message: "Invalid session" });
       }
 
@@ -849,7 +1001,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         ...user,
-        authProvider: (req.user as any).provider || 'replit'
+        authProvider: (req.user as any).provider || "replit",
       });
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -858,40 +1010,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // OAuth error handling route
-  app.get('/api/auth/error', (req, res) => {
+  app.get("/api/auth/error", (req, res) => {
     const { error, provider, message } = req.query;
     res.json({
-      error: error || 'oauth_error',
-      provider: provider || 'unknown',
-      message: message || 'Authentication failed. Please try again.',
-      support: 'Contact support@onspotglobal.com for assistance',
-      retry: true
+      error: error || "oauth_error",
+      provider: provider || "unknown",
+      message: message || "Authentication failed. Please try again.",
+      support: "Contact support@onspotglobal.com for assistance",
+      retry: true,
     });
   });
 
-
-
   // Health check route returning exact format required by specification
-  app.get('/api/health', (req, res) => {
+  app.get("/api/health", (req, res) => {
     res.json({ ok: true });
   });
 
   // Enhanced development login endpoint with validation and monitoring
-  app.post('/api/dev/login', 
-    validateRequest(z.object({
-      email: z.string().email("Valid email address required"),
-      userType: z.enum(['talent', 'client']).optional().default('talent')
-    })),
+  app.post(
+    "/api/dev/login",
+    validateRequest(
+      z.object({
+        email: z.string().email("Valid email address required"),
+        userType: z.enum(["talent", "client"]).optional().default("talent"),
+      }),
+    ),
     async (req: any, res) => {
       // Only allow in development environment
-      if (process.env.NODE_ENV === 'production') {
-        console.warn(`🚫 Production dev login attempt blocked [${req.requestId}]`, {
-          ip: req.ip,
-          userAgent: req.get('User-Agent')
-        });
-        return res.status(403).json({ 
-          error: 'Development login not available in production',
-          requestId: req.requestId
+      if (process.env.NODE_ENV === "production") {
+        console.warn(
+          `🚫 Production dev login attempt blocked [${req.requestId}]`,
+          {
+            ip: req.ip,
+            userAgent: req.get("User-Agent"),
+          },
+        );
+        return res.status(403).json({
+          error: "Development login not available in production",
+          requestId: req.requestId,
         });
       }
 
@@ -899,13 +1055,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { email, userType } = req.body;
 
         // Create or get mock user for development
-        const mockUserId = `dev_${email.replace('@', '_').replace('.', '_')}`;
+        const mockUserId = `dev_${email.replace("@", "_").replace(".", "_")}`;
         const mockUser = {
           id: mockUserId,
           email: email,
-          firstName: email.split('@')[0],
-          lastName: 'DevUser',
-          role: userType || 'talent',
+          firstName: email.split("@")[0],
+          lastName: "DevUser",
+          role: userType || "talent",
           profileImageUrl: null,
         };
 
@@ -913,358 +1069,260 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.upsertUser(mockUser);
 
         // CRITICAL: Use req.login() to establish proper server session
-        req.login({ user: mockUser, provider: 'dev' }, (err: any) => {
+        req.login({ user: mockUser, provider: "dev" }, (err: any) => {
           if (err) {
-            console.error(`🚨 Dev login session error [${req.requestId}]:`, err);
-            
+            console.error(
+              `🚨 Dev login session error [${req.requestId}]:`,
+              err,
+            );
+
             // Log session creation failure for monitoring
             if (process.env.SENTRY_DSN) {
               Sentry.captureException(err, {
                 tags: {
-                  operation: 'dev_login_session',
+                  operation: "dev_login_session",
                   requestId: req.requestId,
-                  userId: mockUserId
-                }
+                  userId: mockUserId,
+                },
               });
             }
-            
-            return res.status(500).json({ 
-              error: 'Failed to create session',
-              requestId: req.requestId
+
+            return res.status(500).json({
+              error: "Failed to create session",
+              requestId: req.requestId,
             });
           }
-          
-          console.log(`✅ Dev login successful [${req.requestId}]:`, { 
-            email, 
-            userId: mockUserId, 
-            userType 
+
+          console.log(`✅ Dev login successful [${req.requestId}]:`, {
+            email,
+            userId: mockUserId,
+            userType,
           });
-          
+
           res.json({
             success: true,
             user: mockUser,
-            message: 'Development login successful',
-            sessionEstablished: true
+            message: "Development login successful",
+            sessionEstablished: true,
           });
         });
       } catch (error) {
         handleRouteError(error, req, res, "Development login", 500);
       }
-    }
+    },
   );
 
   // POST /api/object-storage/upload-url - Generate presigned S3 URL for file uploads
-  app.post("/api/object-storage/upload-url", authenticateJWT, async (req: any, res) => {
-    try {
-      const { fileName, contentType } = req.body;
+  app.post(
+    "/api/object-storage/upload-url",
+    authenticateJWT,
+    async (req: any, res) => {
+      try {
+        const { fileName, contentType } = req.body;
 
-      console.log(`📤 Upload URL request [${req.requestId}]:`, { fileName, contentType });
+        console.log(`📤 Upload URL request [${req.requestId}]:`, {
+          fileName,
+          contentType,
+        });
 
-      // Validate required parameters
-      if (!fileName || !contentType) {
-        console.error(`❌ Missing parameters [${req.requestId}]:`, { fileName, contentType });
-        return res.status(400).json({ error: "fileName and contentType required" });
+        // Validate required parameters
+        if (!fileName || !contentType) {
+          console.error(`❌ Missing parameters [${req.requestId}]:`, {
+            fileName,
+            contentType,
+          });
+          return res
+            .status(400)
+            .json({ error: "fileName and contentType required" });
+        }
+
+        const awsRegion = process.env.AWS_REGION;
+        const awsBucket = process.env.AWS_BUCKET_NAME;
+        const awsAccessKeyId = process.env.AWS_ACCESS_KEY_ID;
+        const awsSecretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
+
+        if (
+          !awsRegion ||
+          !awsBucket ||
+          !awsAccessKeyId ||
+          !awsSecretAccessKey
+        ) {
+          console.error(`❌ S3 not configured [${req.requestId}]`);
+          return res.status(500).json({ error: "S3 not configured" });
+        }
+
+        // Create S3 client
+        const s3Client = new S3Client({
+          region: awsRegion,
+          credentials: {
+            accessKeyId: awsAccessKeyId,
+            secretAccessKey: awsSecretAccessKey,
+          },
+        });
+
+        // Generate unique key
+        const timestamp = Date.now();
+        const key = `uploads/${timestamp}-${fileName}`;
+
+        // Create signed URL
+        const command = new PutObjectCommand({
+          Bucket: awsBucket,
+          Key: key,
+          ContentType: contentType,
+        });
+
+        const signedUrl = await getSignedUrl(s3Client, command, {
+          expiresIn: 60,
+        }); // 1 min expiration
+
+        // Response format required by ObjectUploader.tsx
+        const response = {
+          url: signedUrl,
+          method: "PUT",
+          headers: { "Content-Type": contentType },
+          fileUrl: `https://${awsBucket}.s3.${awsRegion}.amazonaws.com/${key}`,
+        };
+
+        console.log(`✅ Signed URL generated [${req.requestId}]:`, { key });
+        res.json(response);
+      } catch (error: any) {
+        console.error(
+          `❌ S3 upload URL generation failed [${req.requestId}]:`,
+          {
+            error: error.message,
+            stack: error.stack,
+          },
+        );
+        res.status(500).json({ error: "Failed to generate upload URL" });
       }
-
-      const awsRegion = process.env.AWS_REGION;
-      const awsBucket = process.env.AWS_BUCKET_NAME;
-      const awsAccessKeyId = process.env.AWS_ACCESS_KEY_ID;
-      const awsSecretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
-
-      if (!awsRegion || !awsBucket || !awsAccessKeyId || !awsSecretAccessKey) {
-        console.error(`❌ S3 not configured [${req.requestId}]`);
-        return res.status(500).json({ error: "S3 not configured" });
-      }
-
-      // Create S3 client
-      const s3Client = new S3Client({
-        region: awsRegion,
-        credentials: {
-          accessKeyId: awsAccessKeyId,
-          secretAccessKey: awsSecretAccessKey,
-        },
-      });
-
-      // Generate unique key
-      const timestamp = Date.now();
-      const key = `uploads/${timestamp}-${fileName}`;
-
-      // Create signed URL
-      const command = new PutObjectCommand({
-        Bucket: awsBucket,
-        Key: key,
-        ContentType: contentType,
-      });
-
-      const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 60 }); // 1 min expiration
-
-      // Response format required by ObjectUploader.tsx
-      const response = {
-        url: signedUrl,
-        method: "PUT",
-        headers: { "Content-Type": contentType },
-        fileUrl: `https://${awsBucket}.s3.${awsRegion}.amazonaws.com/${key}`,
-      };
-
-      console.log(`✅ Signed URL generated [${req.requestId}]:`, { key });
-      res.json(response);
-    } catch (error: any) {
-      console.error(`❌ S3 upload URL generation failed [${req.requestId}]:`, {
-        error: error.message,
-        stack: error.stack,
-      });
-      res.status(500).json({ error: "Failed to generate upload URL" });
-    }
-  });
+    },
+  );
 
   // SECURITY FIX: Protected Object Storage Direct Upload Handler
-  app.put('/api/objects/*', authenticateJWT, (req: any, res) => {
-
+  app.put("/api/objects/*", authenticateJWT, (req: any, res) => {
     try {
       // For demo purposes, simulate successful upload
       // In production, this would be handled by actual object storage
       const filePath = req.params[0];
       const fileUrl = `${process.env.PUBLIC_BASE_URL}/api/objects/${filePath}`;
-      
-      console.log('✅ Authenticated file upload:', { 
-        userId: (req.user as any)?.user?.id || (req.user as any)?.claims?.sub, 
-        filePath 
+
+      console.log("✅ Authenticated file upload:", {
+        userId: (req.user as any)?.user?.id || (req.user as any)?.claims?.sub,
+        filePath,
       });
-      
+
       res.json({
         success: true,
         fileUrl,
-        message: 'File uploaded successfully'
+        message: "File uploaded successfully",
       });
     } catch (error) {
-      console.error('Object upload error:', error);
-      res.status(500).json({ error: 'Upload failed' });
+      console.error("Object upload error:", error);
+      res.status(500).json({ error: "Upload failed" });
     }
   });
 
   // Object Storage File Retrieval
-  app.get('/api/objects/*', (req, res) => {
+  app.get("/api/objects/*", (req, res) => {
     // For demo, return a placeholder response
     // In production, this would serve the actual file from object storage
-    res.status(200).json({ 
-      message: 'File access simulated', 
-      path: (req.params as any)[0] 
+    res.status(200).json({
+      message: "File access simulated",
+      path: (req.params as any)[0],
     });
   });
 
-  // Talent Import from Resume/CSV
-  app.post('/api/talent/import', authenticateJWT, async (req: any, res) => {
+  // POST /api/talent/import - Talent Import from Resume/CSV
+  app.post("/api/talent/import", authenticateJWT, async (req: any, res) => {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
       const { fileUrl, fileName, type, fileContent } = req.body;
-      
-      if (!fileName) {
-        return res.status(400).json({ 
-          success: false,
-          error: 'fileName is required' 
-        });
+      const userId = req.user.id;
+
+      if (!fileUrl || !fileName || !type) {
+        return res.status(400).json({ success: false, error: "Missing parameters" });
       }
 
-      // Support either fileUrl (for production) or fileContent (for development/testing)
-      if (!fileUrl && !fileContent) {
-        return res.status(400).json({ 
-          success: false,
-          error: 'Either fileUrl or fileContent is required' 
-        });
-      }
+      console.log(`📄 Talent import started for user ${userId}`, { fileName, type });
 
-      console.log(`📥 Starting talent profile import [${req.requestId}]:`, { 
-        userId, 
-        fileName, 
-        type 
-      });
-
-      // Get the user's existing profile
-      const existingProfile = await storage.getProfileByUserId(userId);
-      
-      // Determine file type from fileName
-      const fileExtension = fileName.toLowerCase().split('.').pop();
-      let parsedData: any = {};
-
-      // Parse based on file type
-      if (fileExtension === 'csv') {
-        // For CSV files, we expect structured data
-        console.log(`📊 Parsing CSV file: ${fileName}`);
-        
-        // Get CSV content from either provided content or fetch from URL
-        let csvContent: string;
-        try {
-          if (fileContent) {
-            // Development/testing: content provided directly
-            csvContent = fileContent;
-            console.log(`📄 Using provided CSV content (${csvContent.length} bytes)`);
-          } else {
-            // Production: fetch from object storage URL
-            console.log(`📥 Fetching CSV from: ${fileUrl}`);
-            const fetchResponse = await fetch(fileUrl);
-            if (!fetchResponse.ok) {
-              throw new Error(`Failed to fetch file: ${fetchResponse.statusText}`);
-            }
-            csvContent = await fetchResponse.text();
-            console.log(`📄 CSV content fetched (${csvContent.length} bytes)`);
-          }
-        } catch (fetchError: any) {
-          console.error('❌ Failed to fetch/read file:', fetchError);
-          return res.status(400).json({
-            success: false,
-            error: `Failed to fetch uploaded file: ${fetchError.message}`
-          });
-        }
-        
-        const parseResult = Papa.parse(csvContent, {
-          header: true,
-          skipEmptyLines: true,
-          transformHeader: (header) => header.trim(),
-        });
-
-        if (parseResult.errors && parseResult.errors.length > 0) {
-          return res.status(400).json({
-            success: false,
-            error: "CSV parsing failed",
-            details: parseResult.errors
-          });
-        }
-
-        // Extract first row of data (for single talent import)
-        const row = parseResult.data[0] as any;
-        if (!row) {
-          return res.status(400).json({
-            success: false,
-            error: "No data found in CSV file"
-          });
-        }
-
-        parsedData = {
-          firstName: row.first_name?.trim(),
-          lastName: row.last_name?.trim(),
-          title: row.title?.trim(),
-          bio: row.bio?.trim(),
-          location: row.location?.trim() || 'Global',
-          hourlyRate: row.hourly_rate ? parseFloat(row.hourly_rate) : undefined,
-          phoneNumber: row.phone_number?.trim(),
-          skills: row.skills ? row.skills.split(',').map((s: string) => s.trim()).filter(Boolean) : [],
-          languages: row.languages ? row.languages.split(',').map((l: string) => l.trim()).filter(Boolean) : ['English'],
-        };
-
-      } else if (fileExtension === 'pdf' || fileExtension === 'docx' || fileExtension === 'doc') {
-        // For resume files, extract basic information
-        // Note: Full PDF/DOCX parsing requires additional libraries like pdf-parse or mammoth
-        console.log(`📄 Processing resume file: ${fileName}`);
-        
-        // Advanced parsing would require:
-        // 1. Install pdf-parse: npm install pdf-parse
-        // 2. Install mammoth (for DOCX): npm install mammoth
-        // 3. Extract text from the file
-        // 4. Use NLP/regex to find: name, contact info, skills, experience
-        // 5. Map extracted data to profile fields
-        
-        console.log(`⚠️ PDF/DOCX parsing requires additional libraries (pdf-parse, mammoth).`);
-        console.log(`💡 To test profile enrichment, upload a CSV file with this format:`);
-        console.log(`   first_name,last_name,title,bio,location,hourly_rate,phone_number,skills,languages`);
-        
-        return res.status(200).json({
-          success: true,
-          message: "Resume uploaded successfully. For automatic profile enrichment, please upload a CSV file instead, or update your profile manually.",
-          profile: existingProfile,
-          requiresManualUpdate: true,
-          csvTemplate: {
-            columns: ['first_name', 'last_name', 'title', 'bio', 'location', 'hourly_rate', 'phone_number', 'skills', 'languages'],
-            example: 'John,Doe,Full Stack Developer,"5 years experience",Philippines,35,+63-123-4567,"JavaScript,React,Node.js","English,Tagalog"'
-          }
-        });
-
+      // 1. Fetch file text (if CSV or résumé from S3)
+      let textContent = "";
+      if (fileContent) {
+        // frontend may send CSV content directly
+        textContent = fileContent;
       } else {
-        return res.status(400).json({
-          success: false,
-          error: `Unsupported file type: .${fileExtension}. Please upload CSV, PDF, or DOCX files.`
-        });
+        console.log(`⬇️ Downloading file from ${fileUrl}`);
+        const response = await fetch(fileUrl);
+        if (!response.ok) throw new Error("Failed to download file");
+        textContent = await response.text();
       }
 
-      // Update or create profile with parsed data
-      const profileData: any = {
-        userId,
-        firstName: parsedData.firstName || existingProfile?.firstName || 'Unknown',
-        lastName: parsedData.lastName || existingProfile?.lastName || 'User',
-      };
+      // 2. Naive parsing logic (replace with real parser later)
+      // Example: Look for first/last name, title, and skills
+      const firstNameMatch = textContent.match(/First Name:\s*(\w+)/i);
+      const lastNameMatch = textContent.match(/Last Name:\s*(\w+)/i);
+      const titleMatch = textContent.match(/Title:\s*([^\n]+)/i);
+      const skillsMatch = textContent.match(/Skills:\s*([^\n]+)/i);
 
-      // Add optional fields if they exist
-      if (parsedData.title) profileData.title = parsedData.title;
-      if (parsedData.bio) profileData.bio = parsedData.bio;
-      if (parsedData.location) profileData.location = parsedData.location;
-      if (parsedData.hourlyRate) profileData.hourlyRate = parsedData.hourlyRate.toString();
-      if (parsedData.phoneNumber) profileData.phoneNumber = parsedData.phoneNumber;
-      if (parsedData.languages) profileData.languages = parsedData.languages;
+      const firstName = firstNameMatch ? firstNameMatch[1] : req.user.email.split("@")[0];
+      const lastName = lastNameMatch ? lastNameMatch[1] : "Candidate";
+      const title = titleMatch ? titleMatch[1].trim() : "Professional";
+      const skills = skillsMatch ? skillsMatch[1].split(",").map(s => s.trim()) : ["General"];
 
-      // Update or create profile
-      let updatedProfile;
-      if (existingProfile) {
-        updatedProfile = await storage.updateProfile(existingProfile.id, profileData);
-      } else {
-        updatedProfile = await storage.createProfile(profileData);
-      }
+      console.log("🔍 Parsed resume data:", { firstName, lastName, title, skills });
 
-      // Handle skills if provided
-      if (parsedData.skills && parsedData.skills.length > 0) {
-        console.log(`🎯 Processing skills:`, parsedData.skills);
-        
-        // Get existing user skills to avoid duplicates
-        const existingUserSkills = await storage.getUserSkills(userId);
-        const existingSkillIds = new Set(existingUserSkills.map(us => us.skillId));
-        
-        // Get or create skills and link them to user
-        for (const skillName of parsedData.skills) {
-          try {
-            // Find or create skill
-            let skill = await storage.getSkillByName(skillName);
-            if (!skill) {
-              skill = await storage.createSkill({
-                name: skillName,
-                category: 'Technical' // Default category
-              });
-            }
+      // 3. Upsert into profiles table
+      const profileResult = await query(
+        `
+        INSERT INTO profiles (user_id, first_name, last_name, title, updated_at)
+        VALUES ($1, $2, $3, $4, NOW())
+        ON CONFLICT (user_id)
+        DO UPDATE SET first_name = EXCLUDED.first_name,
+                      last_name = EXCLUDED.last_name,
+                      title = EXCLUDED.title,
+                      updated_at = NOW()
+        RETURNING id;
+        `,
+        [userId, firstName, lastName, title]
+      );
+      const profileId = profileResult.rows[0].id;
 
-            // Add skill to user if not already added
-            if (!existingSkillIds.has(skill.id)) {
-              await storage.createUserSkill({
-                userId,
-                skillId: skill.id,
-                level: 'intermediate', // Default level
-                yearsExperience: 0
-              });
-            }
-          } catch (error) {
-            console.error(`❌ Error processing skill ${skillName}:`, error);
-            // Continue with other skills even if one fails
-          }
+      // 4. Upsert skills
+      if (skills.length > 0) {
+        await query(`DELETE FROM user_skills WHERE user_id = $1`, [userId]);
+        for (const skill of skills) {
+          const skillId = uuidv4();
+          await query(
+            `INSERT INTO user_skills (id, user_id, skill_name, created_at) VALUES ($1, $2, $3, NOW())`,
+            [skillId, userId, skill]
+          );
         }
       }
 
-      console.log(`✅ Talent profile import completed [${req.requestId}]:`, {
-        profileId: updatedProfile?.id,
-        skillsProcessed: parsedData.skills?.length || 0
-      });
+      // 5. Save document reference
+      const documentId = uuidv4();
+      await query(
+        `
+        INSERT INTO documents (id, user_id, type, file_name, file_url, created_at)
+        VALUES ($1, $2, $3, $4, $5, NOW())
+        ON CONFLICT (user_id, file_url) DO NOTHING
+        `,
+        [documentId, userId, type, fileName, fileUrl]
+      );
+
+      console.log(`✅ Talent profile updated for user ${userId}`);
 
       res.json({
         success: true,
-        message: "Talent profile updated from uploaded file",
-        profile: updatedProfile || existingProfile,
-        skillsAdded: parsedData.skills?.length || 0
+        message: "Talent profile updated from resume",
+        profileId,
+        importedSkills: skills,
       });
 
     } catch (error: any) {
-      console.error(`❌ Talent import failed [${req.requestId}]:`, error);
-      res.status(500).json({ 
+      console.error("❌ Talent import failed:", error);
+      res.status(500).json({
         success: false,
-        error: error.message || "Failed to import talent profile"
+        error: error.message || "Failed to import resume",
       });
     }
   });
@@ -1289,9 +1347,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/documents - Create new document
-  app.post("/api/documents", 
+  app.post(
+    "/api/documents",
     authenticateJWT,
-    validateRequest(insertDocumentSchema.omit({ userId: true }), 'body'),
+    validateRequest(insertDocumentSchema.omit({ userId: true }), "body"),
     async (req: any, res) => {
       try {
         const userId = req.user?.id;
@@ -1299,28 +1358,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(401).json({ error: "Authentication required" });
         }
 
-        console.log(`📄 Creating document [${req.requestId}]:`, { userId, type: req.body.type });
+        console.log(`📄 Creating document [${req.requestId}]:`, {
+          userId,
+          type: req.body.type,
+        });
         const document = await storage.createDocument({
           ...req.body,
-          userId
+          userId,
         });
         res.status(201).json(document);
       } catch (error) {
         handleRouteError(error, req, res, "Create document", 500);
       }
-    }
+    },
   );
 
   // PUT /api/documents/:id - Update document
-  app.put("/api/documents/:id",
+  app.put(
+    "/api/documents/:id",
     authenticateJWT,
-    validateRequest(z.object({ id: z.string().min(1) }), 'params'),
-    validateRequest(insertDocumentSchema.omit({ userId: true }).partial(), 'body'),
+    validateRequest(z.object({ id: z.string().min(1) }), "params"),
+    validateRequest(
+      insertDocumentSchema.omit({ userId: true }).partial(),
+      "body",
+    ),
     async (req: any, res) => {
       try {
         const userId = req.user?.id;
         const { id } = req.params;
-        
+
         // Check if document exists and belongs to user
         const existingDoc = await storage.getDocument(id);
         if (!existingDoc) {
@@ -1333,24 +1399,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Security: Remove userId from update data to prevent reassignment
         const { userId: _, ...updateData } = req.body;
 
-        console.log(`📝 Updating document [${req.requestId}]:`, { userId, documentId: id });
+        console.log(`📝 Updating document [${req.requestId}]:`, {
+          userId,
+          documentId: id,
+        });
         const document = await storage.updateDocument(id, updateData);
         res.json(document);
       } catch (error) {
         handleRouteError(error, req, res, "Update document", 500);
       }
-    }
+    },
   );
 
   // DELETE /api/documents/:id - Delete document
-  app.delete("/api/documents/:id",
+  app.delete(
+    "/api/documents/:id",
     authenticateJWT,
-    validateRequest(z.object({ id: z.string().min(1) }), 'params'),
+    validateRequest(z.object({ id: z.string().min(1) }), "params"),
     async (req: any, res) => {
       try {
         const userId = req.user?.id;
         const { id } = req.params;
-        
+
         // Check if document exists and belongs to user
         const existingDoc = await storage.getDocument(id);
         if (!existingDoc) {
@@ -1360,7 +1430,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(403).json({ error: "Access denied" });
         }
 
-        console.log(`🗑️ Deleting document [${req.requestId}]:`, { userId, documentId: id });
+        console.log(`🗑️ Deleting document [${req.requestId}]:`, {
+          userId,
+          documentId: id,
+        });
         const deleted = await storage.deleteDocument(id);
         if (deleted) {
           res.json({ success: true, message: "Document deleted successfully" });
@@ -1370,28 +1443,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         handleRouteError(error, req, res, "Delete document", 500);
       }
-    }
+    },
   );
 
   // ==================== USERS ====================
-  app.get("/api/users/:id", 
-    validateRequest(z.object({ id: z.string().min(1, "User ID required") }), 'params'),
+  app.get(
+    "/api/users/:id",
+    validateRequest(
+      z.object({ id: z.string().min(1, "User ID required") }),
+      "params",
+    ),
     async (req: any, res) => {
       try {
-        console.log(`🔍 Fetching user [${req.requestId}]:`, { userId: req.params.id });
+        console.log(`🔍 Fetching user [${req.requestId}]:`, {
+          userId: req.params.id,
+        });
         const user = await storage.getUser(req.params.id);
         if (!user) {
-          return res.status(404).json({ 
-            error: "User not found", 
+          return res.status(404).json({
+            error: "User not found",
             message: "No user exists with the provided ID",
-            requestId: req.requestId
+            requestId: req.requestId,
           });
         }
         res.json(user);
       } catch (error) {
         handleRouteError(error, req, res, "Get user by ID", 500);
       }
-    }
+    },
   );
 
   app.get("/api/users/username/:username", async (req, res) => {
@@ -1406,148 +1485,176 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/users", 
+  app.post(
+    "/api/users",
     authenticateJWT,
     requireAdmin,
     validateRequest(insertUserSchema),
     async (req: Request, res: Response) => {
       try {
-        console.log(`👤 Creating new user [${req.requestId}]:`, { 
+        console.log(`👤 Creating new user [${req.requestId}]:`, {
           email: req.body.email,
-          role: req.body.role 
+          role: req.body.role,
         });
         const validated = insertUserSchema.parse(req.body);
         const user = await storage.createUser(validated);
-        
-        console.log(`✅ User created successfully [${req.requestId}]:`, { userId: user.id });
+
+        console.log(`✅ User created successfully [${req.requestId}]:`, {
+          userId: user.id,
+        });
         res.status(201).json(user);
       } catch (error) {
         handleRouteError(error, req, res, "Create user", 500);
       }
-    }
+    },
   );
 
-  app.patch("/api/users/:id", 
-    validateRequest(z.object({ id: z.string().min(1) }), 'params'),
+  app.patch(
+    "/api/users/:id",
+    validateRequest(z.object({ id: z.string().min(1) }), "params"),
     validateRequest(insertUserSchema.partial()),
     async (req: any, res) => {
       try {
-        console.log(`✏️ Updating user [${req.requestId}]:`, { 
+        console.log(`✏️ Updating user [${req.requestId}]:`, {
           userId: req.params.id,
-          updateFields: Object.keys(req.body)
+          updateFields: Object.keys(req.body),
         });
-        
+
         const updates = insertUserSchema.partial().parse(req.body);
         const user = await storage.updateUser(req.params.id, updates);
-        
+
         if (!user) {
-          return res.status(404).json({ 
+          return res.status(404).json({
             error: "User not found",
             message: "No user exists with the provided ID",
-            requestId: req.requestId
+            requestId: req.requestId,
           });
         }
-        
-        console.log(`✅ User updated successfully [${req.requestId}]:`, { userId: user.id });
+
+        console.log(`✅ User updated successfully [${req.requestId}]:`, {
+          userId: user.id,
+        });
         res.json(user);
       } catch (error) {
         handleRouteError(error, req, res, "Update user", 500);
       }
-    }
+    },
   );
 
   // ==================== PROFILES ====================
-  
+
   // GET /api/profiles/me - Get current user's profile (must come before /:id route)
-  app.get("/api/profiles/me", 
+  app.get(
+    "/api/profiles/me",
     authenticateJWT,
     async (req: Request, res: Response) => {
       try {
         const requestId = (req as any).requestId;
         const userId = (req as any).user?.id;
-        
+
         if (!userId) {
           return res.status(401).json({
             error: "Authentication required",
             message: "User not authenticated",
-            requestId
+            requestId,
           });
         }
 
-        console.log(`👤 Fetching current user profile [${requestId}]:`, { userId });
-        
+        console.log(`👤 Fetching current user profile [${requestId}]:`, {
+          userId,
+        });
+
         // Query database using Drizzle ORM
-        const result = await db.select().from(profiles).where(eq(profiles.userId, userId));
-        
+        const result = await db
+          .select()
+          .from(profiles)
+          .where(eq(profiles.userId, userId));
+
         if (result.length === 0) {
           // Create a default profile for the user instead of returning 404
-          console.log(`➕ Creating default profile for new user [${requestId}]:`, { userId });
-          
+          console.log(
+            `➕ Creating default profile for new user [${requestId}]:`,
+            { userId },
+          );
+
           const defaultProfileData = {
             userId: userId,
-            firstName: '',
-            lastName: '',
-            location: 'Global',
-            rateCurrency: 'USD',
-            availability: 'available',
-            languages: ['English'],
-            timezone: 'Asia/Manila'
+            firstName: "",
+            lastName: "",
+            location: "Global",
+            rateCurrency: "USD",
+            availability: "available",
+            languages: ["English"],
+            timezone: "Asia/Manila",
           };
-          
-          const newProfile = await db.insert(profiles).values(defaultProfileData).returning();
+
+          const newProfile = await db
+            .insert(profiles)
+            .values(defaultProfileData)
+            .returning();
           const profile = newProfile[0];
-          
-          console.log(`✅ Default profile created successfully [${requestId}]:`, { profileId: profile.id });
-          
-          return res.json({ 
+
+          console.log(
+            `✅ Default profile created successfully [${requestId}]:`,
+            { profileId: profile.id },
+          );
+
+          return res.json({
             success: true,
-            profile: profile // Drizzle automatically returns camelCase
+            profile: profile, // Drizzle automatically returns camelCase
           });
         }
-        
+
         const profile = result[0];
-        
-        console.log(`✅ Current user profile fetched successfully [${requestId}]:`, { profileId: profile.id });
-        
-        res.json({ 
+
+        console.log(
+          `✅ Current user profile fetched successfully [${requestId}]:`,
+          { profileId: profile.id },
+        );
+
+        res.json({
           success: true,
-          profile: profile // Drizzle automatically returns camelCase
+          profile: profile, // Drizzle automatically returns camelCase
         });
       } catch (error: any) {
         const requestId = (req as any).requestId;
-        console.error(`❌ Failed to fetch current user profile [${requestId}]:`, error.message);
-        res.status(500).json({ 
+        console.error(
+          `❌ Failed to fetch current user profile [${requestId}]:`,
+          error.message,
+        );
+        res.status(500).json({
           success: false,
           message: error.message,
-          requestId
+          requestId,
         });
       }
-    }
+    },
   );
 
   // PUT /api/profiles/me - Update current user's profile (must come before /:id route)
-  console.log('✅ Registered route: PUT /api/profiles/me');
-  app.put("/api/profiles/me", 
+  console.log("✅ Registered route: PUT /api/profiles/me");
+  app.put(
+    "/api/profiles/me",
     authenticateJWT,
     async (req: Request, res: Response) => {
       try {
         const userId = (req as any).user?.id;
         const requestId = (req as any).requestId;
-        
+
         if (!userId) {
           return res.status(401).json({
             error: "Authentication required",
             message: "User not authenticated",
-            requestId
+            requestId,
           });
         }
 
-        console.log(`👤 Updating current user profile [${requestId}]:`, { 
+        console.log(`👤 Updating current user profile [${requestId}]:`, {
           userId: userId,
           updateFields: Object.keys(req.body),
-          bodyData: req.body
+          bodyData: req.body,
         });
-        
+
         // Prepare profile data (already in camelCase, which Drizzle expects)
         const profileData = {
           userId: userId, // Add userId from authenticated session
@@ -1562,50 +1669,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
           profilePicture: req.body.profilePicture,
           phoneNumber: req.body.phoneNumber,
           languages: req.body.languages,
-          timezone: req.body.timezone
+          timezone: req.body.timezone,
         };
-        
-        console.log(`🔍 Profile data for validation [${requestId}]:`, profileData);
-        
+
+        console.log(
+          `🔍 Profile data for validation [${requestId}]:`,
+          profileData,
+        );
+
         // Validate the data using Drizzle schema
         const validated = insertProfileSchema.parse(profileData);
-        
+
         // Check if profile already exists for this user using Drizzle ORM
-        const existingProfile = await db.select().from(profiles).where(eq(profiles.userId, userId));
-        
+        const existingProfile = await db
+          .select()
+          .from(profiles)
+          .where(eq(profiles.userId, userId));
+
         let profile;
-        
+
         if (existingProfile.length > 0) {
           // Update existing profile
-          console.log(`📝 Updating existing profile [${requestId}]:`, { profileId: existingProfile[0].id });
-          
+          console.log(`📝 Updating existing profile [${requestId}]:`, {
+            profileId: existingProfile[0].id,
+          });
+
           // Prepare update data with defaults
           const updateData = {
             firstName: validated.firstName,
             lastName: validated.lastName,
             title: validated.title,
             bio: validated.bio,
-            location: validated.location || 'Global',
+            location: validated.location || "Global",
             hourlyRate: validated.hourlyRate,
-            rateCurrency: validated.rateCurrency || 'USD',
-            availability: validated.availability || 'available',
+            rateCurrency: validated.rateCurrency || "USD",
+            availability: validated.availability || "available",
             profilePicture: validated.profilePicture,
             phoneNumber: validated.phoneNumber,
-            languages: validated.languages || ['English'],
-            timezone: validated.timezone || 'Asia/Manila'
+            languages: validated.languages || ["English"],
+            timezone: validated.timezone || "Asia/Manila",
           };
-          
+
           const updatedProfiles = await db
             .update(profiles)
             .set(updateData)
             .where(eq(profiles.userId, userId))
             .returning();
-            
+
           profile = updatedProfiles[0];
         } else {
           // Create new profile
           console.log(`➕ Creating new profile [${requestId}]`);
-          
+
           // Set defaults for required fields
           const insertData = {
             userId: userId,
@@ -1613,36 +1728,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
             lastName: validated.lastName,
             title: validated.title,
             bio: validated.bio,
-            location: validated.location || 'Global',
+            location: validated.location || "Global",
             hourlyRate: validated.hourlyRate,
-            rateCurrency: validated.rateCurrency || 'USD',
-            availability: validated.availability || 'available',
+            rateCurrency: validated.rateCurrency || "USD",
+            availability: validated.availability || "available",
             profilePicture: validated.profilePicture,
             phoneNumber: validated.phoneNumber,
-            languages: validated.languages || ['English'],
-            timezone: validated.timezone || 'Asia/Manila'
+            languages: validated.languages || ["English"],
+            timezone: validated.timezone || "Asia/Manila",
           };
-          
-          const insertedProfiles = await db.insert(profiles).values(insertData).returning();
+
+          const insertedProfiles = await db
+            .insert(profiles)
+            .values(insertData)
+            .returning();
           profile = insertedProfiles[0];
         }
-        
-        console.log(`✅ Current user profile updated successfully [${requestId}]:`, { profileId: profile.id });
-        res.json({ 
+
+        console.log(
+          `✅ Current user profile updated successfully [${requestId}]:`,
+          { profileId: profile.id },
+        );
+        res.json({
           success: true,
           profile: profile, // Drizzle automatically returns camelCase
-          message: "Profile saved successfully"
+          message: "Profile saved successfully",
         });
       } catch (error: any) {
         const requestId = (req as any).requestId;
-        console.error(`❌ Failed to update current user profile [${requestId}]:`, error.message);
-        res.status(500).json({ 
+        console.error(
+          `❌ Failed to update current user profile [${requestId}]:`,
+          error.message,
+        );
+        res.status(500).json({
           success: false,
           message: error.message,
-          requestId
+          requestId,
         });
       }
-    }
+    },
   );
 
   app.get("/api/profiles/:id", async (req, res) => {
@@ -1657,25 +1781,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/profiles/user/:userId", 
+  app.get(
+    "/api/profiles/user/:userId",
     authenticateJWT,
     async (req: Request, res: Response) => {
       try {
         const requestId = (req as any).requestId;
         const userId = req.params.userId;
         const authUserId = (req as any).user?.id;
-        
+
         // Users can only access their own profile (or admins can access any)
-        if (authUserId !== userId && (req as any).user?.role !== 'admin') {
-          return res.status(403).json({ 
+        if (authUserId !== userId && (req as any).user?.role !== "admin") {
+          return res.status(403).json({
             success: false,
             message: "Access denied",
-            requestId
+            requestId,
           });
         }
 
         console.log(`👤 Fetching profile [${requestId}]:`, { userId });
-        
+
         // Query database directly for profile
         const profileQuery = `
           SELECT id, user_id, first_name, last_name, title, bio, location, 
@@ -1685,78 +1810,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
           FROM profiles 
           WHERE user_id = $1
         `;
-        
+
         const result = await query(profileQuery, [userId]);
-        
+
         if (result.rows.length === 0) {
-          return res.status(404).json({ 
+          return res.status(404).json({
             success: false,
             message: "Profile not found",
-            requestId
+            requestId,
           });
         }
-        
+
         const profile = result.rows[0];
-        console.log(`✅ Profile fetched successfully [${requestId}]:`, { profileId: profile.id });
-        
-        res.json({ 
+        console.log(`✅ Profile fetched successfully [${requestId}]:`, {
+          profileId: profile.id,
+        });
+
+        res.json({
           success: true,
-          profile 
+          profile,
         });
       } catch (error: any) {
         const requestId = (req as any).requestId;
-        console.error(`❌ Failed to fetch profile [${requestId}]:`, error.message);
-        res.status(500).json({ 
+        console.error(
+          `❌ Failed to fetch profile [${requestId}]:`,
+          error.message,
+        );
+        res.status(500).json({
           success: false,
           message: error.message,
-          requestId
+          requestId,
         });
       }
-    }
+    },
   );
 
-  app.post("/api/profiles", 
+  app.post(
+    "/api/profiles",
     authenticateJWT,
     requireAnyRole,
     async (req: Request, res: Response) => {
       try {
         const userId = (req as any).user?.id;
         const requestId = (req as any).requestId;
-        
+
         if (!userId) {
-          return res.status(401).json({ 
+          return res.status(401).json({
             success: false,
             message: "Authentication required",
-            requestId
+            requestId,
           });
         }
 
-        console.log(`👤 Creating/updating profile [${requestId}]:`, { 
-          userId: userId 
+        console.log(`👤 Creating/updating profile [${requestId}]:`, {
+          userId: userId,
         });
-        
+
         // Add userId from authenticated session to the request body
         const dataWithUserId = {
           ...req.body,
-          userId: userId
+          userId: userId,
         };
-        
+
         // Validate the complete data including userId
         const validated = insertProfileSchema.parse(dataWithUserId);
-        
+
         // Check if profile already exists for this user
         const existingProfileQuery = `
           SELECT id FROM profiles WHERE user_id = $1
         `;
         const existingResult = await query(existingProfileQuery, [userId]);
-        
+
         let profile;
-        
+
         if (existingResult.rows.length > 0) {
           // Update existing profile
           const profileId = existingResult.rows[0].id;
-          console.log(`📝 Updating existing profile [${requestId}]:`, { profileId });
-          
+          console.log(`📝 Updating existing profile [${requestId}]:`, {
+            profileId,
+          });
+
           const updateQuery = `
             UPDATE profiles 
             SET first_name = $2, last_name = $3, title = $4, bio = $5, 
@@ -1766,28 +1899,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
             WHERE id = $1
             RETURNING *
           `;
-          
+
           const updateParams = [
             profileId,
             validated.firstName,
-            validated.lastName, 
+            validated.lastName,
             validated.title,
             validated.bio,
-            validated.location || 'Global',
+            validated.location || "Global",
             validated.hourlyRate,
-            validated.rateCurrency || 'USD',
-            validated.availability || 'available',
+            validated.rateCurrency || "USD",
+            validated.availability || "available",
             validated.phoneNumber,
-            validated.languages || ['English'],
-            validated.timezone || 'Asia/Manila'
+            validated.languages || ["English"],
+            validated.timezone || "Asia/Manila",
           ];
-          
+
           const updateResult = await query(updateQuery, updateParams);
           profile = updateResult.rows[0];
         } else {
           // Create new profile
           console.log(`➕ Creating new profile [${requestId}]`);
-          
+
           const insertQuery = `
             INSERT INTO profiles (user_id, first_name, last_name, title, bio, 
                                 location, hourly_rate, rate_currency, availability, 
@@ -1795,79 +1928,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
             RETURNING *
           `;
-          
+
           const insertParams = [
             userId,
             validated.firstName,
             validated.lastName,
             validated.title,
             validated.bio,
-            validated.location || 'Global',
+            validated.location || "Global",
             validated.hourlyRate,
-            validated.rateCurrency || 'USD', 
-            validated.availability || 'available',
+            validated.rateCurrency || "USD",
+            validated.availability || "available",
             validated.phoneNumber,
-            validated.languages || ['English'],
-            validated.timezone || 'Asia/Manila'
+            validated.languages || ["English"],
+            validated.timezone || "Asia/Manila",
           ];
-          
+
           const insertResult = await query(insertQuery, insertParams);
           profile = insertResult.rows[0];
         }
-        
-        console.log(`✅ Profile saved successfully [${requestId}]:`, { profileId: profile.id });
-        res.status(201).json({ 
+
+        console.log(`✅ Profile saved successfully [${requestId}]:`, {
+          profileId: profile.id,
+        });
+        res.status(201).json({
           success: true,
-          profile 
+          profile,
         });
       } catch (error: any) {
         const requestId = (req as any).requestId;
-        console.error(`❌ Failed to save profile [${requestId}]:`, error.message);
-        res.status(500).json({ 
+        console.error(
+          `❌ Failed to save profile [${requestId}]:`,
+          error.message,
+        );
+        res.status(500).json({
           success: false,
           message: error.message,
-          requestId
+          requestId,
         });
       }
-    }
+    },
   );
 
-  app.patch("/api/profiles/:id", 
-    validateRequest(z.object({ id: z.string().min(1) }), 'params'),
+  app.patch(
+    "/api/profiles/:id",
+    validateRequest(z.object({ id: z.string().min(1) }), "params"),
     validateRequest(insertProfileSchema.partial()),
     async (req: any, res) => {
       try {
-        console.log(`📝 Updating profile [${req.requestId}]:`, { 
+        console.log(`📝 Updating profile [${req.requestId}]:`, {
           profileId: req.params.id,
-          updateFields: Object.keys(req.body)
+          updateFields: Object.keys(req.body),
         });
-        
+
         const updates = insertProfileSchema.partial().parse(req.body);
         const profile = await storage.updateProfile(req.params.id, updates);
-        
+
         if (!profile) {
-          return res.status(404).json({ 
+          return res.status(404).json({
             error: "Profile not found",
             message: "No profile exists with the provided ID",
-            requestId: req.requestId
+            requestId: req.requestId,
           });
         }
-        
-        console.log(`✅ Profile updated successfully [${req.requestId}]:`, { profileId: profile.id });
+
+        console.log(`✅ Profile updated successfully [${req.requestId}]:`, {
+          profileId: profile.id,
+        });
         res.json(profile);
       } catch (error) {
         handleRouteError(error, req, res, "Update profile", 500);
       }
-    }
+    },
   );
-
 
   // Advanced Profile Search - Critical for talent discovery
   app.get("/api/profiles/search", async (req, res) => {
     try {
       const filters = {
         location: req.query.location as string,
-        skills: req.query.skills ? (req.query.skills as string).split(',') : undefined,
+        skills: req.query.skills
+          ? (req.query.skills as string).split(",")
+          : undefined,
         availability: req.query.availability as string,
         minRate: req.query.minRate ? Number(req.query.minRate) : undefined,
         maxRate: req.query.maxRate ? Number(req.query.maxRate) : undefined,
@@ -1881,34 +2023,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ==================== LEAD INTAKE ====================
-  app.post("/api/lead-intake", 
-    validateRequest(insertLeadIntakeSchema), 
+  app.post(
+    "/api/lead-intake",
+    validateRequest(insertLeadIntakeSchema),
     async (req, res) => {
       try {
-        console.log(`📝 Lead intake submission started [${(req as any).requestId}]:`, {
-          email: req.body.email,
-          company: req.body.companyName,
-          serviceType: req.body.serviceType,
-          urgencyLevel: req.body.urgencyLevel,
-          budgetRange: req.body.budgetRange
-        });
+        console.log(
+          `📝 Lead intake submission started [${(req as any).requestId}]:`,
+          {
+            email: req.body.email,
+            company: req.body.companyName,
+            serviceType: req.body.serviceType,
+            urgencyLevel: req.body.urgencyLevel,
+            budgetRange: req.body.budgetRange,
+          },
+        );
 
         // Create lead intake with automatic scoring
         const leadIntake = await storage.createLeadIntake(req.body);
-        
-        console.log(`✅ Lead intake created successfully [${(req as any).requestId}]:`, { 
-          leadId: leadIntake.id,
-          leadScore: leadIntake.leadScore,
-          status: leadIntake.status
-        });
+
+        console.log(
+          `✅ Lead intake created successfully [${(req as any).requestId}]:`,
+          {
+            leadId: leadIntake.id,
+            leadScore: leadIntake.leadScore,
+            status: leadIntake.status,
+          },
+        );
 
         // Send lead to Go-High-Level CRM
         const ghlResult = await ghlService.sendLeadToGHL(leadIntake);
         if (ghlResult.success && ghlResult.ghlContactId) {
-          console.log(`🎯 Lead successfully sent to GHL: Contact ID ${ghlResult.ghlContactId}`);
+          console.log(
+            `🎯 Lead successfully sent to GHL: Contact ID ${ghlResult.ghlContactId}`,
+          );
           // Optionally update the lead with GHL contact ID
           await storage.updateLeadIntake(leadIntake.id, {
-            internalNotes: `GHL Contact ID: ${ghlResult.ghlContactId}`
+            internalNotes: `GHL Contact ID: ${ghlResult.ghlContactId}`,
           });
         } else if (ghlResult.error) {
           console.warn(`⚠️ Failed to send lead to GHL: ${ghlResult.error}`);
@@ -1920,23 +2071,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           success: true,
           leadId: leadIntake.id,
           leadScore: leadIntake.leadScore,
-          message: "Thank you for your interest! We'll contact you within 24 hours.",
-          nextSteps: "Our team will reach out to schedule a discovery call to discuss your specific needs."
+          message:
+            "Thank you for your interest! We'll contact you within 24 hours.",
+          nextSteps:
+            "Our team will reach out to schedule a discovery call to discuss your specific needs.",
         });
-        
       } catch (error) {
         handleRouteError(error, req, res, "Create lead intake", 500);
       }
-    }
+    },
   );
 
   app.get("/api/lead-intake/:id", async (req, res) => {
     try {
       const leadIntake = await storage.getLeadIntake(req.params.id);
       if (!leadIntake) {
-        return res.status(404).json({ 
+        return res.status(404).json({
           error: "Lead intake not found",
-          requestId: (req as any).requestId
+          requestId: (req as any).requestId,
         });
       }
       res.json(leadIntake);
@@ -1950,7 +2102,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const filters = {
         status: req.query.status as string,
         email: req.query.email as string,
-        createdAfter: req.query.createdAfter ? new Date(req.query.createdAfter as string) : undefined,
+        createdAfter: req.query.createdAfter
+          ? new Date(req.query.createdAfter as string)
+          : undefined,
       };
       const leadIntakes = await storage.searchLeadIntakes(filters);
       res.json(leadIntakes);
@@ -2002,7 +2156,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(skill);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Validation failed", details: error.errors });
+        return res
+          .status(400)
+          .json({ error: "Validation failed", details: error.errors });
       }
       res.status(500).json({ error: "Failed to create skill" });
     }
@@ -2011,8 +2167,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==================== USER SKILLS ====================
   app.get("/api/users/:userId/skills", async (req, res) => {
     try {
-      const includeNames = req.query.includeNames === 'true';
-      const userSkills = includeNames 
+      const includeNames = req.query.includeNames === "true";
+      const userSkills = includeNames
         ? await storage.getUserSkillsWithNames(req.params.userId)
         : await storage.getUserSkills(req.params.userId);
       res.json(userSkills);
@@ -2021,100 +2177,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/users/:userId/skills", 
-    authenticateJWT,
-    async (req, res) => {
+  app.post("/api/users/:userId/skills", authenticateJWT, async (req, res) => {
     try {
       const authenticatedUserId = (req as any).user?.id;
       const requestId = (req as any).requestId;
-      
+
       // Ensure users can only add skills to their own profile
       if (authenticatedUserId !== req.params.userId) {
         return res.status(403).json({
           error: "Forbidden",
           message: "You can only modify your own skills",
-          requestId
+          requestId,
         });
       }
-      
+
       const validated = insertUserSkillSchema.parse({
         ...req.body,
-        userId: req.params.userId
+        userId: req.params.userId,
       });
       const userSkill = await storage.createUserSkill(validated);
       res.status(201).json(userSkill);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Validation failed", details: error.errors });
+        return res
+          .status(400)
+          .json({ error: "Validation failed", details: error.errors });
       }
       res.status(500).json({ error: "Failed to create user skill" });
     }
   });
 
-  app.patch("/api/user-skills/:id", 
-    authenticateJWT,
-    async (req, res) => {
+  app.patch("/api/user-skills/:id", authenticateJWT, async (req, res) => {
     try {
       const authenticatedUserId = (req as any).user?.id;
       const requestId = (req as any).requestId;
-      
+
       // First, get the existing user skill to verify ownership
-      const existingUserSkill = await storage.getUserSkill(Number(req.params.id));
+      const existingUserSkill = await storage.getUserSkill(
+        Number(req.params.id),
+      );
       if (!existingUserSkill) {
-        return res.status(404).json({ 
+        return res.status(404).json({
           error: "User skill not found",
-          requestId 
+          requestId,
         });
       }
-      
+
       // Ensure users can only modify their own skills
       if (authenticatedUserId !== existingUserSkill.userId) {
         return res.status(403).json({
           error: "Forbidden",
           message: "You can only modify your own skills",
-          requestId
+          requestId,
         });
       }
-      
+
       const updates = insertUserSkillSchema.partial().parse(req.body);
-      const userSkill = await storage.updateUserSkill(Number(req.params.id), updates);
+      const userSkill = await storage.updateUserSkill(
+        Number(req.params.id),
+        updates,
+      );
       if (!userSkill) {
         return res.status(404).json({ error: "User skill not found" });
       }
       res.json(userSkill);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Validation failed", details: error.errors });
+        return res
+          .status(400)
+          .json({ error: "Validation failed", details: error.errors });
       }
       res.status(500).json({ error: "Failed to update user skill" });
     }
   });
 
-  app.delete("/api/user-skills/:id", 
-    authenticateJWT,
-    async (req, res) => {
+  app.delete("/api/user-skills/:id", authenticateJWT, async (req, res) => {
     try {
       const authenticatedUserId = (req as any).user?.id;
       const requestId = (req as any).requestId;
-      
+
       // First, get the existing user skill to verify ownership
-      const existingUserSkill = await storage.getUserSkill(Number(req.params.id));
+      const existingUserSkill = await storage.getUserSkill(
+        Number(req.params.id),
+      );
       if (!existingUserSkill) {
-        return res.status(404).json({ 
+        return res.status(404).json({
           error: "User skill not found",
-          requestId 
+          requestId,
         });
       }
-      
+
       // Ensure users can only delete their own skills
       if (authenticatedUserId !== existingUserSkill.userId) {
         return res.status(403).json({
           error: "Forbidden",
           message: "You can only delete your own skills",
-          requestId
+          requestId,
         });
       }
-      
+
       const deleted = await storage.deleteUserSkill(Number(req.params.id));
       if (!deleted) {
         return res.status(404).json({ error: "User skill not found" });
@@ -2133,13 +2294,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         category: req.query.category as string,
         contractType: req.query.contractType as string,
         experienceLevel: req.query.experienceLevel as string,
-        minBudget: req.query.minBudget ? Number(req.query.minBudget) : undefined,
-        maxBudget: req.query.maxBudget ? Number(req.query.maxBudget) : undefined,
-        skills: req.query.skills ? (req.query.skills as string).split(',') : undefined,
-        status: req.query.status as string || 'open',
+        minBudget: req.query.minBudget
+          ? Number(req.query.minBudget)
+          : undefined,
+        maxBudget: req.query.maxBudget
+          ? Number(req.query.maxBudget)
+          : undefined,
+        skills: req.query.skills
+          ? (req.query.skills as string).split(",")
+          : undefined,
+        status: (req.query.status as string) || "open",
         q: req.query.q as string, // Text search query
       };
-      
+
       // Use enhanced search method that includes skills arrays
       const jobsWithSkills = await storage.searchJobsWithSkills(filters);
       res.json(jobsWithSkills);
@@ -2163,21 +2330,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/jobs", 
+  app.post(
+    "/api/jobs",
     authenticateJWT,
     requireClient,
     async (req: Request, res: Response) => {
-    try {
-      const validated = insertJobSchema.parse(req.body);
-      const job = await storage.createJob(validated);
-      res.status(201).json(job);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Validation failed", details: error.errors });
+      try {
+        const validated = insertJobSchema.parse(req.body);
+        const job = await storage.createJob(validated);
+        res.status(201).json(job);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res
+            .status(400)
+            .json({ error: "Validation failed", details: error.errors });
+        }
+        res.status(500).json({ error: "Failed to create job" });
       }
-      res.status(500).json({ error: "Failed to create job" });
-    }
-  });
+    },
+  );
 
   app.patch("/api/jobs/:id", async (req, res) => {
     try {
@@ -2189,7 +2360,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(job);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Validation failed", details: error.errors });
+        return res
+          .status(400)
+          .json({ error: "Validation failed", details: error.errors });
       }
       res.status(500).json({ error: "Failed to update job" });
     }
@@ -2218,13 +2391,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validated = insertJobSkillSchema.parse({
         ...req.body,
-        jobId: req.params.jobId
+        jobId: req.params.jobId,
       });
       const jobSkill = await storage.createJobSkill(validated);
       res.status(201).json(jobSkill);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Validation failed", details: error.errors });
+        return res
+          .status(400)
+          .json({ error: "Validation failed", details: error.errors });
       }
       res.status(500).json({ error: "Failed to create job skill" });
     }
@@ -2258,7 +2433,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Parse optional filters from query parameters
       const filters = {
-        skills: req.query.skills ? (req.query.skills as string).split(',') : undefined,
+        skills: req.query.skills
+          ? (req.query.skills as string).split(",")
+          : undefined,
         minRate: req.query.minRate ? Number(req.query.minRate) : undefined,
         maxRate: req.query.maxRate ? Number(req.query.maxRate) : undefined,
         timezone: req.query.timezone as string,
@@ -2267,11 +2444,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         experienceLevel: req.query.experienceLevel as string,
       };
 
-      console.log(`🎯 Calculating job matches for user ${userId} with filters:`, filters);
-      
+      console.log(
+        `🎯 Calculating job matches for user ${userId} with filters:`,
+        filters,
+      );
+
       // Calculate job matches using the matching algorithm
       const matches = await storage.calculateJobMatches(userId, filters);
-      
+
       console.log(`✅ Found ${matches.length} job matches for user ${userId}`);
       res.json(matches);
     } catch (error) {
@@ -2297,7 +2477,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Get authenticated user ID from trusted session
       const talentId = req.user.claims.sub;
-      
+
       if (!talentId) {
         return res.status(401).json({ error: "Authentication required" });
       }
@@ -2307,17 +2487,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...req.body,
         talentId, // Override any client-supplied talentId with server-derived value
       };
-      
+
       const validated = insertProposalSchema.parse(proposalData);
       const proposal = await storage.createProposal(validated);
       res.status(201).json(proposal);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Validation failed", details: error.errors });
+        return res
+          .status(400)
+          .json({ error: "Validation failed", details: error.errors });
       }
       // Handle unique constraint violation for duplicate proposals
-      if (error instanceof Error && error.message.includes('unique') && error.message.includes('proposals_job_talent')) {
-        return res.status(409).json({ error: "You have already submitted a proposal for this job" });
+      if (
+        error instanceof Error &&
+        error.message.includes("unique") &&
+        error.message.includes("proposals_job_talent")
+      ) {
+        return res
+          .status(409)
+          .json({
+            error: "You have already submitted a proposal for this job",
+          });
       }
       res.status(500).json({ error: "Failed to create proposal" });
     }
@@ -2333,7 +2523,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(proposal);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Validation failed", details: error.errors });
+        return res
+          .status(400)
+          .json({ error: "Validation failed", details: error.errors });
       }
       res.status(500).json({ error: "Failed to update proposal" });
     }
@@ -2348,23 +2540,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/talents/:talentId/proposals", isAuthenticated, async (req: any, res) => {
-    try {
-      // SECURITY: Use authenticated user ID from session, not URL parameter
-      // This prevents user enumeration and unauthorized access to proposals
-      const authenticatedUserId = req.user.claims.sub;
-      
-      if (!authenticatedUserId) {
-        return res.status(401).json({ error: "Authentication required" });
+  app.get(
+    "/api/talents/:talentId/proposals",
+    isAuthenticated,
+    async (req: any, res) => {
+      try {
+        // SECURITY: Use authenticated user ID from session, not URL parameter
+        // This prevents user enumeration and unauthorized access to proposals
+        const authenticatedUserId = req.user.claims.sub;
+
+        if (!authenticatedUserId) {
+          return res.status(401).json({ error: "Authentication required" });
+        }
+
+        // Only return proposals for the authenticated user (ignore URL parameter)
+        const proposals =
+          await storage.listProposalsByTalent(authenticatedUserId);
+        res.json(proposals);
+      } catch (error) {
+        res.status(500).json({ error: "Failed to get talent proposals" });
       }
-      
-      // Only return proposals for the authenticated user (ignore URL parameter)
-      const proposals = await storage.listProposalsByTalent(authenticatedUserId);
-      res.json(proposals);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to get talent proposals" });
-    }
-  });
+    },
+  );
 
   // ==================== CONTRACTS (Phase 2 Priority) ====================
   app.get("/api/contracts/:id", async (req, res) => {
@@ -2386,7 +2583,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(contract);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Validation failed", details: error.errors });
+        return res
+          .status(400)
+          .json({ error: "Validation failed", details: error.errors });
       }
       res.status(500).json({ error: "Failed to create contract" });
     }
@@ -2402,7 +2601,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(contract);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Validation failed", details: error.errors });
+        return res
+          .status(400)
+          .json({ error: "Validation failed", details: error.errors });
       }
       res.status(500).json({ error: "Failed to update contract" });
     }
@@ -2410,7 +2611,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/clients/:clientId/contracts", async (req, res) => {
     try {
-      const contracts = await storage.listContractsByClient(req.params.clientId);
+      const contracts = await storage.listContractsByClient(
+        req.params.clientId,
+      );
       res.json(contracts);
     } catch (error) {
       res.status(500).json({ error: "Failed to get client contracts" });
@@ -2419,7 +2622,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/talents/:talentId/contracts", async (req, res) => {
     try {
-      const contracts = await storage.listContractsByTalent(req.params.talentId);
+      const contracts = await storage.listContractsByTalent(
+        req.params.talentId,
+      );
       res.json(contracts);
     } catch (error) {
       res.status(500).json({ error: "Failed to get talent contracts" });
@@ -2446,7 +2651,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(thread);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Validation failed", details: error.errors });
+        return res
+          .status(400)
+          .json({ error: "Validation failed", details: error.errors });
       }
       res.status(500).json({ error: "Failed to create message thread" });
     }
@@ -2477,7 +2684,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(message);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Validation failed", details: error.errors });
+        return res
+          .status(400)
+          .json({ error: "Validation failed", details: error.errors });
       }
       res.status(500).json({ error: "Failed to create message" });
     }
@@ -2497,11 +2706,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ==================== ADDITIONAL ROUTES (Stubs for Phase 2+) ====================
-  
+
   // Milestones
   app.get("/api/contracts/:contractId/milestones", async (req, res) => {
     try {
-      const milestones = await storage.listMilestonesByContract(req.params.contractId);
+      const milestones = await storage.listMilestonesByContract(
+        req.params.contractId,
+      );
       res.json(milestones);
     } catch (error) {
       res.status(500).json({ error: "Failed to get contract milestones" });
@@ -2515,7 +2726,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(milestone);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Validation failed", details: error.errors });
+        return res
+          .status(400)
+          .json({ error: "Validation failed", details: error.errors });
       }
       res.status(500).json({ error: "Failed to create milestone" });
     }
@@ -2524,7 +2737,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Time Entries
   app.get("/api/contracts/:contractId/time-entries", async (req, res) => {
     try {
-      const entries = await storage.listTimeEntriesByContract(req.params.contractId);
+      const entries = await storage.listTimeEntriesByContract(
+        req.params.contractId,
+      );
       res.json(entries);
     } catch (error) {
       res.status(500).json({ error: "Failed to get time entries" });
@@ -2538,7 +2753,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(entry);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Validation failed", details: error.errors });
+        return res
+          .status(400)
+          .json({ error: "Validation failed", details: error.errors });
       }
       res.status(500).json({ error: "Failed to create time entry" });
     }
@@ -2547,8 +2764,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Reviews
   app.get("/api/users/:userId/reviews", async (req, res) => {
     try {
-      const asReviewer = req.query.as_reviewer === 'true';
-      const reviews = await storage.listReviewsByUser(req.params.userId, asReviewer);
+      const asReviewer = req.query.as_reviewer === "true";
+      const reviews = await storage.listReviewsByUser(
+        req.params.userId,
+        asReviewer,
+      );
       res.json(reviews);
     } catch (error) {
       res.status(500).json({ error: "Failed to get user reviews" });
@@ -2562,7 +2782,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(review);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Validation failed", details: error.errors });
+        return res
+          .status(400)
+          .json({ error: "Validation failed", details: error.errors });
       }
       res.status(500).json({ error: "Failed to create review" });
     }
@@ -2571,7 +2793,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Portfolio
   app.get("/api/talents/:talentId/portfolio", async (req, res) => {
     try {
-      const items = await storage.listPortfolioItemsByTalent(req.params.talentId);
+      const items = await storage.listPortfolioItemsByTalent(
+        req.params.talentId,
+      );
       res.json(items);
     } catch (error) {
       res.status(500).json({ error: "Failed to get portfolio items" });
@@ -2597,7 +2821,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(item);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Validation failed", details: error.errors });
+        return res
+          .status(400)
+          .json({ error: "Validation failed", details: error.errors });
       }
       res.status(500).json({ error: "Failed to create portfolio item" });
     }
@@ -2613,7 +2839,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(item);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Validation failed", details: error.errors });
+        return res
+          .status(400)
+          .json({ error: "Validation failed", details: error.errors });
       }
       res.status(500).json({ error: "Failed to update portfolio item" });
     }
@@ -2634,8 +2862,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Notifications
   app.get("/api/users/:userId/notifications", async (req, res) => {
     try {
-      const unreadOnly = req.query.unread_only === 'true';
-      const notifications = await storage.listNotificationsByUser(req.params.userId, unreadOnly);
+      const unreadOnly = req.query.unread_only === "true";
+      const notifications = await storage.listNotificationsByUser(
+        req.params.userId,
+        unreadOnly,
+      );
       res.json(notifications);
     } catch (error) {
       res.status(500).json({ error: "Failed to get notifications" });
@@ -2649,7 +2880,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(notification);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Validation failed", details: error.errors });
+        return res
+          .status(400)
+          .json({ error: "Validation failed", details: error.errors });
       }
       res.status(500).json({ error: "Failed to create notification" });
     }
@@ -2668,14 +2901,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ==================== LINKEDIN INTEGRATION ====================
-  
+
   // LinkedIn OAuth Connect - Initiate LinkedIn authentication
   app.post("/api/linkedin/connect", async (req, res) => {
     try {
       // In a real implementation, this would redirect to LinkedIn OAuth
       // For now, we'll simulate a successful connection
       const { userId } = req.body;
-      
+
       if (!userId) {
         return res.status(400).json({ error: "User ID required" });
       }
@@ -2683,9 +2916,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if user already has LinkedIn profile
       const existingProfile = await storage.getLinkedinProfileByUserId(userId);
       if (existingProfile) {
-        return res.json({ 
+        return res.json({
           status: "already_connected",
-          linkedinProfile: existingProfile
+          linkedinProfile: existingProfile,
         });
       }
 
@@ -2706,15 +2939,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           profilePictureUrl: null,
           experience: [],
           education: [],
-          skills: ["JavaScript", "React", "Node.js"]
-        }
+          skills: ["JavaScript", "React", "Node.js"],
+        },
       };
 
-      const createdProfile = await storage.createLinkedinProfile(linkedinProfile);
-      
+      const createdProfile =
+        await storage.createLinkedinProfile(linkedinProfile);
+
       res.json({
         status: "connected",
-        linkedinProfile: createdProfile
+        linkedinProfile: createdProfile,
       });
     } catch (error) {
       console.error("LinkedIn connect error:", error);
@@ -2726,7 +2960,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/linkedin/import-profile", async (req, res) => {
     try {
       const { userId } = req.body;
-      
+
       if (!userId) {
         return res.status(400).json({ error: "User ID required" });
       }
@@ -2734,11 +2968,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get LinkedIn profile data
       const linkedinProfile = await storage.getLinkedinProfileByUserId(userId);
       if (!linkedinProfile || !linkedinProfile.profileData) {
-        return res.status(404).json({ error: "LinkedIn profile not found or not connected" });
+        return res
+          .status(404)
+          .json({ error: "LinkedIn profile not found or not connected" });
       }
 
       const profileData = linkedinProfile.profileData;
-      
+
       // Map LinkedIn data to OnSpot profile format
       const profileImportData = {
         firstName: profileData.firstName || "",
@@ -2747,7 +2983,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         bio: profileData.summary || "",
         location: profileData.location || "Global",
         profilePicture: profileData.profilePictureUrl || null,
-        languages: ["English"]
+        languages: ["English"],
       };
 
       // Get or create user profile
@@ -2763,7 +2999,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           hourlyRate: "50.00",
           rateCurrency: "USD",
           availability: "available",
-          timezone: "Asia/Manila"
+          timezone: "Asia/Manila",
         });
       }
 
@@ -2776,20 +3012,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Create new skill
             skill = await storage.createSkill({
               name: skillName,
-              category: "Technical"
+              category: "Technical",
             });
           }
 
           // Add user skill if not already exists
           const existingUserSkills = await storage.getUserSkills(userId);
-          const hasSkill = existingUserSkills.some(us => us.skillId === skill!.id);
-          
+          const hasSkill = existingUserSkills.some(
+            (us) => us.skillId === skill!.id,
+          );
+
           if (!hasSkill) {
             await storage.createUserSkill({
               userId,
               skillId: skill.id,
               level: "intermediate",
-              yearsExperience: 2
+              yearsExperience: 2,
             });
           }
         }
@@ -2797,7 +3035,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Update LinkedIn profile sync timestamp
       await storage.updateLinkedinProfile(linkedinProfile.id, {
-        lastSync: new Date()
+        lastSync: new Date(),
       });
 
       res.json({
@@ -2807,8 +3045,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           personalInfo: !!profileData.firstName,
           skills: profileData.skills?.length || 0,
           experience: profileData.experience?.length || 0,
-          education: profileData.education?.length || 0
-        }
+          education: profileData.education?.length || 0,
+        },
       });
     } catch (error) {
       console.error("LinkedIn import error:", error);
@@ -2820,17 +3058,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/resume/parse", async (req, res) => {
     try {
       const { resumeText, userId } = req.body;
-      
+
       if (!resumeText || !userId) {
-        return res.status(400).json({ error: "Resume text and user ID required" });
+        return res
+          .status(400)
+          .json({ error: "Resume text and user ID required" });
       }
 
       // Simple resume parsing logic (can be enhanced with NLP)
       const parsedData = parseResumeText(resumeText);
-      
+
       res.json({
         status: "parsed",
-        parsedData
+        parsedData,
       });
     } catch (error) {
       console.error("Resume parsing error:", error);
@@ -2841,12 +3081,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get LinkedIn connection status
   app.get("/api/linkedin/status/:userId", async (req, res) => {
     try {
-      const linkedinProfile = await storage.getLinkedinProfileByUserId(req.params.userId);
-      
+      const linkedinProfile = await storage.getLinkedinProfileByUserId(
+        req.params.userId,
+      );
+
       res.json({
         isConnected: !!linkedinProfile,
         lastSync: linkedinProfile?.lastSync || null,
-        profileUrl: linkedinProfile?.profileUrl || null
+        profileUrl: linkedinProfile?.profileUrl || null,
       });
     } catch (error) {
       console.error("LinkedIn status error:", error);
@@ -2858,15 +3100,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/chat", async (req, res) => {
     try {
       const { messages } = req.body;
-      
+
       if (!process.env.OPENAI_API_KEY) {
-        return res.status(401).json({ 
-          error: "Service not configured. Please add your OPENAI_API_KEY to continue using your virtual assistant." 
+        return res.status(401).json({
+          error:
+            "Service not configured. Please add your OPENAI_API_KEY to continue using your virtual assistant.",
         });
       }
 
       // Import OpenAI dynamically
-      const { OpenAI } = await import('openai');
+      const { OpenAI } = await import("openai");
       const openai = new OpenAI({
         apiKey: process.env.OPENAI_API_KEY,
       });
@@ -2895,7 +3138,7 @@ Your personality:
 - Be encouraging and supportive about their business challenges
 - When discussing numbers/ROI, speak from experience not like you're reciting facts
 
-Keep it conversational and natural. Ask follow-up questions that show you're listening and want to help them find the right solution.`
+Keep it conversational and natural. Ask follow-up questions that show you're listening and want to help them find the right solution.`,
       };
 
       const completion = await openai.chat.completions.create({
@@ -2905,13 +3148,16 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
         temperature: 0.7,
       });
 
-      const assistantMessage = completion.choices[0]?.message?.content || "Sorry, I'm having a bit of trouble right now! Give me another try in just a sec.";
+      const assistantMessage =
+        completion.choices[0]?.message?.content ||
+        "Sorry, I'm having a bit of trouble right now! Give me another try in just a sec.";
 
       res.json({ message: assistantMessage });
     } catch (error) {
-      console.error('Chat API error:', error);
-      res.status(500).json({ 
-        error: "Hmm, something's not quite right on my end. Give me a moment and try again!" 
+      console.error("Chat API error:", error);
+      res.status(500).json({
+        error:
+          "Hmm, something's not quite right on my end. Give me a moment and try again!",
       });
     }
   });
@@ -2923,92 +3169,117 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
       fileSize: 10 * 1024 * 1024, // 10MB limit
     },
     fileFilter: (req, file, cb) => {
-      if (file.mimetype === 'text/csv' || file.originalname.endsWith('.csv')) {
+      if (file.mimetype === "text/csv" || file.originalname.endsWith(".csv")) {
         cb(null, true);
       } else {
-        cb(new Error('Only CSV files are allowed'));
+        cb(new Error("Only CSV files are allowed"));
       }
-    }
+    },
   });
 
   // CSV Talent Import Routes
-  
+
   // Get CSV template for talent import
-  app.get('/api/admin/csv-import/template', async (req: any, res) => {
+  app.get("/api/admin/csv-import/template", async (req: any, res) => {
     try {
       // Admin authentication check
       if (!req.isAuthenticated()) {
         return res.status(401).json({
           error: "Authentication required",
           message: "Please log in to access this resource",
-          requestId: req.requestId
+          requestId: req.requestId,
         });
       }
 
-      const user = (req.user as any)?.user || await storage.getUser((req.user as any)?.claims?.sub);
-      if (!user || user.role !== 'admin') {
+      const user =
+        (req.user as any)?.user ||
+        (await storage.getUser((req.user as any)?.claims?.sub));
+      if (!user || user.role !== "admin") {
         return res.status(403).json({
           error: "Access denied",
           message: "Admin access required for CSV import",
-          requestId: req.requestId
+          requestId: req.requestId,
         });
       }
 
       const template = {
         headers: [
-          'firstName', 'lastName', 'email', 'title', 'bio', 'location', 
-          'hourlyRate', 'rateCurrency', 'availability', 'phoneNumber', 
-          'languages', 'timezone', 'skills'
+          "firstName",
+          "lastName",
+          "email",
+          "title",
+          "bio",
+          "location",
+          "hourlyRate",
+          "rateCurrency",
+          "availability",
+          "phoneNumber",
+          "languages",
+          "timezone",
+          "skills",
         ],
         sampleData: [
           {
-            firstName: 'John',
-            lastName: 'Doe',
-            email: 'john.doe@example.com',
-            title: 'Senior Software Engineer',
-            bio: 'Experienced full-stack developer with expertise in React, Node.js, and cloud technologies. Passionate about building scalable applications.',
-            location: 'Manila, Philippines',
-            hourlyRate: '25.00',
-            rateCurrency: 'USD',
-            availability: 'available',
-            phoneNumber: '+63 9123456789',
-            languages: 'English, Filipino',
-            timezone: 'Asia/Manila',
-            skills: 'JavaScript, React, Node.js, AWS, MongoDB'
+            firstName: "John",
+            lastName: "Doe",
+            email: "john.doe@example.com",
+            title: "Senior Software Engineer",
+            bio: "Experienced full-stack developer with expertise in React, Node.js, and cloud technologies. Passionate about building scalable applications.",
+            location: "Manila, Philippines",
+            hourlyRate: "25.00",
+            rateCurrency: "USD",
+            availability: "available",
+            phoneNumber: "+63 9123456789",
+            languages: "English, Filipino",
+            timezone: "Asia/Manila",
+            skills: "JavaScript, React, Node.js, AWS, MongoDB",
           },
           {
-            firstName: 'Maria',
-            lastName: 'Santos',
-            email: 'maria.santos@example.com',
-            title: 'Digital Marketing Specialist',
-            bio: 'Creative marketing professional with 5+ years of experience in social media marketing, content creation, and campaign management.',
-            location: 'Cebu, Philippines',
-            hourlyRate: '20.00',
-            rateCurrency: 'USD',
-            availability: 'available',
-            phoneNumber: '+63 9876543210',
-            languages: 'English, Filipino, Cebuano',
-            timezone: 'Asia/Manila',
-            skills: 'Social Media Marketing, Content Writing, Google Ads, SEO, Canva'
-          }
+            firstName: "Maria",
+            lastName: "Santos",
+            email: "maria.santos@example.com",
+            title: "Digital Marketing Specialist",
+            bio: "Creative marketing professional with 5+ years of experience in social media marketing, content creation, and campaign management.",
+            location: "Cebu, Philippines",
+            hourlyRate: "20.00",
+            rateCurrency: "USD",
+            availability: "available",
+            phoneNumber: "+63 9876543210",
+            languages: "English, Filipino, Cebuano",
+            timezone: "Asia/Manila",
+            skills:
+              "Social Media Marketing, Content Writing, Google Ads, SEO, Canva",
+          },
         ],
         fieldDescriptions: {
-          firstName: 'Required. First name of the talent (max 100 characters)',
-          lastName: 'Required. Last name of the talent (max 100 characters)',
-          email: 'Required. Valid email address (must be unique)',
-          title: 'Required. Professional title or job position (max 200 characters)',
-          bio: 'Required. Professional biography or summary (minimum 10 characters, max 2000)',
+          firstName: "Required. First name of the talent (max 100 characters)",
+          lastName: "Required. Last name of the talent (max 100 characters)",
+          email: "Required. Valid email address (must be unique)",
+          title:
+            "Required. Professional title or job position (max 200 characters)",
+          bio: "Required. Professional biography or summary (minimum 10 characters, max 2000)",
           location: 'Optional. Geographic location (default: "Global")',
           hourlyRate: 'Optional. Numeric hourly rate (e.g., "25.00")',
-          rateCurrency: 'Optional. Currency code: "USD" or "PHP" (default: "USD")',
-          availability: 'Optional. Status: "available", "busy", or "offline" (default: "available")',
-          phoneNumber: 'Optional. Contact phone number',
+          rateCurrency:
+            'Optional. Currency code: "USD" or "PHP" (default: "USD")',
+          availability:
+            'Optional. Status: "available", "busy", or "offline" (default: "available")',
+          phoneNumber: "Optional. Contact phone number",
           languages: 'Optional. Comma-separated languages (default: "English")',
           timezone: 'Optional. Timezone identifier (default: "Asia/Manila")',
-          skills: 'Optional. Comma-separated list of skills'
+          skills: "Optional. Comma-separated list of skills",
         },
-        requiredFields: ['firstName', 'lastName', 'email', 'title', 'bio'],
-        optionalFields: ['location', 'hourlyRate', 'rateCurrency', 'availability', 'phoneNumber', 'languages', 'timezone', 'skills']
+        requiredFields: ["firstName", "lastName", "email", "title", "bio"],
+        optionalFields: [
+          "location",
+          "hourlyRate",
+          "rateCurrency",
+          "availability",
+          "phoneNumber",
+          "languages",
+          "timezone",
+          "skills",
+        ],
       };
 
       res.json(template);
@@ -3018,42 +3289,66 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
   });
 
   // Download CSV template file
-  app.get('/api/admin/csv-import/template/download', async (req: any, res) => {
+  app.get("/api/admin/csv-import/template/download", async (req: any, res) => {
     try {
       // Admin authentication check
       if (!req.isAuthenticated()) {
         return res.status(401).json({
           error: "Authentication required",
-          requestId: req.requestId
+          requestId: req.requestId,
         });
       }
 
-      const user = (req.user as any)?.user || await storage.getUser((req.user as any)?.claims?.sub);
-      if (!user || user.role !== 'admin') {
+      const user =
+        (req.user as any)?.user ||
+        (await storage.getUser((req.user as any)?.claims?.sub));
+      if (!user || user.role !== "admin") {
         return res.status(403).json({
           error: "Access denied",
           message: "Admin access required for CSV import",
-          requestId: req.requestId
+          requestId: req.requestId,
         });
       }
 
       const csvHeaders = [
-        'firstName', 'lastName', 'email', 'title', 'bio', 'location',
-        'hourlyRate', 'rateCurrency', 'availability', 'phoneNumber',
-        'languages', 'timezone', 'skills'
+        "firstName",
+        "lastName",
+        "email",
+        "title",
+        "bio",
+        "location",
+        "hourlyRate",
+        "rateCurrency",
+        "availability",
+        "phoneNumber",
+        "languages",
+        "timezone",
+        "skills",
       ];
 
       const sampleRow = [
-        'John', 'Doe', 'john.doe@example.com', 'Senior Software Engineer',
-        'Experienced full-stack developer with expertise in React and Node.js',
-        'Manila, Philippines', '25.00', 'USD', 'available', '+63 9123456789',
-        'English, Filipino', 'Asia/Manila', 'JavaScript, React, Node.js'
+        "John",
+        "Doe",
+        "john.doe@example.com",
+        "Senior Software Engineer",
+        "Experienced full-stack developer with expertise in React and Node.js",
+        "Manila, Philippines",
+        "25.00",
+        "USD",
+        "available",
+        "+63 9123456789",
+        "English, Filipino",
+        "Asia/Manila",
+        "JavaScript, React, Node.js",
       ];
 
       const csvContent = Papa.unparse([csvHeaders, sampleRow]);
 
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', 'attachment; filename="onspot_talent_import_template.csv"');
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader(
+        "Content-Disposition",
+        'attachment; filename="onspot_talent_import_template.csv"',
+      );
       res.send(csvContent);
     } catch (error) {
       handleRouteError(error, req, res, "Download CSV template", 500);
@@ -3061,42 +3356,45 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
   });
 
   // Validate CSV data before import
-  app.post('/api/admin/csv-import/validate', 
-    upload.single('csvFile'),
+  app.post(
+    "/api/admin/csv-import/validate",
+    upload.single("csvFile"),
     async (req: any, res) => {
       try {
         // Admin authentication check
         if (!req.isAuthenticated()) {
           return res.status(401).json({
             error: "Authentication required",
-            requestId: req.requestId
+            requestId: req.requestId,
           });
         }
 
-        const user = (req.user as any)?.user || await storage.getUser((req.user as any)?.claims?.sub);
-        if (!user || user.role !== 'admin') {
+        const user =
+          (req.user as any)?.user ||
+          (await storage.getUser((req.user as any)?.claims?.sub));
+        if (!user || user.role !== "admin") {
           return res.status(403).json({
             error: "Access denied",
             message: "Admin access required for CSV import",
-            requestId: req.requestId
+            requestId: req.requestId,
           });
         }
 
         if (!req.file) {
           return res.status(400).json({
             error: "No CSV file provided",
-            requestId: req.requestId
+            requestId: req.requestId,
           });
         }
 
         console.log(`📊 CSV validation started [${req.requestId}]:`, {
           fileName: req.file.originalname,
           fileSize: req.file.size,
-          userId: user.id
+          userId: user.id,
         });
 
         // Parse CSV
-        const csvContent = req.file.buffer.toString('utf-8');
+        const csvContent = req.file.buffer.toString("utf-8");
         const parseResult = Papa.parse(csvContent, {
           header: true,
           skipEmptyLines: true,
@@ -3108,18 +3406,20 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
             error: "CSV parsing failed",
             message: "Invalid CSV format",
             details: parseResult.errors,
-            requestId: req.requestId
+            requestId: req.requestId,
           });
         }
 
         // Validate each row
-        const validationResult = await storage.validateCsvTalentRows(parseResult.data as any[]);
+        const validationResult = await storage.validateCsvTalentRows(
+          parseResult.data as any[],
+        );
 
         console.log(`✅ CSV validation completed [${req.requestId}]:`, {
           totalRows: parseResult.data.length,
           validRows: validationResult.validRows.length,
           errorRows: validationResult.errors.length,
-          duplicateEmails: validationResult.duplicateEmails.length
+          duplicateEmails: validationResult.duplicateEmails.length,
         });
 
         res.json({
@@ -3130,44 +3430,52 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
           errors: validationResult.errors,
           duplicateEmails: validationResult.duplicateEmails,
           sampleValidRows: validationResult.validRows.slice(0, 3), // Show first 3 for preview
-          requestId: req.requestId
+          requestId: req.requestId,
         });
-
       } catch (error) {
         handleRouteError(error, req, res, "Validate CSV data", 500);
       }
-    }
+    },
   );
 
   // Import CSV talents
-  app.post('/api/admin/csv-import/import',
-    upload.single('csvFile'),
-    validateRequest(z.object({
-      skipDuplicateEmails: z.string().optional().transform(val => val === 'true')
-    }), 'body'),
+  app.post(
+    "/api/admin/csv-import/import",
+    upload.single("csvFile"),
+    validateRequest(
+      z.object({
+        skipDuplicateEmails: z
+          .string()
+          .optional()
+          .transform((val) => val === "true"),
+      }),
+      "body",
+    ),
     async (req: any, res) => {
       try {
         // Admin authentication check
         if (!req.isAuthenticated()) {
           return res.status(401).json({
             error: "Authentication required",
-            requestId: req.requestId
+            requestId: req.requestId,
           });
         }
 
-        const user = (req.user as any)?.user || await storage.getUser((req.user as any)?.claims?.sub);
-        if (!user || user.role !== 'admin') {
+        const user =
+          (req.user as any)?.user ||
+          (await storage.getUser((req.user as any)?.claims?.sub));
+        if (!user || user.role !== "admin") {
           return res.status(403).json({
             error: "Access denied",
             message: "Admin access required for CSV import",
-            requestId: req.requestId
+            requestId: req.requestId,
           });
         }
 
         if (!req.file) {
           return res.status(400).json({
             error: "No CSV file provided",
-            requestId: req.requestId
+            requestId: req.requestId,
           });
         }
 
@@ -3177,11 +3485,11 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
           fileName: req.file.originalname,
           fileSize: req.file.size,
           skipDuplicateEmails,
-          userId: user.id
+          userId: user.id,
         });
 
         // Parse CSV
-        const csvContent = req.file.buffer.toString('utf-8');
+        const csvContent = req.file.buffer.toString("utf-8");
         const parseResult = Papa.parse(csvContent, {
           header: true,
           skipEmptyLines: true,
@@ -3193,83 +3501,88 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
             error: "CSV parsing failed",
             message: "Invalid CSV format",
             details: parseResult.errors,
-            requestId: req.requestId
+            requestId: req.requestId,
           });
         }
 
         // Validate and process
-        const validationResult = await storage.validateCsvTalentRows(parseResult.data as any[]);
-        
+        const validationResult = await storage.validateCsvTalentRows(
+          parseResult.data as any[],
+        );
+
         // Filter out duplicates if requested
         let talentDataToImport = validationResult.validRows;
         if (skipDuplicateEmails) {
           // Remove rows with duplicate emails from import
           const duplicateEmailsSet = new Set(validationResult.duplicateEmails);
-          talentDataToImport = validationResult.validRows.filter(row => 
-            !duplicateEmailsSet.has(row.user.email!)
+          talentDataToImport = validationResult.validRows.filter(
+            (row) => !duplicateEmailsSet.has(row.user.email!),
           );
         }
 
         // Perform bulk import
-        const importResult = await storage.bulkCreateTalents(talentDataToImport);
+        const importResult =
+          await storage.bulkCreateTalents(talentDataToImport);
 
         console.log(`✅ CSV talent import completed [${req.requestId}]:`, {
           totalProcessed: importResult.totalRows,
           successful: importResult.successfulRows,
           failed: importResult.failedRows,
-          duplicatesSkipped: importResult.summary.duplicatesSkipped
+          duplicatesSkipped: importResult.summary.duplicatesSkipped,
         });
 
         res.json({
           ...importResult,
-          requestId: req.requestId
+          requestId: req.requestId,
         });
-
       } catch (error) {
         handleRouteError(error, req, res, "Import CSV talents", 500);
       }
-    }
+    },
   );
 
   // Debug endpoint to check environment configuration (development only for security)
-  app.get('/debug/env', (req: Request, res: Response) => {
+  app.get("/debug/env", (req: Request, res: Response) => {
     // Security: Only allow in development environment
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env.NODE_ENV === "production") {
       return res.status(404).json({
         success: false,
-        message: 'Not found'
+        message: "Not found",
       });
     }
-    
+
     const requestId = (req as any).requestId;
-    
+
     // Mask sensitive values
     const dbUrl = process.env.DATABASE_URL;
-    const maskedDbUrl = dbUrl ? dbUrl.replace(/:([^:]+)@/, ':***@') : 'NOT_SET';
-    
+    const maskedDbUrl = dbUrl ? dbUrl.replace(/:([^:]+)@/, ":***@") : "NOT_SET";
+
     const envDebugInfo = {
       requestId,
       timestamp: new Date().toISOString(),
-      nodeEnv: process.env.NODE_ENV || 'NOT_SET',
+      nodeEnv: process.env.NODE_ENV || "NOT_SET",
       hasJwtSecret: !!process.env.JWT_SECRET,
       databaseUrl: maskedDbUrl,
-      port: process.env.PORT || 'NOT_SET',
-      frontendBaseUrl: process.env.VITE_API_BASE || 'NOT_SET'
+      port: process.env.PORT || "NOT_SET",
+      frontendBaseUrl: process.env.VITE_API_BASE || "NOT_SET",
     };
-    
-    console.log(`🔍 Debug environment info requested [${requestId}] (development only):`, envDebugInfo);
-    
+
+    console.log(
+      `🔍 Debug environment info requested [${requestId}] (development only):`,
+      envDebugInfo,
+    );
+
     res.json({
       success: true,
-      environment: envDebugInfo
+      environment: envDebugInfo,
     });
   });
 
   // Production-friendly routes without /api prefix (prevents double /api in production URLs)
   // These are identical to the /api routes but without the prefix for production baseURL compatibility
-  
+
   // Production login route (without /api prefix)
-  app.post('/login', authLimiter, async (req: Request, res: Response) => {
+  app.post("/login", authLimiter, async (req: Request, res: Response) => {
     try {
       const { email, password } = req.body;
       const requestId = (req as any).requestId;
@@ -3277,150 +3590,176 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
       // Debug: Log DATABASE_URL being used (mask password)
       const dbUrl = process.env.DATABASE_URL;
       if (dbUrl) {
-        const maskedDbUrl = dbUrl.replace(/:([^:]+)@/, ':***@');
-        console.log(`🗄️ Debug [${requestId}]: Using DATABASE_URL = ${maskedDbUrl}`);
+        const maskedDbUrl = dbUrl.replace(/:([^:]+)@/, ":***@");
+        console.log(
+          `🗄️ Debug [${requestId}]: Using DATABASE_URL = ${maskedDbUrl}`,
+        );
       } else {
         console.error(`❌ Debug [${requestId}]: DATABASE_URL not set!`);
       }
 
       // Debug: Log JWT_SECRET status
       const hasJwtSecret = !!process.env.JWT_SECRET;
-      console.log(`🔑 Debug [${requestId}]: JWT_SECRET loaded = ${hasJwtSecret}`);
+      console.log(
+        `🔑 Debug [${requestId}]: JWT_SECRET loaded = ${hasJwtSecret}`,
+      );
 
       // Production diagnostics logging
-      if (process.env.NODE_ENV === 'production') {
+      if (process.env.NODE_ENV === "production") {
         console.log(`🌐 Production login attempt [${requestId}]:`, {
-          email: email ? '***@' + email.split('@')[1] : 'missing',
+          email: email ? "***@" + email.split("@")[1] : "missing",
           hasPassword: !!password,
-          userAgent: req.get('User-Agent')?.substring(0, 50) + '...',
-          ip: req.ip
+          userAgent: req.get("User-Agent")?.substring(0, 50) + "...",
+          ip: req.ip,
         });
       }
 
       console.log(`🔐 Login request received [${requestId}]:`, {
-        email: email ? '***@' + email.split('@')[1] : 'missing',
-        hasPassword: !!password
+        email: email ? "***@" + email.split("@")[1] : "missing",
+        hasPassword: !!password,
       });
 
       if (!email || !password) {
         const missingFields = [];
-        if (!email) missingFields.push('email');
-        if (!password) missingFields.push('password');
-        
-        console.error(`❌ Login validation failed [${requestId}]: Missing fields:`, missingFields);
-        
+        if (!email) missingFields.push("email");
+        if (!password) missingFields.push("password");
+
+        console.error(
+          `❌ Login validation failed [${requestId}]: Missing fields:`,
+          missingFields,
+        );
+
         return res.status(400).json({
           success: false,
-          message: `Missing required fields: ${missingFields.join(', ')}`,
-          requestId
+          message: `Missing required fields: ${missingFields.join(", ")}`,
+          requestId,
         });
       }
-      
+
       // Basic email format validation
       if (!validateEmail(email)) {
         console.error(`❌ Email format validation failed [${requestId}]`);
         return res.status(400).json({
           success: false,
           message: "Please enter a valid email address",
-          requestId
+          requestId,
         });
       }
 
       // Find user by email
-      const userQuery = 'SELECT id, email, username, "first_name", "last_name", "password_hash", role, company FROM users WHERE email = $1';
+      const userQuery =
+        'SELECT id, email, username, "first_name", "last_name", "password_hash", role, company FROM users WHERE email = $1';
       const userResult = await query(userQuery, [email]);
-      
+
       if (userResult.rows.length === 0) {
-        console.error(`❌ User not found [${requestId}]: No user with email ${email}`);
+        console.error(
+          `❌ User not found [${requestId}]: No user with email ${email}`,
+        );
         console.log(`🔍 Debug [${requestId}]: User record found = false`);
-        if (process.env.NODE_ENV === 'production') {
-          console.log(`🌐 Production login failed: User not found [${requestId}]`);
+        if (process.env.NODE_ENV === "production") {
+          console.log(
+            `🌐 Production login failed: User not found [${requestId}]`,
+          );
         }
         return res.status(401).json({
           success: false,
           message: "Invalid email or password",
-          requestId
+          requestId,
         });
       }
-      
+
       console.log(`👤 User found [${requestId}]:`, {
         userId: userResult.rows[0].id,
         email: userResult.rows[0].email,
-        role: userResult.rows[0].role
+        role: userResult.rows[0].role,
       });
       console.log(`🔍 Debug [${requestId}]: User record found = true`);
 
       const user = userResult.rows[0];
-      
+
       // Check if user has a password (OAuth users might not)
       if (!user.password_hash) {
-        console.error(`❌ Password verification failed [${requestId}]: User ${user.id} has no password (OAuth user?)`);
+        console.error(
+          `❌ Password verification failed [${requestId}]: User ${user.id} has no password (OAuth user?)`,
+        );
         return res.status(401).json({
           success: false,
-          message: "This account was created with social login. Please use Google or LinkedIn to sign in.",
-          requestId
+          message:
+            "This account was created with social login. Please use Google or LinkedIn to sign in.",
+          requestId,
         });
       }
-      
+
       // Verify password
       console.log(`🔐 Verifying password [${requestId}]`);
-      const isPasswordValid = await verifyPassword(password, user.password_hash);
+      const isPasswordValid = await verifyPassword(
+        password,
+        user.password_hash,
+      );
       if (!isPasswordValid) {
-        console.error(`❌ Password verification failed [${requestId}]: Password did not match for user ${user.id}`);
+        console.error(
+          `❌ Password verification failed [${requestId}]: Password did not match for user ${user.id}`,
+        );
         console.log(`🔍 Debug [${requestId}]: bcrypt.compare result = false`);
-        if (process.env.NODE_ENV === 'production') {
-          console.log(`🌐 Production login failed: Invalid password [${requestId}]`);
+        if (process.env.NODE_ENV === "production") {
+          console.log(
+            `🌐 Production login failed: Invalid password [${requestId}]`,
+          );
         }
         return res.status(401).json({
           success: false,
           message: "Invalid email or password",
-          requestId
+          requestId,
         });
       }
-      
+
       console.log(`✅ Password verified successfully [${requestId}]`);
       console.log(`🔍 Debug [${requestId}]: bcrypt.compare result = true`);
-      
+
       // Get JWT secret with graceful error handling
       let jwtSecret = process.env.JWT_SECRET;
       if (!jwtSecret) {
-        if (process.env.NODE_ENV === 'development') {
-          jwtSecret = 'development-fallback-secret-not-for-production';
-          console.warn(`⚠️ Using development fallback JWT secret [${requestId}]`);
+        if (process.env.NODE_ENV === "development") {
+          jwtSecret = "development-fallback-secret-not-for-production";
+          console.warn(
+            `⚠️ Using development fallback JWT secret [${requestId}]`,
+          );
         } else {
-          console.error(`❌ JWT_SECRET not configured for production [${requestId}]`);
+          console.error(
+            `❌ JWT_SECRET not configured for production [${requestId}]`,
+          );
           return res.status(500).json({
             success: false,
-            message: "JWT not configured"
+            message: "JWT not configured",
           });
         }
       }
-      
+
       // Generate JWT token
       const tokenPayload = {
         userId: user.id,
         email: user.email,
-        role: user.role
+        role: user.role,
       };
-      
-      const token = jwt.sign(tokenPayload, jwtSecret, { expiresIn: '7d' });
-      
+
+      const token = jwt.sign(tokenPayload, jwtSecret, { expiresIn: "7d" });
+
       console.log(`🔍 Debug [${requestId}]: JWT signed = true`);
-      
+
       console.log(`✅ JWT token generated successfully [${requestId}]:`, {
         userId: user.id,
         role: user.role,
-        expiresIn: '7d'
+        expiresIn: "7d",
       });
 
-      if (process.env.NODE_ENV === 'production') {
+      if (process.env.NODE_ENV === "production") {
         console.log(`🌐 Production login successful [${requestId}]:`, {
           userId: user.id,
           role: user.role,
-          jwtSigned: !!token
+          jwtSigned: !!token,
         });
       }
-      
+
       // Return successful login response
       res.json({
         success: true,
@@ -3433,197 +3772,235 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
           first_name: user.first_name,
           last_name: user.last_name,
           role: user.role,
-          company: user.company
+          company: user.company,
         },
-        authProvider: 'jwt',
-        requestId
+        authProvider: "jwt",
+        requestId,
       });
-      
     } catch (error: any) {
       const requestId = (req as any).requestId;
       console.error(`❌ Login error [${requestId}]:`, {
         error: error.message,
-        stack: error.stack?.split('\n')[0]
+        stack: error.stack?.split("\n")[0],
       });
-      
-      if (process.env.NODE_ENV === 'production') {
-        console.log(`🌐 Production login error [${requestId}]: ${error.message}`);
+
+      if (process.env.NODE_ENV === "production") {
+        console.log(
+          `🌐 Production login error [${requestId}]: ${error.message}`,
+        );
       }
-      
+
       return res.status(500).json({
         success: false,
         message: "Login failed due to server error",
-        requestId
+        requestId,
       });
     }
   });
 
   // Production signup route (without /api prefix)
-  app.post('/signup', authLimiter, async (req: Request, res: Response) => {
+  app.post("/signup", authLimiter, async (req: Request, res: Response) => {
     try {
-      const { email, username, password, first_name, last_name, role, company } = req.body;
+      const {
+        email,
+        username,
+        password,
+        first_name,
+        last_name,
+        role,
+        company,
+      } = req.body;
       const requestId = (req as any).requestId;
 
       // Debug: Log DATABASE_URL being used (mask password)
       const dbUrl = process.env.DATABASE_URL;
       if (dbUrl) {
-        const maskedDbUrl = dbUrl.replace(/:([^:]+)@/, ':***@');
-        console.log(`🗄️ Debug [${requestId}]: Using DATABASE_URL = ${maskedDbUrl}`);
+        const maskedDbUrl = dbUrl.replace(/:([^:]+)@/, ":***@");
+        console.log(
+          `🗄️ Debug [${requestId}]: Using DATABASE_URL = ${maskedDbUrl}`,
+        );
       } else {
         console.error(`❌ Debug [${requestId}]: DATABASE_URL not set!`);
       }
 
       // Debug: Log JWT_SECRET status
       const hasJwtSecret = !!process.env.JWT_SECRET;
-      console.log(`🔑 Debug [${requestId}]: JWT_SECRET loaded = ${hasJwtSecret}`);
+      console.log(
+        `🔑 Debug [${requestId}]: JWT_SECRET loaded = ${hasJwtSecret}`,
+      );
 
       // Production diagnostics logging
-      if (process.env.NODE_ENV === 'production') {
+      if (process.env.NODE_ENV === "production") {
         console.log(`🌐 Production signup attempt [${requestId}]:`, {
-          email: email ? '***@' + email.split('@')[1] : 'missing',
-          role: role || 'missing',
-          userAgent: req.get('User-Agent')?.substring(0, 50) + '...',
-          ip: req.ip
+          email: email ? "***@" + email.split("@")[1] : "missing",
+          role: role || "missing",
+          userAgent: req.get("User-Agent")?.substring(0, 50) + "...",
+          ip: req.ip,
         });
       }
 
       console.log(`🔍 Signup request received [${requestId}]:`, {
-        email: email ? '***@' + email.split('@')[1] : 'missing',
-        username: username || 'not provided',
-        first_name: first_name || 'missing',
-        last_name: last_name || 'missing',
-        role: role || 'missing',
-        company: company || 'not provided'
+        email: email ? "***@" + email.split("@")[1] : "missing",
+        username: username || "not provided",
+        first_name: first_name || "missing",
+        last_name: last_name || "missing",
+        role: role || "missing",
+        company: company || "not provided",
       });
 
       // Validate required fields
       if (!email || !password || !first_name || !last_name || !role) {
         const missingFields = [];
-        if (!email) missingFields.push('email');
-        if (!password) missingFields.push('password');
-        if (!first_name) missingFields.push('first_name');
-        if (!last_name) missingFields.push('last_name');
-        if (!role) missingFields.push('role');
-        
-        console.error(`❌ Signup validation failed [${requestId}]: Missing fields:`, missingFields);
-        
+        if (!email) missingFields.push("email");
+        if (!password) missingFields.push("password");
+        if (!first_name) missingFields.push("first_name");
+        if (!last_name) missingFields.push("last_name");
+        if (!role) missingFields.push("role");
+
+        console.error(
+          `❌ Signup validation failed [${requestId}]: Missing fields:`,
+          missingFields,
+        );
+
         return res.status(400).json({
           success: false,
-          message: `Missing required fields: ${missingFields.join(', ')}`,
-          requestId
+          message: `Missing required fields: ${missingFields.join(", ")}`,
+          requestId,
         });
       }
 
       // Validate email format
       if (!validateEmail(email)) {
-        console.error(`❌ Email validation failed [${requestId}]: Invalid format for email:`, email);
+        console.error(
+          `❌ Email validation failed [${requestId}]: Invalid format for email:`,
+          email,
+        );
         return res.status(400).json({
           success: false,
-          message: "Please enter a valid email address (e.g., name@example.com)",
-          requestId
+          message:
+            "Please enter a valid email address (e.g., name@example.com)",
+          requestId,
         });
       }
 
       // Validate password strength
       const passwordValidation = validatePasswordStrength(password);
       if (!passwordValidation.isValid) {
-        console.error(`❌ Password validation failed [${requestId}]:`, passwordValidation.errors);
+        console.error(
+          `❌ Password validation failed [${requestId}]:`,
+          passwordValidation.errors,
+        );
         return res.status(400).json({
           success: false,
-          message: passwordValidation.errors.join(', '),
-          requestId
+          message: passwordValidation.errors.join(", "),
+          requestId,
         });
       }
 
       // Check for existing user
-      const existingUserQuery = 'SELECT id, email, username FROM users WHERE email = $1 OR username = $2';
-      const existingUser = await query(existingUserQuery, [email, username || email]);
-      
+      const existingUserQuery =
+        "SELECT id, email, username FROM users WHERE email = $1 OR username = $2";
+      const existingUser = await query(existingUserQuery, [
+        email,
+        username || email,
+      ]);
+
       if (existingUser.rows.length > 0) {
         const existing = existingUser.rows[0];
         console.error(`❌ User already exists [${requestId}]:`, {
           existingEmail: existing.email,
           existingUsername: existing.username,
           attemptedEmail: email,
-          attemptedUsername: username || email
+          attemptedUsername: username || email,
         });
-        
+
         return res.status(409).json({
           success: false,
           message: "An account with this email or username already exists",
-          requestId
+          requestId,
         });
       }
 
       // Hash password (using bcrypt with 12 salt rounds)
       const passwordHash = await hashPassword(password);
-      
+
       console.log(`🔐 Password hashed successfully [${requestId}]`);
-      
+
       // Generate user ID
       const userId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
+
       // Insert user into database
       const insertUserQuery = `
         INSERT INTO users (id, email, username, "first_name", "last_name", "password_hash", company, role, "created_at", "updated_at")
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
         RETURNING id, email, username, "first_name", "last_name", role
       `;
-      
+
       console.log(`📝 Inserting user into database [${requestId}]:`, {
         userId,
         email,
-        username: username || email.split('@')[0],
+        username: username || email.split("@")[0],
         first_name,
         last_name,
         role,
-        company: company || null
+        company: company || null,
       });
-      
+
       const userResult = await query(insertUserQuery, [
         userId,
         email,
-        username || email.split('@')[0], // Use email prefix as username if not provided
+        username || email.split("@")[0], // Use email prefix as username if not provided
         first_name,
         last_name,
         passwordHash,
         company || null,
-        role
+        role,
       ]);
 
       const newUser = userResult.rows[0];
-      console.log(`🔍 Debug [${requestId}]: User inserted into database = true`);
+      console.log(
+        `🔍 Debug [${requestId}]: User inserted into database = true`,
+      );
 
       // If user is talent, create profile entry
-      if (role === 'talent') {
+      if (role === "talent") {
         const profileId = `prof_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         const insertProfileQuery = `
           INSERT INTO profiles (id, "user_id", "first_name", "last_name", location, languages, timezone, "created_at", "updated_at")
           VALUES ($1, $2, $3, $4, 'Global', ARRAY['English'], 'Asia/Manila', NOW(), NOW())
         `;
-        
+
         console.log(`👤 Creating talent profile [${requestId}]:`, {
           profileId,
           userId,
           first_name,
-          last_name
+          last_name,
         });
-        
-        await query(insertProfileQuery, [profileId, userId, first_name, last_name]);
+
+        await query(insertProfileQuery, [
+          profileId,
+          userId,
+          first_name,
+          last_name,
+        ]);
       }
 
       // Get JWT secret with graceful error handling
       let jwtSecret = process.env.JWT_SECRET;
       if (!jwtSecret) {
-        if (process.env.NODE_ENV === 'development') {
-          jwtSecret = 'development-fallback-secret-not-for-production';
-          console.warn(`⚠️ Using development fallback JWT secret [${requestId}]`);
+        if (process.env.NODE_ENV === "development") {
+          jwtSecret = "development-fallback-secret-not-for-production";
+          console.warn(
+            `⚠️ Using development fallback JWT secret [${requestId}]`,
+          );
         } else {
-          console.error(`❌ JWT_SECRET not configured for production [${requestId}]`);
+          console.error(
+            `❌ JWT_SECRET not configured for production [${requestId}]`,
+          );
           return res.status(500).json({
             success: false,
             message: "Server configuration error - authentication unavailable",
-            requestId
+            requestId,
           });
         }
       }
@@ -3632,26 +4009,26 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
       const tokenPayload = {
         userId: newUser.id,
         email: newUser.email,
-        role: newUser.role
+        role: newUser.role,
       };
-      
-      const token = jwt.sign(tokenPayload, jwtSecret, { expiresIn: '7d' });
-      
+
+      const token = jwt.sign(tokenPayload, jwtSecret, { expiresIn: "7d" });
+
       console.log(`✅ User signup completed successfully [${requestId}]:`, {
         userId: newUser.id,
         email: newUser.email,
         role: newUser.role,
-        hasProfile: role === 'talent'
+        hasProfile: role === "talent",
       });
 
-      if (process.env.NODE_ENV === 'production') {
+      if (process.env.NODE_ENV === "production") {
         console.log(`🌐 Production signup successful [${requestId}]:`, {
           userId: newUser.id,
           role: newUser.role,
-          jwtSigned: !!token
+          jwtSigned: !!token,
         });
       }
-      
+
       res.status(201).json({
         success: true,
         message: "Account created successfully",
@@ -3662,27 +4039,28 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
           username: newUser.username,
           first_name: newUser.first_name,
           last_name: newUser.last_name,
-          role: newUser.role
+          role: newUser.role,
         },
-        authProvider: 'jwt',
-        requestId
+        authProvider: "jwt",
+        requestId,
       });
-      
     } catch (error: any) {
       const requestId = (req as any).requestId;
       console.error(`❌ Signup error [${requestId}]:`, {
         error: error.message,
-        stack: error.stack?.split('\n')[0]
+        stack: error.stack?.split("\n")[0],
       });
-      
-      if (process.env.NODE_ENV === 'production') {
-        console.log(`🌐 Production signup error [${requestId}]: ${error.message}`);
+
+      if (process.env.NODE_ENV === "production") {
+        console.log(
+          `🌐 Production signup error [${requestId}]: ${error.message}`,
+        );
       }
-      
+
       return res.status(500).json({
         success: false,
         message: "Signup failed due to server error",
-        requestId
+        requestId,
       });
     }
   });
@@ -3693,8 +4071,11 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
 
 // Helper function for resume parsing
 function parseResumeText(resumeText: string): any {
-  const lines = resumeText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-  
+  const lines = resumeText
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
   const parsedData = {
     personalInfo: {
       firstName: "",
@@ -3702,7 +4083,7 @@ function parseResumeText(resumeText: string): any {
       email: "",
       phone: "",
       title: "",
-      location: ""
+      location: "",
     },
     summary: "",
     skills: [] as string[],
@@ -3721,7 +4102,7 @@ function parseResumeText(resumeText: string): any {
       name: string;
       issuer: string;
       year: string;
-    }>
+    }>,
   };
 
   let currentSection = "";
@@ -3732,18 +4113,25 @@ function parseResumeText(resumeText: string): any {
     const upperLine = line.toUpperCase();
 
     // Extract name (usually first non-empty line)
-    if (!nameFound && line.length > 2 && !line.includes('@') && !line.includes('http')) {
-      const nameParts = line.split(' ').filter(part => part.length > 1);
+    if (
+      !nameFound &&
+      line.length > 2 &&
+      !line.includes("@") &&
+      !line.includes("http")
+    ) {
+      const nameParts = line.split(" ").filter((part) => part.length > 1);
       if (nameParts.length >= 2) {
         parsedData.personalInfo.firstName = nameParts[0];
-        parsedData.personalInfo.lastName = nameParts.slice(1).join(' ');
+        parsedData.personalInfo.lastName = nameParts.slice(1).join(" ");
         nameFound = true;
         continue;
       }
     }
 
     // Extract email
-    const emailMatch = line.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+    const emailMatch = line.match(
+      /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/,
+    );
     if (emailMatch) {
       parsedData.personalInfo.email = emailMatch[0];
       continue;
@@ -3757,33 +4145,48 @@ function parseResumeText(resumeText: string): any {
     }
 
     // Detect sections
-    if (upperLine.includes('EXPERIENCE') || upperLine.includes('WORK') || upperLine.includes('EMPLOYMENT')) {
+    if (
+      upperLine.includes("EXPERIENCE") ||
+      upperLine.includes("WORK") ||
+      upperLine.includes("EMPLOYMENT")
+    ) {
       currentSection = "experience";
       continue;
     }
-    if (upperLine.includes('EDUCATION') || upperLine.includes('ACADEMIC')) {
+    if (upperLine.includes("EDUCATION") || upperLine.includes("ACADEMIC")) {
       currentSection = "education";
       continue;
     }
-    if (upperLine.includes('SKILL') || upperLine.includes('TECHNICAL')) {
+    if (upperLine.includes("SKILL") || upperLine.includes("TECHNICAL")) {
       currentSection = "skills";
       continue;
     }
-    if (upperLine.includes('CERTIFICATION') || upperLine.includes('CERTIFICATE')) {
+    if (
+      upperLine.includes("CERTIFICATION") ||
+      upperLine.includes("CERTIFICATE")
+    ) {
       currentSection = "certifications";
       continue;
     }
-    if (upperLine.includes('SUMMARY') || upperLine.includes('PROFILE') || upperLine.includes('OBJECTIVE')) {
+    if (
+      upperLine.includes("SUMMARY") ||
+      upperLine.includes("PROFILE") ||
+      upperLine.includes("OBJECTIVE")
+    ) {
       currentSection = "summary";
       continue;
     }
 
     // Extract title (look for common professional titles)
-    if (!parsedData.personalInfo.title && (
-      upperLine.includes('DEVELOPER') || upperLine.includes('ENGINEER') || 
-      upperLine.includes('MANAGER') || upperLine.includes('ANALYST') ||
-      upperLine.includes('DESIGNER') || upperLine.includes('CONSULTANT')
-    )) {
+    if (
+      !parsedData.personalInfo.title &&
+      (upperLine.includes("DEVELOPER") ||
+        upperLine.includes("ENGINEER") ||
+        upperLine.includes("MANAGER") ||
+        upperLine.includes("ANALYST") ||
+        upperLine.includes("DESIGNER") ||
+        upperLine.includes("CONSULTANT"))
+    ) {
       parsedData.personalInfo.title = line;
       continue;
     }
@@ -3791,18 +4194,25 @@ function parseResumeText(resumeText: string): any {
     // Process content based on current section
     if (currentSection === "skills" && line.length > 2) {
       // Split skills by common delimiters
-      const skillsInLine = line.split(/[,•·|]/).map(s => s.trim()).filter(s => s.length > 1);
+      const skillsInLine = line
+        .split(/[,•·|]/)
+        .map((s) => s.trim())
+        .filter((s) => s.length > 1);
       parsedData.skills.push(...skillsInLine);
     } else if (currentSection === "summary" && line.length > 10) {
       parsedData.summary += (parsedData.summary ? " " : "") + line;
     } else if (currentSection === "experience" && line.length > 3) {
       // Simple experience parsing - look for job titles and companies
-      if (upperLine.includes('DEVELOPER') || upperLine.includes('ENGINEER') || upperLine.includes('MANAGER')) {
+      if (
+        upperLine.includes("DEVELOPER") ||
+        upperLine.includes("ENGINEER") ||
+        upperLine.includes("MANAGER")
+      ) {
         parsedData.experience.push({
           title: line,
           company: "",
           duration: "",
-          description: ""
+          description: "",
         });
       }
     }
@@ -3810,7 +4220,7 @@ function parseResumeText(resumeText: string): any {
 
   // Clean up and deduplicate skills
   parsedData.skills = Array.from(new Set(parsedData.skills))
-    .filter(skill => skill.length > 1 && skill.length < 30)
+    .filter((skill) => skill.length > 1 && skill.length < 30)
     .slice(0, 20); // Limit to 20 skills
 
   return parsedData;
