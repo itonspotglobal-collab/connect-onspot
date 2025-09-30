@@ -11,6 +11,8 @@ import Papa from "papaparse";
 import jwt from "jsonwebtoken";
 import { query, db } from './db.ts';
 import { eq } from 'drizzle-orm';
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import {
   insertUserSchema, insertProfileSchema, insertSkillSchema, insertUserSkillSchema, profiles,
   insertJobSchema, insertJobSkillSchema, insertProposalSchema, insertContractSchema,
@@ -952,39 +954,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // POST /api/object-storage/upload-url - Generate presigned S3 URL for file uploads
-  app.post('/api/object-storage/upload-url', authenticateJWT, async (req: any, res) => {
+  app.post("/api/object-storage/upload-url", authenticateJWT, async (req: any, res) => {
     try {
       const { fileName, contentType } = req.body;
-      
+
       console.log(`📤 Upload URL request [${req.requestId}]:`, { fileName, contentType });
-      
+
       // Validate required parameters
       if (!fileName || !contentType) {
-        console.error(`❌ Missing parameters [${req.requestId}]:`, { fileName: !!fileName, contentType: !!contentType });
-        return res.status(400).json({ error: 'fileName and contentType required' });
+        console.error(`❌ Missing parameters [${req.requestId}]:`, { fileName, contentType });
+        return res.status(400).json({ error: "fileName and contentType required" });
       }
 
-      // Check if AWS credentials are configured
       const awsRegion = process.env.AWS_REGION;
       const awsBucket = process.env.AWS_BUCKET_NAME;
       const awsAccessKeyId = process.env.AWS_ACCESS_KEY_ID;
       const awsSecretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
 
       if (!awsRegion || !awsBucket || !awsAccessKeyId || !awsSecretAccessKey) {
-        console.error(`❌ S3 not configured [${req.requestId}]:`, { 
-          hasRegion: !!awsRegion, 
-          hasBucket: !!awsBucket, 
-          hasAccessKey: !!awsAccessKeyId, 
-          hasSecretKey: !!awsSecretAccessKey 
-        });
-        return res.status(500).json({ error: 'S3 not configured' });
+        console.error(`❌ S3 not configured [${req.requestId}]`);
+        return res.status(500).json({ error: "S3 not configured" });
       }
 
-      // Import AWS SDK modules
-      const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3');
-      const { getSignedUrl } = await import('@aws-sdk/s3-request-presigner');
-
-      // Initialize S3 client
+      // Create S3 client
       const s3Client = new S3Client({
         region: awsRegion,
         credentials: {
@@ -993,45 +985,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       });
 
-      // Generate unique key with timestamp prefix
+      // Generate unique key
       const timestamp = Date.now();
       const key = `uploads/${timestamp}-${fileName}`;
 
-      // Create command for presigned URL
+      // Create signed URL
       const command = new PutObjectCommand({
         Bucket: awsBucket,
         Key: key,
         ContentType: contentType,
       });
 
-      // Generate presigned URL (expires in 5 minutes)
-      const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+      const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 60 }); // 1 min expiration
 
-      // Construct permanent file URL
-      const fileUrl = `https://${awsBucket}.s3.${awsRegion}.amazonaws.com/${key}`;
-
+      // Response format required by ObjectUploader.tsx
       const response = {
         url: signedUrl,
-        method: 'PUT' as const,
-        headers: {
-          'Content-Type': contentType
-        },
-        fileUrl
+        method: "PUT",
+        headers: { "Content-Type": contentType },
+        fileUrl: `https://${awsBucket}.s3.${awsRegion}.amazonaws.com/${key}`,
       };
 
-      console.log(`✅ S3 upload URL generated [${req.requestId}]:`, { 
-        bucket: awsBucket,
-        key, 
-        region: awsRegion
-      });
-
+      console.log(`✅ Signed URL generated [${req.requestId}]:`, { key });
       res.json(response);
     } catch (error: any) {
       console.error(`❌ S3 upload URL generation failed [${req.requestId}]:`, {
         error: error.message,
-        stack: error.stack
+        stack: error.stack,
       });
-      res.status(500).json({ error: 'Failed to generate upload URL' });
+      res.status(500).json({ error: "Failed to generate upload URL" });
     }
   });
 
