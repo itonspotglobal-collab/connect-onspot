@@ -7,10 +7,6 @@ import { authAPI } from "@/lib/api";
 interface ObjectUploaderProps {
   maxNumberOfFiles?: number;
   maxFileSize?: number;
-  onGetUploadParameters: () => Promise<{
-    method: "POST" | "PUT";
-    url: string;
-  }>;
   onComplete?: (result: any) => void;
   buttonClassName?: string;
   children: ReactNode;
@@ -20,8 +16,7 @@ interface ObjectUploaderProps {
 
 export function ObjectUploader({
   maxNumberOfFiles = 1,
-  maxFileSize = 10485760, // 10MB
-  onGetUploadParameters,
+  maxFileSize = 10485760, // 10MB default
   onComplete,
   buttonClassName,
   children,
@@ -37,22 +32,16 @@ export function ObjectUploader({
   };
 
   const handleFileSelection = async (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
     const file = files[0];
-    console.log("📁 File selected:", file.name, file.size);
-
     if (file.size > maxFileSize) {
       toast({
         title: "File Too Large",
-        description: `File size (${Math.round(
-          file.size / 1024 / 1024
-        )}MB) exceeds the max allowed size (${Math.round(
-          maxFileSize / 1024 / 1024
-        )}MB).`,
+        description: `Max allowed size is ${Math.round(maxFileSize / 1024 / 1024)}MB.`,
         variant: "destructive",
       });
       return;
@@ -61,53 +50,34 @@ export function ObjectUploader({
     setIsUploading(true);
 
     try {
-      console.log("🔗 Requesting upload parameters...");
-      const uploadParams = await onGetUploadParameters();
-
-      // Ask backend for signed URL
-      const response = await authAPI.post(uploadParams.url, {
+      // 1️⃣ Ask backend for a signed upload URL
+      const response = await authAPI.post("/api/object-storage/upload-url", {
         fileName: file.name,
         contentType: file.type,
       });
 
-      if (!response?.data) {
-        throw new Error("Invalid response from upload URL endpoint");
+      if (!response?.data?.url) {
+        throw new Error("Upload URL not received from server");
       }
 
-      // ✅ Flexible mapping for different response shapes
-      const uploadUrl =
-        response.data.url || response.data.uploadUrl || response.data.signedUrl;
-      const method = response.data.method || "PUT";
-      const fileUrl = response.data.fileUrl || uploadUrl; // permanent URL if backend provides it
-      const extraHeaders = response.data.headers || {};
+      const { url, method, headers, fileUrl } = response.data;
 
-      if (!uploadUrl) {
-        throw new Error("Upload URL not returned by server");
-      }
-
-      console.log("✅ Got signed upload URL:", uploadUrl);
-
-      // Upload to object storage
-      const uploadResponse = await fetch(uploadUrl, {
-        method,
-        headers: {
-          "Content-Type": file.type,
-          ...extraHeaders,
-        },
+      // 2️⃣ Upload the file to signed URL
+      const uploadRes = await fetch(url, {
+        method: method || "PUT",
+        headers: { ...(headers || {}), "Content-Type": file.type },
         body: file,
       });
 
-      if (!uploadResponse.ok) {
-        throw new Error(`Upload failed: ${uploadResponse.statusText}`);
+      if (!uploadRes.ok) {
+        throw new Error(`Upload failed: ${uploadRes.statusText}`);
       }
 
-      console.log("🎉 File uploaded successfully!");
-
-      // Optional: import talent profile data from file
+      // 3️⃣ If enabled, trigger talent import
       let importResult = null;
       if (enableTalentImport) {
         try {
-          let fileContentToSend: string | undefined = undefined;
+          let fileContentToSend;
           if (file.name.toLowerCase().endsWith(".csv")) {
             fileContentToSend = await file.text();
           }
@@ -123,52 +93,45 @@ export function ObjectUploader({
 
           if (importResult.success) {
             toast({
-              title: importResult.requiresManualUpdate
-                ? "Resume Uploaded"
-                : "Profile Updated",
+              title: "Resume Imported",
               description:
-                importResult.message ||
-                "Your profile has been updated from the uploaded file.",
+                importResult.message || "Talent profile updated successfully.",
             });
+          } else {
+            throw new Error(importResult.error || "Import failed");
           }
-        } catch (importError: any) {
-          console.error("❌ Talent import failed:", importError);
+        } catch (err: any) {
           toast({
             title: "Import Failed",
-            description:
-              importError.response?.data?.error ||
-              "File uploaded but profile import failed. Please update manually.",
+            description: err.message || "Resume uploaded but import failed.",
             variant: "destructive",
           });
         }
       } else {
         toast({
           title: "Upload Successful",
-          description: `${file.name} uploaded successfully.`,
+          description: `${file.name} has been uploaded.`,
         });
       }
 
-      if (onComplete) {
-        await onComplete({
-          successful: [
-            {
-              name: file.name,
-              type: file.type,
-              size: file.size,
-              uploadURL: fileUrl,
-            },
-          ],
-          failed: [],
-          importResult,
-        });
-      }
-    } catch (error: any) {
-      console.error("❌ Upload failed:", error);
+      // 4️⃣ Notify parent
+      onComplete?.({
+        successful: [
+          {
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            uploadURL: fileUrl,
+          },
+        ],
+        failed: [],
+        importResult,
+      });
+    } catch (err: any) {
+      console.error("❌ Upload failed:", err);
       toast({
         title: "Upload Failed",
-        description:
-          error?.message ||
-          "Failed to upload file. Please check server response and try again.",
+        description: err.message || "Server error while uploading file.",
         variant: "destructive",
       });
     } finally {
@@ -185,7 +148,7 @@ export function ObjectUploader({
         style={{ display: "none" }}
         onChange={handleFileSelection}
         multiple={maxNumberOfFiles > 1}
-        accept=".pdf,.doc,.docx,.csv,.mp4,.mov,.avi,.webm"
+        accept=".pdf,.doc,.docx,.csv"
       />
 
       <Button
