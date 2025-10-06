@@ -1,0 +1,55 @@
+Enhance the existing Value Calculator component — without changing its current UI design or layout — by improving its functionality and adding more detailed input fields to better match the OnSpot Value Calculator at https://www.onspotglobal.com/value-calculator.
+
+🧩 Requirements:
+1. **Do NOT alter design or structure**
+   - Keep all existing components, cards, grids, typography, colors, and icons.
+   - Maintain responsiveness and overall styling.
+
+2. **Add more input fields** to improve geographic and operational accuracy:
+   - Country → State → City dropdowns (cascading)
+   - Auto-fill and editable minimum wage per city
+   - Editable fields for:
+     - Average working hours per week
+     - Annual work weeks (default 52)
+     - Benefits cost percentage
+     - Overhead cost percentage
+     - Productivity gain percentage (slider)
+     - Management fee per seat (monthly)
+     - Attrition rate percentage (optional future cost)
+     - Expected annual growth rate
+   - Allow users to add multiple job roles and headcounts dynamically (with “Add Role” and “Remove” buttons).
+
+3. **Backend-calculation parity**
+   - Use the new inputs to calculate:
+     - In-house cost per seat = (hourly rate × weekly hours × annual weeks) × (1 + (benefits + overhead)/100)
+     - Total in-house cost = cost per seat × team size
+     - OnSpot cost per seat = OnSpot base rate + (management fee × 12)
+     - Annual savings = in-house cost − OnSpot cost
+     - ROI = (savings ÷ OnSpot cost) × 100
+     - Total value = savings + (productivity + scalability + risk reduction)
+     - Multi-month projection based on growth rate
+
+4. **Improved logic**
+   - When a user selects a country, filter available states.
+   - When a state is selected, show relevant cities.
+   - Auto-update wage and calculations when city changes.
+   - All fields remain editable for flexibility.
+
+5. **Add input validation & recalculation**
+   - Use controlled components for all new inputs.
+   - Ensure all numeric values are clamped to non-negative numbers.
+   - Recalculate in real-time on every change.
+
+6. **Keep results identical in layout**
+   - Update only the calculation logic to reflect new variables.
+   - Maintain output cards: Savings, ROI, Value Beyond Savings, Projection.
+
+7. **Deliverables**
+   - Provide the full updated `ValueCalculator.tsx` file.
+   - Code must be TypeScript-safe and compatible with shadcn/ui.
+   - Ensure all icons, cards, and sliders work as before.
+   - Include default fallback values for new inputs.
+
+🎯 Goal:
+Enhance the Value Calculator’s accuracy and flexibility so it behaves like OnSpot’s public calculator, supporting detailed per-location and per-role customization — while preserving the exact design.
+
