@@ -1136,17 +1136,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Use Replit Object Storage
         const objectStorageService = new ObjectStorageService();
-        const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+        const { uploadUrl, objectPath } = await objectStorageService.getObjectEntityUploadURL();
 
         // Response format required by ObjectUploader.tsx
         const response = {
-          url: uploadURL,
+          url: uploadUrl,
           method: "PUT",
           headers: { "Content-Type": contentType },
-          fileUrl: uploadURL,
+          fileUrl: objectPath, // Return the permanent path, not the temporary signed URL
         };
 
-        console.log(`✅ Signed URL generated [${req.requestId}]`);
+        console.log(`✅ Signed URL generated [${req.requestId}]:`, { objectPath });
         res.json(response);
       } catch (error: any) {
         console.error(
@@ -1161,38 +1161,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  // SECURITY FIX: Protected Object Storage Direct Upload Handler
-  app.put("/api/objects/*", authenticateJWT, (req: any, res) => {
+  // Object Storage File Retrieval with ACL
+  app.get("/api/objects/:objectPath(*)", authenticateJWT, async (req: any, res) => {
+    const userId = req.user?.id || req.user?.claims?.sub;
+    const objectStorageService = new ObjectStorageService();
     try {
-      // For demo purposes, simulate successful upload
-      // In production, this would be handled by actual object storage
-      const filePath = req.params[0];
-      const fileUrl = `${process.env.PUBLIC_BASE_URL}/api/objects/${filePath}`;
-
-      console.log("✅ Authenticated file upload:", {
-        userId: (req.user as any)?.user?.id || (req.user as any)?.claims?.sub,
-        filePath,
+      // Get the path parameter (e.g., "uploads/123")
+      let objectPath = req.params.objectPath;
+      
+      // Normalize to canonical path format: /objects/{path}
+      // Handle case where path might already have "objects/" prefix
+      if (objectPath.startsWith("objects/")) {
+        objectPath = objectPath.substring(8); // Remove "objects/" prefix
+      }
+      const canonicalPath = `/objects/${objectPath}`;
+      
+      console.log(`📁 File retrieval request [${req.requestId}]:`, { rawPath: req.params.objectPath, canonicalPath });
+      
+      const objectFile = await objectStorageService.getObjectEntityFile(canonicalPath);
+      const canAccess = await objectStorageService.canAccessObjectEntity({
+        objectFile,
+        userId: userId,
+        requestedPermission: undefined, // defaults to READ
       });
-
-      res.json({
-        success: true,
-        fileUrl,
-        message: "File uploaded successfully",
-      });
+      if (!canAccess) {
+        console.log(`❌ Access denied [${req.requestId}]:`, { userId, path: canonicalPath });
+        return res.sendStatus(401);
+      }
+      console.log(`✅ File access granted [${req.requestId}]:`, { userId, path: canonicalPath });
+      await objectStorageService.downloadObject(objectFile, res);
     } catch (error) {
-      console.error("Object upload error:", error);
-      res.status(500).json({ error: "Upload failed" });
+      console.error(`❌ Object retrieval error [${req.requestId}]:`, error);
+      if ((error as any).name === "ObjectNotFoundError") {
+        return res.sendStatus(404);
+      }
+      return res.sendStatus(500);
     }
-  });
-
-  // Object Storage File Retrieval
-  app.get("/api/objects/*", (req, res) => {
-    // For demo, return a placeholder response
-    // In production, this would serve the actual file from object storage
-    res.status(200).json({
-      message: "File access simulated",
-      path: (req.params as any)[0],
-    });
   });
 
   // POST /api/talent/import - Talent Import from Resume/CSV
