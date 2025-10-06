@@ -40,48 +40,96 @@ type LocationData = {
 
 const locationData: LocationData = {
   "United States": {
-    "California": {
-      cities: ["San Francisco", "Los Angeles", "San Diego", "Sacramento"],
-      minWages: { "San Francisco": 18.07, "Los Angeles": 16.78, "San Diego": 16.30, "Sacramento": 16.50 }
-    },
-    "New York": {
-      cities: ["New York City", "Buffalo", "Albany", "Rochester"],
-      minWages: { "New York City": 16.00, "Buffalo": 15.00, "Albany": 15.00, "Rochester": 15.00 }
-    },
-    "Texas": {
-      cities: ["Austin", "Houston", "Dallas", "San Antonio"],
-      minWages: { "Austin": 7.25, "Houston": 7.25, "Dallas": 7.25, "San Antonio": 7.25 }
-    },
-    "Florida": {
-      cities: ["Miami", "Orlando", "Tampa", "Jacksonville"],
-      minWages: { "Miami": 12.00, "Orlando": 12.00, "Tampa": 12.00, "Jacksonville": 12.00 }
-    }
+    "Alabama": { cities: ["Birmingham", "Montgomery", "Mobile", "Huntsville"], minWages: { "Birmingham": 7.25, "Montgomery": 7.25, "Mobile": 7.25, "Huntsville": 7.25 } },
+    "Alaska": { cities: ["Anchorage", "Fairbanks", "Juneau"], minWages: { "Anchorage": 11.73, "Fairbanks": 11.73, "Juneau": 11.73 } },
+    "Arizona": { cities: ["Phoenix", "Tucson", "Mesa", "Chandler", "Scottsdale"], minWages: { "Phoenix": 14.35, "Tucson": 14.35, "Mesa": 14.35, "Chandler": 14.35, "Scottsdale": 14.35 } },
+    "Arkansas": { cities: ["Little Rock", "Fort Smith", "Fayetteville", "Springdale"], minWages: { "Little Rock": 11.00, "Fort Smith": 11.00, "Fayetteville": 11.00, "Springdale": 11.00 } },
+    "California": { cities: ["Los Angeles", "San Diego", "San Jose", "San Francisco", "Fresno", "Sacramento"], minWages: { "Los Angeles": 16.78, "San Diego": 16.30, "San Jose": 17.55, "San Francisco": 18.07, "Fresno": 16.00, "Sacramento": 16.50 } },
+    "Colorado": { cities: ["Denver", "Colorado Springs", "Aurora", "Fort Collins"], minWages: { "Denver": 18.29, "Colorado Springs": 14.42, "Aurora": 14.42, "Fort Collins": 14.42 } },
+    "Connecticut": { cities: ["Bridgeport", "New Haven", "Hartford", "Stamford"], minWages: { "Bridgeport": 15.69, "New Haven": 15.69, "Hartford": 15.69, "Stamford": 15.69 } },
+    "Delaware": { cities: ["Wilmington", "Dover", "Newark"], minWages: { "Wilmington": 13.25, "Dover": 13.25, "Newark": 13.25 } },
+    "Florida": { cities: ["Jacksonville", "Miami", "Tampa", "Orlando", "Fort Lauderdale"], minWages: { "Jacksonville": 12.00, "Miami": 12.00, "Tampa": 12.00, "Orlando": 12.00, "Fort Lauderdale": 12.00 } },
+    "Georgia": { cities: ["Atlanta", "Columbus", "Augusta", "Savannah", "Athens"], minWages: { "Atlanta": 7.25, "Columbus": 7.25, "Augusta": 7.25, "Savannah": 7.25, "Athens": 7.25 } },
+    "Hawaii": { cities: ["Honolulu", "Pearl City", "Hilo", "Kailua"], minWages: { "Honolulu": 14.00, "Pearl City": 14.00, "Hilo": 14.00, "Kailua": 14.00 } },
+    "Idaho": { cities: ["Boise", "Meridian", "Nampa", "Idaho Falls"], minWages: { "Boise": 7.25, "Meridian": 7.25, "Nampa": 7.25, "Idaho Falls": 7.25 } },
+    "Illinois": { cities: ["Chicago", "Aurora", "Naperville", "Joliet", "Rockford"], minWages: { "Chicago": 15.80, "Aurora": 14.00, "Naperville": 14.00, "Joliet": 14.00, "Rockford": 14.00 } },
+    "Indiana": { cities: ["Indianapolis", "Fort Wayne", "Evansville", "South Bend"], minWages: { "Indianapolis": 7.25, "Fort Wayne": 7.25, "Evansville": 7.25, "South Bend": 7.25 } },
+    "Iowa": { cities: ["Des Moines", "Cedar Rapids", "Davenport", "Sioux City"], minWages: { "Des Moines": 7.25, "Cedar Rapids": 7.25, "Davenport": 7.25, "Sioux City": 7.25 } },
+    "Kansas": { cities: ["Wichita", "Overland Park", "Kansas City", "Topeka"], minWages: { "Wichita": 7.25, "Overland Park": 7.25, "Kansas City": 7.25, "Topeka": 7.25 } },
+    "Kentucky": { cities: ["Louisville", "Lexington", "Bowling Green", "Owensboro"], minWages: { "Louisville": 7.25, "Lexington": 7.25, "Bowling Green": 7.25, "Owensboro": 7.25 } },
+    "Louisiana": { cities: ["New Orleans", "Baton Rouge", "Shreveport", "Lafayette"], minWages: { "New Orleans": 7.25, "Baton Rouge": 7.25, "Shreveport": 7.25, "Lafayette": 7.25 } },
+    "Maine": { cities: ["Portland", "Lewiston", "Bangor", "South Portland"], minWages: { "Portland": 14.15, "Lewiston": 14.15, "Bangor": 14.15, "South Portland": 14.15 } },
+    "Maryland": { cities: ["Baltimore", "Columbia", "Germantown", "Silver Spring"], minWages: { "Baltimore": 15.00, "Columbia": 15.00, "Germantown": 15.00, "Silver Spring": 15.00 } },
+    "Massachusetts": { cities: ["Boston", "Worcester", "Springfield", "Cambridge", "Lowell"], minWages: { "Boston": 15.00, "Worcester": 15.00, "Springfield": 15.00, "Cambridge": 15.00, "Lowell": 15.00 } },
+    "Michigan": { cities: ["Detroit", "Grand Rapids", "Warren", "Sterling Heights", "Ann Arbor"], minWages: { "Detroit": 10.33, "Grand Rapids": 10.33, "Warren": 10.33, "Sterling Heights": 10.33, "Ann Arbor": 10.33 } },
+    "Minnesota": { cities: ["Minneapolis", "St. Paul", "Rochester", "Duluth", "Bloomington"], minWages: { "Minneapolis": 15.57, "St. Paul": 15.57, "Rochester": 10.85, "Duluth": 10.85, "Bloomington": 10.85 } },
+    "Mississippi": { cities: ["Jackson", "Gulfport", "Southaven", "Hattiesburg"], minWages: { "Jackson": 7.25, "Gulfport": 7.25, "Southaven": 7.25, "Hattiesburg": 7.25 } },
+    "Missouri": { cities: ["Kansas City", "St. Louis", "Springfield", "Columbia"], minWages: { "Kansas City": 12.30, "St. Louis": 12.30, "Springfield": 12.30, "Columbia": 12.30 } },
+    "Montana": { cities: ["Billings", "Missoula", "Great Falls", "Bozeman"], minWages: { "Billings": 10.30, "Missoula": 10.30, "Great Falls": 10.30, "Bozeman": 10.30 } },
+    "Nebraska": { cities: ["Omaha", "Lincoln", "Bellevue", "Grand Island"], minWages: { "Omaha": 12.00, "Lincoln": 12.00, "Bellevue": 12.00, "Grand Island": 12.00 } },
+    "Nevada": { cities: ["Las Vegas", "Henderson", "Reno", "North Las Vegas"], minWages: { "Las Vegas": 12.00, "Henderson": 12.00, "Reno": 12.00, "North Las Vegas": 12.00 } },
+    "New Hampshire": { cities: ["Manchester", "Nashua", "Concord", "Derry"], minWages: { "Manchester": 7.25, "Nashua": 7.25, "Concord": 7.25, "Derry": 7.25 } },
+    "New Jersey": { cities: ["Newark", "Jersey City", "Paterson", "Elizabeth", "Edison"], minWages: { "Newark": 15.13, "Jersey City": 15.13, "Paterson": 15.13, "Elizabeth": 15.13, "Edison": 15.13 } },
+    "New Mexico": { cities: ["Albuquerque", "Las Cruces", "Rio Rancho", "Santa Fe"], minWages: { "Albuquerque": 12.00, "Las Cruces": 12.00, "Rio Rancho": 12.00, "Santa Fe": 12.00 } },
+    "New York": { cities: ["New York City", "Buffalo", "Rochester", "Syracuse", "Albany"], minWages: { "New York City": 16.50, "Buffalo": 15.00, "Rochester": 15.00, "Syracuse": 15.00, "Albany": 15.00 } },
+    "North Carolina": { cities: ["Charlotte", "Raleigh", "Greensboro", "Durham", "Winston-Salem"], minWages: { "Charlotte": 7.25, "Raleigh": 7.25, "Greensboro": 7.25, "Durham": 7.25, "Winston-Salem": 7.25 } },
+    "North Dakota": { cities: ["Fargo", "Bismarck", "Grand Forks", "Minot"], minWages: { "Fargo": 7.25, "Bismarck": 7.25, "Grand Forks": 7.25, "Minot": 7.25 } },
+    "Ohio": { cities: ["Columbus", "Cleveland", "Cincinnati", "Toledo", "Akron"], minWages: { "Columbus": 10.45, "Cleveland": 10.45, "Cincinnati": 10.45, "Toledo": 10.45, "Akron": 10.45 } },
+    "Oklahoma": { cities: ["Oklahoma City", "Tulsa", "Norman", "Broken Arrow"], minWages: { "Oklahoma City": 7.25, "Tulsa": 7.25, "Norman": 7.25, "Broken Arrow": 7.25 } },
+    "Oregon": { cities: ["Portland", "Eugene", "Salem", "Gresham", "Hillsboro"], minWages: { "Portland": 15.45, "Eugene": 14.20, "Salem": 14.20, "Gresham": 15.45, "Hillsboro": 15.45 } },
+    "Pennsylvania": { cities: ["Philadelphia", "Pittsburgh", "Allentown", "Erie", "Reading"], minWages: { "Philadelphia": 7.25, "Pittsburgh": 7.25, "Allentown": 7.25, "Erie": 7.25, "Reading": 7.25 } },
+    "Rhode Island": { cities: ["Providence", "Warwick", "Cranston", "Pawtucket"], minWages: { "Providence": 14.00, "Warwick": 14.00, "Cranston": 14.00, "Pawtucket": 14.00 } },
+    "South Carolina": { cities: ["Charleston", "Columbia", "North Charleston", "Mount Pleasant"], minWages: { "Charleston": 7.25, "Columbia": 7.25, "North Charleston": 7.25, "Mount Pleasant": 7.25 } },
+    "South Dakota": { cities: ["Sioux Falls", "Rapid City", "Aberdeen", "Brookings"], minWages: { "Sioux Falls": 11.20, "Rapid City": 11.20, "Aberdeen": 11.20, "Brookings": 11.20 } },
+    "Tennessee": { cities: ["Nashville", "Memphis", "Knoxville", "Chattanooga", "Clarksville"], minWages: { "Nashville": 7.25, "Memphis": 7.25, "Knoxville": 7.25, "Chattanooga": 7.25, "Clarksville": 7.25 } },
+    "Texas": { cities: ["Houston", "San Antonio", "Dallas", "Austin", "Fort Worth", "El Paso"], minWages: { "Houston": 7.25, "San Antonio": 7.25, "Dallas": 7.25, "Austin": 7.25, "Fort Worth": 7.25, "El Paso": 7.25 } },
+    "Utah": { cities: ["Salt Lake City", "West Valley City", "Provo", "West Jordan"], minWages: { "Salt Lake City": 7.25, "West Valley City": 7.25, "Provo": 7.25, "West Jordan": 7.25 } },
+    "Vermont": { cities: ["Burlington", "South Burlington", "Rutland", "Barre"], minWages: { "Burlington": 13.67, "South Burlington": 13.67, "Rutland": 13.67, "Barre": 13.67 } },
+    "Virginia": { cities: ["Virginia Beach", "Norfolk", "Chesapeake", "Richmond", "Arlington"], minWages: { "Virginia Beach": 12.00, "Norfolk": 12.00, "Chesapeake": 12.00, "Richmond": 12.00, "Arlington": 12.00 } },
+    "Washington": { cities: ["Seattle", "Spokane", "Tacoma", "Vancouver", "Bellevue"], minWages: { "Seattle": 19.97, "Spokane": 16.28, "Tacoma": 16.28, "Vancouver": 16.28, "Bellevue": 16.28 } },
+    "Washington DC": { cities: ["Washington"], minWages: { "Washington": 17.00 } },
+    "West Virginia": { cities: ["Charleston", "Huntington", "Morgantown", "Parkersburg"], minWages: { "Charleston": 8.75, "Huntington": 8.75, "Morgantown": 8.75, "Parkersburg": 8.75 } },
+    "Wisconsin": { cities: ["Milwaukee", "Madison", "Green Bay", "Kenosha", "Racine"], minWages: { "Milwaukee": 7.25, "Madison": 7.25, "Green Bay": 7.25, "Kenosha": 7.25, "Racine": 7.25 } },
+    "Wyoming": { cities: ["Cheyenne", "Casper", "Laramie", "Gillette"], minWages: { "Cheyenne": 7.25, "Casper": 7.25, "Laramie": 7.25, "Gillette": 7.25 } }
   },
   "Canada": {
-    "Ontario": {
-      cities: ["Toronto", "Ottawa", "Mississauga", "Hamilton"],
-      minWages: { "Toronto": 16.55, "Ottawa": 16.55, "Mississauga": 16.55, "Hamilton": 16.55 }
-    },
-    "British Columbia": {
-      cities: ["Vancouver", "Victoria", "Surrey", "Burnaby"],
-      minWages: { "Vancouver": 16.75, "Victoria": 16.75, "Surrey": 16.75, "Burnaby": 16.75 }
-    }
+    "Alberta": { cities: ["Calgary", "Edmonton"], minWages: { "Calgary": 15.00, "Edmonton": 15.00 } },
+    "British Columbia": { cities: ["Vancouver", "Victoria", "Surrey", "Burnaby"], minWages: { "Vancouver": 17.40, "Victoria": 17.40, "Surrey": 17.40, "Burnaby": 17.40 } },
+    "Manitoba": { cities: ["Winnipeg"], minWages: { "Winnipeg": 15.80 } },
+    "New Brunswick": { cities: ["Saint John", "Moncton", "Fredericton"], minWages: { "Saint John": 14.75, "Moncton": 14.75, "Fredericton": 14.75 } },
+    "Newfoundland and Labrador": { cities: ["St. John's"], minWages: { "St. John's": 15.60 } },
+    "Northwest Territories": { cities: ["Yellowknife"], minWages: { "Yellowknife": 16.70 } },
+    "Nova Scotia": { cities: ["Halifax"], minWages: { "Halifax": 15.20 } },
+    "Nunavut": { cities: ["Iqaluit"], minWages: { "Iqaluit": 19.00 } },
+    "Ontario": { cities: ["Toronto", "Ottawa", "Mississauga", "Hamilton"], minWages: { "Toronto": 16.55, "Ottawa": 16.55, "Mississauga": 16.55, "Hamilton": 16.55 } },
+    "Prince Edward Island": { cities: ["Charlottetown"], minWages: { "Charlottetown": 15.00 } },
+    "Quebec": { cities: ["Montreal", "Quebec City", "Laval"], minWages: { "Montreal": 15.75, "Quebec City": 15.75, "Laval": 15.75 } },
+    "Saskatchewan": { cities: ["Saskatoon", "Regina"], minWages: { "Saskatoon": 15.00, "Regina": 15.00 } },
+    "Yukon": { cities: ["Whitehorse"], minWages: { "Whitehorse": 17.59 } }
   },
   "United Kingdom": {
-    "England": {
-      cities: ["London", "Manchester", "Birmingham", "Leeds"],
-      minWages: { "London": 11.44, "Manchester": 11.44, "Birmingham": 11.44, "Leeds": 11.44 }
-    }
+    "England - London": { cities: ["London"], minWages: { "London": 11.44 } },
+    "England - South East": { cities: ["Brighton", "Southampton", "Portsmouth", "Reading", "Oxford"], minWages: { "Brighton": 11.44, "Southampton": 11.44, "Portsmouth": 11.44, "Reading": 11.44, "Oxford": 11.44 } },
+    "England - South West": { cities: ["Bristol", "Plymouth", "Exeter", "Bournemouth"], minWages: { "Bristol": 11.44, "Plymouth": 11.44, "Exeter": 11.44, "Bournemouth": 11.44 } },
+    "England - West Midlands": { cities: ["Birmingham", "Coventry", "Wolverhampton"], minWages: { "Birmingham": 11.44, "Coventry": 11.44, "Wolverhampton": 11.44 } },
+    "England - East Midlands": { cities: ["Nottingham", "Leicester", "Derby"], minWages: { "Nottingham": 11.44, "Leicester": 11.44, "Derby": 11.44 } },
+    "England - East": { cities: ["Norwich", "Cambridge", "Peterborough"], minWages: { "Norwich": 11.44, "Cambridge": 11.44, "Peterborough": 11.44 } },
+    "England - North West": { cities: ["Manchester", "Liverpool", "Preston", "Chester"], minWages: { "Manchester": 11.44, "Liverpool": 11.44, "Preston": 11.44, "Chester": 11.44 } },
+    "England - North East": { cities: ["Newcastle", "Sunderland", "Durham"], minWages: { "Newcastle": 11.44, "Sunderland": 11.44, "Durham": 11.44 } },
+    "England - Yorkshire": { cities: ["Leeds", "Sheffield", "Bradford", "York", "Hull"], minWages: { "Leeds": 11.44, "Sheffield": 11.44, "Bradford": 11.44, "York": 11.44, "Hull": 11.44 } },
+    "Scotland": { cities: ["Edinburgh", "Glasgow", "Aberdeen", "Dundee", "Inverness"], minWages: { "Edinburgh": 11.44, "Glasgow": 11.44, "Aberdeen": 11.44, "Dundee": 11.44, "Inverness": 11.44 } },
+    "Wales": { cities: ["Cardiff", "Swansea", "Newport", "Wrexham"], minWages: { "Cardiff": 11.44, "Swansea": 11.44, "Newport": 11.44, "Wrexham": 11.44 } },
+    "Northern Ireland": { cities: ["Belfast", "Derry", "Lisburn"], minWages: { "Belfast": 11.44, "Derry": 11.44, "Lisburn": 11.44 } }
   },
   "Australia": {
-    "New South Wales": {
-      cities: ["Sydney", "Newcastle", "Wollongong"],
-      minWages: { "Sydney": 23.23, "Newcastle": 23.23, "Wollongong": 23.23 }
-    },
-    "Victoria": {
-      cities: ["Melbourne", "Geelong", "Ballarat"],
-      minWages: { "Melbourne": 23.23, "Geelong": 23.23, "Ballarat": 23.23 }
-    }
+    "New South Wales": { cities: ["Sydney", "Newcastle", "Wollongong", "Central Coast"], minWages: { "Sydney": 24.10, "Newcastle": 24.10, "Wollongong": 24.10, "Central Coast": 24.10 } },
+    "Victoria": { cities: ["Melbourne", "Geelong", "Ballarat", "Bendigo"], minWages: { "Melbourne": 24.10, "Geelong": 24.10, "Ballarat": 24.10, "Bendigo": 24.10 } },
+    "Queensland": { cities: ["Brisbane", "Gold Coast", "Sunshine Coast", "Townsville", "Cairns"], minWages: { "Brisbane": 24.10, "Gold Coast": 24.10, "Sunshine Coast": 24.10, "Townsville": 24.10, "Cairns": 24.10 } },
+    "Western Australia": { cities: ["Perth", "Mandurah", "Bunbury"], minWages: { "Perth": 24.10, "Mandurah": 24.10, "Bunbury": 24.10 } },
+    "South Australia": { cities: ["Adelaide", "Mount Gambier"], minWages: { "Adelaide": 24.10, "Mount Gambier": 24.10 } },
+    "Tasmania": { cities: ["Hobart", "Launceston"], minWages: { "Hobart": 24.10, "Launceston": 24.10 } },
+    "Northern Territory": { cities: ["Darwin", "Alice Springs"], minWages: { "Darwin": 24.10, "Alice Springs": 24.10 } },
+    "Australian Capital Territory": { cities: ["Canberra"], minWages: { "Canberra": 24.10 } }
   }
 };
 
