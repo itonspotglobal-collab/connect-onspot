@@ -61,47 +61,23 @@ export function ObjectUploader({
     setIsUploading(true);
 
     try {
-      console.log("🔗 Requesting upload parameters...");
-      const uploadParams = await onGetUploadParameters();
+      console.log("🔗 Starting direct file upload...");
 
-      // Ask backend for signed URL
-      const response = await authAPI.post(uploadParams.url, {
-        fileName: file.name,
-        contentType: file.type,
-      });
+      // Create FormData for multipart upload
+      const formData = new FormData();
+      formData.append("file", file);
 
-      if (!response?.data) {
-        throw new Error("Invalid response from upload URL endpoint");
+      console.log("📤 Uploading file directly to backend:", file.name, file.size);
+      
+      // Upload directly to backend (which handles object storage)
+      const uploadResponse = await authAPI.post("/api/object-storage/upload", formData);
+
+      if (!uploadResponse?.data?.success) {
+        throw new Error(uploadResponse?.data?.error || "Upload failed");
       }
 
-      // ✅ Flexible mapping for different response shapes
-      const uploadUrl =
-        response.data.url || response.data.uploadUrl || response.data.signedUrl;
-      const method = response.data.method || "PUT";
-      const fileUrl = response.data.fileUrl || uploadUrl; // permanent URL if backend provides it
-      const extraHeaders = response.data.headers || {};
-
-      if (!uploadUrl) {
-        throw new Error("Upload URL not returned by server");
-      }
-
-      console.log("✅ Got signed upload URL:", uploadUrl);
-
-      // Upload to object storage
-      const uploadResponse = await fetch(uploadUrl, {
-        method,
-        headers: {
-          "Content-Type": file.type,
-          ...extraHeaders,
-        },
-        body: file,
-      });
-
-      if (!uploadResponse.ok) {
-        throw new Error(`Upload failed: ${uploadResponse.statusText}`);
-      }
-
-      console.log("🎉 File uploaded successfully!");
+      const fileUrl = uploadResponse.data.fileUrl;
+      console.log("🎉 File uploaded successfully! Path:", fileUrl);
 
       // Optional: import talent profile data from file
       let importResult = null;

@@ -16,8 +16,10 @@ import Papa from "papaparse";
 import jwt from "jsonwebtoken";
 import { query, db } from "./db.ts";
 import { eq } from "drizzle-orm";
-import { ObjectStorageService } from "./objectStorage";
+import { ObjectStorageService, objectStorageClient } from "./objectStorage";
+import { setObjectAclPolicy } from "./objectAcl";
 import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "crypto";
 import {
   insertUserSchema,
   insertProfileSchema,
@@ -356,6 +358,14 @@ const authLimiter = rateLimit({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Configure multer for file uploads (CSV, PDF, videos)
+  const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+      fileSize: 50 * 1024 * 1024, // 50MB limit for videos
+    },
+  });
+
   console.log("🔗 Registering API routes...");
 
   // Protected Dashboard Routes with Role-Based Access Control
@@ -1157,6 +1167,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
           },
         );
         res.status(500).json({ error: "Failed to generate upload URL" });
+      }
+    },
+  );
+
+  // POST /api/object-storage/upload - Direct file upload to Replit Object Storage
+  app.post(
+    "/api/object-storage/upload",
+    authenticateJWT,
+    upload.single("file"),
+    async (req: any, res) => {
+      try {
+        const userId = req.user?.id || req.user?.claims?.sub;
+        const file = req.file;
+
+        if (!file) {
+          return res.status(400).json({ error: "No file uploaded" });
+        }
+
+        console.log(`📤 Direct upload request [${req.requestId}]:`, {
+          userId,
+          fileName: file.originalname,
+          size: file.size,
+          mimeType: file.mimetype,
+        });
+
+        // Use Replit Object Storage
+        const objectStorageService = new ObjectStorageService();
+        const objectId = randomUUID();
+        const objectPath = `/objects/uploads/${objectId}`;
+
+        // Upload file buffer to object storage
+        const privateObjectDir = objectStorageService.getPrivateObjectDir();
+        if (!privateObjectDir) {
+          throw new Error("PRIVATE_OBJECT_DIR not configured");
+        }
+
+        const fullPath = `${privateObjectDir}/uploads/${objectId}`;
+        const parts = fullPath.split("/").filter(p => p);
+        const bucketName = parts[0];
+        const objectName = parts.slice(1).join("/");
+        
+        const bucket = objectStorageClient.bucket(bucketName);
+        const objectFile = bucket.file(objectName);
+
+        // Upload the file
+        await objectFile.save(file.buffer, {
+          metadata: {
+            contentType: file.mimetype,
+            metadata: {
+              originalName: file.originalname,
+              uploadedBy: userId,
+              uploadedAt: new Date().toISOString(),
+            },
+          },
+        });
+
+        // Set ACL for the uploaded file
+        const aclPolicy = {
+          visibility: "private" as const,
+          owner: userId,
+        };
+        await setObjectAclPolicy(objectFile, aclPolicy);
+
+        console.log(`✅ File uploaded successfully [${req.requestId}]:`, { objectPath });
+
+        res.json({
+          success: true,
+          fileUrl: objectPath,
+          fileName: file.originalname,
+          size: file.size,
+          mimeType: file.mimetype,
+        });
+      } catch (error: any) {
+        console.error(`❌ Upload failed [${req.requestId}]:`, {
+          error: error.message,
+          stack: error.stack,
+        });
+        res.status(500).json({ error: "Failed to upload file" });
       }
     },
   );
@@ -3215,21 +3303,6 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
           "Hmm, something's not quite right on my end. Give me a moment and try again!",
       });
     }
-  });
-
-  // Configure multer for CSV file uploads
-  const upload = multer({
-    storage: multer.memoryStorage(),
-    limits: {
-      fileSize: 10 * 1024 * 1024, // 10MB limit
-    },
-    fileFilter: (req, file, cb) => {
-      if (file.mimetype === "text/csv" || file.originalname.endsWith(".csv")) {
-        cb(null, true);
-      } else {
-        cb(new Error("Only CSV files are allowed"));
-      }
-    },
   });
 
   // CSV Talent Import Routes
