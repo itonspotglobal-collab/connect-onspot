@@ -2,7 +2,6 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import * as Sentry from "@sentry/node";
 import { storage, type CreateUserData } from "./storage";
-import { ObjectStorage } from "@replit/object-storage";
 import { isAuthenticated } from "./replitAuth";
 import {
   hashPassword,
@@ -17,6 +16,8 @@ import Papa from "papaparse";
 import jwt from "jsonwebtoken";
 import { query, db } from "./db.ts";
 import { eq } from "drizzle-orm";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { v4 as uuidv4 } from "uuid";
 import {
   insertUserSchema,
@@ -1134,56 +1135,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .json({ error: "fileName and contentType required" });
         }
 
-        const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID || "default";
-        const objectStorage = new ObjectStorage(bucketId);
+        const awsRegion = process.env.AWS_REGION;
+        const awsBucket = process.env.AWS_BUCKET_NAME;
+        const awsAccessKeyId = process.env.AWS_ACCESS_KEY_ID;
+        const awsSecretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
 
-        // --- Your upload route ---
-        app.post("/api/object-storage/upload-url", authenticateJWT, async (req: any, res) => {
-          try {
-            const { fileName, contentType } = req.body;
+        if (
+          !awsRegion ||
+          !awsBucket ||
+          !awsAccessKeyId ||
+          !awsSecretAccessKey
+        ) {
+          console.error(`❌ S3 not configured [${req.requestId}]`);
+          return res.status(500).json({ error: "S3 not configured" });
+        }
 
-            if (!fileName || !contentType) {
-              return res.status(400).json({ error: "fileName and contentType required" });
-            }
-
-            const timestamp = Date.now();
-            const key = `uploads/${timestamp}-${fileName}`;
-
-            // ✅ Generate signed upload URL using Replit Object Storage
-            const signedUrl = await objectStorage.presignUpload(key, {
-              contentType,
-              expiresIn: 60, // 1 min expiry
-            });
-
-            // ✅ Build public URL (Replit auto-hosts files under a path)
-            const fileUrl = `${process.env.PUBLIC_BASE_URL || ""}/api/objects/${key}`;
-
-            res.json({
-              url: signedUrl,
-              method: "PUT",
-              headers: { "Content-Type": contentType },
-              fileUrl,
-            });
-          } catch (error: any) {
-            console.error("❌ Replit storage upload URL generation failed:", error.message);
-            res.status(500).json({ error: "Failed to generate upload URL" });
-          }
+        // Create S3 client
+        const s3Client = new S3Client({
+          region: awsRegion,
+          credentials: {
+            accessKeyId: awsAccessKeyId,
+            secretAccessKey: awsSecretAccessKey,
+          },
         });
 
-        // ✅ Optional: Add GET route for accessing stored files
-        app.get("/api/objects/*", async (req, res) => {
-          const filePath = req.params[0];
-          try {
-            const fileStream = await objectStorage.get(filePath);
-            if (!fileStream) {
-              return res.status(404).json({ error: "File not found" });
-            }
-            fileStream.pipe(res);
-          } catch (error: any) {
-            console.error("❌ Error serving object:", error.message);
-            res.status(500).json({ error: "Failed to fetch file" });
-          }
+        // Generate unique key
+        const timestamp = Date.now();
+        const key = `uploads/${timestamp}-${fileName}`;
+
+        // Create signed URL
+        const command = new PutObjectCommand({
+          Bucket: awsBucket,
+          Key: key,
+          ContentType: contentType,
         });
+
+        const signedUrl = await getSignedUrl(s3Client, command, {
+          expiresIn: 60,
+        }); // 1 min expiration
+
+        // Response format required by ObjectUploader.tsx
+        const response = {
+          url: signedUrl,
+          method: "PUT",
+          headers: { "Content-Type": contentType },
+          fileUrl: `https://${awsBucket}.s3.${awsRegion}.amazonaws.com/${key}`,
+        };
+
+        console.log(`✅ Signed URL generated [${req.requestId}]:`, { key });
+        res.json(response);
+      } catch (error: any) {
+        console.error(
+          `❌ S3 upload URL generation failed [${req.requestId}]:`,
+          {
+            error: error.message,
+            stack: error.stack,
+          },
+        );
+        res.status(500).json({ error: "Failed to generate upload URL" });
+      }
+    },
+  );
 
   // SECURITY FIX: Protected Object Storage Direct Upload Handler
   app.put("/api/objects/*", authenticateJWT, (req: any, res) => {
