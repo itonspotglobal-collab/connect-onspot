@@ -163,85 +163,131 @@ export default function TalentPortal() {
         </div>
 
         <div className="container mx-auto px-4 py-20 relative z-10">
-          <div className="max-w-4xl">
-            {/* OnSpot Branding */}
-            <div className="mb-8" data-testid="hero-branding">
-              <OnSpotLogo size="lg" className="mb-4" data-testid="onspot-logo" />
-              <div className="flex items-center gap-3 mb-6" data-testid="hero-badges">
-                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 px-4 py-1" data-testid="badge-elite-network">
-                  <Crown className="h-3 w-3 mr-1" />
-                  Elite Talent Network
-                </Badge>
-                <QuickTrustIndicators size="sm" data-testid="quick-trust-indicators" />
-              </div>
-            </div>
-
-            {/* Value Proposition */}
-            <div className="space-y-6 mb-12">
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-foreground leading-tight">
-                Join <span className="text-primary">50,000+ Elite</span><br />
-                <span className="bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
-                  Talents Earning
-                </span><br />
-                <span className="text-foreground">Premium Rates</span>
-              </h1>
-              
-              <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-8">
-                <div className="bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-lg px-4 py-2">
-                  <span className="text-green-700 dark:text-green-400 font-semibold text-lg">
-                    Cut costs 70%, grow 8X
-                  </span>
-                </div>
-                <div className="text-muted-foreground text-lg">
-                  Making Outsourcing Easy
+          <div className="grid md:grid-cols-2 gap-12 lg:gap-16 items-center">
+            {/* Left Column - Hero Text Content */}
+            <div>
+              {/* OnSpot Branding */}
+              <div className="mb-8" data-testid="hero-branding">
+                <OnSpotLogo size="lg" className="mb-4" data-testid="onspot-logo" />
+                <div className="flex items-center gap-3 mb-6" data-testid="hero-badges">
+                  <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 px-4 py-1" data-testid="badge-elite-network">
+                    <Crown className="h-3 w-3 mr-1" />
+                    Elite Talent Network
+                  </Badge>
+                  <QuickTrustIndicators size="sm" data-testid="quick-trust-indicators" />
                 </div>
               </div>
 
-              <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed max-w-3xl">
-                Access exclusive opportunities with verified Fortune 500 clients. 
-                Guaranteed payments, premium rates, and career growth support.
-              </p>
-            </div>
-
-            {/* Primary CTA Section */}
-            <div className="space-y-6 mb-12">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button 
-                  size="lg" 
-                  className="text-lg group"
-                  onClick={handleGetStarted}
-                  data-testid="button-get-started"
-                >
-                  <span>Start Earning Today</span>
-                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </Button>
+              {/* Value Proposition */}
+              <div className="space-y-6 mb-12">
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground leading-tight">
+                  Join <span className="text-primary">50,000+ Elite</span><br />
+                  <span className="bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                    Talents Earning
+                  </span><br />
+                  <span className="text-foreground">Premium Rates</span>
+                </h1>
                 
-                <Button 
-                  variant="outline" 
-                  size="lg" 
-                  className="text-lg"
-                  onClick={handleFindProjects}
-                  data-testid="button-find-projects"
-                >
-                  <Eye className="mr-2 h-5 w-5" />
-                  Browse Premium Projects
-                </Button>
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-8">
+                  <div className="bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-lg px-4 py-2">
+                    <span className="text-green-700 dark:text-green-400 font-semibold text-lg">
+                      Cut costs 70%, grow 8X
+                    </span>
+                  </div>
+                  <div className="text-muted-foreground text-lg">
+                    Making Outsourcing Easy
+                  </div>
+                </div>
+
+                <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed">
+                  Access exclusive opportunities with verified Fortune 500 clients. 
+                  Guaranteed payments, premium rates, and career growth support.
+                </p>
               </div>
 
-              {/* Trust Indicators Below CTA */}
-              <div className="flex items-center gap-6 text-sm text-muted-foreground" data-testid="trust-indicators-cta">
-                <div className="flex items-center gap-2" data-testid="indicator-free-join">
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  <span>Free to join</span>
+              {/* Primary CTA Section */}
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Button 
+                    size="lg" 
+                    className="text-lg group"
+                    onClick={handleGetStarted}
+                    data-testid="button-get-started"
+                  >
+                    <span>Start Earning Today</span>
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="lg" 
+                    className="text-lg"
+                    onClick={handleFindProjects}
+                    data-testid="button-find-projects"
+                  >
+                    <Eye className="mr-2 h-5 w-5" />
+                    Browse Premium Projects
+                  </Button>
                 </div>
-                <div className="flex items-center gap-2" data-testid="indicator-payment-protected">
-                  <Shield className="h-4 w-4 text-blue-500" />
-                  <span>Payment protected</span>
+
+                {/* Trust Indicators Below CTA */}
+                <div className="flex items-center gap-6 text-sm text-muted-foreground" data-testid="trust-indicators-cta">
+                  <div className="flex items-center gap-2" data-testid="indicator-free-join">
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    <span>Free to join</span>
+                  </div>
+                  <div className="flex items-center gap-2" data-testid="indicator-payment-protected">
+                    <Shield className="h-4 w-4 text-blue-500" />
+                    <span>Payment protected</span>
+                  </div>
+                  <div className="flex items-center gap-2" data-testid="indicator-quick-match">
+                    <Clock className="h-4 w-4 text-purple-500" />
+                    <span>Get matched in 24hrs</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2" data-testid="indicator-quick-match">
-                  <Clock className="h-4 w-4 text-purple-500" />
-                  <span>Get matched in 24hrs</span>
-                </div>
+              </div>
+            </div>
+
+            {/* Right Column - How It Works Steps */}
+            <div className="space-y-6">
+              <div className="text-center md:text-left mb-8">
+                <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-3">
+                  Start Earning in 3 Simple Steps
+                </h2>
+                <p className="text-lg text-muted-foreground">
+                  Join the elite network of verified professionals
+                </p>
+              </div>
+
+              <div className="space-y-4" data-testid="how-it-works-steps">
+                {HOW_IT_WORKS_STEPS.map((step, index) => (
+                  <div key={index} className="relative" data-testid={`step-${index + 1}`}>
+                    <Card className="hover-elevate p-6" data-testid={`step-card-${index + 1}`}>
+                      <CardContent className="p-0 flex items-start gap-4">
+                        <div className="relative flex-shrink-0">
+                          <div className={cn(
+                            "w-12 h-12 rounded-full flex items-center justify-center",
+                            step.color
+                          )}>
+                            <step.icon className="h-6 w-6 text-white" />
+                          </div>
+                          <div className="absolute -top-1 -right-1 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold">
+                            {step.step}
+                          </div>
+                        </div>
+                        
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-foreground mb-2">
+                            {step.title}
+                          </h3>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            {step.description}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -266,69 +312,6 @@ export default function TalentPortal() {
             showDescriptions={false}
             animateOnScroll={false}
           />
-        </div>
-      </section>
-
-      {/* How It Works Section */}
-      <section className="py-20 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Start Earning in 3 Simple Steps
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Join the elite network of verified professionals earning premium rates
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8" data-testid="how-it-works-steps">
-            {HOW_IT_WORKS_STEPS.map((step, index) => (
-              <div key={index} className="relative group" data-testid={`step-${index + 1}`}>
-                <Card className="hover-elevate text-center p-8 h-full" data-testid={`step-card-${index + 1}`}>
-                  <CardContent className="p-0 space-y-6">
-                    <div className="relative">
-                      <div className={cn(
-                        "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4",
-                        step.color
-                      )}>
-                        <step.icon className="h-8 w-8 text-white" />
-                      </div>
-                      <div className="absolute -top-2 -right-2 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
-                        {step.step}
-                      </div>
-                    </div>
-                    
-                    <h3 className="text-xl font-semibold text-foreground">
-                      {step.title}
-                    </h3>
-                    
-                    <p className="text-muted-foreground leading-relaxed">
-                      {step.description}
-                    </p>
-                  </CardContent>
-                </Card>
-
-                {/* Connection Arrow for Desktop */}
-                {index < HOW_IT_WORKS_STEPS.length - 1 && (
-                  <div className="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2">
-                    <ChevronRight className="h-8 w-8 text-muted-foreground/50" />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          <div className="text-center mt-12">
-            <Button 
-              size="lg" 
-              onClick={handleGetStarted}
-              className="text-lg"
-              data-testid="button-join-onspot"
-            >
-              Join OnSpot Today
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          </div>
         </div>
       </section>
 
