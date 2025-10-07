@@ -248,29 +248,8 @@ export default function TalentPortal() {
         </div>
       </section>
 
-      {/* Client Logos Section - Social Proof */}
-      <ClientLogos 
-        logos={DEFAULT_CLIENT_LOGOS}
-        variant="default"
-        maxLogos={8}
-        className="border-y"
-      />
-
-      {/* Statistics Bar */}
-      <section className="bg-muted/30">
-        <div className="container mx-auto px-4">
-          <StatisticsBar 
-            statistics={DEFAULT_MARKETPLACE_STATS}
-            variant="default"
-            columns={4}
-            showDescriptions={false}
-            animateOnScroll={false}
-          />
-        </div>
-      </section>
-
       {/* How It Works Section */}
-      <section className="py-20 bg-background">
+      <section className="py-14 md:py-20 bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
@@ -329,6 +308,27 @@ export default function TalentPortal() {
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </div>
+        </div>
+      </section>
+
+      {/* Client Logos Section - Social Proof */}
+      <ClientLogos 
+        logos={DEFAULT_CLIENT_LOGOS}
+        variant="default"
+        maxLogos={8}
+        className="border-y"
+      />
+
+      {/* Statistics Bar */}
+      <section className="bg-muted/30">
+        <div className="container mx-auto px-4">
+          <StatisticsBar 
+            statistics={DEFAULT_MARKETPLACE_STATS}
+            variant="default"
+            columns={4}
+            showDescriptions={false}
+            animateOnScroll={false}
+          />
         </div>
       </section>
 
