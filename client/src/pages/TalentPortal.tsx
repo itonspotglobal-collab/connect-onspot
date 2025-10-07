@@ -50,6 +50,7 @@ import { useTalentProfile } from "@/hooks/useTalentProfile";
 import { cn } from "@/lib/utils";
 import professionalWorkspaceImg from "@assets/generated_images/Professional_workspace_background_ccee2885.png";
 import businessNetworkImg from "@assets/generated_images/Business_network_illustration_d2c6527c.png";
+import avatarImage from "@assets/generated_images/Professional_talent_avatar_71613d75.png";
 
 // Use imported components with their default data
 
@@ -347,6 +348,76 @@ export default function TalentPortal() {
               Join OnSpot Today
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Talent Performance Showcase */}
+      <section className="py-20 bg-muted/30" id="talent-showcase">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Talent Performance Showcase
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Meet top-performing professionals delivering exceptional results through OnSpot.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[
+              {
+                name: "Maria Santos",
+                role: "Senior Full Stack Developer",
+                avatar: avatarImage,
+                metrics: [
+                  { label: "Client Satisfaction", value: "98%" },
+                  { label: "Projects Delivered", value: "24" },
+                  { label: "Avg. Rating", value: "4.9/5" },
+                ],
+              },
+              {
+                name: "Carlos Reyes",
+                role: "Customer Support Specialist",
+                avatar: avatarImage,
+                metrics: [
+                  { label: "Response Time", value: "1.2 min" },
+                  { label: "Resolution Rate", value: "96%" },
+                  { label: "Client NPS", value: "9.4" },
+                ],
+              },
+              {
+                name: "Ana Dela Cruz",
+                role: "Virtual Assistant",
+                avatar: avatarImage,
+                metrics: [
+                  { label: "Tasks Completed", value: "150+" },
+                  { label: "Reliability", value: "99%" },
+                  { label: "Avg. Feedback", value: "4.8/5" },
+                ],
+              },
+            ].map((talent, i) => (
+              <Card key={i} className="hover-elevate transition-all duration-300" data-testid={`talent-card-${i + 1}`}>
+                <CardHeader className="flex flex-row items-center gap-4 space-y-0">
+                  <Avatar className="h-16 w-16">
+                    <AvatarImage src={talent.avatar} alt={talent.name} />
+                    <AvatarFallback>{talent.name[0]}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <CardTitle className="text-lg">{talent.name}</CardTitle>
+                    <p className="text-sm text-muted-foreground">{talent.role}</p>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {talent.metrics.map((m, j) => (
+                    <div key={j} className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{m.label}</span>
+                      <span className="font-semibold text-foreground">{m.value}</span>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
