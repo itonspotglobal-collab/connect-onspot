@@ -289,6 +289,18 @@ export default function TalentPortal() {
                   </div>
                 ))}
               </div>
+
+              <div className="text-center md:text-right mt-6">
+                <Button 
+                  size="lg" 
+                  onClick={handleGetStarted}
+                  className="text-lg"
+                  data-testid="button-join-onspot"
+                >
+                  Join OnSpot Today
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
