@@ -1,0 +1,39 @@
+Update the talent portal: src/pages/TalentPortal.tsx (the TalentPortal component).
+
+GOAL
+- Make the "Start Earning in 3 Simple Steps" section appear IMMEDIATELY UNDER the hero (the first section).
+- Keep the visual design of the step cards unchanged.
+- Move ClientLogos and StatisticsBar to appear AFTER the steps (as in the mock).
+- Do not change the hero content or styles, only the order and spacing.
+- Ensure there is no duplicate steps section left behind.
+
+CHANGES
+
+1) CUT the entire "How It Works Section" block. In the current file it begins with:
+   <section className="py-20 bg-background">
+   and ends at its closing </section> (the block with the heading “Start Earning in 3 Simple Steps” and the 3 cards).
+
+2) PASTE that whole block **right after** the first hero section. Concretely:
+   - Find the closing tag of the hero section:
+     </section>  // (the one with class "relative min-h-screen ...")
+   - Immediately after that closing tag, insert the "How It Works Section" you cut in step 1.
+
+3) Update the outer wrapper classes on the moved steps section to tighten the spacing to the hero:
+   - Change <section className="py-20 bg-background"> to:
+     <section className="py-14 md:py-20 bg-background">
+
+4) REORDER the sections that follow:
+   - After the moved steps section, keep the ClientLogos section, then the StatisticsBar section (in that order).
+   - Make sure the original ClientLogos and StatisticsBar blocks remain intact, just positioned AFTER the steps section.
+   - Remove any leftover copy of the old steps section so there’s only ONE instance on the page.
+
+5) Keep all JSX and styles INSIDE the steps section exactly the same (the 3 cards, numbers, icons, chevrons, CTA “Join OnSpot Today”, etc.). Don’t change card content or styles—only placement and outer spacing.
+
+6) Sanity checks / acceptance criteria:
+   - The page should render the hero first.
+   - Immediately below the hero, the “Start Earning in 3 Simple Steps” heading and its 3 cards should be visible.
+   - Below that, show client logos, then the statistics bar.
+   - There must be no second/duplicate steps section elsewhere on the page.
+   - On mobile the cards stack; on desktop they remain in three columns as before.
+
+Make only the described reordering and tiny spacing change. Don’t modify any other content, imports, hooks, or components.
