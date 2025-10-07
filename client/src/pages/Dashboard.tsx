@@ -29,6 +29,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Area, AreaChart } from 'recharts';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useState } from 'react';
 //todo: remove mock functionality
 import avatarImage from "@assets/generated_images/Professional_talent_avatar_71613d75.png";
@@ -588,8 +589,8 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Talent Scorecard - Table with Inline Bars */}
-            <Card>
+            {/* Talent Scorecard - Table */}
+            <Card className="xl:col-span-3">
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <Users className="h-4 w-4" />
@@ -597,64 +598,153 @@ export default function Dashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {talentScorecard.map((talent) => (
-                    <div key={talent.name} className="space-y-2">
-                      <div className="text-sm font-medium">{talent.name}</div>
-                      <div className="grid grid-cols-3 gap-2 text-xs">
-                        <div>
-                          <div className="text-muted-foreground mb-1">Performance</div>
-                          <div className="flex items-center gap-2">
-                            <Progress value={talent.performance} className="h-1.5" />
-                            <span className="text-xs font-medium w-8">{talent.performance}%</span>
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-muted-foreground mb-1">Quality</div>
-                          <div className="flex items-center gap-2">
-                            <Progress value={talent.quality} className="h-1.5" />
-                            <span className="text-xs font-medium w-8">{talent.quality}%</span>
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-muted-foreground mb-1">Attendance</div>
-                          <div className="flex items-center gap-2">
-                            <Progress value={talent.attendance} className="h-1.5" />
-                            <span className="text-xs font-medium w-8">{talent.attendance}%</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="font-semibold">Name</TableHead>
+                        <TableHead className="font-semibold">KPI</TableHead>
+                        <TableHead className="font-semibold">Target</TableHead>
+                        <TableHead className="font-semibold">Weight</TableHead>
+                        <TableHead className="font-semibold">Actual</TableHead>
+                        <TableHead className="font-semibold">Weighted Score</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {/* Talent 1 */}
+                      <TableRow>
+                        <TableCell rowSpan={4} className="font-medium border-r">Talent 1</TableCell>
+                        <TableCell>Attendance</TableCell>
+                        <TableCell>95%</TableCell>
+                        <TableCell>30%</TableCell>
+                        <TableCell>98%</TableCell>
+                        <TableCell>29.4</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>CSAT</TableCell>
+                        <TableCell>90%</TableCell>
+                        <TableCell>40%</TableCell>
+                        <TableCell>92%</TableCell>
+                        <TableCell>36.8</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>Productivity</TableCell>
+                        <TableCell>85%</TableCell>
+                        <TableCell>30%</TableCell>
+                        <TableCell>88%</TableCell>
+                        <TableCell>26.4</TableCell>
+                      </TableRow>
+                      <TableRow className="bg-muted/50">
+                        <TableCell colSpan={4} className="font-semibold">Talent 1 Overall</TableCell>
+                        <TableCell className="font-semibold">92.6</TableCell>
+                      </TableRow>
+
+                      {/* Talent 2 */}
+                      <TableRow>
+                        <TableCell rowSpan={4} className="font-medium border-r">Talent 2</TableCell>
+                        <TableCell>Attendance</TableCell>
+                        <TableCell>95%</TableCell>
+                        <TableCell>30%</TableCell>
+                        <TableCell>96%</TableCell>
+                        <TableCell>28.8</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>CSAT</TableCell>
+                        <TableCell>90%</TableCell>
+                        <TableCell>40%</TableCell>
+                        <TableCell>89%</TableCell>
+                        <TableCell>35.6</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>Productivity</TableCell>
+                        <TableCell>85%</TableCell>
+                        <TableCell>30%</TableCell>
+                        <TableCell>85%</TableCell>
+                        <TableCell>25.5</TableCell>
+                      </TableRow>
+                      <TableRow className="bg-muted/50">
+                        <TableCell colSpan={4} className="font-semibold">Talent 2 Overall</TableCell>
+                        <TableCell className="font-semibold">89.9</TableCell>
+                      </TableRow>
+
+                      {/* Talent 3 */}
+                      <TableRow>
+                        <TableCell rowSpan={4} className="font-medium border-r">Talent 3</TableCell>
+                        <TableCell>Attendance</TableCell>
+                        <TableCell>95%</TableCell>
+                        <TableCell>30%</TableCell>
+                        <TableCell>100%</TableCell>
+                        <TableCell>30.0</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>CSAT</TableCell>
+                        <TableCell>90%</TableCell>
+                        <TableCell>40%</TableCell>
+                        <TableCell>94%</TableCell>
+                        <TableCell>37.6</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>Productivity</TableCell>
+                        <TableCell>85%</TableCell>
+                        <TableCell>30%</TableCell>
+                        <TableCell>90%</TableCell>
+                        <TableCell>27.0</TableCell>
+                      </TableRow>
+                      <TableRow className="bg-muted/50">
+                        <TableCell colSpan={4} className="font-semibold">Talent 3 Overall</TableCell>
+                        <TableCell className="font-semibold">94.6</TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Client Feedback & Coaching - Table with Sentiment Chips */}
+          {/* Client Feedback / Call Out and Coaching - Table */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <MessageSquare className="h-4 w-4" />
-                Client Feedback & Coaching
+                Client Feedback / Call Out and Coaching
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {clientFeedback.map((item, index) => (
-                  <div key={index} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-lg border">
-                    <div className="flex-1">
-                      <div className="font-medium text-sm">{item.client}</div>
-                      <div className="text-sm text-muted-foreground mt-1">{item.feedback}</div>
-                    </div>
-                    <Badge 
-                      variant={item.sentiment === 'positive' ? 'default' : 'secondary'}
-                      className={item.sentiment === 'positive' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' : ''}
-                    >
-                      {item.sentiment}
-                    </Badge>
-                  </div>
-                ))}
+              <div className="border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="font-semibold">Feedback</TableHead>
+                      <TableHead className="font-semibold">Date</TableHead>
+                      <TableHead className="font-semibold">Coaching Date</TableHead>
+                      <TableHead className="font-semibold">RCA</TableHead>
+                      <TableHead className="font-semibold">Action Plan</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell className="text-muted-foreground">-</TableCell>
+                      <TableCell className="text-muted-foreground">-</TableCell>
+                      <TableCell className="text-muted-foreground">-</TableCell>
+                      <TableCell className="text-muted-foreground">-</TableCell>
+                      <TableCell className="text-muted-foreground">-</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="text-muted-foreground">-</TableCell>
+                      <TableCell className="text-muted-foreground">-</TableCell>
+                      <TableCell className="text-muted-foreground">-</TableCell>
+                      <TableCell className="text-muted-foreground">-</TableCell>
+                      <TableCell className="text-muted-foreground">-</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="text-muted-foreground">-</TableCell>
+                      <TableCell className="text-muted-foreground">-</TableCell>
+                      <TableCell className="text-muted-foreground">-</TableCell>
+                      <TableCell className="text-muted-foreground">-</TableCell>
+                      <TableCell className="text-muted-foreground">-</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
               </div>
             </CardContent>
           </Card>
