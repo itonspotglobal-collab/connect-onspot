@@ -607,7 +607,12 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* Performance Summary & Talent Showcase - Responsive Grid */}
+
+
+
+
+      
+      {/* Performance Summary */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Performance Summary Metrics */}
         <Card>
@@ -680,13 +685,22 @@ export default function Dashboard() {
                         stroke="#6b7280"
                         tick={{ fontSize: 11 }}
                       />
-                      <YAxis 
-                        stroke="#6b7280" 
+                      <YAxis
+                        stroke="#6b7280"
                         tick={{ fontSize: 11 }}
-                        label={{ value: 'Attendance %', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }}
+                        label={{
+                          value: "Attendance %",
+                          angle: -90,
+                          position: "insideLeft",
+                          style: { fontSize: 11 },
+                        }}
                       />
                       <Tooltip />
-                      <Bar dataKey="attendance" fill="#10b981" name="Attendance %">
+                      <Bar
+                        dataKey="attendance"
+                        fill="#10b981"
+                        name="Attendance %"
+                      >
                         <LabelList
                           dataKey="attendance"
                           position="top"
@@ -699,7 +713,7 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              {/* Projects - Weekly Stacked Bars */}
+              {/* Projects Overview - Horizontal Stacked Bar Chart */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
@@ -708,7 +722,7 @@ export default function Dashboard() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={220}>
+                  <ResponsiveContainer width="100%" height={320}>
                     <BarChart data={perfProjectsData} layout="vertical">
                       <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                       <XAxis
@@ -724,6 +738,7 @@ export default function Dashboard() {
                         width={60}
                       />
                       <Tooltip />
+                      <Legend wrapperStyle={{ fontSize: "12px" }} />
                       <Bar
                         dataKey="completed"
                         stackId="a"
@@ -750,7 +765,7 @@ export default function Dashboard() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={220}>
+                  <ResponsiveContainer width="100%" height={320}>
                     <BarChart data={workDistributionData} layout="vertical">
                       <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                       <XAxis
@@ -781,266 +796,7 @@ export default function Dashboard() {
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
-
-              {/* Talent Scorecard - Table */}
-              <Card className="lg:col-span-2">
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    Talent Scorecard
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="border rounded-lg">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="font-semibold">Name</TableHead>
-                          <TableHead className="font-semibold">KPI</TableHead>
-                          <TableHead className="font-semibold">
-                            Target
-                          </TableHead>
-                          <TableHead className="font-semibold">
-                            Weight
-                          </TableHead>
-                          <TableHead className="font-semibold">
-                            Actual
-                          </TableHead>
-                          <TableHead className="font-semibold">
-                            Weighted Score
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {/* Talent 1 */}
-                        <TableRow>
-                          <TableCell
-                            rowSpan={4}
-                            className="font-medium border-r"
-                          >
-                            Maria Santos
-                          </TableCell>
-                          <TableCell>Attendance</TableCell>
-                          <TableCell>95%</TableCell>
-                          <TableCell>30%</TableCell>
-                          <TableCell>98%</TableCell>
-                          <TableCell>29.4</TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell>CSAT</TableCell>
-                          <TableCell>90%</TableCell>
-                          <TableCell>40%</TableCell>
-                          <TableCell>92%</TableCell>
-                          <TableCell>36.8</TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell>Productivity</TableCell>
-                          <TableCell>85%</TableCell>
-                          <TableCell>30%</TableCell>
-                          <TableCell>88%</TableCell>
-                          <TableCell>26.4</TableCell>
-                        </TableRow>
-                        <TableRow className="bg-muted/50">
-                          <TableCell colSpan={4} className="font-semibold">
-                            Maria Santos Overall
-                          </TableCell>
-                          <TableCell className="font-semibold">92.6</TableCell>
-                        </TableRow>
-
-                        {/* Talent 2 */}
-                        <TableRow>
-                          <TableCell
-                            rowSpan={4}
-                            className="font-medium border-r"
-                          >
-                            Carlos Reyes
-                          </TableCell>
-                          <TableCell>Attendance</TableCell>
-                          <TableCell>95%</TableCell>
-                          <TableCell>30%</TableCell>
-                          <TableCell>96%</TableCell>
-                          <TableCell>28.8</TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell>CSAT</TableCell>
-                          <TableCell>90%</TableCell>
-                          <TableCell>40%</TableCell>
-                          <TableCell>89%</TableCell>
-                          <TableCell>35.6</TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell>Productivity</TableCell>
-                          <TableCell>85%</TableCell>
-                          <TableCell>30%</TableCell>
-                          <TableCell>85%</TableCell>
-                          <TableCell>25.5</TableCell>
-                        </TableRow>
-                        <TableRow className="bg-muted/50">
-                          <TableCell colSpan={4} className="font-semibold">
-                            Carlos Reyes Overall
-                          </TableCell>
-                          <TableCell className="font-semibold">89.9</TableCell>
-                        </TableRow>
-
-                        {/* Talent 3 */}
-                        <TableRow>
-                          <TableCell
-                            rowSpan={4}
-                            className="font-medium border-r"
-                          >
-                            Ana Dela Cruz
-                          </TableCell>
-                          <TableCell>Attendance</TableCell>
-                          <TableCell>95%</TableCell>
-                          <TableCell>30%</TableCell>
-                          <TableCell>100%</TableCell>
-                          <TableCell>30.0</TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell>CSAT</TableCell>
-                          <TableCell>90%</TableCell>
-                          <TableCell>40%</TableCell>
-                          <TableCell>94%</TableCell>
-                          <TableCell>37.6</TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell>Productivity</TableCell>
-                          <TableCell>85%</TableCell>
-                          <TableCell>30%</TableCell>
-                          <TableCell>90%</TableCell>
-                          <TableCell>27.0</TableCell>
-                        </TableRow>
-                        <TableRow className="bg-muted/50">
-                          <TableCell colSpan={4} className="font-semibold">
-                            Ana Dela Cruz Overall
-                          </TableCell>
-                          <TableCell className="font-semibold">94.6</TableCell>
-                        </TableRow>
-
-                        {/* Talent 4 */}
-                        <TableRow>
-                          <TableCell
-                            rowSpan={4}
-                            className="font-medium border-r"
-                          >
-                            Juan Pablo
-                          </TableCell>
-                          <TableCell>Attendance</TableCell>
-                          <TableCell>85%</TableCell>
-                          <TableCell>25%</TableCell>
-                          <TableCell>100%</TableCell>
-                          <TableCell>30.0</TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell>CSAT</TableCell>
-                          <TableCell>90%</TableCell>
-                          <TableCell>40%</TableCell>
-                          <TableCell>94%</TableCell>
-                          <TableCell>37.6</TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell>Productivity</TableCell>
-                          <TableCell>85%</TableCell>
-                          <TableCell>30%</TableCell>
-                          <TableCell>90%</TableCell>
-                          <TableCell>27.0</TableCell>
-                        </TableRow>
-                        <TableRow className="bg-muted/50">
-                          <TableCell colSpan={4} className="font-semibold">
-                            Juan Pablo Overall
-                          </TableCell>
-                          <TableCell className="font-semibold">94.6</TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
             </div>
-
-            {/* Client Feedback / Call Out and Coaching - Table */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4" />
-                  Client Feedback / Call Out and Coaching
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="border rounded-lg">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="font-semibold">
-                          Feedback
-                        </TableHead>
-                        <TableHead className="font-semibold">Date</TableHead>
-                        <TableHead className="font-semibold">
-                          Coaching Date
-                        </TableHead>
-                        <TableHead className="font-semibold">RCA</TableHead>
-                        <TableHead className="font-semibold">
-                          Action Plan
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell className="text-muted-foreground">
-                          -
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          -
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          -
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          -
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          -
-                        </TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="text-muted-foreground">
-                          -
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          -
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          -
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          -
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          -
-                        </TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="text-muted-foreground">
-                          -
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          -
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          -
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          -
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          -
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
           </CardContent>
         </Card>
 
@@ -1102,6 +858,216 @@ export default function Dashboard() {
                 experience="4+ years"
                 availability="available"
               />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* === Talent Performance Section (Separate Div) === */}
+      <div className="space-y-6">
+        {/* Talent Scorecard */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Talent Scorecard
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="font-semibold">Name</TableHead>
+                    <TableHead className="font-semibold">KPI</TableHead>
+                    <TableHead className="font-semibold">Target</TableHead>
+                    <TableHead className="font-semibold">Weight</TableHead>
+                    <TableHead className="font-semibold">Actual</TableHead>
+                    <TableHead className="font-semibold">
+                      Weighted Score
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {/* Talent 1 */}
+                  <TableRow>
+                    <TableCell rowSpan={4} className="font-medium border-r">
+                      Maria Santos
+                    </TableCell>
+                    <TableCell>Attendance</TableCell>
+                    <TableCell>95%</TableCell>
+                    <TableCell>30%</TableCell>
+                    <TableCell>98%</TableCell>
+                    <TableCell>29.4</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>CSAT</TableCell>
+                    <TableCell>90%</TableCell>
+                    <TableCell>40%</TableCell>
+                    <TableCell>92%</TableCell>
+                    <TableCell>36.8</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>Productivity</TableCell>
+                    <TableCell>85%</TableCell>
+                    <TableCell>30%</TableCell>
+                    <TableCell>88%</TableCell>
+                    <TableCell>26.4</TableCell>
+                  </TableRow>
+                  <TableRow className="bg-muted/50">
+                    <TableCell colSpan={4} className="font-semibold">
+                      Maria Santos Overall
+                    </TableCell>
+                    <TableCell className="font-semibold">92.6</TableCell>
+                  </TableRow>
+
+                  {/* Talent 2 */}
+                  <TableRow>
+                    <TableCell rowSpan={4} className="font-medium border-r">
+                      Carlos Reyes
+                    </TableCell>
+                    <TableCell>Attendance</TableCell>
+                    <TableCell>95%</TableCell>
+                    <TableCell>30%</TableCell>
+                    <TableCell>96%</TableCell>
+                    <TableCell>28.8</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>CSAT</TableCell>
+                    <TableCell>90%</TableCell>
+                    <TableCell>40%</TableCell>
+                    <TableCell>89%</TableCell>
+                    <TableCell>35.6</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>Productivity</TableCell>
+                    <TableCell>85%</TableCell>
+                    <TableCell>30%</TableCell>
+                    <TableCell>85%</TableCell>
+                    <TableCell>25.5</TableCell>
+                  </TableRow>
+                  <TableRow className="bg-muted/50">
+                    <TableCell colSpan={4} className="font-semibold">
+                      Carlos Reyes Overall
+                    </TableCell>
+                    <TableCell className="font-semibold">89.9</TableCell>
+                  </TableRow>
+
+                  {/* Talent 3 */}
+                  <TableRow>
+                    <TableCell rowSpan={4} className="font-medium border-r">
+                      Ana Dela Cruz
+                    </TableCell>
+                    <TableCell>Attendance</TableCell>
+                    <TableCell>95%</TableCell>
+                    <TableCell>30%</TableCell>
+                    <TableCell>100%</TableCell>
+                    <TableCell>30.0</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>CSAT</TableCell>
+                    <TableCell>90%</TableCell>
+                    <TableCell>40%</TableCell>
+                    <TableCell>94%</TableCell>
+                    <TableCell>37.6</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>Productivity</TableCell>
+                    <TableCell>85%</TableCell>
+                    <TableCell>30%</TableCell>
+                    <TableCell>90%</TableCell>
+                    <TableCell>27.0</TableCell>
+                  </TableRow>
+                  <TableRow className="bg-muted/50">
+                    <TableCell colSpan={4} className="font-semibold">
+                      Ana Dela Cruz Overall
+                    </TableCell>
+                    <TableCell className="font-semibold">94.6</TableCell>
+                  </TableRow>
+
+                  {/* Talent 4 */}
+                  <TableRow>
+                    <TableCell rowSpan={4} className="font-medium border-r">
+                      Juan Pablo
+                    </TableCell>
+                    <TableCell>Attendance</TableCell>
+                    <TableCell>85%</TableCell>
+                    <TableCell>25%</TableCell>
+                    <TableCell>100%</TableCell>
+                    <TableCell>30.0</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>CSAT</TableCell>
+                    <TableCell>90%</TableCell>
+                    <TableCell>40%</TableCell>
+                    <TableCell>94%</TableCell>
+                    <TableCell>37.6</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>Productivity</TableCell>
+                    <TableCell>85%</TableCell>
+                    <TableCell>30%</TableCell>
+                    <TableCell>90%</TableCell>
+                    <TableCell>27.0</TableCell>
+                  </TableRow>
+                  <TableRow className="bg-muted/50">
+                    <TableCell colSpan={4} className="font-semibold">
+                      Juan Pablo Overall
+                    </TableCell>
+                    <TableCell className="font-semibold">94.6</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Client Feedback / Call Out and Coaching */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" />
+              Client Feedback / Call Out and Coaching
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="font-semibold">Feedback</TableHead>
+                    <TableHead className="font-semibold">Date</TableHead>
+                    <TableHead className="font-semibold">
+                      Coaching Date
+                    </TableHead>
+                    <TableHead className="font-semibold">RCA</TableHead>
+                    <TableHead className="font-semibold">Action Plan</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell className="text-muted-foreground">-</TableCell>
+                    <TableCell className="text-muted-foreground">-</TableCell>
+                    <TableCell className="text-muted-foreground">-</TableCell>
+                    <TableCell className="text-muted-foreground">-</TableCell>
+                    <TableCell className="text-muted-foreground">-</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="text-muted-foreground">-</TableCell>
+                    <TableCell className="text-muted-foreground">-</TableCell>
+                    <TableCell className="text-muted-foreground">-</TableCell>
+                    <TableCell className="text-muted-foreground">-</TableCell>
+                    <TableCell className="text-muted-foreground">-</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="text-muted-foreground">-</TableCell>
+                    <TableCell className="text-muted-foreground">-</TableCell>
+                    <TableCell className="text-muted-foreground">-</TableCell>
+                    <TableCell className="text-muted-foreground">-</TableCell>
+                    <TableCell className="text-muted-foreground">-</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
             </div>
           </CardContent>
         </Card>
