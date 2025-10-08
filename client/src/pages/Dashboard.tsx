@@ -230,8 +230,7 @@ export default function Dashboard() {
       : weeklyClientSatisfaction;
   const momAverageData =
     timeFilter === "monthly" ? monthlyMoMAverage : weeklyMoMAverage;
-  const ahtData =
-    timeFilter === "monthly" ? monthlyAHT : weeklyAHT;
+  const ahtData = timeFilter === "monthly" ? monthlyAHT : weeklyAHT;
   const projectsData =
     timeFilter === "monthly" ? monthlyProjects : weeklyProjects;
   const callsData = timeFilter === "monthly" ? monthlyCalls : weeklyCalls;
@@ -443,7 +442,7 @@ export default function Dashboard() {
                         dataKey="aht"
                         position="top"
                         offset={4}
-                        style={{ fontSize: '10px' }}
+                        style={{ fontSize: "10px" }}
                         formatter={(val: number) => `${val}%`}
                       />
                     </Bar>
@@ -452,7 +451,7 @@ export default function Dashboard() {
                         dataKey="quality"
                         position="top"
                         offset={4}
-                        style={{ fontSize: '10px' }}
+                        style={{ fontSize: "10px" }}
                         formatter={(val: number) => `${val}%`}
                       />
                     </Bar>
@@ -461,7 +460,7 @@ export default function Dashboard() {
                         dataKey="csat"
                         position="top"
                         offset={4}
-                        style={{ fontSize: '10px' }}
+                        style={{ fontSize: "10px" }}
                         formatter={(val: number) => `${val}%`}
                       />
                     </Bar>
@@ -515,13 +514,7 @@ export default function Dashboard() {
                 <ResponsiveContainer width="100%" height={200}>
                   <AreaChart data={ahtData}>
                     <defs>
-                      <linearGradient
-                        id="colorAHT"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
+                      <linearGradient id="colorAHT" x1="0" y1="0" x2="0" y2="1">
                         <stop
                           offset="5%"
                           stopColor="#8b5cf6"
@@ -540,11 +533,16 @@ export default function Dashboard() {
                       stroke="#6b7280"
                       tick={{ fontSize: 12 }}
                     />
-                    <YAxis 
-                      stroke="#6b7280" 
-                      tick={{ fontSize: 12 }} 
+                    <YAxis
+                      stroke="#6b7280"
+                      tick={{ fontSize: 12 }}
                       domain={[30, 120]}
-                      label={{ value: 'AHT (seconds)', angle: -90, position: 'insideLeft', style: { fontSize: 12 } }}
+                      label={{
+                        value: "AHT (seconds)",
+                        angle: -90,
+                        position: "insideLeft",
+                        style: { fontSize: 12 },
+                      }}
                     />
                     <Tooltip formatter={(value: number) => `${value} sec`} />
                     <Area
@@ -569,18 +567,33 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={callsData} margin={{ top: 20, right: 10, left: -10, bottom: 5 }}>
+                  <BarChart
+                    data={callsData}
+                    margin={{ top: 20, right: 10, left: -10, bottom: 5 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis dataKey="month" stroke="#6b7280" tick={{ fontSize: 11 }} />
+                    <XAxis
+                      dataKey="month"
+                      stroke="#6b7280"
+                      tick={{ fontSize: 11 }}
+                    />
                     <YAxis stroke="#6b7280" tick={{ fontSize: 11 }} />
                     <Tooltip />
                     <Legend wrapperStyle={{ fontSize: "12px" }} />
-                    
+
                     <Bar dataKey="inbound" fill="#3b82f6" name="Inbound">
-                      <LabelList dataKey="inbound" position="top" style={{ fontSize: '10px' }} />
+                      <LabelList
+                        dataKey="inbound"
+                        position="top"
+                        style={{ fontSize: "10px" }}
+                      />
                     </Bar>
                     <Bar dataKey="outbound" fill="#ec4899" name="Outbound">
-                      <LabelList dataKey="outbound" position="top" style={{ fontSize: '10px' }} />
+                      <LabelList
+                        dataKey="outbound"
+                        position="top"
+                        style={{ fontSize: "10px" }}
+                      />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
@@ -619,37 +632,6 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {/* Client Satisfaction - Radar Chart */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Activity className="h-4 w-4" />
-                  Client Satisfaction Metrics
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex justify-center">
-                <ResponsiveContainer width="100%" height={220}>
-                  <RadarChart data={radarData}>
-                    <PolarGrid stroke="#e5e7eb" />
-                    <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11 }} />
-                    <PolarRadiusAxis
-                      angle={90}
-                      domain={[0, 100]}
-                      tick={{ fontSize: 10 }}
-                    />
-                    <Radar
-                      name="Score"
-                      dataKey="value"
-                      stroke="#3b82f6"
-                      fill="#3b82f6"
-                      fillOpacity={0.5}
-                    />
-                    <Tooltip />
-                  </RadarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
             {/* Performance Monthly Average - Bar Chart */}
             <Card>
               <CardHeader>
