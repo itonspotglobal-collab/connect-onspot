@@ -9,7 +9,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import {
   Users,
@@ -28,15 +34,46 @@ import {
   Award,
   MessageSquare,
 } from "lucide-react";
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Area, AreaChart } from 'recharts';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useState } from 'react';
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  Area,
+  AreaChart,
+  LabelList,
+} from "recharts";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useState } from "react";
 //todo: remove mock functionality
 import avatarImage from "@assets/generated_images/Professional_talent_avatar_71613d75.png";
 
 export default function Dashboard() {
-  const [timeFilter, setTimeFilter] = useState<'monthly' | 'weekly'>('monthly');
-  const [performanceFilter, setPerformanceFilter] = useState<'monthly' | 'weekly'>('monthly');
+  const [timeFilter, setTimeFilter] = useState<"monthly" | "weekly">("monthly");
+  const [performanceFilter, setPerformanceFilter] = useState<
+    "monthly" | "weekly"
+  >("monthly");
 
   //todo: remove mock functionality
   const performanceData = [
@@ -50,139 +87,166 @@ export default function Dashboard() {
 
   // Mock data for analytics
   const monthlyClientSatisfaction = [
-    { month: 'Jan', score: 4.2 },
-    { month: 'Feb', score: 4.5 },
-    { month: 'Mar', score: 4.3 },
-    { month: 'Apr', score: 4.6 },
-    { month: 'May', score: 4.8 },
-    { month: 'Jun', score: 4.7 },
+    { month: "Jan", score: 4.2 },
+    { month: "Feb", score: 4.5 },
+    { month: "Mar", score: 4.3 },
+    { month: "Apr", score: 4.6 },
+    { month: "May", score: 4.8 },
+    { month: "Jun", score: 4.7 },
   ];
 
   const weeklyClientSatisfaction = [
-    { month: 'Week 1', score: 4.5 },
-    { month: 'Week 2', score: 4.6 },
-    { month: 'Week 3', score: 4.4 },
-    { month: 'Week 4', score: 4.7 },
+    { month: "Week 1", score: 4.5 },
+    { month: "Week 2", score: 4.6 },
+    { month: "Week 3", score: 4.4 },
+    { month: "Week 4", score: 4.7 },
   ];
 
   const monthlyMoMAverage = [
-    { month: 'Jan', onTime: 85, quality: 90, efficiency: 88 },
-    { month: 'Feb', onTime: 87, quality: 92, efficiency: 89 },
-    { month: 'Mar', onTime: 86, quality: 91, efficiency: 90 },
-    { month: 'Apr', onTime: 89, quality: 93, efficiency: 91 },
-    { month: 'May', onTime: 90, quality: 94, efficiency: 92 },
-    { month: 'Jun', onTime: 91, quality: 95, efficiency: 93 },
+    { month: "Jan", aht: 85, quality: 90, csat: 88 },
+    { month: "Feb", aht: 87, quality: 92, csat: 89 },
+    { month: "Mar", aht: 86, quality: 91, csat: 90 },
+    { month: "Apr", aht: 89, quality: 93, csat: 91 },
+    { month: "May", aht: 90, quality: 94, csat: 92 },
+    { month: "Jun", aht: 91, quality: 95, csat: 93 },
   ];
 
   const weeklyMoMAverage = [
-    { month: 'Week 1', onTime: 88, quality: 92, efficiency: 90 },
-    { month: 'Week 2', onTime: 90, quality: 94, efficiency: 91 },
-    { month: 'Week 3', onTime: 89, quality: 93, efficiency: 92 },
-    { month: 'Week 4', onTime: 91, quality: 95, efficiency: 93 },
+    { month: "Week 1", aht: 88, quality: 92, csat: 90 },
+    { month: "Week 2", aht: 90, quality: 94, csat: 91 },
+    { month: "Week 3", aht: 89, quality: 93, csat: 92 },
+    { month: "Week 4", aht: 91, quality: 95, csat: 93 },
   ];
 
   const attendanceData = [
-    { name: 'Maria Santos', attendance: 98, days: '24/25' },
-    { name: 'Carlos Reyes', attendance: 96, days: '23/25' },
-    { name: 'Ana Dela Cruz', attendance: 100, days: '25/25' },
-    { name: 'Juan Pablo', attendance: 94, days: '22/25' },
+    { name: "Maria Santos", attendance: 98, days: "24/25" },
+    { name: "Carlos Reyes", attendance: 96, days: "23/25" },
+    { name: "Ana Dela Cruz", attendance: 100, days: "25/25" },
+    { name: "Juan Pablo", attendance: 94, days: "22/25" },
   ];
 
   const monthlyProductivity = [
-    { month: 'Jan', value: 78 },
-    { month: 'Feb', value: 82 },
-    { month: 'Mar', value: 79 },
-    { month: 'Apr', value: 85 },
-    { month: 'May', value: 88 },
-    { month: 'Jun', value: 91 },
+    { month: "Jan", value: 78 },
+    { month: "Feb", value: 82 },
+    { month: "Mar", value: 79 },
+    { month: "Apr", value: 85 },
+    { month: "May", value: 88 },
+    { month: "Jun", value: 91 },
   ];
 
   const weeklyProductivity = [
-    { month: 'Week 1', value: 85 },
-    { month: 'Week 2', value: 88 },
-    { month: 'Week 3', value: 87 },
-    { month: 'Week 4', value: 91 },
+    { month: "Week 1", value: 85 },
+    { month: "Week 2", value: 88 },
+    { month: "Week 3", value: 87 },
+    { month: "Week 4", value: 91 },
   ];
 
   const monthlyProjects = [
-    { month: 'Jan', completed: 12, inProgress: 8, planned: 5 },
-    { month: 'Feb', completed: 15, inProgress: 10, planned: 6 },
-    { month: 'Mar', completed: 13, inProgress: 9, planned: 7 },
-    { month: 'Apr', completed: 18, inProgress: 11, planned: 8 },
-    { month: 'May', completed: 20, inProgress: 12, planned: 9 },
-    { month: 'Jun', completed: 22, inProgress: 14, planned: 10 },
+    { month: "Jan", completed: 12, inProgress: 8, planned: 5 },
+    { month: "Feb", completed: 15, inProgress: 10, planned: 6 },
+    { month: "Mar", completed: 13, inProgress: 9, planned: 7 },
+    { month: "Apr", completed: 18, inProgress: 11, planned: 8 },
+    { month: "May", completed: 20, inProgress: 12, planned: 9 },
+    { month: "Jun", completed: 22, inProgress: 14, planned: 10 },
   ];
 
   const weeklyProjects = [
-    { month: 'Week 1', completed: 5, inProgress: 3, planned: 2 },
-    { month: 'Week 2', completed: 6, inProgress: 4, planned: 3 },
-    { month: 'Week 3', completed: 5, inProgress: 3, planned: 2 },
-    { month: 'Week 4', completed: 6, inProgress: 4, planned: 3 },
+    { month: "Week 1", completed: 5, inProgress: 3, planned: 2 },
+    { month: "Week 2", completed: 6, inProgress: 4, planned: 3 },
+    { month: "Week 3", completed: 5, inProgress: 3, planned: 2 },
+    { month: "Week 4", completed: 6, inProgress: 4, planned: 3 },
   ];
 
   const monthlyCalls = [
-    { month: 'Jan', calls: 145 },
-    { month: 'Feb', calls: 162 },
-    { month: 'Mar', calls: 158 },
-    { month: 'Apr', calls: 178 },
-    { month: 'May', calls: 185 },
-    { month: 'Jun', calls: 192 },
+    { month: "Jan", calls: 145 },
+    { month: "Feb", calls: 162 },
+    { month: "Mar", calls: 158 },
+    { month: "Apr", calls: 178 },
+    { month: "May", calls: 185 },
+    { month: "Jun", calls: 192 },
   ];
 
   const weeklyCalls = [
-    { month: 'Week 1', calls: 45 },
-    { month: 'Week 2', calls: 48 },
-    { month: 'Week 3', calls: 47 },
-    { month: 'Week 4', calls: 52 },
+    { month: "Week 1", calls: 45 },
+    { month: "Week 2", calls: 48 },
+    { month: "Week 3", calls: 47 },
+    { month: "Week 4", calls: 52 },
   ];
 
   // Performance Summary Mock Data
   const radarData = [
-    { subject: 'Quality', value: 92 },
-    { subject: 'Speed', value: 88 },
-    { subject: 'Communication', value: 95 },
-    { subject: 'Innovation', value: 85 },
-    { subject: 'Reliability', value: 90 },
+    { subject: "Quality", value: 92 },
+    { subject: "Speed", value: 88 },
+    { subject: "Communication", value: 95 },
+    { subject: "Innovation", value: 85 },
+    { subject: "Reliability", value: 90 },
   ];
 
   const attendanceDonutData = [
-    { name: 'Present', value: 96 },
-    { name: 'Absent', value: 4 },
+    { name: "Present", value: 96 },
+    { name: "Absent", value: 4 },
   ];
 
   const workDistributionData = [
-    { task: 'Development', hours: 120 },
-    { task: 'Testing', hours: 80 },
-    { task: 'Documentation', hours: 40 },
-    { task: 'Meetings', hours: 60 },
+    { task: "Development", hours: 120 },
+    { task: "Testing", hours: 80 },
+    { task: "Documentation", hours: 40 },
+    { task: "Meetings", hours: 60 },
   ];
 
   const talentScorecard = [
-    { name: 'Maria Santos', performance: 95, quality: 92, attendance: 98 },
-    { name: 'Carlos Reyes', performance: 88, quality: 90, attendance: 96 },
-    { name: 'Ana Dela Cruz', performance: 92, quality: 94, attendance: 100 },
-    { name: 'Juan Pablo', performance: 85, quality: 88, attendance: 94 },
+    { name: "Maria Santos", performance: 95, quality: 92, attendance: 98 },
+    { name: "Carlos Reyes", performance: 88, quality: 90, attendance: 96 },
+    { name: "Ana Dela Cruz", performance: 92, quality: 94, attendance: 100 },
+    { name: "Juan Pablo", performance: 85, quality: 88, attendance: 94 },
   ];
 
   const clientFeedback = [
-    { client: 'TechCorp', feedback: 'Excellent work on the API integration', sentiment: 'positive' },
-    { client: 'StartupXYZ', feedback: 'Could improve response time', sentiment: 'neutral' },
-    { client: 'Enterprise Inc', feedback: 'Outstanding quality and communication', sentiment: 'positive' },
-    { client: 'SmallBiz Co', feedback: 'Good progress, minor delays', sentiment: 'neutral' },
+    {
+      client: "TechCorp",
+      feedback: "Excellent work on the API integration",
+      sentiment: "positive",
+    },
+    {
+      client: "StartupXYZ",
+      feedback: "Could improve response time",
+      sentiment: "neutral",
+    },
+    {
+      client: "Enterprise Inc",
+      feedback: "Outstanding quality and communication",
+      sentiment: "positive",
+    },
+    {
+      client: "SmallBiz Co",
+      feedback: "Good progress, minor delays",
+      sentiment: "neutral",
+    },
   ];
 
-  const clientSatisfactionData = timeFilter === 'monthly' ? monthlyClientSatisfaction : weeklyClientSatisfaction;
-  const momAverageData = timeFilter === 'monthly' ? monthlyMoMAverage : weeklyMoMAverage;
-  const productivityData = timeFilter === 'monthly' ? monthlyProductivity : weeklyProductivity;
-  const projectsData = timeFilter === 'monthly' ? monthlyProjects : weeklyProjects;
-  const callsData = timeFilter === 'monthly' ? monthlyCalls : weeklyCalls;
+  const clientSatisfactionData =
+    timeFilter === "monthly"
+      ? monthlyClientSatisfaction
+      : weeklyClientSatisfaction;
+  const momAverageData =
+    timeFilter === "monthly" ? monthlyMoMAverage : weeklyMoMAverage;
+  const productivityData =
+    timeFilter === "monthly" ? monthlyProductivity : weeklyProductivity;
+  const projectsData =
+    timeFilter === "monthly" ? monthlyProjects : weeklyProjects;
+  const callsData = timeFilter === "monthly" ? monthlyCalls : weeklyCalls;
 
-  const perfClientSatisfactionData = performanceFilter === 'monthly' ? monthlyClientSatisfaction : weeklyClientSatisfaction;
-  const perfMomAverageData = performanceFilter === 'monthly' ? monthlyMoMAverage : weeklyMoMAverage;
-  const perfProjectsData = performanceFilter === 'monthly' ? monthlyProjects : weeklyProjects;
+  const perfClientSatisfactionData =
+    performanceFilter === "monthly"
+      ? monthlyClientSatisfaction
+      : weeklyClientSatisfaction;
+  const perfMomAverageData =
+    performanceFilter === "monthly" ? monthlyMoMAverage : weeklyMoMAverage;
+  const perfProjectsData =
+    performanceFilter === "monthly" ? monthlyProjects : weeklyProjects;
 
-  const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'];
-  const DONUT_COLORS = ['#10b981', '#ef4444'];
+  const COLORS = ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981"];
+  const DONUT_COLORS = ["#10b981", "#ef4444"];
 
   const roiData = {
     totalCostSavings: 50000000, // $50M value delivered since 2021
@@ -283,15 +347,20 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Key Metrics */}
+      {/* Performance Summary */}
       <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5" />
-              Key Metrics
+              Performance Summary 
             </CardTitle>
-            <Select value={timeFilter} onValueChange={(value) => setTimeFilter(value as 'monthly' | 'weekly')}>
+            <Select
+              value={timeFilter}
+              onValueChange={(value) =>
+                setTimeFilter(value as "monthly" | "weekly")
+              }
+            >
               <SelectTrigger className="w-36" data-testid="select-time-filter">
                 <SelectValue />
               </SelectTrigger>
@@ -316,10 +385,24 @@ export default function Dashboard() {
                 <ResponsiveContainer width="100%" height={200}>
                   <LineChart data={clientSatisfactionData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis dataKey="month" stroke="#6b7280" tick={{ fontSize: 12 }} />
-                    <YAxis stroke="#6b7280" tick={{ fontSize: 12 }} domain={[0, 5]} />
+                    <XAxis
+                      dataKey="month"
+                      stroke="#6b7280"
+                      tick={{ fontSize: 12 }}
+                    />
+                    <YAxis
+                      stroke="#6b7280"
+                      tick={{ fontSize: 12 }}
+                      domain={[0, 5]}
+                    />
                     <Tooltip />
-                    <Line type="monotone" dataKey="score" stroke="#3b82f6" strokeWidth={2} dot={{ fill: '#3b82f6', r: 4 }} />
+                    <Line
+                      type="monotone"
+                      dataKey="score"
+                      stroke="#3b82f6"
+                      strokeWidth={2}
+                      dot={{ fill: "#3b82f6", r: 4 }}
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -328,24 +411,38 @@ export default function Dashboard() {
             {/* MoM Average - Grouped Bar Chart */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4" />
-                  MoM Average Performance
-                </CardTitle>
+                <div className="flex flex-col">
+                  <span className="text-sm text-muted-foreground">Month on Month Performance</span>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4" />
+                    MoM Average Performance
+                  </CardTitle>
+                </div>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={200}>
+                <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={momAverageData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                     <XAxis dataKey="month" stroke="#6b7280" tick={{ fontSize: 12 }} />
-                    <YAxis stroke="#6b7280" tick={{ fontSize: 12 }} />
+                    <YAxis stroke="#6b7280" tick={{ fontSize: 12 }} domain={[0, 100]} />
                     <Tooltip />
-                    <Legend wrapperStyle={{ fontSize: '12px' }} />
-                    <Bar dataKey="onTime" fill="#3b82f6" name="On Time" />
-                    <Bar dataKey="quality" fill="#8b5cf6" name="Quality" />
-                    <Bar dataKey="efficiency" fill="#10b981" name="Efficiency" />
+                    <Legend wrapperStyle={{ fontSize: "12px" }} />
+
+                    <Bar dataKey="aht" fill="#3b82f6" name="AHT">
+                      <LabelList dataKey="aht" position="top" formatter={(val: number) => `${val}%`} />
+                    </Bar>
+                    <Bar dataKey="quality" fill="#8b5cf6" name="Quality">
+                      <LabelList dataKey="quality" position="top" formatter={(val: number) => `${val}%`} />
+                    </Bar>
+                    <Bar dataKey="csat" fill="#10b981" name="C SAT">
+                      <LabelList dataKey="csat" position="top" formatter={(val: number) => `${val}%`} />
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
+
+                <p className="text-xs text-muted-foreground text-center mt-2">
+                  Data labels represent % performance across AHT, Quality, and C SAT metrics.
+                </p>
               </CardContent>
             </Card>
 
@@ -363,10 +460,14 @@ export default function Dashboard() {
                     <div key={item.name} className="space-y-1">
                       <div className="flex items-center justify-between text-sm">
                         <span className="font-medium">{item.name}</span>
-                        <span className="text-muted-foreground">{item.days}</span>
+                        <span className="text-muted-foreground">
+                          {item.days}
+                        </span>
                       </div>
                       <Progress value={item.attendance} className="h-2" />
-                      <div className="text-xs text-right text-muted-foreground">{item.attendance}%</div>
+                      <div className="text-xs text-right text-muted-foreground">
+                        {item.attendance}%
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -385,16 +486,40 @@ export default function Dashboard() {
                 <ResponsiveContainer width="100%" height={200}>
                   <AreaChart data={productivityData}>
                     <defs>
-                      <linearGradient id="colorProductivity" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                      <linearGradient
+                        id="colorProductivity"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor="#8b5cf6"
+                          stopOpacity={0.3}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="#8b5cf6"
+                          stopOpacity={0}
+                        />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis dataKey="month" stroke="#6b7280" tick={{ fontSize: 12 }} />
+                    <XAxis
+                      dataKey="month"
+                      stroke="#6b7280"
+                      tick={{ fontSize: 12 }}
+                    />
                     <YAxis stroke="#6b7280" tick={{ fontSize: 12 }} />
                     <Tooltip />
-                    <Area type="monotone" dataKey="value" stroke="#8b5cf6" fillOpacity={1} fill="url(#colorProductivity)" />
+                    <Area
+                      type="monotone"
+                      dataKey="value"
+                      stroke="#8b5cf6"
+                      fillOpacity={1}
+                      fill="url(#colorProductivity)"
+                    />
                   </AreaChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -412,13 +537,32 @@ export default function Dashboard() {
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={projectsData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis dataKey="month" stroke="#6b7280" tick={{ fontSize: 12 }} />
+                    <XAxis
+                      dataKey="month"
+                      stroke="#6b7280"
+                      tick={{ fontSize: 12 }}
+                    />
                     <YAxis stroke="#6b7280" tick={{ fontSize: 12 }} />
                     <Tooltip />
-                    <Legend wrapperStyle={{ fontSize: '12px' }} />
-                    <Bar dataKey="completed" stackId="a" fill="#10b981" name="Completed" />
-                    <Bar dataKey="inProgress" stackId="a" fill="#f59e0b" name="In Progress" />
-                    <Bar dataKey="planned" stackId="a" fill="#6b7280" name="Planned" />
+                    <Legend wrapperStyle={{ fontSize: "12px" }} />
+                    <Bar
+                      dataKey="completed"
+                      stackId="a"
+                      fill="#10b981"
+                      name="Completed"
+                    />
+                    <Bar
+                      dataKey="inProgress"
+                      stackId="a"
+                      fill="#f59e0b"
+                      name="In Progress"
+                    />
+                    <Bar
+                      dataKey="planned"
+                      stackId="a"
+                      fill="#6b7280"
+                      name="Planned"
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -435,14 +579,22 @@ export default function Dashboard() {
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold">{callsData[callsData.length - 1]?.calls || 0}</span>
+                    <span className="text-3xl font-bold">
+                      {callsData[callsData.length - 1]?.calls || 0}
+                    </span>
                     <Badge variant="outline" className="text-xs">
-                      {timeFilter === 'monthly' ? 'This Month' : 'This Week'}
+                      {timeFilter === "monthly" ? "This Month" : "This Week"}
                     </Badge>
                   </div>
                   <ResponsiveContainer width="100%" height={120}>
                     <LineChart data={callsData}>
-                      <Line type="monotone" dataKey="calls" stroke="#ec4899" strokeWidth={2} dot={false} />
+                      <Line
+                        type="monotone"
+                        dataKey="calls"
+                        stroke="#ec4899"
+                        strokeWidth={2}
+                        dot={false}
+                      />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -460,8 +612,16 @@ export default function Dashboard() {
               <Award className="h-5 w-5" />
               Performance Summary
             </CardTitle>
-            <Select value={performanceFilter} onValueChange={(value) => setPerformanceFilter(value as 'monthly' | 'weekly')}>
-              <SelectTrigger className="w-36" data-testid="select-performance-filter">
+            <Select
+              value={performanceFilter}
+              onValueChange={(value) =>
+                setPerformanceFilter(value as "monthly" | "weekly")
+              }
+            >
+              <SelectTrigger
+                className="w-36"
+                data-testid="select-performance-filter"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -486,8 +646,18 @@ export default function Dashboard() {
                   <RadarChart data={radarData}>
                     <PolarGrid stroke="#e5e7eb" />
                     <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11 }} />
-                    <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 10 }} />
-                    <Radar name="Score" dataKey="value" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.5} />
+                    <PolarRadiusAxis
+                      angle={90}
+                      domain={[0, 100]}
+                      tick={{ fontSize: 10 }}
+                    />
+                    <Radar
+                      name="Score"
+                      dataKey="value"
+                      stroke="#3b82f6"
+                      fill="#3b82f6"
+                      fillOpacity={0.5}
+                    />
                     <Tooltip />
                   </RadarChart>
                 </ResponsiveContainer>
@@ -506,7 +676,11 @@ export default function Dashboard() {
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={perfMomAverageData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis dataKey="month" stroke="#6b7280" tick={{ fontSize: 11 }} />
+                    <XAxis
+                      dataKey="month"
+                      stroke="#6b7280"
+                      tick={{ fontSize: 11 }}
+                    />
                     <YAxis stroke="#6b7280" tick={{ fontSize: 11 }} />
                     <Tooltip />
                     <Bar dataKey="quality" fill="#8b5cf6" name="Quality" />
@@ -537,7 +711,10 @@ export default function Dashboard() {
                       label={({ name, value }) => `${name}: ${value}%`}
                     >
                       {attendanceDonutData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={DONUT_COLORS[index % DONUT_COLORS.length]} />
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={DONUT_COLORS[index % DONUT_COLORS.length]}
+                        />
                       ))}
                     </Pie>
                     <Tooltip />
@@ -558,11 +735,31 @@ export default function Dashboard() {
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={perfProjectsData} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis type="number" stroke="#6b7280" tick={{ fontSize: 11 }} />
-                    <YAxis dataKey="month" type="category" stroke="#6b7280" tick={{ fontSize: 11 }} width={60} />
+                    <XAxis
+                      type="number"
+                      stroke="#6b7280"
+                      tick={{ fontSize: 11 }}
+                    />
+                    <YAxis
+                      dataKey="month"
+                      type="category"
+                      stroke="#6b7280"
+                      tick={{ fontSize: 11 }}
+                      width={60}
+                    />
                     <Tooltip />
-                    <Bar dataKey="completed" stackId="a" fill="#10b981" name="Completed" />
-                    <Bar dataKey="inProgress" stackId="a" fill="#f59e0b" name="In Progress" />
+                    <Bar
+                      dataKey="completed"
+                      stackId="a"
+                      fill="#10b981"
+                      name="Completed"
+                    />
+                    <Bar
+                      dataKey="inProgress"
+                      stackId="a"
+                      fill="#f59e0b"
+                      name="In Progress"
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -580,7 +777,11 @@ export default function Dashboard() {
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={workDistributionData} layout="horizontal">
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis dataKey="task" stroke="#6b7280" tick={{ fontSize: 11 }} />
+                    <XAxis
+                      dataKey="task"
+                      stroke="#6b7280"
+                      tick={{ fontSize: 11 }}
+                    />
                     <YAxis stroke="#6b7280" tick={{ fontSize: 11 }} />
                     <Tooltip />
                     <Bar dataKey="hours" fill="#ec4899" name="Hours" />
@@ -607,13 +808,17 @@ export default function Dashboard() {
                         <TableHead className="font-semibold">Target</TableHead>
                         <TableHead className="font-semibold">Weight</TableHead>
                         <TableHead className="font-semibold">Actual</TableHead>
-                        <TableHead className="font-semibold">Weighted Score</TableHead>
+                        <TableHead className="font-semibold">
+                          Weighted Score
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {/* Talent 1 */}
                       <TableRow>
-                        <TableCell rowSpan={4} className="font-medium border-r">Talent 1</TableCell>
+                        <TableCell rowSpan={4} className="font-medium border-r">
+                          John Doe
+                        </TableCell>
                         <TableCell>Attendance</TableCell>
                         <TableCell>95%</TableCell>
                         <TableCell>30%</TableCell>
@@ -635,13 +840,17 @@ export default function Dashboard() {
                         <TableCell>26.4</TableCell>
                       </TableRow>
                       <TableRow className="bg-muted/50">
-                        <TableCell colSpan={4} className="font-semibold">Talent 1 Overall</TableCell>
+                        <TableCell colSpan={4} className="font-semibold">
+                          John Doe Overall
+                        </TableCell>
                         <TableCell className="font-semibold">92.6</TableCell>
                       </TableRow>
 
                       {/* Talent 2 */}
                       <TableRow>
-                        <TableCell rowSpan={4} className="font-medium border-r">Talent 2</TableCell>
+                        <TableCell rowSpan={4} className="font-medium border-r">
+                          Val Legaspi
+                        </TableCell>
                         <TableCell>Attendance</TableCell>
                         <TableCell>95%</TableCell>
                         <TableCell>30%</TableCell>
@@ -663,13 +872,17 @@ export default function Dashboard() {
                         <TableCell>25.5</TableCell>
                       </TableRow>
                       <TableRow className="bg-muted/50">
-                        <TableCell colSpan={4} className="font-semibold">Talent 2 Overall</TableCell>
+                        <TableCell colSpan={4} className="font-semibold">
+                          Val Legaspi Overall
+                        </TableCell>
                         <TableCell className="font-semibold">89.9</TableCell>
                       </TableRow>
 
                       {/* Talent 3 */}
                       <TableRow>
-                        <TableCell rowSpan={4} className="font-medium border-r">Talent 3</TableCell>
+                        <TableCell rowSpan={4} className="font-medium border-r">
+                          Frenzy Eloise
+                        </TableCell>
                         <TableCell>Attendance</TableCell>
                         <TableCell>95%</TableCell>
                         <TableCell>30%</TableCell>
@@ -691,7 +904,9 @@ export default function Dashboard() {
                         <TableCell>27.0</TableCell>
                       </TableRow>
                       <TableRow className="bg-muted/50">
-                        <TableCell colSpan={4} className="font-semibold">Talent 3 Overall</TableCell>
+                        <TableCell colSpan={4} className="font-semibold">
+                          Frenzy Eloise Overall
+                        </TableCell>
                         <TableCell className="font-semibold">94.6</TableCell>
                       </TableRow>
                     </TableBody>
@@ -716,9 +931,13 @@ export default function Dashboard() {
                     <TableRow>
                       <TableHead className="font-semibold">Feedback</TableHead>
                       <TableHead className="font-semibold">Date</TableHead>
-                      <TableHead className="font-semibold">Coaching Date</TableHead>
+                      <TableHead className="font-semibold">
+                        Coaching Date
+                      </TableHead>
                       <TableHead className="font-semibold">RCA</TableHead>
-                      <TableHead className="font-semibold">Action Plan</TableHead>
+                      <TableHead className="font-semibold">
+                        Action Plan
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
