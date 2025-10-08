@@ -218,6 +218,13 @@ const requireRole = (allowedRoles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     const requestId = (req as any).requestId;
 
+    // Bypass RBAC when authentication is disabled
+    const DISABLE_AUTH = process.env.DISABLE_AUTH === "true";
+    if (DISABLE_AUTH) {
+      console.log(`⚠️  RBAC BYPASSED - Authentication disabled [${requestId}]`);
+      return next();
+    }
+
     if (!(req as any).user) {
       console.error(`❌ RBAC failed: No user in request [${requestId}]`);
       return res.status(401).json({
