@@ -725,7 +725,12 @@ export default function Dashboard() {
                   </CardHeader>
                   <CardContent>
                     <ResponsiveContainer width="100%" height={240}>
-                      <BarChart data={perfProjectsData} layout="vertical">
+                      <BarChart 
+                        data={perfProjectsData} 
+                        layout="vertical"
+                        margin={{ left: 0, right: 40, top: 5, bottom: 5 }}
+                        barSize={24}
+                      >
                         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                         <XAxis
                           type="number"
@@ -737,7 +742,7 @@ export default function Dashboard() {
                           type="category"
                           stroke="#6b7280"
                           tick={{ fontSize: 11 }}
-                          width={60}
+                          width={50}
                         />
                         <Tooltip />
                         <Legend wrapperStyle={{ fontSize: "12px" }} />
@@ -768,7 +773,12 @@ export default function Dashboard() {
                   </CardHeader>
                   <CardContent>
                     <ResponsiveContainer width="100%" height={200}>
-                      <BarChart data={workDistributionData} layout="vertical">
+                      <BarChart 
+                        data={workDistributionData} 
+                        layout="vertical"
+                        margin={{ left: 0, right: 40, top: 5, bottom: 5 }}
+                        barSize={28}
+                      >
                         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                         <XAxis
                           type="number"
