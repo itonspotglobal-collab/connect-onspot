@@ -74,6 +74,19 @@ const authenticateJWT = async (
   next: NextFunction,
 ) => {
   try {
+    // Check if authentication is disabled for testing
+    const DISABLE_AUTH = process.env.DISABLE_AUTH === "true";
+    
+    if (DISABLE_AUTH) {
+      console.log(`⚠️  AUTH DISABLED - Bypassing authentication [${(req as any).requestId}]`);
+      (req as any).user = {
+        id: "test-user-admin",
+        email: "admin@onspotglobal.com",
+        role: "admin",
+      };
+      return next();
+    }
+
     const authHeader = req.headers["authorization"];
     const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
 
