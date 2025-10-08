@@ -507,7 +507,7 @@ export default function Dashboard() {
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <Target className="h-4 w-4" />
-                  AHT Trend
+                  Productivity Trend
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -603,35 +603,39 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* Performance Summary Metrics */}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <CardTitle className="flex items-center gap-2">
-              <Award className="h-5 w-5" />
-              Performance Summary
-            </CardTitle>
-            <Select
-              value={performanceFilter}
-              onValueChange={(value) =>
-                setPerformanceFilter(value as "monthly" | "weekly")
-              }
-            >
-              <SelectTrigger
-                className="w-36"
-                data-testid="select-performance-filter"
+      {/* Performance Summary & Talent Showcase - Responsive Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Performance Summary Metrics */}
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <CardTitle className="flex items-center gap-2">
+                <Award className="h-5 w-5" />
+                Performance Summary
+              </CardTitle>
+              <Select
+                value={performanceFilter}
+                onValueChange={(value) =>
+                  setPerformanceFilter(value as "monthly" | "weekly")
+                }
               >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="monthly">Monthly</SelectItem>
-                <SelectItem value="weekly">Weekly</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardHeader>
+                <SelectTrigger
+                  className="w-36"
+                  data-testid="select-performance-filter"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            {/* Client Satisfaction - Radar Chart */}
+
             {/* Performance Monthly Average - Bar Chart */}
             <Card>
               <CardHeader>
@@ -785,7 +789,7 @@ export default function Dashboard() {
                       {/* Talent 1 */}
                       <TableRow>
                         <TableCell rowSpan={4} className="font-medium border-r">
-                          John Doe
+                          Maria Santos
                         </TableCell>
                         <TableCell>Attendance</TableCell>
                         <TableCell>95%</TableCell>
@@ -809,7 +813,7 @@ export default function Dashboard() {
                       </TableRow>
                       <TableRow className="bg-muted/50">
                         <TableCell colSpan={4} className="font-semibold">
-                          John Doe Overall
+                          Maria Santos Overall
                         </TableCell>
                         <TableCell className="font-semibold">92.6</TableCell>
                       </TableRow>
@@ -817,7 +821,7 @@ export default function Dashboard() {
                       {/* Talent 2 */}
                       <TableRow>
                         <TableCell rowSpan={4} className="font-medium border-r">
-                          Val Legaspi
+                          Carlos Reyes
                         </TableCell>
                         <TableCell>Attendance</TableCell>
                         <TableCell>95%</TableCell>
@@ -841,7 +845,7 @@ export default function Dashboard() {
                       </TableRow>
                       <TableRow className="bg-muted/50">
                         <TableCell colSpan={4} className="font-semibold">
-                          Val Legaspi Overall
+                          Carlos Reyes Overall
                         </TableCell>
                         <TableCell className="font-semibold">89.9</TableCell>
                       </TableRow>
@@ -849,7 +853,7 @@ export default function Dashboard() {
                       {/* Talent 3 */}
                       <TableRow>
                         <TableCell rowSpan={4} className="font-medium border-r">
-                          Frenzy Eloise
+                          Ana Dela Cruz
                         </TableCell>
                         <TableCell>Attendance</TableCell>
                         <TableCell>95%</TableCell>
@@ -873,7 +877,39 @@ export default function Dashboard() {
                       </TableRow>
                       <TableRow className="bg-muted/50">
                         <TableCell colSpan={4} className="font-semibold">
-                          Frenzy Eloise Overall
+                          Ana Dela Cruz Overall
+                        </TableCell>
+                        <TableCell className="font-semibold">94.6</TableCell>
+                      </TableRow>
+
+                      {/* Talent 4 */}
+                      <TableRow>
+                        <TableCell rowSpan={4} className="font-medium border-r">
+                          Juan Pablo
+                        </TableCell>
+                        <TableCell>Attendance</TableCell>
+                        <TableCell>85%</TableCell>
+                        <TableCell>25%</TableCell>
+                        <TableCell>100%</TableCell>
+                        <TableCell>30.0</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>CSAT</TableCell>
+                        <TableCell>90%</TableCell>
+                        <TableCell>40%</TableCell>
+                        <TableCell>94%</TableCell>
+                        <TableCell>37.6</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>Productivity</TableCell>
+                        <TableCell>85%</TableCell>
+                        <TableCell>30%</TableCell>
+                        <TableCell>90%</TableCell>
+                        <TableCell>27.0</TableCell>
+                      </TableRow>
+                      <TableRow className="bg-muted/50">
+                        <TableCell colSpan={4} className="font-semibold">
+                          Juan Pablo Overall
                         </TableCell>
                         <TableCell className="font-semibold">94.6</TableCell>
                       </TableRow>
@@ -936,93 +972,69 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </CardContent>
-      </Card>
+        </Card>
 
-      {/* Talent Section */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
+        {/* Talent Performance Showcase */}
+        <Card>
+          <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
-              Top Talent
+              Talent Performance Showcase
             </CardTitle>
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search talent..."
-                  className="pl-8 w-48"
-                  data-testid="input-talent-search"
-                />
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                data-testid="button-filter-talent"
-              >
-                <Filter className="h-4 w-4 mr-1" />
-                Filter
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleViewAllTalent}
-                data-testid="button-view-all-talent"
-              >
-                View All
-              </Button>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-6">
+              Top performing talent delivering exceptional results for our clients
+            </p>
+            <div className="space-y-4">
+              <TalentCard
+                id="talent-1"
+                name="Maria Santos"
+                role="Senior Full Stack Developer"
+                location="Manila, Philippines"
+                hourlyRate={25}
+                rating={4.9}
+                skills={["React", "Node.js", "TypeScript", "Python", "AWS"]}
+                avatarUrl={avatarImage}
+                experience="5+ years"
+                availability="available"
+              />
+              <TalentCard
+                id="talent-2"
+                name="Carlos Reyes"
+                role="Customer Support Specialist"
+                location="Cebu, Philippines"
+                hourlyRate={8}
+                rating={4.8}
+                skills={[
+                  "English Fluency",
+                  "CRM Management",
+                  "Technical Support",
+                  "Customer Service",
+                ]}
+                experience="3+ years"
+                availability="available"
+              />
+              <TalentCard
+                id="talent-3"
+                name="Ana Dela Cruz"
+                role="Virtual Assistant"
+                location="Davao, Philippines"
+                hourlyRate={6}
+                rating={4.7}
+                skills={[
+                  "Admin Support",
+                  "Data Entry",
+                  "Social Media",
+                  "Lead Generation",
+                ]}
+                experience="4+ years"
+                availability="available"
+              />
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <TalentCard
-              id="talent-1"
-              name="Maria Santos"
-              role="Senior Full Stack Developer"
-              location="Manila, Philippines"
-              hourlyRate={25}
-              rating={4.9}
-              skills={["React", "Node.js", "TypeScript", "Python", "AWS"]}
-              avatarUrl={avatarImage}
-              experience="5+ years"
-              availability="available"
-            />
-            <TalentCard
-              id="talent-2"
-              name="Carlos Reyes"
-              role="Customer Support Specialist"
-              location="Cebu, Philippines"
-              hourlyRate={8}
-              rating={4.8}
-              skills={[
-                "English Fluency",
-                "CRM Management",
-                "Technical Support",
-                "Customer Service",
-              ]}
-              experience="3+ years"
-              availability="available"
-            />
-            <TalentCard
-              id="talent-3"
-              name="Ana Dela Cruz"
-              role="Virtual Assistant"
-              location="Davao, Philippines"
-              hourlyRate={6}
-              rating={4.7}
-              skills={[
-                "Admin Support",
-                "Data Entry",
-                "Social Media",
-                "Lead Generation",
-              ]}
-              experience="4+ years"
-              availability="available"
-            />
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Project Management */}
       <TaskBoard tasks={mockTasks} />
