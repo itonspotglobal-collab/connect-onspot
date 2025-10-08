@@ -294,10 +294,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Check for authentication on mount - only once
   useEffect(() => {
     if (!initialized) {
-      console.log('🔒 AuthContext: Initializing JWT authentication...');
-      refreshAuth().finally(() => {
-        setInitialized(true);
-      });
+      console.log('🔒 AuthContext: Authentication disabled - public access mode');
+      // Skip authentication checks - site is fully public
+      setIsAuthenticated(false);
+      setUser(null);
+      setIsLoading(false);
+      setInitialized(true);
     }
   }, [initialized]);
 

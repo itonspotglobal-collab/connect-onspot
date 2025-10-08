@@ -21,44 +21,13 @@ export function PostLoginPortalSelection() {
 
   // Check if user needs portal selection
   useEffect(() => {
+    // Authentication disabled - no redirects needed
     if (!isAuthenticated || isLoading || !user) {
       return;
     }
 
-    // Check if user has already completed portal selection
-    const portalSelectionKey = `portal_selection_completed_${user.id}`;
-    const hasCompletedSelection = localStorage.getItem(portalSelectionKey) === 'true';
-
-    // Check if user is accessing a specific dashboard path
-    const isDashboardPath = location === '/client-dashboard' || 
-                           location === '/talent-dashboard' || 
-                           location === '/dashboard' || 
-                           location === '/talent-portal' ||
-                           location === '/admin/dashboard';
-
-    // Admin users skip portal selection and go directly to admin dashboard
-    if (user.role === 'admin') {
-      if (location === '/' || !location.startsWith('/admin')) {
-        console.log('🔀 Redirecting admin user to admin dashboard:', user.id);
-        setLocation('/admin/dashboard');
-      }
-      return;
-    }
-
-    if (!hasCompletedSelection && !isDashboardPath && !hasSelectedPortal) {
-      // Show portal selection dialog (only for client/talent users)
-      console.log('🚪 Showing portal selection for authenticated user:', user.id);
-      setShowPortalSelection(true);
-    } else if (hasCompletedSelection || hasSelectedPortal) {
-      // User has already selected portal, redirect appropriately
-      const targetPath = user.role === 'client' ? '/client-dashboard' : 
-                        user.role === 'talent' ? '/talent-dashboard' :
-                        user.role === 'admin' ? '/admin/dashboard' : '/';
-      if (location === '/' && !isDashboardPath) {
-        console.log('🔀 Redirecting to saved portal selection:', targetPath);
-        setLocation(targetPath);
-      }
-    }
+    // Skip all redirect logic when authentication is disabled
+    console.log('🔒 Portal selection disabled - public access mode');
   }, [isAuthenticated, isLoading, user, location, hasSelectedPortal, setLocation]);
 
   const handlePortalSelectionComplete = () => {
