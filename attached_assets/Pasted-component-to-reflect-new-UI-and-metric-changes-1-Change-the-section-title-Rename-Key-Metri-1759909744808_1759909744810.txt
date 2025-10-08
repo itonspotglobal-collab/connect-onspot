@@ -1,0 +1,62 @@
+component to reflect new UI and metric changes.
+
+1. Change the section title:
+   - Rename "Key Metrics" → "Performance Summary".
+
+2. Update the "MoM Average Performance" chart:
+   - Add a subtitle above it: "Month on Month Performance".
+   - Replace the existing chart metrics (On Time, Quality, Efficiency)
+     with AHT, Quality, and C SAT.
+   - Update both monthlyMoMAverage and weeklyMoMAverage datasets to use:
+     { month, aht, quality, csat } instead of { onTime, quality, efficiency }.
+
+3. Add % data labels above each bar in the MoM chart.
+   - Use Recharts <LabelList> inside each <Bar> to show percentage values.
+
+4. Add this descriptive footer under the chart:
+   "Data labels represent % performance across AHT, Quality, and C SAT metrics."
+
+5. Also rename the "Key Metrics" section header at the top to "Performance Summary".
+
+Here’s the code structure you should use for the MoM Average Performance chart:
+
+<Card>
+  <CardHeader>
+    <div className="flex flex-col">
+      <span className="text-sm text-muted-foreground">Month on Month Performance</span>
+      <CardTitle className="text-base flex items-center gap-2">
+        <TrendingUp className="h-4 w-4" />
+        MoM Average Performance
+      </CardTitle>
+    </div>
+  </CardHeader>
+  <CardContent>
+    <ResponsiveContainer width="100%" height={220}>
+      <BarChart data={momAverageData}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+        <XAxis dataKey="month" stroke="#6b7280" tick={{ fontSize: 12 }} />
+        <YAxis stroke="#6b7280" tick={{ fontSize: 12 }} domain={[0, 100]} />
+        <Tooltip />
+        <Legend wrapperStyle={{ fontSize: "12px" }} />
+
+        <Bar dataKey="aht" fill="#3b82f6" name="AHT">
+          <LabelList dataKey="aht" position="top" formatter={(val) => `${val}%`} />
+        </Bar>
+        <Bar dataKey="quality" fill="#8b5cf6" name="Quality">
+          <LabelList dataKey="quality" position="top" formatter={(val) => `${val}%`} />
+        </Bar>
+        <Bar dataKey="csat" fill="#10b981" name="C SAT">
+          <LabelList dataKey="csat" position="top" formatter={(val) => `${val}%`} />
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+
+    <p className="text-xs text-muted-foreground text-center mt-2">
+      Data labels represent % performance across AHT, Quality, and C SAT metrics.
+    </p>
+  </CardContent>
+</Card>
+
+After you apply these edits, re-run the site and verify that:
+- The section header now reads “Performance Summary”.
+- The MoM Average Performance chart has bars for AHT, Quality, and C SAT with percentage labels on top.
