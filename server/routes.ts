@@ -368,42 +368,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   console.log("🔗 Registering API routes...");
 
-  // Protected Dashboard Routes with Role-Based Access Control
-  // These routes serve the dashboard content with server-side validation
+  // 🔓 Dashboard Routes - Public Access (Authentication Disabled)
   app.get(
     "/client-dashboard",
-    authenticateJWT,
-    requireClient,
     (req: Request, res: Response) => {
-      console.log(`🏠 Client dashboard access [${(req as any).requestId}]:`, {
-        userId: (req as any).user?.id,
-        role: (req as any).user?.role,
-      });
-      // In a production app, this would render the client dashboard or return appropriate data
+      console.log(`🏠 Client dashboard access (public) [${(req as any).requestId}]`);
+      // Public access - no authentication required
       res.json({
         success: true,
-        message: "Client dashboard access granted",
-        userRole: (req as any).user?.role,
-        userId: (req as any).user?.id,
+        message: "Client dashboard access granted (public mode)",
+        userRole: "guest",
+        userId: "guest",
       });
     },
   );
 
   app.get(
     "/talent-dashboard",
-    authenticateJWT,
-    requireTalent,
     (req: Request, res: Response) => {
-      console.log(`🎯 Talent dashboard access [${(req as any).requestId}]:`, {
-        userId: (req as any).user?.id,
-        role: (req as any).user?.role,
-      });
-      // In a production app, this would render the talent dashboard or return appropriate data
+      console.log(`🎯 Talent dashboard access (public) [${(req as any).requestId}]`);
+      // Public access - no authentication required
       res.json({
         success: true,
-        message: "Talent dashboard access granted",
-        userRole: (req as any).user?.role,
-        userId: (req as any).user?.id,
+        message: "Talent dashboard access granted (public mode)",
+        userRole: "guest",
+        userId: "guest",
       });
     },
   );
