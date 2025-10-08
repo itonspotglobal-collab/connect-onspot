@@ -709,17 +709,17 @@ export default function Dashboard() {
               </Card>
 
               {/* Projects Overview and Work Distribution - Stacked Vertically */}
-              <div className="space-y-5">
+              <div className="space-y-6">
                 {/* Projects Overview - Horizontal Stacked Bar Chart */}
-                <Card className="overflow-hidden">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2 font-semibold">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
                       <Briefcase className="h-4 w-4" />
                       Projects Overview
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="pt-0">
-                    <ResponsiveContainer width="100%" height={240}>
+                  <CardContent>
+                    <ResponsiveContainer width="230%" height={240}>
                       <BarChart
                         data={perfProjectsData}
                         layout="vertical"
@@ -759,15 +759,16 @@ export default function Dashboard() {
                 </Card>
 
                 {/* Work Distribution (Channels) - Horizontal Bar Chart */}
-                <Card className="overflow-hidden">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2 font-semibold">
+                <Card className="w-full">
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
                       <Target className="h-4 w-4" />
                       Work Distribution (Channels)
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="pt-0">
-                    <ResponsiveContainer width="100%" height={200}>
+                  <CardContent>
+                    <div className="w-full h-[220px]">
+                      <ResponsiveContainer width="230%" height={200}>
                         <BarChart
                           data={workDistributionData}
                           layout="vertical"
