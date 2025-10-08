@@ -158,19 +158,19 @@ export default function Dashboard() {
   ];
 
   const monthlyCalls = [
-    { month: "Jan", calls: 145 },
-    { month: "Feb", calls: 162 },
-    { month: "Mar", calls: 158 },
-    { month: "Apr", calls: 178 },
-    { month: "May", calls: 185 },
-    { month: "Jun", calls: 192 },
+    { month: "Jan", inbound: 85, outbound: 60 },
+    { month: "Feb", inbound: 90, outbound: 72 },
+    { month: "Mar", inbound: 92, outbound: 66 },
+    { month: "Apr", inbound: 97, outbound: 81 },
+    { month: "May", inbound: 105, outbound: 80 },
+    { month: "Jun", inbound: 110, outbound: 82 },
   ];
 
   const weeklyCalls = [
-    { month: "Week 1", calls: 45 },
-    { month: "Week 2", calls: 48 },
-    { month: "Week 3", calls: 47 },
-    { month: "Week 4", calls: 52 },
+    { month: "Week 1", inbound: 22, outbound: 18 },
+    { month: "Week 2", inbound: 25, outbound: 20 },
+    { month: "Week 3", inbound: 24, outbound: 19 },
+    { month: "Week 4", inbound: 27, outbound: 21 },
   ];
 
   // Performance Summary Mock Data
@@ -353,7 +353,7 @@ export default function Dashboard() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5" />
-              Performance Summary 
+              Performance Summary
             </CardTitle>
             <Select
               value={timeFilter}
@@ -412,7 +412,9 @@ export default function Dashboard() {
             <Card>
               <CardHeader>
                 <div className="flex flex-col">
-                  <span className="text-sm text-muted-foreground">Month on Month Performance</span>
+                  <span className="text-sm text-muted-foreground">
+                    Month on Month Performance
+                  </span>
                   <CardTitle className="text-base flex items-center gap-2">
                     <TrendingUp className="h-4 w-4" />
                     MoM Average Performance
@@ -423,25 +425,46 @@ export default function Dashboard() {
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={momAverageData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis dataKey="month" stroke="#6b7280" tick={{ fontSize: 12 }} />
-                    <YAxis stroke="#6b7280" tick={{ fontSize: 12 }} domain={[0, 100]} />
+                    <XAxis
+                      dataKey="month"
+                      stroke="#6b7280"
+                      tick={{ fontSize: 12 }}
+                    />
+                    <YAxis
+                      stroke="#6b7280"
+                      tick={{ fontSize: 12 }}
+                      domain={[0, 100]}
+                    />
                     <Tooltip />
                     <Legend wrapperStyle={{ fontSize: "12px" }} />
 
                     <Bar dataKey="aht" fill="#3b82f6" name="AHT">
-                      <LabelList dataKey="aht" position="top" formatter={(val: number) => `${val}%`} />
+                      <LabelList
+                        dataKey="aht"
+                        position="top"
+                        formatter={(val: number) => `${val}%`}
+                      />
                     </Bar>
                     <Bar dataKey="quality" fill="#8b5cf6" name="Quality">
-                      <LabelList dataKey="quality" position="top" formatter={(val: number) => `${val}%`} />
+                      <LabelList
+                        dataKey="quality"
+                        position="top"
+                        formatter={(val: number) => `${val}%`}
+                      />
                     </Bar>
                     <Bar dataKey="csat" fill="#10b981" name="C SAT">
-                      <LabelList dataKey="csat" position="top" formatter={(val: number) => `${val}%`} />
+                      <LabelList
+                        dataKey="csat"
+                        position="top"
+                        formatter={(val: number) => `${val}%`}
+                      />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
 
                 <p className="text-xs text-muted-foreground text-center mt-2">
-                  Data labels represent % performance across AHT, Quality, and C SAT metrics.
+                  Data labels represent % performance across AHT, Quality, and C
+                  SAT metrics.
                 </p>
               </CardContent>
             </Card>
@@ -525,79 +548,31 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Projects - Stacked Vertical Bar Chart */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Briefcase className="h-4 w-4" />
-                  Projects Status
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={projectsData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis
-                      dataKey="month"
-                      stroke="#6b7280"
-                      tick={{ fontSize: 12 }}
-                    />
-                    <YAxis stroke="#6b7280" tick={{ fontSize: 12 }} />
-                    <Tooltip />
-                    <Legend wrapperStyle={{ fontSize: "12px" }} />
-                    <Bar
-                      dataKey="completed"
-                      stackId="a"
-                      fill="#10b981"
-                      name="Completed"
-                    />
-                    <Bar
-                      dataKey="inProgress"
-                      stackId="a"
-                      fill="#f59e0b"
-                      name="In Progress"
-                    />
-                    <Bar
-                      dataKey="planned"
-                      stackId="a"
-                      fill="#6b7280"
-                      name="Planned"
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            {/* Number of Calls - Sparkline Chart */}
+            {/* Calls Summary - Bar Chart */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <Phone className="h-4 w-4" />
-                  Number of Calls
+                  Calls Summary
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold">
-                      {callsData[callsData.length - 1]?.calls || 0}
-                    </span>
-                    <Badge variant="outline" className="text-xs">
-                      {timeFilter === "monthly" ? "This Month" : "This Week"}
-                    </Badge>
-                  </div>
-                  <ResponsiveContainer width="100%" height={120}>
-                    <LineChart data={callsData}>
-                      <Line
-                        type="monotone"
-                        dataKey="calls"
-                        stroke="#ec4899"
-                        strokeWidth={2}
-                        dot={false}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={callsData} margin={{ top: 20, right: 10, left: -10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis dataKey="month" stroke="#6b7280" tick={{ fontSize: 11 }} />
+                    <YAxis stroke="#6b7280" tick={{ fontSize: 11 }} />
+                    <Tooltip />
+                    <Legend wrapperStyle={{ fontSize: "12px" }} />
+                    
+                    <Bar dataKey="inbound" fill="#3b82f6" name="Inbound">
+                      <LabelList dataKey="inbound" position="top" style={{ fontSize: '10px' }} />
+                    </Bar>
+                    <Bar dataKey="outbound" fill="#ec4899" name="Outbound">
+                      <LabelList dataKey="outbound" position="top" style={{ fontSize: '10px' }} />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               </CardContent>
             </Card>
           </div>
