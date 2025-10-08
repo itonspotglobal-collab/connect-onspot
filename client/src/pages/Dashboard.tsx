@@ -637,9 +637,7 @@ export default function Dashboard() {
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-              {/* Client Satisfaction - Radar Chart */}
-
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Performance Monthly Average - Bar Chart */}
               <Card>
                 <CardHeader>
@@ -785,7 +783,7 @@ export default function Dashboard() {
               </Card>
 
               {/* Talent Scorecard - Table */}
-              <Card className="xl:col-span-3">
+              <Card className="lg:col-span-2">
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
                     <Users className="h-4 w-4" />
