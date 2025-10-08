@@ -74,6 +74,19 @@ const authenticateJWT = async (
   next: NextFunction,
 ) => {
   try {
+    // Check if authentication is disabled for testing
+    const DISABLE_AUTH = process.env.DISABLE_AUTH === "true";
+    
+    if (DISABLE_AUTH) {
+      console.log(`⚠️  AUTH DISABLED - Bypassing authentication [${(req as any).requestId}]`);
+      (req as any).user = {
+        id: "test-user-admin",
+        email: "admin@onspotglobal.com",
+        role: "admin",
+      };
+      return next();
+    }
+
     const authHeader = req.headers["authorization"];
     const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
 
@@ -204,6 +217,13 @@ const authenticateJWT = async (
 const requireRole = (allowedRoles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     const requestId = (req as any).requestId;
+
+    // Bypass RBAC when authentication is disabled
+    const DISABLE_AUTH = process.env.DISABLE_AUTH === "true";
+    if (DISABLE_AUTH) {
+      console.log(`⚠️  RBAC BYPASSED - Authentication disabled [${requestId}]`);
+      return next();
+    }
 
     if (!(req as any).user) {
       console.error(`❌ RBAC failed: No user in request [${requestId}]`);

@@ -285,18 +285,6 @@ app.use((req, res, next) => {
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🚀 Frontend baseURL: ${process.env.VITE_API_BASE || 'relative URLs'}`);
 
-  // Serve robots.txt for SEO
-  app.get('/robots.txt', (req, res) => {
-    res.type('text/plain');
-    res.sendFile('robots.txt', { root: './server/public' });
-  });
-
-  // Bot detection middleware for SEO/crawlability
-  // This must come before Vite/static middleware to intercept bot requests
-  const { botDetectionMiddleware } = await import('./botMiddleware');
-  app.use(botDetectionMiddleware);
-  console.log('🤖 Bot detection middleware enabled for SEO');
-
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
