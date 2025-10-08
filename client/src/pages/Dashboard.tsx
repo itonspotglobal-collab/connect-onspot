@@ -713,89 +713,92 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              {/* Projects Overview - Horizontal Stacked Bar Chart */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Briefcase className="h-4 w-4" />
-                    Projects Overview
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={320}>
-                    <BarChart data={perfProjectsData} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                      <XAxis
-                        type="number"
-                        stroke="#6b7280"
-                        tick={{ fontSize: 11 }}
-                      />
-                      <YAxis
-                        dataKey="month"
-                        type="category"
-                        stroke="#6b7280"
-                        tick={{ fontSize: 11 }}
-                        width={60}
-                      />
-                      <Tooltip />
-                      <Legend wrapperStyle={{ fontSize: "12px" }} />
-                      <Bar
-                        dataKey="completed"
-                        stackId="a"
-                        fill="#10b981"
-                        name="Completed"
-                      />
-                      <Bar
-                        dataKey="inProgress"
-                        stackId="a"
-                        fill="#f59e0b"
-                        name="In Progress"
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              {/* Work Distribution (Channels) - Horizontal Bar Chart */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Target className="h-4 w-4" />
-                    Work Distribution (Channels)
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={320}>
-                    <BarChart data={workDistributionData} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                      <XAxis
-                        type="number"
-                        stroke="#6b7280"
-                        tick={{ fontSize: 11 }}
-                      />
-                      <YAxis
-                        dataKey="channel"
-                        type="category"
-                        stroke="#6b7280"
-                        tick={{ fontSize: 11 }}
-                        width={70}
-                      />
-                      <Tooltip />
-                      <Bar dataKey="count" name="Count">
-                        {workDistributionData.map((entry, index) => {
-                          const colors = ["#3b82f6", "#ec4899", "#eab308", "#10b981"];
-                          return <Cell key={`cell-${index}`} fill={colors[index]} />;
-                        })}
-                        <LabelList
-                          dataKey="count"
-                          position="right"
-                          style={{ fontSize: "10px" }}
+              {/* Projects Overview and Work Distribution - Stacked Vertically */}
+              <div className="space-y-6">
+                {/* Projects Overview - Horizontal Stacked Bar Chart */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Briefcase className="h-4 w-4" />
+                      Projects Overview
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={320}>
+                      <BarChart data={perfProjectsData} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                        <XAxis
+                          type="number"
+                          stroke="#6b7280"
+                          tick={{ fontSize: 11 }}
                         />
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
+                        <YAxis
+                          dataKey="month"
+                          type="category"
+                          stroke="#6b7280"
+                          tick={{ fontSize: 11 }}
+                          width={60}
+                        />
+                        <Tooltip />
+                        <Legend wrapperStyle={{ fontSize: "12px" }} />
+                        <Bar
+                          dataKey="completed"
+                          stackId="a"
+                          fill="#10b981"
+                          name="Completed"
+                        />
+                        <Bar
+                          dataKey="inProgress"
+                          stackId="a"
+                          fill="#f59e0b"
+                          name="In Progress"
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                {/* Work Distribution (Channels) - Horizontal Bar Chart */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Target className="h-4 w-4" />
+                      Work Distribution (Channels)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={320}>
+                      <BarChart data={workDistributionData} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                        <XAxis
+                          type="number"
+                          stroke="#6b7280"
+                          tick={{ fontSize: 11 }}
+                        />
+                        <YAxis
+                          dataKey="channel"
+                          type="category"
+                          stroke="#6b7280"
+                          tick={{ fontSize: 11 }}
+                          width={70}
+                        />
+                        <Tooltip />
+                        <Bar dataKey="count" name="Count">
+                          {workDistributionData.map((entry, index) => {
+                            const colors = ["#3b82f6", "#ec4899", "#eab308", "#10b981"];
+                            return <Cell key={`cell-${index}`} fill={colors[index]} />;
+                          })}
+                          <LabelList
+                            dataKey="count"
+                            position="right"
+                            style={{ fontSize: "10px" }}
+                          />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </CardContent>
         </Card>
