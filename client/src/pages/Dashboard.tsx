@@ -665,6 +665,42 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
+              {/* Attendance % - Vertical Bar Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Attendance %
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={attendanceMonthlyData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <XAxis
+                        dataKey="month"
+                        stroke="#6b7280"
+                        tick={{ fontSize: 11 }}
+                      />
+                      <YAxis 
+                        stroke="#6b7280" 
+                        tick={{ fontSize: 11 }}
+                        label={{ value: 'Attendance %', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }}
+                      />
+                      <Tooltip />
+                      <Bar dataKey="attendance" fill="#10b981" name="Attendance %">
+                        <LabelList
+                          dataKey="attendance"
+                          position="top"
+                          style={{ fontSize: "10px" }}
+                          offset={4}
+                        />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
               {/* Projects - Weekly Stacked Bars */}
               <Card>
                 <CardHeader>
@@ -702,42 +738,6 @@ export default function Dashboard() {
                         fill="#f59e0b"
                         name="In Progress"
                       />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              {/* Attendance % - Vertical Bar Chart */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    Attendance %
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={attendanceMonthlyData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                      <XAxis
-                        dataKey="month"
-                        stroke="#6b7280"
-                        tick={{ fontSize: 11 }}
-                      />
-                      <YAxis 
-                        stroke="#6b7280" 
-                        tick={{ fontSize: 11 }}
-                        label={{ value: 'Attendance %', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }}
-                      />
-                      <Tooltip />
-                      <Bar dataKey="attendance" fill="#10b981" name="Attendance %">
-                        <LabelList
-                          dataKey="attendance"
-                          position="top"
-                          style={{ fontSize: "10px" }}
-                          offset={4}
-                        />
-                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
