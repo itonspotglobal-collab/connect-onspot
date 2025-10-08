@@ -55,6 +55,7 @@ import {
   Radar,
   Area,
   AreaChart,
+  LabelList,
 } from "recharts";
 import {
   Table,
@@ -102,19 +103,19 @@ export default function Dashboard() {
   ];
 
   const monthlyMoMAverage = [
-    { month: "Jan", onTime: 85, quality: 90, efficiency: 88 },
-    { month: "Feb", onTime: 87, quality: 92, efficiency: 89 },
-    { month: "Mar", onTime: 86, quality: 91, efficiency: 90 },
-    { month: "Apr", onTime: 89, quality: 93, efficiency: 91 },
-    { month: "May", onTime: 90, quality: 94, efficiency: 92 },
-    { month: "Jun", onTime: 91, quality: 95, efficiency: 93 },
+    { month: "Jan", aht: 85, quality: 90, csat: 88 },
+    { month: "Feb", aht: 87, quality: 92, csat: 89 },
+    { month: "Mar", aht: 86, quality: 91, csat: 90 },
+    { month: "Apr", aht: 89, quality: 93, csat: 91 },
+    { month: "May", aht: 90, quality: 94, csat: 92 },
+    { month: "Jun", aht: 91, quality: 95, csat: 93 },
   ];
 
   const weeklyMoMAverage = [
-    { month: "Week 1", onTime: 88, quality: 92, efficiency: 90 },
-    { month: "Week 2", onTime: 90, quality: 94, efficiency: 91 },
-    { month: "Week 3", onTime: 89, quality: 93, efficiency: 92 },
-    { month: "Week 4", onTime: 91, quality: 95, efficiency: 93 },
+    { month: "Week 1", aht: 88, quality: 92, csat: 90 },
+    { month: "Week 2", aht: 90, quality: 94, csat: 91 },
+    { month: "Week 3", aht: 89, quality: 93, csat: 92 },
+    { month: "Week 4", aht: 91, quality: 95, csat: 93 },
   ];
 
   const attendanceData = [
@@ -346,13 +347,13 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Key Metrics */}
+      {/* Performance Summary */}
       <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5" />
-              Key Metrics
+              Performance Summary 
             </CardTitle>
             <Select
               value={timeFilter}
@@ -410,32 +411,38 @@ export default function Dashboard() {
             {/* MoM Average - Grouped Bar Chart */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4" />
-                  MoM Average Performance
-                </CardTitle>
+                <div className="flex flex-col">
+                  <span className="text-sm text-muted-foreground">Month on Month Performance</span>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4" />
+                    MoM Average Performance
+                  </CardTitle>
+                </div>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={200}>
+                <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={momAverageData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis
-                      dataKey="month"
-                      stroke="#6b7280"
-                      tick={{ fontSize: 12 }}
-                    />
-                    <YAxis stroke="#6b7280" tick={{ fontSize: 12 }} />
+                    <XAxis dataKey="month" stroke="#6b7280" tick={{ fontSize: 12 }} />
+                    <YAxis stroke="#6b7280" tick={{ fontSize: 12 }} domain={[0, 100]} />
                     <Tooltip />
                     <Legend wrapperStyle={{ fontSize: "12px" }} />
-                    <Bar dataKey="onTime" fill="#3b82f6" name="On Time" />
-                    <Bar dataKey="quality" fill="#8b5cf6" name="Quality" />
-                    <Bar
-                      dataKey="efficiency"
-                      fill="#10b981"
-                      name="Efficiency"
-                    />
+
+                    <Bar dataKey="aht" fill="#3b82f6" name="AHT">
+                      <LabelList dataKey="aht" position="top" formatter={(val: number) => `${val}%`} />
+                    </Bar>
+                    <Bar dataKey="quality" fill="#8b5cf6" name="Quality">
+                      <LabelList dataKey="quality" position="top" formatter={(val: number) => `${val}%`} />
+                    </Bar>
+                    <Bar dataKey="csat" fill="#10b981" name="C SAT">
+                      <LabelList dataKey="csat" position="top" formatter={(val: number) => `${val}%`} />
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
+
+                <p className="text-xs text-muted-foreground text-center mt-2">
+                  Data labels represent % performance across AHT, Quality, and C SAT metrics.
+                </p>
               </CardContent>
             </Card>
 
