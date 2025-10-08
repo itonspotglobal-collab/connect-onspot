@@ -1,7 +1,4 @@
-import { useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useQuery } from "@tanstack/react-query";
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -46,7 +43,6 @@ import {
   PremiumFeatures,
   DEFAULT_PREMIUM_FEATURES,
 } from "@/components/PremiumFeatures";
-import { useTalentProfile } from "@/hooks/useTalentProfile";
 import { cn } from "@/lib/utils";
 import professionalWorkspaceImg from "@assets/generated_images/Professional_workspace_background_ccee2885.png";
 import businessNetworkImg from "@assets/generated_images/Business_network_illustration_d2c6527c.png";
@@ -109,42 +105,26 @@ const TRUST_INDICATORS = [
 // Use imported premium features from component
 
 export default function TalentPortal() {
-  const { user } = useAuth();
-  // Use real profile data from useTalentProfile hook
-  const {
-    profile,
-    profileCompletion,
-    isNewUser,
-    hasCompletedOnboarding,
-    isLoading: profileLoading,
-  } = useTalentProfile();
-
-  // Note: Onboarding modal is now handled globally by NewUserOnboardingWrapper
-  // Removed duplicate modal logic that was causing the modal to appear twice
-
-  // Handle authenticated user navigation
+  // 🔓 Authentication disabled - no user checks
   const [, setLocation] = useLocation();
 
+  // 🔓 No authentication required - direct access to content
   const handleGetStarted = () => {
-    if (user) {
-      // Profile completion is now handled by NewUserOnboardingWrapper
-      // Just scroll to opportunities for authenticated users
-      const opportunitiesSection = document.getElementById("opportunities");
-      if (opportunitiesSection) {
-        opportunitiesSection.scrollIntoView({ behavior: "smooth" });
-      }
+    // Scroll to opportunities section for all visitors
+    const opportunitiesSection = document.getElementById("opportunities");
+    if (opportunitiesSection) {
+      opportunitiesSection.scrollIntoView({ behavior: "smooth" });
     } else {
-      // Not authenticated, trigger sign up flow
+      // If opportunities section doesn't exist, go to sign up
       setLocation("/get-hired");
     }
   };
 
   const handleFindProjects = () => {
-    if (user) {
-      const opportunitiesSection = document.getElementById("opportunities");
-      if (opportunitiesSection) {
-        opportunitiesSection.scrollIntoView({ behavior: "smooth" });
-      }
+    // Scroll to opportunities for all visitors
+    const opportunitiesSection = document.getElementById("opportunities");
+    if (opportunitiesSection) {
+      opportunitiesSection.scrollIntoView({ behavior: "smooth" });
     } else {
       setLocation("/get-hired");
     }
