@@ -125,20 +125,20 @@ export default function Dashboard() {
     { name: "Juan Pablo", attendance: 94, days: "22/25" },
   ];
 
-  const monthlyProductivity = [
-    { month: "Jan", value: 78 },
-    { month: "Feb", value: 82 },
-    { month: "Mar", value: 79 },
-    { month: "Apr", value: 85 },
+  const monthlyAHT = [
+    { month: "Jan", value: 105 },
+    { month: "Feb", value: 98 },
+    { month: "Mar", value: 110 },
+    { month: "Apr", value: 95 },
     { month: "May", value: 88 },
-    { month: "Jun", value: 91 },
+    { month: "Jun", value: 82 },
   ];
 
-  const weeklyProductivity = [
-    { month: "Week 1", value: 85 },
+  const weeklyAHT = [
+    { month: "Week 1", value: 95 },
     { month: "Week 2", value: 88 },
-    { month: "Week 3", value: 87 },
-    { month: "Week 4", value: 91 },
+    { month: "Week 3", value: 92 },
+    { month: "Week 4", value: 82 },
   ];
 
   const monthlyProjects = [
@@ -230,8 +230,8 @@ export default function Dashboard() {
       : weeklyClientSatisfaction;
   const momAverageData =
     timeFilter === "monthly" ? monthlyMoMAverage : weeklyMoMAverage;
-  const productivityData =
-    timeFilter === "monthly" ? monthlyProductivity : weeklyProductivity;
+  const ahtData =
+    timeFilter === "monthly" ? monthlyAHT : weeklyAHT;
   const projectsData =
     timeFilter === "monthly" ? monthlyProjects : weeklyProjects;
   const callsData = timeFilter === "monthly" ? monthlyCalls : weeklyCalls;
@@ -423,7 +423,7 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={momAverageData}>
+                  <BarChart data={momAverageData} barGap={6}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                     <XAxis
                       dataKey="month"
@@ -442,6 +442,8 @@ export default function Dashboard() {
                       <LabelList
                         dataKey="aht"
                         position="top"
+                        offset={4}
+                        style={{ fontSize: '10px' }}
                         formatter={(val: number) => `${val}%`}
                       />
                     </Bar>
@@ -449,6 +451,8 @@ export default function Dashboard() {
                       <LabelList
                         dataKey="quality"
                         position="top"
+                        offset={4}
+                        style={{ fontSize: '10px' }}
                         formatter={(val: number) => `${val}%`}
                       />
                     </Bar>
@@ -456,6 +460,8 @@ export default function Dashboard() {
                       <LabelList
                         dataKey="csat"
                         position="top"
+                        offset={4}
+                        style={{ fontSize: '10px' }}
                         formatter={(val: number) => `${val}%`}
                       />
                     </Bar>
@@ -497,20 +503,20 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Productivity - Time Series Line Chart */}
+            {/* AHT - Time Series Area Chart */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <Target className="h-4 w-4" />
-                  Productivity Trend
+                  AHT Trend
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={200}>
-                  <AreaChart data={productivityData}>
+                  <AreaChart data={ahtData}>
                     <defs>
                       <linearGradient
-                        id="colorProductivity"
+                        id="colorAHT"
                         x1="0"
                         y1="0"
                         x2="0"
@@ -534,14 +540,19 @@ export default function Dashboard() {
                       stroke="#6b7280"
                       tick={{ fontSize: 12 }}
                     />
-                    <YAxis stroke="#6b7280" tick={{ fontSize: 12 }} />
-                    <Tooltip />
+                    <YAxis 
+                      stroke="#6b7280" 
+                      tick={{ fontSize: 12 }} 
+                      domain={[30, 120]}
+                      label={{ value: 'AHT (seconds)', angle: -90, position: 'insideLeft', style: { fontSize: 12 } }}
+                    />
+                    <Tooltip formatter={(value: number) => `${value} sec`} />
                     <Area
                       type="monotone"
                       dataKey="value"
                       stroke="#8b5cf6"
                       fillOpacity={1}
-                      fill="url(#colorProductivity)"
+                      fill="url(#colorAHT)"
                     />
                   </AreaChart>
                 </ResponsiveContainer>
