@@ -368,34 +368,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   console.log("🔗 Registering API routes...");
 
-  // 🔓 Dashboard Routes - Public Access (Authentication Disabled)
-  app.get(
-    "/client-dashboard",
-    (req: Request, res: Response) => {
-      console.log(`🏠 Client dashboard access (public) [${(req as any).requestId}]`);
-      // Public access - no authentication required
-      res.json({
-        success: true,
-        message: "Client dashboard access granted (public mode)",
-        userRole: "guest",
-        userId: "guest",
-      });
-    },
-  );
-
-  app.get(
-    "/talent-dashboard",
-    (req: Request, res: Response) => {
-      console.log(`🎯 Talent dashboard access (public) [${(req as any).requestId}]`);
-      // Public access - no authentication required
-      res.json({
-        success: true,
-        message: "Talent dashboard access granted (public mode)",
-        userRole: "guest",
-        userId: "guest",
-      });
-    },
-  );
+  // 🔓 Dashboard routes removed - handled by frontend router (no backend authentication)
 
   // Protected API Route Validation Endpoint
   app.get(

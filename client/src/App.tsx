@@ -166,10 +166,20 @@ function AppContent() {
       <Route path="/lead-intake" component={PublicRouter} />
       <Route path="/investors" component={PublicRouter} />
       <Route path="/talent" component={PublicRouter} />
-      <Route path="/client-dashboard" component={PublicRouter} />
-      <Route path="/talent-dashboard" component={PublicRouter} />
       
       {/* Dashboard routes - now public */}
+      <Route path="/client-dashboard" component={() => (
+        <ClientLayout>
+          <Dashboard />
+          <VanessaChat />
+        </ClientLayout>
+      )} />
+      <Route path="/talent-dashboard" component={() => (
+        <div className="min-h-screen bg-background">
+          <TalentPortal />
+          <VanessaChat />
+        </div>
+      )} />
       <Route path="/dashboard" component={() => (
         <ClientLayout>
           <Dashboard />
