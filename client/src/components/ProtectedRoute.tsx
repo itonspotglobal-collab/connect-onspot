@@ -19,16 +19,7 @@ export function ProtectedRoute({
   const { isAuthenticated, isLoading, user } = useAuth();
   const [, setLocation] = useLocation();
 
-  // Check if authentication is disabled for testing
-  const DISABLE_AUTH = import.meta.env.VITE_DISABLE_AUTH === "true";
-
   useEffect(() => {
-    // Bypass all checks when auth is disabled
-    if (DISABLE_AUTH) {
-      console.log('⚠️  ProtectedRoute: Auth disabled - bypassing all checks');
-      return;
-    }
-
     // Only redirect after loading is complete
     if (!isLoading) {
       if (!isAuthenticated) {
@@ -54,12 +45,7 @@ export function ProtectedRoute({
         requiredRole 
       });
     }
-  }, [isAuthenticated, isLoading, user, requiredRole, fallbackPath, setLocation, DISABLE_AUTH]);
-
-  // Bypass all rendering checks when auth is disabled
-  if (DISABLE_AUTH) {
-    return <>{children}</>;
-  }
+  }, [isAuthenticated, isLoading, user, requiredRole, fallbackPath, setLocation]);
 
   // Show loading state while authentication is being checked
   if (isLoading) {

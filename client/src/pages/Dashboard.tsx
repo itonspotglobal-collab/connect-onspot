@@ -474,7 +474,7 @@ export default function Dashboard() {
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
-                  Individual Attendance Summary
+                  Attendance
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -558,33 +558,18 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={220}>
-                  <BarChart
-                    data={callsData}
-                    margin={{ top: 20, right: 10, left: -10, bottom: 5 }}
-                  >
+                  <BarChart data={callsData} margin={{ top: 20, right: 10, left: -10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis
-                      dataKey="month"
-                      stroke="#6b7280"
-                      tick={{ fontSize: 11 }}
-                    />
+                    <XAxis dataKey="month" stroke="#6b7280" tick={{ fontSize: 11 }} />
                     <YAxis stroke="#6b7280" tick={{ fontSize: 11 }} />
                     <Tooltip />
                     <Legend wrapperStyle={{ fontSize: "12px" }} />
-
+                    
                     <Bar dataKey="inbound" fill="#3b82f6" name="Inbound">
-                      <LabelList
-                        dataKey="inbound"
-                        position="top"
-                        style={{ fontSize: "10px" }}
-                      />
+                      <LabelList dataKey="inbound" position="top" style={{ fontSize: '10px' }} />
                     </Bar>
                     <Bar dataKey="outbound" fill="#ec4899" name="Outbound">
-                      <LabelList
-                        dataKey="outbound"
-                        position="top"
-                        style={{ fontSize: "10px" }}
-                      />
+                      <LabelList dataKey="outbound" position="top" style={{ fontSize: '10px' }} />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
