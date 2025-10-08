@@ -39,21 +39,43 @@ import AdminDashboard from "@/pages/AdminDashboard";
 import InvestorsCorner from "@/pages/InvestorsCorner";
 import ProfileSettings from "@/pages/ProfileSettings";
 
-// Public Routes - 🔓 All routes publicly accessible (authentication disabled)
+// Public Routes - Always available regardless of authentication
 function PublicRouter() {
+  const { isAuthenticated, user } = useAuth();
+  
   return (
     <div className="min-h-screen bg-background">
       <TopNavigation />
       <main>
         <Switch>
-          <Route path="/" component={Home} />
-          <Route path="/client-dashboard" component={Dashboard} />
-          <Route path="/talent-dashboard" component={TalentPortal} />
+          <Route path="/" component={() => {
+            if (isAuthenticated) {
+              return <PostLoginPortalSelection />;
+            }
+            return <Home />;
+          }} />
+          <Route path="/client-dashboard" component={() => {
+            if (isAuthenticated) {
+              return <PostLoginPortalSelection />;
+            }
+            return <Home />;
+          }} />
+          <Route path="/talent-dashboard" component={() => {
+            if (isAuthenticated) {
+              return <PostLoginPortalSelection />;
+            }
+            return <Home />;
+          }} />
           <Route path="/hire-talent" component={TalentSearch} />
           <Route path="/find-work" component={FindWork} />
           <Route path="/find-work/:category" component={FindWork} />
-          <Route path="/get-hired" component={GetHired} />
-          <Route path="/talent-portal" component={TalentPortal} />
+          <Route path="/get-hired" component={() => {
+            // Allow both authenticated and non-authenticated access to GetHired
+            if (isAuthenticated && user?.userType === 'talent') {
+              return <TalentPortal />;
+            }
+            return <GetHired />;
+          }} />
           <Route path="/why-onspot" component={WhyOnSpot} />
           <Route path="/why-onspot/about" component={WhyOnSpotAbout} />
           <Route path="/why-onspot/case-studies" component={WhyOnSpotCaseStudies} />
@@ -142,16 +164,17 @@ function TalentRouter() {
 }
 
 function AppContent() {
-  // 🔓 All routes publicly accessible - authentication disabled
+  const { isAuthenticated, isLoading, user } = useAuth();
+  
+  // Always show public routes, but protected routes will handle their own redirects
   return (
     <Switch>
-      {/* All routes are public */}
+      {/* Public Routes - Always available */}
       <Route path="/" component={PublicRouter} />
       <Route path="/hire-talent" component={PublicRouter} />
       <Route path="/find-work" component={PublicRouter} />
       <Route path="/find-work/:category" component={PublicRouter} />
       <Route path="/get-hired" component={PublicRouter} />
-      <Route path="/talent-portal" component={PublicRouter} />
       <Route path="/why-onspot" component={PublicRouter} />
       <Route path="/why-onspot/:page" component={PublicRouter} />
       <Route path="/amazing" component={PublicRouter} />
@@ -167,63 +190,66 @@ function AppContent() {
       <Route path="/investors" component={PublicRouter} />
       <Route path="/talent" component={PublicRouter} />
       
-      {/* Dashboard routes - now public */}
-      <Route path="/client-dashboard" component={() => (
-        <ClientLayout>
-          <Dashboard />
-          <VanessaChat />
-        </ClientLayout>
-      )} />
-      <Route path="/talent-dashboard" component={() => (
-        <div className="min-h-screen bg-background">
-          <TalentPortal />
-          <VanessaChat />
-        </div>
-      )} />
-      <Route path="/dashboard" component={() => (
-        <ClientLayout>
-          <Dashboard />
-          <VanessaChat />
-        </ClientLayout>
-      )} />
-      <Route path="/projects" component={() => (
-        <ClientLayout>
-          <div className="p-6">Projects Module - Coming Soon</div>
-          <VanessaChat />
-        </ClientLayout>
-      )} />
-      <Route path="/performance" component={() => (
-        <ClientLayout>
-          <div className="p-6">Performance Module - Coming Soon</div>
-          <VanessaChat />
-        </ClientLayout>
-      )} />
-      <Route path="/admin/dashboard" component={() => (
-        <ClientLayout>
-          <AdminDashboard />
-          <VanessaChat />
-        </ClientLayout>
-      )} />
-      <Route path="/admin/csv-import" component={() => (
-        <ClientLayout>
-          <AdminCSVImport />
-          <VanessaChat />
-        </ClientLayout>
-      )} />
+      {/* Client Protected Routes */}
+      <Route path="/dashboard" component={ClientRouter} />
+      <Route path="/projects" component={ClientRouter} />
+      <Route path="/performance" component={ClientRouter} />
+      <Route path="/clients" component={ClientRouter} />
+      <Route path="/contracts" component={ClientRouter} />
+      <Route path="/payments" component={ClientRouter} />
+      <Route path="/roi" component={ClientRouter} />
+      {/* Talent Protected Routes */}
+      <Route path="/talent-portal" component={TalentRouter} />
       
-      {/* Settings - public access */}
-      <Route path="/settings" component={() => (
-        <ClientLayout>
-          <ProfileSettings />
-          <VanessaChat />
-        </ClientLayout>
-      )} />
-      <Route path="/profile-settings" component={() => (
-        <ClientLayout>
-          <ProfileSettings />
-          <VanessaChat />
-        </ClientLayout>
-      )} />
+      {/* Settings Routes - Available for both client and talent */}
+      <Route path="/settings" component={() => {
+        const { user } = useAuth();
+        if (user?.role === "client") {
+          return (
+            <ClientProtectedRoute>
+              <ClientLayout>
+                <ProfileSettings />
+                <VanessaChat />
+              </ClientLayout>
+            </ClientProtectedRoute>
+          );
+        } else if (user?.role === "talent") {
+          return (
+            <TalentProtectedRoute>
+              <div className="min-h-screen bg-background">
+                <ProfileSettings />
+                <VanessaChat />
+              </div>
+            </TalentProtectedRoute>
+          );
+        }
+        return <PublicRouter />;
+      }} />
+      
+      {/* Profile Settings Route - Alias for /settings */}
+      <Route path="/profile-settings" component={() => {
+        const { user } = useAuth();
+        if (user?.role === "client") {
+          return (
+            <ClientProtectedRoute>
+              <ClientLayout>
+                <ProfileSettings />
+                <VanessaChat />
+              </ClientLayout>
+            </ClientProtectedRoute>
+          );
+        } else if (user?.role === "talent") {
+          return (
+            <TalentProtectedRoute>
+              <div className="min-h-screen bg-background">
+                <ProfileSettings />
+                <VanessaChat />
+              </div>
+            </TalentProtectedRoute>
+          );
+        }
+        return <PublicRouter />;
+      }} />
       
       {/* Catch all */}
       <Route component={() => <PublicRouter />} />

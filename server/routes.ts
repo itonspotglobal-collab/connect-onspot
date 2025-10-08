@@ -368,7 +368,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   console.log("🔗 Registering API routes...");
 
-  // 🔓 Dashboard routes removed - handled by frontend router (no backend authentication)
+  // Protected Dashboard Routes with Role-Based Access Control
+  // These routes serve the dashboard content with server-side validation
+  app.get(
+    "/client-dashboard",
+    authenticateJWT,
+    requireClient,
+    (req: Request, res: Response) => {
+      console.log(`🏠 Client dashboard access [${(req as any).requestId}]:`, {
+        userId: (req as any).user?.id,
+        role: (req as any).user?.role,
+      });
+      // In a production app, this would render the client dashboard or return appropriate data
+      res.json({
+        success: true,
+        message: "Client dashboard access granted",
+        userRole: (req as any).user?.role,
+        userId: (req as any).user?.id,
+      });
+    },
+  );
+
+  app.get(
+    "/talent-dashboard",
+    authenticateJWT,
+    requireTalent,
+    (req: Request, res: Response) => {
+      console.log(`🎯 Talent dashboard access [${(req as any).requestId}]:`, {
+        userId: (req as any).user?.id,
+        role: (req as any).user?.role,
+      });
+      // In a production app, this would render the talent dashboard or return appropriate data
+      res.json({
+        success: true,
+        message: "Talent dashboard access granted",
+        userRole: (req as any).user?.role,
+        userId: (req as any).user?.id,
+      });
+    },
+  );
 
   // Protected API Route Validation Endpoint
   app.get(
@@ -865,14 +903,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes - Updated for OAuth compatibility with enhanced error handling
   app.get("/api/auth/user", async (req: any, res) => {
     try {
-      // Authentication disabled - public access mode
-      // if (!req.isAuthenticated()) {
-      //   return res.status(401).json({
-      //     error: "Not authenticated",
-      //     message: "Please log in to access this resource",
-      //     requestId: req.requestId,
-      //   });
-      // }
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({
+          error: "Not authenticated",
+          message: "Please log in to access this resource",
+          requestId: req.requestId,
+        });
+      }
 
       let user;
 
@@ -947,10 +984,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Alternative endpoint name for better frontend compatibility
   app.get("/api/me", async (req: any, res) => {
     // Reuse the same logic as /api/auth/user
-    // Authentication disabled - public access mode
-    // if (!req.isAuthenticated()) {
-    //   return res.status(401).json({ message: "Not authenticated" });
-    // }
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
 
     try {
       let user;
@@ -3274,15 +3310,14 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
   // Get CSV template for talent import
   app.get("/api/admin/csv-import/template", async (req: any, res) => {
     try {
-      // Authentication disabled - public access mode
       // Admin authentication check
-      // if (!req.isAuthenticated()) {
-      //   return res.status(401).json({
-      //     error: "Authentication required",
-      //     message: "Please log in to access this resource",
-      //     requestId: req.requestId,
-      //   });
-      // }
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({
+          error: "Authentication required",
+          message: "Please log in to access this resource",
+          requestId: req.requestId,
+        });
+      }
 
       const user =
         (req.user as any)?.user ||
@@ -3384,14 +3419,13 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
   // Download CSV template file
   app.get("/api/admin/csv-import/template/download", async (req: any, res) => {
     try {
-      // Authentication disabled - public access mode
       // Admin authentication check
-      // if (!req.isAuthenticated()) {
-      //   return res.status(401).json({
-      //     error: "Authentication required",
-      //     requestId: req.requestId,
-      //   });
-      // }
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({
+          error: "Authentication required",
+          requestId: req.requestId,
+        });
+      }
 
       const user =
         (req.user as any)?.user ||
@@ -3455,14 +3489,13 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
     upload.single("csvFile"),
     async (req: any, res) => {
       try {
-        // Authentication disabled - public access mode
         // Admin authentication check
-        // if (!req.isAuthenticated()) {
-        //   return res.status(401).json({
-        //     error: "Authentication required",
-        //     requestId: req.requestId,
-        //   });
-        // }
+        if (!req.isAuthenticated()) {
+          return res.status(401).json({
+            error: "Authentication required",
+            requestId: req.requestId,
+          });
+        }
 
         const user =
           (req.user as any)?.user ||
@@ -3548,25 +3581,24 @@ Keep it conversational and natural. Ask follow-up questions that show you're lis
     ),
     async (req: any, res) => {
       try {
-        // Authentication disabled - public access mode
         // Admin authentication check
-        // if (!req.isAuthenticated()) {
-        //   return res.status(401).json({
-        //     error: "Authentication required",
-        //     requestId: req.requestId,
-        //   });
-        // }
+        if (!req.isAuthenticated()) {
+          return res.status(401).json({
+            error: "Authentication required",
+            requestId: req.requestId,
+          });
+        }
 
         const user =
           (req.user as any)?.user ||
           (await storage.getUser((req.user as any)?.claims?.sub));
-        // if (!user || user.role !== "admin") {
-        //   return res.status(403).json({
-        //     error: "Access denied",
-        //     message: "Admin access required for CSV import",
-        //     requestId: req.requestId,
-        //   });
-        // }
+        if (!user || user.role !== "admin") {
+          return res.status(403).json({
+            error: "Access denied",
+            message: "Admin access required for CSV import",
+            requestId: req.requestId,
+          });
+        }
 
         if (!req.file) {
           return res.status(400).json({

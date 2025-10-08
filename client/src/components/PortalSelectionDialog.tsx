@@ -32,14 +32,27 @@ export function PortalSelectionDialog({ open, onOpenChange }: PortalSelectionDia
   const userRole = user?.role as PortalType;
 
   const handlePortalSelect = async (portalType: PortalType) => {
-    // 🔓 Authentication disabled - all portals accessible
-    console.log(`🔒 Portal selection disabled - public access mode`);
     setSelectedPortal(portalType);
     setError(null);
     setIsNavigating(true);
 
     try {
-      // 🔓 No role validation - direct access to all portals
+      // Validate role against selected portal
+      if (userRole !== portalType) {
+        const errorMessage = `You do not have access to this portal. Please use your ${userRole} account.`;
+        setError(errorMessage);
+        
+        toast({
+          title: "Access Denied",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        
+        setIsNavigating(false);
+        return;
+      }
+
+      // Role matches - proceed with navigation
       if (enterPortal) {
         const success = await enterPortal(portalType);
         if (success) {
@@ -78,8 +91,7 @@ export function PortalSelectionDialog({ open, onOpenChange }: PortalSelectionDia
   };
 
   const getPortalAccess = (portalType: PortalType) => {
-    // 🔓 Authentication disabled - all portals accessible
-    return true;
+    return userRole === portalType;
   };
 
   const getPortalButtonState = (portalType: PortalType) => {
@@ -142,10 +154,14 @@ export function PortalSelectionDialog({ open, onOpenChange }: PortalSelectionDia
 
           {/* Portal Selection Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Client Portal Card - 🔓 No authentication required */}
+            {/* Client Portal Card */}
             <Card 
-              className="relative cursor-pointer transition-all duration-300 border-2 hover-elevate hover:border-primary/50"
-              onClick={() => handlePortalSelect("client")}
+              className={`relative cursor-pointer transition-all duration-300 border-2 ${
+                getPortalAccess("client") 
+                  ? "hover-elevate hover:border-primary/50" 
+                  : "opacity-60 cursor-not-allowed border-muted"
+              }`}
+              onClick={() => getPortalAccess("client") && handlePortalSelect("client")}
               data-testid="card-client-portal"
             >
               <CardContent className="p-6 text-center relative">
@@ -205,13 +221,25 @@ export function PortalSelectionDialog({ open, onOpenChange }: PortalSelectionDia
                   );
                 })()}
 
+                {!getPortalAccess("client") && (
+                  <div className="absolute inset-0 bg-background/50 rounded-lg flex items-center justify-center">
+                    <div className="text-center">
+                      <AlertCircle className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground font-medium">Requires Client Account</p>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
-            {/* Talent Portal Card - 🔓 No authentication required */}
+            {/* Talent Portal Card */}
             <Card 
-              className="relative cursor-pointer transition-all duration-300 border-2 hover-elevate hover:border-[hsl(var(--gold-yellow)/0.5)]"
-              onClick={() => handlePortalSelect("talent")}
+              className={`relative cursor-pointer transition-all duration-300 border-2 ${
+                getPortalAccess("talent") 
+                  ? "hover-elevate hover:border-[hsl(var(--gold-yellow)/0.5)]" 
+                  : "opacity-60 cursor-not-allowed border-muted"
+              }`}
+              onClick={() => getPortalAccess("talent") && handlePortalSelect("talent")}
               data-testid="card-talent-portal"
             >
               <CardContent className="p-6 text-center relative">
@@ -271,6 +299,14 @@ export function PortalSelectionDialog({ open, onOpenChange }: PortalSelectionDia
                   );
                 })()}
 
+                {!getPortalAccess("talent") && (
+                  <div className="absolute inset-0 bg-background/50 rounded-lg flex items-center justify-center">
+                    <div className="text-center">
+                      <AlertCircle className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground font-medium">Requires Talent Account</p>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

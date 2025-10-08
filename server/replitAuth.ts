@@ -325,7 +325,59 @@ async function setupOAuthStrategies(app: Express) {
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
-  // Authentication disabled - all requests allowed
-  console.log('🔓 Authentication disabled - public access mode');
-  next();
+  const sessionUser = req.user as any;
+
+  if (!req.isAuthenticated()) {
+    console.log('Authentication check failed: no session');
+    return res.status(401).json({ message: "Not authenticated", code: "NO_SESSION" });
+  }
+
+  if (!sessionUser) {
+    console.log('Authentication check failed: no user in session');
+    return res.status(401).json({ message: "No user in session", code: "NO_USER" });
+  }
+
+  // Handle OAuth users (Google/LinkedIn) - they have {user, provider} structure
+  if (sessionUser.user && sessionUser.provider) {
+    console.log('OAuth user authenticated:', { id: sessionUser.user.id, provider: sessionUser.provider });
+    return next();
+  }
+
+  // Handle Replit Auth users - they have claims and tokens directly
+  if (sessionUser.claims || sessionUser.expires_at) {
+    // Check if Replit Auth token is expired
+    if (sessionUser.expires_at) {
+      const now = Math.floor(Date.now() / 1000);
+      if (now <= sessionUser.expires_at) {
+        console.log('Replit Auth user authenticated (valid token)');
+        return next();
+      }
+
+      // Try to refresh expired token
+      const refreshToken = sessionUser.refresh_token;
+      if (!refreshToken) {
+        console.log('Replit Auth token expired, no refresh token');
+        return res.status(401).json({ message: "Token expired", code: "TOKEN_EXPIRED" });
+      }
+
+      try {
+        const config = await getOidcConfig();
+        const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
+        updateUserSession(sessionUser, tokenResponse);
+        console.log('Replit Auth token refreshed successfully');
+        return next();
+      } catch (error) {
+        console.error('Failed to refresh Replit Auth token:', error);
+        return res.status(401).json({ message: "Failed to refresh token", code: "REFRESH_FAILED" });
+      }
+    } else {
+      // Replit Auth user without expiration (shouldn't happen but allow it)
+      console.log('Replit Auth user authenticated (no expiration)');
+      return next();
+    }
+  }
+
+  // Unknown user structure
+  console.error('Unknown user structure in session:', sessionUser);
+  return res.status(401).json({ message: "Invalid session format", code: "INVALID_SESSION" });
 };

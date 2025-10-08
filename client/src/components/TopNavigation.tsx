@@ -840,8 +840,13 @@ export function TopNavigation() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            // Login disabled for public access
-            <></>
+            // Not authenticated - show login/signup buttons
+            <>
+              <LoginDialog />
+              <ErrorBoundaryWrapper>
+                <SignUpDialog />
+              </ErrorBoundaryWrapper>
+            </>
           )}
         </div>
       </div>
