@@ -69,13 +69,8 @@ function PublicRouter() {
           <Route path="/hire-talent" component={TalentSearch} />
           <Route path="/find-work" component={FindWork} />
           <Route path="/find-work/:category" component={FindWork} />
-          <Route path="/get-hired" component={() => {
-            // Allow both authenticated and non-authenticated access to GetHired
-            if (isAuthenticated && user?.userType === 'talent') {
-              return <TalentPortal />;
-            }
-            return <GetHired />;
-          }} />
+          <Route path="/get-hired" component={GetHired} />
+          <Route path="/talent-portal" component={TalentPortal} />
           <Route path="/why-onspot" component={WhyOnSpot} />
           <Route path="/why-onspot/about" component={WhyOnSpotAbout} />
           <Route path="/why-onspot/case-studies" component={WhyOnSpotCaseStudies} />
@@ -169,12 +164,13 @@ function AppContent() {
   // Always show public routes, but protected routes will handle their own redirects
   return (
     <Switch>
-      {/* Public Routes - Always available */}
+      {/* Public Routes - Always available (for AI crawling and public access) */}
       <Route path="/" component={PublicRouter} />
       <Route path="/hire-talent" component={PublicRouter} />
       <Route path="/find-work" component={PublicRouter} />
       <Route path="/find-work/:category" component={PublicRouter} />
       <Route path="/get-hired" component={PublicRouter} />
+      <Route path="/talent-portal" component={PublicRouter} />
       <Route path="/why-onspot" component={PublicRouter} />
       <Route path="/why-onspot/:page" component={PublicRouter} />
       <Route path="/amazing" component={PublicRouter} />
@@ -198,8 +194,6 @@ function AppContent() {
       <Route path="/contracts" component={ClientRouter} />
       <Route path="/payments" component={ClientRouter} />
       <Route path="/roi" component={ClientRouter} />
-      {/* Talent Protected Routes */}
-      <Route path="/talent-portal" component={TalentRouter} />
       
       {/* Settings Routes - Available for both client and talent */}
       <Route path="/settings" component={() => {

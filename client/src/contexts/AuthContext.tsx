@@ -150,29 +150,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       setError(null);
       
-      // Check if authentication is disabled for testing
-      const DISABLE_AUTH = import.meta.env.VITE_DISABLE_AUTH === "true";
-      
-      if (DISABLE_AUTH) {
-        console.log('⚠️  AUTH DISABLED - Auto-authenticating as test admin');
-        const mockUser: User = {
-          id: "test-user-admin",
-          username: "testadmin",
-          email: "admin@onspotglobal.com",
-          firstName: "Test",
-          lastName: "Admin",
-          role: "admin",
-          userType: "client",
-          authProvider: "bypass",
-          company: "OnSpot Testing",
-          needsOnboarding: false
-        };
-        setUser(mockUser);
-        setIsAuthenticated(true);
-        setIsLoading(false);
-        return;
-      }
-      
       // Check if user has JWT token and user data in localStorage
       const isAuth = checkIsAuthenticated();
       const storedUser = getCurrentUser();
