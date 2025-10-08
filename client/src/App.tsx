@@ -26,6 +26,7 @@ import WhyOnSpotValueCalculator from "@/pages/WhyOnSpotValueCalculator";
 import Amazing from "@/pages/Amazing";
 import GetHired from "@/pages/GetHired";
 import TalentPortal from "@/pages/TalentPortal";
+import HiredTalentPortal from "@/pages/HiredTalentPortal";
 import FindWork from "@/pages/FindWork";
 import Insights from "@/pages/Insights";
 import NotFound from "@/pages/not-found";
@@ -153,6 +154,7 @@ function TalentRouter() {
           <Route path="/" component={TalentPortal} />
           <Route path="/get-hired" component={TalentPortal} />
           <Route path="/talent-portal" component={TalentPortal} />
+          <Route path="/hired-talent-portal" component={HiredTalentPortal} />
           <Route path="/settings" component={ProfileSettings} />
           {/* Redirect any other paths to talent portal */}
           <Route component={TalentPortal} />
@@ -200,6 +202,7 @@ function AppContent() {
       <Route path="/roi" component={ClientRouter} />
       {/* Talent Protected Routes */}
       <Route path="/talent-portal" component={TalentRouter} />
+      <Route path="/hired-talent-portal" component={TalentRouter} />
       
       {/* Settings Routes - Available for both client and talent */}
       <Route path="/settings" component={() => {
