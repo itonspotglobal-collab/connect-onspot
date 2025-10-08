@@ -607,11 +607,6 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-
-
-
-
-      
       {/* Performance Summary */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Performance Summary Metrics */}
@@ -714,19 +709,19 @@ export default function Dashboard() {
               </Card>
 
               {/* Projects Overview and Work Distribution - Stacked Vertically */}
-              <div className="space-y-6">
+              <div className="space-y-5">
                 {/* Projects Overview - Horizontal Stacked Bar Chart */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2">
+                <Card className="overflow-hidden">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2 font-semibold">
                       <Briefcase className="h-4 w-4" />
                       Projects Overview
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="pt-0">
                     <ResponsiveContainer width="100%" height={240}>
-                      <BarChart 
-                        data={perfProjectsData} 
+                      <BarChart
+                        data={perfProjectsData}
                         layout="vertical"
                         margin={{ left: 0, right: 40, top: 5, bottom: 5 }}
                         barSize={24}
@@ -764,48 +759,62 @@ export default function Dashboard() {
                 </Card>
 
                 {/* Work Distribution (Channels) - Horizontal Bar Chart */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2">
+                <Card className="overflow-hidden">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2 font-semibold">
                       <Target className="h-4 w-4" />
                       Work Distribution (Channels)
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="pt-0">
                     <ResponsiveContainer width="100%" height={200}>
-                      <BarChart 
-                        data={workDistributionData} 
-                        layout="vertical"
-                        margin={{ left: 0, right: 40, top: 5, bottom: 5 }}
-                        barSize={28}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                        <XAxis
-                          type="number"
-                          stroke="#6b7280"
-                          tick={{ fontSize: 11 }}
-                        />
-                        <YAxis
-                          dataKey="channel"
-                          type="category"
-                          stroke="#6b7280"
-                          tick={{ fontSize: 11 }}
-                          width={70}
-                        />
-                        <Tooltip />
-                        <Bar dataKey="count" name="Count">
-                          {workDistributionData.map((entry, index) => {
-                            const colors = ["#3b82f6", "#ec4899", "#eab308", "#10b981"];
-                            return <Cell key={`cell-${index}`} fill={colors[index]} />;
-                          })}
-                          <LabelList
-                            dataKey="count"
-                            position="right"
-                            style={{ fontSize: "10px" }}
+                        <BarChart
+                          data={workDistributionData}
+                          layout="vertical"
+                          margin={{ left: 0, right: 40, top: 5, bottom: 5 }}
+                          barSize={28}
+                        >
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke="#e5e7eb"
                           />
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
+                          <XAxis
+                            type="number"
+                            stroke="#6b7280"
+                            tick={{ fontSize: 11 }}
+                          />
+                          <YAxis
+                            dataKey="channel"
+                            type="category"
+                            stroke="#6b7280"
+                            tick={{ fontSize: 11 }}
+                            width={70}
+                          />
+                          <Tooltip />
+                          <Bar dataKey="count" name="Count">
+                            {workDistributionData.map((entry, index) => {
+                              const colors = [
+                                "#3b82f6",
+                                "#ec4899",
+                                "#eab308",
+                                "#10b981",
+                              ];
+                              return (
+                                <Cell
+                                  key={`cell-${index}`}
+                                  fill={colors[index]}
+                                />
+                              );
+                            })}
+                            <LabelList
+                              dataKey="count"
+                              position="right"
+                              style={{ fontSize: "10px" }}
+                            />
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
                   </CardContent>
                 </Card>
               </div>
