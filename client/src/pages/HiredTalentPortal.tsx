@@ -27,6 +27,7 @@ import {
   Activity,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { TopNavigation } from "@/components/TopNavigation";
 
 // Sample data for monthly performance
 const monthlyPerformanceData = [
@@ -101,6 +102,7 @@ export default function HiredTalentPortal() {
 
   return (
     <div className="min-h-screen bg-background">
+      <TopNavigation />
       {/* Header */}
       <div className="border-b bg-card/50">
         <div className="container mx-auto px-4 py-6">
