@@ -374,219 +374,221 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Performance Summary */}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <CardTitle className="flex items-center gap-2">
-              <Award className="h-5 w-5" />
-              Performance Summary
-            </CardTitle>
-            <Select
-              value={performanceFilter}
-              onValueChange={(value) =>
-                setPerformanceFilter(value as "monthly" | "weekly")
-              }
-            >
-              <SelectTrigger
-                className="w-36"
-                data-testid="select-performance-filter"
+      {/* Performance Summary & Talent Showcase Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Performance Summary - Takes 2/3 width */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <CardTitle className="flex items-center gap-2">
+                <Award className="h-5 w-5" />
+                Performance Summary
+              </CardTitle>
+              <Select
+                value={performanceFilter}
+                onValueChange={(value) =>
+                  setPerformanceFilter(value as "monthly" | "weekly")
+                }
               >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="monthly">Monthly</SelectItem>
-                <SelectItem value="weekly">Weekly</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {/* 2x2 Grid Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Performance Average - Vertical Bar Chart */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4" />
-                  Performance Average
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={perfMomAverageData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis
-                      dataKey="month"
-                      stroke="#6b7280"
-                      tick={{ fontSize: 11 }}
-                    />
-                    <YAxis 
-                      stroke="#6b7280" 
-                      tick={{ fontSize: 11 }}
-                      domain={[0, 100]}
-                    />
-                    <Tooltip />
-                    <Bar dataKey="quality" fill="#a855f7" name="Performance" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+                <SelectTrigger
+                  className="w-36"
+                  data-testid="select-performance-filter"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {/* 2x2 Grid Layout */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Performance Average - Vertical Bar Chart */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4" />
+                    Performance Average
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={perfMomAverageData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <XAxis
+                        dataKey="month"
+                        stroke="#6b7280"
+                        tick={{ fontSize: 11 }}
+                      />
+                      <YAxis 
+                        stroke="#6b7280" 
+                        tick={{ fontSize: 11 }}
+                        domain={[0, 100]}
+                      />
+                      <Tooltip />
+                      <Bar dataKey="quality" fill="#a855f7" name="Performance" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
 
-            {/* Attendance % - Vertical Bar Chart */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Attendance %
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={attendanceMonthlyData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis
-                      dataKey="month"
-                      stroke="#6b7280"
-                      tick={{ fontSize: 11 }}
-                    />
-                    <YAxis
-                      stroke="#6b7280"
-                      tick={{ fontSize: 11 }}
-                      domain={[0, 100]}
-                    />
-                    <Tooltip />
-                    <Bar
-                      dataKey="attendance"
-                      fill="#10b981"
-                      name="Attendance %"
-                      radius={[4, 4, 0, 0]}
-                    >
-                      <LabelList
+              {/* Attendance % - Vertical Bar Chart */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Attendance %
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={attendanceMonthlyData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <XAxis
+                        dataKey="month"
+                        stroke="#6b7280"
+                        tick={{ fontSize: 11 }}
+                      />
+                      <YAxis
+                        stroke="#6b7280"
+                        tick={{ fontSize: 11 }}
+                        domain={[0, 100]}
+                      />
+                      <Tooltip />
+                      <Bar
                         dataKey="attendance"
-                        position="top"
-                        style={{ fontSize: "10px" }}
-                        offset={4}
+                        fill="#10b981"
+                        name="Attendance %"
+                        radius={[4, 4, 0, 0]}
+                      >
+                        <LabelList
+                          dataKey="attendance"
+                          position="top"
+                          style={{ fontSize: "10px" }}
+                          offset={4}
+                        />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* Projects Overview - Horizontal Stacked Bar Chart */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Briefcase className="h-4 w-4" />
+                    Projects Overview
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart
+                      data={perfProjectsData}
+                      layout="vertical"
+                      margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
+                      barSize={20}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <XAxis
+                        type="number"
+                        stroke="#6b7280"
+                        tick={{ fontSize: 11 }}
                       />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            {/* Projects Overview - Horizontal Stacked Bar Chart */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Briefcase className="h-4 w-4" />
-                  Projects Overview
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart
-                    data={perfProjectsData}
-                    layout="vertical"
-                    margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
-                    barSize={20}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis
-                      type="number"
-                      stroke="#6b7280"
-                      tick={{ fontSize: 11 }}
-                    />
-                    <YAxis
-                      dataKey="month"
-                      type="category"
-                      stroke="#6b7280"
-                      tick={{ fontSize: 11 }}
-                      width={50}
-                    />
-                    <Tooltip />
-                    <Bar
-                      dataKey="completed"
-                      stackId="a"
-                      fill="#10b981"
-                      name="Completed"
-                      radius={[0, 4, 4, 0]}
-                    />
-                    <Bar
-                      dataKey="inProgress"
-                      stackId="a"
-                      fill="#f59e0b"
-                      name="In Progress"
-                      radius={[0, 4, 4, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            {/* Work Distribution (Channels) - Horizontal Bar Chart */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Target className="h-4 w-4" />
-                  Work Distribution (Channels)
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart
-                    data={workDistributionData}
-                    layout="vertical"
-                    margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
-                    barSize={20}
-                  >
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke="#e5e7eb"
-                    />
-                    <XAxis
-                      type="number"
-                      stroke="#6b7280"
-                      tick={{ fontSize: 11 }}
-                    />
-                    <YAxis
-                      dataKey="channel"
-                      type="category"
-                      stroke="#6b7280"
-                      tick={{ fontSize: 11 }}
-                      width={70}
-                    />
-                    <Tooltip />
-                    <Bar dataKey="count" name="Count" radius={[0, 4, 4, 0]}>
-                      {workDistributionData.map((entry, index) => {
-                        const colors = [
-                          "#3b82f6",
-                          "#ec4899",
-                          "#eab308",
-                          "#10b981",
-                        ];
-                        return (
-                          <Cell
-                            key={`cell-${index}`}
-                            fill={colors[index]}
-                          />
-                        );
-                      })}
-                      <LabelList
-                        dataKey="count"
-                        position="right"
-                        style={{ fontSize: "10px", fill: "#6b7280" }}
+                      <YAxis
+                        dataKey="month"
+                        type="category"
+                        stroke="#6b7280"
+                        tick={{ fontSize: 11 }}
+                        width={50}
                       />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-        </CardContent>
-      </Card>
+                      <Tooltip />
+                      <Bar
+                        dataKey="completed"
+                        stackId="a"
+                        fill="#10b981"
+                        name="Completed"
+                        radius={[0, 4, 4, 0]}
+                      />
+                      <Bar
+                        dataKey="inProgress"
+                        stackId="a"
+                        fill="#f59e0b"
+                        name="In Progress"
+                        radius={[0, 4, 4, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
 
-        {/* Talent Performance Showcase */}
-        <Card>
+              {/* Work Distribution (Channels) - Horizontal Bar Chart */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Target className="h-4 w-4" />
+                    Work Distribution (Channels)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart
+                      data={workDistributionData}
+                      layout="vertical"
+                      margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
+                      barSize={20}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="#e5e7eb"
+                      />
+                      <XAxis
+                        type="number"
+                        stroke="#6b7280"
+                        tick={{ fontSize: 11 }}
+                      />
+                      <YAxis
+                        dataKey="channel"
+                        type="category"
+                        stroke="#6b7280"
+                        tick={{ fontSize: 11 }}
+                        width={70}
+                      />
+                      <Tooltip />
+                      <Bar dataKey="count" name="Count" radius={[0, 4, 4, 0]}>
+                        {workDistributionData.map((entry, index) => {
+                          const colors = [
+                            "#3b82f6",
+                            "#ec4899",
+                            "#eab308",
+                            "#10b981",
+                          ];
+                          return (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={colors[index]}
+                            />
+                          );
+                        })}
+                        <LabelList
+                          dataKey="count"
+                          position="right"
+                          style={{ fontSize: "10px", fill: "#6b7280" }}
+                        />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Talent Performance Showcase - Takes 1/3 width */}
+        <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
@@ -658,6 +660,7 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
+      </div>
 
       {/* KPI */}
       <Card>
