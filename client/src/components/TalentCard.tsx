@@ -132,28 +132,6 @@ export function TalentCard({
           />
         </div>
 
-        {/* Quality indicators */}
-        <div className="grid grid-cols-3 gap-2 text-center mb-3 p-2 bg-muted/20 rounded-lg">
-          <div>
-            <div className="text-sm font-semibold text-green-600 dark:text-green-400">
-              {successRate}%
-            </div>
-            <div className="text-xs text-muted-foreground">Performance</div>
-          </div>
-          <div>
-            <div className="text-sm font-semibold text-blue-600 dark:text-blue-400">
-              {onTimeDelivery}%
-            </div>
-            <div className="text-xs text-muted-foreground">Attendance</div>
-          </div>
-          <div>
-            <div className="text-sm font-semibold text-purple-600 dark:text-purple-400">
-              {qualityScore}
-            </div>
-            <div className="text-xs text-muted-foreground">Quality</div>
-          </div>
-        </div>
-
         {/* Trust badges */}
         <div className="flex flex-wrap gap-1 mb-3">
           {verified && <TrustBadge variant="verified" size="sm" />}
