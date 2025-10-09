@@ -199,10 +199,34 @@ export default function Dashboard() {
   ];
 
   const talentScorecard = [
-    { name: "Maria Santos", performance: 95, quality: 92, attendance: 98 },
-    { name: "Carlos Reyes", performance: 88, quality: 90, attendance: 96 },
-    { name: "Ana Dela Cruz", performance: 92, quality: 94, attendance: 100 },
-    { name: "Juan Pablo", performance: 85, quality: 88, attendance: 94 },
+    { 
+      name: "Maria Santos", 
+      attendance: 98, 
+      csat: 92, 
+      productivity: 88, 
+      avgHandleTime: 85 
+    },
+    { 
+      name: "Carlos Reyes", 
+      attendance: 96, 
+      csat: 90, 
+      productivity: 85, 
+      avgHandleTime: 88 
+    },
+    { 
+      name: "Ana Dela Cruz", 
+      attendance: 100, 
+      csat: 94, 
+      productivity: 92, 
+      avgHandleTime: 90 
+    },
+    { 
+      name: "Juan Pablo", 
+      attendance: 94, 
+      csat: 88, 
+      productivity: 85, 
+      avgHandleTime: 82 
+    },
   ];
 
   const clientFeedback = [
@@ -845,123 +869,39 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="border rounded-lg">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="font-semibold">Name</TableHead>
-                    <TableHead className="font-semibold">KPI</TableHead>
-                    <TableHead className="font-semibold">Target</TableHead>
-                    <TableHead className="font-semibold">Actual</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {/* Talent 1 */}
-                  <TableRow>
-                    <TableCell rowSpan={4} className="font-medium border-r">
-                      Maria Santos
-                    </TableCell>
-                    <TableCell>Attendance</TableCell>
-                    <TableCell>95%</TableCell>
-                    <TableCell>30%</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>CSAT</TableCell>
-                    <TableCell>90%</TableCell>
-                    <TableCell>40%</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Productivity</TableCell>
-                    <TableCell>85%</TableCell>
-                    <TableCell>30%</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Average Handle Time</TableCell>
-                    <TableCell>75%</TableCell>
-                    <TableCell>40%</TableCell>
-                  </TableRow>
-                  <TableRow className="bg-muted/50"></TableRow>
-
-                  {/* Talent 2 */}
-                  <TableRow>
-                    <TableCell rowSpan={4} className="font-medium border-r">
-                      Carlos Reyes
-                    </TableCell>
-                    <TableCell>Attendance</TableCell>
-                    <TableCell>95%</TableCell>
-                    <TableCell>30%</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>CSAT</TableCell>
-                    <TableCell>90%</TableCell>
-                    <TableCell>40%</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Productivity</TableCell>
-                    <TableCell>85%</TableCell>
-                    <TableCell>30%</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Average Handle Time</TableCell>
-                    <TableCell>85%</TableCell>
-                    <TableCell>25%</TableCell>
-                  </TableRow>
-                  <TableRow className="bg-muted/50"></TableRow>
-
-                  {/* Talent 3 */}
-                  <TableRow>
-                    <TableCell rowSpan={4} className="font-medium border-r">
-                      Ana Dela Cruz
-                    </TableCell>
-                    <TableCell>Attendance</TableCell>
-                    <TableCell>95%</TableCell>
-                    <TableCell>30%</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>CSAT</TableCell>
-                    <TableCell>90%</TableCell>
-                    <TableCell>40%</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Productivity</TableCell>
-                    <TableCell>85%</TableCell>
-                    <TableCell>30%</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Average Handle Time</TableCell>
-                    <TableCell>80%</TableCell>
-                    <TableCell>50%</TableCell>
-                  </TableRow>
-                  <TableRow className="bg-muted/50"></TableRow>
-
-                  {/* Talent 4 */}
-                  <TableRow>
-                    <TableCell rowSpan={4} className="font-medium border-r">
-                      Juan Pablo
-                    </TableCell>
-                    <TableCell>Attendance</TableCell>
-                    <TableCell>85%</TableCell>
-                    <TableCell>25%</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>CSAT</TableCell>
-                    <TableCell>90%</TableCell>
-                    <TableCell>40%</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Productivity</TableCell>
-                    <TableCell>85%</TableCell>
-                    <TableCell>30%</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Average Handle Time</TableCell>
-                    <TableCell>75%</TableCell>
-                    <TableCell>90%</TableCell>
-                  </TableRow>
-                  <TableRow className="bg-muted/50"></TableRow>
-                </TableBody>
-              </Table>
-            </div>
+            <ResponsiveContainer width="100%" height={350}>
+              <BarChart
+                data={talentScorecard}
+                margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis
+                  dataKey="name"
+                  stroke="#6b7280"
+                  tick={{ fontSize: 11 }}
+                  angle={-15}
+                  textAnchor="end"
+                  height={80}
+                />
+                <YAxis
+                  stroke="#6b7280"
+                  tick={{ fontSize: 11 }}
+                  domain={[0, 100]}
+                  label={{
+                    value: "Performance %",
+                    angle: -90,
+                    position: "insideLeft",
+                    style: { fontSize: 11 },
+                  }}
+                />
+                <Tooltip />
+                <Legend wrapperStyle={{ fontSize: "12px" }} />
+                <Bar dataKey="attendance" fill="#10b981" name="Attendance" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="csat" fill="#3b82f6" name="CSAT" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="productivity" fill="#f59e0b" name="Productivity" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="avgHandleTime" fill="#8b5cf6" name="Avg Handle Time" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
 
