@@ -25,9 +25,63 @@ import {
   Clock,
   CheckCircle,
   Activity,
+  Home,
+  Search,
+  Briefcase,
+  FileText,
+  Settings,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { TopNavigation } from "@/components/TopNavigation";
+import { Link, useLocation } from "wouter";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import { ThemeToggle } from "@/components/ThemeToggle";
+
+// Sidebar Menu Items
+const coreModules = [
+  {
+    title: "Dashboard",
+    url: "/hired-talent-portal",
+    icon: Home,
+  },
+  {
+    title: "OnSpot Talent",
+    url: "/hired-talent-portal/talent",
+    icon: Search,
+  },
+  {
+    title: "Client Projects",
+    url: "/hired-talent-portal/projects",
+    icon: Briefcase,
+  },
+];
+
+const managementItems = [
+  {
+    title: "Contracts",
+    url: "/hired-talent-portal/contracts",
+    icon: FileText,
+  },
+];
+
+const systemItems = [
+  {
+    title: "Profile Settings",
+    url: "/settings",
+    icon: Settings,
+  },
+];
 
 // Sample data for monthly performance
 const monthlyPerformanceData = [
@@ -93,284 +147,468 @@ const kpiMetrics = [
   },
 ];
 
+function TalentSidebar() {
+  const [location] = useLocation();
+
+  return (
+    <Sidebar>
+      <SidebarContent>
+        {/* Core Modules */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Core Modules</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {coreModules.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={location === item.url}>
+                    <Link
+                      href={item.url}
+                      data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
+                    >
+                      <item.icon className="w-4 h-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Management */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Management</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {managementItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={location === item.url}>
+                    <Link
+                      href={item.url}
+                      data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
+                    >
+                      <item.icon className="w-4 h-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* System */}
+        <SidebarGroup>
+          <SidebarGroupLabel>System</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {systemItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={location === item.url}>
+                    <Link
+                      href={item.url}
+                      data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
+                    >
+                      <item.icon className="w-4 h-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+    </Sidebar>
+  );
+}
+
 export default function HiredTalentPortal() {
   const { user } = useAuth();
 
-  const totalCalls = productivityData.inboundCalls + productivityData.outboundCalls;
-  const currentMonthAttendance = attendanceData[attendanceData.length - 1].attendance;
-  const currentMonthPerformance = monthlyPerformanceData[monthlyPerformanceData.length - 1].performance;
+  const totalCalls =
+    productivityData.inboundCalls + productivityData.outboundCalls;
+  const currentMonthAttendance =
+    attendanceData[attendanceData.length - 1].attendance;
+  const currentMonthPerformance =
+    monthlyPerformanceData[monthlyPerformanceData.length - 1].performance;
+
+  const sidebarStyle = {
+    "--sidebar-width": "16rem",
+  };
 
   return (
     <div className="min-h-screen bg-background">
       <TopNavigation />
-      {/* Header */}
-      <div className="border-b bg-card/50">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16">
-                <AvatarImage src="" alt={user?.firstName || "Talent"} />
-                <AvatarFallback className="text-lg font-semibold bg-primary text-primary-foreground">
-                  {user?.firstName?.[0]}{user?.lastName?.[0]}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <h1 className="text-2xl font-bold" data-testid="text-talent-name">
-                  {user?.firstName} {user?.lastName}
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  Customer Support Specialist
-                </p>
-                <div className="flex items-center gap-2 mt-1">
-                  <Badge variant="secondary" className="text-xs" data-testid="badge-status">
-                    Active
-                  </Badge>
-                  <Badge variant="outline" className="text-xs" data-testid="badge-shift">
-                    Current Shift: 9:00 AM - 6:00 PM
-                  </Badge>
-                </div>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-sm text-muted-foreground">Overall Performance</div>
-              <div className="text-3xl font-bold text-primary" data-testid="text-overall-score">
-                {currentMonthPerformance}%
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="space-y-8">
-          {/* Productivity Summary */}
-          <section>
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <Activity className="h-5 w-5" />
-              Productivity Summary
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="overflow-hidden">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-blue-500" />
-                    Inbound Calls
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold" data-testid="text-inbound-calls">
-                    {productivityData.inboundCalls}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">This month</p>
-                </CardContent>
-              </Card>
-
-              <Card className="overflow-hidden">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-pink-500" />
-                    Outbound Calls
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold" data-testid="text-outbound-calls">
-                    {productivityData.outboundCalls}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">This month</p>
-                </CardContent>
-              </Card>
-
-              <Card className="overflow-hidden">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-yellow-500" />
-                    Emails
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold" data-testid="text-emails">
-                    {productivityData.emails}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">This month</p>
-                </CardContent>
-              </Card>
-
-              <Card className="overflow-hidden">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4 text-green-500" />
-                    Chats
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold" data-testid="text-chats">
-                    {productivityData.chats}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">This month</p>
-                </CardContent>
-              </Card>
-            </div>
-          </section>
-
-          {/* Performance Charts */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Attendance Chart */}
-            <Card className="overflow-hidden">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2 font-semibold">
-                  <Calendar className="h-4 w-4" />
-                  Attendance Tracking
-                </CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Current: {currentMonthAttendance}%
-                </p>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={attendanceData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis
-                      dataKey="month"
-                      stroke="#6b7280"
-                      tick={{ fontSize: 11 }}
-                    />
-                    <YAxis
-                      stroke="#6b7280"
-                      tick={{ fontSize: 11 }}
-                      domain={[0, 100]}
-                    />
-                    <Tooltip />
-                    <Bar dataKey="attendance" fill="#10b981" name="Attendance %">
-                      <LabelList
-                        dataKey="attendance"
-                        position="top"
-                        style={{ fontSize: "10px" }}
-                        formatter={(value: number) => `${value}%`}
-                      />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            {/* Monthly Performance Chart */}
-            <Card className="overflow-hidden">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2 font-semibold">
-                  <TrendingUp className="h-4 w-4" />
-                  Monthly Performance
-                </CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Current: {currentMonthPerformance}%
-                </p>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={monthlyPerformanceData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis
-                      dataKey="month"
-                      stroke="#6b7280"
-                      tick={{ fontSize: 11 }}
-                    />
-                    <YAxis
-                      stroke="#6b7280"
-                      tick={{ fontSize: 11 }}
-                      domain={[0, 100]}
-                    />
-                    <Tooltip />
-                    <Bar dataKey="performance" fill="#3b82f6" name="Performance %">
-                      <LabelList
-                        dataKey="performance"
-                        position="top"
-                        style={{ fontSize: "10px" }}
-                        formatter={(value: number) => `${value}%`}
-                      />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* KPI Metrics */}
-          <section>
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <Target className="h-5 w-5" />
-              Key Performance Indicators (KPIs)
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {kpiMetrics.map((kpi) => (
-                <Card key={kpi.id} className="overflow-hidden">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
-                      <kpi.icon className="h-4 w-4 text-primary" />
-                      {kpi.label}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <div className="text-2xl font-bold" data-testid={`text-kpi-${kpi.id}`}>
-                        {kpi.value}
-                      </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Target: {kpi.target}</span>
-                        <Badge
-                          variant={kpi.status === "excellent" ? "default" : "secondary"}
-                          className="text-xs"
+      <SidebarProvider style={sidebarStyle as React.CSSProperties}>
+        <div className="flex h-[calc(100vh-4rem)] w-full">
+          <TalentSidebar />
+          <div className="flex flex-col flex-1 overflow-hidden">
+            <header className="flex items-center justify-between p-4 border-b bg-background">
+              <SidebarTrigger data-testid="button-sidebar-toggle" />
+              <ThemeToggle />
+            </header>
+            <main className="flex-1 overflow-auto">
+              {/* Header */}
+              <div className="border-b bg-card/50">
+                <div className="container mx-auto px-4 py-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <Avatar className="h-16 w-16">
+                        <AvatarImage src="" alt={user?.firstName || "Talent"} />
+                        <AvatarFallback className="text-lg font-semibold bg-primary text-primary-foreground">
+                          {user?.firstName?.[0]}
+                          {user?.lastName?.[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <h1
+                          className="text-2xl font-bold"
+                          data-testid="text-talent-name"
                         >
-                          {kpi.status === "excellent" ? "Exceeding" : "On Track"}
-                        </Badge>
+                          {user?.firstName} {user?.lastName}
+                        </h1>
+                        <p className="text-sm text-muted-foreground">
+                          Customer Support Specialist
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge
+                            variant="secondary"
+                            className="text-xs"
+                            data-testid="badge-status"
+                          >
+                            Active
+                          </Badge>
+                          <Badge
+                            variant="outline"
+                            className="text-xs"
+                            data-testid="badge-shift"
+                          >
+                            Current Shift: 9:00 AM - 6:00 PM
+                          </Badge>
+                        </div>
                       </div>
-                      <Progress value={95} className="h-2" />
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </section>
-
-          {/* Summary Stats */}
-          <Card className="overflow-hidden">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold">Performance Summary</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="space-y-2">
-                  <div className="text-sm text-muted-foreground">Total Interactions</div>
-                  <div className="text-2xl font-bold" data-testid="text-total-interactions">
-                    {totalCalls + productivityData.emails + productivityData.chats}
+                    <div className="text-right">
+                      <div className="text-sm text-muted-foreground">
+                        Overall Performance
+                      </div>
+                      <div
+                        className="text-3xl font-bold text-primary"
+                        data-testid="text-overall-score"
+                      >
+                        {currentMonthPerformance}%
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Across all channels this month
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <div className="text-sm text-muted-foreground">Average Daily Output</div>
-                  <div className="text-2xl font-bold" data-testid="text-daily-output">
-                    {Math.round((totalCalls + productivityData.emails + productivityData.chats) / 30)}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Interactions per working day
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <div className="text-sm text-muted-foreground">Performance Trend</div>
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-green-500" />
-                    <span className="text-2xl font-bold text-green-500" data-testid="text-trend">+7%</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Compared to last month
-                  </p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+
+              {/* Main Content */}
+              <div className="container mx-auto px-4 py-8">
+                <div className="space-y-8">
+                  {/* Productivity Summary */}
+                  <section>
+                    <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                      <Activity className="h-5 w-5" />
+                      Productivity Summary
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <Card className="overflow-hidden">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-medium flex items-center gap-2">
+                            <Phone className="h-4 w-4 text-blue-500" />
+                            Inbound Calls
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div
+                            className="text-3xl font-bold"
+                            data-testid="text-inbound-calls"
+                          >
+                            {productivityData.inboundCalls}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            This month
+                          </p>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="overflow-hidden">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-medium flex items-center gap-2">
+                            <Phone className="h-4 w-4 text-pink-500" />
+                            Outbound Calls
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div
+                            className="text-3xl font-bold"
+                            data-testid="text-outbound-calls"
+                          >
+                            {productivityData.outboundCalls}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            This month
+                          </p>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="overflow-hidden">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-medium flex items-center gap-2">
+                            <Mail className="h-4 w-4 text-yellow-500" />
+                            Emails
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div
+                            className="text-3xl font-bold"
+                            data-testid="text-emails"
+                          >
+                            {productivityData.emails}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            This month
+                          </p>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="overflow-hidden">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-medium flex items-center gap-2">
+                            <MessageSquare className="h-4 w-4 text-green-500" />
+                            Chats
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div
+                            className="text-3xl font-bold"
+                            data-testid="text-chats"
+                          >
+                            {productivityData.chats}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            This month
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </section>
+
+                  {/* Performance Charts */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Attendance Chart */}
+                    <Card className="overflow-hidden">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base flex items-center gap-2 font-semibold">
+                          <Calendar className="h-4 w-4" />
+                          Attendance Tracking
+                        </CardTitle>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Current: {currentMonthAttendance}%
+                        </p>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <ResponsiveContainer width="100%" height={250}>
+                          <BarChart data={attendanceData}>
+                            <CartesianGrid
+                              strokeDasharray="3 3"
+                              stroke="#e5e7eb"
+                            />
+                            <XAxis
+                              dataKey="month"
+                              stroke="#6b7280"
+                              tick={{ fontSize: 11 }}
+                            />
+                            <YAxis
+                              stroke="#6b7280"
+                              tick={{ fontSize: 11 }}
+                              domain={[0, 100]}
+                            />
+                            <Tooltip />
+                            <Bar
+                              dataKey="attendance"
+                              fill="#10b981"
+                              name="Attendance %"
+                            >
+                              <LabelList
+                                dataKey="attendance"
+                                position="top"
+                                style={{ fontSize: "10px" }}
+                                formatter={(value: number) => `${value}%`}
+                              />
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+
+                    {/* Monthly Performance Chart */}
+                    <Card className="overflow-hidden">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base flex items-center gap-2 font-semibold">
+                          <TrendingUp className="h-4 w-4" />
+                          Monthly Performance
+                        </CardTitle>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Current: {currentMonthPerformance}%
+                        </p>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <ResponsiveContainer width="100%" height={250}>
+                          <BarChart data={monthlyPerformanceData}>
+                            <CartesianGrid
+                              strokeDasharray="3 3"
+                              stroke="#e5e7eb"
+                            />
+                            <XAxis
+                              dataKey="month"
+                              stroke="#6b7280"
+                              tick={{ fontSize: 11 }}
+                            />
+                            <YAxis
+                              stroke="#6b7280"
+                              tick={{ fontSize: 11 }}
+                              domain={[0, 100]}
+                            />
+                            <Tooltip />
+                            <Bar
+                              dataKey="performance"
+                              fill="#3b82f6"
+                              name="Performance %"
+                            >
+                              <LabelList
+                                dataKey="performance"
+                                position="top"
+                                style={{ fontSize: "10px" }}
+                                formatter={(value: number) => `${value}%`}
+                              />
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* KPI Metrics */}
+                  <section>
+                    <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                      <Target className="h-5 w-5" />
+                      Key Performance Indicators (KPIs)
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {kpiMetrics.map((kpi) => (
+                        <Card key={kpi.id} className="overflow-hidden">
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-sm font-medium flex items-center gap-2">
+                              <kpi.icon className="h-4 w-4 text-primary" />
+                              {kpi.label}
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-2">
+                              <div
+                                className="text-2xl font-bold"
+                                data-testid={`text-kpi-${kpi.id}`}
+                              >
+                                {kpi.value}
+                              </div>
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-muted-foreground">
+                                  Target: {kpi.target}
+                                </span>
+                                <Badge
+                                  variant={
+                                    kpi.status === "excellent"
+                                      ? "default"
+                                      : "secondary"
+                                  }
+                                  className="text-xs"
+                                >
+                                  {kpi.status === "excellent"
+                                    ? "Exceeding"
+                                    : "On Track"}
+                                </Badge>
+                              </div>
+                              <Progress value={95} className="h-2" />
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </section>
+
+                  {/* Summary Stats */}
+                  <Card className="overflow-hidden">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base font-semibold">
+                        Performance Summary
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="space-y-2">
+                          <div className="text-sm text-muted-foreground">
+                            Total Interactions
+                          </div>
+                          <div
+                            className="text-2xl font-bold"
+                            data-testid="text-total-interactions"
+                          >
+                            {totalCalls +
+                              productivityData.emails +
+                              productivityData.chats}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Across all channels this month
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="text-sm text-muted-foreground">
+                            Average Daily Output
+                          </div>
+                          <div
+                            className="text-2xl font-bold"
+                            data-testid="text-daily-output"
+                          >
+                            {Math.round(
+                              (totalCalls +
+                                productivityData.emails +
+                                productivityData.chats) /
+                                30,
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Interactions per working day
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="text-sm text-muted-foreground">
+                            Performance Trend
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <TrendingUp className="h-5 w-5 text-green-500" />
+                            <span
+                              className="text-2xl font-bold text-green-500"
+                              data-testid="text-trend"
+                            >
+                              +7%
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Compared to last month
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </main>
+          </div>
         </div>
-      </div>
+      </SidebarProvider>
     </div>
   );
 }
