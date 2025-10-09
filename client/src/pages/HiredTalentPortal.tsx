@@ -30,9 +30,14 @@ import {
   Briefcase,
   FileText,
   Settings,
+  User,
+  Loader2,
+  LogOut,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link, useLocation } from "wouter";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -223,7 +228,8 @@ function TalentSidebar() {
 }
 
 export default function HiredTalentPortal() {
-  const { user } = useAuth();
+  const { user, logout, isLoading } = useAuth();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const totalCalls =
     productivityData.inboundCalls + productivityData.outboundCalls;
@@ -233,76 +239,96 @@ export default function HiredTalentPortal() {
     monthlyPerformanceData[monthlyPerformanceData.length - 1].performance;
 
   const sidebarStyle = {
-    "--sidebar-width": "16rem",
+    "--sidebar-width": "18rem",
+    "--sidebar-width-icon": "4rem",
+  };
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      console.log("✅ User logged out successfully from talent portal");
+    } catch (error) {
+      console.error("❌ Logout failed:", error);
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   return (
     <SidebarProvider style={sidebarStyle as React.CSSProperties}>
       <div className="flex h-screen w-full">
-          <TalentSidebar />
-          <div className="flex flex-col flex-1 overflow-hidden">
-            <header className="flex items-center justify-between p-4 border-b bg-background">
+        <TalentSidebar />
+        <div className="flex flex-col flex-1 overflow-hidden">
+          <header className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="flex items-center gap-2">
               <SidebarTrigger data-testid="button-sidebar-toggle" />
-              <ThemeToggle />
-            </header>
-            <main className="flex-1 overflow-auto">
-              {/* Header */}
-              <div className="border-b bg-card/50">
-                <div className="container mx-auto px-4 py-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <Avatar className="h-16 w-16">
-                        <AvatarImage src="" alt={user?.firstName || "Talent"} />
-                        <AvatarFallback className="text-lg font-semibold bg-primary text-primary-foreground">
-                          {user?.firstName?.[0]}
-                          {user?.lastName?.[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <h1
-                          className="text-2xl font-bold"
-                          data-testid="text-talent-name"
-                        >
-                          {user?.firstName} {user?.lastName}
-                        </h1>
-                        <p className="text-sm text-muted-foreground">
-                          Customer Support Specialist
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge
-                            variant="secondary"
-                            className="text-xs"
-                            data-testid="badge-status"
-                          >
-                            Active
-                          </Badge>
-                          <Badge
-                            variant="outline"
-                            className="text-xs"
-                            data-testid="badge-shift"
-                          >
-                            Current Shift: 9:00 AM - 6:00 PM
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm text-muted-foreground">
-                        Overall Performance
-                      </div>
-                      <div
-                        className="text-3xl font-bold text-primary"
-                        data-testid="text-overall-score"
-                      >
-                        {currentMonthPerformance}%
-                      </div>
-                    </div>
+              <Link href="/hired-talent-portal" className="flex items-center space-x-2">
+                <div className="font-semibold text-lg text-primary">OnSpot</div>
+                <div className="text-xs text-muted-foreground bg-primary/10 px-2 py-1 rounded">
+                  Talent Portal
+                </div>
+              </Link>
+            </div>
+            <div className="flex items-center gap-3">
+              {/* User Information */}
+              {isLoading ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground" data-testid="user-loading">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Loading...</span>
+                </div>
+              ) : user ? (
+                <div className="flex items-center gap-2 text-sm" data-testid="user-info">
+                  <Avatar className="w-8 h-8">
+                    <AvatarImage src={user.profileImageUrl || undefined} alt={user.firstName || user.email} />
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                      {user.firstName ? user.firstName.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col">
+                    <span className="font-medium">
+                      {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : 
+                       user.firstName || user.username || user.email.split("@")[0]}
+                    </span>
+                    <span className="text-xs text-muted-foreground capitalize">
+                      {user.userType || user.role}
+                    </span>
                   </div>
                 </div>
-              </div>
-
-              {/* Main Content */}
-              <div className="container mx-auto px-4 py-8">
+              ) : (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground" data-testid="user-not-found">
+                  <User className="w-4 h-4" />
+                  <span>User not found</span>
+                </div>
+              )}
+              
+              <ThemeToggle />
+              
+              {/* Logout Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLogout}
+                disabled={isLoggingOut || isLoading}
+                data-testid="button-logout"
+              >
+                {isLoggingOut ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Logging out...
+                  </>
+                ) : (
+                  <>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                  </>
+                )}
+              </Button>
+            </div>
+          </header>
+          <main className="flex-1 overflow-auto">
+            {/* Main Content */}
+            <div className="container mx-auto px-4 py-8">
                 <div className="space-y-8">
                   {/* Productivity Summary */}
                   <section>
