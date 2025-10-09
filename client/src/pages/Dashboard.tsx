@@ -1,5 +1,4 @@
 import { DashboardCard } from "@/components/DashboardCard";
-import { TalentCard } from "@/components/TalentCard";
 import { TaskBoard } from "@/components/TaskBoard";
 import { PerformanceChart } from "@/components/PerformanceChart";
 import { ROICalculator } from "@/components/ROICalculator";
@@ -9,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Select,
   SelectContent,
@@ -33,6 +33,7 @@ import {
   Calendar,
   Award,
   MessageSquare,
+  Star,
 } from "lucide-react";
 import {
   LineChart,
@@ -596,67 +597,75 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <TalentCard
-                id="talent-1"
-                name="Maria Santos"
-                role="Senior Full Stack Developer"
-                location="Manila, Philippines"
-                hourlyRate={25}
-                rating={4.9}
-                skills={["React", "Node.js", "TypeScript", "Python", "AWS"]}
-                avatarUrl={avatarImage}
-                experience="5+ years"
-                availability="available"
-              />
-              <TalentCard
-                id="talent-2"
-                name="Carlos Reyes"
-                role="Customer Support Specialist"
-                location="Cebu, Philippines"
-                hourlyRate={8}
-                rating={4.8}
-                skills={[
-                  "English Fluency",
-                  "CRM Management",
-                  "Technical Support",
-                  "Customer Service",
-                ]}
-                experience="3+ years"
-                availability="available"
-              />
-              <TalentCard
-                id="talent-3"
-                name="Ana Dela Cruz"
-                role="Virtual Assistant"
-                location="Davao, Philippines"
-                hourlyRate={6}
-                rating={4.7}
-                skills={[
-                  "Admin Support",
-                  "Data Entry",
-                  "Social Media",
-                  "Lead Generation",
-                ]}
-                experience="4+ years"
-                availability="available"
-              />
-              <TalentCard
-                id="talent-3"
-                name="Juan Pablo"
-                role="Virtual Assistant"
-                location="Davao, Philippines"
-                hourlyRate={6}
-                rating={4.7}
-                skills={[
-                  "Admin Support",
-                  "Data Entry",
-                  "Social Media",
-                  "Lead Generation",
-                ]}
-                experience="4+ years"
-                availability="available"
-              />
+            <div className="space-y-3">
+              {/* Compact Talent Cards */}
+              <div className="flex items-center gap-2 p-2 rounded-md border hover-elevate">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={avatarImage} alt="Maria Santos" />
+                  <AvatarFallback>MS</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">Maria Santos</p>
+                  <p className="text-xs text-muted-foreground truncate">Full Stack Dev</p>
+                </div>
+                <div className="text-right">
+                  <div className="flex items-center gap-0.5">
+                    <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                    <span className="text-xs font-medium">4.9</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 p-2 rounded-md border hover-elevate">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={avatarImage} alt="Carlos Reyes" />
+                  <AvatarFallback>CR</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">Carlos Reyes</p>
+                  <p className="text-xs text-muted-foreground truncate">Support Specialist</p>
+                </div>
+                <div className="text-right">
+                  <div className="flex items-center gap-0.5">
+                    <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                    <span className="text-xs font-medium">4.8</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 p-2 rounded-md border hover-elevate">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={avatarImage} alt="Ana Dela Cruz" />
+                  <AvatarFallback>AD</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">Ana Dela Cruz</p>
+                  <p className="text-xs text-muted-foreground truncate">Virtual Assistant</p>
+                </div>
+                <div className="text-right">
+                  <div className="flex items-center gap-0.5">
+                    <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                    <span className="text-xs font-medium">4.7</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 p-2 rounded-md border hover-elevate">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={avatarImage} alt="Juan Pablo" />
+                  <AvatarFallback>JP</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">Juan Pablo</p>
+                  <p className="text-xs text-muted-foreground truncate">Virtual Assistant</p>
+                </div>
+                <div className="text-right">
+                  <div className="flex items-center gap-0.5">
+                    <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                    <span className="text-xs font-medium">4.7</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
