@@ -200,28 +200,28 @@ export default function Dashboard() {
 
   const talentScorecard = [
     { 
-      name: "Maria Santos", 
+      name: "Maria S.", 
       attendance: 98, 
       csat: 92, 
       productivity: 88, 
       avgHandleTime: 85 
     },
     { 
-      name: "Carlos Reyes", 
+      name: "Carlos R.", 
       attendance: 96, 
       csat: 90, 
       productivity: 85, 
       avgHandleTime: 88 
     },
     { 
-      name: "Ana Dela Cruz", 
+      name: "Ana D.", 
       attendance: 100, 
       csat: 94, 
       productivity: 92, 
       avgHandleTime: 90 
     },
     { 
-      name: "Juan Pablo", 
+      name: "Juan P.", 
       attendance: 94, 
       csat: 88, 
       productivity: 85, 
@@ -881,10 +881,10 @@ export default function Dashboard() {
                 <XAxis
                   dataKey="name"
                   stroke="#6b7280"
-                  tick={{ fontSize: 11 }}
-                  angle={-15}
-                  textAnchor="end"
-                  height={80}
+                  tick={{ fontSize: 13, fontWeight: 500 }}
+                  angle={0}
+                  textAnchor="middle"
+                  height={60}
                 />
                 <YAxis
                   stroke="#6b7280"
