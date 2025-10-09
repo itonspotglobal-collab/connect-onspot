@@ -32,7 +32,6 @@ import {
   Settings,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { TopNavigation } from "@/components/TopNavigation";
 import { Link, useLocation } from "wouter";
 import {
   Sidebar,
@@ -238,10 +237,8 @@ export default function HiredTalentPortal() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <TopNavigation />
-      <SidebarProvider style={sidebarStyle as React.CSSProperties}>
-        <div className="flex h-[calc(100vh-4rem)] w-full">
+    <SidebarProvider style={sidebarStyle as React.CSSProperties}>
+      <div className="flex h-screen w-full">
           <TalentSidebar />
           <div className="flex flex-col flex-1 overflow-hidden">
             <header className="flex items-center justify-between p-4 border-b bg-background">
@@ -609,6 +606,5 @@ export default function HiredTalentPortal() {
           </div>
         </div>
       </SidebarProvider>
-    </div>
   );
 }

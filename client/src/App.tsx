@@ -150,6 +150,7 @@ function TalentRouter() {
   return (
     <TalentProtectedRoute>
       <div className="min-h-screen bg-background">
+        <TopNavigation />
         <Switch>
           <Route path="/" component={TalentPortal} />
           <Route path="/get-hired" component={TalentPortal} />
