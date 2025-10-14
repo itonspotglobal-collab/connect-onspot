@@ -1,0 +1,117 @@
+Fix the Validation & Data Submission Error
+
+Ensure LeadIntake.tsx correctly maps the form field names and sends the payload in the format expected by the backend.
+
+Convert camelCase fields (like firstName) to snake_case (first_name) before sending.
+
+Make sure zodResolver and backend validation schemas are consistent.
+
+Verify that fetch('/api/lead-intake', …) returns a success response (200 OK).
+
+Save the Submitted Data to the Database
+
+Update /api/lead-intake.ts (or equivalent Express/Next route) to:
+
+Validate incoming data.
+
+Insert it into your database (e.g., PostgreSQL, Supabase, Prisma, or MongoDB).
+
+Return a success message upon save.
+
+Integrate with GoHighLevel (GHL) API
+
+After successfully saving to the database, make API calls to GoHighLevel:
+
+Create or update a contact via
+POST https://rest.gohighlevel.com/v1/contacts/
+
+Create a new opportunity via
+POST https://rest.gohighlevel.com/v1/opportunities/
+
+Include these fields:
+
+{
+  "email": "user@email.com",
+  "firstName": "John",
+  "lastName": "Doe",
+  "phone": "+123456789",
+  "companyName": "Acme Inc",
+  "source": "OnSpot Lead Intake Form"
+}
+
+
+Store the GHL API key in .env:
+
+GHL_API_KEY=your_highlevel_api_key
+
+
+Use the key for authorization:
+
+headers: { "Authorization": `Bearer ${process.env.GHL_API_KEY}` }
+
+
+Optional: Send an Automated Message
+
+Use POST https://rest.gohighlevel.com/v1/conversations/messages/
+to send an SMS or email to the new lead confirming receipt.
+
+Frontend Improvements
+
+Show a success toast when the form submission and GHL integration succeed.
+
+Display any errors gracefully if API requests fail.
+
+💻 Technical Requirements
+
+Framework: Next.js (App Router or Pages Router)
+
+Frontend file: LeadIntake.tsx
+
+Backend endpoint: /api/lead-intake
+
+Libraries:
+
+react-hook-form, zod, @hookform/resolvers/zod
+
+fetch or axios for HTTP requests
+
+Environment variables stored in .env
+
+🧱 Example Workflow
+
+User submits the Lead Intake form.
+
+Data is validated locally and sent as:
+
+{
+  "first_name": "Jane",
+  "last_name": "Smith",
+  "email": "jane@company.com",
+  "company_name": "TechStart",
+  "service_type": "virtual_assistants",
+  "urgency_level": "immediate",
+  "budget_range": "5k-20k"
+}
+
+
+Backend:
+
+Saves data to DB.
+
+Sends it to GoHighLevel.
+
+Returns { message: "Lead saved successfully" }.
+
+UI displays: ✅ “Thank you! We’ll reach out within 24 hours.”
+
+🧠 Expected Output
+
+After Replit AI applies the prompt:
+
+The form submits successfully (no more “Invalid body data provided” errors).
+
+Submitted data appears in your database.
+
+New leads automatically show up in GoHighLevel under Contacts → Opportunities.
+
+A success toast confirms the submission.

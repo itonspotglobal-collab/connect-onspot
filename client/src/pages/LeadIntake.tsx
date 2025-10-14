@@ -114,30 +114,30 @@ export default function LeadIntake() {
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
-      // Build payload with snake_case field names matching database schema
+      // Build payload with camelCase field names matching the backend zod schema
       const payload = {
-        first_name: data.firstName,
-        last_name: data.lastName,
+        firstName: data.firstName,
+        lastName: data.lastName,
         email: data.email,
-        phone_number: data.phoneNumber,
-        job_title: data.jobTitle,
-        company_name: data.companyName,
-        company_size: data.companySize,
+        phoneNumber: data.phoneNumber,
+        jobTitle: data.jobTitle,
+        companyName: data.companyName,
+        companySize: data.companySize,
         industry: data.industry,
-        company_website: data.companyWebsite,
-        service_type: data.serviceType,
-        current_challenges: data.currentChallenges,
-        service_volume: data.serviceVolume,
-        required_skills: data.requiredSkills,
-        urgency_level: data.urgencyLevel,
-        budget_range: data.budgetRange,
-        expected_start_date: data.expectedStartDate,
-        team_size: data.teamSize,
-        has_current_provider: data.hasCurrentProvider,
-        current_provider_details: data.currentProviderDetails,
-        decision_maker_status: data.decisionMakerStatus,
-        implementation_timeline: data.implementationTimeline,
-        additional_notes: data.additionalNotes
+        companyWebsite: data.companyWebsite,
+        serviceType: data.serviceType,
+        currentChallenges: data.currentChallenges,
+        serviceVolume: data.serviceVolume,
+        requiredSkills: data.requiredSkills,
+        urgencyLevel: data.urgencyLevel,
+        budgetRange: data.budgetRange,
+        expectedStartDate: data.expectedStartDate,
+        teamSize: data.teamSize,
+        hasCurrentProvider: data.hasCurrentProvider,
+        currentProviderDetails: data.currentProviderDetails,
+        decisionMakerStatus: data.decisionMakerStatus,
+        implementationTimeline: data.implementationTimeline,
+        additionalNotes: data.additionalNotes
       };
 
       const response = await fetch('/api/lead-intake', {
