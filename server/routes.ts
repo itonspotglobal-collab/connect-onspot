@@ -2197,12 +2197,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Send lead to Go-High-Level CRM
         const ghlResult = await ghlService.sendLeadToGHL(leadIntake);
         if (ghlResult.success && ghlResult.ghlContactId) {
-          console.log(
-            `🎯 Lead successfully sent to GHL: Contact ID ${ghlResult.ghlContactId}`,
-          );
-          // Optionally update the lead with GHL contact ID
+          const ghlInfo = `GHL Contact ID: ${ghlResult.ghlContactId}` + 
+            (ghlResult.ghlOpportunityId ? `, Opportunity ID: ${ghlResult.ghlOpportunityId}` : '');
+          console.log(`🎯 Lead successfully sent to GHL: ${ghlInfo}`);
+          
+          // Update the lead with GHL contact and opportunity IDs
           await storage.updateLeadIntake(leadIntake.id, {
-            internalNotes: `GHL Contact ID: ${ghlResult.ghlContactId}`,
+            internalNotes: ghlInfo,
           });
         } else if (ghlResult.error) {
           console.warn(`⚠️ Failed to send lead to GHL: ${ghlResult.error}`);

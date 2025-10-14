@@ -35,46 +35,81 @@ export class GHLService {
   }
 
   /**
-   * Send lead to Go-High-Level CRM
+   * Send lead to Go-High-Level CRM (creates contact and opportunity)
    */
-  async sendLeadToGHL(leadIntake: LeadIntake): Promise<{ success: boolean; ghlContactId?: string; error?: string }> {
+  async sendLeadToGHL(leadIntake: LeadIntake): Promise<{ success: boolean; ghlContactId?: string; ghlOpportunityId?: string; error?: string }> {
     if (!this.apiKey) {
       console.log('🔄 GHL integration skipped - API key not configured');
       return { success: false, error: 'GHL API key not configured' };
     }
 
     try {
+      // Step 1: Create or update contact
       const contact: GHLContact = this.mapLeadToGHLContact(leadIntake);
       
       console.log(`📤 Sending lead to GHL: ${contact.email}`);
       
-      const response = await fetch(`${this.baseUrl}/contacts/`, {
+      const contactResponse = await fetch(`${this.baseUrl}/contacts/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
           'Content-Type': 'application/json',
+          'Version': '2021-07-28',
         },
         body: JSON.stringify(contact),
       });
 
-      const responseData: GHLApiResponse = await response.json();
+      const contactData: GHLApiResponse = await contactResponse.json();
 
-      if (response.ok && responseData.contact?.id) {
-        console.log(`✅ Lead successfully sent to GHL: Contact ID ${responseData.contact.id}`);
-        return { 
-          success: true, 
-          ghlContactId: responseData.contact.id 
-        };
-      } else {
-        console.error('❌ GHL API Error:', {
-          status: response.status,
-          statusText: response.statusText,
-          message: responseData.message,
-          responseData
+      if (!contactResponse.ok || !contactData.contact?.id) {
+        console.error('❌ GHL Contact Creation Error:', {
+          status: contactResponse.status,
+          statusText: contactResponse.statusText,
+          message: contactData.message,
+          contactData
         });
         return { 
           success: false, 
-          error: `GHL API Error: ${responseData.message || response.statusText}` 
+          error: `GHL Contact API Error: ${contactData.message || contactResponse.statusText}` 
+        };
+      }
+
+      const contactId = contactData.contact.id;
+      console.log(`✅ Contact created in GHL: Contact ID ${contactId}`);
+
+      // Step 2: Create opportunity
+      const opportunityData = this.createOpportunityData(leadIntake, contactId);
+      
+      const opportunityResponse = await fetch(`${this.baseUrl}/opportunities/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+          'Version': '2021-07-28',
+        },
+        body: JSON.stringify(opportunityData),
+      });
+
+      const oppData = await opportunityResponse.json();
+
+      if (opportunityResponse.ok && oppData.id) {
+        console.log(`✅ Opportunity created in GHL: Opportunity ID ${oppData.id}`);
+        return { 
+          success: true, 
+          ghlContactId: contactId,
+          ghlOpportunityId: oppData.id
+        };
+      } else {
+        console.warn('⚠️ GHL Opportunity Creation Warning:', {
+          status: opportunityResponse.status,
+          message: oppData.message,
+          oppData
+        });
+        // Contact was created successfully, so still return success
+        return { 
+          success: true, 
+          ghlContactId: contactId,
+          error: `Contact created but opportunity failed: ${oppData.message || opportunityResponse.statusText}`
         };
       }
     } catch (error: any) {
@@ -147,6 +182,55 @@ export class GHLService {
         
         // Additional Notes
         additional_notes: leadIntake.additionalNotes,
+      }
+    };
+  }
+
+  /**
+   * Create opportunity data for GHL
+   */
+  private createOpportunityData(leadIntake: LeadIntake, contactId: string) {
+    // Map budget range to monetary value
+    const monetaryValueMap: Record<string, number> = {
+      '<5k': 3000,
+      '5k-20k': 12500,
+      '20k-50k': 35000,
+      '50k+': 75000
+    };
+
+    // Map urgency to pipeline stage
+    const stageMap: Record<string, string> = {
+      'immediate': 'hot_lead',
+      'within_month': 'qualified',
+      'within_quarter': 'contacted',
+      'planning': 'new'
+    };
+
+    const serviceTypeMap: Record<string, string> = {
+      'customer_support': 'Customer Support',
+      'virtual_assistants': 'Virtual Assistant',
+      'technical_support': 'Technical Support',
+      'back_office': 'Back Office',
+      'sales_marketing': 'Sales & Marketing',
+      'design_creative': 'Design & Creative'
+    };
+
+    return {
+      contactId: contactId,
+      name: `${leadIntake.companyName} - ${serviceTypeMap[leadIntake.serviceType] || leadIntake.serviceType}`,
+      monetaryValue: monetaryValueMap[leadIntake.budgetRange] || 10000,
+      pipelineStage: stageMap[leadIntake.urgencyLevel] || 'new',
+      status: 'open',
+      source: 'OnSpot Website',
+      customFields: {
+        service_type: leadIntake.serviceType,
+        urgency_level: leadIntake.urgencyLevel,
+        budget_range: leadIntake.budgetRange,
+        team_size: leadIntake.teamSize,
+        expected_start_date: leadIntake.expectedStartDate,
+        decision_maker_status: leadIntake.decisionMakerStatus,
+        current_challenges: leadIntake.currentChallenges,
+        lead_score: leadIntake.leadScore
       }
     };
   }
