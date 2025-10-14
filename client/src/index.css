@@ -111,6 +111,12 @@
     radial-gradient(1000px 600px at 85% 5%, hsl(220 100% 65% / 0.25) 0%, transparent 60%),
     radial-gradient(800px 400px at 95% 100%, hsl(280 80% 45% / 0.15) 0%, transparent 50%),
     linear-gradient(155deg, hsl(var(--brand)) 0%, hsl(var(--brand-700)) 45%, hsl(240 45% 25%) 100%);
+  
+  /* Lighter version for Amazing Stories section */
+  --gradient-stories-light: 
+    radial-gradient(1200px 500px at 20% -10%, hsl(236 42% 95% / 0.5) 0%, transparent 70%),
+    radial-gradient(800px 400px at 80% 10%, hsl(220 100% 97% / 0.4) 0%, transparent 65%),
+    linear-gradient(160deg, hsl(236 30% 96%) 0%, hsl(240 20% 97%) 100%);
 
   --font-sans: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-serif: Georgia, serif;
@@ -257,6 +263,12 @@
   /* Dark Mode Brand Colors */
   --brand: 236 42% 54%;
   --brand-700: 236 50% 44%;
+  
+  /* Lighter version for Amazing Stories section - Dark Mode */
+  --gradient-stories-light: 
+    radial-gradient(1200px 500px at 20% -10%, hsl(236 42% 18% / 0.4) 0%, transparent 70%),
+    radial-gradient(800px 400px at 80% 10%, hsl(220 100% 20% / 0.3) 0%, transparent 65%),
+    linear-gradient(160deg, hsl(220 13% 14%) 0%, hsl(220 13% 12%) 100%);
 
   --shadow-2xs: 0px 2px 0px 0px hsl(220 13% 19% / 0.00);
   --shadow-xs: 0px 2px 0px 0px hsl(220 13% 19% / 0.00);
@@ -603,6 +615,12 @@
   .hero-investor { 
     background: var(--gradient-investor-hero); 
     position: relative; 
+  }
+  
+  /* Amazing Stories Section - Lighter Hero Gradient */
+  .bg-stories-light {
+    background: var(--gradient-stories-light);
+    position: relative;
   }
   .nav-over-hero { 
     position:fixed; 

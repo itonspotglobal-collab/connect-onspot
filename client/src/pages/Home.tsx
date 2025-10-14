@@ -373,7 +373,7 @@ export default function Home() {
       </div>
 
       {/* Amazing Stories - Testimonials */}
-      <div className="bg-sidebar pb-16">
+      <div className="bg-stories-light pb-16">
         <div className="container mx-auto px-6">
           <div className="text-center space-y-3 mb-12 pt-16">
             <h2 className="text-3xl font-bold">Amazing Stories</h2>
