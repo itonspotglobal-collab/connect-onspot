@@ -315,13 +315,17 @@ export default function Amazing() {
             {featuredEmployees.map((employee, index) => (
               <Card
                 key={index}
-                className="relative overflow-hidden hover-elevate transition-all duration-500 group text-center h-full flex flex-col"
+                className="relative overflow-hidden hover-elevate transition-all duration-500 group text-center"
                 data-testid={`employee-${index}`}
               >
-                <CardContent className="p-8 flex flex-col h-full">
+                <CardContent className="p-8">
                   <div className="relative mb-6">
-                    <Avatar className="w-24 h-24 mx-auto border-4 border-white shadow-xl">
-                      <AvatarImage src={employee.photo} alt={employee.name} />
+                    <Avatar className="w-24 h-24 mx-auto border-4 border-white shadow-xl overflow-hidden rounded-full bg-gray-50">
+                      <AvatarImage
+                        src={employee.photo}
+                        alt={employee.name}
+                        className="object-cover w-full h-full object-top scale-110"
+                      />
                       <AvatarFallback className="bg-gradient-to-br from-primary to-[hsl(var(--gold-yellow))] text-white text-xl font-bold">
                         {employee.initials}
                       </AvatarFallback>
@@ -334,11 +338,11 @@ export default function Amazing() {
                   <p className="text-primary font-medium mb-4">
                     {employee.title}
                   </p>
-                  <p className="text-muted-foreground text-sm leading-relaxed mb-6 flex-grow">
+                  <p className="text-muted-foreground text-sm leading-relaxed mb-6">
                     {employee.description}
                   </p>
 
-                  <div className="flex flex-wrap gap-2 justify-center mt-auto">
+                  <div className="flex flex-wrap gap-2 justify-center">
                     {employee.skills.map((skill, skillIndex) => (
                       <Badge
                         key={skillIndex}
