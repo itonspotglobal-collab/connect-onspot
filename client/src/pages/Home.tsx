@@ -193,7 +193,7 @@ export default function Home() {
         <div className="text-center space-y-8">
           <div>
             <p className="text-sm text-muted-foreground uppercase tracking-wide mb-4">Trusted by</p>
-            <h2 className="text-3xl font-bold">OnSpot Powers Growth for global brands, hundreds of entrepreneurs, and thousands of professionals.</h2>
+            <h2 className="text-3xl font-bold">Global brands, hundreds of entrepreneurs, and thousands of professionals.</h2>
           </div>
           
           {/* Brand Logos Strip */}
