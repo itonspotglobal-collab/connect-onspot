@@ -19,9 +19,12 @@ import {
   type Notification, type InsertNotification,
   type LeadIntake, type InsertLeadIntake,
   type CsvTalentRow, type CsvBulkImport, type CsvImportResult, type CsvTemplate, type BulkTalentData,
-  type Document, type InsertDocument
+  type Document, type InsertDocument,
+  leadIntakes
 } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { db } from "./db";
+import { eq, and, gte } from "drizzle-orm";
 
 // Type for creating user with password
 export interface CreateUserData {
@@ -1563,72 +1566,53 @@ export class MemStorage implements IStorage {
   async createLeadIntake(leadIntake: InsertLeadIntake): Promise<LeadIntake> {
     const leadScore = this.calculateLeadScore(leadIntake);
     
-    const newLeadIntake: LeadIntake = {
-      id: randomUUID(),
+    const newLeadIntake = {
       ...leadIntake,
-      requiredSkills: leadIntake.requiredSkills || [],
-      phoneNumber: leadIntake.phoneNumber || null,
-      jobTitle: leadIntake.jobTitle || null,
-      companyWebsite: leadIntake.companyWebsite || null,
-      serviceVolume: leadIntake.serviceVolume || null,
-      teamSize: leadIntake.teamSize || null,
-      expectedStartDate: leadIntake.expectedStartDate || null,
-      currentProviderDetails: leadIntake.currentProviderDetails || null,
-      implementationTimeline: leadIntake.implementationTimeline || null,
-      additionalNotes: leadIntake.additionalNotes || null,
-      internalNotes: null,
-      utmSource: leadIntake.utmSource || null,
-      utmMedium: leadIntake.utmMedium || null,
-      utmCampaign: leadIntake.utmCampaign || null,
-      referringPage: leadIntake.referringPage || null,
-      appointmentDateTime: null,
-      appointmentType: null,
-      calendarEventId: null,
       leadScore,
-      status: "new",
+      status: "new" as const,
       source: leadIntake.source || "website",
-      appointmentScheduled: false,
-      scheduledAt: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
     };
     
-    this.leadIntakes.set(newLeadIntake.id, newLeadIntake);
-    return newLeadIntake;
+    const [result] = await db.insert(leadIntakes).values(newLeadIntake).returning();
+    return result;
   }
 
   async getLeadIntake(id: string): Promise<LeadIntake | undefined> {
-    return this.leadIntakes.get(id);
+    const result = await db.select().from(leadIntakes).where(eq(leadIntakes.id, id));
+    return result[0];
   }
 
   async updateLeadIntake(id: string, updates: Partial<InsertLeadIntake>): Promise<LeadIntake | undefined> {
-    const leadIntake = this.leadIntakes.get(id);
-    if (!leadIntake) return undefined;
-
-    const updatedLeadIntake = {
-      ...leadIntake,
-      ...updates,
-      updatedAt: new Date()
-    };
-    
-    this.leadIntakes.set(id, updatedLeadIntake);
-    return updatedLeadIntake;
+    const [result] = await db
+      .update(leadIntakes)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(leadIntakes.id, id))
+      .returning();
+    return result;
   }
 
   async searchLeadIntakes(filters: { status?: string; email?: string; createdAfter?: Date }): Promise<LeadIntake[]> {
-    const allLeadIntakes = Array.from(this.leadIntakes.values());
+    const conditions = [];
     
-    return allLeadIntakes.filter(lead => {
-      if (filters.status && lead.status !== filters.status) return false;
-      if (filters.email && lead.email !== filters.email) return false;
-      if (filters.createdAfter && lead.createdAt && lead.createdAt < filters.createdAfter) return false;
-      return true;
-    });
+    if (filters.status) {
+      conditions.push(eq(leadIntakes.status, filters.status));
+    }
+    if (filters.email) {
+      conditions.push(eq(leadIntakes.email, filters.email));
+    }
+    if (filters.createdAfter) {
+      conditions.push(gte(leadIntakes.createdAt, filters.createdAfter));
+    }
+    
+    if (conditions.length === 0) {
+      return await db.select().from(leadIntakes);
+    }
+    
+    return await db.select().from(leadIntakes).where(and(...conditions));
   }
 
   async listLeadIntakesByStatus(status: string): Promise<LeadIntake[]> {
-    const allLeadIntakes = Array.from(this.leadIntakes.values());
-    return allLeadIntakes.filter(lead => lead.status === status);
+    return await db.select().from(leadIntakes).where(eq(leadIntakes.status, status));
   }
 
   private calculateLeadScore(leadIntake: InsertLeadIntake): number {
