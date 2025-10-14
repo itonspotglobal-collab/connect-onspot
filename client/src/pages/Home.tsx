@@ -47,6 +47,19 @@ const valueTiles = [
   },
 ];
 
+const integrations = [
+  { name: "Microsoft" },
+  { name: "Go High Level" },
+  { name: "Lindy AI" },
+  { name: "Replit" },
+  { name: "OnSpot Intelligence System" },
+  { name: "AWS" },
+  { name: "BambooHR" },
+  { name: "QuickBooks" },
+  { name: "Integration 9" },
+  { name: "Integration 10" },
+];
+
 const serviceModels = [
   {
     title: "Resourced",
@@ -232,6 +245,26 @@ export default function Home() {
               </CardContent>
             </Card>
           ))}
+        </div>
+      </div>
+
+      {/* Integrations Strip */}
+      <div className="container mx-auto px-6 py-12">
+        <div className="space-y-6">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm text-muted-foreground uppercase tracking-wide">Integrates with</p>
+            <span className="text-xs text-muted-foreground">and many more</span>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-10 gap-3">
+            {integrations.map((integration, index) => (
+              <Card key={index} className="hover-elevate transition-all duration-200 bg-card/50 border" data-testid={`integration-${index}`}>
+                <CardContent className="p-3 h-12 flex items-center justify-center">
+                  <span className="text-sm font-medium text-foreground/60 text-center truncate">{integration.name}</span>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </div>
 
