@@ -171,6 +171,13 @@ const testimonials = [
 export default function Home() {
   const [showVanessaChat, setShowVanessaChat] = useState(false);
   const [isScrolledPastHero, setIsScrolledPastHero] = useState(false);
+  const [hasInteractedWithVanessa, setHasInteractedWithVanessa] = useState(false);
+
+  // Check if user has previously interacted with Vanessa
+  useEffect(() => {
+    const hasInteracted = localStorage.getItem("hasInteractedWithVanessa") === "true";
+    setHasInteractedWithVanessa(hasInteracted);
+  }, []);
 
   // Track scroll position to determine if past hero section
   useEffect(() => {
@@ -184,6 +191,15 @@ export default function Home() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Handle opening Vanessa chat
+  const handleOpenVanessa = () => {
+    setShowVanessaChat(true);
+    if (!hasInteractedWithVanessa) {
+      localStorage.setItem("hasInteractedWithVanessa", "true");
+      setHasInteractedWithVanessa(true);
+    }
+  };
 
   return (
     <div className="space-y-16">
@@ -227,7 +243,7 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 hero-fade-up-delay">
               <Button
                 size="lg"
-                onClick={() => setShowVanessaChat(true)}
+                onClick={handleOpenVanessa}
                 className="relative group text-base px-8 h-auto bg-gradient-to-r from-violet-600 to-blue-600 text-white font-semibold hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] transition-all duration-300 hover-elevate rounded-2xl min-w-[220px] py-4"
                 data-testid="button-launch-ai"
               >
@@ -546,11 +562,11 @@ export default function Home() {
         isSticky={isScrolledPastHero}
       />
 
-      {/* Persistent Floating Button (when chat is closed and scrolled past hero) */}
-      {!showVanessaChat && isScrolledPastHero && (
+      {/* Persistent Floating Button (always available after first interaction or when scrolled past hero) */}
+      {!showVanessaChat && (hasInteractedWithVanessa || isScrolledPastHero) && (
         <Button
           size="icon"
-          onClick={() => setShowVanessaChat(true)}
+          onClick={handleOpenVanessa}
           className="fixed bottom-6 right-6 z-50 h-16 w-16 rounded-full bg-gradient-to-r from-violet-600 to-blue-600 text-white shadow-2xl hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] hover-elevate animate-in slide-in-from-bottom-4 duration-500"
           data-testid="button-open-vanessa"
         >
