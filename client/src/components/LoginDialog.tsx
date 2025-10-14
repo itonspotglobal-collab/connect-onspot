@@ -238,8 +238,7 @@ export function LoginDialog() {
       <DialogTrigger asChild>
         <Button 
           variant="outline" 
-          size="sm" 
-          className="text-white border-white/60 bg-black/20 font-medium"
+          className="w-40 md:w-48 h-11 text-white border-white/60 bg-black/20 font-medium hover:scale-[1.02] transition-transform"
           data-testid="button-login"
         >
           <LogIn className="w-4 h-4 mr-2" />

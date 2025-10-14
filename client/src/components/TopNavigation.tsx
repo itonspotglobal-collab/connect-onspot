@@ -1469,20 +1469,19 @@ export function TopNavigation() {
           setSelectedPortal(null);
         }
       }}>
-        <DialogContent className="sm:max-w-4xl">
+        <DialogContent className="max-w-lg sm:max-w-2xl rounded-2xl border bg-background/95 p-8 shadow-xl backdrop-blur-md">
           {/* Step 1: Intro Screen */}
           {modalStep === 1 && (
-            <div className="text-center py-12 space-y-8" data-testid="modal-step-intro">
-              <DialogHeader>
-                <DialogTitle className="text-3xl font-bold">
+            <div className="flex flex-col items-center text-center space-y-8 py-8" data-testid="modal-step-intro">
+              <DialogHeader className="space-y-4">
+                <DialogTitle className="text-2xl font-semibold">
                   The first Superhuman BPO is coming soon.
                 </DialogTitle>
               </DialogHeader>
               
               <Button 
                 onClick={() => setModalStep(2)}
-                size="lg"
-                className="mx-auto"
+                className="w-40 md:w-48 h-11 hover:scale-[1.02] transition-transform"
                 data-testid="button-continue-to-portal-selection"
               >
                 Continue
@@ -1492,33 +1491,33 @@ export function TopNavigation() {
 
           {/* Step 2: Portal Selection */}
           {modalStep === 2 && (
-            <div className="space-y-6" data-testid="modal-step-portal-selection">
-              <DialogHeader className="text-center pb-6">
-                <div className="flex justify-center mb-4">
+            <div className="flex flex-col items-center space-y-8 py-8" data-testid="modal-step-portal-selection">
+              <DialogHeader className="text-center space-y-4">
+                <div className="flex justify-center mb-2">
                   <img 
                     src={onspotLogo} 
                     alt="OnSpot" 
                     className="h-12 w-auto"
                   />
                 </div>
-                <DialogTitle className="text-2xl">Welcome to OnSpot</DialogTitle>
-                <DialogDescription className="text-base">
+                <DialogTitle className="text-2xl font-semibold">Welcome to OnSpot</DialogTitle>
+                <DialogDescription className="text-muted-foreground text-base mb-6">
                   Choose your portal to continue.
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="space-y-4">
+              <div className="w-full space-y-6">
                 {/* Portal Selection Cards */}
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <Card 
-                    className="relative cursor-pointer hover-elevate transition-all duration-300 group border-2 hover:border-primary/50"
+                    className="relative cursor-pointer hover-elevate hover:scale-[1.02] transition-all duration-300 group border-2 hover:border-primary/50"
                     onClick={() => {
                       setSelectedPortal('client');
                       setModalStep(3);
                     }}
                     data-testid="card-client-portal"
                   >
-                    <CardContent className="p-8 text-center">
+                    <CardContent className="p-6 sm:p-8 text-center">
                       <div className="w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                         <Building className="w-8 h-8 text-primary" />
                       </div>
@@ -1544,14 +1543,14 @@ export function TopNavigation() {
                   </Card>
 
                   <Card 
-                    className="relative cursor-pointer hover-elevate transition-all duration-300 group border-2 hover:border-[hsl(var(--gold-yellow)/0.5)]"
+                    className="relative cursor-pointer hover-elevate hover:scale-[1.02] transition-all duration-300 group border-2 hover:border-[hsl(var(--gold-yellow)/0.5)]"
                     onClick={() => {
                       setSelectedPortal('talent');
                       setModalStep(3);
                     }}
                     data-testid="card-talent-portal"
                   >
-                    <CardContent className="p-8 text-center">
+                    <CardContent className="p-6 sm:p-8 text-center">
                       <div className="w-16 h-16 mx-auto mb-4 bg-[hsl(var(--gold-yellow)/0.1)] rounded-full flex items-center justify-center group-hover:bg-[hsl(var(--gold-yellow)/0.2)] transition-colors">
                         <User className="w-8 h-8 text-[hsl(var(--gold-yellow)/0.8)]" />
                       </div>
@@ -1598,38 +1597,38 @@ export function TopNavigation() {
 
           {/* Step 3: Authentication Flow */}
           {modalStep === 3 && (
-            <div className="space-y-8 py-8" data-testid="modal-step-authentication">
-              <DialogHeader className="text-center">
-                <div className="flex justify-center mb-4">
+            <div className="flex flex-col items-center space-y-8 py-8" data-testid="modal-step-authentication">
+              <DialogHeader className="text-center space-y-4">
+                <div className="flex justify-center mb-2">
                   <img 
                     src={onspotLogo} 
                     alt="OnSpot" 
                     className="h-12 w-auto"
                   />
                 </div>
-                <DialogTitle className="text-2xl mb-2">
+                <DialogTitle className="text-2xl font-semibold">
                   {selectedPortal === 'client' ? 'Client Portal Access' : 'Talent Portal Access'}
                 </DialogTitle>
-                <DialogDescription className="text-base">
+                <DialogDescription className="text-muted-foreground text-base mb-6">
                   Please log in or create an account to continue to the {selectedPortal === 'client' ? 'Client' : 'Talent'} Portal
                 </DialogDescription>
               </DialogHeader>
 
               {/* Auth Action Buttons */}
-              <div className="flex flex-col items-center gap-4 px-8">
-                <div className="flex gap-4 w-full max-w-md">
+              <div className="flex flex-col items-center gap-6 w-full">
+                <div className="flex gap-4 justify-center">
                   <LoginDialog />
                   <SignUpDialog />
                 </div>
 
-                <Separator className="my-4" />
+                <Separator className="w-full max-w-md" />
 
                 {/* Back button */}
                 <Button
                   variant="ghost"
                   onClick={() => setModalStep(2)}
                   data-testid="button-back-to-portal-selection"
-                  className="text-muted-foreground"
+                  className="text-sm text-muted-foreground hover:text-foreground"
                 >
                   ← Back to Portal Selection
                 </Button>

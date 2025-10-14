@@ -314,8 +314,7 @@ export function SignUpDialog() {
       <DialogTrigger asChild>
         <Button 
           variant="default" 
-          size="sm" 
-          className="bg-white text-[#474ead] border-0 font-semibold shadow-lg"
+          className="w-40 md:w-48 h-11 bg-white text-[#474ead] border-0 font-semibold shadow-lg hover:scale-[1.02] transition-transform"
           data-testid="button-signup"
         >
           <UserPlus className="w-4 h-4 mr-2" />
