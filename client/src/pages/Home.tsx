@@ -11,10 +11,8 @@ import {
   CheckCircle2,
   MapPin,
   Clock,
-  Award,
   Target,
   ArrowRight,
-  Briefcase,
   Bot,
   Zap
 } from "lucide-react";
@@ -64,30 +62,6 @@ const integrations = [
   { name: "QuickBooks", icon: SiQuickbooks },
   { name: "Stripe", icon: SiStripe },
   { name: "More", icon: null },
-];
-
-const serviceModels = [
-  {
-    title: "Resourced",
-    description: "Staff augmentation with vetted OnSpot talent",
-    features: ["Pre-screened professionals", "Quick deployment", "Flexible scaling", "Direct management"],
-    icon: Users,
-    color: "bg-blue-50 dark:bg-blue-950/20 text-blue-600"
-  },
-  {
-    title: "Managed", 
-    description: "End-to-end project management with dedicated teams",
-    features: ["Project oversight", "Team coordination", "Quality assurance", "Regular reporting"],
-    icon: Briefcase,
-    color: "bg-green-50 dark:bg-green-950/20 text-green-600"
-  },
-  {
-    title: "Enterprise",
-    description: "Strategic partnerships for large-scale operations",
-    features: ["Dedicated facilities", "Custom solutions", "24/7 support", "SLA guarantees"],
-    icon: Award,
-    color: "bg-purple-50 dark:bg-purple-950/20 text-purple-600"
-  }
 ];
 
 const popularSkills = [
@@ -315,50 +289,6 @@ export default function Home() {
               </Card>
             ))}
           </div>
-        </div>
-      </div>
-
-      {/* Service Models */}
-      <div className="container mx-auto px-6 space-y-12">
-        <div className="text-center space-y-4">
-          <h2 className="text-3xl font-bold">Our Service Models</h2>
-          <p className="text-muted-foreground">
-            Choose the right engagement model for your business needs
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {serviceModels.map((model, index) => (
-            <Card key={index} className="hover-elevate transition-all duration-200" data-testid={`service-${model.title.toLowerCase()}`}>
-              <CardHeader>
-                <div className="flex items-center space-x-3">
-                  <div className={`p-3 rounded-lg ${model.color}`}>
-                    <model.icon className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-xl">{model.title}</CardTitle>
-                  </div>
-                </div>
-                <CardDescription className="mt-3">
-                  {model.description}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {model.features.map((feature, featureIndex) => (
-                    <div key={featureIndex} className="flex items-center space-x-2 text-sm">
-                      <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
-                      <span>{feature}</span>
-                    </div>
-                  ))}
-                </div>
-                <Button variant="outline" size="sm" className="w-full mt-6">
-                  Learn More
-                  <ArrowRight className="w-3 h-3 ml-2" />
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
         </div>
       </div>
 
