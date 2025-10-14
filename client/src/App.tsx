@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { VanessaProvider, useVanessa } from "@/contexts/VanessaContext";
 import { OAuthErrorDialog, useOAuthError } from "@/components/OAuthErrorDialog";
 import { TopNavigation } from "@/components/TopNavigation";
 import { ClientLayout } from "@/components/ClientLayout";
@@ -13,6 +14,9 @@ import { ClientProtectedRoute, TalentProtectedRoute, AdminProtectedRoute } from 
 import { NewUserOnboardingWrapper } from "@/components/NewUserOnboardingWrapper";
 import { PostLoginPortalSelection } from "@/components/PostLoginPortalSelection";
 import { DomainRouter } from "@/components/DomainRouter";
+import { VanessaChat } from "@/components/VanessaChat";
+import { Button } from "@/components/ui/button";
+import { MessageCircle } from "lucide-react";
 import Home from "@/pages/Home";
 import TalentSearch from "@/pages/TalentSearch";
 import Dashboard from "@/pages/Dashboard";
@@ -253,6 +257,33 @@ function AppContent() {
   );
 }
 
+function GlobalVanessaWidget() {
+  const { showVanessaChat, hasInteractedWithVanessa, openVanessa, closeVanessa } = useVanessa();
+
+  return (
+    <>
+      {/* Global Vanessa AI Assistant */}
+      <VanessaChat 
+        isOpen={showVanessaChat} 
+        onClose={closeVanessa}
+        isSticky={true}
+      />
+      
+      {/* Global Persistent Floating Button (always available after first interaction) */}
+      {!showVanessaChat && hasInteractedWithVanessa && (
+        <Button
+          size="icon"
+          onClick={openVanessa}
+          className="fixed bottom-6 right-6 z-50 h-16 w-16 rounded-full bg-gradient-to-r from-violet-600 to-blue-600 text-white shadow-2xl hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] hover-elevate animate-in slide-in-from-bottom-4 duration-500"
+          data-testid="button-open-vanessa-global"
+        >
+          <MessageCircle className="h-7 w-7" />
+        </Button>
+      )}
+    </>
+  );
+}
+
 function App() {
   const oauthError = useOAuthError();
 
@@ -261,13 +292,16 @@ function App() {
       <TooltipProvider>
         <ThemeProvider defaultTheme="light" storageKey="onspot-ui-theme">
           <AuthProvider>
-            <DomainRouter>
-              <NewUserOnboardingWrapper>
-                <AppContent />
-              </NewUserOnboardingWrapper>
-            </DomainRouter>
-            <OAuthErrorDialog {...oauthError} open={oauthError.show} />
-            <Toaster />
+            <VanessaProvider>
+              <DomainRouter>
+                <NewUserOnboardingWrapper>
+                  <AppContent />
+                </NewUserOnboardingWrapper>
+              </DomainRouter>
+              <OAuthErrorDialog {...oauthError} open={oauthError.show} />
+              <Toaster />
+              <GlobalVanessaWidget />
+            </VanessaProvider>
           </AuthProvider>
         </ThemeProvider>
       </TooltipProvider>

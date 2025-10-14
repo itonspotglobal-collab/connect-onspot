@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useVanessa } from "@/contexts/VanessaContext";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -22,11 +22,9 @@ import {
   Bot,
   Zap,
   Sparkles,
-  MessageCircle,
 } from "lucide-react";
 import { SiAmazon, SiQuickbooks, SiReplit, SiStripe } from "react-icons/si";
 import { Link } from "wouter";
-import { VanessaChat } from "@/components/VanessaChat";
 
 import FlashLogo from "../assets/logos/Flash.png";
 import FutureEVLogo from "../assets/logos/FutureEV.png";
@@ -169,37 +167,7 @@ const testimonials = [
 ];
 
 export default function Home() {
-  const [showVanessaChat, setShowVanessaChat] = useState(false);
-  const [isScrolledPastHero, setIsScrolledPastHero] = useState(false);
-  const [hasInteractedWithVanessa, setHasInteractedWithVanessa] = useState(false);
-
-  // Check if user has previously interacted with Vanessa
-  useEffect(() => {
-    const hasInteracted = localStorage.getItem("hasInteractedWithVanessa") === "true";
-    setHasInteractedWithVanessa(hasInteracted);
-  }, []);
-
-  // Track scroll position to determine if past hero section
-  useEffect(() => {
-    const handleScroll = () => {
-      // Hero section is min-h-screen, so check if scrolled past viewport height
-      const scrollPosition = window.scrollY;
-      const heroHeight = window.innerHeight;
-      setIsScrolledPastHero(scrollPosition > heroHeight * 0.8); // Trigger at 80% of hero height
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  // Handle opening Vanessa chat
-  const handleOpenVanessa = () => {
-    setShowVanessaChat(true);
-    if (!hasInteractedWithVanessa) {
-      localStorage.setItem("hasInteractedWithVanessa", "true");
-      setHasInteractedWithVanessa(true);
-    }
-  };
+  const { openVanessa } = useVanessa();
 
   return (
     <div className="space-y-16">
@@ -243,7 +211,7 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 hero-fade-up-delay">
               <Button
                 size="lg"
-                onClick={handleOpenVanessa}
+                onClick={openVanessa}
                 className="relative group text-base px-8 h-auto bg-gradient-to-r from-violet-600 to-blue-600 text-white font-semibold hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] transition-all duration-300 hover-elevate rounded-2xl min-w-[220px] py-4"
                 data-testid="button-launch-ai"
               >
@@ -555,24 +523,6 @@ export default function Home() {
         </CardContent>
       </Card>
 
-      {/* Vanessa AI Assistant Chat */}
-      <VanessaChat 
-        isOpen={showVanessaChat} 
-        onClose={() => setShowVanessaChat(false)}
-        isSticky={isScrolledPastHero}
-      />
-
-      {/* Persistent Floating Button (always available after first interaction or when scrolled past hero) */}
-      {!showVanessaChat && (hasInteractedWithVanessa || isScrolledPastHero) && (
-        <Button
-          size="icon"
-          onClick={handleOpenVanessa}
-          className="fixed bottom-6 right-6 z-50 h-16 w-16 rounded-full bg-gradient-to-r from-violet-600 to-blue-600 text-white shadow-2xl hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] hover-elevate animate-in slide-in-from-bottom-4 duration-500"
-          data-testid="button-open-vanessa"
-        >
-          <MessageCircle className="h-7 w-7" />
-        </Button>
-      )}
     </div>
   );
 }
