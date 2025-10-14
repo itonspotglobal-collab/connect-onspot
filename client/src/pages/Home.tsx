@@ -17,8 +17,6 @@ import {
   Briefcase
 } from "lucide-react";
 import { Link } from "wouter";
-import heroWorkspaceImage from "@assets/generated_images/Creative_collaborative_business_workspace_8528c1b1.png";
-import heroVideoPath from "@assets/OnSpot Hero Section Video_1758018354294.mp4";
 
 const stats = [
   {
@@ -144,43 +142,14 @@ export default function Home() {
   return (
     <div className="space-y-16">
       {/* Hero Section */}
-      <div className="relative overflow-hidden min-h-screen flex items-center justify-center">
-        {/* Video Background */}
-        <div className="absolute inset-0">
-          <video 
-            autoPlay 
-            muted 
-            loop 
-            playsInline
-            className="absolute inset-0 w-full h-full object-cover object-center scale-105 hover:scale-100 transition-transform duration-[8s] ease-out"
-            onError={(e) => {
-              // Fallback to image if video fails to load
-              const target = e.target as HTMLVideoElement;
-              target.style.display = 'none';
-              const fallbackImg = target.nextElementSibling as HTMLImageElement;
-              if (fallbackImg) fallbackImg.style.display = 'block';
-            }}
-          >
-            <source src={heroVideoPath} type="video/mp4" />
-          </video>
-          {/* Fallback Image */}
-          <img 
-            src={heroWorkspaceImage} 
-            alt="Creative collaborative workspace" 
-            className="hidden w-full h-full object-cover object-center scale-105"
-            loading="eager"
-            decoding="async"
-          />
-        </div>
+      <div className="relative overflow-hidden min-h-screen flex items-center justify-center hero-investor">
+        {/* Elegant Gradient Overlay for Depth */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/30"></div>
         
-        {/* Sophisticated Dark Wash - Apple Style */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/60"></div>
-        <div className="absolute inset-0 bg-gradient-radial from-transparent via-black/10 to-black/40"></div>
-        
-        {/* Elegant Light Accents */}
+        {/* Subtle Animated Accents */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/4 left-1/2 w-[800px] h-[800px] bg-gradient-conic from-white/5 via-transparent to-white/5 rounded-full blur-3xl animate-slow-spin transform -translate-x-1/2 -translate-y-1/2"></div>
-          <div className="absolute bottom-1/4 right-1/3 w-[600px] h-[600px] bg-gradient-radial from-white/8 to-transparent rounded-full blur-2xl animate-gentle-float"></div>
+          <div className="absolute top-1/3 left-1/4 w-[600px] h-[600px] bg-gradient-radial from-white/5 to-transparent rounded-full blur-3xl animate-gentle-float"></div>
+          <div className="absolute bottom-1/3 right-1/4 w-[500px] h-[500px] bg-gradient-radial from-blue-500/10 to-transparent rounded-full blur-3xl animate-slow-spin"></div>
         </div>
 
         <div className="container mx-auto text-center relative z-20 px-6">
@@ -231,15 +200,6 @@ export default function Home() {
                 </Link>
               </Button>
             </div>
-          </div>
-          
-          {/* Minimalist Video Indicator */}
-          <div className="absolute bottom-12 right-12 hidden lg:flex items-center gap-3 text-white/60 text-xs backdrop-blur-xl bg-black/10 px-6 py-3 rounded-full border border-white/5 shadow-xl">
-            <div className="relative">
-              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-              <div className="absolute inset-0 w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
-            </div>
-            <span className="font-medium tracking-wider uppercase">Live Experience</span>
           </div>
         </div>
       </div>
