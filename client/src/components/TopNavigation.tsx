@@ -359,8 +359,14 @@ export function TopNavigation() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showPortal, setShowPortal] = useState(false);
-  const [modalStep, setModalStep] = useState<1 | 2 | 3>(1);
+  const [modalStep, setModalStep] = useState<1 | 2 | 3 | 4>(1);
   const [selectedPortal, setSelectedPortal] = useState<'client' | 'talent' | null>(null);
+  const [contactForm, setContactForm] = useState({
+    email: '',
+    fullName: '',
+    businessName: '',
+    phone: ''
+  });
   const lastScrollY = useRef(0);
   const ticking = useRef(false);
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -1472,6 +1478,7 @@ export function TopNavigation() {
         {/* Step 1: Cinematic Awakening Modal */}
         {modalStep === 1 ? (
           <DialogContent className="max-w-5xl border-0 p-0 overflow-hidden bg-transparent shadow-2xl">
+            <DialogTitle className="sr-only">Superhuman BPO Awakening</DialogTitle>
             <div 
               className="relative hero-investor flex items-center justify-center min-h-[600px] rounded-2xl overflow-hidden"
               data-testid="modal-step-intro"
@@ -1533,7 +1540,7 @@ export function TopNavigation() {
                     onClick={() => setModalStep(2)}
                     size="lg"
                     className="relative group px-8 py-6 text-lg font-medium bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white border-0 hover:shadow-[0_0_40px_rgba(58,58,248,0.6)] transition-all duration-500 hover:scale-105"
-                    data-testid="button-continue-to-portal-selection"
+                    data-testid="button-continue-to-contact-form"
                   >
                     <span className="relative z-10 flex items-center gap-2">
                       Be the first to experience it
@@ -1558,11 +1565,126 @@ export function TopNavigation() {
               </div>
             </div>
           </DialogContent>
+        ) : modalStep === 2 ? (
+          <DialogContent className="max-w-3xl border-0 p-0 overflow-hidden bg-transparent shadow-2xl">
+            <DialogTitle className="sr-only">Contact Information</DialogTitle>
+            <div 
+              className="relative hero-investor flex items-center justify-center min-h-[650px] rounded-2xl overflow-hidden"
+              data-testid="modal-step-contact-form"
+            >
+              {/* Gradient Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60"></div>
+              
+              {/* Subtle AI Pulse */}
+              <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none opacity-50">
+                <div className="relative w-[400px] h-[400px]">
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[#3A3AF8]/15 to-[#7F3DF4]/15 blur-3xl animate-pulse" 
+                       style={{ animationDuration: '4s' }}></div>
+                </div>
+              </div>
+
+              {/* Contact Form */}
+              <div className="relative z-10 w-full px-8 py-12 max-w-2xl">
+                <div className="text-center mb-8 space-y-3">
+                  <h2 
+                    className="text-3xl sm:text-4xl md:text-5xl font-light tracking-tight text-white"
+                    style={{ 
+                      fontFamily: 'Inter, sans-serif',
+                      letterSpacing: '-0.02em'
+                    }}
+                  >
+                    Join the Revolution
+                  </h2>
+                  <p className="text-base sm:text-lg text-white/70" style={{ fontFamily: 'Inter, sans-serif' }}>
+                    Be among the first to transform your business with AI-powered outsourcing
+                  </p>
+                </div>
+
+                <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); setModalStep(3); }}>
+                  {/* Email */}
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-white/90 text-sm font-medium">Email Address</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="your@email.com"
+                      value={contactForm.email}
+                      onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                      required
+                      className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12"
+                      data-testid="input-contact-email"
+                    />
+                  </div>
+
+                  {/* Full Name */}
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName" className="text-white/90 text-sm font-medium">Full Name</Label>
+                    <Input
+                      id="fullName"
+                      type="text"
+                      placeholder="John Doe"
+                      value={contactForm.fullName}
+                      onChange={(e) => setContactForm({ ...contactForm, fullName: e.target.value })}
+                      required
+                      className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12"
+                      data-testid="input-contact-fullname"
+                    />
+                  </div>
+
+                  {/* Business Name */}
+                  <div className="space-y-2">
+                    <Label htmlFor="businessName" className="text-white/90 text-sm font-medium">Business Name</Label>
+                    <Input
+                      id="businessName"
+                      type="text"
+                      placeholder="Your Company Inc."
+                      value={contactForm.businessName}
+                      onChange={(e) => setContactForm({ ...contactForm, businessName: e.target.value })}
+                      className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12"
+                      data-testid="input-contact-business"
+                    />
+                  </div>
+
+                  {/* Phone */}
+                  <div className="space-y-2">
+                    <Label htmlFor="phone" className="text-white/90 text-sm font-medium">Phone Number</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="+1 (555) 000-0000"
+                      value={contactForm.phone}
+                      onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })}
+                      className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12"
+                      data-testid="input-contact-phone"
+                    />
+                  </div>
+
+                  {/* Submit Button */}
+                  <Button 
+                    type="submit"
+                    size="lg"
+                    className="w-full mt-6 relative group px-8 py-6 text-lg font-medium bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white border-0 hover:shadow-[0_0_40px_rgba(58,58,248,0.6)] transition-all duration-500 hover:scale-105"
+                    data-testid="button-submit-contact"
+                  >
+                    <span className="relative z-10 flex items-center justify-center gap-2">
+                      Continue
+                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
+                    </span>
+                    <div className="absolute inset-0 rounded-md bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500"></div>
+                  </Button>
+                </form>
+
+                <p className="text-center text-xs text-white/40 mt-6" style={{ fontFamily: 'Inter, sans-serif' }}>
+                  Your information is secure and will never be shared
+                </p>
+              </div>
+            </div>
+          </DialogContent>
         ) : (
           <DialogContent className="max-w-lg sm:max-w-2xl rounded-2xl border bg-background/95 p-8 shadow-xl backdrop-blur-md">
 
-          {/* Step 2: Portal Selection */}
-          {modalStep === 2 && (
+          {/* Step 3: Portal Selection */}
+          {modalStep === 3 && (
             <div className="flex flex-col items-center space-y-8 py-8" data-testid="modal-step-portal-selection">
               <DialogHeader className="text-center space-y-4">
                 <div className="flex justify-center mb-2">
@@ -1585,7 +1707,7 @@ export function TopNavigation() {
                     className="relative cursor-pointer hover-elevate hover:scale-[1.02] transition-all duration-300 group border-2 hover:border-primary/50"
                     onClick={() => {
                       setSelectedPortal('client');
-                      setModalStep(3);
+                      setModalStep(4);
                     }}
                     data-testid="card-client-portal"
                   >
@@ -1618,7 +1740,7 @@ export function TopNavigation() {
                     className="relative cursor-pointer hover-elevate hover:scale-[1.02] transition-all duration-300 group border-2 hover:border-[hsl(var(--gold-yellow)/0.5)]"
                     onClick={() => {
                       setSelectedPortal('talent');
-                      setModalStep(3);
+                      setModalStep(4);
                     }}
                     data-testid="card-talent-portal"
                   >
@@ -1667,8 +1789,8 @@ export function TopNavigation() {
             </div>
           )}
 
-          {/* Step 3: Authentication Flow */}
-          {modalStep === 3 && (
+          {/* Step 4: Authentication Flow */}
+          {modalStep === 4 && (
             <div className="flex flex-col items-center space-y-8 py-8" data-testid="modal-step-authentication">
               <DialogHeader className="text-center space-y-4">
                 <div className="flex justify-center mb-2">
@@ -1698,7 +1820,7 @@ export function TopNavigation() {
                 {/* Back button */}
                 <Button
                   variant="ghost"
-                  onClick={() => setModalStep(2)}
+                  onClick={() => setModalStep(3)}
                   data-testid="button-back-to-portal-selection"
                   className="text-sm text-muted-foreground hover:text-foreground"
                 >
