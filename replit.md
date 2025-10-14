@@ -17,8 +17,7 @@ Preferred communication style: Simple, everyday language.
 - **State Management**: TanStack React Query for server state management and caching
 - **Routing**: Wouter for lightweight client-side routing with domain-based routing for multi-portal architecture
 - **Domain-Based Routing**: Automatic routing based on subdomain detection:
-  - `onspotglobal.com` → Home page/Landing page
-  - `connect.onspotglobal.com` → Client Portal (Dashboard)
+  - `onspotglobal.com` → Client Portal (Dashboard)
   - `talent.onspotglobal.com` → Talent Portal
 - **Design System**: Apple-inspired interface with light/dark mode support, consistent spacing (4, 6, 8, 12, 16, 24 unit increments), and professional typography using SF Pro Display system fonts
 

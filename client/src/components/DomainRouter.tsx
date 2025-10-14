@@ -13,10 +13,10 @@ export function DomainRouter({ children }: DomainRouterProps) {
     
     // Skip redirect if already on the correct path
     const isAlreadyOnCorrectPath = () => {
-      if (hostname.includes('connect.onspotglobal.com') && location.startsWith('/dashboard')) {
+      if (hostname.includes('talent.onspotglobal.com') && location.startsWith('/talent-portal')) {
         return true;
       }
-      if (hostname.includes('talent.onspotglobal.com') && location.startsWith('/talent-portal')) {
+      if (hostname.includes('onspotglobal.com') && !hostname.includes('talent.onspotglobal.com') && location.startsWith('/dashboard')) {
         return true;
       }
       return false;
@@ -28,18 +28,17 @@ export function DomainRouter({ children }: DomainRouterProps) {
     }
     
     // Domain-based routing
-    if (hostname.includes('connect.onspotglobal.com')) {
-      // Client portal subdomain - redirect to dashboard
-      if (location === '/' || !location.startsWith('/dashboard')) {
-        setLocation('/dashboard');
-      }
-    } else if (hostname.includes('talent.onspotglobal.com')) {
+    if (hostname.includes('talent.onspotglobal.com')) {
       // Talent portal subdomain - redirect to talent portal
       if (location === '/' || !location.startsWith('/talent-portal')) {
         setLocation('/talent-portal');
       }
+    } else if (hostname.includes('onspotglobal.com')) {
+      // Main domain (onspotglobal.com) - redirect to client dashboard
+      if (location === '/' || !location.startsWith('/dashboard')) {
+        setLocation('/dashboard');
+      }
     }
-    // onspotglobal.com (main domain) stays on home page by default
   }, [location, setLocation]);
   
   return <>{children}</>;
