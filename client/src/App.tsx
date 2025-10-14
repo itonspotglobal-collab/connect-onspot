@@ -12,6 +12,7 @@ import { Footer } from "@/components/Footer";
 import { ClientProtectedRoute, TalentProtectedRoute, AdminProtectedRoute } from "@/components/ProtectedRoute";
 import { NewUserOnboardingWrapper } from "@/components/NewUserOnboardingWrapper";
 import { PostLoginPortalSelection } from "@/components/PostLoginPortalSelection";
+import { DomainRouter } from "@/components/DomainRouter";
 import Home from "@/pages/Home";
 import TalentSearch from "@/pages/TalentSearch";
 import Dashboard from "@/pages/Dashboard";
@@ -260,9 +261,11 @@ function App() {
       <TooltipProvider>
         <ThemeProvider defaultTheme="light" storageKey="onspot-ui-theme">
           <AuthProvider>
-            <NewUserOnboardingWrapper>
-              <AppContent />
-            </NewUserOnboardingWrapper>
+            <DomainRouter>
+              <NewUserOnboardingWrapper>
+                <AppContent />
+              </NewUserOnboardingWrapper>
+            </DomainRouter>
             <OAuthErrorDialog {...oauthError} open={oauthError.show} />
             <Toaster />
           </AuthProvider>
