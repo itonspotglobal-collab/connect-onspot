@@ -1460,108 +1460,8 @@ export function TopNavigation() {
         </div>
       </nav>
 
-      {/* Step 1: Cinematic Awakening Screen - Fullscreen Overlay */}
-      {showPortal && modalStep === 1 && (
-        <div 
-          className="fixed inset-0 z-50 hero-investor flex items-center justify-center animate-in fade-in duration-700"
-          data-testid="modal-step-intro"
-        >
-          {/* Gradient Overlay for Depth */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60"></div>
-          
-          {/* AI Pulse Orb - Animated Background Effect */}
-          <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none">
-            <div className="relative w-[800px] h-[800px]">
-              {/* Outer pulse ring */}
-              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[#3A3AF8]/20 to-[#7F3DF4]/20 blur-3xl animate-pulse" 
-                   style={{ animationDuration: '4s' }}></div>
-              {/* Inner glow */}
-              <div className="absolute inset-[20%] rounded-full bg-gradient-to-r from-[#3A3AF8]/30 to-[#7F3DF4]/30 blur-2xl animate-pulse" 
-                   style={{ animationDuration: '3s', animationDelay: '0.5s' }}></div>
-              {/* Core light */}
-              <div className="absolute inset-[40%] rounded-full bg-gradient-to-r from-[#3A3AF8]/40 to-[#7F3DF4]/40 blur-xl animate-pulse" 
-                   style={{ animationDuration: '2s', animationDelay: '1s' }}></div>
-            </div>
-          </div>
-
-          {/* Content Container */}
-          <div className="relative z-10 flex flex-col items-center text-center space-y-12 px-6 max-w-4xl">
-            {/* Headline - Fade in with delay */}
-            <h1 
-              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light tracking-tight text-white animate-in fade-in slide-in-from-bottom-4 duration-1000"
-              style={{ 
-                fontFamily: 'Inter, sans-serif',
-                letterSpacing: '-0.02em',
-                animationDelay: '500ms',
-                animationFillMode: 'backwards'
-              }}
-            >
-              The first Superhuman BPO is awakening.
-            </h1>
-            
-            {/* Subcopy - Delayed fade in */}
-            <p 
-              className="text-xl sm:text-2xl md:text-3xl font-light text-white/80 animate-in fade-in slide-in-from-bottom-4 duration-1000"
-              style={{ 
-                fontFamily: 'Inter, sans-serif',
-                animationDelay: '1200ms',
-                animationFillMode: 'backwards'
-              }}
-            >
-              AI first. Humans when it matters.
-            </p>
-
-            {/* CTA Button with Glow Animation */}
-            <div 
-              className="animate-in fade-in slide-in-from-bottom-4 duration-1000"
-              style={{ 
-                animationDelay: '1800ms',
-                animationFillMode: 'backwards'
-              }}
-            >
-              <Button 
-                onClick={() => setModalStep(2)}
-                size="lg"
-                className="relative group px-8 py-6 text-lg font-medium bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white border-0 hover:shadow-[0_0_40px_rgba(58,58,248,0.6)] transition-all duration-500 hover:scale-105"
-                data-testid="button-continue-to-portal-selection"
-              >
-                <span className="relative z-10 flex items-center gap-2">
-                  Be the first to experience it
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
-                </span>
-                {/* Animated glow effect */}
-                <div className="absolute inset-0 rounded-md bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500"></div>
-              </Button>
-            </div>
-
-            {/* Microtext */}
-            <p 
-              className="text-sm text-white/40 animate-in fade-in duration-1000"
-              style={{ 
-                fontFamily: 'Inter, sans-serif',
-                animationDelay: '2200ms',
-                animationFillMode: 'backwards'
-              }}
-            >
-              Your AI-powered outsourcing revolution starts now
-            </p>
-          </div>
-
-          {/* Close button (X) in top-right corner */}
-          <button
-            onClick={() => setShowPortal(false)}
-            className="absolute top-8 right-8 z-20 text-white/60 hover:text-white transition-colors duration-300 p-2"
-            data-testid="button-close-modal"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-      )}
-
-      {/* Access Portal Modal - Steps 2 & 3 */}
-      <Dialog open={showPortal && modalStep !== 1} onOpenChange={(open) => {
+      {/* Access Portal Modal - All Steps */}
+      <Dialog open={showPortal} onOpenChange={(open) => {
         setShowPortal(open);
         if (!open) {
           // Reset modal state when closing
@@ -1569,7 +1469,97 @@ export function TopNavigation() {
           setSelectedPortal(null);
         }
       }}>
-        <DialogContent className="max-w-lg sm:max-w-2xl rounded-2xl border bg-background/95 p-8 shadow-xl backdrop-blur-md">
+        {/* Step 1: Cinematic Awakening Modal */}
+        {modalStep === 1 ? (
+          <DialogContent className="max-w-5xl border-0 p-0 overflow-hidden bg-transparent shadow-2xl">
+            <div 
+              className="relative hero-investor flex items-center justify-center min-h-[600px] rounded-2xl overflow-hidden"
+              data-testid="modal-step-intro"
+            >
+              {/* Gradient Overlay for Depth */}
+              <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60"></div>
+              
+              {/* AI Pulse Orb - Animated Background Effect */}
+              <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none">
+                <div className="relative w-[600px] h-[600px]">
+                  {/* Outer pulse ring */}
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[#3A3AF8]/20 to-[#7F3DF4]/20 blur-3xl animate-pulse" 
+                       style={{ animationDuration: '4s' }}></div>
+                  {/* Inner glow */}
+                  <div className="absolute inset-[20%] rounded-full bg-gradient-to-r from-[#3A3AF8]/30 to-[#7F3DF4]/30 blur-2xl animate-pulse" 
+                       style={{ animationDuration: '3s', animationDelay: '0.5s' }}></div>
+                  {/* Core light */}
+                  <div className="absolute inset-[40%] rounded-full bg-gradient-to-r from-[#3A3AF8]/40 to-[#7F3DF4]/40 blur-xl animate-pulse" 
+                       style={{ animationDuration: '2s', animationDelay: '1s' }}></div>
+                </div>
+              </div>
+
+              {/* Content Container */}
+              <div className="relative z-10 flex flex-col items-center text-center space-y-10 px-8 py-12 max-w-3xl">
+                {/* Headline - Fade in with delay */}
+                <h1 
+                  className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light tracking-tight text-white animate-in fade-in slide-in-from-bottom-4 duration-1000"
+                  style={{ 
+                    fontFamily: 'Inter, sans-serif',
+                    letterSpacing: '-0.02em',
+                    animationDelay: '300ms',
+                    animationFillMode: 'backwards'
+                  }}
+                >
+                  The first Superhuman BPO is awakening.
+                </h1>
+                
+                {/* Subcopy - Delayed fade in */}
+                <p 
+                  className="text-lg sm:text-xl md:text-2xl font-light text-white/80 animate-in fade-in slide-in-from-bottom-4 duration-1000"
+                  style={{ 
+                    fontFamily: 'Inter, sans-serif',
+                    animationDelay: '800ms',
+                    animationFillMode: 'backwards'
+                  }}
+                >
+                  AI first. Humans when it matters.
+                </p>
+
+                {/* CTA Button with Glow Animation */}
+                <div 
+                  className="animate-in fade-in slide-in-from-bottom-4 duration-1000"
+                  style={{ 
+                    animationDelay: '1300ms',
+                    animationFillMode: 'backwards'
+                  }}
+                >
+                  <Button 
+                    onClick={() => setModalStep(2)}
+                    size="lg"
+                    className="relative group px-8 py-6 text-lg font-medium bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white border-0 hover:shadow-[0_0_40px_rgba(58,58,248,0.6)] transition-all duration-500 hover:scale-105"
+                    data-testid="button-continue-to-portal-selection"
+                  >
+                    <span className="relative z-10 flex items-center gap-2">
+                      Be the first to experience it
+                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
+                    </span>
+                    {/* Animated glow effect */}
+                    <div className="absolute inset-0 rounded-md bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500"></div>
+                  </Button>
+                </div>
+
+                {/* Microtext */}
+                <p 
+                  className="text-sm text-white/40 animate-in fade-in duration-1000"
+                  style={{ 
+                    fontFamily: 'Inter, sans-serif',
+                    animationDelay: '1700ms',
+                    animationFillMode: 'backwards'
+                  }}
+                >
+                  Your AI-powered outsourcing revolution starts now
+                </p>
+              </div>
+            </div>
+          </DialogContent>
+        ) : (
+          <DialogContent className="max-w-lg sm:max-w-2xl rounded-2xl border bg-background/95 p-8 shadow-xl backdrop-blur-md">
 
           {/* Step 2: Portal Selection */}
           {modalStep === 2 && (
@@ -1717,7 +1707,8 @@ export function TopNavigation() {
               </div>
             </div>
           )}
-        </DialogContent>
+          </DialogContent>
+        )}
       </Dialog>
     </>
   );
