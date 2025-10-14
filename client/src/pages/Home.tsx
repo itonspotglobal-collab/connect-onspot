@@ -18,6 +18,12 @@ import {
   Bot,
   Zap
 } from "lucide-react";
+import { 
+  SiAmazon, 
+  SiQuickbooks,
+  SiReplit,
+  SiStripe
+} from "react-icons/si";
 import { Link } from "wouter";
 
 const trustedBrands = [
@@ -48,16 +54,16 @@ const valueTiles = [
 ];
 
 const integrations = [
-  { name: "Microsoft" },
-  { name: "Go High Level" },
-  { name: "Lindy AI" },
-  { name: "Replit" },
-  { name: "OnSpot Intelligence System" },
-  { name: "AWS" },
-  { name: "BambooHR" },
-  { name: "QuickBooks" },
-  { name: "Integration 9" },
-  { name: "Integration 10" },
+  { name: "Microsoft", icon: null },
+  { name: "Go High Level", icon: null },
+  { name: "Lindy AI", icon: Bot },
+  { name: "Replit", icon: SiReplit },
+  { name: "OnSpot Intelligence", icon: Zap },
+  { name: "AWS", icon: SiAmazon },
+  { name: "BambooHR", icon: Users },
+  { name: "QuickBooks", icon: SiQuickbooks },
+  { name: "Stripe", icon: SiStripe },
+  { name: "More", icon: null },
 ];
 
 const serviceModels = [
@@ -260,7 +266,11 @@ export default function Home() {
             {integrations.map((integration, index) => (
               <Card key={index} className="hover-elevate transition-all duration-200 bg-card/50 border" data-testid={`integration-${index}`}>
                 <CardContent className="p-3 h-12 flex items-center justify-center">
-                  <span className="text-sm font-medium text-foreground/60 text-center truncate">{integration.name}</span>
+                  {integration.icon ? (
+                    <integration.icon className="w-6 h-6 text-foreground/60" />
+                  ) : (
+                    <span className="text-xs font-medium text-foreground/60 text-center truncate px-1">{integration.name}</span>
+                  )}
                 </CardContent>
               </Card>
             ))}
