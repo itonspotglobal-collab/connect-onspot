@@ -28,6 +28,7 @@ import {
   Shield,
   Mail,
   Briefcase,
+  Sparkles,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -55,6 +56,7 @@ import { useToast } from "@/hooks/use-toast";
 import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
 import { LoginDialog } from "@/components/LoginDialog";
 import { SignUpDialog } from "@/components/SignUpDialog";
+import { VanessaChat } from "@/components/VanessaChat";
 
 // Service definitions for mega menu
 const serviceDetails = {
@@ -360,6 +362,7 @@ export function TopNavigation() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showPortal, setShowPortal] = useState(false);
+  const [showVanessaChat, setShowVanessaChat] = useState(false);
   const [modalStep, setModalStep] = useState<1 | 2 | 3 | 4>(1);
   const [selectedPortal, setSelectedPortal] = useState<'client' | 'talent' | null>(null);
   const [contactForm, setContactForm] = useState({
@@ -1209,18 +1212,31 @@ export function TopNavigation() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              // Not authenticated - show access portal button
-              <Button
-                onClick={() => {
-                  setModalStep(1);
-                  setSelectedPortal(null);
-                  setShowPortal(true);
-                }}
-                className="bg-white text-primary font-semibold hover:bg-gray-100 rounded-md px-4 py-2"
-                data-testid="button-access-portal"
-              >
-                ACCESS PORTAL
-              </Button>
+              // Not authenticated - show access portal and AI assistant buttons
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => setShowVanessaChat(true)}
+                  className="relative bg-gradient-to-r from-violet-600 to-blue-600 text-white font-semibold hover:shadow-[0_0_20px_rgba(139,92,246,0.5)] transition-all duration-300 hover-elevate rounded-md px-4 py-2"
+                  data-testid="button-launch-ai-assistant"
+                >
+                  <span className="flex items-center gap-2">
+                    Launch AI Assistant
+                    <Sparkles className="w-4 h-4" />
+                  </span>
+                  <div className="absolute inset-0 rounded-md bg-gradient-to-r from-violet-600 to-blue-600 opacity-0 hover:opacity-100 blur-md transition-opacity duration-300 -z-10"></div>
+                </Button>
+                <Button
+                  onClick={() => {
+                    setModalStep(1);
+                    setSelectedPortal(null);
+                    setShowPortal(true);
+                  }}
+                  className="bg-white text-primary font-semibold hover:bg-gray-100 rounded-md px-4 py-2"
+                  data-testid="button-access-portal"
+                >
+                  ACCESS PORTAL
+                </Button>
+              </div>
             )}
           </div>
         </div>
@@ -1862,6 +1878,12 @@ export function TopNavigation() {
           </DialogContent>
         )}
       </Dialog>
+
+      {/* Vanessa AI Assistant Chat */}
+      <VanessaChat 
+        isOpen={showVanessaChat} 
+        onClose={() => setShowVanessaChat(false)} 
+      />
     </>
   );
 }
