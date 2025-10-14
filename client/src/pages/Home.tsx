@@ -14,53 +14,37 @@ import {
   Award,
   Target,
   ArrowRight,
-  Briefcase
+  Briefcase,
+  Bot,
+  Zap
 } from "lucide-react";
 import { Link } from "wouter";
 
-const stats = [
+const trustedBrands = [
+  { name: "Angkas", logo: null },
+  { name: "Company A", logo: null },
+  { name: "Company B", logo: null },
+  { name: "Company C", logo: null },
+  { name: "Company D", logo: null },
+  { name: "Company E", logo: null },
+];
+
+const valueTiles = [
   {
-    label: "Clients Served",
-    value: "40+",
-    description: "Across various industries",
+    label: "AI Assistant",
+    description: "24/7, integrated, fast.",
+    icon: Bot,
+  },
+  {
+    label: "Managed Services",
+    description: "We run the engine.",
+    icon: Zap,
+  },
+  {
+    label: "Resourced Talent",
+    description: "Elite, on-demand.",
     icon: Users,
-    color: "text-blue-600"
   },
-  {
-    label: "Resources Deployed",
-    value: "300+",
-    description: "Supporting business operations",
-    icon: Target,
-    color: "text-purple-600"
-  },
-  {
-    label: "Value Delivered",
-    value: "$30M+",
-    description: "Estimated client value since 2021",
-    icon: DollarSign,
-    color: "text-green-600"
-  },
-  {
-    label: "Client NPS Score",
-    value: "80%",
-    description: "Client satisfaction rating",
-    icon: Star,
-    color: "text-yellow-600"
-  },
-  {
-    label: "Cost Reduction",
-    value: "70%",
-    description: "Payroll cost savings achieved",
-    icon: TrendingUp,
-    color: "text-orange-600"
-  },
-  {
-    label: "Leadership Experience",
-    value: "120+",
-    description: "Years of outsourcing expertise",
-    icon: Award,
-    color: "text-indigo-600"
-  }
 ];
 
 const serviceModels = [
@@ -204,24 +188,45 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Key Statistics */}
-      <div className="container mx-auto px-6">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">OnSpot Powers Growth for 40+ Amazing Brands</h2>
-          <p className="text-muted-foreground">Proven results that speak for themselves</p>
+      {/* Trusted By Section */}
+      <div className="container mx-auto px-6 space-y-12">
+        <div className="text-center space-y-8">
+          <div>
+            <p className="text-sm text-muted-foreground uppercase tracking-wide mb-4">Trusted by</p>
+            <h2 className="text-3xl font-bold">OnSpot Powers Growth for global brands, hundreds of entrepreneurs, and thousands of professionals.</h2>
+          </div>
+          
+          {/* Brand Logos Strip */}
+          <div className="relative">
+            <div className="flex justify-end mb-2">
+              <span className="text-xs text-muted-foreground">great companies</span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {trustedBrands.map((brand, index) => (
+                <Card key={index} className="hover-elevate transition-all duration-200 bg-card/50" data-testid={`brand-logo-${index}`}>
+                  <CardContent className="p-6 flex items-center justify-center min-h-[100px]">
+                    <div className="text-center">
+                      <span className="text-xl font-bold text-foreground/40">{brand.name}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {stats.map((stat, index) => (
-            <Card key={index} className="hover-elevate transition-all duration-200" data-testid={`stat-${index}`}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-3xl font-bold">{stat.value}</div>
-                    <div className="font-medium text-base">{stat.label}</div>
-                    <div className="text-sm text-muted-foreground mt-1">{stat.description}</div>
+
+        {/* Value Tiles */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16">
+          {valueTiles.map((tile, index) => (
+            <Card key={index} className="rounded-2xl border hover-elevate transition-all duration-200" data-testid={`value-tile-${index}`}>
+              <CardContent className="p-8">
+                <div className="space-y-4">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <tile.icon className="w-6 h-6 text-primary" />
                   </div>
-                  <div className={`p-3 rounded-lg bg-muted/20 ${stat.color}`}>
-                    <stat.icon className="w-6 h-6" />
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">{tile.label}</p>
+                    <p className="text-xl font-bold">{tile.description}</p>
                   </div>
                 </div>
               </CardContent>
