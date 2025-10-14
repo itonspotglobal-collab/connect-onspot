@@ -199,7 +199,7 @@ export default function Home() {
             {/* Subcopy */}
             <div className="hero-fade-up-delay">
               <p className="text-xl md:text-2xl text-white/70 font-light tracking-wide">
-                One platform. Your unfair advantage.
+                One <span className="bg-white/10 px-2 py-0.5 rounded">"system"</span>. you unfair advantage.
               </p>
             </div>
 
