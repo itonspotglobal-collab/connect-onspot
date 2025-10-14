@@ -2,9 +2,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { 
-  Star, 
-  Quote, 
+import {
+  Star,
+  Quote,
   Users,
   Award,
   ChevronLeft,
@@ -14,11 +14,21 @@ import {
   Sparkles,
   Camera,
   Play,
-  ArrowRight
+  ArrowRight,
 } from "lucide-react";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import teamPhoto from "@assets/vertex team_1758457968487.png";
+
+import FrederickPhoto from "../assets/logos/Frederick.png";
+import AmiraPhoto from "../assets/logos/Amira.png";
+import JuliePhoto from "../assets/logos/Julie.png";
+import PaigePhoto from "../assets/logos/Paige.png";
+import StefanPhoto from "../assets/logos/Stefan.png";
+import AlexPhoto from "../assets/logos/Alex.png";
+import JamesPhoto from "../assets/logos/James.png";
+import MariaPhoto from "../assets/logos/Maria.png";
+import SofiaPhoto from "../assets/logos/Sofia.png";
 
 export default function Amazing() {
   const [galleryFilter, setGalleryFilter] = useState("All");
@@ -28,68 +38,86 @@ export default function Amazing() {
       name: "Frederic Hill",
       title: "Founder & CEO",
       company: "TechVenture Inc.",
-      quote: "I just had to take a moment to express my gratitude for the outstanding service they provided. Their complete assistance and efforts were truly remarkable",
-      initials: "FH"
+      quote:
+        "I just had to take a moment to express my gratitude for the outstanding service they provided. Their complete assistance and efforts were truly remarkable",
+      initials: "FH",
+      photo: FrederickPhoto,
     },
     {
-      name: "Julie Kyle", 
+      name: "Julie Kyle",
       title: "Account Executive",
       company: "Growth Solutions",
-      quote: "Every step of the way they provided helpful advice, recommended strategies to ensure our website was optimally set up, and made sure every element was clear and concise.",
-      initials: "JK"
+      quote:
+        "Every step of the way they provided helpful advice, recommended strategies to ensure our website was optimally set up, and made sure every element was clear and concise.",
+      initials: "JK",
+      photo: JuliePhoto,
     },
     {
-      name: "Brendan Buck",
-      title: "Data Engineer", 
+      name: "Amira Santos",
+      title: "Data Engineer",
       company: "Analytics Pro",
-      quote: "Excellent service and throughly trained professionals, and their follow-up on tickets was handled with such care and attention to detail.",
-      initials: "BB"
+      quote:
+        "Excellent service and throughly trained professionals, and their follow-up on tickets was handled with such care and attention to detail.",
+      initials: "BB",
+      photo: AmiraPhoto,
     },
     {
       name: "Paige Lowery",
       title: "Head of Brand",
       company: "Creative Studios",
-      quote: "Every step of the way they provided helpful advice, recommended strategies to ensure our website was optimally set up, and made sure every element was clear and concise.",
-      initials: "PL"
+      quote:
+        "Every step of the way they provided helpful advice, recommended strategies to ensure our website was optimally set up, and made sure every element was clear and concise.",
+      initials: "PL",
+      photo: PaigePhoto,
     },
     {
       name: "Stefan Ball",
       title: "Marketing Manager",
       company: "Digital First",
-      quote: "I just had to take a moment to express my gratitude for the outstanding service they provided. Their complete assistance and efforts were truly remarkable.",
-      initials: "SB"
-    }
+      quote:
+        "I just had to take a moment to express my gratitude for the outstanding service they provided. Their complete assistance and efforts were truly remarkable.",
+      initials: "SB",
+      photo: StefanPhoto,
+    },
   ];
 
   const featuredEmployees = [
     {
       name: "Maria Santos",
       title: "Senior Talent Specialist",
-      description: "Expert in matching top-tier talent with growing businesses. Specializes in technical and creative roles with 8+ years of recruitment experience.",
+      description:
+        "Expert in matching top-tier talent with growing businesses. Specializes in technical and creative roles with 8+ years of recruitment experience.",
       skills: ["Recruitment", "Matching", "HR Tech"],
-      initials: "MS"
+      initials: "MS",
+      photo: MariaPhoto,
     },
     {
       name: "James Chen",
-      title: "Platform Architect", 
-      description: "Designs and builds scalable systems that power our matching algorithms and performance tracking. Passionate about clean, efficient code.",
+      title: "Platform Architect",
+      description:
+        "Designs and builds scalable systems that power our matching algorithms and performance tracking. Passionate about clean, efficient code.",
       skills: ["System Design", "Cloud Infrastructure", "Security"],
-      initials: "JC"
+      initials: "JC",
+      photo: JamesPhoto,
     },
     {
       name: "Sofia Rodriguez",
       title: "Client Success Manager",
-      description: "Ensures every client achieves their outsourcing goals through strategic guidance and ongoing support. Results-driven with a personal touch.",
+      description:
+        "Ensures every client achieves their outsourcing goals through strategic guidance and ongoing support. Results-driven with a personal touch.",
       skills: ["Client Relations", "Strategy", "Growth"],
-      initials: "SR"
+      initials: "SR",
+      photo: SofiaPhoto,
     },
     {
       name: "Alex Thompson",
       title: "Quality Assurance Lead",
-      description: "Maintains the highest standards across all delivered work. Implements quality frameworks that ensure consistent excellence.",
+      description:
+        "Maintains the highest standards across all delivered work. Implements quality frameworks that ensure consistent excellence.",
       skills: ["Quality Control", "Process Design", "Training"],
-      initials: "AT"
-    }
+      initials: "AT",
+      photo: AlexPhoto,
+    },
   ];
 
   const galleryImages = [
@@ -104,12 +132,13 @@ export default function Amazing() {
     { id: 9, category: "All", alt: "Team celebration" },
     { id: 10, category: "All", alt: "Remote work setup" },
     { id: 11, category: "Neighbours", alt: "Building lobby" },
-    { id: 12, category: "All", alt: "Training session" }
+    { id: 12, category: "All", alt: "Training session" },
   ];
 
-  const filteredImages = galleryFilter === "All" 
-    ? galleryImages 
-    : galleryImages.filter(img => img.category === galleryFilter);
+  const filteredImages =
+    galleryFilter === "All"
+      ? galleryImages
+      : galleryImages.filter((img) => img.category === galleryFilter);
 
   return (
     <div className="space-y-0 overflow-hidden">
@@ -129,7 +158,7 @@ export default function Amazing() {
                 <Sparkles className="w-4 h-4" />
                 Amazing Stories
               </motion.div>
-              
+
               <motion.h1
                 initial={{ opacity: 0, y: 12 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -139,11 +168,13 @@ export default function Amazing() {
               >
                 We love our
                 <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-[hsl(var(--gold-yellow))] via-[hsl(var(--gold-yellow))] to-[hsl(var(--gold-yellow)/0.8)] drop-shadow-lg">
-                  {" "}people
+                  {" "}
+                  people
                 </span>
-                <br />and they love us
+                <br />
+                and they love us
               </motion.h1>
-              
+
               <motion.p
                 initial={{ opacity: 0, y: 12 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -151,9 +182,10 @@ export default function Amazing() {
                 transition={{ duration: 0.7, delay: 0.2 }}
                 className="text-lg md:text-xl text-[hsl(var(--brand-foreground))]/95 mb-6 leading-relaxed font-light drop-shadow-lg"
               >
-                Amazing results. Amazing stories. It's not just about the numbers, it's about the feeling.
+                Amazing results. Amazing stories. It's not just about the
+                numbers, it's about the feeling.
               </motion.p>
-              
+
               <motion.p
                 initial={{ opacity: 0, y: 12 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -161,7 +193,8 @@ export default function Amazing() {
                 transition={{ duration: 0.8, delay: 0.3 }}
                 className="text-base text-[hsl(var(--brand-foreground))]/90 mb-8 font-light drop-shadow-md"
               >
-                The sheer thrill of seeing our people achieve what they once thought impossible? That's the amazingness we strive for.
+                The sheer thrill of seeing our people achieve what they once
+                thought impossible? That's the amazingness we strive for.
               </motion.p>
             </div>
 
@@ -174,9 +207,9 @@ export default function Amazing() {
                 transition={{ duration: 0.6 }}
                 className="relative w-full"
               >
-                <img 
-                  src={teamPhoto} 
-                  alt="OnSpot team working together" 
+                <img
+                  src={teamPhoto}
+                  alt="OnSpot team working together"
                   className="w-full h-auto object-contain rounded-2xl shadow-xl"
                 />
               </motion.div>
@@ -193,27 +226,49 @@ export default function Amazing() {
               <Quote className="w-4 h-4" />
               Client Stories
             </div>
-            <h2 className="text-4xl md:text-5xl font-light mb-4">What Our Clients Say</h2>
-            <p className="text-xl text-muted-foreground">Real feedback from real clients who've experienced the OnSpot difference</p>
+            <h2 className="text-4xl md:text-5xl font-light mb-4">
+              What Our Clients Say
+            </h2>
+            <p className="text-xl text-muted-foreground">
+              Real feedback from real clients who've experienced the OnSpot
+              difference
+            </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
-              <Card key={index} className="relative overflow-hidden hover-elevate transition-all duration-500 group border-none shadow-lg" data-testid={`testimonial-${index}`}>
+              <Card
+                key={index}
+                className="relative overflow-hidden hover-elevate transition-all duration-500 group border-none shadow-lg"
+                data-testid={`testimonial-${index}`}
+              >
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-[hsl(var(--gold-yellow))]/5"></div>
-                
+
                 <CardContent className="relative p-8">
                   <div className="flex items-center mb-6">
-                    <Avatar className="w-16 h-16 border-2 border-primary/20">
-                      <AvatarImage src="" alt={testimonial.name} />
-                      <AvatarFallback className="bg-primary text-white font-semibold">
-                        {testimonial.initials}
-                      </AvatarFallback>
+                    <Avatar className="w-16 h-16 border-2 border-primary/20 overflow-hidden shadow-sm">
+                      {testimonial.photo ? (
+                        <AvatarImage
+                          src={testimonial.photo}
+                          alt={testimonial.name}
+                          className="object-cover"
+                        />
+                      ) : (
+                        <AvatarFallback className="bg-primary text-white font-semibold">
+                          {testimonial.name.charAt(0)}
+                        </AvatarFallback>
+                      )}
                     </Avatar>
                     <div className="ml-4">
-                      <h3 className="font-semibold text-lg">{testimonial.name}</h3>
-                      <p className="text-primary font-medium">{testimonial.title}</p>
-                      <p className="text-muted-foreground text-sm">{testimonial.company}</p>
+                      <h3 className="font-semibold text-lg">
+                        {testimonial.name}
+                      </h3>
+                      <p className="text-primary font-medium">
+                        {testimonial.title}
+                      </p>
+                      <p className="text-muted-foreground text-sm">
+                        {testimonial.company}
+                      </p>
                     </div>
                   </div>
 
@@ -226,7 +281,10 @@ export default function Amazing() {
 
                   <div className="flex items-center mt-6">
                     {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 text-[hsl(var(--gold-yellow))] fill-current" />
+                      <Star
+                        key={i}
+                        className="w-4 h-4 text-[hsl(var(--gold-yellow))] fill-current"
+                      />
                     ))}
                   </div>
                 </CardContent>
@@ -244,34 +302,47 @@ export default function Amazing() {
               <Users className="w-4 h-4" />
               Our Team
             </div>
-            <h2 className="text-4xl md:text-5xl font-light mb-4">Featured Employees</h2>
-            <p className="text-xl text-muted-foreground">Meet our expert professionals driving innovation in the freelance revolution</p>
+            <h2 className="text-4xl md:text-5xl font-light mb-4">
+              Featured Employees
+            </h2>
+            <p className="text-xl text-muted-foreground">
+              Meet our expert professionals driving innovation in the freelance
+              revolution
+            </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {featuredEmployees.map((employee, index) => (
-              <Card key={index} className="relative overflow-hidden hover-elevate transition-all duration-500 group text-center" data-testid={`employee-${index}`}>
-                <CardContent className="p-8">
+              <Card
+                key={index}
+                className="relative overflow-hidden hover-elevate transition-all duration-500 group text-center h-full flex flex-col"
+                data-testid={`employee-${index}`}
+              >
+                <CardContent className="p-8 flex flex-col h-full">
                   <div className="relative mb-6">
                     <Avatar className="w-24 h-24 mx-auto border-4 border-white shadow-xl">
-                      <AvatarImage src="" alt={employee.name} />
+                      <AvatarImage src={employee.photo} alt={employee.name} />
                       <AvatarFallback className="bg-gradient-to-br from-primary to-[hsl(var(--gold-yellow))] text-white text-xl font-bold">
                         {employee.initials}
                       </AvatarFallback>
                     </Avatar>
                   </div>
 
-                  <h3 className="text-xl font-semibold mb-2">{employee.name}</h3>
-                  <p className="text-primary font-medium mb-4">{employee.title}</p>
-                  <p className="text-muted-foreground text-sm leading-relaxed mb-6">
+                  <h3 className="text-xl font-semibold mb-2">
+                    {employee.name}
+                  </h3>
+                  <p className="text-primary font-medium mb-4">
+                    {employee.title}
+                  </p>
+                  <p className="text-muted-foreground text-sm leading-relaxed mb-6 flex-grow">
                     {employee.description}
                   </p>
 
-                  <div className="flex flex-wrap gap-2 justify-center">
+                  <div className="flex flex-wrap gap-2 justify-center mt-auto">
                     {employee.skills.map((skill, skillIndex) => (
-                      <Badge 
-                        key={skillIndex} 
-                        variant="outline" 
+                      <Badge
+                        key={skillIndex}
+                        variant="outline"
                         className="border-primary/30 text-primary bg-primary/5"
                       >
                         {skill}
@@ -294,7 +365,9 @@ export default function Amazing() {
               Behind the Scenes
             </div>
             <h2 className="text-4xl md:text-5xl font-light mb-4">Highlights</h2>
-            <p className="text-xl text-muted-foreground mb-8">Discover what makes our work enjoyable</p>
+            <p className="text-xl text-muted-foreground mb-8">
+              Discover what makes our work enjoyable
+            </p>
 
             {/* Filter Tabs */}
             <div className="inline-flex items-center gap-1 p-1 bg-white/60 backdrop-blur-sm rounded-full">
@@ -318,8 +391,8 @@ export default function Amazing() {
           {/* Gallery Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             {filteredImages.map((image) => (
-              <Card 
-                key={image.id} 
+              <Card
+                key={image.id}
                 className="relative overflow-hidden group cursor-pointer hover-elevate transition-all duration-300 aspect-square"
                 data-testid={`gallery-image-${image.id}`}
               >
@@ -327,7 +400,9 @@ export default function Amazing() {
                 <div className="absolute inset-0 flex items-center justify-center bg-muted/80">
                   <div className="text-center">
                     <Camera className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-xs text-muted-foreground px-2 leading-tight">{image.alt}</p>
+                    <p className="text-xs text-muted-foreground px-2 leading-tight">
+                      {image.alt}
+                    </p>
                   </div>
                 </div>
                 <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/10 transition-all duration-300 flex items-center justify-center">
@@ -352,10 +427,20 @@ export default function Amazing() {
       {/* Call to Action */}
       <section className="hero-investor py-20 px-4 relative overflow-hidden">
         <div className="absolute inset-0">
-          <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full blur-3xl opacity-8 pointer-events-none"
-               style={{ background: "radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 40%, transparent 70%)" }} />
-          <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full blur-3xl opacity-6 pointer-events-none"
-               style={{ background: "radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.03) 40%, transparent 70%)" }} />
+          <div
+            className="absolute -top-32 -left-32 h-96 w-96 rounded-full blur-3xl opacity-8 pointer-events-none"
+            style={{
+              background:
+                "radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 40%, transparent 70%)",
+            }}
+          />
+          <div
+            className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full blur-3xl opacity-6 pointer-events-none"
+            style={{
+              background:
+                "radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.03) 40%, transparent 70%)",
+            }}
+          />
         </div>
 
         <div className="relative z-10 max-w-4xl mx-auto text-center container">
@@ -366,12 +451,14 @@ export default function Amazing() {
             transition={{ duration: 0.6 }}
             className="text-4xl md:text-5xl font-light text-[hsl(var(--brand-foreground))] mb-6 drop-shadow-lg"
           >
-            Ready to create your own 
+            Ready to create your own
             <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-[hsl(var(--gold-yellow))] to-[hsl(var(--gold-yellow)/0.8)]">
-              {" "}amazing story
-            </span>?
+              {" "}
+              amazing story
+            </span>
+            ?
           </motion.h2>
-          
+
           <motion.p
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -379,9 +466,10 @@ export default function Amazing() {
             transition={{ duration: 0.7, delay: 0.1 }}
             className="text-xl text-[hsl(var(--brand-foreground))]/90 mb-8 max-w-2xl mx-auto drop-shadow-md"
           >
-            Join hundreds of businesses who've transformed their operations with OnSpot's talented professionals.
+            Join hundreds of businesses who've transformed their operations with
+            OnSpot's talented professionals.
           </motion.p>
-          
+
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -389,11 +477,19 @@ export default function Amazing() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="flex flex-col sm:flex-row gap-4 justify-center"
           >
-            <Button size="lg" className="bg-[hsl(var(--brand-foreground))] text-primary hover:bg-[hsl(var(--brand-foreground))]/90 px-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1" data-testid="button-get-started">
+            <Button
+              size="lg"
+              className="bg-[hsl(var(--brand-foreground))] text-primary hover:bg-[hsl(var(--brand-foreground))]/90 px-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+              data-testid="button-get-started"
+            >
               Get Started Today
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
-            <Button size="lg" variant="outline" className="border-[hsl(var(--brand-foreground))]/30 text-[hsl(var(--brand-foreground))] hover:bg-[hsl(var(--brand-foreground))]/15 hover:border-[hsl(var(--brand-foreground))]/50 px-8 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1">
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-[hsl(var(--brand-foreground))]/30 text-[hsl(var(--brand-foreground))] hover:bg-[hsl(var(--brand-foreground))]/15 hover:border-[hsl(var(--brand-foreground))]/50 px-8 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1"
+            >
               View Our Services
             </Button>
           </motion.div>
