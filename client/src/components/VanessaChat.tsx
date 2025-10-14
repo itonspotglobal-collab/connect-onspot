@@ -1,15 +1,11 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { X, Sparkles, MessageCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
-interface Message {
-  id: number;
-  text: string;
-  sender: "vanessa" | "user";
-  isTyping?: boolean;
-}
+import { useVanessa } from "@/contexts/VanessaContext";
+import type { Message } from "@/contexts/VanessaContext";
+import vanessaPhoto from "@/assets/logos/vanessa.png";
 
 interface VanessaChatProps {
   isOpen: boolean;
@@ -17,40 +13,64 @@ interface VanessaChatProps {
   isSticky?: boolean;
 }
 
-export function VanessaChat({ isOpen, onClose, isSticky = false }: VanessaChatProps) {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
-  const [showOptions, setShowOptions] = useState(false);
-  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
-  const [isMinimized, setIsMinimized] = useState(false);
+export function VanessaChat({
+  isOpen,
+  onClose,
+  isSticky = false,
+}: VanessaChatProps) {
+  // Use shared conversation state from context
+  const {
+    messages,
+    setMessages,
+    currentMessageIndex,
+    setCurrentMessageIndex,
+    showOptions,
+    setShowOptions,
+    selectedTopic,
+    setSelectedTopic,
+    isMinimized,
+    setIsMinimized,
+  } = useVanessa();
 
   const openingMessages = [
-    { id: 1, text: "Hi there! I'm Vanessa, your OnSpot Virtual Assistant.", sender: "vanessa" as const },
-    { id: 2, text: "I'm currently in training — learning from the decades of experience of our founders, managers, clients, and thousands of professionals in the OnSpot network.", sender: "vanessa" as const },
-    { id: 3, text: "For now, I can help you get started with Outsourcing through OnSpot.\nWould you like to explore how it works?", sender: "vanessa" as const },
+    {
+      id: 1,
+      text: "Hi there! I'm Vanessa, your OnSpot Virtual Assistant.",
+      sender: "vanessa" as const,
+    },
+    {
+      id: 2,
+      text: "I'm currently in training — learning from the decades of experience of our founders, managers, clients, and thousands of professionals in the OnSpot network.",
+      sender: "vanessa" as const,
+    },
+    {
+      id: 3,
+      text: "For now, I can help you get started with Outsourcing through OnSpot.\nWould you like to explore how it works?",
+      sender: "vanessa" as const,
+    },
   ];
 
   const faqResponses: Record<string, string[]> = {
     "how-it-works": [
       "Great question! OnSpot connects you with pre-vetted Filipino talent through a unique AI-first approach.",
       "Here's how it works:\n\n1. Tell us your needs\n2. Our AI matches you with top candidates\n3. Human experts verify the match\n4. Start working within 48 hours",
-      "The best part? You only pay for productive work, with built-in quality assurance and performance tracking."
+      "The best part? You only pay for productive work, with built-in quality assurance and performance tracking.",
     ],
-    "pricing": [
+    pricing: [
       "Our pricing is simple and transparent:",
       "Hourly Rate: $8-25/hour (depending on skill level)\nMonthly Retainer: Custom packages available\nPerformance-based: Pay only for verified productive hours",
-      "All pricing includes:\n• AI-powered time tracking\n• Quality assurance\n• Dedicated account manager\n• Replacement guarantee"
+      "All pricing includes:\n• AI-powered time tracking\n• Quality assurance\n• Dedicated account manager\n• Replacement guarantee",
     ],
     "ai-human": [
       "This is where OnSpot truly shines! We combine the best of both worlds:",
       "AI handles: Talent matching, time tracking, performance analytics, workflow optimization",
       "Humans handle: Complex decisions, relationship building, quality oversight, strategic guidance",
-      "Result? 40% faster hiring, 30% cost savings, and 95% client satisfaction. AI does the heavy lifting, humans ensure excellence."
+      "Result? 40% faster hiring, 30% cost savings, and 95% client satisfaction. AI does the heavy lifting, humans ensure excellence.",
     ],
     "talk-human": [
       "Perfect! I'd love to connect you with one of our expert managers.",
       "They can provide:\n• Custom solution design\n• ROI analysis for your use case\n• Live talent preview\n• Onboarding timeline",
-    ]
+    ],
   };
 
   // Start message sequence when chat opens
@@ -69,23 +89,28 @@ export function VanessaChat({ isOpen, onClose, isSticky = false }: VanessaChatPr
       return;
     }
 
-    const timer = setTimeout(() => {
-      const newMessage = openingMessages[currentMessageIndex];
-      
-      // Show typing indicator first
-      setMessages(prev => [...prev, { ...newMessage, isTyping: true }]);
-      
-      // Replace typing indicator with actual message after delay
-      setTimeout(() => {
-        setMessages(prev => {
-          const updated = [...prev];
-          updated[updated.length - 1] = { ...newMessage, isTyping: false };
-          return updated;
-        });
-        setCurrentMessageIndex(prev => prev + 1);
-      }, 1000 + Math.random() * 500); // 1-1.5s typing delay
-      
-    }, currentMessageIndex === 0 ? 300 : 1500); // First message faster
+    const timer = setTimeout(
+      () => {
+        const newMessage = openingMessages[currentMessageIndex];
+
+        // Show typing indicator first
+        setMessages((prev) => [...prev, { ...newMessage, isTyping: true }]);
+
+        // Replace typing indicator with actual message after delay
+        setTimeout(
+          () => {
+            setMessages((prev) => {
+              const updated = [...prev];
+              updated[updated.length - 1] = { ...newMessage, isTyping: false };
+              return updated;
+            });
+            setCurrentMessageIndex((prev) => prev + 1);
+          },
+          1000 + Math.random() * 500,
+        ); // 1-1.5s typing delay
+      },
+      currentMessageIndex === 0 ? 300 : 1500,
+    ); // First message faster
 
     return () => clearTimeout(timer);
   }, [currentMessageIndex, isOpen, openingMessages.length, showOptions]);
@@ -93,20 +118,23 @@ export function VanessaChat({ isOpen, onClose, isSticky = false }: VanessaChatPr
   const handleTopicSelect = (topic: string) => {
     setSelectedTopic(topic);
     setShowOptions(false);
-    
+
     // Add user message
     const userMessages: Record<string, string> = {
       "how-it-works": "How OnSpot Outsourcing Works",
-      "pricing": "See Pricing Models",
+      pricing: "See Pricing Models",
       "ai-human": "AI + Human Advantage",
-      "talk-human": "Talk to a Human Expert"
+      "talk-human": "Talk to a Human Expert",
     };
-    
-    setMessages(prev => [...prev, { 
-      id: Date.now(), 
-      text: userMessages[topic], 
-      sender: "user" 
-    }]);
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        text: userMessages[topic],
+        sender: "user",
+      },
+    ]);
 
     // Show Vanessa's responses sequentially
     const responses = faqResponses[topic];
@@ -115,24 +143,27 @@ export function VanessaChat({ isOpen, onClose, isSticky = false }: VanessaChatPr
     const showNextResponse = () => {
       if (responseIndex < responses.length) {
         // Show typing
-        setMessages(prev => [...prev, { 
-          id: Date.now() + responseIndex, 
-          text: responses[responseIndex], 
-          sender: "vanessa",
-          isTyping: true 
-        }]);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now() + responseIndex,
+            text: responses[responseIndex],
+            sender: "vanessa",
+            isTyping: true,
+          },
+        ]);
 
         // Replace with actual message
         setTimeout(() => {
-          setMessages(prev => {
+          setMessages((prev) => {
             const updated = [...prev];
-            updated[updated.length - 1] = { 
-              ...updated[updated.length - 1], 
-              isTyping: false 
+            updated[updated.length - 1] = {
+              ...updated[updated.length - 1],
+              isTyping: false,
             };
             return updated;
           });
-          
+
           responseIndex++;
           if (responseIndex < responses.length) {
             setTimeout(showNextResponse, 1500);
@@ -140,11 +171,14 @@ export function VanessaChat({ isOpen, onClose, isSticky = false }: VanessaChatPr
             // Show follow-up options after last response
             setTimeout(() => {
               if (topic === "talk-human") {
-                setMessages(prev => [...prev, { 
-                  id: Date.now() + 1000, 
-                  text: "Would you like me to connect you with an OnSpot Manager to discuss your setup?", 
-                  sender: "vanessa" 
-                }]);
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    id: Date.now() + 1000,
+                    text: "Would you like me to connect you with an OnSpot Manager to discuss your setup?",
+                    sender: "vanessa",
+                  },
+                ]);
                 setTimeout(() => setShowOptions(true), 800);
               } else {
                 setShowOptions(true);
@@ -180,25 +214,40 @@ export function VanessaChat({ isOpen, onClose, isSticky = false }: VanessaChatPr
           </Button>
         ) : (
           // Expanded chat widget
-          <Card 
+          <Card
             className="w-[400px] h-[600px] flex flex-col relative animate-in slide-in-from-bottom-4 duration-500 border-violet-500/20 overflow-visible shadow-2xl"
             style={{
-              background: "linear-gradient(135deg, rgba(139, 92, 246, 0.95) 0%, rgba(30, 27, 75, 0.98) 100%)",
+              background:
+                "linear-gradient(135deg, rgba(139, 92, 246, 0.95) 0%, rgba(30, 27, 75, 0.98) 100%)",
             }}
             data-testid="vanessa-chat-widget"
           >
             {/* Header */}
             <div className="flex items-center gap-3 p-4 border-b border-white/10">
-              <Avatar className="h-12 w-12 ring-2 ring-white/20" data-testid="avatar-vanessa">
-                <AvatarImage src="/placeholder-vanessa.jpg" alt="Vanessa" />
+              <Avatar className="h-12 w-12 ring-2 ring-white/20 overflow-hidden bg-violet-800/40">
+                <AvatarImage
+                  src={vanessaPhoto}
+                  alt="Vanessa"
+                  className="object-cover object-center w-full h-full rounded-full"
+                />
                 <AvatarFallback className="bg-gradient-to-br from-violet-400 to-blue-400 text-white font-semibold">
                   VA
                 </AvatarFallback>
               </Avatar>
+
               <div className="flex-1">
-                <h3 className="font-semibold text-white" data-testid="text-vanessa-name">Vanessa</h3>
-                <p className="text-xs text-white/70">OnSpot Virtual Assistant</p>
-                <p className="text-xs text-violet-300">Superhuman Assistant — In Training</p>
+                <h3
+                  className="font-semibold text-white"
+                  data-testid="text-vanessa-name"
+                >
+                  Vanessa
+                </h3>
+                <p className="text-xs text-white/70">
+                  OnSpot Virtual Assistant
+                </p>
+                <p className="text-xs text-violet-300">
+                  Superhuman Assistant — In Training
+                </p>
               </div>
               <div className="flex gap-1">
                 <Button
@@ -223,7 +272,10 @@ export function VanessaChat({ isOpen, onClose, isSticky = false }: VanessaChatPr
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4" data-testid="chat-messages">
+            <div
+              className="flex-1 overflow-y-auto p-4 space-y-4"
+              data-testid="chat-messages"
+            >
               {messages.map((message) => (
                 <div
                   key={message.id}
@@ -238,13 +290,27 @@ export function VanessaChat({ isOpen, onClose, isSticky = false }: VanessaChatPr
                     data-testid={`message-${message.sender}-${message.id}`}
                   >
                     {message.isTyping ? (
-                      <div className="flex gap-1 py-1" data-testid="typing-indicator">
-                        <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                        <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                        <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                      <div
+                        className="flex gap-1 py-1"
+                        data-testid="typing-indicator"
+                      >
+                        <div
+                          className="w-2 h-2 bg-white/60 rounded-full animate-bounce"
+                          style={{ animationDelay: "0ms" }}
+                        />
+                        <div
+                          className="w-2 h-2 bg-white/60 rounded-full animate-bounce"
+                          style={{ animationDelay: "150ms" }}
+                        />
+                        <div
+                          className="w-2 h-2 bg-white/60 rounded-full animate-bounce"
+                          style={{ animationDelay: "300ms" }}
+                        />
                       </div>
                     ) : (
-                      <p className="text-sm whitespace-pre-line leading-relaxed">{message.text}</p>
+                      <p className="text-sm whitespace-pre-line leading-relaxed">
+                        {message.text}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -317,7 +383,10 @@ export function VanessaChat({ isOpen, onClose, isSticky = false }: VanessaChatPr
             {/* Sparkle effect */}
             <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
               <Sparkles className="absolute top-4 right-4 h-4 w-4 text-violet-300 opacity-60 animate-pulse" />
-              <Sparkles className="absolute bottom-20 left-6 h-3 w-3 text-blue-300 opacity-40 animate-pulse" style={{ animationDelay: "1s" }} />
+              <Sparkles
+                className="absolute bottom-20 left-6 h-3 w-3 text-blue-300 opacity-40 animate-pulse"
+                style={{ animationDelay: "1s" }}
+              />
             </div>
           </Card>
         )}
@@ -327,48 +396,63 @@ export function VanessaChat({ isOpen, onClose, isSticky = false }: VanessaChatPr
 
   // Full-screen modal mode (default)
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-300"
       style={{
-        background: "radial-gradient(ellipse at center, rgba(139, 92, 246, 0.15) 0%, rgba(59, 130, 246, 0.1) 50%, rgba(0, 0, 0, 0.4) 100%)",
-        backdropFilter: "blur(8px)"
+        background:
+          "radial-gradient(ellipse at center, rgba(139, 92, 246, 0.15) 0%, rgba(59, 130, 246, 0.1) 50%, rgba(0, 0, 0, 0.4) 100%)",
+        backdropFilter: "blur(8px)",
       }}
       onClick={onClose}
     >
-      <Card 
+      <Card
         className="w-full max-w-lg h-[600px] flex flex-col relative animate-in slide-in-from-bottom-4 duration-500 border-violet-500/20 overflow-hidden"
         style={{
-          background: "linear-gradient(135deg, rgba(139, 92, 246, 0.95) 0%, rgba(30, 27, 75, 0.98) 100%)",
+          background:
+            "linear-gradient(135deg, rgba(139, 92, 246, 0.95) 0%, rgba(30, 27, 75, 0.98) 100%)",
         }}
         onClick={(e) => e.stopPropagation()}
         data-testid="vanessa-chat-window"
       >
         {/* Header */}
         <div className="flex items-center gap-3 p-4 border-b border-white/10">
-          <Avatar className="h-12 w-12 ring-2 ring-white/20" data-testid="avatar-vanessa">
-            <AvatarImage src="/placeholder-vanessa.jpg" alt="Vanessa" />
+          <Avatar
+            className="h-12 w-12 ring-2 ring-white/20"
+            data-testid="avatar-vanessa"
+          >
+            <AvatarImage src={vanessaPhoto} alt="Vanessa" />
             <AvatarFallback className="bg-gradient-to-br from-violet-400 to-blue-400 text-white font-semibold">
               VA
             </AvatarFallback>
           </Avatar>
           <div className="flex-1">
-            <h3 className="font-semibold text-white" data-testid="text-vanessa-name">Vanessa</h3>
+            <h3
+              className="font-semibold text-white"
+              data-testid="text-vanessa-name"
+            >
+              Vanessa
+            </h3>
             <p className="text-xs text-white/70">OnSpot Virtual Assistant</p>
-            <p className="text-xs text-violet-300">Superhuman Assistant — In Training</p>
+            <p className="text-xs text-violet-300">
+              Superhuman Assistant — In Training
+            </p>
           </div>
           <Button
             size="icon"
             variant="ghost"
             onClick={onClose}
             className="text-white/70 hover:text-white hover:bg-white/10"
-            data-testid="button-close-chat"
+            data-testid="button-minimize-chat"
           >
             <X className="h-5 w-5" />
           </Button>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4" data-testid="chat-messages">
+        <div
+          className="flex-1 overflow-y-auto p-4 space-y-4"
+          data-testid="chat-messages"
+        >
           {messages.map((message) => (
             <div
               key={message.id}
@@ -383,13 +467,27 @@ export function VanessaChat({ isOpen, onClose, isSticky = false }: VanessaChatPr
                 data-testid={`message-${message.sender}-${message.id}`}
               >
                 {message.isTyping ? (
-                  <div className="flex gap-1 py-1" data-testid="typing-indicator">
-                    <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                    <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                    <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                  <div
+                    className="flex gap-1 py-1"
+                    data-testid="typing-indicator"
+                  >
+                    <div
+                      className="w-2 h-2 bg-white/60 rounded-full animate-bounce"
+                      style={{ animationDelay: "0ms" }}
+                    />
+                    <div
+                      className="w-2 h-2 bg-white/60 rounded-full animate-bounce"
+                      style={{ animationDelay: "150ms" }}
+                    />
+                    <div
+                      className="w-2 h-2 bg-white/60 rounded-full animate-bounce"
+                      style={{ animationDelay: "300ms" }}
+                    />
                   </div>
                 ) : (
-                  <p className="text-sm whitespace-pre-line leading-relaxed">{message.text}</p>
+                  <p className="text-sm whitespace-pre-line leading-relaxed">
+                    {message.text}
+                  </p>
                 )}
               </div>
             </div>
@@ -462,7 +560,10 @@ export function VanessaChat({ isOpen, onClose, isSticky = false }: VanessaChatPr
         {/* Sparkle effect */}
         <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
           <Sparkles className="absolute top-4 right-4 h-4 w-4 text-violet-300 opacity-60 animate-pulse" />
-          <Sparkles className="absolute bottom-20 left-6 h-3 w-3 text-blue-300 opacity-40 animate-pulse" style={{ animationDelay: "1s" }} />
+          <Sparkles
+            className="absolute bottom-20 left-6 h-3 w-3 text-blue-300 opacity-40 animate-pulse"
+            style={{ animationDelay: "1s" }}
+          />
         </div>
       </Card>
     </div>

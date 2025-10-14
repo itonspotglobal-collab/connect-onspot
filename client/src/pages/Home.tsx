@@ -1,4 +1,4 @@
-import { useVanessa } from "@/contexts/VanessaContext";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -22,9 +22,11 @@ import {
   Bot,
   Zap,
   Sparkles,
+  MessageCircle,
 } from "lucide-react";
 import { SiAmazon, SiQuickbooks, SiReplit, SiStripe } from "react-icons/si";
 import { Link } from "wouter";
+import { VanessaChat } from "@/components/VanessaChat";
 
 import FlashLogo from "../assets/logos/Flash.png";
 import FutureEVLogo from "../assets/logos/FutureEV.png";
@@ -32,9 +34,6 @@ import IPSLogo from "../assets/logos/IPS.png";
 import PinetechLogo from "../assets/logos/Pinetech.png";
 import SafewayLogo from "../assets/logos/Safeway.png";
 import VertexLogo from "../assets/logos/Vertex.png";
-import FrederickPhoto from "../assets/logos/Frederick.png";
-import AmiraPhoto from "../assets/logos/Amira.png";
-import JuliePhoto from "../assets/logos/Julie.png";
 
 const trustedBrands = [
   { name: "Flash Justice", logo: FlashLogo },
@@ -153,28 +152,38 @@ const testimonials = [
     name: "Frederic Hill",
     role: "Founder & CEO",
     quote:
-      "I just had to take a moment to express my gratitude for the outstanding service they provided. Their complete assistance and efforts were truly remarkable.",
-    photo: FrederickPhoto,
+      "I just had to take a moment to express my gratitude for the outstanding service they provided. Their complete assistance and efforts were truly remarkable",
   },
-
   {
-    name: "Julie Cruz",
+    name: "Julie Kyle",
     role: "Account Executive",
     quote:
       "Every step of the way they provided helpful advice, recommended strategies to ensure our website was optimally set up, and made sure every element was clear and concise.",
-    photo: JuliePhoto,
   },
   {
-    name: "Amira Santos",
+    name: "Brendan Buck",
     role: "Data Engineer",
     quote:
       "Excellent service and thoroughly trained professionals, and their follow-up on tickets was handled with such care and attention to detail.",
-    photo: AmiraPhoto,
   },
 ];
 
 export default function Home() {
-  const { openVanessa } = useVanessa();
+  const [showVanessaChat, setShowVanessaChat] = useState(false);
+  const [isScrolledPastHero, setIsScrolledPastHero] = useState(false);
+
+  // Track scroll position to determine if past hero section
+  useEffect(() => {
+    const handleScroll = () => {
+      // Hero section is min-h-screen, so check if scrolled past viewport height
+      const scrollPosition = window.scrollY;
+      const heroHeight = window.innerHeight;
+      setIsScrolledPastHero(scrollPosition > heroHeight * 0.8); // Trigger at 80% of hero height
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
     <div className="space-y-16">
@@ -218,7 +227,7 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 hero-fade-up-delay">
               <Button
                 size="lg"
-                onClick={openVanessa}
+                onClick={() => setShowVanessaChat(true)}
                 className="relative group text-base px-8 h-auto bg-gradient-to-r from-violet-600 to-blue-600 text-white font-semibold hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] transition-all duration-300 hover-elevate rounded-2xl min-w-[220px] py-4"
                 data-testid="button-launch-ai"
               >
@@ -348,19 +357,15 @@ export default function Home() {
             {testimonials.map((testimonial, index) => (
               <div
                 key={index}
-                className="bg-background rounded-2xl p-6 hover-elevate transition-all duration-300 flex flex-col h-full"
+                className="bg-background rounded-2xl p-6 hover-elevate transition-all duration-300"
                 data-testid={`testimonial-${index}`}
               >
-                <p className="text-sm leading-relaxed mb-6 flex-grow">
+                <p className="text-sm leading-relaxed mb-6">
                   "{testimonial.quote}"
                 </p>
-                <div className="flex items-center gap-3 mt-auto">
-                  <div className="w-12 h-12 rounded-full overflow-hidden border border-border shadow-sm">
-                    <img
-                      src={testimonial.photo}
-                      alt={testimonial.name}
-                      className="w-full h-full object-cover"
-                    />
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
+                    {testimonial.name.charAt(0)}
                   </div>
                   <div>
                     <div className="font-medium text-sm">
@@ -533,6 +538,27 @@ export default function Home() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Vanessa AI Assistant Chat */}
+      {showVanessaChat ? (
+        <VanessaChat
+          isOpen={showVanessaChat}
+          onClose={() => setShowVanessaChat(false)}
+          isSticky={isScrolledPastHero}
+        />
+      ) : (
+        // Minimized Chat Bubble Button (matches VanessaChat design)
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4 duration-500">
+          <Button
+            size="icon"
+            onClick={() => setShowVanessaChat(true)}
+            className="h-16 w-16 rounded-full bg-gradient-to-r from-violet-600 to-blue-600 text-white shadow-2xl hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] hover-elevate transition-transform hover:scale-105"
+            data-testid="button-open-chat"
+          >
+            <MessageCircle className="h-7 w-7" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
