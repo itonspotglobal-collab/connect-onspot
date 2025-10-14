@@ -79,3 +79,16 @@ Preferred communication style: Simple, everyday language.
 - **Lindy.ai**: Embedded AI chatbot for customer support and lead qualification
   - **Configuration**: Requires domain whitelisting in Lindy.ai dashboard
   - **Current Status**: Embed script installed, pending domain configuration on Lindy.ai side
+
+## Recent Changes
+
+### October 14, 2025 - ACCESS PORTAL Modal Implementation
+- **Replaced Login/Signup buttons with single ACCESS PORTAL button** in navigation bar
+- **Created AccessPortalModal component** with 3-step user flow:
+  1. Coming Soon message: "The First Superhuman BPO is Coming Soon"
+  2. Email validation: Input field with @ validation
+  3. Role selection: Client or Talent radio options
+- **Features**: Smooth animations, keyboard accessibility (ESC to close), backdrop click to close
+- **State management**: React useState for step tracking and form data
+- **Components used**: Shadcn/ui Dialog, Button, Input, Label, RadioGroup
+- **Next steps**: Connect submit action to waitlist/onboarding API when available
