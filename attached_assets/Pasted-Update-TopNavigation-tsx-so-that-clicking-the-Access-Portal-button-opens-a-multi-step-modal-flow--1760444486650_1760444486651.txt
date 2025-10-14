@@ -1,0 +1,81 @@
+Update TopNavigation.tsx so that clicking the “Access Portal” button opens a multi-step modal flow, replacing the previous Login/SignUp buttons.
+
+Requirements:
+
+Step 1 – Intro Screen:
+
+Show only:
+
+Text: "The first Superhuman BPO is coming soon."
+
+A centered button labeled Continue.
+
+Style it like the current login modal: centered, rounded, with background blur and shadow.
+
+Step 2 – Portal Selection:
+
+After clicking Continue, transition (fade/slide) into a new modal state that displays:
+
+The OnSpot logo at the top.
+
+Heading: "Welcome to OnSpot"
+
+Subtext: "Choose your portal to continue."
+
+Two portal cards (Client and Talent), matching the design from your existing login modal:
+
+Client Portal
+
+Blue icon (building)
+
+Description: “Access your hiring dashboard, manage projects, and track performance.”
+
+Feature icons: “70% Cost Savings”, “8X Growth”, “24/7 Support”
+
+Talent Portal
+
+Yellow icon (user)
+
+Description: “Access opportunities, manage your profile, and track your career growth.”
+
+Feature icons: “Premium Jobs”, “Secure Payments”, “Career Growth”
+
+A small “Admin Portal” button below, styled subtly (gray outline).
+
+Step 3 – Authentication Flow:
+
+When the user selects a portal (Client or Talent), show the existing Login/SignUp step.
+
+Reuse the current LoginDialog and SignUpDialog components for this (do not re-create logic).
+
+The modal content should smoothly transition between steps.
+
+Animations & UX:
+
+Use data-[state=open] and data-[state=closed] transitions from your current modal styles.
+
+Smooth fade-in/out or slide-up transitions between steps.
+
+Ensure the modal is responsive and centered.
+
+Implementation Details:
+
+Use useState to manage modal step: step = 1 | 2 | 3.
+
+Add a close button in the top-right corner.
+
+Make sure Esc and outside clicks close the modal.
+
+Ensure consistent styling with Tailwind + ShadCN UI.
+
+Reuse Dialog, DialogContent, and Button components from your existing UI system.
+
+Bonus:
+
+Optional: Add a subtle fade overlay behind the modal (semi-transparent dark layer).
+
+📁 Files to update:
+
+TopNavigation.tsx → Replace Login/SignUp buttons with a single Access Portal button and modal logic.
+
+(Optional) Create a new component AccessPortalModal.tsx if separation is preferred.
