@@ -25,12 +25,20 @@ interface GHLApiResponse {
 
 export class GHLService {
   private apiKey: string;
+  private locationId: string;
+  private pipelineId: string;
   private baseUrl = 'https://services.leadconnectorhq.com';
 
   constructor() {
     this.apiKey = process.env.GHL_API_KEY || '';
+    this.locationId = process.env.GHL_LOCATION_ID || '';
+    this.pipelineId = process.env.GHL_PIPELINE_ID || '';
+    
     if (!this.apiKey) {
       console.warn('⚠️ GHL_API_KEY not configured - GHL integration disabled');
+    }
+    if (!this.locationId || !this.pipelineId) {
+      console.warn('⚠️ GHL_LOCATION_ID or GHL_PIPELINE_ID not configured - Opportunity creation will be skipped');
     }
   }
 
@@ -77,39 +85,61 @@ export class GHLService {
       const contactId = contactData.contact.id;
       console.log(`✅ Contact created in GHL: Contact ID ${contactId}`);
 
-      // Step 2: Create opportunity
-      const opportunityData = this.createOpportunityData(leadIntake, contactId);
+      // Step 2: Create opportunity (only if fully configured)
+      // GHL opportunities require: locationId, pipelineId, pipelineStageId
+      // Custom fields also require GHL-specific customFieldId values
+      const pipelineStageId = process.env.GHL_PIPELINE_STAGE_ID || '';
       
-      const opportunityResponse = await fetch(`${this.baseUrl}/opportunities/`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-          'Version': '2021-07-28',
-        },
-        body: JSON.stringify(opportunityData),
-      });
-
-      const oppData = await opportunityResponse.json();
-
-      if (opportunityResponse.ok && oppData.id) {
-        console.log(`✅ Opportunity created in GHL: Opportunity ID ${oppData.id}`);
+      if (!this.locationId || !this.pipelineId || !pipelineStageId) {
+        console.log('ℹ️ Skipping opportunity creation - Missing required GHL configuration (GHL_LOCATION_ID, GHL_PIPELINE_ID, or GHL_PIPELINE_STAGE_ID)');
         return { 
           success: true, 
-          ghlContactId: contactId,
-          ghlOpportunityId: oppData.id
+          ghlContactId: contactId
         };
-      } else {
-        console.warn('⚠️ GHL Opportunity Creation Warning:', {
-          status: opportunityResponse.status,
-          message: oppData.message,
-          oppData
+      }
+
+      try {
+        const opportunityData = this.createOpportunityData(leadIntake, contactId, pipelineStageId);
+        
+        const opportunityResponse = await fetch(`${this.baseUrl}/opportunities/`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json',
+            'Version': '2021-07-28',
+          },
+          body: JSON.stringify(opportunityData),
         });
-        // Contact was created successfully, so still return success
+
+        const oppData = await opportunityResponse.json();
+
+        if (opportunityResponse.ok && oppData.opportunity?.id) {
+          console.log(`✅ Opportunity created in GHL: Opportunity ID ${oppData.opportunity.id}`);
+          return { 
+            success: true, 
+            ghlContactId: contactId,
+            ghlOpportunityId: oppData.opportunity.id
+          };
+        } else {
+          console.error('❌ GHL Opportunity Creation Error:', {
+            status: opportunityResponse.status,
+            message: oppData.message,
+            oppData
+          });
+          // Contact was created successfully
+          return { 
+            success: true, 
+            ghlContactId: contactId,
+            error: `Contact created but opportunity failed: ${oppData.message || opportunityResponse.statusText}`
+          };
+        }
+      } catch (oppError: any) {
+        console.error('❌ GHL Opportunity Error:', oppError);
+        // Contact was created successfully, opportunity is optional
         return { 
           success: true, 
           ghlContactId: contactId,
-          error: `Contact created but opportunity failed: ${oppData.message || opportunityResponse.statusText}`
+          error: `Contact created but opportunity failed: ${oppError.message}`
         };
       }
     } catch (error: any) {
@@ -188,22 +218,16 @@ export class GHLService {
 
   /**
    * Create opportunity data for GHL
+   * Note: Custom fields require GHL-specific customFieldId values which vary by account
+   * Configure these separately if needed
    */
-  private createOpportunityData(leadIntake: LeadIntake, contactId: string) {
+  private createOpportunityData(leadIntake: LeadIntake, contactId: string, pipelineStageId: string) {
     // Map budget range to monetary value
     const monetaryValueMap: Record<string, number> = {
       '<5k': 3000,
       '5k-20k': 12500,
       '20k-50k': 35000,
       '50k+': 75000
-    };
-
-    // Map urgency to pipeline stage
-    const stageMap: Record<string, string> = {
-      'immediate': 'hot_lead',
-      'within_month': 'qualified',
-      'within_quarter': 'contacted',
-      'planning': 'new'
     };
 
     const serviceTypeMap: Record<string, string> = {
@@ -216,22 +240,14 @@ export class GHLService {
     };
 
     return {
+      locationId: this.locationId,
+      pipelineId: this.pipelineId,
+      pipelineStageId: pipelineStageId,
       contactId: contactId,
       name: `${leadIntake.companyName} - ${serviceTypeMap[leadIntake.serviceType] || leadIntake.serviceType}`,
       monetaryValue: monetaryValueMap[leadIntake.budgetRange] || 10000,
-      pipelineStage: stageMap[leadIntake.urgencyLevel] || 'new',
       status: 'open',
-      source: 'OnSpot Website',
-      customFields: {
-        service_type: leadIntake.serviceType,
-        urgency_level: leadIntake.urgencyLevel,
-        budget_range: leadIntake.budgetRange,
-        team_size: leadIntake.teamSize,
-        expected_start_date: leadIntake.expectedStartDate,
-        decision_maker_status: leadIntake.decisionMakerStatus,
-        current_challenges: leadIntake.currentChallenges,
-        lead_score: leadIntake.leadScore
-      }
+      source: 'OnSpot Website - Lead Intake Form'
     };
   }
 
