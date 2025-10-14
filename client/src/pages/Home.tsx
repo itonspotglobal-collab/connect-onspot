@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -169,6 +169,20 @@ const testimonials = [
 
 export default function Home() {
   const [showVanessaChat, setShowVanessaChat] = useState(false);
+  const [isScrolledPastHero, setIsScrolledPastHero] = useState(false);
+
+  // Track scroll position to determine if past hero section
+  useEffect(() => {
+    const handleScroll = () => {
+      // Hero section is min-h-screen, so check if scrolled past viewport height
+      const scrollPosition = window.scrollY;
+      const heroHeight = window.innerHeight;
+      setIsScrolledPastHero(scrollPosition > heroHeight * 0.8); // Trigger at 80% of hero height
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
     <div className="space-y-16">
@@ -527,7 +541,8 @@ export default function Home() {
       {/* Vanessa AI Assistant Chat */}
       <VanessaChat 
         isOpen={showVanessaChat} 
-        onClose={() => setShowVanessaChat(false)} 
+        onClose={() => setShowVanessaChat(false)}
+        isSticky={isScrolledPastHero}
       />
     </div>
   );

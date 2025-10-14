@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { X, Sparkles } from "lucide-react";
+import { X, Sparkles, MessageCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -14,13 +14,15 @@ interface Message {
 interface VanessaChatProps {
   isOpen: boolean;
   onClose: () => void;
+  isSticky?: boolean;
 }
 
-export function VanessaChat({ isOpen, onClose }: VanessaChatProps) {
+export function VanessaChat({ isOpen, onClose, isSticky = false }: VanessaChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
   const [showOptions, setShowOptions] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+  const [isMinimized, setIsMinimized] = useState(false);
 
   const openingMessages = [
     { id: 1, text: "Hi there! I'm Vanessa, your OnSpot Virtual Assistant.", sender: "vanessa" as const },
@@ -162,6 +164,168 @@ export function VanessaChat({ isOpen, onClose }: VanessaChatProps) {
 
   if (!isOpen) return null;
 
+  // Sticky chat widget mode (lower right corner)
+  if (isSticky) {
+    return (
+      <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4 duration-500">
+        {isMinimized ? (
+          // Minimized floating button
+          <Button
+            size="icon"
+            onClick={() => setIsMinimized(false)}
+            className="h-16 w-16 rounded-full bg-gradient-to-r from-violet-600 to-blue-600 text-white shadow-2xl hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] hover-elevate"
+            data-testid="button-open-chat-widget"
+          >
+            <MessageCircle className="h-7 w-7" />
+          </Button>
+        ) : (
+          // Expanded chat widget
+          <Card 
+            className="w-[400px] h-[600px] flex flex-col relative animate-in slide-in-from-bottom-4 duration-500 border-violet-500/20 overflow-visible shadow-2xl"
+            style={{
+              background: "linear-gradient(135deg, rgba(139, 92, 246, 0.95) 0%, rgba(30, 27, 75, 0.98) 100%)",
+            }}
+            data-testid="vanessa-chat-widget"
+          >
+            {/* Header */}
+            <div className="flex items-center gap-3 p-4 border-b border-white/10">
+              <Avatar className="h-12 w-12 ring-2 ring-white/20" data-testid="avatar-vanessa">
+                <AvatarImage src="/placeholder-vanessa.jpg" alt="Vanessa" />
+                <AvatarFallback className="bg-gradient-to-br from-violet-400 to-blue-400 text-white font-semibold">
+                  VA
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <h3 className="font-semibold text-white" data-testid="text-vanessa-name">Vanessa</h3>
+                <p className="text-xs text-white/70">OnSpot Virtual Assistant</p>
+                <p className="text-xs text-violet-300">Superhuman Assistant — In Training</p>
+              </div>
+              <div className="flex gap-1">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => setIsMinimized(true)}
+                  className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10"
+                  data-testid="button-minimize-chat"
+                >
+                  <span className="text-lg leading-none">−</span>
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={onClose}
+                  className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10"
+                  data-testid="button-close-chat"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4" data-testid="chat-messages">
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2 duration-300`}
+                >
+                  <div
+                    className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
+                      message.sender === "user"
+                        ? "bg-white text-gray-900"
+                        : "bg-white/10 text-white backdrop-blur-sm"
+                    }`}
+                    data-testid={`message-${message.sender}-${message.id}`}
+                  >
+                    {message.isTyping ? (
+                      <div className="flex gap-1 py-1" data-testid="typing-indicator">
+                        <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                        <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                        <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                      </div>
+                    ) : (
+                      <p className="text-sm whitespace-pre-line leading-relaxed">{message.text}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Interactive Options */}
+            {showOptions && (
+              <div className="p-4 border-t border-white/10 space-y-2 animate-in slide-in-from-bottom-2 duration-300">
+                {selectedTopic === "talk-human" ? (
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleBookCall}
+                      className="flex-1 bg-white text-violet-600 hover:bg-white/90"
+                      data-testid="button-book-call"
+                    >
+                      Book a Call
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setSelectedTopic(null);
+                        setShowOptions(true);
+                      }}
+                      variant="outline"
+                      className="flex-1 border-white/20 text-white hover:bg-white/10"
+                      data-testid="button-keep-exploring"
+                    >
+                      Keep Exploring
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <Button
+                      onClick={() => handleTopicSelect("how-it-works")}
+                      variant="outline"
+                      className="w-full justify-start text-left border-white/20 text-white hover:bg-white/10"
+                      data-testid="button-how-it-works"
+                    >
+                      How OnSpot Outsourcing Works
+                    </Button>
+                    <Button
+                      onClick={() => handleTopicSelect("pricing")}
+                      variant="outline"
+                      className="w-full justify-start text-left border-white/20 text-white hover:bg-white/10"
+                      data-testid="button-pricing"
+                    >
+                      See Pricing Models
+                    </Button>
+                    <Button
+                      onClick={() => handleTopicSelect("ai-human")}
+                      variant="outline"
+                      className="w-full justify-start text-left border-white/20 text-white hover:bg-white/10"
+                      data-testid="button-ai-human"
+                    >
+                      AI + Human Advantage
+                    </Button>
+                    <Button
+                      onClick={() => handleTopicSelect("talk-human")}
+                      variant="outline"
+                      className="w-full justify-start text-left border-white/20 text-white hover:bg-white/10"
+                      data-testid="button-talk-human"
+                    >
+                      Talk to a Human Expert
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Sparkle effect */}
+            <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
+              <Sparkles className="absolute top-4 right-4 h-4 w-4 text-violet-300 opacity-60 animate-pulse" />
+              <Sparkles className="absolute bottom-20 left-6 h-3 w-3 text-blue-300 opacity-40 animate-pulse" style={{ animationDelay: "1s" }} />
+            </div>
+          </Card>
+        )}
+      </div>
+    );
+  }
+
+  // Full-screen modal mode (default)
   return (
     <div 
       className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-300"
