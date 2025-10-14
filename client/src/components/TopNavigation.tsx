@@ -354,6 +354,7 @@ const navigationItems = [
 export function TopNavigation() {
   const [location] = useLocation();
   const { isAuthenticated, isLoading, user, logout } = useAuth();
+  const { toast } = useToast();
   const [isVisible, setIsVisible] = useState(true);
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
@@ -1600,7 +1601,36 @@ export function TopNavigation() {
                   </p>
                 </div>
 
-                <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); setModalStep(3); }}>
+                <form className="space-y-5" onSubmit={async (e) => { 
+                  e.preventDefault(); 
+                  try {
+                    const response = await fetch('/api/waitlist', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(contactForm)
+                    });
+                    if (response.ok) {
+                      toast({
+                        title: "Success!",
+                        description: "Thank you for your interest. We'll be in touch soon.",
+                      });
+                      setShowPortal(false);
+                      setContactForm({ email: '', fullName: '', businessName: '', phone: '' });
+                    } else {
+                      toast({
+                        title: "Error",
+                        description: "Failed to submit. Please try again.",
+                        variant: "destructive",
+                      });
+                    }
+                  } catch (error) {
+                    toast({
+                      title: "Error",
+                      description: "Something went wrong. Please try again.",
+                      variant: "destructive",
+                    });
+                  }
+                }}>
                   {/* Email */}
                   <div className="space-y-2">
                     <Label htmlFor="email" className="text-white/90 text-sm font-medium">Email Address</Label>
@@ -1667,8 +1697,8 @@ export function TopNavigation() {
                     data-testid="button-submit-contact"
                   >
                     <span className="relative z-10 flex items-center justify-center gap-2">
-                      Continue
-                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
+                      Submit
+                      <CheckCircle2 className="w-5 h-5" />
                     </span>
                     <div className="absolute inset-0 rounded-md bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500"></div>
                   </Button>

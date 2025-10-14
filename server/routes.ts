@@ -46,6 +46,7 @@ import {
   csvImportResultSchema,
   csvTemplateSchema,
   insertDocumentSchema,
+  waitlist,
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -2254,6 +2255,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(leadIntakes);
     } catch (error) {
       handleRouteError(error, req, res, "Search lead intakes", 500);
+    }
+  });
+
+  // ==================== WAITLIST ====================
+  app.post("/api/waitlist", async (req, res) => {
+    try {
+      const { email, fullName, businessName, phone } = req.body;
+      
+      // Validate required fields
+      if (!email || !fullName) {
+        return res.status(400).json({
+          error: "Missing required fields",
+          message: "Email and full name are required",
+          requestId: (req as any).requestId,
+        });
+      }
+
+      // Save to waitlist table
+      const waitlistEntry = await db.insert(waitlist).values({
+        email,
+        fullName,
+        businessName: businessName || null,
+        phone: phone || null,
+        status: "new",
+      }).returning();
+
+      console.log(
+        `✅ Waitlist entry created [${(req as any).requestId}]:`,
+        { id: waitlistEntry[0].id, email }
+      );
+
+      res.status(201).json({
+        success: true,
+        id: waitlistEntry[0].id,
+        message: "Thank you for your interest! We'll be in touch soon.",
+      });
+    } catch (error) {
+      handleRouteError(error, req, res, "Create waitlist entry", 500);
     }
   });
 

@@ -182,6 +182,17 @@ export const leadIntakes = pgTable("lead_intakes", {
   scheduledAt: timestamp("scheduled_at"), // When appointment was scheduled
 });
 
+// Waitlist - Contact form submissions from Access Portal
+export const waitlist = pgTable("waitlist", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email").notNull(),
+  fullName: text("full_name").notNull(),
+  businessName: text("business_name"),
+  phone: text("phone"),
+  status: text("status").notNull().default("new"), // new, contacted, converted
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Contracts
 export const contracts = pgTable("contracts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
