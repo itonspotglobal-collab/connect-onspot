@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { authAPI } from "@/lib/api";
+import api, { authAPI } from "@/lib/api";
 
 interface ObjectUploaderProps {
   maxNumberOfFiles?: number;
