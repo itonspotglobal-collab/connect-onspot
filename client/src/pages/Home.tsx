@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -20,9 +21,11 @@ import {
   ArrowRight,
   Bot,
   Zap,
+  Sparkles,
 } from "lucide-react";
 import { SiAmazon, SiQuickbooks, SiReplit, SiStripe } from "react-icons/si";
 import { Link } from "wouter";
+import { VanessaChat } from "@/components/VanessaChat";
 
 import FlashLogo from "../assets/logos/Flash.png";
 import FutureEVLogo from "../assets/logos/FutureEV.png";
@@ -165,6 +168,8 @@ const testimonials = [
 ];
 
 export default function Home() {
+  const [showVanessaChat, setShowVanessaChat] = useState(false);
+
   return (
     <div className="space-y-16">
       {/* Hero Section */}
@@ -207,14 +212,15 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 hero-fade-up-delay">
               <Button
                 size="lg"
-                className="group text-base px-8 h-auto bg-white text-black hover:bg-gray-50 font-medium rounded-2xl min-w-[220px] py-4"
-                asChild
+                onClick={() => setShowVanessaChat(true)}
+                className="relative group text-base px-8 h-auto bg-gradient-to-r from-violet-600 to-blue-600 text-white font-semibold hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] transition-all duration-300 hover-elevate rounded-2xl min-w-[220px] py-4"
                 data-testid="button-launch-ai"
               >
-                <Link href="/hire-talent">
+                <span className="flex items-center gap-2">
                   Launch AI Assistant
-                  <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
-                </Link>
+                  <Sparkles className="w-5 h-5" />
+                </span>
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-violet-600 to-blue-600 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-300 -z-10"></div>
               </Button>
 
               <Button
@@ -517,6 +523,12 @@ export default function Home() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Vanessa AI Assistant Chat */}
+      <VanessaChat 
+        isOpen={showVanessaChat} 
+        onClose={() => setShowVanessaChat(false)} 
+      />
     </div>
   );
 }

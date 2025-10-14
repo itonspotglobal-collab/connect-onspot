@@ -1212,31 +1212,18 @@ export function TopNavigation() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              // Not authenticated - show access portal and AI assistant buttons
-              <div className="flex gap-3">
-                <Button
-                  onClick={() => setShowVanessaChat(true)}
-                  className="relative bg-gradient-to-r from-violet-600 to-blue-600 text-white font-semibold hover:shadow-[0_0_20px_rgba(139,92,246,0.5)] transition-all duration-300 hover-elevate rounded-md px-4 py-2"
-                  data-testid="button-launch-ai-assistant"
-                >
-                  <span className="flex items-center gap-2">
-                    Launch AI Assistant
-                    <Sparkles className="w-4 h-4" />
-                  </span>
-                  <div className="absolute inset-0 rounded-md bg-gradient-to-r from-violet-600 to-blue-600 opacity-0 hover:opacity-100 blur-md transition-opacity duration-300 -z-10"></div>
-                </Button>
-                <Button
-                  onClick={() => {
-                    setModalStep(1);
-                    setSelectedPortal(null);
-                    setShowPortal(true);
-                  }}
-                  className="bg-white text-primary font-semibold hover:bg-gray-100 rounded-md px-4 py-2"
-                  data-testid="button-access-portal"
-                >
-                  ACCESS PORTAL
-                </Button>
-              </div>
+              // Not authenticated - show access portal button
+              <Button
+                onClick={() => {
+                  setModalStep(1);
+                  setSelectedPortal(null);
+                  setShowPortal(true);
+                }}
+                className="bg-white text-primary font-semibold hover:bg-gray-100 rounded-md px-4 py-2"
+                data-testid="button-access-portal"
+              >
+                ACCESS PORTAL
+              </Button>
             )}
           </div>
         </div>
