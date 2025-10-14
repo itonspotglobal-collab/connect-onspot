@@ -24,14 +24,13 @@ import {
 import { SiAmazon, SiQuickbooks, SiReplit, SiStripe } from "react-icons/si";
 import { Link } from "wouter";
 
-import FlashLogo from "../../assets/logos/Flash.png";
-import FutureEVLogo from "../../assets/logos/FutureEV.png";
-import IPSLogo from "../../assets/logos/IPS.png";
-import PinetechLogo from "../../assets/logos/Pinetech.png";
-import SafewayLogo from "../../assets/logos/Safeway.png";
-import VertexLogo from "../../assets/logos/Vertex.png";
+import FlashLogo from "../assets/logos/Flash.png";
+import FutureEVLogo from "../assets/logos/FutureEV.png";
+import IPSLogo from "../assets/logos/IPS.png";
+import PinetechLogo from "../assets/logos/Pinetech.png";
+import SafewayLogo from "../assets/logos/Safeway.png";
+import VertexLogo from "../assets/logos/Vertex.png";
 
-// ✅ Trusted Brand Logos
 const trustedBrands = [
   { name: "Flash Justice", logo: FlashLogo },
   { name: "Future Motors EV", logo: FutureEVLogo },
@@ -260,11 +259,11 @@ export default function Home() {
                   data-testid={`brand-logo-${index}`}
                 >
                   <CardContent className="p-6 flex items-center justify-center min-h-[100px]">
-                    <div className="text-center">
-                      <span className="text-xl font-bold text-foreground/40">
-                        {brand.name}
-                      </span>
-                    </div>
+                    <img 
+                      src={brand.logo} 
+                      alt={brand.name} 
+                      className="max-w-full max-h-16 object-contain opacity-60 hover:opacity-100 transition-opacity duration-200"
+                    />
                   </CardContent>
                 </Card>
               ))}
