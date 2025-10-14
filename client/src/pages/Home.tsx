@@ -186,7 +186,7 @@ export default function Home() {
               data-testid="badge-superhuman-bpo"
             >
               <div className="w-2 h-2 bg-white/60 rounded-full"></div>
-              Superhuman BPO
+              Making outsourcing Easy
             </div>
 
             {/* AI-First Headline */}
@@ -199,7 +199,7 @@ export default function Home() {
             {/* Subcopy */}
             <div className="hero-fade-up-delay">
               <p className="text-xl md:text-2xl text-white/70 font-light tracking-wide">
-                One <span className="bg-white/10 px-2 py-0.5 rounded">"system"</span>. you unfair advantage.
+                One system. Your unfair advantage.
               </p>
             </div>
 
@@ -322,56 +322,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* OnSpot Experience 4-Stage System */}
-      <div className="bg-muted/30 py-16">
-        <div className="container mx-auto px-6">
-          <div className="text-center space-y-4 mb-16">
-            <h2 className="text-4xl font-bold">
-              The OnSpot Experience 4-Stage System
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Our proven methodology that delivers seamless operations and fixes
-              your leaky buckets
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {onspotExperience.map((stage, index) => (
-              <Card
-                key={index}
-                className="hover-elevate transition-all duration-200"
-                data-testid={`stage-${stage.stage}`}
-              >
-                <CardHeader>
-                  <div className="text-center">
-                    <div className="w-12 h-12 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold text-lg mx-auto mb-4">
-                      {stage.stage}
-                    </div>
-                    <CardTitle className="text-xl">{stage.title}</CardTitle>
-                    <CardDescription className="mt-2">
-                      {stage.description}
-                    </CardDescription>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {stage.steps.map((step, stepIndex) => (
-                      <div
-                        key={stepIndex}
-                        className="flex items-center space-x-2 text-sm"
-                      >
-                        <div className="w-1.5 h-1.5 bg-primary rounded-full flex-shrink-0" />
-                        <span>{step}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </div>
-
       {/* Amazing Stories - Testimonials */}
       <div className="bg-stories-light pb-16">
         <div className="container mx-auto px-6">
@@ -397,7 +347,9 @@ export default function Home() {
                     {testimonial.name.charAt(0)}
                   </div>
                   <div>
-                    <div className="font-medium text-sm">{testimonial.name}</div>
+                    <div className="font-medium text-sm">
+                      {testimonial.name}
+                    </div>
                     <div className="text-xs text-muted-foreground">
                       {testimonial.role}
                     </div>
@@ -421,7 +373,7 @@ export default function Home() {
       {/* Popular Skills */}
       <div className="container mx-auto px-6 space-y-12">
         <div className="text-center space-y-4">
-          <h2 className="text-3xl font-bold">In-Demand Skills</h2>
+          <h2 className="text-3xl font-bold">Want to Hire Talent?</h2>
           <p className="text-muted-foreground">
             Our talent pool covers the most sought-after skills in the market
           </p>
@@ -456,7 +408,7 @@ export default function Home() {
       {/* Why OnSpot Advantage */}
       <div className="space-y-6">
         <div className="text-center space-y-2">
-          <h2 className="text-3xl font-bold">Why OnSpot Talent?</h2>
+          <h2 className="text-3xl font-bold">Why Outsource OnSpot</h2>
           <p className="text-muted-foreground">
             Discover the competitive advantages of working with OnSpot
             professionals
