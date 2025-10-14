@@ -9,7 +9,6 @@ import { OAuthErrorDialog, useOAuthError } from "@/components/OAuthErrorDialog";
 import { TopNavigation } from "@/components/TopNavigation";
 import { ClientLayout } from "@/components/ClientLayout";
 import { Footer } from "@/components/Footer";
-import { VanessaChat } from "@/components/VanessaChat";
 import { ClientProtectedRoute, TalentProtectedRoute, AdminProtectedRoute } from "@/components/ProtectedRoute";
 import { NewUserOnboardingWrapper } from "@/components/NewUserOnboardingWrapper";
 import { PostLoginPortalSelection } from "@/components/PostLoginPortalSelection";
@@ -101,7 +100,6 @@ function PublicRouter() {
         </Switch>
       </main>
       <Footer />
-      <VanessaChat />
     </div>
   );
 }
@@ -139,7 +137,6 @@ function ClientRouter() {
           <Route path="/find-work/:category" component={FindWork} />
           <Route component={NotFound} />
         </Switch>
-        <VanessaChat />
       </ClientLayout>
     </ClientProtectedRoute>
   );
@@ -159,7 +156,6 @@ function TalentRouter() {
           {/* Redirect any other paths to talent portal */}
           <Route component={TalentPortal} />
         </Switch>
-        <VanessaChat />
       </div>
     </TalentProtectedRoute>
   );
@@ -212,7 +208,6 @@ function AppContent() {
             <ClientProtectedRoute>
               <ClientLayout>
                 <ProfileSettings />
-                <VanessaChat />
               </ClientLayout>
             </ClientProtectedRoute>
           );
@@ -221,7 +216,6 @@ function AppContent() {
             <TalentProtectedRoute>
               <div className="min-h-screen bg-background">
                 <ProfileSettings />
-                <VanessaChat />
               </div>
             </TalentProtectedRoute>
           );
@@ -237,7 +231,6 @@ function AppContent() {
             <ClientProtectedRoute>
               <ClientLayout>
                 <ProfileSettings />
-                <VanessaChat />
               </ClientLayout>
             </ClientProtectedRoute>
           );
@@ -246,7 +239,6 @@ function AppContent() {
             <TalentProtectedRoute>
               <div className="min-h-screen bg-background">
                 <ProfileSettings />
-                <VanessaChat />
               </div>
             </TalentProtectedRoute>
           );
