@@ -373,7 +373,7 @@ export default function Home() {
       </div>
 
       {/* Amazing Stories - Testimonials */}
-      <div className="bg-muted/30 py-16">
+      <div className="bg-muted/30 pb-16">
         <div className="container mx-auto px-6">
           <div className="text-center space-y-4 mb-16">
             <h2 className="text-4xl font-bold">Amazing Stories</h2>
