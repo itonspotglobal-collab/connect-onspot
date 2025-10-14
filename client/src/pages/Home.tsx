@@ -22,6 +22,7 @@ import {
   Bot,
   Zap,
   Sparkles,
+  MessageCircle,
 } from "lucide-react";
 import { SiAmazon, SiQuickbooks, SiReplit, SiStripe } from "react-icons/si";
 import { Link } from "wouter";
@@ -544,6 +545,18 @@ export default function Home() {
         onClose={() => setShowVanessaChat(false)}
         isSticky={isScrolledPastHero}
       />
+
+      {/* Persistent Floating Button (when chat is closed and scrolled past hero) */}
+      {!showVanessaChat && isScrolledPastHero && (
+        <Button
+          size="icon"
+          onClick={() => setShowVanessaChat(true)}
+          className="fixed bottom-6 right-6 z-50 h-16 w-16 rounded-full bg-gradient-to-r from-violet-600 to-blue-600 text-white shadow-2xl hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] hover-elevate animate-in slide-in-from-bottom-4 duration-500"
+          data-testid="button-open-vanessa"
+        >
+          <MessageCircle className="h-7 w-7" />
+        </Button>
+      )}
     </div>
   );
 }
