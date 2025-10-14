@@ -245,27 +245,20 @@ export default function Home() {
           </div>
 
           {/* Brand Logos Strip */}
-          <div className="relative">
-            <div className="flex justify-end mb-2">
-              <span className="text-xs text-muted-foreground">
-                great companies
-              </span>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="relative py-8">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-x-12 gap-y-8">
               {trustedBrands.map((brand, index) => (
-                <Card
+                <div
                   key={index}
-                  className="hover-elevate transition-all duration-200 bg-card/50"
+                  className="flex items-center justify-center"
                   data-testid={`brand-logo-${index}`}
                 >
-                  <CardContent className="p-6 flex items-center justify-center min-h-[100px]">
-                    <img 
-                      src={brand.logo} 
-                      alt={brand.name} 
-                      className="max-w-full max-h-16 object-contain opacity-60 hover:opacity-100 transition-opacity duration-200"
-                    />
-                  </CardContent>
-                </Card>
+                  <img
+                    src={brand.logo}
+                    alt={brand.name}
+                    className="h-12 w-auto object-contain grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-300"
+                  />
+                </div>
               ))}
             </div>
           </div>
