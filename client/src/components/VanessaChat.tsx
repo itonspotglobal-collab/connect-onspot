@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { X, Sparkles, MessageCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import vanessaPhoto from "@/assets/logos/vanessa.png";
 
 interface Message {
   id: number;
@@ -23,6 +22,7 @@ export function VanessaChat({ isOpen, onClose, isSticky = false }: VanessaChatPr
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
   const [showOptions, setShowOptions] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+  const [isMinimized, setIsMinimized] = useState(false);
 
   const openingMessages = [
     { id: 1, text: "Hi there! I'm Vanessa, your OnSpot Virtual Assistant.", sender: "vanessa" as const },
@@ -168,7 +168,19 @@ export function VanessaChat({ isOpen, onClose, isSticky = false }: VanessaChatPr
   if (isSticky) {
     return (
       <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4 duration-500">
-        <Card 
+        {isMinimized ? (
+          // Minimized floating button
+          <Button
+            size="icon"
+            onClick={() => setIsMinimized(false)}
+            className="h-16 w-16 rounded-full bg-gradient-to-r from-violet-600 to-blue-600 text-white shadow-2xl hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] hover-elevate"
+            data-testid="button-open-chat-widget"
+          >
+            <MessageCircle className="h-7 w-7" />
+          </Button>
+        ) : (
+          // Expanded chat widget
+          <Card 
             className="w-[400px] h-[600px] flex flex-col relative animate-in slide-in-from-bottom-4 duration-500 border-violet-500/20 overflow-visible shadow-2xl"
             style={{
               background: "linear-gradient(135deg, rgba(139, 92, 246, 0.95) 0%, rgba(30, 27, 75, 0.98) 100%)",
@@ -178,7 +190,7 @@ export function VanessaChat({ isOpen, onClose, isSticky = false }: VanessaChatPr
             {/* Header */}
             <div className="flex items-center gap-3 p-4 border-b border-white/10">
               <Avatar className="h-12 w-12 ring-2 ring-white/20" data-testid="avatar-vanessa">
-                <AvatarImage src={vanessaPhoto} alt="Vanessa" />
+                <AvatarImage src="/placeholder-vanessa.jpg" alt="Vanessa" />
                 <AvatarFallback className="bg-gradient-to-br from-violet-400 to-blue-400 text-white font-semibold">
                   VA
                 </AvatarFallback>
@@ -188,15 +200,26 @@ export function VanessaChat({ isOpen, onClose, isSticky = false }: VanessaChatPr
                 <p className="text-xs text-white/70">OnSpot Virtual Assistant</p>
                 <p className="text-xs text-violet-300">Superhuman Assistant — In Training</p>
               </div>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={onClose}
-                className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10"
-                data-testid="button-close-chat"
-              >
-                <X className="h-5 w-5" />
-              </Button>
+              <div className="flex gap-1">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => setIsMinimized(true)}
+                  className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10"
+                  data-testid="button-minimize-chat"
+                >
+                  <span className="text-lg leading-none">−</span>
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={onClose}
+                  className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10"
+                  data-testid="button-close-chat"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
             </div>
 
             {/* Messages */}
@@ -297,6 +320,7 @@ export function VanessaChat({ isOpen, onClose, isSticky = false }: VanessaChatPr
               <Sparkles className="absolute bottom-20 left-6 h-3 w-3 text-blue-300 opacity-40 animate-pulse" style={{ animationDelay: "1s" }} />
             </div>
           </Card>
+        )}
       </div>
     );
   }
@@ -322,7 +346,7 @@ export function VanessaChat({ isOpen, onClose, isSticky = false }: VanessaChatPr
         {/* Header */}
         <div className="flex items-center gap-3 p-4 border-b border-white/10">
           <Avatar className="h-12 w-12 ring-2 ring-white/20" data-testid="avatar-vanessa">
-            <AvatarImage src={vanessaPhoto} alt="Vanessa" />
+            <AvatarImage src="/placeholder-vanessa.jpg" alt="Vanessa" />
             <AvatarFallback className="bg-gradient-to-br from-violet-400 to-blue-400 text-white font-semibold">
               VA
             </AvatarFallback>
