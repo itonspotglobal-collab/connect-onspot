@@ -1,7 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LoginDialog } from "@/components/LoginDialog";
-import { SignUpDialog } from "@/components/SignUpDialog";
-import { ErrorBoundaryWrapper } from "@/components/ErrorBoundary";
+import { AccessPortalModal } from "@/components/AccessPortalModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect, useRef } from "react";
 import {
@@ -1185,13 +1183,8 @@ export function TopNavigation() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              // Not authenticated - show login/signup buttons
-              <>
-                <LoginDialog />
-                <ErrorBoundaryWrapper>
-                  <SignUpDialog />
-                </ErrorBoundaryWrapper>
-              </>
+              // Not authenticated - show access portal button
+              <AccessPortalModal />
             )}
           </div>
         </div>
