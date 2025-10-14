@@ -184,63 +184,50 @@ export default function Home() {
         </div>
 
         <div className="container mx-auto text-center relative z-20 px-6">
-          <div className="max-w-5xl mx-auto space-y-8">
-            {/* Refined Typography Section */}
-            <div className="space-y-6 hero-content">
-              {/* Elegant Badge */}
-              <div className="inline-flex items-center gap-2 text-xs font-medium text-white/90 tracking-[0.2em] uppercase bg-white/5 backdrop-blur-xl px-6 py-2 rounded-full border border-white/10 shadow-2xl">
-                <div className="w-1.5 h-1.5 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full animate-pulse"></div>
-                Making Outsourcing Easy
-              </div>
-              
-              {/* Hero Title - Apple Typography */}
-              <div className="space-y-2">
-                <h1 className="hero-title">
-                  <span className="block text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-light tracking-tighter leading-[0.85] text-white">
-                    Fuel Your
-                  </span>
-                  <span className="block text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-bold tracking-tighter leading-[0.85] bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
-                    Vision
-                  </span>
-                </h1>
-              </div>
-              
-              {/* Refined Description */}
-              <div className="max-w-3xl mx-auto">
-                <p className="text-lg md:text-xl lg:text-2xl text-white/85 leading-relaxed font-light tracking-wide">
-                  Connect with <span className="font-medium text-white">50,000+ vetted professionals</span>. 
-                  Reduce cost by <span className="font-medium text-white">up to 70%</span>. 
-                  Scale operations seamlessly with our <span className="font-medium text-white">Performance-Driven System</span>.
-                </p>
-              </div>
+          <div className="max-w-5xl mx-auto space-y-12">
+            {/* Ultra-minimal Badge */}
+            <div className="hero-fade-up inline-flex items-center gap-2.5 text-xs font-medium text-white/90 tracking-wide bg-white/5 backdrop-blur-xl px-5 py-2.5 rounded-full border border-white/20" data-testid="badge-superhuman-bpo">
+              <div className="w-2 h-2 bg-white/60 rounded-full"></div>
+              Superhuman BPO
             </div>
             
-            {/* Premium Call-to-Action */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 cta-buttons">
+            {/* AI-First Headline */}
+            <div className="space-y-4 hero-fade-up">
+              <h1 className="text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold tracking-tight leading-[1.1] text-white">
+                AI first. Humans when it matters.
+              </h1>
+            </div>
+            
+            {/* Subcopy */}
+            <div className="hero-fade-up-delay">
+              <p className="text-xl md:text-2xl text-white/70 font-light tracking-wide">
+                One platform. Your unfair advantage.
+              </p>
+            </div>
+            
+            {/* CTAs */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 hero-fade-up-delay">
               <Button 
                 size="lg" 
-                className="group relative overflow-hidden text-base px-8 py-4 h-auto bg-white text-black hover:bg-gray-50 shadow-2xl hover:shadow-3xl transition-all duration-500 font-medium rounded-xl border-2 border-white/20 min-w-[200px]" 
+                className="group text-base px-8 h-auto bg-white text-black hover:bg-gray-50 font-medium rounded-2xl min-w-[220px] py-4" 
                 asChild 
-                data-testid="button-find-talent"
+                data-testid="button-launch-ai"
               >
                 <Link href="/hire-talent">
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                  <Search className="w-4 h-4 mr-2 transition-transform group-hover:scale-110" />
-                  Find Talent Now
+                  Launch AI Assistant
+                  <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
                 </Link>
               </Button>
               
               <Button 
                 variant="outline" 
                 size="lg" 
-                className="group relative overflow-hidden text-base px-8 py-4 h-auto border-2 border-white/30 text-white hover:bg-white/10 hover:border-white/60 shadow-2xl hover:shadow-3xl transition-all duration-500 font-medium backdrop-blur-xl bg-white/5 rounded-xl min-w-[200px]" 
+                className="text-base px-8 h-auto border-2 border-white/30 text-white hover:bg-white/10 hover:border-white/50 font-medium backdrop-blur-xl bg-white/5 rounded-2xl min-w-[220px] py-4" 
                 asChild 
-                data-testid="button-get-hired"
+                data-testid="button-get-managed-team"
               >
-                <Link href="/get-hired">
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                  <Users className="w-4 h-4 mr-2 transition-transform group-hover:scale-110" />
-                  Get Hired
+                <Link href="/lead-intake">
+                  Get Managed Team
                 </Link>
               </Button>
             </div>
