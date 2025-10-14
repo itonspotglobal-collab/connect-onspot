@@ -373,45 +373,44 @@ export default function Home() {
       </div>
 
       {/* Amazing Stories - Testimonials */}
-      <div className="bg-muted/30 pb-16">
+      <div className="bg-sidebar pb-16">
         <div className="container mx-auto px-6">
-          <div className="text-center space-y-4 mb-16">
-            <h2 className="text-4xl font-bold">Amazing Stories</h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              We love our people and they love us. Amazing results. Amazing
-              stories. It's not just about the numbers, it's about the feeling.
+          <div className="text-center space-y-3 mb-12 pt-16">
+            <h2 className="text-3xl font-bold">Amazing Stories</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Real results from real people
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
             {testimonials.map((testimonial, index) => (
-              <Card
+              <div
                 key={index}
-                className="hover-elevate transition-all duration-200"
+                className="bg-background rounded-2xl p-6 hover-elevate transition-all duration-300"
                 data-testid={`testimonial-${index}`}
               >
-                <CardContent className="p-6">
-                  <div className="space-y-4">
-                    <div className="text-4xl text-primary opacity-50">"</div>
-                    <p className="text-sm leading-relaxed italic">
-                      {testimonial.quote}
-                    </p>
-                    <div className="pt-4 border-t">
-                      <div className="font-medium">{testimonial.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {testimonial.role}
-                      </div>
+                <p className="text-sm leading-relaxed mb-6">
+                  "{testimonial.quote}"
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
+                    {testimonial.name.charAt(0)}
+                  </div>
+                  <div>
+                    <div className="font-medium text-sm">{testimonial.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {testimonial.role}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             ))}
           </div>
 
           <div className="text-center mt-12">
-            <Button asChild>
+            <Button variant="outline" asChild>
               <Link href="/amazing">
-                Read More Amazing Stories
+                Read More Stories
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Link>
             </Button>
