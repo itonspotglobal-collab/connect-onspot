@@ -1,6 +1,4 @@
 import { Link, useLocation } from "wouter";
-import { LoginDialog } from "@/components/LoginDialog";
-import { SignUpDialog } from "@/components/SignUpDialog";
 import { ErrorBoundaryWrapper } from "@/components/ErrorBoundary";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect, useRef } from "react";
@@ -27,6 +25,9 @@ import {
   Calculator,
   LogOut,
   Loader2,
+  Shield,
+  Mail,
+  Briefcase,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -37,6 +38,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -344,6 +352,7 @@ export function TopNavigation() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showPortal, setShowPortal] = useState(false);
   const lastScrollY = useRef(0);
   const ticking = useRef(false);
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -1185,13 +1194,14 @@ export function TopNavigation() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              // Not authenticated - show login/signup buttons
-              <>
-                <LoginDialog />
-                <ErrorBoundaryWrapper>
-                  <SignUpDialog />
-                </ErrorBoundaryWrapper>
-              </>
+              // Not authenticated - show access portal button
+              <Button
+                onClick={() => setShowPortal(true)}
+                className="bg-white text-primary font-semibold hover:bg-gray-100 rounded-md px-4 py-2"
+                data-testid="button-access-portal"
+              >
+                ACCESS PORTAL
+              </Button>
             )}
           </div>
         </div>
@@ -1437,6 +1447,112 @@ export function TopNavigation() {
           </div>
         </div>
       </nav>
+
+      {/* Access Portal Modal */}
+      <Dialog open={showPortal} onOpenChange={setShowPortal}>
+        <DialogContent className="sm:max-w-4xl">
+          <DialogHeader className="text-center pb-6">
+            <div className="flex justify-center mb-4">
+              <img 
+                src={onspotLogo} 
+                alt="OnSpot" 
+                className="h-12 w-auto"
+              />
+            </div>
+            <DialogTitle className="text-2xl">Welcome to OnSpot</DialogTitle>
+            <DialogDescription className="text-base">
+              The first Superhuman BPO is coming soon.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Portal Selection Cards */}
+            <div className="grid grid-cols-2 gap-6">
+              <Card 
+                className="relative cursor-pointer hover-elevate transition-all duration-300 group border-2 hover:border-primary/50"
+                onClick={() => {
+                  setShowPortal(false);
+                  window.location.href = '/dashboard';
+                }}
+                data-testid="card-client-portal"
+              >
+                <CardContent className="p-8 text-center">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                    <Building className="w-8 h-8 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-3">Client Portal</h3>
+                  <p className="text-muted-foreground mb-4 leading-relaxed">
+                    Access your hiring dashboard, manage projects, and track performance.
+                  </p>
+                  <div className="grid grid-cols-3 gap-3 text-xs text-muted-foreground">
+                    <div className="text-center">
+                      <Shield className="h-5 w-5 mx-auto text-primary mb-1" />
+                      70% Cost Savings
+                    </div>
+                    <div className="text-center">
+                      <Zap className="h-5 w-5 mx-auto text-primary mb-1" />
+                      8X Growth
+                    </div>
+                    <div className="text-center">
+                      <Mail className="h-5 w-5 mx-auto text-primary mb-1" />
+                      24/7 Support
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card 
+                className="relative cursor-pointer hover-elevate transition-all duration-300 group border-2 hover:border-[hsl(var(--gold-yellow)/0.5)]"
+                onClick={() => {
+                  setShowPortal(false);
+                  window.location.href = '/talent-portal';
+                }}
+                data-testid="card-talent-portal"
+              >
+                <CardContent className="p-8 text-center">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-[hsl(var(--gold-yellow)/0.1)] rounded-full flex items-center justify-center group-hover:bg-[hsl(var(--gold-yellow)/0.2)] transition-colors">
+                    <User className="w-8 h-8 text-[hsl(var(--gold-yellow)/0.8)]" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-3">Talent Portal</h3>
+                  <p className="text-muted-foreground mb-4 leading-relaxed">
+                    Access opportunities, manage your profile, and track your career growth.
+                  </p>
+                  <div className="grid grid-cols-3 gap-3 text-xs text-muted-foreground">
+                    <div className="text-center">
+                      <Briefcase className="h-5 w-5 mx-auto text-[hsl(var(--gold-yellow)/0.8)] mb-1" />
+                      Premium Jobs
+                    </div>
+                    <div className="text-center">
+                      <Shield className="h-5 w-5 mx-auto text-[hsl(var(--gold-yellow)/0.8)] mb-1" />
+                      Secure Payments
+                    </div>
+                    <div className="text-center">
+                      <User className="h-5 w-5 mx-auto text-[hsl(var(--gold-yellow)/0.8)] mb-1" />
+                      Career Growth
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+            
+            {/* Admin Portal Footer Button */}
+            <div className="mt-6 flex justify-center">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  setShowPortal(false);
+                  window.location.href = '/admin/dashboard';
+                }}
+                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                data-testid="button-admin-portal"
+              >
+                🔑 Admin Portal
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
