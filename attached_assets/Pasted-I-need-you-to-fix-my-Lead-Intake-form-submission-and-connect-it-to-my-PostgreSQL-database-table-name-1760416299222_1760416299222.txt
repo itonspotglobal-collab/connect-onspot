@@ -1,0 +1,51 @@
+I need you to fix my Lead Intake form submission and connect it to my PostgreSQL database table named `lead_intakes`.
+
+Here’s the situation:
+
+- My frontend file is `LeadIntake.tsx`, and it sends a POST request to `/api/lead-intake`.
+- The database table `lead_intakes` already exists and has the following fields:
+
+id (UUID, primary key, default gen_random_uuid()),
+first_name, last_name, email, phone_number, job_title, company_name,
+company_size, industry, company_website, service_type, current_challenges,
+service_volume, required_skills (TEXT[]), urgency_level, budget_range,
+expected_start_date, team_size, has_current_provider, current_provider_details,
+decision_maker_status, implementation_timeline, additional_notes,
+source (default 'website'), status (default 'new'), created_at (default now())
+
+The problem is that when I submit the form, I get this error:
+{
+  "error": "Validation failed",
+  "message": "Invalid body data provided",
+  "details": [...]
+}
+
+That means the backend route `/api/lead-intake.ts` doesn’t exist or isn’t saving data correctly.
+
+I need you to:
+
+1. **Create a new API route file** `/app/api/lead-intake/route.ts` (for Next.js 13+ app router)
+   - It should handle POST requests.
+   - Validate required fields.
+   - Insert all submitted fields into the `lead_intakes` table.
+   - Return a success response with the new record’s ID.
+   - Use `@vercel/postgres` (or pg) for DB connection.
+
+2. **Make sure the payload matches** the database field names (use snake_case).
+
+3. **After successful insert**, optionally call the GoHighLevel API to create a contact using:
+   `https://api.msgsndr.com/api/v2/contacts/`
+   Include fields like first name, last name, email, phone, and company.
+   Use an environment variable `GHL_API_KEY` for authorization.
+
+4. Test the endpoint by submitting the form and confirm that data appears in the `lead_intakes` table.
+   You can verify by running:
+   `SELECT * FROM lead_intakes ORDER BY created_at DESC LIMIT 5;`
+
+In summary:
+- The route should insert form data into `lead_intakes`.
+- It should return a JSON success response.
+- Optionally, it should trigger a GoHighLevel API request after saving.
+- Fix any schema or naming mismatch causing the “Invalid body data” error.
+
+Please generate the full, working `/app/api/lead-intake/route.ts` code that does this.
