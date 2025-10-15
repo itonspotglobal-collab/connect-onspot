@@ -11,34 +11,20 @@ export function DomainRouter({ children }: DomainRouterProps) {
   useEffect(() => {
     const hostname = window.location.hostname;
     
-    // Skip redirect if already on the correct path
-    const isAlreadyOnCorrectPath = () => {
-      if (hostname.includes('talent.onspotglobal.com') && location.startsWith('/talent-portal')) {
-        return true;
-      }
-      if (hostname.includes('onspotglobal.com') && !hostname.includes('talent.onspotglobal.com') && location.startsWith('/dashboard')) {
-        return true;
-      }
-      return false;
-    };
-    
-    // Skip if already on correct path
-    if (isAlreadyOnCorrectPath()) {
-      return;
-    }
-    
-    // Domain-based routing
+    // Only handle talent subdomain routing
+    // Main domain (onspotglobal.com) shows the primary site without auto-redirect
     if (hostname.includes('talent.onspotglobal.com')) {
+      // Skip if already on talent portal
+      if (location.startsWith('/talent-portal')) {
+        return;
+      }
+      
       // Talent portal subdomain - redirect to talent portal
       if (location === '/' || !location.startsWith('/talent-portal')) {
         setLocation('/talent-portal');
       }
-    } else if (hostname.includes('onspotglobal.com')) {
-      // Main domain (onspotglobal.com) - redirect to client dashboard
-      if (location === '/' || !location.startsWith('/dashboard')) {
-        setLocation('/dashboard');
-      }
     }
+    // No auto-redirect for main domain - it serves the primary public site
   }, [location, setLocation]);
   
   return <>{children}</>;

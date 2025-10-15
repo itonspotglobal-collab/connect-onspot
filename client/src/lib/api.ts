@@ -6,8 +6,8 @@ const getAPIBaseURL = (): string => {
   const isProduction = window.location.origin.includes("onspotglobal.com");
 
   if (isProduction) {
-    console.log('🚀 Production API baseURL: https://connect.onspotglobal.com');
-    return "https://connect.onspotglobal.com";
+    console.log('🚀 Production API baseURL: https://onspotglobal.com');
+    return "https://onspotglobal.com";
   }
 
   // Development - use environment variable or relative URLs

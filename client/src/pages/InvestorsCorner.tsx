@@ -442,7 +442,7 @@ export default function InvestorsCorner() {
                 <a href="#ask" className="inline-flex items-center gap-3 px-8 py-4 rounded-xl bg-[hsl(var(--brand-foreground))] text-primary font-semibold shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:bg-[hsl(var(--brand-foreground))]/95 hover:scale-105 group" data-testid="cta-partner">
                   <Handshake className="w-5 h-5 group-hover:rotate-12 transition-transform duration-300" /> Partner with OnSpot
                 </a>
-                <a href="https://connect.onspotglobal.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 px-8 py-4 rounded-xl border-2 border-[hsl(var(--brand-foreground))]/30 text-[hsl(var(--brand-foreground))] font-semibold backdrop-blur-sm hover:bg-[hsl(var(--brand-foreground))]/15 hover:border-[hsl(var(--brand-foreground))]/50 transition-all duration-300 hover:-translate-y-1 hover:scale-105 group" data-testid="cta-onspotconnect">
+                <a href="https://onspotglobal.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 px-8 py-4 rounded-xl border-2 border-[hsl(var(--brand-foreground))]/30 text-[hsl(var(--brand-foreground))] font-semibold backdrop-blur-sm hover:bg-[hsl(var(--brand-foreground))]/15 hover:border-[hsl(var(--brand-foreground))]/50 transition-all duration-300 hover:-translate-y-1 hover:scale-105 group" data-testid="cta-onspotconnect">
                   <Rocket className="w-5 h-5 group-hover:rotate-12 transition-transform duration-300" /> See OnSpotConnect in Action
                 </a>
               </motion.div>
@@ -757,8 +757,8 @@ export default function InvestorsCorner() {
                 <div className="font-bold text-sm">OnSpotConnect</div>
                 <div className="text-xs text-muted-foreground">Live prototype</div>
                 <div className="text-xs text-primary font-medium">
-                  <a href="https://connect.onspotglobal.com" target="_blank" rel="noopener noreferrer" className="hover:underline" data-testid="prototype-link">
-                    connect.onspotglobal.com
+                  <a href="https://onspotglobal.com" target="_blank" rel="noopener noreferrer" className="hover:underline" data-testid="prototype-link">
+                    onspotglobal.com
                   </a>
                 </div>
               </div>
