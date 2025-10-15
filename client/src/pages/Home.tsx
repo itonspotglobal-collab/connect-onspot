@@ -35,6 +35,11 @@ import PinetechLogo from "../assets/logos/Pinetech.png";
 import SafewayLogo from "../assets/logos/Safeway.png";
 import VertexLogo from "../assets/logos/Vertex.png";
 
+import FrederickPhoto from "../assets/logos/Frederick.png";
+import AmiraPhoto from "../assets/logos/Amira.png";
+import JuliePhoto from "../assets/logos/Julie.png";
+import PaigePhoto from "../assets/logos/Paige.png";
+
 const trustedBrands = [
   { name: "Flash Justice", logo: FlashLogo },
   { name: "Future Motors EV", logo: FutureEVLogo },
@@ -153,18 +158,21 @@ const testimonials = [
     role: "Founder & CEO",
     quote:
       "I just had to take a moment to express my gratitude for the outstanding service they provided. Their complete assistance and efforts were truly remarkable",
+    photo: FrederickPhoto,
   },
   {
-    name: "Julie Kyle",
+    name: "Julie Reyes",
     role: "Account Executive",
     quote:
       "Every step of the way they provided helpful advice, recommended strategies to ensure our website was optimally set up, and made sure every element was clear and concise.",
+    photo: JuliePhoto,
   },
   {
-    name: "Brendan Buck",
+    name: "Amira Santos",
     role: "Data Engineer",
     quote:
       "Excellent service and thoroughly trained professionals, and their follow-up on tickets was handled with such care and attention to detail.",
+    photo: AmiraPhoto,
   },
 ];
 
@@ -357,15 +365,19 @@ export default function Home() {
             {testimonials.map((testimonial, index) => (
               <div
                 key={index}
-                className="bg-background rounded-2xl p-6 hover-elevate transition-all duration-300"
+                className="bg-background rounded-2xl p-6 hover-elevate transition-all duration-300 h-full flex flex-col"
                 data-testid={`testimonial-${index}`}
               >
-                <p className="text-sm leading-relaxed mb-6">
+                <p className="text-sm leading-relaxed flex-grow">
                   "{testimonial.quote}"
                 </p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
-                    {testimonial.name.charAt(0)}
+                <div className="flex items-center gap-3 mt-6">
+                  <div className="w-12 h-12 rounded-full overflow-hidden border border-border shadow-sm">
+                    <img
+                      src={testimonial.photo}
+                      alt={testimonial.name}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   <div>
                     <div className="font-medium text-sm">

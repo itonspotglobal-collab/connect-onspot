@@ -44,7 +44,7 @@ export default function Amazing() {
       photo: FrederickPhoto,
     },
     {
-      name: "Julie Kyle",
+      name: "Julie Reyes",
       title: "Account Executive",
       company: "Growth Solutions",
       quote:
@@ -320,8 +320,12 @@ export default function Amazing() {
               >
                 <CardContent className="p-8 flex flex-col h-full">
                   <div className="relative mb-6">
-                    <Avatar className="w-24 h-24 mx-auto border-4 border-white shadow-xl">
-                      <AvatarImage src={employee.photo} alt={employee.name} />
+                    <Avatar className="w-24 h-24 mx-auto border-4 border-white shadow-xl overflow-hidden rounded-full bg-gray-50">
+                      <AvatarImage
+                        src={employee.photo}
+                        alt={employee.name}
+                        className="object-cover w-full h-full object-top scale-110"
+                      />
                       <AvatarFallback className="bg-gradient-to-br from-primary to-[hsl(var(--gold-yellow))] text-white text-xl font-bold">
                         {employee.initials}
                       </AvatarFallback>
