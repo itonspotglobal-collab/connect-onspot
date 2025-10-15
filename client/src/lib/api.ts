@@ -3,16 +3,16 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
 // Determine the correct API base URL based on environment
 const getAPIBaseURL = (): string => {
   // Check if we're in production by looking at the current origin
-  const isProduction = window.location.origin.includes("www.onspotglobal.com");
+  const isProduction = window.location.origin.includes("onspotglobal.com");
 
   if (isProduction) {
-    console.log("🚀 Production API baseURL: https://www.onspotglobal.com");
-    return "https://www.onspotglobal.com";
+    console.log('🚀 Production API baseURL: https://onspotglobal.com');
+    return "https://onspotglobal.com";
   }
 
   // Development - use environment variable or relative URLs
   const baseURL = import.meta.env.VITE_API_BASE || "";
-  console.log(`🛠️ Development API baseURL: ${baseURL || "relative URLs"}`);
+  console.log(`🛠️ Development API baseURL: ${baseURL || 'relative URLs'}`);
   return baseURL;
 };
 
