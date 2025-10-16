@@ -1498,6 +1498,28 @@ export function TopNavigation() {
                   </Link>
                 );
               })}
+              
+              {/* Access Portal Button - Only show when not authenticated */}
+              {!isAuthenticated && (
+                <>
+                  <Separator className="bg-white/20 my-2" />
+                  <Button
+                    onClick={() => {
+                      setModalStep(1);
+                      setSelectedPortal(null);
+                      setShowPortal(true);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full bg-gradient-to-r from-violet-600 to-blue-600 text-white font-bold hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] transition-all duration-300 rounded-xl min-h-[52px] text-base border-2 border-white/30"
+                    data-testid="mobile-button-access-portal"
+                  >
+                    <span className="flex items-center gap-2 justify-center">
+                      <Sparkles className="w-5 h-5" />
+                      ACCESS PORTAL
+                    </span>
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
