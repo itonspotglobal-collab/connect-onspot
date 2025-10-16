@@ -149,6 +149,15 @@ export function Footer() {
                 </li>
                 <li>
                   <Link
+                    href="/powerapp"
+                    className="hover:text-white transition-all duration-200 hover:translate-x-1"
+                    data-testid="footer-powerapp"
+                  >
+                    Powerapp
+                  </Link>
+                </li>
+                <li>
+                  <Link
                     href="/pricing"
                     className="hover:text-white transition-all duration-200 hover:translate-x-1"
                     data-testid="footer-pricing"

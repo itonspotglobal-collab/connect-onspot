@@ -43,6 +43,7 @@ import AdminCSVImport from "@/pages/AdminCSVImport";
 import AdminDashboard from "@/pages/AdminDashboard";
 import InvestorsCorner from "@/pages/InvestorsCorner";
 import ProfileSettings from "@/pages/ProfileSettings";
+import Powerapp from "@/pages/Powerapp";
 
 // Public Routes - Always available regardless of authentication
 function PublicRouter() {
@@ -99,6 +100,7 @@ function PublicRouter() {
           <Route path="/trust-safety" component={TrustSafety} />
           <Route path="/lead-intake" component={LeadIntake} />
           <Route path="/investors" component={InvestorsCorner} />
+          <Route path="/powerapp" component={Powerapp} />
           {/* Legacy routes for backward compatibility */}
           <Route path="/talent" component={TalentSearch} />
           <Route component={NotFound} />
