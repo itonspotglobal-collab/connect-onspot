@@ -193,7 +193,9 @@ export function VanessaChat({
   };
 
   const handleBookCall = () => {
-    window.open("https://calendly.com/onspot", "_blank");
+    window.open(
+      "https://api.leadconnectorhq.com/widget/booking/2oCPWrG6iXVnuUGRXKBK",
+    );
   };
 
   if (!isOpen) return null;

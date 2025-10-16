@@ -1,0 +1,118 @@
+I want to build a backend process that automatically sends leads from my MySQL database tables 
+`lead_intakes` and `waitlist` to my GoHighLevel (GHL) sub-account CRM.
+
+Please create this system inside my Replit project with the following requirements:
+
+---
+
+### ⚙️ Tech Stack
+- Use **Node.js + Express** (or a standalone Node script if simpler).
+- Use the `mysql2` and `axios` packages for database and HTTP requests.
+- My Replit environment already has a database connection to MySQL where the tables exist.
+
+---
+
+### 🧩 Database Details
+There are two tables:
+1. **lead_intakes**
+   - Fields: `id`, `first_name`, `last_name`, `email`, `phone`, `source`, `status`, `synced_to_ghl`
+2. **waitlist**
+   - Fields: `id`, `name`, `email`, `phone`, `note`, `synced_to_ghl`
+
+When new rows are inserted into either table, I want to send those entries to GoHighLevel as Contacts.
+
+---
+
+### 🌐 GHL API Integration
+Use my **GHL sub-account API key** (stored securely in an environment variable) to connect to GHL.
+
+#### 1️⃣ Create Contacts
+For each new record, send a POST request to:
+https://rest.gohighlevel.com/v1/contacts/
+
+makefile
+Copy code
+Headers:
+Authorization: Bearer process.env.GHL_API_KEY
+Content-Type: application/json
+
+css
+Copy code
+
+Payload example for `lead_intakes`:
+```json
+{
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "john@example.com",
+  "phone": "+15551234567",
+  "source": "Website Intake Form",
+  "tags": ["Website Lead"]
+}
+Payload example for waitlist:
+
+json
+Copy code
+{
+  "firstName": "Jane",
+  "lastName": "Smith",
+  "email": "jane@example.com",
+  "phone": "+15557654321",
+  "source": "Waitlist Signup",
+  "tags": ["Waitlist Lead"]
+}
+After successfully sending the contact to GHL, update the local database row:
+
+sql
+Copy code
+UPDATE lead_intakes SET synced_to_ghl = 1 WHERE id = ?
+(or the same for waitlist).
+
+🕓 Scheduling
+Set up an automatic sync every 15 minutes using node-cron,
+so any new unsynced records are pushed to GHL automatically.
+
+🔐 Security
+Store API key in Replit Secrets:
+
+ini
+Copy code
+GHL_API_KEY=<my_subaccount_api_key>
+Never expose it client-side.
+
+Handle network and rate-limit errors gracefully (retry failed syncs later).
+
+🧠 Optional Enhancement
+If a lead includes a preferred booking date/time (e.g. desired_time_start, desired_time_end columns),
+use the GHL Appointments API to automatically create an appointment:
+
+bash
+Copy code
+POST https://rest.gohighlevel.com/v1/appointments/
+Payload:
+
+json
+Copy code
+{
+  "calendarId": process.env.GHL_CALENDAR_ID,
+  "contactId": "CONTACT_ID_FROM_PREVIOUS_CALL",
+  "startTime": "2025-10-18T15:00:00Z",
+  "endTime": "2025-10-18T15:30:00Z",
+  "title": "Discovery Call from Website"
+}
+✅ Deliverables
+A script (syncToGHL.js) that:
+
+Connects to the database
+
+Reads new leads from both tables
+
+Sends them to GHL
+
+Marks them as synced
+
+Runs automatically every 15 minutes
+
+Clear console logs for success/failure.
+
+Uses environment variables for secrets.

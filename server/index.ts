@@ -225,6 +225,10 @@ app.use((req, res, next) => {
   // Setup authentication first before routes
   await setupAuth(app);
   
+  // Start GHL sync service (automatic sync every 15 minutes)
+  const { ghlSyncService } = await import('./services/ghlSyncService');
+  ghlSyncService.startCronJob();
+  
   const server = await registerRoutes(app);
 
   // Enhanced global error handler with Sentry integration

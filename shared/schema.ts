@@ -176,6 +176,12 @@ export const leadIntakes = pgTable("lead_intakes", {
   additionalNotes: text("additional_notes"),
   internalNotes: text("internal_notes"), // For sales team use
   
+  // GHL Integration
+  syncedToGhl: boolean("synced_to_ghl").default(false),
+  ghlContactId: text("ghl_contact_id"),
+  ghlOpportunityId: text("ghl_opportunity_id"),
+  ghlSyncedAt: timestamp("ghl_synced_at"),
+  
   // Timestamps
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -190,6 +196,12 @@ export const waitlist = pgTable("waitlist", {
   businessName: text("business_name"),
   phone: text("phone"),
   status: text("status").notNull().default("new"), // new, contacted, converted
+  
+  // GHL Integration
+  syncedToGhl: boolean("synced_to_ghl").default(false),
+  ghlContactId: text("ghl_contact_id"),
+  ghlSyncedAt: timestamp("ghl_synced_at"),
+  
   createdAt: timestamp("created_at").defaultNow(),
 });
 

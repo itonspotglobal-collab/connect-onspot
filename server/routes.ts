@@ -886,6 +886,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
+  // Manual GHL Sync Trigger - Admin Only
+  app.post(
+    "/api/ghl/sync",
+    authenticateJWT,
+    requireAdmin,
+    async (req: Request, res: Response) => {
+      try {
+        const { ghlSyncService } = await import('./services/ghlSyncService');
+        console.log(`🔄 Manual GHL sync triggered [${(req as any).requestId}]:`, {
+          userId: (req as any).user?.id,
+          role: (req as any).user?.role,
+        });
+        
+        await ghlSyncService.triggerManualSync();
+        
+        res.json({ 
+          success: true, 
+          message: 'GHL sync completed successfully' 
+        });
+      } catch (error: any) {
+        handleRouteError(error, req as Request, res, "Manual GHL Sync", 500);
+      }
+    },
+  );
+
   // Protected User Profile Routes
   app.get(
     "/api/user/profile",
