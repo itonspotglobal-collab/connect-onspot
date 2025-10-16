@@ -1,0 +1,139 @@
+Create a backend service for my Replit-hosted website that connects all "Book a Call" buttons (including inside the Vanessa chat interface) to GoHighLevel (GHL) CRM.
+
+---
+
+### 🌐 Purpose
+When a visitor clicks “Book a Call”, they fill out a form with:
+- First name
+- Last name
+- Email
+- Phone
+- Selected date/time slot (from an available calendar)
+- Optional message
+
+After submitting:
+1. Their information is sent to GoHighLevel as a **Contact**.
+2. A **Calendar Appointment** is automatically created in my GHL sub-account for that contact.
+
+---
+
+### ⚙️ Technical Specifications
+
+#### **Backend**
+- Use **Node.js + Express**.
+- Add two main endpoints:
+  1. `/api/book` → Create or update a contact.
+  2. `/api/appointment` → Create an appointment for that contact.
+
+#### **API Calls**
+Use the GoHighLevel REST API (v1):
+
+1. **Create Contact**
+POST https://rest.gohighlevel.com/v1/contacts/
+Headers:
+Authorization: Bearer process.env.GHL_API_KEY
+Content-Type: application/json
+
+css
+Copy code
+
+**Body Example:**
+```json
+{
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "john@example.com",
+  "phone": "+15551234567",
+  "source": "OnSpot Website - Vanessa Chat",
+  "tags": ["Book a Call"]
+}
+Capture the contact.id from the response.
+
+Create Appointment
+
+bash
+Copy code
+POST https://rest.gohighlevel.com/v1/appointments/
+Headers:
+  Authorization: Bearer process.env.GHL_API_KEY
+  Content-Type: application/json
+Body Example:
+
+json
+Copy code
+{
+  "calendarId": "YOUR_GHL_CALENDAR_ID",
+  "contactId": "CONTACT_ID_FROM_PREVIOUS_CALL",
+  "startTime": "2025-10-18T15:00:00Z",
+  "endTime": "2025-10-18T15:30:00Z",
+  "title": "Discovery Call with OnSpot"
+}
+🧩 Environment Variables
+Store the API key as a Replit Secret named:
+
+ini
+Copy code
+GHL_API_KEY=<your_new_GHL_subaccount_key>
+Do not hardcode it anywhere in your source code.
+
+🖥️ Frontend Integration
+The booking form (modal or chat flow) should:
+
+Collect user info and selected date/time.
+
+Submit a single POST request to /api/book.
+
+The backend should then:
+
+Create the contact.
+
+Automatically call the appointment endpoint using that contact ID.
+
+Show a success message (“Your call has been booked! Check your email for confirmation.”).
+
+✅ Success & Error Handling
+If both contact creation and appointment creation succeed → return { success: true }.
+
+If either fails → return { success: false, error: "<message>" }.
+
+Log all server-side errors for debugging (but don’t expose them to users).
+
+🧠 Implementation Notes
+Use async/await for clean API calls.
+
+Use fetch or axios for HTTP requests.
+
+Ensure all times are in UTC ISO format when sending to GHL.
+
+Later, we may trigger GHL Workflows (e.g., auto-confirmation emails) based on tags or appointment creation.
+
+🧪 Testing
+Provide:
+
+A working HTML/JS form for testing the booking flow.
+
+Example curl commands to test both endpoints.
+
+⚙️ Summary of Environment Variables
+markdown
+Copy code
+GHL_API_KEY=***************
+GHL_CALENDAR_ID=***************
+The final code should:
+
+Securely store credentials.
+
+Handle booking end-to-end.
+
+Work with all “Book a Call” triggers (including Vanessa chatbot).
+
+Log success in Replit console for verification.
+
+yaml
+Copy code
+
+---
+
+### 🔐 Reminder
+Before using this, please regenerate your API key and set it safely in:
+> Replit → Tools → Secrets → Add Secret → Key: `GHL_API_KEY`, Value: *your new key*

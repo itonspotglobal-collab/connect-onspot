@@ -1,9 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { X, Sparkles, MessageCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useVanessa } from "@/contexts/VanessaContext";
+import { BookCallDialog } from "@/components/BookCallDialog";
 import type { Message } from "@/contexts/VanessaContext";
 import vanessaPhoto from "@/assets/logos/vanessa.png";
 
@@ -31,6 +32,9 @@ export function VanessaChat({
     isMinimized,
     setIsMinimized,
   } = useVanessa();
+
+  // Book call dialog state
+  const [isBookCallOpen, setIsBookCallOpen] = useState(false);
 
   const openingMessages = [
     {
@@ -193,7 +197,7 @@ export function VanessaChat({
   };
 
   const handleBookCall = () => {
-    window.open("https://calendly.com/onspot", "_blank");
+    setIsBookCallOpen(true);
   };
 
   if (!isOpen) return null;
@@ -224,17 +228,13 @@ export function VanessaChat({
           >
             {/* Header */}
             <div className="flex items-center gap-3 p-4 border-b border-white/10">
-              <Avatar className="h-12 w-12 ring-2 ring-white/20 overflow-hidden bg-violet-800/40">
+              <Avatar className="h-12 w-12 ring-2 ring-white/20 overflow-hidden bg-violet-800/40 flex items-center justify-center">
                 <AvatarImage
                   src={vanessaPhoto}
                   alt="Vanessa"
-                  className="object-cover object-center w-full h-full rounded-full"
+                  className="object-cover object-top w-full h-full scale-110 rounded-full"
                 />
-                <AvatarFallback className="bg-gradient-to-br from-violet-400 to-blue-400 text-white font-semibold">
-                  VA
-                </AvatarFallback>
               </Avatar>
-
               <div className="flex-1">
                 <h3
                   className="font-semibold text-white"
@@ -566,6 +566,13 @@ export function VanessaChat({
           />
         </div>
       </Card>
+
+      {/* Book Call Dialog */}
+      <BookCallDialog 
+        open={isBookCallOpen} 
+        onOpenChange={setIsBookCallOpen}
+        source="Vanessa Chat"
+      />
     </div>
   );
 }
