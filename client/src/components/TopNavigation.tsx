@@ -1228,14 +1228,14 @@ export function TopNavigation() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              // Not authenticated - show access portal button
+              // Not authenticated - show access portal button (desktop only)
               <Button
                 onClick={() => {
                   setModalStep(1);
                   setSelectedPortal(null);
                   setShowPortal(true);
                 }}
-                className="bg-white text-primary font-semibold hover:bg-gray-100 rounded-md px-4 py-2"
+                className="hidden md:flex bg-white text-primary font-semibold hover:bg-gray-100 rounded-md px-4 py-2"
                 data-testid="button-access-portal"
               >
                 ACCESS PORTAL
