@@ -120,7 +120,7 @@ const pricingPlans = [
     name: "Powerapp Pro",
     description: "Full automation suite + custom funnel + multi-channel campaigns",
     whoFor: "Clients who want to automate follow-up and scale faster",
-    price: "$99",
+    price: "$299",
     period: "/month",
     features: [
       "Everything in Complimentary",
