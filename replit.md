@@ -67,16 +67,12 @@ Preferred communication style: Simple, everyday language.
 - **GoHighLevel (GHL)**: Automated lead management with contact and opportunity creation
   - **Contact Creation**: Always enabled when `GHL_API_KEY` is configured
   - **Opportunity Creation**: Optional feature requiring additional configuration
-  - **Appointment Booking**: Calendar appointment creation for "Book a Call" functionality
   - **Required Environment Variables**:
-    - `GHL_API_KEY` (required): GoHighLevel API authentication key for basic contact creation and appointment booking
-    - `GHL_CALENDAR_ID` (required for appointments): GHL calendar identifier for booking appointments
+    - `GHL_API_KEY` (required): GoHighLevel API authentication key for basic contact creation
     - `GHL_LOCATION_ID` (optional): GHL location identifier for opportunity creation
     - `GHL_PIPELINE_ID` (optional): GHL pipeline identifier for opportunity creation
     - `GHL_PIPELINE_STAGE_ID` (optional): GHL pipeline stage identifier for opportunity creation
-  - **Features**: 
-    - Lead intake forms automatically create GHL contacts; when fully configured, also creates opportunities with monetary values mapped from budget ranges
-    - "Book a Call" buttons throughout the platform (including Vanessa AI chat) create contacts and calendar appointments in GHL
+  - **Features**: Lead intake forms automatically create GHL contacts; when fully configured, also creates opportunities with monetary values mapped from budget ranges
   - **Error Handling**: Graceful degradation - contact creation succeeds even if opportunity creation fails
 
 ### Chatbot Integration

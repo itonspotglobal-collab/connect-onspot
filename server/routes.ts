@@ -10,7 +10,6 @@ import {
   validateEmail,
 } from "./auth-utils";
 import { ghlService } from "./services/ghlService";
-import { ghlAppointmentService } from "./services/ghlAppointmentService";
 import rateLimit from "express-rate-limit";
 import multer from "multer";
 import Papa from "papaparse";
@@ -2258,95 +2257,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       handleRouteError(error, req, res, "Search lead intakes", 500);
     }
   });
-
-  // ==================== APPOINTMENT BOOKING ====================
-  
-  // Validation schema for booking requests
-  const bookingRequestSchema = z.object({
-    firstName: z.string().min(1, "First name is required"),
-    lastName: z.string().min(1, "Last name is required"),
-    email: z.string().email("Valid email is required"),
-    phone: z.string().optional(),
-    dateTime: z.string().refine(
-      (date) => !isNaN(Date.parse(date)),
-      "Valid date/time is required"
-    ),
-    message: z.string().optional(),
-    source: z.string().optional(),
-  });
-
-  // Book a call endpoint
-  app.post("/api/book-call", async (req, res) => {
-    try {
-      // Check if GHL is configured
-      if (!process.env.GHL_API_KEY || !process.env.GHL_CALENDAR_ID) {
-        console.warn(
-          `⚠️ Book call attempted but GHL not configured [${(req as any).requestId}]`
-        );
-        return res.status(503).json({
-          error: "Appointment booking is currently unavailable. Please contact support directly.",
-          requestId: (req as any).requestId,
-        });
-      }
-
-      // Validate request body
-      const validationResult = bookingRequestSchema.safeParse(req.body);
-      
-      if (!validationResult.success) {
-        return res.status(400).json({
-          error: "Validation failed",
-          details: validationResult.error.issues,
-          requestId: (req as any).requestId,
-        });
-      }
-
-      const bookingData = validationResult.data;
-
-      console.log(
-        `📞 Processing call booking [${(req as any).requestId}]:`,
-        {
-          name: `${bookingData.firstName} ${bookingData.lastName}`,
-          email: bookingData.email,
-          dateTime: bookingData.dateTime,
-          source: bookingData.source || "Website"
-        }
-      );
-
-      // Book the call through GHL
-      const result = await ghlAppointmentService.bookCall(bookingData);
-
-      if (result.success) {
-        console.log(
-          `✅ Call booked successfully [${(req as any).requestId}]:`,
-          {
-            contactId: result.contactId,
-            appointmentId: result.appointmentId,
-          }
-        );
-
-        res.status(201).json({
-          success: true,
-          contactId: result.contactId,
-          appointmentId: result.appointmentId,
-          message: "Your call has been booked! Check your email for confirmation.",
-        });
-      } else {
-        console.error(
-          `❌ Call booking failed [${(req as any).requestId}]:`,
-          result.error
-        );
-
-        res.status(400).json({
-          success: false,
-          error: result.error,
-          requestId: (req as any).requestId,
-        });
-      }
-    } catch (error) {
-      handleRouteError(error, req, res, "Book call", 500);
-    }
-  });
-
 
   // ==================== WAITLIST ====================
   app.post("/api/waitlist", async (req, res) => {

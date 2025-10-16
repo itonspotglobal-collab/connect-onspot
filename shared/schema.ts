@@ -698,22 +698,6 @@ export const insertLeadIntakeSchema = createInsertSchema(leadIntakes).omit({
 export type InsertLeadIntake = z.infer<typeof insertLeadIntakeSchema>;
 export type LeadIntake = typeof leadIntakes.$inferSelect;
 
-// Book a Call / Appointment Booking Schema
-export const bookCallSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Valid email is required"),
-  phone: z.string().optional(),
-  dateTime: z.string().refine(
-    (date) => !isNaN(Date.parse(date)),
-    "Valid date/time is required"
-  ),
-  message: z.string().optional(),
-  source: z.string().optional(),
-});
-
-export type BookCallRequest = z.infer<typeof bookCallSchema>;
-
 export type InsertAssessment = z.infer<typeof insertAssessmentSchema>;
 export type Assessment = typeof assessments.$inferSelect;
 
