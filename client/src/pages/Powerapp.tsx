@@ -171,37 +171,37 @@ export default function Powerapp() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-primary/5 py-24 md:py-32">
+      <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-primary/5 py-12 sm:py-16 md:py-24 lg:py-32">
         <div className="absolute inset-0 bg-grid-white/5 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.5))]" />
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-4xl mx-auto text-center space-y-8">
+        <div className="container mx-auto px-4 sm:px-6 relative z-10">
+          <div className="max-w-4xl mx-auto text-center space-y-6 sm:space-y-8">
             <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20">
               <Sparkles className="w-3 h-3 mr-1" />
               Complimentary with OnSpot Services
             </Badge>
             
-            <h1 className="text-5xl md:text-7xl font-bold tracking-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold tracking-tight px-2">
               Powerapp by OnSpot
             </h1>
             
-            <p className="text-2xl md:text-3xl text-muted-foreground font-light">
+            <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-muted-foreground font-light px-2">
               Your All-In-One Growth & Automation Platform
             </p>
             
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto px-4">
               Run your business like a $10M company — even if you're just starting.
-              <br />
+              <br className="hidden sm:block" />
               <span className="font-medium text-foreground">One system. All your tools. Automated, organized, and ready to scale.</span>
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-              <Button size="lg" className="text-lg px-8" asChild data-testid="button-get-started">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center pt-4 px-4">
+              <Button size="lg" className="text-base sm:text-lg px-6 sm:px-8 w-full sm:w-auto" asChild data-testid="button-get-started">
                 <Link href="/lead-intake">
                   Get Started Free
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                  <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" className="text-lg px-8" asChild data-testid="button-contact">
+              <Button size="lg" variant="outline" className="text-base sm:text-lg px-6 sm:px-8 w-full sm:w-auto" asChild data-testid="button-contact">
                 <Link href="/lead-intake">
                   Talk to Us
                 </Link>
@@ -212,42 +212,42 @@ export default function Powerapp() {
       </section>
 
       {/* What is Powerapp */}
-      <section className="py-24 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="max-w-5xl mx-auto space-y-12">
-            <div className="text-center space-y-6">
-              <h2 className="text-4xl md:text-5xl font-bold">
+      <section className="py-12 sm:py-16 md:py-24 bg-muted/30">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="max-w-5xl mx-auto space-y-8 sm:space-y-12">
+            <div className="text-center space-y-4 sm:space-y-6">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold px-2">
                 What Powerapp Is
               </h2>
-              <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+              <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed px-4">
                 Powerapp (powered by GHL and customized by OnSpot) is your complete business growth system — 
                 built to centralize your marketing, sales, operations, and communication in one intelligent platform.
               </p>
             </div>
             
             <Card className="border-2">
-              <CardContent className="p-8 md:p-12">
-                <div className="space-y-6">
-                  <div className="flex items-start gap-4">
-                    <div className="bg-primary/10 p-3 rounded-lg">
-                      <Zap className="h-8 w-8 text-primary" />
+              <CardContent className="p-6 sm:p-8 md:p-12">
+                <div className="space-y-6 sm:space-y-8">
+                  <div className="flex flex-col sm:flex-row items-start gap-4">
+                    <div className="bg-primary/10 p-3 rounded-lg flex-shrink-0">
+                      <Zap className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
                     </div>
                     <div className="flex-1 space-y-2">
-                      <h3 className="text-2xl font-semibold">Replaces 15+ Tools</h3>
-                      <p className="text-muted-foreground text-lg">
+                      <h3 className="text-xl sm:text-2xl font-semibold">Replaces 15+ Tools</h3>
+                      <p className="text-muted-foreground text-sm sm:text-base md:text-lg">
                         Say goodbye to HubSpot, Calendly, Mailchimp, ClickFunnels, Typeform, Slack, and more — 
                         saving you time, money, and mental load while giving your team the structure to operate like pros.
                       </p>
                     </div>
                   </div>
                   
-                  <div className="flex items-start gap-4">
-                    <div className="bg-primary/10 p-3 rounded-lg">
-                      <Workflow className="h-8 w-8 text-primary" />
+                  <div className="flex flex-col sm:flex-row items-start gap-4">
+                    <div className="bg-primary/10 p-3 rounded-lg flex-shrink-0">
+                      <Workflow className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
                     </div>
                     <div className="flex-1 space-y-2">
-                      <h3 className="text-2xl font-semibold">We Build the System. You Focus on Growth.</h3>
-                      <p className="text-muted-foreground text-lg">
+                      <h3 className="text-xl sm:text-2xl font-semibold">We Build the System. You Focus on Growth.</h3>
+                      <p className="text-muted-foreground text-sm sm:text-base md:text-lg">
                         Get a fully integrated CRM, automation engine, communication suite, and funnel system that runs 
                         your lead generation, follow-ups, appointments, payments, and reporting — automatically.
                       </p>
@@ -261,29 +261,29 @@ export default function Powerapp() {
       </section>
 
       {/* Key Features */}
-      <section className="py-24">
-        <div className="container mx-auto px-4">
-          <div className="max-w-7xl mx-auto space-y-16">
+      <section className="py-12 sm:py-16 md:py-24">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="max-w-7xl mx-auto space-y-12 sm:space-y-16">
             <div className="text-center space-y-4">
-              <h2 className="text-4xl md:text-5xl font-bold">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold px-2">
                 Key Features & Capabilities
               </h2>
-              <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto px-4">
                 Everything you need to run, automate, and scale your business — all in one place.
               </p>
             </div>
             
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
               {features.map((feature, index) => (
                 <Card key={index} className="hover-elevate transition-all duration-300" data-testid={`feature-card-${index}`}>
-                  <CardContent className="p-6 space-y-4">
-                    <div className="bg-primary/10 w-12 h-12 rounded-lg flex items-center justify-center">
-                      <feature.icon className="h-6 w-6 text-primary" />
+                  <CardContent className="p-5 sm:p-6 space-y-3 sm:space-y-4">
+                    <div className="bg-primary/10 w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center">
+                      <feature.icon className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                     </div>
-                    <h3 className="text-xl font-semibold">{feature.title}</h3>
-                    <p className="text-muted-foreground">{feature.description}</p>
+                    <h3 className="text-lg sm:text-xl font-semibold">{feature.title}</h3>
+                    <p className="text-sm sm:text-base text-muted-foreground">{feature.description}</p>
                     <div className="pt-2 border-t">
-                      <p className="text-sm font-medium text-primary flex items-start gap-2">
+                      <p className="text-xs sm:text-sm font-medium text-primary flex items-start gap-2">
                         <CheckCircle2 className="h-4 w-4 mt-0.5 flex-shrink-0" />
                         <span>{feature.benefit}</span>
                       </p>
@@ -297,33 +297,33 @@ export default function Powerapp() {
       </section>
 
       {/* Industry Snapshots */}
-      <section className="py-24 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="max-w-6xl mx-auto space-y-12">
+      <section className="py-12 sm:py-16 md:py-24 bg-muted/30">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="max-w-6xl mx-auto space-y-8 sm:space-y-12">
             <div className="text-center space-y-4">
-              <h2 className="text-4xl md:text-5xl font-bold">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold px-2">
                 Ready-to-Use Industry Snapshots
               </h2>
-              <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto px-4">
                 Prebuilt templates tailored for your industry. Go live in 48 hours.
               </p>
             </div>
             
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {industrySnapshots.map((industry, index) => (
                 <Card key={index} className="hover-elevate transition-all duration-300" data-testid={`industry-card-${index}`}>
-                  <CardContent className="p-6 text-center">
-                    <p className="font-medium">{industry}</p>
+                  <CardContent className="p-4 sm:p-6 text-center">
+                    <p className="font-medium text-sm sm:text-base">{industry}</p>
                   </CardContent>
                 </Card>
               ))}
             </div>
             
             <Card className="border-2 bg-primary/5 border-primary/20">
-              <CardContent className="p-8">
+              <CardContent className="p-6 sm:p-8">
                 <div className="space-y-4">
-                  <h3 className="text-xl font-semibold">Each snapshot includes:</h3>
-                  <div className="grid md:grid-cols-2 gap-3">
+                  <h3 className="text-lg sm:text-xl font-semibold">Each snapshot includes:</h3>
+                  <div className="grid sm:grid-cols-2 gap-2 sm:gap-3">
                     {[
                       "Website/Funnel templates",
                       "Prewritten email & SMS flows",
@@ -333,8 +333,8 @@ export default function Powerapp() {
                       "Dashboards",
                     ].map((item, index) => (
                       <div key={index} className="flex items-center gap-2">
-                        <CheckCircle2 className="h-5 w-5 text-primary" />
-                        <span>{item}</span>
+                        <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                        <span className="text-sm sm:text-base">{item}</span>
                       </div>
                     ))}
                   </div>
@@ -346,23 +346,23 @@ export default function Powerapp() {
       </section>
 
       {/* Why Clients Love It */}
-      <section className="py-24">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto space-y-12">
+      <section className="py-12 sm:py-16 md:py-24">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="max-w-4xl mx-auto space-y-8 sm:space-y-12">
             <div className="text-center space-y-4">
-              <h2 className="text-4xl md:text-5xl font-bold">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold px-2">
                 Why Clients Love Powerapp
               </h2>
             </div>
             
-            <div className="grid gap-6">
+            <div className="grid gap-4 sm:gap-6">
               {benefits.map((benefit, index) => (
                 <Card key={index} className="hover-elevate transition-all duration-300" data-testid={`benefit-card-${index}`}>
-                  <CardContent className="p-6 flex items-center gap-4">
-                    <div className="bg-primary/10 p-3 rounded-full">
-                      <CheckCircle2 className="h-6 w-6 text-primary" />
+                  <CardContent className="p-4 sm:p-6 flex items-center gap-3 sm:gap-4">
+                    <div className="bg-primary/10 p-2 sm:p-3 rounded-full flex-shrink-0">
+                      <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                     </div>
-                    <p className="text-lg font-medium">{benefit}</p>
+                    <p className="text-base sm:text-lg font-medium">{benefit}</p>
                   </CardContent>
                 </Card>
               ))}
@@ -372,19 +372,19 @@ export default function Powerapp() {
       </section>
 
       {/* Pricing */}
-      <section className="py-24 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="max-w-7xl mx-auto space-y-12">
+      <section className="py-12 sm:py-16 md:py-24 bg-muted/30">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="max-w-7xl mx-auto space-y-8 sm:space-y-12">
             <div className="text-center space-y-4">
-              <h2 className="text-4xl md:text-5xl font-bold">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold px-2">
                 Pricing & Inclusions
               </h2>
-              <p className="text-xl text-muted-foreground">
+              <p className="text-base sm:text-lg md:text-xl text-muted-foreground px-4">
                 All plans include OnSpot support and quarterly optimization sessions.
               </p>
             </div>
             
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid lg:grid-cols-3 gap-6 sm:gap-8 max-w-sm lg:max-w-none mx-auto">
               {pricingPlans.map((plan, index) => (
                 <Card 
                   key={index} 
@@ -398,25 +398,25 @@ export default function Powerapp() {
                       Most Popular
                     </div>
                   )}
-                  <CardContent className="p-8 space-y-6">
+                  <CardContent className="p-6 sm:p-8 space-y-5 sm:space-y-6">
                     <div className="space-y-2">
-                      <h3 className="text-2xl font-bold">{plan.name}</h3>
-                      <p className="text-muted-foreground">{plan.description}</p>
+                      <h3 className="text-xl sm:text-2xl font-bold">{plan.name}</h3>
+                      <p className="text-sm sm:text-base text-muted-foreground">{plan.description}</p>
                     </div>
                     
                     <div className="space-y-2">
                       <div className="flex items-baseline gap-1">
-                        <span className="text-4xl font-bold">{plan.price}</span>
-                        {plan.period && <span className="text-muted-foreground">{plan.period}</span>}
+                        <span className="text-3xl sm:text-4xl font-bold">{plan.price}</span>
+                        {plan.period && <span className="text-muted-foreground text-sm sm:text-base">{plan.period}</span>}
                       </div>
-                      <p className="text-sm text-muted-foreground">{plan.whoFor}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">{plan.whoFor}</p>
                     </div>
                     
-                    <div className="space-y-3 pt-4 border-t">
+                    <div className="space-y-2 sm:space-y-3 pt-4 border-t">
                       {plan.features.map((feature, featureIndex) => (
                         <div key={featureIndex} className="flex items-start gap-2">
-                          <CheckCircle2 className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                          <span className="text-sm">{feature}</span>
+                          <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-primary mt-0.5 flex-shrink-0" />
+                          <span className="text-xs sm:text-sm">{feature}</span>
                         </div>
                       ))}
                     </div>
@@ -440,20 +440,20 @@ export default function Powerapp() {
       </section>
 
       {/* OnSpot Advantage */}
-      <section className="py-24">
-        <div className="container mx-auto px-4">
-          <div className="max-w-5xl mx-auto space-y-12">
+      <section className="py-12 sm:py-16 md:py-24">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="max-w-5xl mx-auto space-y-8 sm:space-y-12">
             <div className="text-center space-y-4">
-              <h2 className="text-4xl md:text-5xl font-bold">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold px-2">
                 The OnSpot Advantage
               </h2>
-              <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto px-4">
                 Unlike standard GoHighLevel resellers, OnSpot customizes Powerapp with proprietary automation 
                 frameworks, sales funnels, and SOP playbooks built from decades of BPO and tech experience.
               </p>
             </div>
             
-            <div className="grid md:grid-cols-2 gap-8">
+            <div className="grid sm:grid-cols-2 gap-6 sm:gap-8">
               {[
                 {
                   icon: Users,
@@ -477,13 +477,13 @@ export default function Powerapp() {
                 },
               ].map((item, index) => (
                 <Card key={index} className="hover-elevate transition-all duration-300" data-testid={`advantage-card-${index}`}>
-                  <CardContent className="p-6 flex items-start gap-4">
-                    <div className="bg-primary/10 p-3 rounded-lg">
-                      <item.icon className="h-6 w-6 text-primary" />
+                  <CardContent className="p-5 sm:p-6 flex items-start gap-3 sm:gap-4">
+                    <div className="bg-primary/10 p-2 sm:p-3 rounded-lg flex-shrink-0">
+                      <item.icon className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                     </div>
                     <div className="flex-1 space-y-1">
-                      <h3 className="text-lg font-semibold">{item.title}</h3>
-                      <p className="text-muted-foreground">{item.description}</p>
+                      <h3 className="text-base sm:text-lg font-semibold">{item.title}</h3>
+                      <p className="text-sm sm:text-base text-muted-foreground">{item.description}</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -494,21 +494,21 @@ export default function Powerapp() {
       </section>
 
       {/* Security & Compliance */}
-      <section className="py-24 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center space-y-8">
+      <section className="py-12 sm:py-16 md:py-24 bg-muted/30">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="max-w-4xl mx-auto text-center space-y-6 sm:space-y-8">
             <div className="space-y-4">
               <div className="flex justify-center">
-                <div className="bg-primary/10 p-4 rounded-full">
-                  <Shield className="h-12 w-12 text-primary" />
+                <div className="bg-primary/10 p-3 sm:p-4 rounded-full">
+                  <Shield className="h-10 w-10 sm:h-12 sm:w-12 text-primary" />
                 </div>
               </div>
-              <h2 className="text-4xl md:text-5xl font-bold">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold px-2">
                 Security & Compliance
               </h2>
             </div>
             
-            <div className="grid md:grid-cols-2 gap-6 text-left">
+            <div className="grid sm:grid-cols-2 gap-4 sm:gap-6 text-left px-4">
               {[
                 "2FA, user roles, audit trails",
                 "GDPR / CAN-SPAM / TCPA compliant",
@@ -516,9 +516,9 @@ export default function Powerapp() {
                 "Data retention policies",
                 "A2P 10DLC registration for SMS deliverability",
               ].map((item, index) => (
-                <div key={index} className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
-                  <span>{item}</span>
+                <div key={index} className="flex items-center gap-2 sm:gap-3">
+                  <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                  <span className="text-sm sm:text-base">{item}</span>
                 </div>
               ))}
             </div>
@@ -527,33 +527,33 @@ export default function Powerapp() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center space-y-8">
-            <h2 className="text-4xl md:text-5xl font-bold">
+      <section className="py-12 sm:py-16 md:py-24 bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="max-w-4xl mx-auto text-center space-y-6 sm:space-y-8">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold px-2">
               Your Business, Powered by OnSpot
             </h2>
             
-            <p className="text-xl opacity-95">
+            <p className="text-base sm:text-lg md:text-xl opacity-95 px-4">
               We don't just give you software — We give you a System that Sells, Serves, and Scales.
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center pt-4 px-4">
               <Button 
                 size="lg" 
                 variant="secondary" 
-                className="text-lg px-8"
+                className="text-base sm:text-lg px-6 sm:px-8 w-full sm:w-auto"
                 asChild
                 data-testid="button-cta-primary"
               >
                 <Link href="/lead-intake">
                   Activate Your Free Powerapp
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                  <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
                 </Link>
               </Button>
             </div>
             
-            <p className="text-sm opacity-90">
+            <p className="text-xs sm:text-sm opacity-90 px-4">
               Visit onspotglobal.com/powerapp or message your Account Manager to activate your complimentary Powerapp seat today.
             </p>
           </div>
