@@ -33,31 +33,31 @@ export function Footer() {
         <div className="absolute bottom-12 left-1/4 w-2 h-12 bg-white/8 rounded-full -rotate-12 animate-pulse delay-300"></div>
       </div>
 
-      <div className="container mx-auto px-4 py-8 relative z-10">
+      <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 relative z-10">
         {/* Company Info and Navigation */}
-        <div className="space-y-6">
+        <div className="space-y-8 sm:space-y-10">
           {/* Company Info */}
-          <div className="space-y-4">
+          <div className="space-y-4 sm:space-y-5">
             <div className="relative">
               <img
                 src={onspotLogo}
                 alt="OnSpot"
-                className="h-10 w-auto brightness-0 saturate-100 invert drop-shadow-lg relative z-10"
+                className="h-8 sm:h-10 w-auto brightness-0 saturate-100 invert drop-shadow-lg relative z-10"
               />
               {/* Logo glow effect */}
               <div className="absolute inset-0 bg-white/20 blur-lg rounded-lg opacity-30"></div>
             </div>
-            <p className="text-white/95 max-w-lg leading-relaxed text-sm font-light">
+            <p className="text-white/95 max-w-lg leading-relaxed text-sm sm:text-base font-light">
               The growth engine behind modern businesses—built by entrepreneurs,
               for entrepreneurs. We deliver world-class teams and performance
               systems that slash costs by up to 70% while unlocking up to 8X
               faster growth.
             </p>
-            <div className="flex space-x-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-white/90 border border-white/20 bg-white/5 hover-elevate"
+                className="text-white/90 border border-white/20 bg-white/5 hover-elevate min-h-[44px] min-w-[44px]"
                 asChild
                 data-testid="social-facebook"
               >
@@ -67,13 +67,13 @@ export function Footer() {
                   rel="noopener noreferrer"
                   aria-label="Follow us on Facebook"
                 >
-                  <Facebook className="h-4 w-4" />
+                  <Facebook className="h-5 w-5 sm:h-4 sm:w-4" />
                 </a>
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-white/90 border border-white/20 bg-white/5 hover-elevate"
+                className="text-white/90 border border-white/20 bg-white/5 hover-elevate min-h-[44px] min-w-[44px]"
                 asChild
                 data-testid="social-twitter"
               >
@@ -83,13 +83,13 @@ export function Footer() {
                   rel="noopener noreferrer"
                   aria-label="Follow us on Twitter"
                 >
-                  <Twitter className="h-4 w-4" />
+                  <Twitter className="h-5 w-5 sm:h-4 sm:w-4" />
                 </a>
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-white/90 border border-white/20 bg-white/5 hover-elevate"
+                className="text-white/90 border border-white/20 bg-white/5 hover-elevate min-h-[44px] min-w-[44px]"
                 asChild
                 data-testid="social-linkedin"
               >
@@ -99,13 +99,13 @@ export function Footer() {
                   rel="noopener noreferrer"
                   aria-label="Follow us on LinkedIn"
                 >
-                  <Linkedin className="h-4 w-4" />
+                  <Linkedin className="h-5 w-5 sm:h-4 sm:w-4" />
                 </a>
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-white/90 border border-white/20 bg-white/5 hover-elevate"
+                className="text-white/90 border border-white/20 bg-white/5 hover-elevate min-h-[44px] min-w-[44px]"
                 asChild
                 data-testid="social-youtube"
               >
@@ -115,24 +115,24 @@ export function Footer() {
                   rel="noopener noreferrer"
                   aria-label="Subscribe to our YouTube channel"
                 >
-                  <Youtube className="h-4 w-4" />
+                  <Youtube className="h-5 w-5 sm:h-4 sm:w-4" />
                 </a>
               </Button>
             </div>
           </div>
 
           {/* Compact Navigation Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10">
             {/* Services */}
             <div className="space-y-3">
-              <h3 className="font-semibold text-white text-base tracking-wide border-b border-white/20 pb-2">
+              <h3 className="font-semibold text-white text-base sm:text-lg tracking-wide border-b border-white/20 pb-2">
                 Solutions
               </h3>
-              <ul className="space-y-2 text-white/85 text-sm">
+              <ul className="space-y-2.5 sm:space-y-2 text-white/85 text-sm sm:text-base">
                 <li>
                   <Link
                     href="/hire-talent"
-                    className="hover:text-white transition-all duration-200 hover:translate-x-1"
+                    className="hover:text-white transition-all duration-200 hover:translate-x-1 inline-block py-1"
                     data-testid="footer-hire-talent"
                   >
                     Hire Talent
@@ -179,10 +179,10 @@ export function Footer() {
 
             {/* Company */}
             <div className="space-y-3">
-              <h3 className="font-semibold text-white text-base tracking-wide border-b border-white/20 pb-2">
+              <h3 className="font-semibold text-white text-base sm:text-lg tracking-wide border-b border-white/20 pb-2">
                 Company
               </h3>
-              <ul className="space-y-2 text-white/85 text-sm">
+              <ul className="space-y-2.5 sm:space-y-2 text-white/85 text-sm sm:text-base">
                 <li>
                   <Link
                     href="/why-onspot"
@@ -251,10 +251,10 @@ export function Footer() {
 
             {/* Contact */}
             <div className="space-y-3">
-              <h3 className="font-semibold text-white text-base tracking-wide border-b border-white/20 pb-2">
+              <h3 className="font-semibold text-white text-base sm:text-lg tracking-wide border-b border-white/20 pb-2">
                 Contact Us
               </h3>
-              <ul className="space-y-2.5 text-white/85 text-sm">
+              <ul className="space-y-3 sm:space-y-2.5 text-white/85 text-sm sm:text-base">
                 <li className="flex items-center space-x-3 hover:text-white transition-colors duration-200">
                   <Mail className="h-4 w-4 text-white/70" />
                   <span>hello@onspot.com</span>
@@ -273,11 +273,11 @@ export function Footer() {
                 </li>
               </ul>
 
-              <div className="mt-4">
+              <div className="mt-4 sm:mt-5">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="bg-white/10 text-white border-white/30 hover-elevate backdrop-blur-sm w-full"
+                  className="bg-white/10 text-white border-white/30 hover-elevate backdrop-blur-sm w-full min-h-[44px] text-sm sm:text-base"
                   asChild
                   data-testid="footer-contact-cta"
                 >
@@ -291,19 +291,19 @@ export function Footer() {
           </div>
         </div>
 
-        <Separator className="my-6 bg-white/30" />
+        <Separator className="my-8 sm:my-10 bg-white/30" />
 
         {/* Bottom Row */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end space-y-4 lg:space-y-0">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end space-y-6 sm:space-y-8 lg:space-y-0 gap-6">
           {/* Left Side - Tagline and Rights */}
-          <div className="space-y-1.5">
-            <p className="text-base font-semibold text-white tracking-wide">
+          <div className="space-y-2 sm:space-y-2.5">
+            <p className="text-base sm:text-lg font-semibold text-white tracking-wide">
               Making Outsourcing Easy
             </p>
-            <div className="text-xs text-white/70">
+            <div className="text-xs sm:text-sm text-white/70">
               © 2024 OnSpot. All rights reserved.
             </div>
-            <div className="flex flex-wrap gap-4 text-xs text-white/70 pt-1">
+            <div className="flex flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm text-white/70 pt-1">
               <a
                 href="#"
                 className="hover:text-white transition-colors duration-200"
@@ -329,31 +329,31 @@ export function Footer() {
           </div>
 
           {/* Right Side - Download Platform */}
-          <div className="space-y-3">
+          <div className="space-y-3 sm:space-y-4 w-full lg:w-auto">
             <div className="flex items-center justify-start lg:justify-end space-x-2">
-              <Smartphone className="h-5 w-5 text-white" />
-              <h3 className="text-lg font-semibold text-white">
+              <Smartphone className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+              <h3 className="text-base sm:text-lg font-semibold text-white">
                 Download Our Platform
               </h3>
             </div>
-            <p className="text-white/90 text-xs max-w-xs lg:text-right leading-relaxed">
+            <p className="text-white/90 text-xs sm:text-sm max-w-xs lg:text-right leading-relaxed">
               Take OnSpot with you wherever you go. Manage projects and track
               progress on the move.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-2 lg:justify-end">
+            <div className="flex flex-col sm:flex-row gap-3 lg:justify-end">
               <Button
                 variant="outline"
                 size="sm"
-                className="bg-black/80 text-white border-white/40 hover-elevate backdrop-blur-sm"
+                className="bg-black/80 text-white border-white/40 hover-elevate backdrop-blur-sm min-h-[48px] sm:min-h-[44px]"
                 asChild
                 data-testid="download-ios"
               >
                 <a href="#" aria-label="Download on App Store">
-                  <SiApple className="h-4 w-4 mr-2" />
+                  <SiApple className="h-5 w-5 sm:h-4 sm:w-4 mr-2" />
                   <div className="text-left">
                     <div className="text-xs opacity-90">Download on the</div>
-                    <div className="font-semibold text-xs">App Store</div>
+                    <div className="font-semibold text-sm sm:text-xs">App Store</div>
                   </div>
                 </a>
               </Button>
@@ -361,15 +361,15 @@ export function Footer() {
               <Button
                 variant="outline"
                 size="sm"
-                className="bg-black/80 text-white border-white/40 hover-elevate backdrop-blur-sm"
+                className="bg-black/80 text-white border-white/40 hover-elevate backdrop-blur-sm min-h-[48px] sm:min-h-[44px]"
                 asChild
                 data-testid="download-android"
               >
                 <a href="#" aria-label="Get it on Google Play">
-                  <SiGoogleplay className="h-4 w-4 mr-2" />
+                  <SiGoogleplay className="h-5 w-5 sm:h-4 sm:w-4 mr-2" />
                   <div className="text-left">
                     <div className="text-xs opacity-90">Get it on</div>
-                    <div className="font-semibold text-xs">Google Play</div>
+                    <div className="font-semibold text-sm sm:text-xs">Google Play</div>
                   </div>
                 </a>
               </Button>
