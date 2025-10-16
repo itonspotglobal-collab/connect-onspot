@@ -29,6 +29,8 @@ import {
   Mail,
   Briefcase,
   Sparkles,
+  Menu,
+  X,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -371,6 +373,7 @@ export function TopNavigation() {
     businessName: '',
     phone: ''
   });
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const lastScrollY = useRef(0);
   const ticking = useRef(false);
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -466,7 +469,7 @@ export function TopNavigation() {
             />
           </Link>
 
-          {/* Navigation Items */}
+          {/* Desktop Navigation Items */}
           <div className="hidden md:flex items-center space-x-2 relative z-10">
             {navigationItems.map((item) => {
               const hasMegaMenu = "megaMenu" in item && item.megaMenu;
@@ -1050,8 +1053,21 @@ export function TopNavigation() {
             })}
           </div>
 
-          {/* Authentication Section */}
+          {/* Mobile Menu Button & Authentication Section */}
           <div className="flex items-center gap-3 relative z-10">
+            {/* Mobile Menu Toggle */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden p-2 text-white hover:bg-white/10 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+              aria-label="Toggle menu"
+              data-testid="mobile-menu-toggle"
+            >
+              {isMobileMenuOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
+            </button>
             {isLoading ? (
               // Loading state during authentication check
               <div
@@ -1228,10 +1244,14 @@ export function TopNavigation() {
           </div>
         </div>
 
-        {/* Mobile Navigation */}
-        <div className="md:hidden border-t border-white/20">
-          <div className="container px-4 py-3">
-            <div className="flex flex-wrap gap-2 justify-center">
+        {/* Mobile Navigation - Collapsible */}
+        <div 
+          className={`md:hidden border-t border-white/20 transition-all duration-300 ease-in-out overflow-hidden ${
+            isMobileMenuOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'
+          }`}
+        >
+          <div className="container px-4 py-4">
+            <div className="flex flex-col gap-3">
               {navigationItems.map((item) => {
                 const hasMegaMenu = "megaMenu" in item && item.megaMenu;
                 const isActive =
@@ -1249,23 +1269,23 @@ export function TopNavigation() {
 
                 if (hasMegaMenu) {
                   return (
-                    <div key={item.title} className="relative">
+                    <div key={item.title} className="w-full">
                       <button
                         onClick={() =>
                           setActiveDropdown(
                             activeDropdown === item.title ? null : item.title,
                           )
                         }
-                        className={`px-3 py-2 text-sm font-medium transition-all duration-300 rounded-lg hover-elevate min-h-[44px] flex items-center gap-1 ${
+                        className={`w-full px-4 py-3 text-base font-medium transition-all duration-300 rounded-lg hover-elevate min-h-[48px] flex items-center justify-between ${
                           isActive
                             ? "text-white bg-white/10 border border-white/30"
-                            : "text-white/90"
+                            : "text-white/90 bg-white/5"
                         }`}
                         data-testid={`mobile-nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
                       >
                         {item.title}
                         <ChevronDown
-                          className={`h-4 w-4 transition-transform duration-200 ${
+                          className={`h-5 w-5 transition-transform duration-200 ${
                             activeDropdown === item.title ? "rotate-180" : ""
                           }`}
                         />
@@ -1274,7 +1294,7 @@ export function TopNavigation() {
                       {/* Mobile Services Menu */}
                       {activeDropdown === item.title && item.services && (
                         <div
-                          className="absolute top-full left-0 mt-2 w-80 rounded-lg border border-white/20 backdrop-blur-md shadow-xl z-50"
+                          className="mt-2 rounded-lg border border-white/20 backdrop-blur-md shadow-xl"
                           style={{
                             background:
                               "linear-gradient(135deg, #474ead 0%, #5a5dc7 50%, #6366f1 100%)",
@@ -1300,7 +1320,10 @@ export function TopNavigation() {
                                         ? "bg-white/20 border-white/40"
                                         : ""
                                     }`}
-                                    onClick={() => setActiveDropdown(null)}
+                                    onClick={() => {
+                                      setActiveDropdown(null);
+                                      setIsMobileMenuOpen(false);
+                                    }}
                                     data-testid={`mobile-service-${key}`}
                                   >
                                     <div className="flex items-start gap-3">
@@ -1337,14 +1360,14 @@ export function TopNavigation() {
                       {/* Mobile Categories Menu */}
                       {activeDropdown === item.title && item.categories && (
                         <div
-                          className="absolute top-full left-0 mt-2 w-[min(90vw,400px)] max-h-[70vh] rounded-lg border border-white/20 backdrop-blur-md shadow-xl z-50 overflow-hidden"
+                          className="mt-2 max-h-[400px] rounded-lg border border-white/20 backdrop-blur-md shadow-xl overflow-hidden"
                           style={{
                             background:
                               "linear-gradient(135deg, #474ead 0%, #5a5dc7 50%, #6366f1 100%)",
                           }}
                         >
                           {/* Mobile Header */}
-                          <div className="sticky top-0 p-4 border-b border-white/10 bg-gradient-to-b from-[#474ead] to-transparent backdrop-blur-sm">
+                          <div className="p-4 border-b border-white/10 bg-gradient-to-b from-[#474ead] to-transparent backdrop-blur-sm">
                             <div className="text-center">
                               <h3 className="text-lg font-bold text-white mb-1">
                                 Find Work
@@ -1356,7 +1379,7 @@ export function TopNavigation() {
                           </div>
 
                           {/* Scrollable Categories */}
-                          <div className="overflow-y-auto max-h-[50vh] p-4">
+                          <div className="overflow-y-auto max-h-[300px] p-4">
                             <div className="space-y-3">
                               {Object.entries(item.categories).map(
                                 ([key, category]) => (
@@ -1368,7 +1391,10 @@ export function TopNavigation() {
                                         ? "bg-white/20 border-white/40 scale-[1.02]"
                                         : ""
                                     }`}
-                                    onClick={() => setActiveDropdown(null)}
+                                    onClick={() => {
+                                      setActiveDropdown(null);
+                                      setIsMobileMenuOpen(false);
+                                    }}
                                     data-testid={`mobile-category-${key}`}
                                   >
                                     <div className="flex items-start gap-3">
@@ -1415,7 +1441,7 @@ export function TopNavigation() {
                           </div>
 
                           {/* Mobile Footer */}
-                          <div className="sticky bottom-0 p-4 border-t border-white/10 bg-gradient-to-t from-[#474ead] to-transparent backdrop-blur-sm">
+                          <div className="p-4 border-t border-white/10 bg-gradient-to-t from-[#474ead] to-transparent backdrop-blur-sm">
                             <div className="flex gap-2">
                               <Button
                                 asChild
@@ -1424,7 +1450,10 @@ export function TopNavigation() {
                               >
                                 <Link
                                   href="/find-work"
-                                  onClick={() => setActiveDropdown(null)}
+                                  onClick={() => {
+                                    setActiveDropdown(null);
+                                    setIsMobileMenuOpen(false);
+                                  }}
                                 >
                                   All Jobs
                                 </Link>
@@ -1437,7 +1466,10 @@ export function TopNavigation() {
                               >
                                 <Link
                                   href="/get-hired"
-                                  onClick={() => setActiveDropdown(null)}
+                                  onClick={() => {
+                                    setActiveDropdown(null);
+                                    setIsMobileMenuOpen(false);
+                                  }}
                                 >
                                   Get Started
                                 </Link>
@@ -1454,11 +1486,12 @@ export function TopNavigation() {
                   <Link
                     key={item.path}
                     href={item.path}
-                    className={`px-3 py-2 text-sm font-medium transition-all duration-300 rounded-lg hover-elevate min-h-[44px] flex items-center ${
+                    className={`w-full px-4 py-3 text-base font-medium transition-all duration-300 rounded-lg hover-elevate min-h-[48px] flex items-center ${
                       location === item.path
                         ? "text-white bg-white/10 border border-white/30"
-                        : "text-white/90"
+                        : "text-white/90 bg-white/5"
                     }`}
+                    onClick={() => setIsMobileMenuOpen(false)}
                     data-testid={`mobile-nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
                   >
                     {item.title}
