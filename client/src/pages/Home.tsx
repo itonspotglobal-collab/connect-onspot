@@ -1249,7 +1249,7 @@ export default function Home() {
       </div>
 
       {/* Footer */}
-      <footer className="onspot-footer relative backdrop-blur-md overflow-hidden">
+      <footer className="onspot-footer relative backdrop-blur-sm overflow-hidden">
         {/* Faint Luminescent Top Divider */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[70%] h-px bg-gradient-to-r from-transparent via-[#8a63ff] through-[#5af0ff] to-transparent opacity-50 pointer-events-none"></div>
         
@@ -1284,7 +1284,7 @@ export default function Home() {
                   <div className="absolute -inset-2 bg-gradient-to-r from-violet-500/20 to-blue-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
                 </div>
                 
-                <p className="text-sm sm:text-base text-white/70 leading-relaxed max-w-md">
+                <p className="text-sm sm:text-base text-white/80 leading-relaxed max-w-md">
                   The growth engine behind modern businesses—built by entrepreneurs, for entrepreneurs. We deliver the Superhuman System. AI-first infrastructure meets people excellence. Scale your business with system and intelligence that never sleeps.
                 </p>
               </div>
@@ -1292,16 +1292,16 @@ export default function Home() {
               {/* Social Icons - Floating outside */}
               <div className="flex gap-3 justify-center md:justify-start">
                 <a href="#" className="relative w-11 h-11 rounded-full bg-white/[0.03] backdrop-blur-sm border border-white/10 hover:bg-gradient-to-br hover:from-violet-500/30 hover:to-blue-500/30 hover:border-violet-400/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group" data-testid="social-linkedin">
-                  <Linkedin className="w-5 h-5 text-white/50 group-hover:text-violet-300 group-hover:scale-110 transition-all duration-300" />
+                  <Linkedin className="w-5 h-5 text-white/60 group-hover:text-violet-300 group-hover:scale-110 transition-all duration-300" />
                 </a>
                 <a href="#" className="relative w-11 h-11 rounded-full bg-white/[0.03] backdrop-blur-sm border border-white/10 hover:bg-gradient-to-br hover:from-violet-500/30 hover:to-blue-500/30 hover:border-violet-400/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group" data-testid="social-facebook">
-                  <Facebook className="w-5 h-5 text-white/50 group-hover:text-violet-300 group-hover:scale-110 transition-all duration-300" />
+                  <Facebook className="w-5 h-5 text-white/60 group-hover:text-violet-300 group-hover:scale-110 transition-all duration-300" />
                 </a>
                 <a href="#" className="relative w-11 h-11 rounded-full bg-white/[0.03] backdrop-blur-sm border border-white/10 hover:bg-gradient-to-br hover:from-violet-500/30 hover:to-blue-500/30 hover:border-violet-400/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group" data-testid="social-twitter">
-                  <Twitter className="w-5 h-5 text-white/50 group-hover:text-violet-300 group-hover:scale-110 transition-all duration-300" />
+                  <Twitter className="w-5 h-5 text-white/60 group-hover:text-violet-300 group-hover:scale-110 transition-all duration-300" />
                 </a>
                 <a href="#" className="relative w-11 h-11 rounded-full bg-white/[0.03] backdrop-blur-sm border border-white/10 hover:bg-gradient-to-br hover:from-violet-500/30 hover:to-blue-500/30 hover:border-violet-400/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group" data-testid="social-instagram">
-                  <Instagram className="w-5 h-5 text-white/50 group-hover:text-violet-300 group-hover:scale-110 transition-all duration-300" />
+                  <Instagram className="w-5 h-5 text-white/60 group-hover:text-violet-300 group-hover:scale-110 transition-all duration-300" />
                 </a>
               </div>
             </div>
@@ -1326,29 +1326,29 @@ export default function Home() {
                     : 'opacity-0 max-h-0 overflow-hidden'
                 }`}
               >
-                <Link href="/hire-talent" className="block text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-hire">
+                <Link href="/hire-talent" className="block text-sm text-white/80 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-hire">
                   Hire Talent
                 </Link>
-                <Link href="/lead-intake" className="block text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-managed">
+                <Link href="/lead-intake" className="block text-sm text-white/80 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-managed">
                   Managed Services
                 </Link>
                 <button
                   onClick={() => setShowVanessaChat(true)}
-                  className="block text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300 text-center md:text-left w-full"
+                  className="block text-sm text-white/80 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300 text-center md:text-left w-full"
                   data-testid="footer-link-ai"
                 >
                   AI Assistant
                 </button>
-                <Link href="/waitlist" className="block text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-waitlist">
+                <Link href="/waitlist" className="block text-sm text-white/80 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-waitlist">
                   Join Waitlist
                 </Link>
-                <Link href="/careers" className="block text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-careers">
+                <Link href="/careers" className="block text-sm text-white/80 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-careers">
                   Careers
                 </Link>
-                <Link href="/powerapp" className="block text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-powerapp">
+                <Link href="/powerapp" className="block text-sm text-white/80 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-powerapp">
                   Powerapp
                 </Link>
-                <Link href="/pricing" className="block text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-pricing">
+                <Link href="/pricing" className="block text-sm text-white/80 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-pricing">
                   Pricing
                 </Link>
               </div>
@@ -1374,25 +1374,25 @@ export default function Home() {
                     : 'opacity-0 max-h-0 overflow-hidden'
                 }`}
               >
-                <Link href="/why-onspot" className="block text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-why">
+                <Link href="/why-onspot" className="block text-sm text-white/80 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-why">
                   Why OnSpot
                 </Link>
-                <Link href="/stories" className="block text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-stories">
+                <Link href="/stories" className="block text-sm text-white/80 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-stories">
                   Amazing Stories
                 </Link>
-                <Link href="/insights" className="block text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-insights">
+                <Link href="/insights" className="block text-sm text-white/80 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-insights">
                   Insights
                 </Link>
-                <Link href="/affiliate" className="block text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-affiliate">
+                <Link href="/affiliate" className="block text-sm text-white/80 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-affiliate">
                   Affiliate Marketing
                 </Link>
-                <Link href="/bpo-partner" className="block text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-bpo">
+                <Link href="/bpo-partner" className="block text-sm text-white/80 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-bpo">
                   BPO Partner
                 </Link>
-                <Link href="/investors" className="block text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-investors">
+                <Link href="/investors" className="block text-sm text-white/80 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-investors">
                   Investors Corner
                 </Link>
-                <Link href="/about" className="block text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-about">
+                <Link href="/about" className="block text-sm text-white/80 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-about">
                   About Us
                 </Link>
               </div>
@@ -1418,7 +1418,7 @@ export default function Home() {
                     : 'opacity-0 max-h-0 overflow-hidden'
                 }`}
               >
-                <p className="text-sm text-white/70 leading-relaxed">
+                <p className="text-sm text-white/80 leading-relaxed">
                   Take OnSpot with you wherever you go. Manage projects and track progress on the move.
                 </p>
                 <div className="flex flex-col gap-3 items-center md:items-start">
@@ -1458,15 +1458,15 @@ export default function Home() {
                     : 'opacity-0 max-h-0 overflow-hidden'
                 }`}
               >
-                <a href="mailto:hello@onspotglobal.com" className="flex items-center justify-center md:justify-start gap-3 text-sm text-white/70 hover:text-violet-300 transition-all duration-300 group" data-testid="footer-email">
+                <a href="mailto:hello@onspotglobal.com" className="flex items-center justify-center md:justify-start gap-3 text-sm text-white/80 hover:text-violet-300 transition-all duration-300 group" data-testid="footer-email">
                   <Mail className="w-5 h-5 flex-shrink-0 group-hover:scale-110 transition-transform duration-300" />
                   <span>hello@onspotglobal.com</span>
                 </a>
-                <a href="tel:+1234567890" className="flex items-center justify-center md:justify-start gap-3 text-sm text-white/70 hover:text-violet-300 transition-all duration-300 group" data-testid="footer-phone">
+                <a href="tel:+1234567890" className="flex items-center justify-center md:justify-start gap-3 text-sm text-white/80 hover:text-violet-300 transition-all duration-300 group" data-testid="footer-phone">
                   <Phone className="w-5 h-5 flex-shrink-0 group-hover:scale-110 transition-transform duration-300" />
                   <span>+1 (234) 567-890</span>
                 </a>
-                <div className="flex items-start justify-center md:justify-start gap-3 text-sm text-white/70">
+                <div className="flex items-start justify-center md:justify-start gap-3 text-sm text-white/80">
                   <MapPinIcon className="w-5 h-5 flex-shrink-0 mt-0.5" />
                   <span>Global HQ<br />New York</span>
                 </div>
