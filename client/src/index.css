@@ -588,6 +588,34 @@
     }
   }
 
+  /* Gentle floating animation for abstract shapes */
+  @keyframes gentleFloat {
+    0%, 100% {
+      transform: translateY(0px) scale(1);
+    }
+    50% {
+      transform: translateY(-20px) scale(1.05);
+    }
+  }
+
+  /* Slow spin animation for gradient orbs */
+  @keyframes slowSpin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .animate-gentle-float {
+    animation: gentleFloat 6s ease-in-out infinite;
+  }
+
+  .animate-slow-spin {
+    animation: slowSpin 20s linear infinite;
+  }
+
   .animate-shimmer {
     animation: shimmer 3s linear infinite;
   }
