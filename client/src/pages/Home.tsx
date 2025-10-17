@@ -234,34 +234,24 @@ const transformationStories = [
 
 const talentProfiles = [
   {
-    name: "Maria Santos",
+    name: "Frederick Chen",
     skill: "Customer Success",
     photo: FrederickPhoto,
   },
   {
-    name: "Carlos Rivera",
+    name: "Amira Patel",
     skill: "Data Analytics",
     photo: AmiraPhoto,
   },
   {
-    name: "Sofia Reyes",
+    name: "Julie Martinez",
     skill: "Executive Assistant",
     photo: JuliePhoto,
   },
   {
-    name: "Miguel Torres",
+    name: "Paige Williams",
     skill: "Lead Generation",
     photo: PaigePhoto,
-  },
-  {
-    name: "Ana Flores",
-    skill: "Content Writing",
-    photo: FrederickPhoto,
-  },
-  {
-    name: "Diego Cruz",
-    skill: "DevOps Engineer",
-    photo: AmiraPhoto,
   },
 ];
 
@@ -1120,7 +1110,7 @@ export default function Home() {
           </div>
 
           {/* Talent Profiles Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 sm:gap-8 max-w-6xl mx-auto">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 max-w-5xl mx-auto">
             {talentProfiles.map((profile, index) => (
               <div
                 key={index}
