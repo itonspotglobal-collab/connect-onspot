@@ -456,15 +456,18 @@ export function VanessaChat({
     );
   }
 
-  // Full-screen luminous glass modal mode - optimized for mobile with safe areas
+  // Full-screen luminous glass modal mode - with visible spacing from edges
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center animate-in fade-in duration-300"
+      className="fixed inset-0 z-50 flex items-center justify-center p-6 md:p-8 animate-in fade-in duration-300"
       style={{
         background:
           "radial-gradient(ellipse at center, rgba(127, 61, 244, 0.15) 0%, rgba(58, 58, 248, 0.1) 50%, rgba(0, 0, 0, 0.3) 100%)",
         backdropFilter: "blur(12px)",
-        padding: "max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left))",
+        paddingTop: "max(24px, env(safe-area-inset-top))",
+        paddingBottom: "max(24px, env(safe-area-inset-bottom))",
+        paddingLeft: "max(24px, env(safe-area-inset-left))",
+        paddingRight: "max(24px, env(safe-area-inset-right))",
       }}
       onClick={onClose}
     >
@@ -476,7 +479,7 @@ export function VanessaChat({
           backdropFilter: "blur(20px)",
           boxShadow:
             "0 0 60px rgba(127, 61, 244, 0.4), 0 8px 32px rgba(0, 0, 0, 0.12), inset 0 0 0 1px rgba(127, 61, 244, 0.3)",
-          maxHeight: "calc(var(--vh, 100dvh) - max(32px, env(safe-area-inset-top) + env(safe-area-inset-bottom)))",
+          maxHeight: "calc(var(--vh, 100dvh) - max(48px, env(safe-area-inset-top) + env(safe-area-inset-bottom) + 48px))",
         }}
         onClick={(e) => e.stopPropagation()}
         data-testid="vanessa-chat-window"
