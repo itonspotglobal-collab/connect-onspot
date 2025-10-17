@@ -83,21 +83,37 @@ const integrations = [
   { name: "More", icon: null },
 ];
 
-const popularSkills = [
-  "Virtual Assistant",
-  "Customer Service",
-  "Data Entry",
-  "Lead Generation",
-  "Content Writing",
-  "Social Media Management",
-  "Graphic Design",
-  "Web Development",
-  "React",
-  "Node.js",
-  "WordPress",
-  "Shopify",
-  "QuickBooks",
-  "SEO",
+const hiringModes = [
+  {
+    icon: Bot,
+    title: "AI Assistant",
+    subtitle: "Vanessa at your service",
+    description: "Instant, intelligent automation that never sleeps. Perfect for routine tasks, scheduling, and coordination.",
+    features: ["24/7 Availability", "Instant Responses", "Smart Automation"],
+    gradient: "from-violet-500/20 to-blue-500/20",
+    link: "#",
+    cta: "Launch AI Assistant",
+  },
+  {
+    icon: Zap,
+    title: "Managed Services",
+    subtitle: "Full team, zero hassle",
+    description: "We build, train, and manage your offshore team. You focus on growth, we handle operations.",
+    features: ["Dedicated Team", "Full Management", "Quality Assurance"],
+    gradient: "from-blue-500/20 to-cyan-500/20",
+    link: "/lead-intake",
+    cta: "Get Managed Team",
+  },
+  {
+    icon: Users,
+    title: "Resourced Services",
+    subtitle: "Elite talent, on-demand",
+    description: "Handpicked professionals integrated into your workflow. Expert skills when you need them.",
+    features: ["Top 5% Talent", "Flexible Scaling", "Direct Integration"],
+    gradient: "from-cyan-500/20 to-violet-500/20",
+    link: "/hire-talent",
+    cta: "Browse Talent",
+  },
 ];
 
 const onspotExperience = [
@@ -753,45 +769,119 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Popular Skills */}
-      <div className="container mx-auto px-4 sm:px-6 space-y-8 sm:space-y-12">
-        <div className="text-center space-y-3 sm:space-y-4">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold px-4">
-            Want to Hire Talent?
-          </h2>
-          <p className="text-sm sm:text-base text-muted-foreground px-4">
-            Our talent pool covers the most sought-after skills in the market
-          </p>
+      {/* Hire Talent - Cinematic Selector */}
+      <div className="relative py-24 sm:py-32 lg:py-40 overflow-hidden">
+        {/* Network lines background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-background">
+          <svg className="absolute inset-0 w-full h-full opacity-20" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="network-pattern" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
+                <circle cx="50" cy="50" r="1" fill="currentColor" className="text-violet-500/40" />
+                <line x1="50" y1="50" x2="100" y2="50" stroke="currentColor" strokeWidth="0.5" className="text-violet-500/20" />
+                <line x1="50" y1="50" x2="50" y2="100" stroke="currentColor" strokeWidth="0.5" className="text-blue-500/20" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#network-pattern)" />
+          </svg>
         </div>
 
-        <Card>
-          <CardContent className="p-5 sm:p-8">
-            <div className="flex flex-wrap gap-2 sm:gap-3 justify-center">
-              {popularSkills.map((skill, index) => (
-                <Badge
-                  key={index}
-                  variant="outline"
-                  className="hover-elevate cursor-pointer px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm"
-                  data-testid={`popular-skill-${skill.toLowerCase().replace(/\s+/g, "-")}`}
-                >
-                  {skill}
-                </Badge>
-              ))}
-            </div>
-            <div className="text-center mt-6 sm:mt-8">
-              <Button
-                size="lg"
-                className="min-h-[48px] w-full sm:w-auto"
-                asChild
+        {/* Gradient motion overlay */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 -left-1/4 w-[800px] h-[800px] bg-gradient-radial from-violet-500/10 to-transparent rounded-full blur-3xl animate-slow-spin"></div>
+          <div className="absolute bottom-1/4 -right-1/4 w-[800px] h-[800px] bg-gradient-radial from-blue-500/10 to-transparent rounded-full blur-3xl animate-slow-spin" style={{ animationDelay: '5s' }}></div>
+        </div>
+
+        <div className="container mx-auto px-4 sm:px-6 relative z-10">
+          {/* Section Title */}
+          <div className="text-center mb-16 sm:mb-20 space-y-4">
+            <p className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wider">
+              Choose Your Path
+            </p>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight">
+              Hire Talent, Your Way
+            </h2>
+            <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
+              Select the perfect approach for your needs
+            </p>
+          </div>
+
+          {/* Hiring Mode Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12 max-w-7xl mx-auto">
+            {hiringModes.map((mode, index) => (
+              <div
+                key={index}
+                className="group relative"
+                style={{
+                  animation: `fadeInUp 0.8s ease-out ${index * 0.15}s both`,
+                }}
+                data-testid={`hiring-mode-${index}`}
               >
-                <Link href="/hire-talent">
-                  <Search className="w-4 h-4 mr-2" />
-                  Search All Skills
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+                {/* Floating glow effect */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${mode.gradient} opacity-0 group-hover:opacity-100 blur-2xl transition-opacity duration-700 rounded-3xl scale-110 animate-gentle-pulse`}></div>
+                
+                {/* Glass Card */}
+                <div className="relative bg-background/30 backdrop-blur-xl border border-white/10 rounded-3xl p-8 lg:p-10 transition-all duration-700 group-hover:border-white/20 group-hover:bg-background/40 h-full flex flex-col group-hover:transform group-hover:scale-[1.02]">
+                  {/* Icon */}
+                  <div className={`w-16 h-16 lg:w-20 lg:h-20 rounded-2xl bg-gradient-to-br ${mode.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500`}>
+                    <mode.icon className="w-8 h-8 lg:w-10 lg:h-10 text-foreground" />
+                  </div>
+
+                  {/* Title & Subtitle */}
+                  <div className="mb-4">
+                    <h3 className="text-xl lg:text-2xl font-semibold mb-2 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+                      {mode.title}
+                    </h3>
+                    <p className="text-sm lg:text-base text-muted-foreground">
+                      {mode.subtitle}
+                    </p>
+                  </div>
+
+                  {/* Description */}
+                  <div className="mb-6 flex-grow">
+                    <p className="text-sm lg:text-base text-foreground/80 leading-relaxed">
+                      {mode.description}
+                    </p>
+                  </div>
+
+                  {/* Features */}
+                  <div className="mb-6 space-y-2">
+                    {mode.features.map((feature, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-violet-500 flex-shrink-0" />
+                        <span className="text-sm text-muted-foreground">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* CTA Button */}
+                  <div className="mt-auto pt-6 border-t border-white/10">
+                    <Button
+                      variant={index === 0 ? "default" : "outline"}
+                      className={`w-full min-h-[48px] ${index === 0 ? 'bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700' : ''}`}
+                      onClick={mode.link === "#" ? () => setShowVanessaChat(true) : undefined}
+                      asChild={mode.link !== "#"}
+                    >
+                      {mode.link === "#" ? (
+                        <span>
+                          <mode.icon className="w-4 h-4 mr-2" />
+                          {mode.cta}
+                        </span>
+                      ) : (
+                        <Link href={mode.link}>
+                          <mode.icon className="w-4 h-4 mr-2" />
+                          {mode.cta}
+                        </Link>
+                      )}
+                    </Button>
+                  </div>
+
+                  {/* Bottom glow line */}
+                  <div className={`absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r ${mode.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-700`}></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Why OnSpot Advantage */}
