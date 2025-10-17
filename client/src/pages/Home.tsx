@@ -1310,13 +1310,13 @@ export default function Home() {
             </div>
 
             {/* Navigation Section */}
-            <div className="space-y-6 pb-8 md:pb-0 border-b md:border-b-0 border-white/10 text-center md:text-left">
+            <div className="space-y-3 md:space-y-6 pb-6 md:pb-0 border-b md:border-b-0 border-white/10 text-center md:text-left">
               <button
                 onClick={() => toggleFooterSection('navigation')}
                 className="flex items-center justify-between w-full md:cursor-default"
                 data-testid="footer-accordion-navigation"
               >
-                <h3 className="text-base sm:text-lg font-semibold bg-gradient-to-r from-[#a38eff] to-[#6af0ff] bg-clip-text text-transparent tracking-wide">
+                <h3 className="text-base sm:text-lg font-semibold text-white/95 tracking-wide">
                   Navigation
                 </h3>
                 <ChevronDown className={`w-5 h-5 text-white/50 transition-transform duration-300 md:hidden ${expandedFooterSection === 'navigation' ? 'rotate-180' : ''}`} />
@@ -1358,13 +1358,13 @@ export default function Home() {
             </div>
 
             {/* Company Section */}
-            <div className="space-y-6 pb-8 md:pb-0 border-b md:border-b-0 border-white/10 text-center md:text-left">
+            <div className="space-y-3 md:space-y-6 pb-6 md:pb-0 border-b md:border-b-0 border-white/10 text-center md:text-left">
               <button
                 onClick={() => toggleFooterSection('company')}
                 className="flex items-center justify-between w-full md:cursor-default"
                 data-testid="footer-accordion-company"
               >
-                <h3 className="text-base sm:text-lg font-semibold bg-gradient-to-r from-[#a38eff] to-[#6af0ff] bg-clip-text text-transparent tracking-wide">
+                <h3 className="text-base sm:text-lg font-semibold text-white/95 tracking-wide">
                   Company
                 </h3>
                 <ChevronDown className={`w-5 h-5 text-white/50 transition-transform duration-300 md:hidden ${expandedFooterSection === 'company' ? 'rotate-180' : ''}`} />
@@ -1402,13 +1402,13 @@ export default function Home() {
             </div>
 
             {/* Download Section */}
-            <div className="space-y-6 pb-8 md:pb-0 border-b md:border-b-0 border-white/10 text-center md:text-left">
+            <div className="space-y-3 md:space-y-6 pb-6 md:pb-0 border-b md:border-b-0 border-white/10 text-center md:text-left">
               <button
                 onClick={() => toggleFooterSection('download')}
                 className="flex items-center justify-between w-full md:cursor-default"
                 data-testid="footer-accordion-download"
               >
-                <h3 className="text-base sm:text-lg font-semibold bg-gradient-to-r from-[#a38eff] to-[#6af0ff] bg-clip-text text-transparent tracking-wide">
+                <h3 className="text-base sm:text-lg font-semibold text-white/95 tracking-wide">
                   Download Platform
                 </h3>
                 <ChevronDown className={`w-5 h-5 text-white/50 transition-transform duration-300 md:hidden ${expandedFooterSection === 'download' ? 'rotate-180' : ''}`} />
@@ -1442,13 +1442,13 @@ export default function Home() {
             </div>
 
             {/* Connect Section */}
-            <div className="space-y-6 text-center md:text-left">
+            <div className="space-y-3 md:space-y-6 text-center md:text-left">
               <button
                 onClick={() => toggleFooterSection('connect')}
                 className="flex items-center justify-between w-full md:cursor-default"
                 data-testid="footer-accordion-connect"
               >
-                <h3 className="text-base sm:text-lg font-semibold bg-gradient-to-r from-[#a38eff] to-[#6af0ff] bg-clip-text text-transparent tracking-wide">
+                <h3 className="text-base sm:text-lg font-semibold text-white/95 tracking-wide">
                   Connect
                 </h3>
                 <ChevronDown className={`w-5 h-5 text-white/50 transition-transform duration-300 md:hidden ${expandedFooterSection === 'connect' ? 'rotate-180' : ''}`} />
