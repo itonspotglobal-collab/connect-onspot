@@ -1,8 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { X, Sparkles, MessageCircle } from "lucide-react";
+import { X, Sparkles, MessageCircle, Send } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Textarea } from "@/components/ui/textarea";
 import { useVanessa } from "@/contexts/VanessaContext";
 import type { Message } from "@/contexts/VanessaContext";
 import vanessaPhoto from "@assets/Vanessa_1760674530978.png";
@@ -31,6 +32,13 @@ export function VanessaChat({
     isMinimized,
     setIsMinimized,
   } = useVanessa();
+
+  // Local state for input and streaming
+  const [userInput, setUserInput] = useState("");
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [userHasTyped, setUserHasTyped] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const openingMessages = [
     {
@@ -226,6 +234,103 @@ export function VanessaChat({
     window.open(
       "https://api.leadconnectorhq.com/widget/booking/2oCPWrG6iXVnuUGRXKBK",
     );
+  };
+
+  // Auto-scroll to bottom when near the bottom
+  const scrollToBottom = (smooth = true) => {
+    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
+  };
+
+  // Check if user is near bottom (within 100px)
+  const isNearBottom = () => {
+    const container = messagesContainerRef.current;
+    if (!container) return true;
+    const threshold = 100;
+    return container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
+  };
+
+  // Auto-scroll when new messages arrive
+  useEffect(() => {
+    if (isNearBottom()) {
+      scrollToBottom();
+    }
+  }, [messages]);
+
+  // Handle sending user message
+  const handleSendMessage = async () => {
+    if (!userInput.trim() || isStreaming) return;
+
+    const userMessage = userInput.trim();
+    setUserInput("");
+    setUserHasTyped(false);
+    setShowOptions(false);
+
+    // Add user message
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        text: userMessage,
+        sender: "user",
+      },
+    ]);
+
+    // Simulate streaming response
+    setIsStreaming(true);
+    
+    // Create empty assistant message
+    const assistantMessageId = Date.now() + 1;
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: assistantMessageId,
+        text: "",
+        sender: "vanessa",
+        isTyping: true,
+      },
+    ]);
+
+    // Simulate streaming tokens
+    const response = "I'm currently in training and learning from real conversations. For now, I can help you explore our services through the quick options, or you can chat with a human expert who can provide detailed assistance!";
+    const words = response.split(' ');
+    
+    for (let i = 0; i < words.length; i++) {
+      await new Promise(resolve => setTimeout(resolve, 50 + Math.random() * 50));
+      
+      setMessages((prev) => {
+        const updated = [...prev];
+        const lastMessage = updated[updated.length - 1];
+        if (lastMessage.id === assistantMessageId) {
+          lastMessage.text = words.slice(0, i + 1).join(' ');
+          lastMessage.isTyping = i < words.length - 1;
+        }
+        return updated;
+      });
+    }
+
+    setIsStreaming(false);
+    
+    // Show options after response completes
+    setTimeout(() => setShowOptions(true), 500);
+  };
+
+  // Handle input change
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setUserInput(e.target.value);
+    if (e.target.value.trim() && !userHasTyped) {
+      setUserHasTyped(true);
+      setShowOptions(false);
+    } else if (!e.target.value.trim() && userHasTyped) {
+      setUserHasTyped(false);
+    }
+  };
+
+  // Handle Enter key
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
   };
 
   if (!isOpen) return null;
