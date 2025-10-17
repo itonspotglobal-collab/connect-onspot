@@ -608,12 +608,28 @@
     }
   }
 
+  /* Gentle pulse animation for core elements */
+  @keyframes gentlePulse {
+    0%, 100% {
+      opacity: 0.6;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(1.05);
+    }
+  }
+
   .animate-gentle-float {
     animation: gentleFloat 6s ease-in-out infinite;
   }
 
   .animate-slow-spin {
     animation: slowSpin 20s linear infinite;
+  }
+
+  .animate-gentle-pulse {
+    animation: gentlePulse 3s ease-in-out infinite;
   }
 
   .animate-shimmer {

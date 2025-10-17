@@ -462,34 +462,121 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Integrations Strip */}
-      <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
-        <div className="space-y-4 sm:space-y-6">
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <p className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wide">
-              Integrates with
+      {/* Integrations - Neural Grid */}
+      <div className="relative py-24 sm:py-32 overflow-hidden">
+        {/* Background gradient */}
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-violet-500/5 to-background"></div>
+        
+        <div className="container mx-auto px-4 sm:px-6 relative z-10">
+          {/* Section Title */}
+          <div className="text-center mb-16 sm:mb-20 space-y-3">
+            <p className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wider">
+              Connected Intelligence
             </p>
-            <span className="text-xs text-muted-foreground">and many more</span>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-light tracking-tight">
+              Seamlessly Integrates With Your Stack
+            </h2>
           </div>
 
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-10 gap-2 sm:gap-3">
-            {integrations.map((integration, index) => (
-              <Card
-                key={index}
-                className="hover-elevate transition-all duration-200 bg-card/50 border"
-                data-testid={`integration-${index}`}
-              >
-                <CardContent className="p-2 sm:p-3 h-10 sm:h-12 flex items-center justify-center">
-                  {integration.icon ? (
-                    <integration.icon className="w-5 h-5 sm:w-6 sm:h-6 text-foreground/60" />
-                  ) : (
-                    <span className="text-[10px] sm:text-xs font-medium text-foreground/60 text-center truncate px-1">
-                      {integration.name}
-                    </span>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+          {/* Neural Grid Container */}
+          <div className="relative max-w-6xl mx-auto">
+            {/* Central OnSpot Core */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+              <div className="relative group">
+                {/* Pulsing glow effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-blue-600 rounded-full blur-2xl opacity-60 group-hover:opacity-80 transition-opacity duration-500 animate-gentle-pulse"></div>
+                
+                {/* Core circle */}
+                <div className="relative w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 rounded-full bg-gradient-to-br from-violet-600 to-blue-600 flex items-center justify-center border-2 border-white/20">
+                  <Sparkles className="w-10 h-10 sm:w-12 sm:h-12 text-white" />
+                </div>
+              </div>
+            </div>
+
+            {/* Integration Nodes - Circular Layout */}
+            <div className="relative h-[500px] sm:h-[600px] lg:h-[700px]">
+              {integrations.map((integration, index) => {
+                const totalItems = integrations.length;
+                const angle = (index * 360) / totalItems;
+                const radius = 180; // Base radius for mobile
+                const smRadius = 220; // Tablet
+                const lgRadius = 280; // Desktop
+                
+                // Calculate positions for different screen sizes
+                const x = Math.cos((angle - 90) * Math.PI / 180);
+                const y = Math.sin((angle - 90) * Math.PI / 180);
+
+                return (
+                  <div
+                    key={index}
+                    className="absolute top-1/2 left-1/2 group"
+                    style={{
+                      transform: `translate(-50%, -50%) translate(calc(${x * radius}px), calc(${y * radius}px))`,
+                    }}
+                    data-testid={`integration-${index}`}
+                  >
+                    {/* Connection line to center */}
+                    <svg
+                      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                      width={radius * 2.5}
+                      height={radius * 2.5}
+                      style={{
+                        transform: 'translate(-50%, -50%)',
+                      }}
+                    >
+                      <line
+                        x1="50%"
+                        y1="50%"
+                        x2={`calc(50% - ${x * radius}px)`}
+                        y2={`calc(50% - ${y * radius}px)`}
+                        stroke="url(#lineGradient)"
+                        strokeWidth="2"
+                        className="animate-pulse"
+                      />
+                      <defs>
+                        <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                          <stop offset="0%" stopColor="rgb(139, 92, 246)" stopOpacity="0.8" />
+                          <stop offset="100%" stopColor="rgb(59, 130, 246)" stopOpacity="0.8" />
+                        </linearGradient>
+                      </defs>
+                    </svg>
+
+                    {/* Integration Node */}
+                    <div className="relative">
+                      {/* Hover glow */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-violet-500/30 to-blue-500/30 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 scale-150"></div>
+                      
+                      {/* Glass card */}
+                      <div className="relative bg-background/40 backdrop-blur-xl border border-white/10 rounded-2xl p-3 sm:p-4 transition-all duration-500 group-hover:border-white/30 group-hover:bg-background/60 min-w-[80px] sm:min-w-[100px] lg:min-w-[120px]">
+                        <div className="flex flex-col items-center justify-center gap-2">
+                          {integration.icon ? (
+                            <integration.icon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-foreground/60 group-hover:text-foreground transition-colors duration-300 grayscale group-hover:grayscale-0" />
+                          ) : (
+                            <div className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 rounded bg-gradient-to-br from-violet-500/20 to-blue-500/20"></div>
+                          )}
+                          <span className="text-[9px] sm:text-[10px] lg:text-xs font-medium text-foreground/60 group-hover:text-foreground transition-colors duration-300 text-center">
+                            {integration.name}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Decorative elements */}
+            <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
+              <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-violet-500/10 rounded-full blur-3xl animate-gentle-float"></div>
+              <div className="absolute bottom-1/4 right-1/4 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl animate-gentle-float" style={{ animationDelay: '2s' }}></div>
+            </div>
+          </div>
+
+          {/* Bottom text */}
+          <div className="text-center mt-12 sm:mt-16">
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              and many more...
+            </p>
           </div>
         </div>
       </div>
