@@ -56,11 +56,7 @@ export function VanessaProvider({ children }: { children: ReactNode }) {
   const closeVanessa = () => {
     setShowVanessaChat(false);
     setIsMinimized(true);
-    // Reset conversation state for fresh start on next open
-    setMessages([]);
-    setCurrentMessageIndex(0);
-    setShowOptions(false);
-    setSelectedTopic(null);
+    // Don't reset conversation - persist across sessions
   };
 
   return (

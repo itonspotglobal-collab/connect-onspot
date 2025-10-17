@@ -91,9 +91,9 @@ export function VanessaChat({
   // Prevent body scroll when popup is open
   useEffect(() => {
     if (isOpen && !isSticky) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
       return () => {
-        document.body.style.overflow = '';
+        document.body.style.overflow = "";
       };
     }
   }, [isOpen, isSticky]);
@@ -105,9 +105,15 @@ export function VanessaChat({
     const updateViewportHeight = () => {
       if (window.visualViewport) {
         const vh = window.visualViewport.height;
-        document.documentElement.style.setProperty('--viewport-height', `${vh}px`);
+        document.documentElement.style.setProperty(
+          "--viewport-height",
+          `${vh}px`,
+        );
       } else {
-        document.documentElement.style.setProperty('--viewport-height', `${window.innerHeight}px`);
+        document.documentElement.style.setProperty(
+          "--viewport-height",
+          `${window.innerHeight}px`,
+        );
       }
       // Recompute pinned state on resize
       if (checkIfNearBottom() && isPinnedToBottom) {
@@ -116,13 +122,16 @@ export function VanessaChat({
     };
 
     updateViewportHeight();
-    window.visualViewport?.addEventListener('resize', updateViewportHeight);
-    window.addEventListener('resize', updateViewportHeight);
+    window.visualViewport?.addEventListener("resize", updateViewportHeight);
+    window.addEventListener("resize", updateViewportHeight);
 
     return () => {
-      window.visualViewport?.removeEventListener('resize', updateViewportHeight);
-      window.removeEventListener('resize', updateViewportHeight);
-      document.documentElement.style.removeProperty('--viewport-height');
+      window.visualViewport?.removeEventListener(
+        "resize",
+        updateViewportHeight,
+      );
+      window.removeEventListener("resize", updateViewportHeight);
+      document.documentElement.style.removeProperty("--viewport-height");
     };
   }, [isOpen, isSticky, isPinnedToBottom]);
 
@@ -146,9 +155,9 @@ export function VanessaChat({
     const container = messagesContainerRef.current;
     if (!container) return;
 
-    container.addEventListener('scroll', handleScroll);
+    container.addEventListener("scroll", handleScroll);
     return () => {
-      container.removeEventListener('scroll', handleScroll);
+      container.removeEventListener("scroll", handleScroll);
     };
   }, [isStreaming]);
 
@@ -165,7 +174,7 @@ export function VanessaChat({
     // Observe the footer area (input + choices)
     const container = messagesContainerRef.current?.parentElement;
     if (container) {
-      const footer = container.querySelector('[data-footer-area]');
+      const footer = container.querySelector("[data-footer-area]");
       if (footer) {
         resizeObserver.observe(footer as Element);
       }
@@ -182,31 +191,31 @@ export function VanessaChat({
       hasInitializedRef.current = false;
       return;
     }
-    
+
     // Prevent running multiple times when chat is already open
     if (hasInitializedRef.current) {
       return;
     }
-    
+
     hasInitializedRef.current = true;
-    
+
     // Always reset conversation state when chat opens
     setMessages([]);
     setCurrentMessageIndex(0);
     setShowOptions(false);
     setSelectedTopic(null);
-    
+
     const timer = setTimeout(() => {
       // Trigger first message
       const firstMessage = openingMessages[0];
       setMessages([{ ...firstMessage, isTyping: true }]);
-      
+
       setTimeout(() => {
         setMessages([{ ...firstMessage, isTyping: false }]);
         setCurrentMessageIndex(1);
       }, 1200);
     }, 300);
-    
+
     return () => clearTimeout(timer);
     // Only run when isOpen changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -214,7 +223,11 @@ export function VanessaChat({
 
   // Display subsequent messages sequentially with typing animation
   useEffect(() => {
-    if (!isOpen || currentMessageIndex === 0 || currentMessageIndex >= openingMessages.length) {
+    if (
+      !isOpen ||
+      currentMessageIndex === 0 ||
+      currentMessageIndex >= openingMessages.length
+    ) {
       // Show options after last opening message
       if (currentMessageIndex === openingMessages.length && !showOptions) {
         setTimeout(() => setShowOptions(true), 500);
@@ -229,14 +242,17 @@ export function VanessaChat({
       setMessages((prev) => [...prev, { ...newMessage, isTyping: true }]);
 
       // Replace typing indicator with actual message after delay
-      setTimeout(() => {
-        setMessages((prev) => {
-          const updated = [...prev];
-          updated[updated.length - 1] = { ...newMessage, isTyping: false };
-          return updated;
-        });
-        setCurrentMessageIndex((prev) => prev + 1);
-      }, 1000 + Math.random() * 500);
+      setTimeout(
+        () => {
+          setMessages((prev) => {
+            const updated = [...prev];
+            updated[updated.length - 1] = { ...newMessage, isTyping: false };
+            return updated;
+          });
+          setCurrentMessageIndex((prev) => prev + 1);
+        },
+        1000 + Math.random() * 500,
+      );
     }, 1500);
 
     return () => clearTimeout(timer);
@@ -330,9 +346,11 @@ export function VanessaChat({
     if (scrollAnimationFrameRef.current !== null) {
       cancelAnimationFrame(scrollAnimationFrameRef.current);
     }
-    
+
     scrollAnimationFrameRef.current = requestAnimationFrame(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
+      messagesEndRef.current?.scrollIntoView({
+        behavior: smooth ? "smooth" : "auto",
+      });
       scrollAnimationFrameRef.current = null;
     });
   };
@@ -342,7 +360,10 @@ export function VanessaChat({
     const container = messagesContainerRef.current;
     if (!container) return true;
     const threshold = 100;
-    return container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
+    return (
+      container.scrollHeight - container.scrollTop - container.clientHeight <
+      threshold
+    );
   };
 
   // Handle scroll events to track pinned state
@@ -376,6 +397,15 @@ export function VanessaChat({
     }
   }, [messages, isPinnedToBottom, isStreaming]);
 
+  // Ensure chat scrolls when new messages are added
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      requestAnimationFrame(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      });
+    }
+  }, [messages]);
+
   // Scroll to bottom and dismiss chip
   const handleScrollToBottomClick = () => {
     setIsPinnedToBottom(true);
@@ -386,13 +416,58 @@ export function VanessaChat({
   // Detect FAQ topic from user input using keyword matching
   const detectFAQTopic = (input: string): string | null => {
     const lowerInput = input.toLowerCase();
-    
+
     // Keywords for each topic
     const keywords = {
-      "how-it-works": ["how", "work", "works", "process", "step", "start", "begin", "onboard", "setup"],
-      "pricing": ["price", "pricing", "cost", "rate", "hour", "pay", "payment", "fee", "charge", "expensive", "cheap", "affordable"],
-      "ai-human": ["ai", "human", "advantage", "benefit", "automation", "technology", "difference", "why", "better"],
-      "talk-human": ["talk", "speak", "human", "person", "expert", "manager", "call", "meeting", "schedule", "contact", "help me"],
+      "how-it-works": [
+        "how",
+        "work",
+        "works",
+        "process",
+        "step",
+        "start",
+        "begin",
+        "onboard",
+        "setup",
+      ],
+      pricing: [
+        "price",
+        "pricing",
+        "cost",
+        "rate",
+        "hour",
+        "pay",
+        "payment",
+        "fee",
+        "charge",
+        "expensive",
+        "cheap",
+        "affordable",
+      ],
+      "ai-human": [
+        "ai",
+        "human",
+        "advantage",
+        "benefit",
+        "automation",
+        "technology",
+        "difference",
+        "why",
+        "better",
+      ],
+      "talk-human": [
+        "talk",
+        "speak",
+        "human",
+        "person",
+        "expert",
+        "manager",
+        "call",
+        "meeting",
+        "schedule",
+        "contact",
+        "help me",
+      ],
     };
 
     // Count keyword matches for each topic
@@ -400,7 +475,9 @@ export function VanessaChat({
     let bestTopic = null;
 
     for (const [topic, topicKeywords] of Object.entries(keywords)) {
-      const matches = topicKeywords.filter(keyword => lowerInput.includes(keyword)).length;
+      const matches = topicKeywords.filter((keyword) =>
+        lowerInput.includes(keyword),
+      ).length;
       if (matches > maxMatches) {
         maxMatches = matches;
         bestTopic = topic;
@@ -432,18 +509,18 @@ export function VanessaChat({
 
     // Detect FAQ topic
     const detectedTopic = detectFAQTopic(userMessage);
-    
+
     if (detectedTopic) {
       // User asked about a FAQ topic - provide those responses
       setSelectedTopic(detectedTopic);
-      
+
       const responses = faqResponses[detectedTopic];
       let responseIndex = 0;
 
       const showNextResponse = async () => {
         if (responseIndex < responses.length) {
           setIsStreaming(true);
-          
+
           // Show typing
           const typingMessageId = Date.now() + responseIndex;
           setMessages((prev) => [
@@ -458,16 +535,18 @@ export function VanessaChat({
 
           // Simulate streaming the response
           const response = responses[responseIndex];
-          const words = response.split(' ');
-          
+          const words = response.split(" ");
+
           for (let i = 0; i < words.length; i++) {
-            await new Promise(resolve => setTimeout(resolve, 40 + Math.random() * 40));
-            
+            await new Promise((resolve) =>
+              setTimeout(resolve, 40 + Math.random() * 40),
+            );
+
             setMessages((prev) => {
               const updated = [...prev];
               const lastMessage = updated[updated.length - 1];
               if (lastMessage.id === typingMessageId) {
-                lastMessage.text = words.slice(0, i + 1).join(' ');
+                lastMessage.text = words.slice(0, i + 1).join(" ");
                 lastMessage.isTyping = i < words.length - 1;
               }
               return updated;
@@ -476,7 +555,7 @@ export function VanessaChat({
 
           setIsStreaming(false);
           responseIndex++;
-          
+
           if (responseIndex < responses.length) {
             setTimeout(showNextResponse, 1200);
           } else {
@@ -502,7 +581,7 @@ export function VanessaChat({
     } else {
       // No FAQ topic detected - provide general response
       setIsStreaming(true);
-      
+
       const assistantMessageId = Date.now() + 1;
       setMessages((prev) => [
         ...prev,
@@ -515,17 +594,20 @@ export function VanessaChat({
       ]);
 
       // Simulate streaming tokens
-      const response = "I can help you learn about OnSpot! Try asking about our pricing, how it works, our AI-human advantage, or tap one of the quick options below to get started.";
-      const words = response.split(' ');
-      
+      const response =
+        "I can help you learn about OnSpot! Try asking about our pricing, how it works, our AI-human advantage, or tap one of the quick options below to get started.";
+      const words = response.split(" ");
+
       for (let i = 0; i < words.length; i++) {
-        await new Promise(resolve => setTimeout(resolve, 50 + Math.random() * 50));
-        
+        await new Promise((resolve) =>
+          setTimeout(resolve, 50 + Math.random() * 50),
+        );
+
         setMessages((prev) => {
           const updated = [...prev];
           const lastMessage = updated[updated.length - 1];
           if (lastMessage.id === assistantMessageId) {
-            lastMessage.text = words.slice(0, i + 1).join(' ');
+            lastMessage.text = words.slice(0, i + 1).join(" ");
             lastMessage.isTyping = i < words.length - 1;
           }
           return updated;
@@ -533,7 +615,7 @@ export function VanessaChat({
       }
 
       setIsStreaming(false);
-      
+
       // Show options after response completes
       setTimeout(() => setShowOptions(true), 500);
     }
@@ -552,7 +634,7 @@ export function VanessaChat({
 
   // Handle Enter key
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
@@ -589,14 +671,16 @@ export function VanessaChat({
           >
             {/* Animated glow accent border */}
             <div className="absolute inset-0 rounded-3xl pointer-events-none overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-[#3A3AF8]/30 via-[#7F3DF4]/30 to-[#3A3AF8]/30 opacity-60 animate-pulse" 
-                   style={{ 
-                     mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                     WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                     maskComposite: 'exclude',
-                     WebkitMaskComposite: 'xor',
-                     padding: '2px'
-                   }} 
+              <div
+                className="absolute inset-0 bg-gradient-to-r from-[#3A3AF8]/30 via-[#7F3DF4]/30 to-[#3A3AF8]/30 opacity-60 animate-pulse"
+                style={{
+                  mask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+                  WebkitMask:
+                    "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+                  maskComposite: "exclude",
+                  WebkitMaskComposite: "xor",
+                  padding: "2px",
+                }}
               />
             </div>
 
@@ -650,56 +734,57 @@ export function VanessaChat({
             </div>
 
             {/* Messages with enhanced contrast - scrollable with momentum */}
-            <div className="flex-1 relative min-h-0">
+            <div className="flex-1 relative min-h-0 transition-all duration-500 ease-in-out">
               <div
                 ref={messagesContainerRef}
-                className="absolute inset-0 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4"
+                className="absolute inset-0 overflow-y-auto"
                 style={{
-                  WebkitOverflowScrolling: 'touch',
-                  overscrollBehavior: 'contain',
+                  maxHeight: "calc(100% - 120px)", // ensures messages can push the input up
+                  WebkitOverflowScrolling: "touch",
+                  overscrollBehavior: "contain",
                 }}
                 data-testid="chat-messages"
               >
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2 duration-300`}
-                >
+                {messages.map((message) => (
                   <div
-                    className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-sm ${
-                      message.sender === "user"
-                        ? "bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white"
-                        : "bg-white/80 text-gray-900 backdrop-blur-sm border border-violet-200/40"
-                    }`}
-                    data-testid={`message-${message.sender}-${message.id}`}
+                    key={message.id}
+                    className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2 duration-300`}
                   >
-                    {message.isTyping ? (
-                      <div
-                        className="flex gap-1 py-1"
-                        data-testid="typing-indicator"
-                      >
+                    <div
+                      className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-sm ${
+                        message.sender === "user"
+                          ? "bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white"
+                          : "bg-white/80 text-gray-900 backdrop-blur-sm border border-violet-200/40"
+                      }`}
+                      data-testid={`message-${message.sender}-${message.id}`}
+                    >
+                      {message.isTyping ? (
                         <div
-                          className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"
-                          style={{ animationDelay: "0ms" }}
-                        />
-                        <div
-                          className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"
-                          style={{ animationDelay: "150ms" }}
-                        />
-                        <div
-                          className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"
-                          style={{ animationDelay: "300ms" }}
-                        />
-                      </div>
-                    ) : (
-                      <p className="text-sm whitespace-pre-line leading-relaxed">
-                        {message.text}
-                      </p>
-                    )}
+                          className="flex gap-1 py-1"
+                          data-testid="typing-indicator"
+                        >
+                          <div
+                            className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"
+                            style={{ animationDelay: "0ms" }}
+                          />
+                          <div
+                            className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"
+                            style={{ animationDelay: "150ms" }}
+                          />
+                          <div
+                            className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"
+                            style={{ animationDelay: "300ms" }}
+                          />
+                        </div>
+                      ) : (
+                        <p className="text-sm whitespace-pre-line leading-relaxed">
+                          {message.text}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
-              <div ref={messagesEndRef} />
+                ))}
+                <div ref={messagesEndRef} />
               </div>
 
               {/* New messages chip - appears when user scrolls up during streaming */}
@@ -720,11 +805,12 @@ export function VanessaChat({
             {/* Footer area (input + choices) - tracked by ResizeObserver */}
             <div data-footer-area>
               {/* Sticky Input Bar - always visible */}
-              <div 
+              <div
                 className="border-t border-violet-200/50 backdrop-blur-sm flex-shrink-0"
                 style={{
-                  padding: 'clamp(10px, 2vw, 16px)',
-                  paddingBottom: 'max(12px, calc(10px + env(safe-area-inset-bottom)))',
+                  padding: "clamp(10px, 2vw, 16px)",
+                  paddingBottom:
+                    "max(12px, calc(10px + env(safe-area-inset-bottom)))",
                 }}
               >
                 <div className="flex gap-2 items-end">
@@ -750,76 +836,77 @@ export function VanessaChat({
 
               {/* Interactive Options with glass buttons - sticky footer with safe area */}
               {showOptions && !userHasTyped && (
-              <div 
-                className="border-t border-violet-200/50 space-y-2 animate-in slide-in-from-bottom-2 duration-300 backdrop-blur-sm flex-shrink-0"
-                style={{
-                  position: 'sticky',
-                  bottom: 0,
-                  paddingTop: '12px',
-                  paddingLeft: '16px',
-                  paddingRight: '16px',
-                  paddingBottom: 'max(16px, calc(12px + env(safe-area-inset-bottom)))',
-                }}
-              >
-                {selectedTopic === "talk-human" ? (
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={handleBookCall}
-                      className="flex-1 bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white hover:shadow-lg hover:scale-[1.02] transition-all duration-300"
-                      data-testid="button-book-call"
-                    >
-                      Book a Call
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        setSelectedTopic(null);
-                        setShowOptions(true);
-                      }}
-                      variant="outline"
-                      className="flex-1 border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
-                      data-testid="button-keep-exploring"
-                    >
-                      Keep Exploring
-                    </Button>
-                  </div>
-                ) : (
-                  <>
-                    <Button
-                      onClick={() => handleTopicSelect("how-it-works")}
-                      variant="outline"
-                      className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
-                      data-testid="button-how-it-works"
-                    >
-                      How OnSpot Outsourcing Works
-                    </Button>
-                    <Button
-                      onClick={() => handleTopicSelect("pricing")}
-                      variant="outline"
-                      className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
-                      data-testid="button-pricing"
-                    >
-                      See Pricing Models
-                    </Button>
-                    <Button
-                      onClick={() => handleTopicSelect("ai-human")}
-                      variant="outline"
-                      className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
-                      data-testid="button-ai-human"
-                    >
-                      AI + Human Advantage
-                    </Button>
-                    <Button
-                      onClick={() => handleTopicSelect("talk-human")}
-                      variant="outline"
-                      className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
-                      data-testid="button-talk-human"
-                    >
-                      Talk to a Human Expert
-                    </Button>
-                  </>
-                )}
-              </div>
-            )}
+                <div
+                  className="border-t border-violet-200/50 space-y-2 animate-in slide-in-from-bottom-2 duration-300 backdrop-blur-sm flex-shrink-0"
+                  style={{
+                    position: "sticky",
+                    bottom: 0,
+                    paddingTop: "12px",
+                    paddingLeft: "16px",
+                    paddingRight: "16px",
+                    paddingBottom:
+                      "max(16px, calc(12px + env(safe-area-inset-bottom)))",
+                  }}
+                >
+                  {selectedTopic === "talk-human" ? (
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={handleBookCall}
+                        className="flex-1 bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white hover:shadow-lg hover:scale-[1.02] transition-all duration-300"
+                        data-testid="button-book-call"
+                      >
+                        Book a Call
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setSelectedTopic(null);
+                          setShowOptions(true);
+                        }}
+                        variant="outline"
+                        className="flex-1 border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
+                        data-testid="button-keep-exploring"
+                      >
+                        Keep Exploring
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <Button
+                        onClick={() => handleTopicSelect("how-it-works")}
+                        variant="outline"
+                        className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
+                        data-testid="button-how-it-works"
+                      >
+                        How OnSpot Outsourcing Works
+                      </Button>
+                      <Button
+                        onClick={() => handleTopicSelect("pricing")}
+                        variant="outline"
+                        className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
+                        data-testid="button-pricing"
+                      >
+                        See Pricing Models
+                      </Button>
+                      <Button
+                        onClick={() => handleTopicSelect("ai-human")}
+                        variant="outline"
+                        className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
+                        data-testid="button-ai-human"
+                      >
+                        AI + Human Advantage
+                      </Button>
+                      <Button
+                        onClick={() => handleTopicSelect("talk-human")}
+                        variant="outline"
+                        className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
+                        data-testid="button-talk-human"
+                      >
+                        Talk to a Human Expert
+                      </Button>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Luminous sparkle effects */}
@@ -862,7 +949,8 @@ export function VanessaChat({
           boxShadow:
             "0 0 60px rgba(127, 61, 244, 0.4), 0 8px 32px rgba(0, 0, 0, 0.12), inset 0 0 0 1px rgba(127, 61, 244, 0.3)",
           width: "min(720px, calc(100vw - 2 * var(--gutter)))",
-          maxHeight: "min(calc(var(--viewport-height, 100dvh) - 2 * var(--vgutter)), calc(100svh - 2 * var(--vgutter)))",
+          maxHeight:
+            "min(calc(var(--viewport-height, 100dvh) - 2 * var(--vgutter)), calc(100svh - 2 * var(--vgutter)))",
           borderRadius: "clamp(16px, 2vw, 24px)",
           overflow: "hidden",
         }}
@@ -870,38 +958,37 @@ export function VanessaChat({
         data-testid="vanessa-chat-window"
       >
         {/* Animated glow accent border */}
-        <div 
+        <div
           className="absolute inset-0 pointer-events-none"
-          style={{ 
+          style={{
             borderRadius: "clamp(16px, 2vw, 24px)",
-            overflow: "hidden"
+            overflow: "hidden",
           }}
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-[#3A3AF8]/30 via-[#7F3DF4]/30 to-[#3A3AF8]/30 opacity-60 animate-pulse" 
-               style={{ 
-                 mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                 WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                 maskComposite: 'exclude',
-                 WebkitMaskComposite: 'xor',
-                 padding: '2px'
-               }} 
+          <div
+            className="absolute inset-0 bg-gradient-to-r from-[#3A3AF8]/30 via-[#7F3DF4]/30 to-[#3A3AF8]/30 opacity-60 animate-pulse"
+            style={{
+              mask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+              WebkitMask:
+                "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+              maskComposite: "exclude",
+              WebkitMaskComposite: "xor",
+              padding: "2px",
+            }}
           />
         </div>
 
         {/* Header with glass effect - pinned */}
-        <div 
+        <div
           className="flex items-center gap-3 border-b border-violet-200/50 backdrop-blur-sm flex-shrink-0"
           style={{
             padding: "clamp(12px, 3vw, 20px)",
           }}
         >
-          <Avatar
-            className="vanessa-avatar"
-            data-testid="avatar-vanessa"
-          >
-            <AvatarImage 
-              src={vanessaPhoto} 
-              alt="Vanessa" 
+          <Avatar className="vanessa-avatar" data-testid="avatar-vanessa">
+            <AvatarImage
+              src={vanessaPhoto}
+              alt="Vanessa"
               className="vanessa-avatar"
             />
             <AvatarFallback className="bg-gradient-to-br from-violet-400 to-blue-400 text-white font-semibold">
@@ -936,12 +1023,12 @@ export function VanessaChat({
           <div
             id="scroller"
             ref={messagesContainerRef}
-            className="absolute inset-0 overflow-y-auto"
+            className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4 transition-all duration-500 ease-in-out"
             style={{
-              WebkitOverflowScrolling: 'touch',
-              overscrollBehavior: 'contain',
+              WebkitOverflowScrolling: "touch",
+              overscrollBehavior: "contain",
               padding: "clamp(12px, 3vw, 20px)",
-              paddingBottom: `calc(clamp(12px, 3vw, 20px) + ${footerHeight}px)`,
+              paddingBottom: "clamp(12px, 3vw, 20px)",
             }}
             data-testid="chat-messages"
           >
@@ -1007,11 +1094,12 @@ export function VanessaChat({
         {/* Footer area (input + choices) - tracked by ResizeObserver */}
         <div ref={footerRef} data-footer-area>
           {/* Sticky Input Bar - always visible */}
-          <div 
+          <div
             className="border-t border-violet-200/50 backdrop-blur-sm flex-shrink-0"
             style={{
               padding: "clamp(12px, 3vw, 20px)",
-              paddingBottom: 'calc(clamp(12px, 3vw, 20px) + env(safe-area-inset-bottom))',
+              paddingBottom:
+                "calc(clamp(12px, 3vw, 20px) + env(safe-area-inset-bottom))",
             }}
           >
             <div className="flex gap-2 items-end">
@@ -1039,77 +1127,78 @@ export function VanessaChat({
 
           {/* Interactive Options with glass buttons - sticky footer with safe area */}
           {showOptions && !userHasTyped && (
-          <div 
-            id="choices"
-            className="border-t border-violet-200/50 space-y-2 animate-in slide-in-from-bottom-2 duration-300 backdrop-blur-sm flex-shrink-0"
-            style={{
-              position: 'sticky',
-              bottom: 0,
-              paddingTop: 'clamp(12px, 3vw, 16px)',
-              paddingLeft: 'clamp(12px, 3vw, 20px)',
-              paddingRight: 'clamp(12px, 3vw, 20px)',
-              paddingBottom: 'calc(clamp(12px, 3vw, 20px) + env(safe-area-inset-bottom))',
-            }}
-          >
-            {selectedTopic === "talk-human" ? (
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleBookCall}
-                  className="flex-1 bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white hover:shadow-lg hover:scale-[1.02] transition-all duration-300"
-                  data-testid="button-book-call"
-                >
-                  Book a Call
-                </Button>
-                <Button
-                  onClick={() => {
-                    setSelectedTopic(null);
-                    setShowOptions(true);
-                  }}
-                  variant="outline"
-                  className="flex-1 border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
-                  data-testid="button-keep-exploring"
-                >
-                  Keep Exploring
-                </Button>
-              </div>
-            ) : (
-              <>
-                <Button
-                  onClick={() => handleTopicSelect("how-it-works")}
-                  variant="outline"
-                  className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
-                  data-testid="button-how-it-works"
-                >
-                  How OnSpot Outsourcing Works
-                </Button>
-                <Button
-                  onClick={() => handleTopicSelect("pricing")}
-                  variant="outline"
-                  className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
-                  data-testid="button-pricing"
-                >
-                  See Pricing Models
-                </Button>
-                <Button
-                  onClick={() => handleTopicSelect("ai-human")}
-                  variant="outline"
-                  className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
-                  data-testid="button-ai-human"
-                >
-                  AI + Human Advantage
-                </Button>
-                <Button
-                  onClick={() => handleTopicSelect("talk-human")}
-                  variant="outline"
-                  className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
-                  data-testid="button-talk-human"
-                >
-                  Talk to a Human Expert
-                </Button>
-              </>
-            )}
-          </div>
-        )}
+            <div
+              id="choices"
+              className="border-t border-violet-200/50 space-y-2 animate-in slide-in-from-bottom-2 duration-300 backdrop-blur-sm flex-shrink-0"
+              style={{
+                position: "sticky",
+                bottom: 0,
+                paddingTop: "clamp(12px, 3vw, 16px)",
+                paddingLeft: "clamp(12px, 3vw, 20px)",
+                paddingRight: "clamp(12px, 3vw, 20px)",
+                paddingBottom:
+                  "calc(clamp(12px, 3vw, 20px) + env(safe-area-inset-bottom))",
+              }}
+            >
+              {selectedTopic === "talk-human" ? (
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleBookCall}
+                    className="flex-1 bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white hover:shadow-lg hover:scale-[1.02] transition-all duration-300"
+                    data-testid="button-book-call"
+                  >
+                    Book a Call
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setSelectedTopic(null);
+                      setShowOptions(true);
+                    }}
+                    variant="outline"
+                    className="flex-1 border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
+                    data-testid="button-keep-exploring"
+                  >
+                    Keep Exploring
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <Button
+                    onClick={() => handleTopicSelect("how-it-works")}
+                    variant="outline"
+                    className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
+                    data-testid="button-how-it-works"
+                  >
+                    How OnSpot Outsourcing Works
+                  </Button>
+                  <Button
+                    onClick={() => handleTopicSelect("pricing")}
+                    variant="outline"
+                    className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
+                    data-testid="button-pricing"
+                  >
+                    See Pricing Models
+                  </Button>
+                  <Button
+                    onClick={() => handleTopicSelect("ai-human")}
+                    variant="outline"
+                    className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
+                    data-testid="button-ai-human"
+                  >
+                    AI + Human Advantage
+                  </Button>
+                  <Button
+                    onClick={() => handleTopicSelect("talk-human")}
+                    variant="outline"
+                    className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
+                    data-testid="button-talk-human"
+                  >
+                    Talk to a Human Expert
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Luminous sparkle effects */}
