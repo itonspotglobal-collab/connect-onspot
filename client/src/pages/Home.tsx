@@ -260,41 +260,70 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Trusted By Section */}
-      <div className="container mx-auto px-4 sm:px-6 space-y-8 sm:space-y-12">
-        <div className="text-center space-y-6 sm:space-y-8">
-          <div>
-            <p className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wide mb-3 sm:mb-4">
-              Trusted by
-            </p>
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold px-4">
-              Global brands, hundreds of entrepreneurs, and thousands of
-              professionals.
-            </h2>
-          </div>
+      {/* Trusted By Section - AI-Inspired Minimalist Design */}
+      <div className="relative overflow-hidden -mt-32 pt-32 pb-24 sm:pb-32">
+        {/* Seamless Gradient Blend from Hero */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/80 to-background"></div>
+        
+        {/* Subtle AI Glow Effects */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40">
+          <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-gradient-radial from-violet-500/20 to-transparent rounded-full blur-3xl animate-gentle-float"></div>
+          <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-gradient-radial from-blue-500/15 to-transparent rounded-full blur-3xl animate-slow-spin"></div>
+        </div>
 
-          {/* Brand Logos Strip */}
-          <div className="relative py-6 sm:py-8">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-x-8 sm:gap-x-12 gap-y-6 sm:gap-y-8">
-              {trustedBrands.map((brand, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-center"
-                  data-testid={`brand-logo-${index}`}
-                >
-                  <img
-                    src={brand.logo}
-                    alt={brand.name}
-                    className="h-10 sm:h-12 w-auto object-contain grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-300"
-                  />
-                </div>
-              ))}
+        <div className="container mx-auto px-4 sm:px-6 relative z-10">
+          <div className="text-center space-y-12 sm:space-y-16">
+            {/* Sleek Typography */}
+            <div className="space-y-4 sm:space-y-6 max-w-4xl mx-auto">
+              <p className="text-xs sm:text-sm font-medium uppercase tracking-[0.2em] bg-gradient-to-r from-violet-600/80 to-blue-600/80 bg-clip-text text-transparent">
+                Trusted by
+              </p>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-light tracking-tight leading-tight px-4">
+                Global brands, hundreds of entrepreneurs,
+                <br className="hidden sm:block" />
+                <span className="font-semibold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                  and thousands of professionals.
+                </span>
+              </h2>
+            </div>
+
+            {/* Floating Logo Grid with Glow Effects */}
+            <div className="relative py-8 sm:py-12">
+              {/* Shimmer overlay effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer pointer-events-none"></div>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-8 sm:gap-10 lg:gap-12 items-center justify-items-center">
+                {trustedBrands.map((brand, index) => (
+                  <div
+                    key={index}
+                    className="group relative flex items-center justify-center"
+                    style={{
+                      animation: `float ${3 + index * 0.3}s ease-in-out infinite`,
+                      animationDelay: `${index * 0.15}s`,
+                    }}
+                    data-testid={`brand-logo-${index}`}
+                  >
+                    {/* Glow effect on hover */}
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                      <div className="absolute inset-0 bg-gradient-to-r from-violet-500/20 to-blue-500/20 blur-xl rounded-full scale-150"></div>
+                    </div>
+                    
+                    <img
+                      src={brand.logo}
+                      alt={brand.name}
+                      className="h-12 sm:h-14 lg:h-16 w-auto object-contain grayscale opacity-30 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500 relative z-10 filter group-hover:brightness-110 group-hover:drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Value Tiles */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mt-8 sm:mt-12 lg:mt-16">
+      {/* Value Tiles */}
+      <div className="container mx-auto px-4 sm:px-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
           {valueTiles.map((tile, index) => (
             <Card
               key={index}
