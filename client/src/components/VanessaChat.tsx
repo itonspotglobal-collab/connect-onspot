@@ -83,6 +83,26 @@ export function VanessaChat({
     }
   }, [isOpen, isSticky]);
 
+  // Handle iOS keyboard with visualViewport
+  useEffect(() => {
+    if (!isOpen || isSticky) return;
+
+    const updateViewportHeight = () => {
+      if (window.visualViewport) {
+        const vh = window.visualViewport.height;
+        document.documentElement.style.setProperty('--vh', `${vh}px`);
+      }
+    };
+
+    updateViewportHeight();
+    window.visualViewport?.addEventListener('resize', updateViewportHeight);
+
+    return () => {
+      window.visualViewport?.removeEventListener('resize', updateViewportHeight);
+      document.documentElement.style.removeProperty('--vh');
+    };
+  }, [isOpen, isSticky]);
+
   // Start message sequence when chat opens
   useEffect(() => {
     if (isOpen && messages.length === 0) {
@@ -349,13 +369,17 @@ export function VanessaChat({
               ))}
             </div>
 
-            {/* Interactive Options with glass buttons - sticky footer */}
+            {/* Interactive Options with glass buttons - sticky footer with safe area */}
             {showOptions && (
               <div 
-                className="p-3 md:p-4 border-t border-violet-200/50 space-y-2 animate-in slide-in-from-bottom-2 duration-300 backdrop-blur-sm flex-shrink-0"
+                className="border-t border-violet-200/50 space-y-2 animate-in slide-in-from-bottom-2 duration-300 backdrop-blur-sm flex-shrink-0"
                 style={{
                   position: 'sticky',
                   bottom: 0,
+                  paddingTop: '12px',
+                  paddingLeft: '16px',
+                  paddingRight: '16px',
+                  paddingBottom: 'max(16px, calc(12px + env(safe-area-inset-bottom)))',
                 }}
               >
                 {selectedTopic === "talk-human" ? (
@@ -432,7 +456,7 @@ export function VanessaChat({
     );
   }
 
-  // Full-screen luminous glass modal mode - optimized for mobile scrolling
+  // Full-screen luminous glass modal mode - optimized for mobile with safe areas
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center animate-in fade-in duration-300"
@@ -440,8 +464,7 @@ export function VanessaChat({
         background:
           "radial-gradient(ellipse at center, rgba(127, 61, 244, 0.15) 0%, rgba(58, 58, 248, 0.1) 50%, rgba(0, 0, 0, 0.3) 100%)",
         backdropFilter: "blur(12px)",
-        padding: "16px",
-        paddingBottom: "max(16px, env(safe-area-inset-bottom))",
+        padding: "max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left))",
       }}
       onClick={onClose}
     >
@@ -453,7 +476,7 @@ export function VanessaChat({
           backdropFilter: "blur(20px)",
           boxShadow:
             "0 0 60px rgba(127, 61, 244, 0.4), 0 8px 32px rgba(0, 0, 0, 0.12), inset 0 0 0 1px rgba(127, 61, 244, 0.3)",
-          maxHeight: "calc(100dvh - 32px)",
+          maxHeight: "calc(var(--vh, 100dvh) - max(32px, env(safe-area-inset-top) + env(safe-area-inset-bottom)))",
         }}
         onClick={(e) => e.stopPropagation()}
         data-testid="vanessa-chat-window"
@@ -555,14 +578,17 @@ export function VanessaChat({
           ))}
         </div>
 
-        {/* Interactive Options with glass buttons - sticky footer */}
+        {/* Interactive Options with glass buttons - sticky footer with safe area */}
         {showOptions && (
           <div 
-            className="p-4 md:p-5 border-t border-violet-200/50 space-y-2 animate-in slide-in-from-bottom-2 duration-300 backdrop-blur-sm flex-shrink-0"
+            className="border-t border-violet-200/50 space-y-2 animate-in slide-in-from-bottom-2 duration-300 backdrop-blur-sm flex-shrink-0"
             style={{
               position: 'sticky',
               bottom: 0,
-              paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
+              paddingTop: '16px',
+              paddingLeft: '20px',
+              paddingRight: '20px',
+              paddingBottom: 'max(20px, calc(16px + env(safe-area-inset-bottom)))',
             }}
           >
             {selectedTopic === "talk-human" ? (
