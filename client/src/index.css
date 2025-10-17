@@ -764,4 +764,30 @@
       height: 40px;
     }
   }
+
+  /* OnSpot Footer - Deep Electric Violet/Indigo Mood */
+  .onspot-footer {
+    background: 
+      linear-gradient(
+        180deg,
+        hsla(260, 60%, 25%, 0.40) 0%,
+        hsla(250, 50%, 20%, 0.55) 30%,
+        hsla(240, 45%, 18%, 0.70) 60%,
+        hsla(230, 40%, 15%, 0.85) 100%
+      );
+    position: relative;
+  }
+
+  .onspot-footer::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: 
+      radial-gradient(
+        1000px 400px at 50% -10%,
+        hsla(270, 70%, 50%, 0.15) 0%,
+        transparent 70%
+      );
+    pointer-events: none;
+  }
 }

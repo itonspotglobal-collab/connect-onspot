@@ -1249,14 +1249,11 @@ export default function Home() {
       </div>
 
       {/* Footer */}
-      <footer className="relative bg-gradient-to-b from-violet-950/20 via-blue-950/30 to-zinc-950/85 backdrop-blur-md overflow-hidden">
-        {/* Multi-layer background depth - Enhanced bottom darkness */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-violet-500/5 to-zinc-950/40 pointer-events-none"></div>
-        
-        {/* Subtle Glow Divider Line at Top */}
+      <footer className="onspot-footer relative backdrop-blur-md overflow-hidden">
+        {/* Faint Luminescent Top Divider */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[70%] h-px bg-gradient-to-r from-transparent via-[#8a63ff] through-[#5af0ff] to-transparent opacity-50 pointer-events-none"></div>
         
-        {/* Animated Luminescent Top Border - Enhanced */}
+        {/* Animated Luminescent Top Border */}
         <div className="absolute top-0 left-0 right-0 h-[3px] overflow-hidden">
           <div 
             className="h-full w-full bg-gradient-to-r from-transparent via-violet-400/80 through-blue-400/80 to-transparent"
@@ -1267,7 +1264,7 @@ export default function Home() {
           ></div>
         </div>
         
-        {/* Depth Glow at Top Edge - Enhanced */}
+        {/* Depth Glow at Top Edge */}
         <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-violet-500/20 via-blue-500/15 to-transparent blur-3xl pointer-events-none"></div>
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-violet-400/40 to-transparent blur-sm pointer-events-none"></div>
 
