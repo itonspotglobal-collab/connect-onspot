@@ -287,6 +287,7 @@ export default function Home() {
   const [showVanessaChat, setShowVanessaChat] = useState(false);
   const [isScrolledPastHero, setIsScrolledPastHero] = useState(false);
   const [expandedFooterSection, setExpandedFooterSection] = useState<string | null>(null);
+  const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' && window.innerWidth >= 1024);
 
   // Track scroll position to determine if past hero section
   useEffect(() => {
@@ -299,6 +300,17 @@ export default function Home() {
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Track window size for responsive footer
+  useEffect(() => {
+    const checkDesktop = () => {
+      setIsDesktop(window.innerWidth >= 1024);
+    };
+
+    checkDesktop();
+    window.addEventListener("resize", checkDesktop);
+    return () => window.removeEventListener("resize", checkDesktop);
   }, []);
 
   return (
@@ -1270,7 +1282,7 @@ export default function Home() {
                 <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform lg:hidden ${expandedFooterSection === 'about' ? 'rotate-180' : ''}`} />
               </button>
               
-              <div className={`space-y-4 ${expandedFooterSection === 'about' || window.innerWidth >= 1024 ? 'block' : 'hidden'} lg:block`}>
+              <div className={`space-y-4 ${expandedFooterSection === 'about' || isDesktop ? 'block' : 'hidden'} lg:block`}>
                 <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
                   The Superhuman System. AI-first infrastructure meets Filipino excellence. Scale your business with intelligence that never sleeps.
                 </p>
@@ -1304,16 +1316,12 @@ export default function Home() {
                 <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform lg:hidden ${expandedFooterSection === 'nav' ? 'rotate-180' : ''}`} />
               </button>
               
-              <div className={`space-y-3 ${expandedFooterSection === 'nav' || window.innerWidth >= 1024 ? 'block' : 'hidden'} lg:block`}>
-                <Link href="/hire-talent">
-                  <a className="block text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors py-1" data-testid="footer-link-hire">
-                    Hire Talent
-                  </a>
+              <div className={`space-y-3 ${expandedFooterSection === 'nav' || isDesktop ? 'block' : 'hidden'} lg:block`}>
+                <Link href="/hire-talent" className="block text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors py-1" data-testid="footer-link-hire">
+                  Hire Talent
                 </Link>
-                <Link href="/lead-intake">
-                  <a className="block text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors py-1" data-testid="footer-link-managed">
-                    Managed Services
-                  </a>
+                <Link href="/lead-intake" className="block text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors py-1" data-testid="footer-link-managed">
+                  Managed Services
                 </Link>
                 <button
                   onClick={() => setShowVanessaChat(true)}
@@ -1322,15 +1330,11 @@ export default function Home() {
                 >
                   AI Assistant
                 </button>
-                <Link href="/waitlist">
-                  <a className="block text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors py-1" data-testid="footer-link-waitlist">
-                    Join Waitlist
-                  </a>
+                <Link href="/waitlist" className="block text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors py-1" data-testid="footer-link-waitlist">
+                  Join Waitlist
                 </Link>
-                <Link href="/about">
-                  <a className="block text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors py-1" data-testid="footer-link-about">
-                    About Us
-                  </a>
+                <Link href="/about" className="block text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors py-1" data-testid="footer-link-about">
+                  About Us
                 </Link>
               </div>
             </div>
@@ -1348,7 +1352,7 @@ export default function Home() {
                 <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform lg:hidden ${expandedFooterSection === 'connect' ? 'rotate-180' : ''}`} />
               </button>
               
-              <div className={`space-y-4 ${expandedFooterSection === 'connect' || window.innerWidth >= 1024 ? 'block' : 'hidden'} lg:block`}>
+              <div className={`space-y-4 ${expandedFooterSection === 'connect' || isDesktop ? 'block' : 'hidden'} lg:block`}>
                 <a href="mailto:hello@onspotglobal.com" className="flex items-center gap-3 text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors group" data-testid="footer-email">
                   <Mail className="w-5 h-5 flex-shrink-0" />
                   <span>hello@onspotglobal.com</span>
@@ -1370,11 +1374,11 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
               <p>© 2025 OnSpot Global. All rights reserved.</p>
               <div className="flex gap-6">
-                <Link href="/privacy">
-                  <a className="hover:text-violet-400 transition-colors" data-testid="footer-privacy">Privacy Policy</a>
+                <Link href="/privacy" className="hover:text-violet-400 transition-colors" data-testid="footer-privacy">
+                  Privacy Policy
                 </Link>
-                <Link href="/terms">
-                  <a className="hover:text-violet-400 transition-colors" data-testid="footer-terms">Terms of Service</a>
+                <Link href="/terms" className="hover:text-violet-400 transition-colors" data-testid="footer-terms">
+                  Terms of Service
                 </Link>
               </div>
             </div>
