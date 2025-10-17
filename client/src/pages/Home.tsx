@@ -35,6 +35,7 @@ import {
 import { SiAmazon, SiQuickbooks, SiReplit, SiStripe } from "react-icons/si";
 import { Link } from "wouter";
 import { VanessaChat } from "@/components/VanessaChat";
+import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
 
 import FlashLogo from "../assets/logos/Flash.png";
 import FutureEVLogo from "../assets/logos/FutureEV.png";
@@ -1257,36 +1258,33 @@ export default function Home() {
 
         <div className="container mx-auto px-4 sm:px-6 py-16 sm:py-20 lg:py-24">
           {/* Footer Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 lg:gap-8 max-w-7xl mx-auto">
-            {/* About Section */}
-            <div className="space-y-6">
-              <button
-                onClick={() => setExpandedFooterSection(expandedFooterSection === 'about' ? null : 'about')}
-                className="w-full flex items-center justify-between lg:cursor-default group"
-                data-testid="footer-about-toggle"
-              >
-                <h3 className="text-lg sm:text-xl font-semibold bg-gradient-to-r from-white to-violet-300 bg-clip-text text-transparent">
-                  About OnSpot
-                </h3>
-                <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform lg:hidden ${expandedFooterSection === 'about' ? 'rotate-180' : ''}`} />
-              </button>
-              
-              <div className={`space-y-4 ${expandedFooterSection === 'about' || isDesktop ? 'block' : 'hidden'} lg:block`}>
-                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-12 lg:gap-8 max-w-7xl mx-auto">
+            {/* Brand Section - Spans 2 columns */}
+            <div className="lg:col-span-2 space-y-6">
+              <div className="space-y-6">
+                <img
+                  src={onspotLogo}
+                  alt="OnSpot"
+                  className="h-8 sm:h-10 w-auto filter brightness-0 saturate-100 invert opacity-90"
+                  data-testid="footer-logo"
+                />
+                
+                <p className="text-sm sm:text-base text-white/80 leading-relaxed max-w-md">
                   The growth engine behind modern businesses—built by entrepreneurs, for entrepreneurs. We deliver the Superhuman System. AI-first infrastructure meets people excellence. Scale your business with system and intelligence that never sleeps.
                 </p>
-                <div className="flex gap-4 pt-2">
+                
+                <div className="flex gap-3 pt-2">
                   <a href="#" className="w-10 h-10 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-gradient-to-br hover:from-violet-500/20 hover:to-blue-500/20 hover:border-violet-400/50 flex items-center justify-center transition-all duration-300 group" data-testid="social-linkedin">
-                    <Linkedin className="w-5 h-5 text-muted-foreground group-hover:text-violet-400 transition-colors" />
+                    <Linkedin className="w-5 h-5 text-white/60 group-hover:text-violet-400 transition-colors" />
                   </a>
                   <a href="#" className="w-10 h-10 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-gradient-to-br hover:from-violet-500/20 hover:to-blue-500/20 hover:border-violet-400/50 flex items-center justify-center transition-all duration-300 group" data-testid="social-facebook">
-                    <Facebook className="w-5 h-5 text-muted-foreground group-hover:text-violet-400 transition-colors" />
+                    <Facebook className="w-5 h-5 text-white/60 group-hover:text-violet-400 transition-colors" />
                   </a>
                   <a href="#" className="w-10 h-10 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-gradient-to-br hover:from-violet-500/20 hover:to-blue-500/20 hover:border-violet-400/50 flex items-center justify-center transition-all duration-300 group" data-testid="social-twitter">
-                    <Twitter className="w-5 h-5 text-muted-foreground group-hover:text-violet-400 transition-colors" />
+                    <Twitter className="w-5 h-5 text-white/60 group-hover:text-violet-400 transition-colors" />
                   </a>
                   <a href="#" className="w-10 h-10 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-gradient-to-br hover:from-violet-500/20 hover:to-blue-500/20 hover:border-violet-400/50 flex items-center justify-center transition-all duration-300 group" data-testid="social-instagram">
-                    <Instagram className="w-5 h-5 text-muted-foreground group-hover:text-violet-400 transition-colors" />
+                    <Instagram className="w-5 h-5 text-white/60 group-hover:text-violet-400 transition-colors" />
                   </a>
                 </div>
               </div>
@@ -1294,41 +1292,34 @@ export default function Home() {
 
             {/* Navigation Section */}
             <div className="space-y-6">
-              <button
-                onClick={() => setExpandedFooterSection(expandedFooterSection === 'nav' ? null : 'nav')}
-                className="w-full flex items-center justify-between lg:cursor-default group"
-                data-testid="footer-nav-toggle"
-              >
-                <h3 className="text-lg sm:text-xl font-semibold bg-gradient-to-r from-white to-violet-300 bg-clip-text text-transparent">
-                  Navigation
-                </h3>
-                <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform lg:hidden ${expandedFooterSection === 'nav' ? 'rotate-180' : ''}`} />
-              </button>
+              <h3 className="text-base sm:text-lg font-semibold text-white tracking-wide">
+                Navigation
+              </h3>
               
-              <div className={`space-y-3 ${expandedFooterSection === 'nav' || isDesktop ? 'block' : 'hidden'} lg:block`}>
-                <Link href="/hire-talent" className="block text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors py-1" data-testid="footer-link-hire">
+              <div className="space-y-3">
+                <Link href="/hire-talent" className="block text-sm text-white/60 hover:text-violet-400 transition-colors" data-testid="footer-link-hire">
                   Hire Talent
                 </Link>
-                <Link href="/lead-intake" className="block text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors py-1" data-testid="footer-link-managed">
+                <Link href="/lead-intake" className="block text-sm text-white/60 hover:text-violet-400 transition-colors" data-testid="footer-link-managed">
                   Managed Services
                 </Link>
                 <button
                   onClick={() => setShowVanessaChat(true)}
-                  className="block text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors py-1 text-left"
+                  className="block text-sm text-white/60 hover:text-violet-400 transition-colors text-left"
                   data-testid="footer-link-ai"
                 >
                   AI Assistant
                 </button>
-                <Link href="/waitlist" className="block text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors py-1" data-testid="footer-link-waitlist">
+                <Link href="/waitlist" className="block text-sm text-white/60 hover:text-violet-400 transition-colors" data-testid="footer-link-waitlist">
                   Join Waitlist
                 </Link>
-                <Link href="/careers" className="block text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors py-1" data-testid="footer-link-careers">
+                <Link href="/careers" className="block text-sm text-white/60 hover:text-violet-400 transition-colors" data-testid="footer-link-careers">
                   Careers
                 </Link>
-                <Link href="/powerapp" className="block text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors py-1" data-testid="footer-link-powerapp">
+                <Link href="/powerapp" className="block text-sm text-white/60 hover:text-violet-400 transition-colors" data-testid="footer-link-powerapp">
                   Powerapp
                 </Link>
-                <Link href="/pricing" className="block text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors py-1" data-testid="footer-link-pricing">
+                <Link href="/pricing" className="block text-sm text-white/60 hover:text-violet-400 transition-colors" data-testid="footer-link-pricing">
                   Pricing
                 </Link>
               </div>
@@ -1336,37 +1327,30 @@ export default function Home() {
 
             {/* Company Section */}
             <div className="space-y-6">
-              <button
-                onClick={() => setExpandedFooterSection(expandedFooterSection === 'company' ? null : 'company')}
-                className="w-full flex items-center justify-between lg:cursor-default group"
-                data-testid="footer-company-toggle"
-              >
-                <h3 className="text-lg sm:text-xl font-semibold bg-gradient-to-r from-white to-violet-300 bg-clip-text text-transparent">
-                  Company
-                </h3>
-                <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform lg:hidden ${expandedFooterSection === 'company' ? 'rotate-180' : ''}`} />
-              </button>
+              <h3 className="text-base sm:text-lg font-semibold text-white tracking-wide">
+                Company
+              </h3>
               
-              <div className={`space-y-3 ${expandedFooterSection === 'company' || isDesktop ? 'block' : 'hidden'} lg:block`}>
-                <Link href="/why-onspot" className="block text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors py-1" data-testid="footer-link-why">
+              <div className="space-y-3">
+                <Link href="/why-onspot" className="block text-sm text-white/60 hover:text-violet-400 transition-colors" data-testid="footer-link-why">
                   Why OnSpot
                 </Link>
-                <Link href="/stories" className="block text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors py-1" data-testid="footer-link-stories">
+                <Link href="/stories" className="block text-sm text-white/60 hover:text-violet-400 transition-colors" data-testid="footer-link-stories">
                   Amazing Stories
                 </Link>
-                <Link href="/insights" className="block text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors py-1" data-testid="footer-link-insights">
+                <Link href="/insights" className="block text-sm text-white/60 hover:text-violet-400 transition-colors" data-testid="footer-link-insights">
                   Insights
                 </Link>
-                <Link href="/affiliate" className="block text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors py-1" data-testid="footer-link-affiliate">
+                <Link href="/affiliate" className="block text-sm text-white/60 hover:text-violet-400 transition-colors" data-testid="footer-link-affiliate">
                   Affiliate Marketing
                 </Link>
-                <Link href="/bpo-partner" className="block text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors py-1" data-testid="footer-link-bpo">
+                <Link href="/bpo-partner" className="block text-sm text-white/60 hover:text-violet-400 transition-colors" data-testid="footer-link-bpo">
                   BPO Partner
                 </Link>
-                <Link href="/investors" className="block text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors py-1" data-testid="footer-link-investors">
+                <Link href="/investors" className="block text-sm text-white/60 hover:text-violet-400 transition-colors" data-testid="footer-link-investors">
                   Investors Corner
                 </Link>
-                <Link href="/about" className="block text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors py-1" data-testid="footer-link-about">
+                <Link href="/about" className="block text-sm text-white/60 hover:text-violet-400 transition-colors" data-testid="footer-link-about">
                   About Us
                 </Link>
               </div>
@@ -1374,33 +1358,26 @@ export default function Home() {
 
             {/* Download Section */}
             <div className="space-y-6">
-              <button
-                onClick={() => setExpandedFooterSection(expandedFooterSection === 'download' ? null : 'download')}
-                className="w-full flex items-center justify-between lg:cursor-default group"
-                data-testid="footer-download-toggle"
-              >
-                <h3 className="text-lg sm:text-xl font-semibold bg-gradient-to-r from-white to-violet-300 bg-clip-text text-transparent">
-                  Download Our Platform
-                </h3>
-                <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform lg:hidden ${expandedFooterSection === 'download' ? 'rotate-180' : ''}`} />
-              </button>
+              <h3 className="text-base sm:text-lg font-semibold text-white tracking-wide">
+                Download Platform
+              </h3>
               
-              <div className={`space-y-4 ${expandedFooterSection === 'download' || isDesktop ? 'block' : 'hidden'} lg:block`}>
-                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+              <div className="space-y-4">
+                <p className="text-sm text-white/60 leading-relaxed">
                   Take OnSpot with you wherever you go. Manage projects and track progress on the move.
                 </p>
-                <div className="flex flex-col gap-3 pt-2">
-                  <a href="#" className="flex items-center gap-3 px-4 py-2 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-gradient-to-br hover:from-violet-500/20 hover:to-blue-500/20 hover:border-violet-400/50 transition-all duration-300 group" data-testid="download-ios">
-                    <svg className="w-6 h-6 text-muted-foreground group-hover:text-violet-400 transition-colors" viewBox="0 0 24 24" fill="currentColor">
+                <div className="flex flex-col gap-3">
+                  <a href="#" className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-gradient-to-br hover:from-violet-500/20 hover:to-blue-500/20 hover:border-violet-400/50 transition-all duration-300 group" data-testid="download-ios">
+                    <svg className="w-5 h-5 text-white/60 group-hover:text-violet-400 transition-colors" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
                     </svg>
-                    <span className="text-sm text-muted-foreground group-hover:text-violet-400 transition-colors">App Store</span>
+                    <span className="text-sm text-white/60 group-hover:text-violet-400 transition-colors">App Store</span>
                   </a>
-                  <a href="#" className="flex items-center gap-3 px-4 py-2 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-gradient-to-br hover:from-violet-500/20 hover:to-blue-500/20 hover:border-violet-400/50 transition-all duration-300 group" data-testid="download-android">
-                    <svg className="w-6 h-6 text-muted-foreground group-hover:text-violet-400 transition-colors" viewBox="0 0 24 24" fill="currentColor">
+                  <a href="#" className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-gradient-to-br hover:from-violet-500/20 hover:to-blue-500/20 hover:border-violet-400/50 transition-all duration-300 group" data-testid="download-android">
+                    <svg className="w-5 h-5 text-white/60 group-hover:text-violet-400 transition-colors" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.6 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.5,12.92 20.16,13.19L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z"/>
                     </svg>
-                    <span className="text-sm text-muted-foreground group-hover:text-violet-400 transition-colors">Google Play</span>
+                    <span className="text-sm text-white/60 group-hover:text-violet-400 transition-colors">Google Play</span>
                   </a>
                 </div>
               </div>
@@ -1408,27 +1385,20 @@ export default function Home() {
 
             {/* Connect Section */}
             <div className="space-y-6">
-              <button
-                onClick={() => setExpandedFooterSection(expandedFooterSection === 'connect' ? null : 'connect')}
-                className="w-full flex items-center justify-between lg:cursor-default group"
-                data-testid="footer-connect-toggle"
-              >
-                <h3 className="text-lg sm:text-xl font-semibold bg-gradient-to-r from-white to-violet-300 bg-clip-text text-transparent">
-                  Connect
-                </h3>
-                <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform lg:hidden ${expandedFooterSection === 'connect' ? 'rotate-180' : ''}`} />
-              </button>
+              <h3 className="text-base sm:text-lg font-semibold text-white tracking-wide">
+                Connect
+              </h3>
               
-              <div className={`space-y-4 ${expandedFooterSection === 'connect' || isDesktop ? 'block' : 'hidden'} lg:block`}>
-                <a href="mailto:hello@onspotglobal.com" className="flex items-center gap-3 text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors group" data-testid="footer-email">
+              <div className="space-y-3">
+                <a href="mailto:hello@onspotglobal.com" className="flex items-center gap-3 text-sm text-white/60 hover:text-violet-400 transition-colors group" data-testid="footer-email">
                   <Mail className="w-5 h-5 flex-shrink-0" />
                   <span>hello@onspotglobal.com</span>
                 </a>
-                <a href="tel:+1234567890" className="flex items-center gap-3 text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors group" data-testid="footer-phone">
+                <a href="tel:+1234567890" className="flex items-center gap-3 text-sm text-white/60 hover:text-violet-400 transition-colors group" data-testid="footer-phone">
                   <Phone className="w-5 h-5 flex-shrink-0" />
                   <span>+1 (234) 567-890</span>
                 </a>
-                <div className="flex items-start gap-3 text-sm sm:text-base text-muted-foreground">
+                <div className="flex items-start gap-3 text-sm text-white/60">
                   <MapPinIcon className="w-5 h-5 flex-shrink-0 mt-0.5" />
                   <span>Global HQ<br />New York</span>
                 </div>
@@ -1438,7 +1408,7 @@ export default function Home() {
 
           {/* Bottom Bar */}
           <div className="mt-16 pt-8 border-t border-white/10">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-white/40">
               <p>© 2025 OnSpot Global. All rights reserved.</p>
               <div className="flex gap-6">
                 <Link href="/privacy" className="hover:text-violet-400 transition-colors" data-testid="footer-privacy">

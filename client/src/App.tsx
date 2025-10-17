@@ -9,7 +9,6 @@ import { VanessaProvider, useVanessa } from "@/contexts/VanessaContext";
 import { OAuthErrorDialog, useOAuthError } from "@/components/OAuthErrorDialog";
 import { TopNavigation } from "@/components/TopNavigation";
 import { ClientLayout } from "@/components/ClientLayout";
-import { Footer } from "@/components/Footer";
 import { ClientProtectedRoute, TalentProtectedRoute, AdminProtectedRoute } from "@/components/ProtectedRoute";
 import { NewUserOnboardingWrapper } from "@/components/NewUserOnboardingWrapper";
 import { PostLoginPortalSelection } from "@/components/PostLoginPortalSelection";
@@ -106,7 +105,6 @@ function PublicRouter() {
           <Route component={NotFound} />
         </Switch>
       </main>
-      <Footer />
     </div>
   );
 }
