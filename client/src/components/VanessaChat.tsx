@@ -347,6 +347,34 @@ export function VanessaChat({
     scrollToBottom(true);
   };
 
+  // Detect FAQ topic from user input using keyword matching
+  const detectFAQTopic = (input: string): string | null => {
+    const lowerInput = input.toLowerCase();
+    
+    // Keywords for each topic
+    const keywords = {
+      "how-it-works": ["how", "work", "works", "process", "step", "start", "begin", "onboard", "setup"],
+      "pricing": ["price", "pricing", "cost", "rate", "hour", "pay", "payment", "fee", "charge", "expensive", "cheap", "affordable"],
+      "ai-human": ["ai", "human", "advantage", "benefit", "automation", "technology", "difference", "why", "better"],
+      "talk-human": ["talk", "speak", "human", "person", "expert", "manager", "call", "meeting", "schedule", "contact", "help me"],
+    };
+
+    // Count keyword matches for each topic
+    let maxMatches = 0;
+    let bestTopic = null;
+
+    for (const [topic, topicKeywords] of Object.entries(keywords)) {
+      const matches = topicKeywords.filter(keyword => lowerInput.includes(keyword)).length;
+      if (matches > maxMatches) {
+        maxMatches = matches;
+        bestTopic = topic;
+      }
+    }
+
+    // Require at least 1 match to consider it a topic
+    return maxMatches > 0 ? bestTopic : null;
+  };
+
   // Handle sending user message
   const handleSendMessage = async () => {
     if (!userInput.trim() || isStreaming) return;
@@ -366,43 +394,113 @@ export function VanessaChat({
       },
     ]);
 
-    // Simulate streaming response
-    setIsStreaming(true);
+    // Detect FAQ topic
+    const detectedTopic = detectFAQTopic(userMessage);
     
-    // Create empty assistant message
-    const assistantMessageId = Date.now() + 1;
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: assistantMessageId,
-        text: "",
-        sender: "vanessa",
-        isTyping: true,
-      },
-    ]);
-
-    // Simulate streaming tokens
-    const response = "I'm currently in training and learning from real conversations. For now, I can help you explore our services through the quick options, or you can chat with a human expert who can provide detailed assistance!";
-    const words = response.split(' ');
-    
-    for (let i = 0; i < words.length; i++) {
-      await new Promise(resolve => setTimeout(resolve, 50 + Math.random() * 50));
+    if (detectedTopic) {
+      // User asked about a FAQ topic - provide those responses
+      setSelectedTopic(detectedTopic);
       
-      setMessages((prev) => {
-        const updated = [...prev];
-        const lastMessage = updated[updated.length - 1];
-        if (lastMessage.id === assistantMessageId) {
-          lastMessage.text = words.slice(0, i + 1).join(' ');
-          lastMessage.isTyping = i < words.length - 1;
-        }
-        return updated;
-      });
-    }
+      const responses = faqResponses[detectedTopic];
+      let responseIndex = 0;
 
-    setIsStreaming(false);
-    
-    // Show options after response completes
-    setTimeout(() => setShowOptions(true), 500);
+      const showNextResponse = async () => {
+        if (responseIndex < responses.length) {
+          setIsStreaming(true);
+          
+          // Show typing
+          const typingMessageId = Date.now() + responseIndex;
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: typingMessageId,
+              text: "",
+              sender: "vanessa",
+              isTyping: true,
+            },
+          ]);
+
+          // Simulate streaming the response
+          const response = responses[responseIndex];
+          const words = response.split(' ');
+          
+          for (let i = 0; i < words.length; i++) {
+            await new Promise(resolve => setTimeout(resolve, 40 + Math.random() * 40));
+            
+            setMessages((prev) => {
+              const updated = [...prev];
+              const lastMessage = updated[updated.length - 1];
+              if (lastMessage.id === typingMessageId) {
+                lastMessage.text = words.slice(0, i + 1).join(' ');
+                lastMessage.isTyping = i < words.length - 1;
+              }
+              return updated;
+            });
+          }
+
+          setIsStreaming(false);
+          responseIndex++;
+          
+          if (responseIndex < responses.length) {
+            setTimeout(showNextResponse, 1200);
+          } else {
+            // Show options after last response
+            setTimeout(() => {
+              if (detectedTopic === "talk-human") {
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    id: Date.now() + 1000,
+                    text: "Would you like me to connect you with an OnSpot Manager to discuss your setup?",
+                    sender: "vanessa",
+                  },
+                ]);
+              }
+              setTimeout(() => setShowOptions(true), 800);
+            }, 1000);
+          }
+        }
+      };
+
+      setTimeout(showNextResponse, 800);
+    } else {
+      // No FAQ topic detected - provide general response
+      setIsStreaming(true);
+      
+      const assistantMessageId = Date.now() + 1;
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: assistantMessageId,
+          text: "",
+          sender: "vanessa",
+          isTyping: true,
+        },
+      ]);
+
+      // Simulate streaming tokens
+      const response = "I can help you learn about OnSpot! Try asking about our pricing, how it works, our AI-human advantage, or tap one of the quick options below to get started.";
+      const words = response.split(' ');
+      
+      for (let i = 0; i < words.length; i++) {
+        await new Promise(resolve => setTimeout(resolve, 50 + Math.random() * 50));
+        
+        setMessages((prev) => {
+          const updated = [...prev];
+          const lastMessage = updated[updated.length - 1];
+          if (lastMessage.id === assistantMessageId) {
+            lastMessage.text = words.slice(0, i + 1).join(' ');
+            lastMessage.isTyping = i < words.length - 1;
+          }
+          return updated;
+        });
+      }
+
+      setIsStreaming(false);
+      
+      // Show options after response completes
+      setTimeout(() => setShowOptions(true), 500);
+    }
   };
 
   // Handle input change
