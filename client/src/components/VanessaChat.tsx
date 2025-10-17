@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useVanessa } from "@/contexts/VanessaContext";
 import type { Message } from "@/contexts/VanessaContext";
-import vanessaPhoto from "@/assets/logos/vanessa.png";
+import vanessaPhoto from "@assets/Vanessa_1760674530978.png";
 
 interface VanessaChatProps {
   isOpen: boolean;
@@ -272,11 +272,11 @@ export function VanessaChat({
 
             {/* Header with glass effect - pinned */}
             <div className="flex items-center gap-3 p-3 md:p-4 border-b border-violet-200/50 backdrop-blur-sm flex-shrink-0">
-              <Avatar className="h-12 w-12 ring-2 ring-violet-400/40 overflow-hidden bg-gradient-to-br from-violet-100 to-blue-100">
+              <Avatar className="vanessa-avatar">
                 <AvatarImage
                   src={vanessaPhoto}
                   alt="Vanessa"
-                  className="object-cover object-center w-full h-full rounded-full"
+                  className="vanessa-avatar"
                 />
                 <AvatarFallback className="bg-gradient-to-br from-violet-400 to-blue-400 text-white font-semibold">
                   VA
@@ -515,10 +515,14 @@ export function VanessaChat({
           }}
         >
           <Avatar
-            className="h-12 w-12 ring-2 ring-violet-400/40"
+            className="vanessa-avatar"
             data-testid="avatar-vanessa"
           >
-            <AvatarImage src={vanessaPhoto} alt="Vanessa" />
+            <AvatarImage 
+              src={vanessaPhoto} 
+              alt="Vanessa" 
+              className="vanessa-avatar"
+            />
             <AvatarFallback className="bg-gradient-to-br from-violet-400 to-blue-400 text-white font-semibold">
               VA
             </AvatarFallback>
