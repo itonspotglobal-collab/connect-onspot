@@ -43,6 +43,7 @@ export function VanessaChat({
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const scrollAnimationFrameRef = useRef<number | null>(null);
   const lastScrollTopRef = useRef(0);
+  const hasInitializedRef = useRef(false);
 
   const openingMessages = useRef([
     {
@@ -156,7 +157,17 @@ export function VanessaChat({
 
   // Start message sequence when chat opens - always reset and restart
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      hasInitializedRef.current = false;
+      return;
+    }
+    
+    // Prevent running multiple times when chat is already open
+    if (hasInitializedRef.current) {
+      return;
+    }
+    
+    hasInitializedRef.current = true;
     
     // Always reset conversation state when chat opens
     setMessages([]);
@@ -176,7 +187,7 @@ export function VanessaChat({
     }, 300);
     
     return () => clearTimeout(timer);
-    // Only run when isOpen changes to true
+    // Only run when isOpen changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
