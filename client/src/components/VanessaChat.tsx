@@ -37,8 +37,12 @@ export function VanessaChat({
   const [userInput, setUserInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [userHasTyped, setUserHasTyped] = useState(false);
+  const [isPinnedToBottom, setIsPinnedToBottom] = useState(true);
+  const [showNewMessageChip, setShowNewMessageChip] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const scrollAnimationFrameRef = useRef<number | null>(null);
+  const lastScrollTopRef = useRef(0);
 
   const openingMessages = [
     {
@@ -91,7 +95,7 @@ export function VanessaChat({
     }
   }, [isOpen, isSticky]);
 
-  // Handle iOS keyboard with visualViewport
+  // Handle iOS keyboard with visualViewport and recompute scroll on resize
   useEffect(() => {
     if (!isOpen || isSticky) return;
 
@@ -99,6 +103,10 @@ export function VanessaChat({
       if (window.visualViewport) {
         const vh = window.visualViewport.height;
         document.documentElement.style.setProperty('--vh', `${vh}px`);
+      }
+      // Recompute pinned state on resize
+      if (checkIfNearBottom() && isPinnedToBottom) {
+        scrollToBottom(false);
       }
     };
 
@@ -109,7 +117,42 @@ export function VanessaChat({
       window.visualViewport?.removeEventListener('resize', updateViewportHeight);
       document.documentElement.style.removeProperty('--vh');
     };
-  }, [isOpen, isSticky]);
+  }, [isOpen, isSticky, isPinnedToBottom]);
+
+  // Attach scroll listener to messages container
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    container.addEventListener('scroll', handleScroll);
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+    };
+  }, [isStreaming]);
+
+  // ResizeObserver to detect choices/input height changes
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (isPinnedToBottom) {
+        scrollToBottom(false);
+      }
+    });
+
+    // Observe the footer area (input + choices)
+    const container = messagesContainerRef.current?.parentElement;
+    if (container) {
+      const footer = container.querySelector('[data-footer-area]');
+      if (footer) {
+        resizeObserver.observe(footer as Element);
+      }
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [isOpen, isPinnedToBottom]);
 
   // Start message sequence when chat opens
   useEffect(() => {
@@ -236,25 +279,63 @@ export function VanessaChat({
     );
   };
 
-  // Auto-scroll to bottom when near the bottom
+  // Auto-scroll to bottom with batching via requestAnimationFrame
   const scrollToBottom = (smooth = true) => {
-    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
+    if (scrollAnimationFrameRef.current !== null) {
+      cancelAnimationFrame(scrollAnimationFrameRef.current);
+    }
+    
+    scrollAnimationFrameRef.current = requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
+      scrollAnimationFrameRef.current = null;
+    });
   };
 
   // Check if user is near bottom (within 100px)
-  const isNearBottom = () => {
+  const checkIfNearBottom = () => {
     const container = messagesContainerRef.current;
     if (!container) return true;
     const threshold = 100;
     return container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
   };
 
-  // Auto-scroll when new messages arrive
-  useEffect(() => {
-    if (isNearBottom()) {
-      scrollToBottom();
+  // Handle scroll events to track pinned state
+  const handleScroll = () => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const isNearBottom = checkIfNearBottom();
+    const scrollingDown = container.scrollTop > lastScrollTopRef.current;
+    lastScrollTopRef.current = container.scrollTop;
+
+    if (isNearBottom) {
+      setIsPinnedToBottom(true);
+      setShowNewMessageChip(false);
+    } else if (scrollingDown === false) {
+      // User scrolled up
+      setIsPinnedToBottom(false);
+      if (isStreaming) {
+        setShowNewMessageChip(true);
+      }
     }
-  }, [messages]);
+  };
+
+  // Auto-scroll when new messages arrive (only if pinned)
+  useEffect(() => {
+    if (isPinnedToBottom) {
+      scrollToBottom();
+    } else if (isStreaming) {
+      // Show chip if user is scrolled up during streaming
+      setShowNewMessageChip(true);
+    }
+  }, [messages, isPinnedToBottom, isStreaming]);
+
+  // Scroll to bottom and dismiss chip
+  const handleScrollToBottomClick = () => {
+    setIsPinnedToBottom(true);
+    setShowNewMessageChip(false);
+    scrollToBottom(true);
+  };
 
   // Handle sending user message
   const handleSendMessage = async () => {
@@ -425,15 +506,16 @@ export function VanessaChat({
             </div>
 
             {/* Messages with enhanced contrast - scrollable with momentum */}
-            <div
-              ref={messagesContainerRef}
-              className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4 min-h-0"
-              style={{
-                WebkitOverflowScrolling: 'touch',
-                overscrollBehavior: 'contain',
-              }}
-              data-testid="chat-messages"
-            >
+            <div className="flex-1 relative min-h-0">
+              <div
+                ref={messagesContainerRef}
+                className="absolute inset-0 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4"
+                style={{
+                  WebkitOverflowScrolling: 'touch',
+                  overscrollBehavior: 'contain',
+                }}
+                data-testid="chat-messages"
+              >
               {messages.map((message) => (
                 <div
                   key={message.id}
@@ -474,39 +556,56 @@ export function VanessaChat({
                 </div>
               ))}
               <div ref={messagesEndRef} />
-            </div>
-
-            {/* Sticky Input Bar - always visible */}
-            <div 
-              className="border-t border-violet-200/50 backdrop-blur-sm flex-shrink-0"
-              style={{
-                padding: 'clamp(10px, 2vw, 16px)',
-                paddingBottom: 'max(12px, calc(10px + env(safe-area-inset-bottom)))',
-              }}
-            >
-              <div className="flex gap-2 items-end">
-                <Textarea
-                  value={userInput}
-                  onChange={handleInputChange}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Type a message..."
-                  className="flex-1 min-h-[40px] max-h-[120px] resize-none text-sm border-violet-300 focus:border-violet-500"
-                  data-testid="input-message"
-                />
-                <Button
-                  onClick={handleSendMessage}
-                  disabled={!userInput.trim() || isStreaming}
-                  size="icon"
-                  className="h-10 w-10 bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all"
-                  data-testid="button-send-message"
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
               </div>
+
+              {/* New messages chip - appears when user scrolls up during streaming */}
+              {showNewMessageChip && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 animate-in slide-in-from-bottom-2 duration-300">
+                  <Button
+                    onClick={handleScrollToBottomClick}
+                    size="sm"
+                    className="bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white shadow-lg hover:shadow-xl transition-all"
+                    data-testid="button-new-messages"
+                  >
+                    New messages ↓
+                  </Button>
+                </div>
+              )}
             </div>
 
-            {/* Interactive Options with glass buttons - sticky footer with safe area */}
-            {showOptions && !userHasTyped && (
+            {/* Footer area (input + choices) - tracked by ResizeObserver */}
+            <div data-footer-area>
+              {/* Sticky Input Bar - always visible */}
+              <div 
+                className="border-t border-violet-200/50 backdrop-blur-sm flex-shrink-0"
+                style={{
+                  padding: 'clamp(10px, 2vw, 16px)',
+                  paddingBottom: 'max(12px, calc(10px + env(safe-area-inset-bottom)))',
+                }}
+              >
+                <div className="flex gap-2 items-end">
+                  <Textarea
+                    value={userInput}
+                    onChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Type a message..."
+                    className="flex-1 min-h-[40px] max-h-[120px] resize-none text-sm border-violet-300 focus:border-violet-500"
+                    data-testid="input-message"
+                  />
+                  <Button
+                    onClick={handleSendMessage}
+                    disabled={!userInput.trim() || isStreaming}
+                    size="icon"
+                    className="h-10 w-10 bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all"
+                    data-testid="button-send-message"
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Interactive Options with glass buttons - sticky footer with safe area */}
+              {showOptions && !userHasTyped && (
               <div 
                 className="border-t border-violet-200/50 space-y-2 animate-in slide-in-from-bottom-2 duration-300 backdrop-blur-sm flex-shrink-0"
                 style={{
@@ -577,6 +676,7 @@ export function VanessaChat({
                 )}
               </div>
             )}
+            </div>
 
             {/* Luminous sparkle effects */}
             <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
@@ -687,89 +787,107 @@ export function VanessaChat({
         </div>
 
         {/* Messages with enhanced contrast - scrollable section with momentum */}
-        <div
-          ref={messagesContainerRef}
-          className="v-body flex-1 overflow-y-auto space-y-3 md:space-y-4 min-h-0"
-          style={{
-            WebkitOverflowScrolling: 'touch',
-            overscrollBehavior: 'contain',
-            padding: "clamp(12px, 3vw, 20px)",
-          }}
-          data-testid="chat-messages"
-        >
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2 duration-300`}
-            >
+        <div className="v-body flex-1 relative min-h-0">
+          <div
+            ref={messagesContainerRef}
+            className="absolute inset-0 overflow-y-auto space-y-3 md:space-y-4"
+            style={{
+              WebkitOverflowScrolling: 'touch',
+              overscrollBehavior: 'contain',
+              padding: "clamp(12px, 3vw, 20px)",
+            }}
+            data-testid="chat-messages"
+          >
+            {messages.map((message) => (
               <div
-                className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-sm ${
-                  message.sender === "user"
-                    ? "bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white"
-                    : "bg-white/80 text-gray-900 backdrop-blur-sm border border-violet-200/40"
-                }`}
-                data-testid={`message-${message.sender}-${message.id}`}
+                key={message.id}
+                className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2 duration-300`}
               >
-                {message.isTyping ? (
-                  <div
-                    className="flex gap-1 py-1"
-                    data-testid="typing-indicator"
-                  >
+                <div
+                  className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-sm ${
+                    message.sender === "user"
+                      ? "bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white"
+                      : "bg-white/80 text-gray-900 backdrop-blur-sm border border-violet-200/40"
+                  }`}
+                  data-testid={`message-${message.sender}-${message.id}`}
+                >
+                  {message.isTyping ? (
                     <div
-                      className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"
-                      style={{ animationDelay: "0ms" }}
-                    />
-                    <div
-                      className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"
-                      style={{ animationDelay: "150ms" }}
-                    />
-                    <div
-                      className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"
-                      style={{ animationDelay: "300ms" }}
-                    />
-                  </div>
-                ) : (
-                  <p className="text-sm whitespace-pre-line leading-relaxed">
-                    {message.text}
-                  </p>
-                )}
+                      className="flex gap-1 py-1"
+                      data-testid="typing-indicator"
+                    >
+                      <div
+                        className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"
+                        style={{ animationDelay: "0ms" }}
+                      />
+                      <div
+                        className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"
+                        style={{ animationDelay: "150ms" }}
+                      />
+                      <div
+                        className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"
+                        style={{ animationDelay: "300ms" }}
+                      />
+                    </div>
+                  ) : (
+                    <p className="text-sm whitespace-pre-line leading-relaxed">
+                      {message.text}
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Sticky Input Bar - always visible */}
-        <div 
-          className="border-t border-violet-200/50 backdrop-blur-sm flex-shrink-0"
-          style={{
-            padding: "clamp(12px, 3vw, 20px)",
-            paddingBottom: 'calc(clamp(12px, 3vw, 20px) + env(safe-area-inset-bottom))',
-          }}
-        >
-          <div className="flex gap-2 items-end">
-            <Textarea
-              value={userInput}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-              placeholder="Type a message..."
-              className="flex-1 min-h-[44px] max-h-[120px] resize-none text-sm border-violet-300 focus:border-violet-500"
-              data-testid="input-message"
-            />
-            <Button
-              onClick={handleSendMessage}
-              disabled={!userInput.trim() || isStreaming}
-              size="icon"
-              className="h-11 w-11 bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all"
-              data-testid="button-send-message"
-            >
-              <Send className="h-5 w-5" />
-            </Button>
+            ))}
+            <div ref={messagesEndRef} />
           </div>
+
+          {/* New messages chip - appears when user scrolls up during streaming */}
+          {showNewMessageChip && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 animate-in slide-in-from-bottom-2 duration-300">
+              <Button
+                onClick={handleScrollToBottomClick}
+                size="sm"
+                className="bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white shadow-lg hover:shadow-xl transition-all"
+                data-testid="button-new-messages"
+              >
+                New messages ↓
+              </Button>
+            </div>
+          )}
         </div>
 
-        {/* Interactive Options with glass buttons - sticky footer with safe area */}
-        {showOptions && !userHasTyped && (
+        {/* Footer area (input + choices) - tracked by ResizeObserver */}
+        <div data-footer-area>
+          {/* Sticky Input Bar - always visible */}
+          <div 
+            className="border-t border-violet-200/50 backdrop-blur-sm flex-shrink-0"
+            style={{
+              padding: "clamp(12px, 3vw, 20px)",
+              paddingBottom: 'calc(clamp(12px, 3vw, 20px) + env(safe-area-inset-bottom))',
+            }}
+          >
+            <div className="flex gap-2 items-end">
+              <Textarea
+                value={userInput}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                placeholder="Type a message..."
+                className="flex-1 min-h-[44px] max-h-[120px] resize-none text-sm border-violet-300 focus:border-violet-500"
+                data-testid="input-message"
+              />
+              <Button
+                onClick={handleSendMessage}
+                disabled={!userInput.trim() || isStreaming}
+                size="icon"
+                className="h-11 w-11 bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all"
+                data-testid="button-send-message"
+              >
+                <Send className="h-5 w-5" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Interactive Options with glass buttons - sticky footer with safe area */}
+          {showOptions && !userHasTyped && (
           <div 
             className="border-t border-violet-200/50 space-y-2 animate-in slide-in-from-bottom-2 duration-300 backdrop-blur-sm flex-shrink-0"
             style={{
@@ -840,6 +958,7 @@ export function VanessaChat({
             )}
           </div>
         )}
+        </div>
 
         {/* Luminous sparkle effects */}
         <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
