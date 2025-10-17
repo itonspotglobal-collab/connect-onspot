@@ -214,7 +214,7 @@ export default function Home() {
               data-testid="badge-superhuman-bpo"
             >
               <div className="w-2 h-2 bg-white/60 rounded-full"></div>
-              Making outsourcing Easy
+              Making Outsourcing Easy
             </div>
 
             {/* AI-First Headline */}
@@ -310,7 +310,9 @@ export default function Home() {
                     <p className="text-xs sm:text-sm text-muted-foreground mb-1">
                       {tile.label}
                     </p>
-                    <p className="text-lg sm:text-xl font-bold">{tile.description}</p>
+                    <p className="text-lg sm:text-xl font-bold">
+                      {tile.description}
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -355,7 +357,9 @@ export default function Home() {
       <div className="bg-stories-light pb-12 sm:pb-16">
         <div className="container mx-auto px-4 sm:px-6">
           <div className="text-center space-y-2 sm:space-y-3 mb-8 sm:mb-12 pt-12 sm:pt-16">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold">Amazing Stories</h2>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold">
+              Amazing Stories
+            </h2>
             <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto px-4">
               Real results from real people
             </p>
@@ -393,7 +397,12 @@ export default function Home() {
           </div>
 
           <div className="text-center mt-8 sm:mt-12">
-            <Button variant="outline" size="lg" className="min-h-[48px]" asChild>
+            <Button
+              variant="outline"
+              size="lg"
+              className="min-h-[48px]"
+              asChild
+            >
               <Link href="/amazing">
                 Read More Stories
                 <ArrowRight className="w-4 h-4 ml-2" />
@@ -406,7 +415,9 @@ export default function Home() {
       {/* Popular Skills */}
       <div className="container mx-auto px-4 sm:px-6 space-y-8 sm:space-y-12">
         <div className="text-center space-y-3 sm:space-y-4">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold px-4">Want to Hire Talent?</h2>
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold px-4">
+            Want to Hire Talent?
+          </h2>
           <p className="text-sm sm:text-base text-muted-foreground px-4">
             Our talent pool covers the most sought-after skills in the market
           </p>
@@ -427,7 +438,11 @@ export default function Home() {
               ))}
             </div>
             <div className="text-center mt-6 sm:mt-8">
-              <Button size="lg" className="min-h-[48px] w-full sm:w-auto" asChild>
+              <Button
+                size="lg"
+                className="min-h-[48px] w-full sm:w-auto"
+                asChild
+              >
                 <Link href="/hire-talent">
                   <Search className="w-4 h-4 mr-2" />
                   Search All Skills
@@ -441,7 +456,9 @@ export default function Home() {
       {/* Why OnSpot Advantage */}
       <div className="container mx-auto px-4 sm:px-6 space-y-6 sm:space-y-8">
         <div className="text-center space-y-2 sm:space-y-3">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold px-4">Why Outsource OnSpot</h2>
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold px-4">
+            Why Outsource OnSpot
+          </h2>
           <p className="text-sm sm:text-base text-muted-foreground px-4">
             Discover the competitive advantages of working with OnSpot
             professionals
@@ -531,7 +548,12 @@ export default function Home() {
               network. Start building your dream team today.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-2 sm:pt-4">
-              <Button size="lg" className="min-h-[48px] w-full sm:w-auto" asChild data-testid="button-get-started">
+              <Button
+                size="lg"
+                className="min-h-[48px] w-full sm:w-auto"
+                asChild
+                data-testid="button-get-started"
+              >
                 <Link href="/lead-intake">
                   <Users className="w-5 h-5 mr-2" />
                   Get Started Now
