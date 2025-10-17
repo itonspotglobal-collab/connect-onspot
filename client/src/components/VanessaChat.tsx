@@ -44,6 +44,8 @@ export function VanessaChat({
   const scrollAnimationFrameRef = useRef<number | null>(null);
   const lastScrollTopRef = useRef(0);
   const hasInitializedRef = useRef(false);
+  const footerRef = useRef<HTMLDivElement>(null);
+  const [footerHeight, setFooterHeight] = useState(0);
 
   const openingMessages = useRef([
     {
@@ -103,7 +105,9 @@ export function VanessaChat({
     const updateViewportHeight = () => {
       if (window.visualViewport) {
         const vh = window.visualViewport.height;
-        document.documentElement.style.setProperty('--vh', `${vh}px`);
+        document.documentElement.style.setProperty('--viewport-height', `${vh}px`);
+      } else {
+        document.documentElement.style.setProperty('--viewport-height', `${window.innerHeight}px`);
       }
       // Recompute pinned state on resize
       if (checkIfNearBottom() && isPinnedToBottom) {
@@ -113,12 +117,29 @@ export function VanessaChat({
 
     updateViewportHeight();
     window.visualViewport?.addEventListener('resize', updateViewportHeight);
+    window.addEventListener('resize', updateViewportHeight);
 
     return () => {
       window.visualViewport?.removeEventListener('resize', updateViewportHeight);
-      document.documentElement.style.removeProperty('--vh');
+      window.removeEventListener('resize', updateViewportHeight);
+      document.documentElement.style.removeProperty('--viewport-height');
     };
   }, [isOpen, isSticky, isPinnedToBottom]);
+
+  // Track footer height for body padding
+  useEffect(() => {
+    const footer = footerRef.current;
+    if (!footer) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setFooterHeight(entry.contentRect.height);
+      }
+    });
+
+    resizeObserver.observe(footer);
+    return () => resizeObserver.disconnect();
+  }, [isOpen]);
 
   // Attach scroll listener to messages container
   useEffect(() => {
@@ -815,23 +836,25 @@ export function VanessaChat({
     );
   }
 
-  // Full-screen luminous glass modal mode - responsive gutters for all screens
+  // Full-screen luminous glass modal mode - vertically balanced with viewport-aware height
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center animate-in fade-in duration-300"
+      className="fixed inset-0 z-50 flex animate-in fade-in duration-300"
       style={{
         background:
           "radial-gradient(ellipse at center, rgba(127, 61, 244, 0.15) 0%, rgba(58, 58, 248, 0.1) 50%, rgba(0, 0, 0, 0.3) 100%)",
         backdropFilter: "blur(12px)",
         paddingInline: "clamp(12px, 4vw, 48px)",
-        paddingBlock: "clamp(12px, 4vh, 48px)",
+        paddingBlock: "clamp(20px, 5vh, 48px)",
         ["--gutter" as string]: "clamp(12px, 4vw, 48px)",
-        ["--vgutter" as string]: "clamp(12px, 4vh, 48px)",
+        ["--vgutter" as string]: "clamp(20px, 5vh, 48px)",
+        alignItems: "center",
+        justifyContent: "center",
       }}
       onClick={onClose}
     >
       <div
-        className="flex flex-col relative animate-in slide-in-from-bottom-4 duration-500"
+        className="flex flex-col relative animate-in slide-in-from-bottom-4 duration-500 max-[360px]:!rounded-t-3xl max-[360px]:!rounded-b-none max-[360px]:self-end"
         style={{
           background:
             "linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(243, 232, 255, 0.98) 100%)",
@@ -839,10 +862,9 @@ export function VanessaChat({
           boxShadow:
             "0 0 60px rgba(127, 61, 244, 0.4), 0 8px 32px rgba(0, 0, 0, 0.12), inset 0 0 0 1px rgba(127, 61, 244, 0.3)",
           width: "min(720px, calc(100vw - 2 * var(--gutter)))",
-          height: "auto",
-          maxHeight: "calc(100dvh - 96px)",
+          maxHeight: "min(calc(var(--viewport-height, 100dvh) - 2 * var(--vgutter)), calc(100svh - 2 * var(--vgutter)))",
           borderRadius: "clamp(16px, 2vw, 24px)",
-          overflow: "visible",
+          overflow: "hidden",
         }}
         onClick={(e) => e.stopPropagation()}
         data-testid="vanessa-chat-window"
@@ -912,55 +934,59 @@ export function VanessaChat({
         {/* Messages with enhanced contrast - scrollable section with momentum */}
         <div className="v-body flex-1 relative min-h-0">
           <div
+            id="scroller"
             ref={messagesContainerRef}
-            className="absolute inset-0 overflow-y-auto space-y-3 md:space-y-4"
+            className="absolute inset-0 overflow-y-auto"
             style={{
               WebkitOverflowScrolling: 'touch',
               overscrollBehavior: 'contain',
               padding: "clamp(12px, 3vw, 20px)",
+              paddingBottom: `calc(clamp(12px, 3vw, 20px) + ${footerHeight}px)`,
             }}
             data-testid="chat-messages"
           >
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2 duration-300`}
-              >
+            <div id="messages" className="space-y-3 md:space-y-4">
+              {messages.map((message) => (
                 <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-sm ${
-                    message.sender === "user"
-                      ? "bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white"
-                      : "bg-white/80 text-gray-900 backdrop-blur-sm border border-violet-200/40"
-                  }`}
-                  data-testid={`message-${message.sender}-${message.id}`}
+                  key={message.id}
+                  className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2 duration-300`}
                 >
-                  {message.isTyping ? (
-                    <div
-                      className="flex gap-1 py-1"
-                      data-testid="typing-indicator"
-                    >
+                  <div
+                    className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-sm ${
+                      message.sender === "user"
+                        ? "bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white"
+                        : "bg-white/80 text-gray-900 backdrop-blur-sm border border-violet-200/40"
+                    }`}
+                    data-testid={`message-${message.sender}-${message.id}`}
+                  >
+                    {message.isTyping ? (
                       <div
-                        className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"
-                        style={{ animationDelay: "0ms" }}
-                      />
-                      <div
-                        className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"
-                        style={{ animationDelay: "150ms" }}
-                      />
-                      <div
-                        className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"
-                        style={{ animationDelay: "300ms" }}
-                      />
-                    </div>
-                  ) : (
-                    <p className="text-sm whitespace-pre-line leading-relaxed">
-                      {message.text}
-                    </p>
-                  )}
+                        className="flex gap-1 py-1"
+                        data-testid="typing-indicator"
+                      >
+                        <div
+                          className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"
+                          style={{ animationDelay: "0ms" }}
+                        />
+                        <div
+                          className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"
+                          style={{ animationDelay: "150ms" }}
+                        />
+                        <div
+                          className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"
+                          style={{ animationDelay: "300ms" }}
+                        />
+                      </div>
+                    ) : (
+                      <p className="text-sm whitespace-pre-line leading-relaxed">
+                        {message.text}
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-            <div ref={messagesEndRef} />
+              ))}
+              <div ref={messagesEndRef} />
+            </div>
           </div>
 
           {/* New messages chip - appears when user scrolls up during streaming */}
@@ -979,7 +1005,7 @@ export function VanessaChat({
         </div>
 
         {/* Footer area (input + choices) - tracked by ResizeObserver */}
-        <div data-footer-area>
+        <div ref={footerRef} data-footer-area>
           {/* Sticky Input Bar - always visible */}
           <div 
             className="border-t border-violet-200/50 backdrop-blur-sm flex-shrink-0"
@@ -990,6 +1016,7 @@ export function VanessaChat({
           >
             <div className="flex gap-2 items-end">
               <Textarea
+                id="chatInput"
                 value={userInput}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
@@ -998,6 +1025,7 @@ export function VanessaChat({
                 data-testid="input-message"
               />
               <Button
+                id="sendBtn"
                 onClick={handleSendMessage}
                 disabled={!userInput.trim() || isStreaming}
                 size="icon"
@@ -1012,6 +1040,7 @@ export function VanessaChat({
           {/* Interactive Options with glass buttons - sticky footer with safe area */}
           {showOptions && !userHasTyped && (
           <div 
+            id="choices"
             className="border-t border-violet-200/50 space-y-2 animate-in slide-in-from-bottom-2 duration-300 backdrop-blur-sm flex-shrink-0"
             style={{
               position: 'sticky',
