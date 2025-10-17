@@ -426,6 +426,7 @@ export function VanessaChat({
 
             {/* Messages with enhanced contrast - scrollable with momentum */}
             <div
+              ref={messagesContainerRef}
               className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4 min-h-0"
               style={{
                 WebkitOverflowScrolling: 'touch',
@@ -472,10 +473,40 @@ export function VanessaChat({
                   </div>
                 </div>
               ))}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Sticky Input Bar - always visible */}
+            <div 
+              className="border-t border-violet-200/50 backdrop-blur-sm flex-shrink-0"
+              style={{
+                padding: 'clamp(10px, 2vw, 16px)',
+                paddingBottom: 'max(12px, calc(10px + env(safe-area-inset-bottom)))',
+              }}
+            >
+              <div className="flex gap-2 items-end">
+                <Textarea
+                  value={userInput}
+                  onChange={handleInputChange}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Type a message..."
+                  className="flex-1 min-h-[40px] max-h-[120px] resize-none text-sm border-violet-300 focus:border-violet-500"
+                  data-testid="input-message"
+                />
+                <Button
+                  onClick={handleSendMessage}
+                  disabled={!userInput.trim() || isStreaming}
+                  size="icon"
+                  className="h-10 w-10 bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all"
+                  data-testid="button-send-message"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
             {/* Interactive Options with glass buttons - sticky footer with safe area */}
-            {showOptions && (
+            {showOptions && !userHasTyped && (
               <div 
                 className="border-t border-violet-200/50 space-y-2 animate-in slide-in-from-bottom-2 duration-300 backdrop-blur-sm flex-shrink-0"
                 style={{
@@ -657,6 +688,7 @@ export function VanessaChat({
 
         {/* Messages with enhanced contrast - scrollable section with momentum */}
         <div
+          ref={messagesContainerRef}
           className="v-body flex-1 overflow-y-auto space-y-3 md:space-y-4 min-h-0"
           style={{
             WebkitOverflowScrolling: 'touch',
@@ -704,10 +736,40 @@ export function VanessaChat({
               </div>
             </div>
           ))}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Sticky Input Bar - always visible */}
+        <div 
+          className="border-t border-violet-200/50 backdrop-blur-sm flex-shrink-0"
+          style={{
+            padding: "clamp(12px, 3vw, 20px)",
+            paddingBottom: 'calc(clamp(12px, 3vw, 20px) + env(safe-area-inset-bottom))',
+          }}
+        >
+          <div className="flex gap-2 items-end">
+            <Textarea
+              value={userInput}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              placeholder="Type a message..."
+              className="flex-1 min-h-[44px] max-h-[120px] resize-none text-sm border-violet-300 focus:border-violet-500"
+              data-testid="input-message"
+            />
+            <Button
+              onClick={handleSendMessage}
+              disabled={!userInput.trim() || isStreaming}
+              size="icon"
+              className="h-11 w-11 bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all"
+              data-testid="button-send-message"
+            >
+              <Send className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
 
         {/* Interactive Options with glass buttons - sticky footer with safe area */}
-        {showOptions && (
+        {showOptions && !userHasTyped && (
           <div 
             className="border-t border-violet-200/50 space-y-2 animate-in slide-in-from-bottom-2 duration-300 backdrop-blur-sm flex-shrink-0"
             style={{
