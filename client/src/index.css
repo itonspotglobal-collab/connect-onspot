@@ -635,6 +635,16 @@
   .animate-shimmer {
     animation: shimmer 3s linear infinite;
   }
+
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
   
   /* Professional button enhancements */
   .btn-professional {

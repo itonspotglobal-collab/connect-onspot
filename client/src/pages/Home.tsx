@@ -155,27 +155,33 @@ const onspotExperience = [
   },
 ];
 
-const testimonials = [
+const transformationStories = [
   {
     name: "Frederic Hill",
-    role: "Founder & CEO",
-    quote:
-      "I just had to take a moment to express my gratitude for the outstanding service they provided. Their complete assistance and efforts were truly remarkable",
+    role: "Founder & CEO, Vertex Education",
+    transformation: "From 12-hour workdays to automated excellence",
+    story:
+      "AI handled routine tasks. Our team focused on strategy. Revenue doubled in 6 months.",
     photo: FrederickPhoto,
+    metric: "2x Revenue",
   },
   {
     name: "Julie Reyes",
-    role: "Account Executive",
-    quote:
-      "Every step of the way they provided helpful advice, recommended strategies to ensure our website was optimally set up, and made sure every element was clear and concise.",
+    role: "Operations Director, Flash Justice",
+    transformation: "From scattered processes to seamless orchestration",
+    story:
+      "Vanessa AI coordinated our remote team. Human expertise met intelligent automation. Efficiency soared.",
     photo: JuliePhoto,
+    metric: "85% Faster",
   },
   {
     name: "Amira Santos",
-    role: "Data Engineer",
-    quote:
-      "Excellent service and thoroughly trained professionals, and their follow-up on tickets was handled with such care and attention to detail.",
+    role: "CTO, Pinetech",
+    transformation: "From constant firefighting to proactive innovation",
+    story:
+      "AI monitors, predicts, and prevents. Our engineers build the future. Downtime became a memory.",
     photo: AmiraPhoto,
+    metric: "99.9% Uptime",
   },
 ];
 
@@ -581,58 +587,165 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Amazing Stories - Testimonials */}
-      <div className="bg-stories-light pb-12 sm:pb-16">
-        <div className="container mx-auto px-4 sm:px-6">
-          <div className="text-center space-y-2 sm:space-y-3 mb-8 sm:mb-12 pt-12 sm:pt-16">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold">
-              Amazing Stories
+      {/* Transformation Stories - Cinematic Gallery */}
+      <div className="relative py-24 sm:py-32 lg:py-40 overflow-hidden">
+        {/* Ethereal background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-violet-500/5 to-background"></div>
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-gradient-radial from-violet-500/10 to-transparent rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-gradient-radial from-blue-500/10 to-transparent rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="container mx-auto px-4 sm:px-6 relative z-10">
+          {/* Section Title */}
+          <div className="text-center mb-16 sm:mb-20 space-y-4">
+            <p className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wider">
+              Transformation Stories
+            </p>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight">
+              Human Achievements
             </h2>
-            <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto px-4">
-              Real results from real people
+            <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
+              Powered by Intelligence
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto">
-            {testimonials.map((testimonial, index) => (
-              <div
-                key={index}
-                className="bg-background rounded-2xl p-5 sm:p-6 hover-elevate transition-all duration-300 h-full flex flex-col"
-                data-testid={`testimonial-${index}`}
-              >
-                <p className="text-sm sm:text-base leading-relaxed flex-grow">
-                  "{testimonial.quote}"
-                </p>
-                <div className="flex items-center gap-3 mt-5 sm:mt-6">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden border border-border shadow-sm flex-shrink-0">
-                    <img
-                      src={testimonial.photo}
-                      alt={testimonial.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div>
-                    <div className="font-medium text-sm">
-                      {testimonial.name}
+          {/* Story Cards - Horizontal Scroll on Mobile, Grid on Desktop */}
+          <div className="relative">
+            {/* Desktop Grid */}
+            <div className="hidden md:grid md:grid-cols-3 gap-8 lg:gap-12 max-w-7xl mx-auto">
+              {transformationStories.map((story, index) => (
+                <div
+                  key={index}
+                  className="group relative"
+                  style={{
+                    animation: `fadeInUp 0.8s ease-out ${index * 0.2}s both`,
+                  }}
+                  data-testid={`story-card-${index}`}
+                >
+                  {/* Breathing glow effect */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 to-blue-500/20 rounded-3xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 scale-110 animate-gentle-pulse"></div>
+                  
+                  {/* Glass Story Card */}
+                  <div className="relative bg-background/30 backdrop-blur-xl border border-white/10 rounded-3xl p-8 lg:p-10 transition-all duration-700 group-hover:border-white/20 group-hover:bg-background/40 h-full flex flex-col">
+                    {/* Profile */}
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className="relative w-14 h-14 lg:w-16 lg:h-16 rounded-full overflow-hidden border-2 border-white/20 group-hover:border-white/40 transition-colors duration-500">
+                        <img
+                          src={story.photo}
+                          alt={story.name}
+                          className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
+                        />
+                        {/* Photo glow */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 to-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-sm lg:text-base">{story.name}</p>
+                        <p className="text-xs lg:text-sm text-muted-foreground">{story.role}</p>
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      {testimonial.role}
+
+                    {/* Transformation Title */}
+                    <div className="mb-6 flex-grow">
+                      <p className="text-base lg:text-lg font-light leading-relaxed text-foreground/90 group-hover:text-foreground transition-colors duration-500">
+                        {story.transformation}
+                      </p>
                     </div>
+
+                    {/* Story */}
+                    <div className="mb-6">
+                      <p className="text-sm lg:text-base text-muted-foreground leading-relaxed">
+                        {story.story}
+                      </p>
+                    </div>
+
+                    {/* Metric Badge */}
+                    <div className="mt-auto pt-6 border-t border-white/10">
+                      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-violet-500/10 to-blue-500/10 border border-white/10 group-hover:border-white/20 transition-colors duration-500">
+                        <Sparkles className="w-4 h-4 text-violet-500" />
+                        <span className="text-sm font-semibold bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent">
+                          {story.metric}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Bottom glow line */}
+                    <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-violet-500/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
                   </div>
                 </div>
+              ))}
+            </div>
+
+            {/* Mobile Horizontal Scroll */}
+            <div className="md:hidden overflow-x-auto scrollbar-hide -mx-4 px-4">
+              <div className="flex gap-6 pb-4" style={{ scrollSnapType: 'x mandatory' }}>
+                {transformationStories.map((story, index) => (
+                  <div
+                    key={index}
+                    className="group relative flex-shrink-0 w-[85vw] max-w-[400px]"
+                    style={{ scrollSnapAlign: 'center' }}
+                    data-testid={`story-card-mobile-${index}`}
+                  >
+                    {/* Breathing glow effect */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 to-blue-500/20 rounded-3xl blur-2xl opacity-50 animate-gentle-pulse"></div>
+                    
+                    {/* Glass Story Card */}
+                    <div className="relative bg-background/30 backdrop-blur-xl border border-white/10 rounded-3xl p-6 h-full flex flex-col">
+                      {/* Profile */}
+                      <div className="flex items-center gap-3 mb-5">
+                        <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-white/20">
+                          <img
+                            src={story.photo}
+                            alt={story.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-semibold text-sm">{story.name}</p>
+                          <p className="text-xs text-muted-foreground">{story.role}</p>
+                        </div>
+                      </div>
+
+                      {/* Transformation Title */}
+                      <div className="mb-4 flex-grow">
+                        <p className="text-base font-light leading-relaxed text-foreground/90">
+                          {story.transformation}
+                        </p>
+                      </div>
+
+                      {/* Story */}
+                      <div className="mb-5">
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {story.story}
+                        </p>
+                      </div>
+
+                      {/* Metric Badge */}
+                      <div className="mt-auto pt-5 border-t border-white/10">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-violet-500/10 to-blue-500/10 border border-white/10">
+                          <Sparkles className="w-4 h-4 text-violet-500" />
+                          <span className="text-sm font-semibold bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent">
+                            {story.metric}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
 
-          <div className="text-center mt-8 sm:mt-12">
+          {/* CTA */}
+          <div className="text-center mt-16 sm:mt-20">
             <Button
               variant="outline"
               size="lg"
-              className="min-h-[48px]"
+              className="min-h-[56px] px-8 text-base border-2 bg-background/50 backdrop-blur-sm hover:bg-background/80"
               asChild
             >
               <Link href="/amazing">
-                Read More Stories
+                Explore More Transformations
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Link>
             </Button>
