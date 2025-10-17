@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { X, Sparkles, MessageCircle, Send } from "lucide-react";
+import { X, Sparkles, MessageCircle, Send, RotateCcw } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,6 +31,7 @@ export function VanessaChat({
     setSelectedTopic,
     isMinimized,
     setIsMinimized,
+    resetConversation,
   } = useVanessa();
 
   // Local state for input and streaming
@@ -715,6 +716,20 @@ export function VanessaChat({
                 <Button
                   size="icon"
                   variant="ghost"
+                  onClick={() => {
+                    if (window.confirm("Reset conversation? This will clear all messages.")) {
+                      resetConversation();
+                    }
+                  }}
+                  className="h-8 w-8 text-gray-600 hover:text-gray-900 hover:bg-violet-100/60"
+                  data-testid="button-reset-chat"
+                  title="Reset conversation"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
                   onClick={() => setIsMinimized(true)}
                   className="h-8 w-8 text-gray-600 hover:text-gray-900 hover:bg-violet-100/60"
                   data-testid="button-minimize-chat"
@@ -1007,15 +1022,31 @@ export function VanessaChat({
               Superhuman Assistant — In Training
             </p>
           </div>
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={onClose}
-            className="text-gray-600 hover:text-gray-900 hover:bg-violet-100/60"
-            data-testid="button-minimize-chat"
-          >
-            <X className="h-5 w-5" />
-          </Button>
+          <div className="flex gap-1">
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => {
+                if (window.confirm("Reset conversation? This will clear all messages.")) {
+                  resetConversation();
+                }
+              }}
+              className="text-gray-600 hover:text-gray-900 hover:bg-violet-100/60"
+              data-testid="button-reset-chat-modal"
+              title="Reset conversation"
+            >
+              <RotateCcw className="h-4 w-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={onClose}
+              className="text-gray-600 hover:text-gray-900 hover:bg-violet-100/60"
+              data-testid="button-close-chat-modal"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
 
         {/* Messages with enhanced contrast - scrollable section with momentum */}

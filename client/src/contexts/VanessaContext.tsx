@@ -17,6 +17,7 @@ interface VanessaContextType {
   isMinimized: boolean;
   openVanessa: () => void;
   closeVanessa: () => void;
+  resetConversation: () => void;
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   setCurrentMessageIndex: React.Dispatch<React.SetStateAction<number>>;
   setShowOptions: React.Dispatch<React.SetStateAction<boolean>>;
@@ -59,6 +60,13 @@ export function VanessaProvider({ children }: { children: ReactNode }) {
     // Don't reset conversation - persist across sessions
   };
 
+  const resetConversation = () => {
+    setMessages([]);
+    setCurrentMessageIndex(0);
+    setShowOptions(false);
+    setSelectedTopic(null);
+  };
+
   return (
     <VanessaContext.Provider
       value={{
@@ -71,6 +79,7 @@ export function VanessaProvider({ children }: { children: ReactNode }) {
         isMinimized,
         openVanessa,
         closeVanessa,
+        resetConversation,
         setMessages,
         setCurrentMessageIndex,
         setShowOptions,
