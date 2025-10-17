@@ -637,4 +637,25 @@
     border-bottom:1px solid hsl(var(--brand-foreground) / 0.1); 
     backdrop-filter:saturate(1.2) blur(8px); 
   }
+
+  /* Vanessa Modal - Prevent full-screen expansion */
+  [data-testid="vanessa-chat-window"] {
+    height: auto !important;
+    max-height: calc(100dvh - 96px) !important;
+    overflow: visible !important;
+  }
+
+  /* Only the message body scrolls */
+  .v-body {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* Small screens (≤360px) - bottom sheet behavior */
+  @media (max-width: 360px) {
+    [data-testid="vanessa-chat-window"] {
+      max-height: calc(100dvh - 40px) !important;
+    }
+  }
 }

@@ -464,10 +464,10 @@ export function VanessaChat({
         background:
           "radial-gradient(ellipse at center, rgba(127, 61, 244, 0.15) 0%, rgba(58, 58, 248, 0.1) 50%, rgba(0, 0, 0, 0.3) 100%)",
         backdropFilter: "blur(12px)",
-        paddingInline: "clamp(12px, 4vw, 24px)",
-        paddingBlock: "clamp(10px, 4vh, 32px)",
-        ["--gutter" as string]: "clamp(12px, 4vw, 24px)",
-        ["--vgutter" as string]: "clamp(10px, 4vh, 32px)",
+        paddingInline: "clamp(12px, 4vw, 48px)",
+        paddingBlock: "clamp(12px, 4vh, 48px)",
+        ["--gutter" as string]: "clamp(12px, 4vw, 48px)",
+        ["--vgutter" as string]: "clamp(12px, 4vh, 48px)",
       }}
       onClick={onClose}
     >
@@ -480,7 +480,8 @@ export function VanessaChat({
           boxShadow:
             "0 0 60px rgba(127, 61, 244, 0.4), 0 8px 32px rgba(0, 0, 0, 0.12), inset 0 0 0 1px rgba(127, 61, 244, 0.3)",
           width: "min(720px, calc(100vw - 2 * var(--gutter)))",
-          maxHeight: "calc(100dvh - 2 * var(--vgutter) - env(safe-area-inset-top) - env(safe-area-inset-bottom))",
+          height: "auto",
+          maxHeight: "calc(100dvh - 96px)",
           borderRadius: "clamp(16px, 2vw, 24px)",
           overflow: "visible",
         }}
@@ -547,7 +548,7 @@ export function VanessaChat({
 
         {/* Messages with enhanced contrast - scrollable section with momentum */}
         <div
-          className="flex-1 overflow-y-auto space-y-3 md:space-y-4 min-h-0"
+          className="v-body flex-1 overflow-y-auto space-y-3 md:space-y-4 min-h-0"
           style={{
             WebkitOverflowScrolling: 'touch',
             overscrollBehavior: 'contain',
