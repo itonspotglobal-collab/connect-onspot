@@ -314,6 +314,11 @@ export default function Home() {
     return () => window.removeEventListener("resize", checkDesktop);
   }, []);
 
+  // Toggle footer accordion sections
+  const toggleFooterSection = (section: string) => {
+    setExpandedFooterSection(expandedFooterSection === section ? null : section);
+  };
+
   return (
     <div>
       {/* Hero Section */}
@@ -1306,11 +1311,24 @@ export default function Home() {
 
             {/* Navigation Section */}
             <div className="space-y-6 pb-8 md:pb-0 border-b md:border-b-0 border-white/10 text-center md:text-left">
-              <h3 className="text-base sm:text-lg font-semibold bg-gradient-to-r from-[#a38eff] to-[#6af0ff] bg-clip-text text-transparent tracking-wide">
-                Navigation
-              </h3>
+              <button
+                onClick={() => toggleFooterSection('navigation')}
+                className="flex items-center justify-between w-full md:cursor-default"
+                data-testid="footer-accordion-navigation"
+              >
+                <h3 className="text-base sm:text-lg font-semibold bg-gradient-to-r from-[#a38eff] to-[#6af0ff] bg-clip-text text-transparent tracking-wide">
+                  Navigation
+                </h3>
+                <ChevronDown className={`w-5 h-5 text-white/50 transition-transform duration-300 md:hidden ${expandedFooterSection === 'navigation' ? 'rotate-180' : ''}`} />
+              </button>
               
-              <div className="space-y-3">
+              <div 
+                className={`space-y-3 transition-all duration-300 md:!opacity-100 md:!max-h-none md:!block ${
+                  expandedFooterSection === 'navigation' 
+                    ? 'opacity-100 max-h-96' 
+                    : 'opacity-0 max-h-0 overflow-hidden'
+                }`}
+              >
                 <Link href="/hire-talent" className="block text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-hire">
                   Hire Talent
                 </Link>
@@ -1341,11 +1359,24 @@ export default function Home() {
 
             {/* Company Section */}
             <div className="space-y-6 pb-8 md:pb-0 border-b md:border-b-0 border-white/10 text-center md:text-left">
-              <h3 className="text-base sm:text-lg font-semibold bg-gradient-to-r from-[#a38eff] to-[#6af0ff] bg-clip-text text-transparent tracking-wide">
-                Company
-              </h3>
+              <button
+                onClick={() => toggleFooterSection('company')}
+                className="flex items-center justify-between w-full md:cursor-default"
+                data-testid="footer-accordion-company"
+              >
+                <h3 className="text-base sm:text-lg font-semibold bg-gradient-to-r from-[#a38eff] to-[#6af0ff] bg-clip-text text-transparent tracking-wide">
+                  Company
+                </h3>
+                <ChevronDown className={`w-5 h-5 text-white/50 transition-transform duration-300 md:hidden ${expandedFooterSection === 'company' ? 'rotate-180' : ''}`} />
+              </button>
               
-              <div className="space-y-3">
+              <div 
+                className={`space-y-3 transition-all duration-300 md:!opacity-100 md:!max-h-none md:!block ${
+                  expandedFooterSection === 'company' 
+                    ? 'opacity-100 max-h-96' 
+                    : 'opacity-0 max-h-0 overflow-hidden'
+                }`}
+              >
                 <Link href="/why-onspot" className="block text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-why">
                   Why OnSpot
                 </Link>
@@ -1372,11 +1403,24 @@ export default function Home() {
 
             {/* Download Section */}
             <div className="space-y-6 pb-8 md:pb-0 border-b md:border-b-0 border-white/10 text-center md:text-left">
-              <h3 className="text-base sm:text-lg font-semibold bg-gradient-to-r from-[#a38eff] to-[#6af0ff] bg-clip-text text-transparent tracking-wide">
-                Download Platform
-              </h3>
+              <button
+                onClick={() => toggleFooterSection('download')}
+                className="flex items-center justify-between w-full md:cursor-default"
+                data-testid="footer-accordion-download"
+              >
+                <h3 className="text-base sm:text-lg font-semibold bg-gradient-to-r from-[#a38eff] to-[#6af0ff] bg-clip-text text-transparent tracking-wide">
+                  Download Platform
+                </h3>
+                <ChevronDown className={`w-5 h-5 text-white/50 transition-transform duration-300 md:hidden ${expandedFooterSection === 'download' ? 'rotate-180' : ''}`} />
+              </button>
               
-              <div className="space-y-4">
+              <div 
+                className={`space-y-4 transition-all duration-300 md:!opacity-100 md:!max-h-none md:!block ${
+                  expandedFooterSection === 'download' 
+                    ? 'opacity-100 max-h-96' 
+                    : 'opacity-0 max-h-0 overflow-hidden'
+                }`}
+              >
                 <p className="text-sm text-white/70 leading-relaxed">
                   Take OnSpot with you wherever you go. Manage projects and track progress on the move.
                 </p>
@@ -1399,11 +1443,24 @@ export default function Home() {
 
             {/* Connect Section */}
             <div className="space-y-6 text-center md:text-left">
-              <h3 className="text-base sm:text-lg font-semibold bg-gradient-to-r from-[#a38eff] to-[#6af0ff] bg-clip-text text-transparent tracking-wide">
-                Connect
-              </h3>
+              <button
+                onClick={() => toggleFooterSection('connect')}
+                className="flex items-center justify-between w-full md:cursor-default"
+                data-testid="footer-accordion-connect"
+              >
+                <h3 className="text-base sm:text-lg font-semibold bg-gradient-to-r from-[#a38eff] to-[#6af0ff] bg-clip-text text-transparent tracking-wide">
+                  Connect
+                </h3>
+                <ChevronDown className={`w-5 h-5 text-white/50 transition-transform duration-300 md:hidden ${expandedFooterSection === 'connect' ? 'rotate-180' : ''}`} />
+              </button>
               
-              <div className="space-y-3">
+              <div 
+                className={`space-y-3 transition-all duration-300 md:!opacity-100 md:!max-h-none md:!block ${
+                  expandedFooterSection === 'connect' 
+                    ? 'opacity-100 max-h-96' 
+                    : 'opacity-0 max-h-0 overflow-hidden'
+                }`}
+              >
                 <a href="mailto:hello@onspotglobal.com" className="flex items-center justify-center md:justify-start gap-3 text-sm text-white/70 hover:text-violet-300 transition-all duration-300 group" data-testid="footer-email">
                   <Mail className="w-5 h-5 flex-shrink-0 group-hover:scale-110 transition-transform duration-300" />
                   <span>hello@onspotglobal.com</span>
