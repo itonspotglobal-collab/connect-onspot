@@ -1230,18 +1230,25 @@ export function TopNavigation() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              // Not authenticated - show access portal button (desktop only)
-              <Button
+              // Not authenticated - show futuristic AI access portal button (desktop only)
+              <button
                 onClick={() => {
                   setModalStep(1);
                   setSelectedPortal(null);
                   setShowPortal(true);
                 }}
-                className="hidden md:flex bg-white text-primary font-semibold hover:bg-gray-100 rounded-md px-4 py-2"
+                className="hidden md:flex items-center gap-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white font-bold text-sm tracking-wide uppercase transition-all duration-500 hover:scale-105 hover:shadow-[0_0_30px_rgba(58,58,248,0.6)] relative overflow-hidden group"
                 data-testid="button-access-portal"
               >
-                ACCESS PORTAL
-              </Button>
+                {/* Animated gradient shimmer overlay */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
+                
+                <Sparkles className="w-4 h-4 relative z-10" />
+                <span className="relative z-10">Access Portal</span>
+                
+                {/* Glow effect */}
+                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] opacity-0 group-hover:opacity-75 blur-md transition-opacity duration-500"></div>
+              </button>
             )}
           </div>
         </div>
@@ -1501,25 +1508,29 @@ export function TopNavigation() {
                 );
               })}
               
-              {/* Access Portal Button - Only show when not authenticated */}
+              {/* Futuristic AI Access Portal Button - Only show when not authenticated */}
               {!isAuthenticated && (
                 <>
                   <Separator className="bg-white/20 my-2" />
-                  <Button
+                  <button
                     onClick={() => {
                       setModalStep(1);
                       setSelectedPortal(null);
                       setShowPortal(true);
                       setIsMobileMenuOpen(false);
                     }}
-                    className="w-full bg-gradient-to-r from-violet-600 to-blue-600 text-white font-bold hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] transition-all duration-300 rounded-xl min-h-[52px] text-base border-2 border-white/30"
+                    className="w-full flex items-center gap-3 justify-center px-6 py-4 rounded-full bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white font-bold text-base tracking-wide uppercase transition-all duration-500 hover:scale-[1.02] hover:shadow-[0_0_40px_rgba(58,58,248,0.7)] relative overflow-hidden group min-h-[56px]"
                     data-testid="mobile-button-access-portal"
                   >
-                    <span className="flex items-center gap-2 justify-center">
-                      <Sparkles className="w-5 h-5" />
-                      ACCESS PORTAL
-                    </span>
-                  </Button>
+                    {/* Animated gradient shimmer overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full group-active:translate-x-full transition-transform duration-1000 ease-in-out"></div>
+                    
+                    <Sparkles className="w-5 h-5 relative z-10" />
+                    <span className="relative z-10">Access Portal</span>
+                    
+                    {/* Glow effect */}
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] opacity-0 group-active:opacity-75 blur-lg transition-opacity duration-500"></div>
+                  </button>
                 </>
               )}
             </div>
