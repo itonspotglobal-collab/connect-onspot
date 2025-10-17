@@ -456,7 +456,7 @@ export function VanessaChat({
     );
   }
 
-  // Full-screen luminous glass modal mode - with visible spacing from edges
+  // Full-screen luminous glass modal mode - responsive gutters for all screens
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center animate-in fade-in duration-300"
@@ -464,26 +464,37 @@ export function VanessaChat({
         background:
           "radial-gradient(ellipse at center, rgba(127, 61, 244, 0.15) 0%, rgba(58, 58, 248, 0.1) 50%, rgba(0, 0, 0, 0.3) 100%)",
         backdropFilter: "blur(12px)",
-        padding: "24px",
+        paddingInline: "clamp(12px, 4vw, 24px)",
+        paddingBlock: "clamp(10px, 4vh, 32px)",
+        ["--gutter" as string]: "clamp(12px, 4vw, 24px)",
+        ["--vgutter" as string]: "clamp(10px, 4vh, 32px)",
       }}
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg flex flex-col relative animate-in slide-in-from-bottom-4 duration-500 rounded-3xl overflow-hidden"
+        className="flex flex-col relative animate-in slide-in-from-bottom-4 duration-500"
         style={{
           background:
             "linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(243, 232, 255, 0.98) 100%)",
           backdropFilter: "blur(20px)",
           boxShadow:
             "0 0 60px rgba(127, 61, 244, 0.4), 0 8px 32px rgba(0, 0, 0, 0.12), inset 0 0 0 1px rgba(127, 61, 244, 0.3)",
-          maxHeight: "calc(100vh - 48px)",
-          height: "auto",
+          width: "min(720px, calc(100vw - 2 * var(--gutter)))",
+          maxHeight: "calc(100dvh - 2 * var(--vgutter) - env(safe-area-inset-top) - env(safe-area-inset-bottom))",
+          borderRadius: "clamp(16px, 2vw, 24px)",
+          overflow: "visible",
         }}
         onClick={(e) => e.stopPropagation()}
         data-testid="vanessa-chat-window"
       >
         {/* Animated glow accent border */}
-        <div className="absolute inset-0 rounded-3xl pointer-events-none overflow-hidden">
+        <div 
+          className="absolute inset-0 pointer-events-none"
+          style={{ 
+            borderRadius: "clamp(16px, 2vw, 24px)",
+            overflow: "hidden"
+          }}
+        >
           <div className="absolute inset-0 bg-gradient-to-r from-[#3A3AF8]/30 via-[#7F3DF4]/30 to-[#3A3AF8]/30 opacity-60 animate-pulse" 
                style={{ 
                  mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
@@ -496,7 +507,12 @@ export function VanessaChat({
         </div>
 
         {/* Header with glass effect - pinned */}
-        <div className="flex items-center gap-3 p-4 md:p-5 border-b border-violet-200/50 backdrop-blur-sm flex-shrink-0">
+        <div 
+          className="flex items-center gap-3 border-b border-violet-200/50 backdrop-blur-sm flex-shrink-0"
+          style={{
+            padding: "clamp(12px, 3vw, 20px)",
+          }}
+        >
           <Avatar
             className="h-12 w-12 ring-2 ring-violet-400/40"
             data-testid="avatar-vanessa"
@@ -531,10 +547,11 @@ export function VanessaChat({
 
         {/* Messages with enhanced contrast - scrollable section with momentum */}
         <div
-          className="flex-1 overflow-y-auto p-4 md:p-5 space-y-3 md:space-y-4 min-h-0"
+          className="flex-1 overflow-y-auto space-y-3 md:space-y-4 min-h-0"
           style={{
             WebkitOverflowScrolling: 'touch',
             overscrollBehavior: 'contain',
+            padding: "clamp(12px, 3vw, 20px)",
           }}
           data-testid="chat-messages"
         >
@@ -586,10 +603,10 @@ export function VanessaChat({
             style={{
               position: 'sticky',
               bottom: 0,
-              paddingTop: '16px',
-              paddingLeft: '20px',
-              paddingRight: '20px',
-              paddingBottom: 'max(20px, calc(16px + env(safe-area-inset-bottom)))',
+              paddingTop: 'clamp(12px, 3vw, 16px)',
+              paddingLeft: 'clamp(12px, 3vw, 20px)',
+              paddingRight: 'clamp(12px, 3vw, 20px)',
+              paddingBottom: 'calc(clamp(12px, 3vw, 20px) + env(safe-area-inset-bottom))',
             }}
           >
             {selectedTopic === "talk-human" ? (
