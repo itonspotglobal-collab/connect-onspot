@@ -47,6 +47,8 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogOverlay,
+  DialogPortal,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -1536,8 +1538,20 @@ export function TopNavigation() {
       }}>
         {/* Step 1: Cinematic Awakening Modal */}
         {modalStep === 1 ? (
-          <DialogContent className="max-w-5xl border-0 p-0 overflow-hidden bg-transparent shadow-2xl">
-            <DialogTitle className="sr-only">Superhuman BPO Awakening</DialogTitle>
+          <DialogPortal>
+            <DialogOverlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-300" />
+            <div className="fixed inset-0 z-50 flex items-center justify-center pt-20 px-4">
+              <div className="w-full max-w-5xl animate-in fade-in zoom-in-95 duration-500 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 relative">
+                <DialogTitle className="sr-only">Superhuman BPO Awakening</DialogTitle>
+                {/* Close Button */}
+                <button
+                  onClick={() => setShowPortal(false)}
+                  className="absolute right-4 top-4 z-50 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-white"
+                  data-testid="button-close-modal"
+                >
+                  <X className="h-6 w-6" />
+                  <span className="sr-only">Close</span>
+                </button>
             <div 
               className="relative hero-investor flex items-center justify-center min-h-[600px] rounded-2xl overflow-hidden"
               data-testid="modal-step-intro"
@@ -1623,10 +1637,24 @@ export function TopNavigation() {
                 </p>
               </div>
             </div>
-          </DialogContent>
+              </div>
+            </div>
+          </DialogPortal>
         ) : modalStep === 2 ? (
-          <DialogContent className="max-w-3xl border-0 p-0 overflow-hidden bg-transparent shadow-2xl">
-            <DialogTitle className="sr-only">Contact Information</DialogTitle>
+          <DialogPortal>
+            <DialogOverlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-300" />
+            <div className="fixed inset-0 z-50 flex items-center justify-center pt-20 px-4">
+              <div className="w-full max-w-3xl animate-in fade-in zoom-in-95 duration-500 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 relative">
+                <DialogTitle className="sr-only">Contact Information</DialogTitle>
+                {/* Close Button */}
+                <button
+                  onClick={() => setShowPortal(false)}
+                  className="absolute right-4 top-4 z-50 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-white"
+                  data-testid="button-close-modal"
+                >
+                  <X className="h-6 w-6" />
+                  <span className="sr-only">Close</span>
+                </button>
             <div 
               className="relative hero-investor flex items-center justify-center min-h-[650px] rounded-2xl overflow-hidden"
               data-testid="modal-step-contact-form"
@@ -1767,9 +1795,23 @@ export function TopNavigation() {
                 </p>
               </div>
             </div>
-          </DialogContent>
+              </div>
+            </div>
+          </DialogPortal>
         ) : (
-          <DialogContent className="max-w-lg sm:max-w-2xl rounded-2xl border bg-background/95 p-8 shadow-xl backdrop-blur-md">
+          <DialogPortal>
+            <DialogOverlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-300" />
+            <div className="fixed inset-0 z-50 flex items-center justify-center pt-20 px-4">
+              <div className="w-full max-w-lg sm:max-w-2xl animate-in fade-in zoom-in-95 duration-500 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 rounded-2xl border bg-background/95 p-8 shadow-xl backdrop-blur-md relative">
+                {/* Close Button */}
+                <button
+                  onClick={() => setShowPortal(false)}
+                  className="absolute right-4 top-4 z-50 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  data-testid="button-close-modal"
+                >
+                  <X className="h-4 w-4" />
+                  <span className="sr-only">Close</span>
+                </button>
 
           {/* Step 3: Portal Selection */}
           {modalStep === 3 && (
@@ -1917,7 +1959,9 @@ export function TopNavigation() {
               </div>
             </div>
           )}
-          </DialogContent>
+              </div>
+            </div>
+          </DialogPortal>
         )}
       </Dialog>
 
