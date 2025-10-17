@@ -49,21 +49,24 @@ const trustedBrands = [
   { name: "Vertex Education", logo: VertexLogo },
 ];
 
-const valueTiles = [
+const superhumanSystem = [
   {
-    label: "AI Assistant",
-    description: "24/7, integrated, fast.",
+    title: "AI Virtual Assistant",
+    subtitle: "Your superhuman work companion.",
     icon: Bot,
+    gradient: "from-violet-500/20 to-blue-500/20",
   },
   {
-    label: "Managed Services",
-    description: "We run the engine.",
+    title: "Managed Services",
+    subtitle: "AI-enhanced teams that scale with you.",
     icon: Zap,
+    gradient: "from-blue-500/20 to-cyan-500/20",
   },
   {
-    label: "Resourced Talent",
-    description: "Elite, on-demand.",
+    title: "Resourced Services",
+    subtitle: "Human expertise powered by intelligent systems.",
     icon: Users,
+    gradient: "from-cyan-500/20 to-violet-500/20",
   },
 ];
 
@@ -321,32 +324,108 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Value Tiles */}
-      <div className="container mx-auto px-4 sm:px-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-          {valueTiles.map((tile, index) => (
-            <Card
-              key={index}
-              className="rounded-2xl border hover-elevate transition-all duration-200"
-              data-testid={`value-tile-${index}`}
-            >
-              <CardContent className="p-6 sm:p-8">
-                <div className="space-y-3 sm:space-y-4">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <tile.icon className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+      {/* The Superhuman System - Cinematic Apple-style Cards */}
+      <div className="relative py-24 sm:py-32 overflow-hidden">
+        {/* Subtle background gradient */}
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-background/95 to-background pointer-events-none"></div>
+        
+        <div className="container mx-auto px-4 sm:px-6 relative z-10">
+          {/* Section Title */}
+          <div className="text-center mb-16 sm:mb-20 space-y-4">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight">
+              The Superhuman System
+            </h2>
+          </div>
+
+          {/* Glassmorphic Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 max-w-7xl mx-auto">
+            {superhumanSystem.map((item, index) => (
+              <div
+                key={index}
+                className="group relative"
+                style={{
+                  animation: `fadeInUp 0.8s ease-out ${index * 0.15}s both`,
+                }}
+                data-testid={`superhuman-card-${index}`}
+              >
+                {/* Floating glow effect */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient} opacity-0 group-hover:opacity-100 blur-2xl transition-opacity duration-700 rounded-3xl scale-105`}></div>
+                
+                {/* Glass card */}
+                <div className="relative bg-background/40 backdrop-blur-xl border border-white/10 rounded-3xl p-8 sm:p-10 transition-all duration-500 group-hover:border-white/20 group-hover:bg-background/50 h-full flex flex-col">
+                  {/* Icon with gradient background */}
+                  <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br ${item.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500`}>
+                    <item.icon className="w-7 h-7 sm:w-8 sm:h-8 text-foreground" />
                   </div>
-                  <div>
-                    <p className="text-xs sm:text-sm text-muted-foreground mb-1">
-                      {tile.label}
-                    </p>
-                    <p className="text-lg sm:text-xl font-bold">
-                      {tile.description}
-                    </p>
+                  
+                  {/* Title */}
+                  <h3 className="text-xl sm:text-2xl font-semibold mb-3 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+                    {item.title}
+                  </h3>
+                  
+                  {/* Subtitle */}
+                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                    {item.subtitle}
+                  </p>
+                  
+                  {/* Subtle bottom glow line */}
+                  <div className={`absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r ${item.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* AI + Human Advantage Philosophy Section */}
+      <div className="relative py-24 sm:py-32 lg:py-40 overflow-hidden">
+        {/* Luminous gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-violet-500/5 to-background"></div>
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-violet-500/20 via-blue-500/10 to-transparent rounded-full blur-3xl opacity-60"></div>
+        </div>
+        
+        <div className="container mx-auto px-4 sm:px-6 relative z-10">
+          <div className="max-w-5xl mx-auto">
+            <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+              {/* Typography */}
+              <div className="text-center lg:text-left space-y-6 sm:space-y-8">
+                <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight">
+                  <span className="block bg-gradient-to-r from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent">
+                    AI + Human
+                  </span>
+                  <span className="block bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent">
+                    Advantage
+                  </span>
+                </h2>
+                
+                <div className="space-y-4">
+                  <p className="text-lg sm:text-xl lg:text-2xl font-light text-foreground/90 leading-relaxed">
+                    The perfect symbiosis of automation and empathy.
+                  </p>
+                  <p className="text-base sm:text-lg text-muted-foreground font-light leading-relaxed">
+                    Intelligence that never sleeps.
+                    <br />
+                    Humanity that always understands.
+                  </p>
+                </div>
+              </div>
+
+              {/* Abstract gradient shape */}
+              <div className="relative flex items-center justify-center lg:justify-end">
+                <div className="relative w-64 h-64 sm:w-80 sm:h-80 lg:w-96 lg:h-96">
+                  {/* Luminous swirl effect */}
+                  <div className="absolute inset-0 bg-gradient-to-tr from-violet-500/30 via-blue-500/30 to-cyan-500/30 rounded-full blur-3xl opacity-80 animate-gentle-float"></div>
+                  <div className="absolute inset-0 bg-gradient-to-bl from-blue-500/40 via-violet-500/40 to-purple-500/40 rounded-full blur-2xl opacity-70 animate-slow-spin"></div>
+                  
+                  {/* Center glow */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-32 h-32 sm:w-40 sm:h-40 bg-gradient-to-r from-violet-400 to-blue-400 rounded-full blur-xl opacity-60"></div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
