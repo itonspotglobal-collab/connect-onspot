@@ -1263,7 +1263,7 @@ export default function Home() {
               
               <div className={`space-y-4 ${expandedFooterSection === 'about' || isDesktop ? 'block' : 'hidden'} lg:block`}>
                 <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-                  The Superhuman System. AI-first infrastructure meets Filipino excellence. Scale your business with intelligence that never sleeps.
+                  The growth engine behind modern businesses—built by entrepreneurs, for entrepreneurs. We deliver the Superhuman System. AI-first infrastructure meets people excellence. Scale your business with system and intelligence that never sleeps.
                 </p>
                 <div className="flex gap-4 pt-2">
                   <a href="#" className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors group" data-testid="social-linkedin">
