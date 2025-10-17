@@ -1242,29 +1242,8 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Sticky Launch Vanessa Micro-bar */}
-      <div className="sticky bottom-0 z-40 bg-gradient-to-r from-violet-950/90 via-violet-900/90 to-blue-950/90 backdrop-blur-xl border-t border-white/10">
-        <div className="container mx-auto px-4 sm:px-6">
-          <button
-            onClick={() => setShowVanessaChat(true)}
-            className="w-full py-4 sm:py-3 flex items-center justify-center gap-3 group hover-elevate transition-all duration-300"
-            data-testid="button-sticky-vanessa"
-          >
-            <Bot className="w-5 h-5 text-violet-400 group-hover:text-violet-300 transition-colors" />
-            <span className="text-sm sm:text-base font-medium text-foreground/90 group-hover:text-foreground transition-colors">
-              Need help? Launch Vanessa
-            </span>
-            <ArrowRight className="w-4 h-4 text-violet-400 group-hover:translate-x-1 transition-transform" />
-          </button>
-        </div>
-      </div>
-
       {/* Footer */}
       <footer className="relative bg-gradient-to-b from-black via-violet-950/30 to-black border-t border-white/10">
-        {/* AI Pulse Line */}
-        <div className="absolute top-0 left-0 right-0 h-px overflow-hidden">
-          <div className="h-full w-1/3 bg-gradient-to-r from-transparent via-violet-500 to-transparent animate-pulse" style={{ animation: 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}></div>
-        </div>
 
         <div className="container mx-auto px-4 sm:px-6 py-16 sm:py-20 lg:py-24">
           {/* Footer Grid */}
