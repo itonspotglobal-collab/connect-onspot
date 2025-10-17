@@ -156,45 +156,55 @@ export function VanessaChat({
 
   // Start message sequence when chat opens
   useEffect(() => {
-    if (isOpen && messages.length === 0) {
-      setCurrentMessageIndex(0);
+    if (!isOpen) return;
+    
+    // Reset and start fresh conversation when opening with no messages
+    if (messages.length === 0 && currentMessageIndex === 0) {
+      const timer = setTimeout(() => {
+        setCurrentMessageIndex(0);
+        // Trigger first message
+        const firstMessage = openingMessages[0];
+        setMessages([{ ...firstMessage, isTyping: true }]);
+        
+        setTimeout(() => {
+          setMessages([{ ...firstMessage, isTyping: false }]);
+          setCurrentMessageIndex(1);
+        }, 1200);
+      }, 300);
+      
+      return () => clearTimeout(timer);
     }
-  }, [isOpen, messages.length]);
+  }, [isOpen, messages.length, currentMessageIndex]);
 
-  // Display messages sequentially with typing animation
+  // Display subsequent messages sequentially with typing animation
   useEffect(() => {
-    if (!isOpen || currentMessageIndex >= openingMessages.length) {
+    if (!isOpen || currentMessageIndex === 0 || currentMessageIndex >= openingMessages.length) {
+      // Show options after last opening message
       if (currentMessageIndex === openingMessages.length && !showOptions) {
         setTimeout(() => setShowOptions(true), 500);
       }
       return;
     }
 
-    const timer = setTimeout(
-      () => {
-        const newMessage = openingMessages[currentMessageIndex];
+    const timer = setTimeout(() => {
+      const newMessage = openingMessages[currentMessageIndex];
 
-        // Show typing indicator first
-        setMessages((prev) => [...prev, { ...newMessage, isTyping: true }]);
+      // Show typing indicator first
+      setMessages((prev) => [...prev, { ...newMessage, isTyping: true }]);
 
-        // Replace typing indicator with actual message after delay
-        setTimeout(
-          () => {
-            setMessages((prev) => {
-              const updated = [...prev];
-              updated[updated.length - 1] = { ...newMessage, isTyping: false };
-              return updated;
-            });
-            setCurrentMessageIndex((prev) => prev + 1);
-          },
-          1000 + Math.random() * 500,
-        ); // 1-1.5s typing delay
-      },
-      currentMessageIndex === 0 ? 300 : 1500,
-    ); // First message faster
+      // Replace typing indicator with actual message after delay
+      setTimeout(() => {
+        setMessages((prev) => {
+          const updated = [...prev];
+          updated[updated.length - 1] = { ...newMessage, isTyping: false };
+          return updated;
+        });
+        setCurrentMessageIndex((prev) => prev + 1);
+      }, 1000 + Math.random() * 500);
+    }, 1500);
 
     return () => clearTimeout(timer);
-  }, [currentMessageIndex, isOpen, openingMessages.length, showOptions]);
+  }, [currentMessageIndex, isOpen, showOptions]);
 
   const handleTopicSelect = (topic: string) => {
     setSelectedTopic(topic);
