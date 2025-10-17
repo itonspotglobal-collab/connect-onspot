@@ -450,8 +450,10 @@ export default function Home() {
             <Accordion type="single" collapsible className="md:hidden space-y-0">
               {/* Navigation Accordion */}
               <AccordionItem value="navigation" className="border-b border-white/10">
-                <AccordionTrigger className="text-base sm:text-lg font-semibold bg-gradient-to-r from-[#a38eff] to-[#6af0ff] bg-clip-text text-transparent tracking-wide hover:no-underline py-4">
-                  Navigation
+                <AccordionTrigger className="text-base sm:text-lg font-semibold hover:no-underline py-4 [&>svg]:text-violet-400">
+                  <span className="bg-gradient-to-r from-[#a38eff] to-[#6af0ff] bg-clip-text text-transparent tracking-wide">
+                    Navigation
+                  </span>
                 </AccordionTrigger>
                 <AccordionContent className="pb-4">
                   <div className="space-y-2">
@@ -486,8 +488,10 @@ export default function Home() {
 
               {/* Company Accordion */}
               <AccordionItem value="company" className="border-b border-white/10">
-                <AccordionTrigger className="text-base sm:text-lg font-semibold bg-gradient-to-r from-[#a38eff] to-[#6af0ff] bg-clip-text text-transparent tracking-wide hover:no-underline py-4">
-                  Company
+                <AccordionTrigger className="text-base sm:text-lg font-semibold hover:no-underline py-4 [&>svg]:text-violet-400">
+                  <span className="bg-gradient-to-r from-[#a38eff] to-[#6af0ff] bg-clip-text text-transparent tracking-wide">
+                    Company
+                  </span>
                 </AccordionTrigger>
                 <AccordionContent className="pb-4">
                   <div className="space-y-2">
@@ -518,8 +522,10 @@ export default function Home() {
 
               {/* Download Platform Accordion */}
               <AccordionItem value="download" className="border-b border-white/10">
-                <AccordionTrigger className="text-base sm:text-lg font-semibold bg-gradient-to-r from-[#a38eff] to-[#6af0ff] bg-clip-text text-transparent tracking-wide hover:no-underline py-4">
-                  Download Platform
+                <AccordionTrigger className="text-base sm:text-lg font-semibold hover:no-underline py-4 [&>svg]:text-violet-400">
+                  <span className="bg-gradient-to-r from-[#a38eff] to-[#6af0ff] bg-clip-text text-transparent tracking-wide">
+                    Download Platform
+                  </span>
                 </AccordionTrigger>
                 <AccordionContent className="pb-4">
                   <div className="space-y-4">
@@ -546,8 +552,10 @@ export default function Home() {
 
               {/* Connect Accordion */}
               <AccordionItem value="connect" className="border-b-0">
-                <AccordionTrigger className="text-base sm:text-lg font-semibold bg-gradient-to-r from-[#a38eff] to-[#6af0ff] bg-clip-text text-transparent tracking-wide hover:no-underline py-4">
-                  Connect
+                <AccordionTrigger className="text-base sm:text-lg font-semibold hover:no-underline py-4 [&>svg]:text-violet-400">
+                  <span className="bg-gradient-to-r from-[#a38eff] to-[#6af0ff] bg-clip-text text-transparent tracking-wide">
+                    Connect
+                  </span>
                 </AccordionTrigger>
                 <AccordionContent className="pb-4">
                   <div className="space-y-2">
