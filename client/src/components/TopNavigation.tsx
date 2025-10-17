@@ -368,12 +368,14 @@ export function TopNavigation() {
   const [showPortal, setShowPortal] = useState(false);
   const [showVanessaChat, setShowVanessaChat] = useState(false);
   const [modalStep, setModalStep] = useState<1 | 2 | 3 | 4>(1);
-  const [selectedPortal, setSelectedPortal] = useState<'client' | 'talent' | null>(null);
+  const [selectedPortal, setSelectedPortal] = useState<
+    "client" | "talent" | null
+  >(null);
   const [contactForm, setContactForm] = useState({
-    email: '',
-    fullName: '',
-    businessName: '',
-    phone: ''
+    email: "",
+    fullName: "",
+    businessName: "",
+    phone: "",
   });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const lastScrollY = useRef(0);
@@ -1242,10 +1244,10 @@ export function TopNavigation() {
               >
                 {/* Animated gradient shimmer overlay */}
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
-                
+
                 <Sparkles className="w-4 h-4 relative z-10" />
                 <span className="relative z-10">Access Portal</span>
-                
+
                 {/* Glow effect */}
                 <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] opacity-0 group-hover:opacity-75 blur-md transition-opacity duration-500"></div>
               </button>
@@ -1254,9 +1256,9 @@ export function TopNavigation() {
         </div>
 
         {/* Mobile Navigation - Collapsible */}
-        <div 
+        <div
           className={`md:hidden border-t border-white/20 transition-all duration-300 ease-in-out overflow-hidden ${
-            isMobileMenuOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'
+            isMobileMenuOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
           }`}
         >
           <div className="container px-4 py-4">
@@ -1507,7 +1509,7 @@ export function TopNavigation() {
                   </Link>
                 );
               })}
-              
+
               {/* Futuristic AI Access Portal Button - Only show when not authenticated */}
               {!isAuthenticated && (
                 <>
@@ -1524,10 +1526,10 @@ export function TopNavigation() {
                   >
                     {/* Animated gradient shimmer overlay */}
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full group-active:translate-x-full transition-transform duration-1000 ease-in-out"></div>
-                    
+
                     <Sparkles className="w-5 h-5 relative z-10" />
                     <span className="relative z-10">Access Portal</span>
-                    
+
                     {/* Glow effect */}
                     <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] opacity-0 group-active:opacity-75 blur-lg transition-opacity duration-500"></div>
                   </button>
@@ -1539,21 +1541,26 @@ export function TopNavigation() {
       </nav>
 
       {/* Access Portal Modal - All Steps */}
-      <Dialog open={showPortal} onOpenChange={(open) => {
-        setShowPortal(open);
-        if (!open) {
-          // Reset modal state when closing
-          setModalStep(1);
-          setSelectedPortal(null);
-        }
-      }}>
+      <Dialog
+        open={showPortal}
+        onOpenChange={(open) => {
+          setShowPortal(open);
+          if (!open) {
+            // Reset modal state when closing
+            setModalStep(1);
+            setSelectedPortal(null);
+          }
+        }}
+      >
         {/* Step 1: Cinematic Awakening Modal */}
         {modalStep === 1 ? (
           <DialogPortal>
             <DialogOverlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-300" />
             <div className="fixed inset-0 z-50 flex items-center justify-center pt-[100px] pb-8 px-4 overflow-y-auto">
               <div className="w-full max-w-5xl animate-in fade-in slide-in-from-bottom-6 duration-500 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-bottom-6 relative my-auto">
-                <DialogTitle className="sr-only">Superhuman BPO Awakening</DialogTitle>
+                <DialogTitle className="sr-only">
+                  Superhuman BPO Awakening
+                </DialogTitle>
                 {/* Close Button */}
                 <button
                   onClick={() => setShowPortal(false)}
@@ -1563,91 +1570,103 @@ export function TopNavigation() {
                   <X className="h-6 w-6" />
                   <span className="sr-only">Close</span>
                 </button>
-            <div 
-              className="relative hero-investor flex items-center justify-center min-h-[600px] rounded-2xl overflow-hidden"
-              data-testid="modal-step-intro"
-            >
-              {/* Gradient Overlay for Depth */}
-              <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60"></div>
-              
-              {/* AI Pulse Orb - Animated Background Effect */}
-              <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none">
-                <div className="relative w-[600px] h-[600px]">
-                  {/* Outer pulse ring */}
-                  <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[#3A3AF8]/20 to-[#7F3DF4]/20 blur-3xl animate-pulse" 
-                       style={{ animationDuration: '4s' }}></div>
-                  {/* Inner glow */}
-                  <div className="absolute inset-[20%] rounded-full bg-gradient-to-r from-[#3A3AF8]/30 to-[#7F3DF4]/30 blur-2xl animate-pulse" 
-                       style={{ animationDuration: '3s', animationDelay: '0.5s' }}></div>
-                  {/* Core light */}
-                  <div className="absolute inset-[40%] rounded-full bg-gradient-to-r from-[#3A3AF8]/40 to-[#7F3DF4]/40 blur-xl animate-pulse" 
-                       style={{ animationDuration: '2s', animationDelay: '1s' }}></div>
+                <div
+                  className="relative hero-investor flex items-center justify-center min-h-[600px] rounded-2xl overflow-hidden"
+                  data-testid="modal-step-intro"
+                >
+                  {/* Gradient Overlay for Depth */}
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60"></div>
+
+                  {/* AI Pulse Orb - Animated Background Effect */}
+                  <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none">
+                    <div className="relative w-[600px] h-[600px]">
+                      {/* Outer pulse ring */}
+                      <div
+                        className="absolute inset-0 rounded-full bg-gradient-to-r from-[#3A3AF8]/20 to-[#7F3DF4]/20 blur-3xl animate-pulse"
+                        style={{ animationDuration: "4s" }}
+                      ></div>
+                      {/* Inner glow */}
+                      <div
+                        className="absolute inset-[20%] rounded-full bg-gradient-to-r from-[#3A3AF8]/30 to-[#7F3DF4]/30 blur-2xl animate-pulse"
+                        style={{
+                          animationDuration: "3s",
+                          animationDelay: "0.5s",
+                        }}
+                      ></div>
+                      {/* Core light */}
+                      <div
+                        className="absolute inset-[40%] rounded-full bg-gradient-to-r from-[#3A3AF8]/40 to-[#7F3DF4]/40 blur-xl animate-pulse"
+                        style={{
+                          animationDuration: "2s",
+                          animationDelay: "1s",
+                        }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* Content Container */}
+                  <div className="relative z-10 flex flex-col items-center text-center space-y-10 px-8 py-12 max-w-3xl">
+                    {/* Headline - Fade in with delay */}
+                    <h1
+                      className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light tracking-tight text-white animate-in fade-in slide-in-from-bottom-4 duration-1000"
+                      style={{
+                        fontFamily: "Inter, sans-serif",
+                        letterSpacing: "-0.02em",
+                        animationDelay: "300ms",
+                        animationFillMode: "backwards",
+                      }}
+                    >
+                      The first Superhuman BPO is awakening.
+                    </h1>
+
+                    {/* Subcopy - Delayed fade in */}
+                    <p
+                      className="text-lg sm:text-xl md:text-2xl font-light text-white/80 animate-in fade-in slide-in-from-bottom-4 duration-1000"
+                      style={{
+                        fontFamily: "Inter, sans-serif",
+                        animationDelay: "800ms",
+                        animationFillMode: "backwards",
+                      }}
+                    >
+                      AI first. Humans when it matters.
+                    </p>
+
+                    {/* CTA Button with Glow Animation */}
+                    <div
+                      className="animate-in fade-in slide-in-from-bottom-4 duration-1000"
+                      style={{
+                        animationDelay: "1300ms",
+                        animationFillMode: "backwards",
+                      }}
+                    >
+                      <Button
+                        onClick={() => setModalStep(2)}
+                        size="lg"
+                        className="relative group px-8 py-6 text-lg font-medium bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white border-0 hover:shadow-[0_0_40px_rgba(58,58,248,0.6)] transition-all duration-500 hover:scale-105"
+                        data-testid="button-continue-to-contact-form"
+                      >
+                        <span className="relative z-10 flex items-center gap-2">
+                          Be the first to experience it
+                          <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
+                        </span>
+                        {/* Animated glow effect */}
+                        <div className="absolute inset-0 rounded-md bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500"></div>
+                      </Button>
+                    </div>
+
+                    {/* Microtext */}
+                    <p
+                      className="text-sm text-white/40 animate-in fade-in duration-1000"
+                      style={{
+                        fontFamily: "Inter, sans-serif",
+                        animationDelay: "1700ms",
+                        animationFillMode: "backwards",
+                      }}
+                    >
+                      Your AI-powered outsourcing revolution starts now
+                    </p>
+                  </div>
                 </div>
-              </div>
-
-              {/* Content Container */}
-              <div className="relative z-10 flex flex-col items-center text-center space-y-10 px-8 py-12 max-w-3xl">
-                {/* Headline - Fade in with delay */}
-                <h1 
-                  className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light tracking-tight text-white animate-in fade-in slide-in-from-bottom-4 duration-1000"
-                  style={{ 
-                    fontFamily: 'Inter, sans-serif',
-                    letterSpacing: '-0.02em',
-                    animationDelay: '300ms',
-                    animationFillMode: 'backwards'
-                  }}
-                >
-                  The first Superhuman BPO is awakening.
-                </h1>
-                
-                {/* Subcopy - Delayed fade in */}
-                <p 
-                  className="text-lg sm:text-xl md:text-2xl font-light text-white/80 animate-in fade-in slide-in-from-bottom-4 duration-1000"
-                  style={{ 
-                    fontFamily: 'Inter, sans-serif',
-                    animationDelay: '800ms',
-                    animationFillMode: 'backwards'
-                  }}
-                >
-                  AI first. Humans when it matters.
-                </p>
-
-                {/* CTA Button with Glow Animation */}
-                <div 
-                  className="animate-in fade-in slide-in-from-bottom-4 duration-1000"
-                  style={{ 
-                    animationDelay: '1300ms',
-                    animationFillMode: 'backwards'
-                  }}
-                >
-                  <Button 
-                    onClick={() => setModalStep(2)}
-                    size="lg"
-                    className="relative group px-8 py-6 text-lg font-medium bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white border-0 hover:shadow-[0_0_40px_rgba(58,58,248,0.6)] transition-all duration-500 hover:scale-105"
-                    data-testid="button-continue-to-contact-form"
-                  >
-                    <span className="relative z-10 flex items-center gap-2">
-                      Be the first to experience it
-                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
-                    </span>
-                    {/* Animated glow effect */}
-                    <div className="absolute inset-0 rounded-md bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500"></div>
-                  </Button>
-                </div>
-
-                {/* Microtext */}
-                <p 
-                  className="text-sm text-white/40 animate-in fade-in duration-1000"
-                  style={{ 
-                    fontFamily: 'Inter, sans-serif',
-                    animationDelay: '1700ms',
-                    animationFillMode: 'backwards'
-                  }}
-                >
-                  Your AI-powered outsourcing revolution starts now
-                </p>
-              </div>
-            </div>
               </div>
             </div>
           </DialogPortal>
@@ -1656,7 +1675,9 @@ export function TopNavigation() {
             <DialogOverlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-300" />
             <div className="fixed inset-0 z-50 flex items-center justify-center pt-[100px] pb-8 px-4 overflow-y-auto">
               <div className="w-full max-w-3xl animate-in fade-in slide-in-from-bottom-6 duration-500 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-bottom-6 relative my-auto">
-                <DialogTitle className="sr-only">Contact Information</DialogTitle>
+                <DialogTitle className="sr-only">
+                  Contact Information
+                </DialogTitle>
                 {/* Close Button */}
                 <button
                   onClick={() => setShowPortal(false)}
@@ -1666,146 +1687,212 @@ export function TopNavigation() {
                   <X className="h-6 w-6" />
                   <span className="sr-only">Close</span>
                 </button>
-            <div 
-              className="relative hero-investor flex items-center justify-center min-h-[650px] rounded-2xl overflow-hidden"
-              data-testid="modal-step-contact-form"
-            >
-              {/* Gradient Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60"></div>
-              
-              {/* Subtle AI Pulse */}
-              <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none opacity-50">
-                <div className="relative w-[400px] h-[400px]">
-                  <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[#3A3AF8]/15 to-[#7F3DF4]/15 blur-3xl animate-pulse" 
-                       style={{ animationDuration: '4s' }}></div>
-                </div>
-              </div>
-
-              {/* Contact Form */}
-              <div className="relative z-10 w-full px-8 py-12 max-w-2xl">
-                <div className="text-center mb-8 space-y-3">
-                  <h2 
-                    className="text-3xl sm:text-4xl md:text-5xl font-light tracking-tight text-white"
-                    style={{ 
-                      fontFamily: 'Inter, sans-serif',
-                      letterSpacing: '-0.02em'
+                <div
+                  className="relative hero-investor flex items-center justify-center min-h-[650px] rounded-2xl overflow-hidden"
+                  data-testid="modal-step-contact-form"
+                >
+                  {/* Gradient Overlay */}
+                  <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      background:
+                        "linear-gradient(to bottom, rgba(15,15,60,0.45) 0%, rgba(0,0,0,0.0) 25%, rgba(0,0,0,0.0) 75%, rgba(15,15,60,0.45) 100%)",
                     }}
-                  >
-                    Join the Revolution
-                  </h2>
-                  <p className="text-base sm:text-lg text-white/70" style={{ fontFamily: 'Inter, sans-serif' }}>
-                    Be among the first to transform your business with AI-powered outsourcing
-                  </p>
+                  ></div>
+
+                  {/* Subtle AI Pulse */}
+                  <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none opacity-50">
+                    <div className="relative w-[400px] h-[400px]">
+                      <div
+                        className="absolute inset-0 rounded-full bg-gradient-to-r from-[#3A3AF8]/15 to-[#7F3DF4]/15 blur-3xl animate-pulse"
+                        style={{ animationDuration: "4s" }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* Contact Form */}
+                  <div className="relative z-10 w-full px-8 py-12 max-w-2xl">
+                    <div className="text-center mb-8 space-y-3">
+                      <h2
+                        className="text-3xl sm:text-4xl md:text-5xl font-light tracking-tight text-white"
+                        style={{
+                          fontFamily: "Inter, sans-serif",
+                          letterSpacing: "-0.02em",
+                        }}
+                      >
+                        Join the Revolution
+                      </h2>
+                      <p
+                        className="text-base sm:text-lg text-white/70"
+                        style={{ fontFamily: "Inter, sans-serif" }}
+                      >
+                        Be among the first to transform your business with
+                        AI-powered outsourcing
+                      </p>
+                    </div>
+
+                    <form
+                      className="space-y-5"
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        try {
+                          const response = await fetch("/api/waitlist", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(contactForm),
+                          });
+                          if (response.ok) {
+                            toast({
+                              title: "Success!",
+                              description:
+                                "Thank you for your interest. We'll be in touch soon.",
+                            });
+                            setShowPortal(false);
+                            setContactForm({
+                              email: "",
+                              fullName: "",
+                              businessName: "",
+                              phone: "",
+                            });
+                          } else {
+                            toast({
+                              title: "Error",
+                              description:
+                                "Failed to submit. Please try again.",
+                              variant: "destructive",
+                            });
+                          }
+                        } catch (error) {
+                          toast({
+                            title: "Error",
+                            description:
+                              "Something went wrong. Please try again.",
+                            variant: "destructive",
+                          });
+                        }
+                      }}
+                    >
+                      {/* Email */}
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="email"
+                          className="text-white/90 text-sm font-medium"
+                        >
+                          Email Address
+                        </Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="your@email.com"
+                          value={contactForm.email}
+                          onChange={(e) =>
+                            setContactForm({
+                              ...contactForm,
+                              email: e.target.value,
+                            })
+                          }
+                          required
+                          className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12"
+                          data-testid="input-contact-email"
+                        />
+                      </div>
+
+                      {/* Full Name */}
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="fullName"
+                          className="text-white/90 text-sm font-medium"
+                        >
+                          Full Name
+                        </Label>
+                        <Input
+                          id="fullName"
+                          type="text"
+                          placeholder="John Doe"
+                          value={contactForm.fullName}
+                          onChange={(e) =>
+                            setContactForm({
+                              ...contactForm,
+                              fullName: e.target.value,
+                            })
+                          }
+                          required
+                          className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12"
+                          data-testid="input-contact-fullname"
+                        />
+                      </div>
+
+                      {/* Business Name */}
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="businessName"
+                          className="text-white/90 text-sm font-medium"
+                        >
+                          Business Name
+                        </Label>
+                        <Input
+                          id="businessName"
+                          type="text"
+                          placeholder="Your Company Inc."
+                          value={contactForm.businessName}
+                          onChange={(e) =>
+                            setContactForm({
+                              ...contactForm,
+                              businessName: e.target.value,
+                            })
+                          }
+                          className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12"
+                          data-testid="input-contact-business"
+                        />
+                      </div>
+
+                      {/* Phone */}
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="phone"
+                          className="text-white/90 text-sm font-medium"
+                        >
+                          Phone Number
+                        </Label>
+                        <Input
+                          id="phone"
+                          type="tel"
+                          placeholder="+1 (555) 000-0000"
+                          value={contactForm.phone}
+                          onChange={(e) =>
+                            setContactForm({
+                              ...contactForm,
+                              phone: e.target.value,
+                            })
+                          }
+                          className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12"
+                          data-testid="input-contact-phone"
+                        />
+                      </div>
+
+                      {/* Submit Button */}
+                      <Button
+                        type="submit"
+                        size="lg"
+                        className="w-full mt-6 relative group px-8 py-6 text-lg font-medium bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white border-0 hover:shadow-[0_0_40px_rgba(58,58,248,0.6)] transition-all duration-500 hover:scale-105"
+                        data-testid="button-submit-contact"
+                      >
+                        <span className="relative z-10 flex items-center justify-center gap-2">
+                          Submit
+                          <CheckCircle2 className="w-5 h-5" />
+                        </span>
+                        <div className="absolute inset-0 rounded-md bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500"></div>
+                      </Button>
+                    </form>
+
+                    <p
+                      className="text-center text-xs text-white/40 mt-6"
+                      style={{ fontFamily: "Inter, sans-serif" }}
+                    >
+                      Your information is secure and will never be shared
+                    </p>
+                  </div>
                 </div>
-
-                <form className="space-y-5" onSubmit={async (e) => { 
-                  e.preventDefault(); 
-                  try {
-                    const response = await fetch('/api/waitlist', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify(contactForm)
-                    });
-                    if (response.ok) {
-                      toast({
-                        title: "Success!",
-                        description: "Thank you for your interest. We'll be in touch soon.",
-                      });
-                      setShowPortal(false);
-                      setContactForm({ email: '', fullName: '', businessName: '', phone: '' });
-                    } else {
-                      toast({
-                        title: "Error",
-                        description: "Failed to submit. Please try again.",
-                        variant: "destructive",
-                      });
-                    }
-                  } catch (error) {
-                    toast({
-                      title: "Error",
-                      description: "Something went wrong. Please try again.",
-                      variant: "destructive",
-                    });
-                  }
-                }}>
-                  {/* Email */}
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="text-white/90 text-sm font-medium">Email Address</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="your@email.com"
-                      value={contactForm.email}
-                      onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
-                      required
-                      className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12"
-                      data-testid="input-contact-email"
-                    />
-                  </div>
-
-                  {/* Full Name */}
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName" className="text-white/90 text-sm font-medium">Full Name</Label>
-                    <Input
-                      id="fullName"
-                      type="text"
-                      placeholder="John Doe"
-                      value={contactForm.fullName}
-                      onChange={(e) => setContactForm({ ...contactForm, fullName: e.target.value })}
-                      required
-                      className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12"
-                      data-testid="input-contact-fullname"
-                    />
-                  </div>
-
-                  {/* Business Name */}
-                  <div className="space-y-2">
-                    <Label htmlFor="businessName" className="text-white/90 text-sm font-medium">Business Name</Label>
-                    <Input
-                      id="businessName"
-                      type="text"
-                      placeholder="Your Company Inc."
-                      value={contactForm.businessName}
-                      onChange={(e) => setContactForm({ ...contactForm, businessName: e.target.value })}
-                      className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12"
-                      data-testid="input-contact-business"
-                    />
-                  </div>
-
-                  {/* Phone */}
-                  <div className="space-y-2">
-                    <Label htmlFor="phone" className="text-white/90 text-sm font-medium">Phone Number</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      placeholder="+1 (555) 000-0000"
-                      value={contactForm.phone}
-                      onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })}
-                      className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12"
-                      data-testid="input-contact-phone"
-                    />
-                  </div>
-
-                  {/* Submit Button */}
-                  <Button 
-                    type="submit"
-                    size="lg"
-                    className="w-full mt-6 relative group px-8 py-6 text-lg font-medium bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white border-0 hover:shadow-[0_0_40px_rgba(58,58,248,0.6)] transition-all duration-500 hover:scale-105"
-                    data-testid="button-submit-contact"
-                  >
-                    <span className="relative z-10 flex items-center justify-center gap-2">
-                      Submit
-                      <CheckCircle2 className="w-5 h-5" />
-                    </span>
-                    <div className="absolute inset-0 rounded-md bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500"></div>
-                  </Button>
-                </form>
-
-                <p className="text-center text-xs text-white/40 mt-6" style={{ fontFamily: 'Inter, sans-serif' }}>
-                  Your information is secure and will never be shared
-                </p>
-              </div>
-            </div>
               </div>
             </div>
           </DialogPortal>
@@ -1824,152 +1911,170 @@ export function TopNavigation() {
                   <span className="sr-only">Close</span>
                 </button>
 
-          {/* Step 3: Portal Selection */}
-          {modalStep === 3 && (
-            <div className="flex flex-col items-center space-y-8 py-8" data-testid="modal-step-portal-selection">
-              <DialogHeader className="text-center space-y-4">
-                <div className="flex justify-center mb-2">
-                  <img 
-                    src={onspotLogo} 
-                    alt="OnSpot" 
-                    className="h-12 w-auto"
-                  />
-                </div>
-                <DialogTitle className="text-2xl font-semibold">Welcome to OnSpot</DialogTitle>
-                <DialogDescription className="text-muted-foreground text-base mb-6">
-                  Choose your portal to continue.
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="w-full space-y-6">
-                {/* Portal Selection Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                  <Card 
-                    className="relative cursor-pointer hover-elevate hover:scale-[1.02] transition-all duration-300 group border-2 hover:border-primary/50"
-                    onClick={() => {
-                      setSelectedPortal('client');
-                      setModalStep(4);
-                    }}
-                    data-testid="card-client-portal"
+                {/* Step 3: Portal Selection */}
+                {modalStep === 3 && (
+                  <div
+                    className="flex flex-col items-center space-y-8 py-8"
+                    data-testid="modal-step-portal-selection"
                   >
-                    <CardContent className="p-6 sm:p-8 text-center">
-                      <div className="w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                        <Building className="w-8 h-8 text-primary" />
+                    <DialogHeader className="text-center space-y-4">
+                      <div className="flex justify-center mb-2">
+                        <img
+                          src={onspotLogo}
+                          alt="OnSpot"
+                          className="h-12 w-auto"
+                        />
                       </div>
-                      <h3 className="text-xl font-semibold mb-3">Client Portal</h3>
-                      <p className="text-muted-foreground mb-4 leading-relaxed">
-                        Access your hiring dashboard, manage projects, and track performance.
-                      </p>
-                      <div className="grid grid-cols-3 gap-3 text-xs text-muted-foreground">
-                        <div className="text-center">
-                          <Shield className="h-5 w-5 mx-auto text-primary mb-1" />
-                          70% Cost Savings
-                        </div>
-                        <div className="text-center">
-                          <Zap className="h-5 w-5 mx-auto text-primary mb-1" />
-                          8X Growth
-                        </div>
-                        <div className="text-center">
-                          <Mail className="h-5 w-5 mx-auto text-primary mb-1" />
-                          24/7 Support
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                      <DialogTitle className="text-2xl font-semibold">
+                        Welcome to OnSpot
+                      </DialogTitle>
+                      <DialogDescription className="text-muted-foreground text-base mb-6">
+                        Choose your portal to continue.
+                      </DialogDescription>
+                    </DialogHeader>
 
-                  <Card 
-                    className="relative cursor-pointer hover-elevate hover:scale-[1.02] transition-all duration-300 group border-2 hover:border-[hsl(var(--gold-yellow)/0.5)]"
-                    onClick={() => {
-                      setSelectedPortal('talent');
-                      setModalStep(4);
-                    }}
-                    data-testid="card-talent-portal"
+                    <div className="w-full space-y-6">
+                      {/* Portal Selection Cards */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                        <Card
+                          className="relative cursor-pointer hover-elevate hover:scale-[1.02] transition-all duration-300 group border-2 hover:border-primary/50"
+                          onClick={() => {
+                            setSelectedPortal("client");
+                            setModalStep(4);
+                          }}
+                          data-testid="card-client-portal"
+                        >
+                          <CardContent className="p-6 sm:p-8 text-center">
+                            <div className="w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                              <Building className="w-8 h-8 text-primary" />
+                            </div>
+                            <h3 className="text-xl font-semibold mb-3">
+                              Client Portal
+                            </h3>
+                            <p className="text-muted-foreground mb-4 leading-relaxed">
+                              Access your hiring dashboard, manage projects, and
+                              track performance.
+                            </p>
+                            <div className="grid grid-cols-3 gap-3 text-xs text-muted-foreground">
+                              <div className="text-center">
+                                <Shield className="h-5 w-5 mx-auto text-primary mb-1" />
+                                70% Cost Savings
+                              </div>
+                              <div className="text-center">
+                                <Zap className="h-5 w-5 mx-auto text-primary mb-1" />
+                                8X Growth
+                              </div>
+                              <div className="text-center">
+                                <Mail className="h-5 w-5 mx-auto text-primary mb-1" />
+                                24/7 Support
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        <Card
+                          className="relative cursor-pointer hover-elevate hover:scale-[1.02] transition-all duration-300 group border-2 hover:border-[hsl(var(--gold-yellow)/0.5)]"
+                          onClick={() => {
+                            setSelectedPortal("talent");
+                            setModalStep(4);
+                          }}
+                          data-testid="card-talent-portal"
+                        >
+                          <CardContent className="p-6 sm:p-8 text-center">
+                            <div className="w-16 h-16 mx-auto mb-4 bg-[hsl(var(--gold-yellow)/0.1)] rounded-full flex items-center justify-center group-hover:bg-[hsl(var(--gold-yellow)/0.2)] transition-colors">
+                              <User className="w-8 h-8 text-[hsl(var(--gold-yellow)/0.8)]" />
+                            </div>
+                            <h3 className="text-xl font-semibold mb-3">
+                              Talent Portal
+                            </h3>
+                            <p className="text-muted-foreground mb-4 leading-relaxed">
+                              Access opportunities, manage your profile, and
+                              track your career growth.
+                            </p>
+                            <div className="grid grid-cols-3 gap-3 text-xs text-muted-foreground">
+                              <div className="text-center">
+                                <Briefcase className="h-5 w-5 mx-auto text-[hsl(var(--gold-yellow)/0.8)] mb-1" />
+                                Premium Jobs
+                              </div>
+                              <div className="text-center">
+                                <Shield className="h-5 w-5 mx-auto text-[hsl(var(--gold-yellow)/0.8)] mb-1" />
+                                Secure Payments
+                              </div>
+                              <div className="text-center">
+                                <User className="h-5 w-5 mx-auto text-[hsl(var(--gold-yellow)/0.8)] mb-1" />
+                                Career Growth
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+
+                      {/* Admin Portal Footer Button */}
+                      <div className="mt-6 flex justify-center">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setShowPortal(false);
+                            window.location.href = "/admin/dashboard";
+                          }}
+                          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                          data-testid="button-admin-portal"
+                        >
+                          🔑 Admin Portal
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 4: Authentication Flow */}
+                {modalStep === 4 && (
+                  <div
+                    className="flex flex-col items-center space-y-8 py-8"
+                    data-testid="modal-step-authentication"
                   >
-                    <CardContent className="p-6 sm:p-8 text-center">
-                      <div className="w-16 h-16 mx-auto mb-4 bg-[hsl(var(--gold-yellow)/0.1)] rounded-full flex items-center justify-center group-hover:bg-[hsl(var(--gold-yellow)/0.2)] transition-colors">
-                        <User className="w-8 h-8 text-[hsl(var(--gold-yellow)/0.8)]" />
+                    <DialogHeader className="text-center space-y-4">
+                      <div className="flex justify-center mb-2">
+                        <img
+                          src={onspotLogo}
+                          alt="OnSpot"
+                          className="h-12 w-auto"
+                        />
                       </div>
-                      <h3 className="text-xl font-semibold mb-3">Talent Portal</h3>
-                      <p className="text-muted-foreground mb-4 leading-relaxed">
-                        Access opportunities, manage your profile, and track your career growth.
-                      </p>
-                      <div className="grid grid-cols-3 gap-3 text-xs text-muted-foreground">
-                        <div className="text-center">
-                          <Briefcase className="h-5 w-5 mx-auto text-[hsl(var(--gold-yellow)/0.8)] mb-1" />
-                          Premium Jobs
-                        </div>
-                        <div className="text-center">
-                          <Shield className="h-5 w-5 mx-auto text-[hsl(var(--gold-yellow)/0.8)] mb-1" />
-                          Secure Payments
-                        </div>
-                        <div className="text-center">
-                          <User className="h-5 w-5 mx-auto text-[hsl(var(--gold-yellow)/0.8)] mb-1" />
-                          Career Growth
-                        </div>
+                      <DialogTitle className="text-2xl font-semibold">
+                        {selectedPortal === "client"
+                          ? "Client Portal Access"
+                          : "Talent Portal Access"}
+                      </DialogTitle>
+                      <DialogDescription className="text-muted-foreground text-base mb-6">
+                        Please log in or create an account to continue to the{" "}
+                        {selectedPortal === "client" ? "Client" : "Talent"}{" "}
+                        Portal
+                      </DialogDescription>
+                    </DialogHeader>
+
+                    {/* Auth Action Buttons */}
+                    <div className="flex flex-col items-center gap-6 w-full">
+                      <div className="flex gap-4 justify-center">
+                        <LoginDialog />
+                        <SignUpDialog />
                       </div>
-                    </CardContent>
-                  </Card>
-                </div>
-                
-                {/* Admin Portal Footer Button */}
-                <div className="mt-6 flex justify-center">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => {
-                      setShowPortal(false);
-                      window.location.href = '/admin/dashboard';
-                    }}
-                    className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-                    data-testid="button-admin-portal"
-                  >
-                    🔑 Admin Portal
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
 
-          {/* Step 4: Authentication Flow */}
-          {modalStep === 4 && (
-            <div className="flex flex-col items-center space-y-8 py-8" data-testid="modal-step-authentication">
-              <DialogHeader className="text-center space-y-4">
-                <div className="flex justify-center mb-2">
-                  <img 
-                    src={onspotLogo} 
-                    alt="OnSpot" 
-                    className="h-12 w-auto"
-                  />
-                </div>
-                <DialogTitle className="text-2xl font-semibold">
-                  {selectedPortal === 'client' ? 'Client Portal Access' : 'Talent Portal Access'}
-                </DialogTitle>
-                <DialogDescription className="text-muted-foreground text-base mb-6">
-                  Please log in or create an account to continue to the {selectedPortal === 'client' ? 'Client' : 'Talent'} Portal
-                </DialogDescription>
-              </DialogHeader>
+                      <Separator className="w-full max-w-md" />
 
-              {/* Auth Action Buttons */}
-              <div className="flex flex-col items-center gap-6 w-full">
-                <div className="flex gap-4 justify-center">
-                  <LoginDialog />
-                  <SignUpDialog />
-                </div>
-
-                <Separator className="w-full max-w-md" />
-
-                {/* Back button */}
-                <Button
-                  variant="ghost"
-                  onClick={() => setModalStep(3)}
-                  data-testid="button-back-to-portal-selection"
-                  className="text-sm text-muted-foreground hover:text-foreground"
-                >
-                  ← Back to Portal Selection
-                </Button>
-              </div>
-            </div>
-          )}
+                      {/* Back button */}
+                      <Button
+                        variant="ghost"
+                        onClick={() => setModalStep(3)}
+                        data-testid="button-back-to-portal-selection"
+                        className="text-sm text-muted-foreground hover:text-foreground"
+                      >
+                        ← Back to Portal Selection
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </DialogPortal>
@@ -1977,9 +2082,9 @@ export function TopNavigation() {
       </Dialog>
 
       {/* Vanessa AI Assistant Chat */}
-      <VanessaChat 
-        isOpen={showVanessaChat} 
-        onClose={() => setShowVanessaChat(false)} 
+      <VanessaChat
+        isOpen={showVanessaChat}
+        onClose={() => setShowVanessaChat(false)}
       />
     </>
   );

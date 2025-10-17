@@ -717,7 +717,11 @@ export function VanessaChat({
                   size="icon"
                   variant="ghost"
                   onClick={() => {
-                    if (window.confirm("Reset conversation? This will clear all messages.")) {
+                    if (
+                      window.confirm(
+                        "Reset conversation? This will clear all messages.",
+                      )
+                    ) {
                       resetConversation();
                     }
                   }}
@@ -754,9 +758,10 @@ export function VanessaChat({
                 ref={messagesContainerRef}
                 className="absolute inset-0 overflow-y-auto"
                 style={{
-                  maxHeight: "calc(100% - 120px)", // ensures messages can push the input up
                   WebkitOverflowScrolling: "touch",
                   overscrollBehavior: "contain",
+                  padding: "clamp(20px, 10vw, 30px)",
+                  paddingBottom: "clamp(20px, 5vw, 30px)",
                 }}
                 data-testid="chat-messages"
               >
@@ -1027,7 +1032,11 @@ export function VanessaChat({
               size="icon"
               variant="ghost"
               onClick={() => {
-                if (window.confirm("Reset conversation? This will clear all messages.")) {
+                if (
+                  window.confirm(
+                    "Reset conversation? This will clear all messages.",
+                  )
+                ) {
                   resetConversation();
                 }
               }}
