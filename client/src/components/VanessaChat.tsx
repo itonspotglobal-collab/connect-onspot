@@ -159,9 +159,8 @@ export function VanessaChat({
     if (!isOpen) return;
     
     // Reset and start fresh conversation when opening with no messages
-    if (messages.length === 0 && currentMessageIndex === 0) {
+    if (messages.length === 0) {
       const timer = setTimeout(() => {
-        setCurrentMessageIndex(0);
         // Trigger first message
         const firstMessage = openingMessages[0];
         setMessages([{ ...firstMessage, isTyping: true }]);
@@ -174,7 +173,7 @@ export function VanessaChat({
       
       return () => clearTimeout(timer);
     }
-  }, [isOpen, messages.length, currentMessageIndex]);
+  }, [isOpen, messages.length, openingMessages]);
 
   // Display subsequent messages sequentially with typing animation
   useEffect(() => {
