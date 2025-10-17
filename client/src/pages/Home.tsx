@@ -116,6 +116,37 @@ const hiringModes = [
   },
 ];
 
+const brandPillars = [
+  {
+    icon: Sparkles,
+    title: "AI-First Infrastructure",
+    subtitle: "Intelligent by design",
+    description: "Every system, every workflow, enhanced by artificial intelligence. Not automation for its own sake — intelligence that amplifies human potential.",
+    gradient: "from-violet-500/20 to-purple-500/20",
+  },
+  {
+    icon: Users,
+    title: "Human-Centered Culture",
+    subtitle: "People, not resources",
+    description: "Elite Filipino talent treated as partners, not headcount. We invest in their growth because your success depends on theirs.",
+    gradient: "from-blue-500/20 to-cyan-500/20",
+  },
+  {
+    icon: Zap,
+    title: "Connected Ecosystem",
+    subtitle: "Seamless integration",
+    description: "Your tools, your workflow, your systems — all working in harmony. We don't disrupt, we elevate what you've already built.",
+    gradient: "from-cyan-500/20 to-teal-500/20",
+  },
+  {
+    icon: TrendingUp,
+    title: "Scalable Excellence",
+    subtitle: "Grow without compromise",
+    description: "Scale from 1 to 100 without losing quality, culture, or control. The same excellence at every stage of your journey.",
+    gradient: "from-purple-500/20 to-violet-500/20",
+  },
+];
+
 const onspotExperience = [
   {
     stage: "01",
@@ -884,86 +915,89 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Why OnSpot Advantage */}
-      <div className="container mx-auto px-4 sm:px-6 space-y-6 sm:space-y-8">
-        <div className="text-center space-y-2 sm:space-y-3">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold px-4">
-            Why Outsource OnSpot
-          </h2>
-          <p className="text-sm sm:text-base text-muted-foreground px-4">
-            Discover the competitive advantages of working with OnSpot
-            professionals
-          </p>
+      {/* Why Partner with OnSpot - Brand Philosophy */}
+      <div className="relative py-24 sm:py-32 lg:py-40 overflow-hidden">
+        {/* Subtle gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-violet-500/5 to-background"></div>
+        
+        {/* Ambient glow orbs */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/3 left-1/4 w-[600px] h-[600px] bg-gradient-radial from-violet-500/10 to-transparent rounded-full blur-3xl animate-gentle-pulse"></div>
+          <div className="absolute bottom-1/3 right-1/4 w-[600px] h-[600px] bg-gradient-radial from-blue-500/10 to-transparent rounded-full blur-3xl animate-gentle-pulse" style={{ animationDelay: '3s' }}></div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-          <Card className="hover-elevate">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center space-x-2 text-lg sm:text-xl">
-                <MapPin className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 flex-shrink-0" />
-                <span>Strategic Location</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3 text-xs sm:text-sm">
-                <div className="flex items-center justify-between">
-                  <span>Time Zone Overlap with US:</span>
-                  <Badge variant="outline">12+ hours</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>English Proficiency:</span>
-                  <div className="flex">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className="w-3 h-3 fill-yellow-400 text-yellow-400"
-                      />
-                    ))}
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Cultural Alignment:</span>
-                  <Badge variant="outline" className="text-green-600">
-                    Excellent
-                  </Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="container mx-auto px-4 sm:px-6 relative z-10">
+          {/* Philosophy Title */}
+          <div className="text-center mb-20 sm:mb-24 space-y-6 max-w-4xl mx-auto">
+            <p className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wider">
+              Our Philosophy
+            </p>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-light tracking-tight leading-tight">
+              Why Partner with{" "}
+              <span className="bg-gradient-to-r from-violet-600 via-blue-600 to-cyan-600 bg-clip-text text-transparent font-semibold">
+                OnSpot
+              </span>
+            </h2>
+            <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+              We're not just a service provider. We're architects of a future where AI and human brilliance work as one.
+            </p>
+          </div>
 
-          <Card className="hover-elevate">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center space-x-2 text-lg sm:text-xl">
-                <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 flex-shrink-0" />
-                <span>Cost Efficiency</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3 text-xs sm:text-sm">
-                <div className="flex items-center justify-between">
-                  <span>Average Cost Savings:</span>
-                  <Badge variant="outline" className="text-green-600">
-                    70%
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Quality Standards:</span>
-                  <div className="flex">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className="w-3 h-3 fill-yellow-400 text-yellow-400"
-                      />
-                    ))}
+          {/* Pillar Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10 max-w-7xl mx-auto">
+            {brandPillars.map((pillar, index) => (
+              <div
+                key={index}
+                className="group relative"
+                style={{
+                  animation: `fadeInUp 0.8s ease-out ${index * 0.15}s both`,
+                }}
+                data-testid={`brand-pillar-${index}`}
+              >
+                {/* Hover glow effect */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${pillar.gradient} opacity-0 group-hover:opacity-100 blur-3xl transition-opacity duration-700 rounded-3xl`}></div>
+                
+                {/* Glass card */}
+                <div className="relative bg-background/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-8 sm:p-10 lg:p-12 transition-all duration-700 group-hover:border-white/30 group-hover:bg-background/50 h-full flex flex-col">
+                  {/* Icon */}
+                  <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br ${pillar.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500`}>
+                    <pillar.icon className="w-7 h-7 sm:w-8 sm:h-8 text-foreground" />
                   </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>ROI Timeline:</span>
-                  <Badge variant="outline">30-90 days</Badge>
+
+                  {/* Title with gradient on hover */}
+                  <h3 className="text-xl sm:text-2xl lg:text-3xl font-semibold mb-2 transition-all duration-500 group-hover:bg-gradient-to-r group-hover:from-violet-600 group-hover:to-blue-600 group-hover:bg-clip-text group-hover:text-transparent">
+                    {pillar.title}
+                  </h3>
+                  
+                  {/* Subtitle */}
+                  <p className="text-sm sm:text-base text-muted-foreground mb-6">
+                    {pillar.subtitle}
+                  </p>
+
+                  {/* Description */}
+                  <p className="text-sm sm:text-base lg:text-lg text-foreground/80 leading-relaxed flex-grow">
+                    {pillar.description}
+                  </p>
+
+                  {/* Bottom accent line */}
+                  <div className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r ${pillar.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-700`}></div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            ))}
+          </div>
+
+          {/* Philosophy Statement */}
+          <div className="text-center mt-20 sm:mt-24 max-w-4xl mx-auto space-y-8">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-violet-500/20 to-transparent h-px top-1/2"></div>
+              <p className="relative text-xl sm:text-2xl lg:text-3xl font-light text-foreground/90 bg-background px-8 inline-block">
+                This is the future of work.
+              </p>
+            </div>
+            <p className="text-base sm:text-lg text-muted-foreground italic">
+              And we'd be honored to build it with you.
+            </p>
+          </div>
         </div>
       </div>
 
