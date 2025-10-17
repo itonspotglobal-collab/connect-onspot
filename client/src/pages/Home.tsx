@@ -1310,30 +1310,30 @@ export default function Home() {
                 Navigation
               </h3>
               
-              <div className="space-y-3">
-                <Link href="/hire-talent" className="block text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-hire">
+              <div className="space-y-2">
+                <Link href="/hire-talent" className="block py-2.5 text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300 min-h-[44px] flex items-center justify-center md:justify-start" data-testid="footer-link-hire">
                   Hire Talent
                 </Link>
-                <Link href="/lead-intake" className="block text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-managed">
+                <Link href="/lead-intake" className="block py-2.5 text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300 min-h-[44px] flex items-center justify-center md:justify-start" data-testid="footer-link-managed">
                   Managed Services
                 </Link>
                 <button
                   onClick={() => setShowVanessaChat(true)}
-                  className="block text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300 text-center md:text-left w-full"
+                  className="py-2.5 text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300 min-h-[44px] flex items-center justify-center md:justify-start w-full"
                   data-testid="footer-link-ai"
                 >
                   AI Assistant
                 </button>
-                <Link href="/waitlist" className="block text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-waitlist">
+                <Link href="/waitlist" className="block py-2.5 text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300 min-h-[44px] flex items-center justify-center md:justify-start" data-testid="footer-link-waitlist">
                   Join Waitlist
                 </Link>
-                <Link href="/careers" className="block text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-careers">
+                <Link href="/careers" className="block py-2.5 text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300 min-h-[44px] flex items-center justify-center md:justify-start" data-testid="footer-link-careers">
                   Careers
                 </Link>
-                <Link href="/powerapp" className="block text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-powerapp">
+                <Link href="/powerapp" className="block py-2.5 text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300 min-h-[44px] flex items-center justify-center md:justify-start" data-testid="footer-link-powerapp">
                   Powerapp
                 </Link>
-                <Link href="/pricing" className="block text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-pricing">
+                <Link href="/pricing" className="block py-2.5 text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300 min-h-[44px] flex items-center justify-center md:justify-start" data-testid="footer-link-pricing">
                   Pricing
                 </Link>
               </div>
@@ -1345,26 +1345,26 @@ export default function Home() {
                 Company
               </h3>
               
-              <div className="space-y-3">
-                <Link href="/why-onspot" className="block text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-why">
+              <div className="space-y-2">
+                <Link href="/why-onspot" className="block py-2.5 text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300 min-h-[44px] flex items-center justify-center md:justify-start" data-testid="footer-link-why">
                   Why OnSpot
                 </Link>
-                <Link href="/stories" className="block text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-stories">
+                <Link href="/stories" className="block py-2.5 text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300 min-h-[44px] flex items-center justify-center md:justify-start" data-testid="footer-link-stories">
                   Amazing Stories
                 </Link>
-                <Link href="/insights" className="block text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-insights">
+                <Link href="/insights" className="block py-2.5 text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300 min-h-[44px] flex items-center justify-center md:justify-start" data-testid="footer-link-insights">
                   Insights
                 </Link>
-                <Link href="/affiliate" className="block text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-affiliate">
+                <Link href="/affiliate" className="block py-2.5 text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300 min-h-[44px] flex items-center justify-center md:justify-start" data-testid="footer-link-affiliate">
                   Affiliate Marketing
                 </Link>
-                <Link href="/bpo-partner" className="block text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-bpo">
+                <Link href="/bpo-partner" className="block py-2.5 text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300 min-h-[44px] flex items-center justify-center md:justify-start" data-testid="footer-link-bpo">
                   BPO Partner
                 </Link>
-                <Link href="/investors" className="block text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-investors">
+                <Link href="/investors" className="block py-2.5 text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300 min-h-[44px] flex items-center justify-center md:justify-start" data-testid="footer-link-investors">
                   Investors Corner
                 </Link>
-                <Link href="/about" className="block text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-about">
+                <Link href="/about" className="block py-2.5 text-sm text-white/70 hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300 min-h-[44px] flex items-center justify-center md:justify-start" data-testid="footer-link-about">
                   About Us
                 </Link>
               </div>
@@ -1403,17 +1403,17 @@ export default function Home() {
                 Connect
               </h3>
               
-              <div className="space-y-3">
-                <a href="mailto:hello@onspotglobal.com" className="flex items-center justify-center md:justify-start gap-3 text-sm text-white/70 hover:text-violet-300 transition-all duration-300 group" data-testid="footer-email">
+              <div className="space-y-2">
+                <a href="mailto:hello@onspotglobal.com" className="flex items-center justify-center md:justify-start gap-3 py-2.5 text-sm text-white/70 hover:text-violet-300 transition-all duration-300 group min-h-[44px]" data-testid="footer-email">
                   <Mail className="w-5 h-5 flex-shrink-0 group-hover:scale-110 transition-transform duration-300" />
                   <span>hello@onspotglobal.com</span>
                 </a>
-                <a href="tel:+1234567890" className="flex items-center justify-center md:justify-start gap-3 text-sm text-white/70 hover:text-violet-300 transition-all duration-300 group" data-testid="footer-phone">
+                <a href="tel:+1234567890" className="flex items-center justify-center md:justify-start gap-3 py-2.5 text-sm text-white/70 hover:text-violet-300 transition-all duration-300 group min-h-[44px]" data-testid="footer-phone">
                   <Phone className="w-5 h-5 flex-shrink-0 group-hover:scale-110 transition-transform duration-300" />
                   <span>+1 (234) 567-890</span>
                 </a>
-                <div className="flex items-start justify-center md:justify-start gap-3 text-sm text-white/70">
-                  <MapPinIcon className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                <div className="flex items-center justify-center md:justify-start gap-3 py-2.5 text-sm text-white/70 min-h-[44px]">
+                  <MapPinIcon className="w-5 h-5 flex-shrink-0" />
                   <span>Global HQ<br />New York</span>
                 </div>
               </div>
