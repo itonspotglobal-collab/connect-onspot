@@ -185,7 +185,7 @@ export function VanessaChat({
     };
   }, [isOpen, isPinnedToBottom]);
 
-  // Start message sequence when chat opens - always reset and restart
+  // Start message sequence when chat opens - only initialize if conversation is empty
   useEffect(() => {
     if (!isOpen) {
       hasInitializedRef.current = false;
@@ -199,25 +199,25 @@ export function VanessaChat({
 
     hasInitializedRef.current = true;
 
-    // Always reset conversation state when chat opens
-    setMessages([]);
-    setCurrentMessageIndex(0);
-    setShowOptions(false);
-    setSelectedTopic(null);
+    // Only initialize if conversation is empty (first time opening)
+    if (messages.length === 0) {
+      setCurrentMessageIndex(0);
+      setShowOptions(false);
+      setSelectedTopic(null);
 
-    const timer = setTimeout(() => {
-      // Trigger first message
-      const firstMessage = openingMessages[0];
-      setMessages([{ ...firstMessage, isTyping: true }]);
+      const timer = setTimeout(() => {
+        // Trigger first message
+        const firstMessage = openingMessages[0];
+        setMessages([{ ...firstMessage, isTyping: true }]);
 
-      setTimeout(() => {
-        setMessages([{ ...firstMessage, isTyping: false }]);
-        setCurrentMessageIndex(1);
-      }, 1200);
-    }, 300);
+        setTimeout(() => {
+          setMessages([{ ...firstMessage, isTyping: false }]);
+          setCurrentMessageIndex(1);
+        }, 1200);
+      }, 300);
 
-    return () => clearTimeout(timer);
-    // Only run when isOpen changes
+      return () => clearTimeout(timer);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
