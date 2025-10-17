@@ -200,24 +200,24 @@ export function VanessaChat({
 
   if (!isOpen) return null;
 
-  // Sticky chat widget mode (lower right corner)
+  // Sticky chat widget mode (lower right corner) - optimized for mobile
   if (isSticky) {
     return (
-      <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4 duration-500">
+      <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50 animate-in slide-in-from-bottom-4 duration-500">
         {isMinimized ? (
           // Minimized floating button with luminous gradient
           <Button
             size="icon"
             onClick={() => setIsMinimized(false)}
-            className="h-16 w-16 rounded-full bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white shadow-2xl hover:shadow-[0_0_40px_rgba(58,58,248,0.6)] hover:scale-105 transition-all duration-300"
+            className="h-14 w-14 md:h-16 md:w-16 rounded-full bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white shadow-2xl hover:shadow-[0_0_40px_rgba(58,58,248,0.6)] hover:scale-105 transition-all duration-300"
             data-testid="button-open-chat-widget"
           >
-            <MessageCircle className="h-7 w-7" />
+            <MessageCircle className="h-6 w-6 md:h-7 md:w-7" />
           </Button>
         ) : (
-          // Expanded luminous glass chat widget
+          // Expanded luminous glass chat widget - responsive sizing
           <div
-            className="w-[400px] h-[600px] flex flex-col relative animate-in slide-in-from-bottom-4 duration-500 rounded-3xl overflow-hidden"
+            className="w-[calc(100vw-32px)] max-w-[400px] h-[calc(100vh-120px)] max-h-[600px] flex flex-col relative animate-in slide-in-from-bottom-4 duration-500 rounded-3xl overflow-hidden"
             style={{
               background:
                 "linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(243, 232, 255, 0.98) 100%)",
@@ -241,7 +241,7 @@ export function VanessaChat({
             </div>
 
             {/* Header with glass effect */}
-            <div className="flex items-center gap-3 p-4 border-b border-violet-200/50 backdrop-blur-sm">
+            <div className="flex items-center gap-3 p-3 md:p-4 border-b border-violet-200/50 backdrop-blur-sm">
               <Avatar className="h-12 w-12 ring-2 ring-violet-400/40 overflow-hidden bg-gradient-to-br from-violet-100 to-blue-100">
                 <AvatarImage
                   src={vanessaPhoto}
@@ -291,7 +291,7 @@ export function VanessaChat({
 
             {/* Messages with enhanced contrast */}
             <div
-              className="flex-1 overflow-y-auto p-4 space-y-4"
+              className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4"
               data-testid="chat-messages"
             >
               {messages.map((message) => (
@@ -337,7 +337,7 @@ export function VanessaChat({
 
             {/* Interactive Options with glass buttons */}
             {showOptions && (
-              <div className="p-4 border-t border-violet-200/50 space-y-2 animate-in slide-in-from-bottom-2 duration-300 backdrop-blur-sm">
+              <div className="p-3 md:p-4 border-t border-violet-200/50 space-y-2 animate-in slide-in-from-bottom-2 duration-300 backdrop-blur-sm">
                 {selectedTopic === "talk-human" ? (
                   <div className="flex gap-2">
                     <Button
@@ -412,10 +412,10 @@ export function VanessaChat({
     );
   }
 
-  // Full-screen luminous glass modal mode
+  // Full-screen luminous glass modal mode - optimized for mobile
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-300"
+      className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 md:py-8 animate-in fade-in duration-300"
       style={{
         background:
           "radial-gradient(ellipse at center, rgba(127, 61, 244, 0.15) 0%, rgba(58, 58, 248, 0.1) 50%, rgba(0, 0, 0, 0.3) 100%)",
@@ -424,7 +424,7 @@ export function VanessaChat({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg h-[600px] flex flex-col relative animate-in slide-in-from-bottom-4 duration-500 rounded-3xl overflow-hidden"
+        className="w-full max-w-lg h-[calc(100vh-48px)] md:h-[600px] max-h-[700px] flex flex-col relative animate-in slide-in-from-bottom-4 duration-500 rounded-3xl overflow-hidden my-auto"
         style={{
           background:
             "linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(243, 232, 255, 0.98) 100%)",
@@ -449,7 +449,7 @@ export function VanessaChat({
         </div>
 
         {/* Header with glass effect */}
-        <div className="flex items-center gap-3 p-4 border-b border-violet-200/50 backdrop-blur-sm">
+        <div className="flex items-center gap-3 p-4 md:p-5 border-b border-violet-200/50 backdrop-blur-sm">
           <Avatar
             className="h-12 w-12 ring-2 ring-violet-400/40"
             data-testid="avatar-vanessa"
@@ -484,7 +484,7 @@ export function VanessaChat({
 
         {/* Messages with enhanced contrast */}
         <div
-          className="flex-1 overflow-y-auto p-4 space-y-4"
+          className="flex-1 overflow-y-auto p-4 md:p-5 space-y-3 md:space-y-4"
           data-testid="chat-messages"
         >
           {messages.map((message) => (
@@ -530,7 +530,7 @@ export function VanessaChat({
 
         {/* Interactive Options with glass buttons */}
         {showOptions && (
-          <div className="p-4 border-t border-violet-200/50 space-y-2 animate-in slide-in-from-bottom-2 duration-300 backdrop-blur-sm">
+          <div className="p-4 md:p-5 border-t border-violet-200/50 space-y-2 animate-in slide-in-from-bottom-2 duration-300 backdrop-blur-sm">
             {selectedTopic === "talk-human" ? (
               <div className="flex gap-2">
                 <Button
