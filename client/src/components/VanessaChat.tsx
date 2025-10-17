@@ -205,28 +205,44 @@ export function VanessaChat({
     return (
       <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4 duration-500">
         {isMinimized ? (
-          // Minimized floating button
+          // Minimized floating button with luminous gradient
           <Button
             size="icon"
             onClick={() => setIsMinimized(false)}
-            className="h-16 w-16 rounded-full bg-gradient-to-r from-violet-600 to-blue-600 text-white shadow-2xl hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] hover-elevate"
+            className="h-16 w-16 rounded-full bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white shadow-2xl hover:shadow-[0_0_40px_rgba(58,58,248,0.6)] hover:scale-105 transition-all duration-300"
             data-testid="button-open-chat-widget"
           >
             <MessageCircle className="h-7 w-7" />
           </Button>
         ) : (
-          // Expanded chat widget
-          <Card
-            className="w-[400px] h-[600px] flex flex-col relative animate-in slide-in-from-bottom-4 duration-500 border-violet-500/20 overflow-visible shadow-2xl"
+          // Expanded luminous glass chat widget
+          <div
+            className="w-[400px] h-[600px] flex flex-col relative animate-in slide-in-from-bottom-4 duration-500 rounded-3xl overflow-hidden"
             style={{
               background:
-                "linear-gradient(135deg, rgba(139, 92, 246, 0.95) 0%, rgba(30, 27, 75, 0.98) 100%)",
+                "linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(243, 232, 255, 0.98) 100%)",
+              backdropFilter: "blur(20px)",
+              boxShadow:
+                "0 0 60px rgba(127, 61, 244, 0.4), 0 8px 32px rgba(0, 0, 0, 0.12), inset 0 0 0 1px rgba(127, 61, 244, 0.3)",
             }}
             data-testid="vanessa-chat-widget"
           >
-            {/* Header */}
-            <div className="flex items-center gap-3 p-4 border-b border-white/10">
-              <Avatar className="h-12 w-12 ring-2 ring-white/20 overflow-hidden bg-violet-800/40">
+            {/* Animated glow accent border */}
+            <div className="absolute inset-0 rounded-3xl pointer-events-none overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-[#3A3AF8]/30 via-[#7F3DF4]/30 to-[#3A3AF8]/30 opacity-60 animate-pulse" 
+                   style={{ 
+                     mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                     WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                     maskComposite: 'exclude',
+                     WebkitMaskComposite: 'xor',
+                     padding: '2px'
+                   }} 
+              />
+            </div>
+
+            {/* Header with glass effect */}
+            <div className="flex items-center gap-3 p-4 border-b border-violet-200/50 backdrop-blur-sm">
+              <Avatar className="h-12 w-12 ring-2 ring-violet-400/40 overflow-hidden bg-gradient-to-br from-violet-100 to-blue-100">
                 <AvatarImage
                   src={vanessaPhoto}
                   alt="Vanessa"
@@ -239,16 +255,16 @@ export function VanessaChat({
 
               <div className="flex-1">
                 <h3
-                  className="font-semibold text-white"
+                  className="font-bold text-gray-900"
                   data-testid="text-vanessa-name"
                 >
                   Vanessa
                 </h3>
-                <p className="text-xs text-white/70">
+                <p className="text-xs text-gray-600">
                   OnSpot Virtual Assistant
                 </p>
-                <p className="text-xs text-violet-300">
-                  Superhuman Assistant — In Training
+                <p className="text-xs font-medium bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent">
+                  Intelligent, Calm, Luminous
                 </p>
               </div>
               <div className="flex gap-1">
@@ -256,7 +272,7 @@ export function VanessaChat({
                   size="icon"
                   variant="ghost"
                   onClick={() => setIsMinimized(true)}
-                  className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10"
+                  className="h-8 w-8 text-gray-600 hover:text-gray-900 hover:bg-violet-100/60"
                   data-testid="button-minimize-chat"
                 >
                   <span className="text-lg leading-none">−</span>
@@ -265,7 +281,7 @@ export function VanessaChat({
                   size="icon"
                   variant="ghost"
                   onClick={onClose}
-                  className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10"
+                  className="h-8 w-8 text-gray-600 hover:text-gray-900 hover:bg-violet-100/60"
                   data-testid="button-close-chat"
                 >
                   <X className="h-5 w-5" />
@@ -273,7 +289,7 @@ export function VanessaChat({
               </div>
             </div>
 
-            {/* Messages */}
+            {/* Messages with enhanced contrast */}
             <div
               className="flex-1 overflow-y-auto p-4 space-y-4"
               data-testid="chat-messages"
@@ -284,10 +300,10 @@ export function VanessaChat({
                   className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2 duration-300`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
+                    className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-sm ${
                       message.sender === "user"
-                        ? "bg-white text-gray-900"
-                        : "bg-white/10 text-white backdrop-blur-sm"
+                        ? "bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white"
+                        : "bg-white/80 text-gray-900 backdrop-blur-sm border border-violet-200/40"
                     }`}
                     data-testid={`message-${message.sender}-${message.id}`}
                   >
@@ -297,15 +313,15 @@ export function VanessaChat({
                         data-testid="typing-indicator"
                       >
                         <div
-                          className="w-2 h-2 bg-white/60 rounded-full animate-bounce"
+                          className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"
                           style={{ animationDelay: "0ms" }}
                         />
                         <div
-                          className="w-2 h-2 bg-white/60 rounded-full animate-bounce"
+                          className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"
                           style={{ animationDelay: "150ms" }}
                         />
                         <div
-                          className="w-2 h-2 bg-white/60 rounded-full animate-bounce"
+                          className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"
                           style={{ animationDelay: "300ms" }}
                         />
                       </div>
@@ -319,14 +335,14 @@ export function VanessaChat({
               ))}
             </div>
 
-            {/* Interactive Options */}
+            {/* Interactive Options with glass buttons */}
             {showOptions && (
-              <div className="p-4 border-t border-white/10 space-y-2 animate-in slide-in-from-bottom-2 duration-300">
+              <div className="p-4 border-t border-violet-200/50 space-y-2 animate-in slide-in-from-bottom-2 duration-300 backdrop-blur-sm">
                 {selectedTopic === "talk-human" ? (
                   <div className="flex gap-2">
                     <Button
                       onClick={handleBookCall}
-                      className="flex-1 bg-white text-violet-600 hover:bg-white/90"
+                      className="flex-1 bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white hover:shadow-lg hover:scale-[1.02] transition-all duration-300"
                       data-testid="button-book-call"
                     >
                       Book a Call
@@ -337,7 +353,7 @@ export function VanessaChat({
                         setShowOptions(true);
                       }}
                       variant="outline"
-                      className="flex-1 border-white/20 text-white hover:bg-white/10"
+                      className="flex-1 border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
                       data-testid="button-keep-exploring"
                     >
                       Keep Exploring
@@ -348,7 +364,7 @@ export function VanessaChat({
                     <Button
                       onClick={() => handleTopicSelect("how-it-works")}
                       variant="outline"
-                      className="w-full justify-start text-left border-white/20 text-white hover:bg-white/10"
+                      className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
                       data-testid="button-how-it-works"
                     >
                       How OnSpot Outsourcing Works
@@ -356,7 +372,7 @@ export function VanessaChat({
                     <Button
                       onClick={() => handleTopicSelect("pricing")}
                       variant="outline"
-                      className="w-full justify-start text-left border-white/20 text-white hover:bg-white/10"
+                      className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
                       data-testid="button-pricing"
                     >
                       See Pricing Models
@@ -364,7 +380,7 @@ export function VanessaChat({
                     <Button
                       onClick={() => handleTopicSelect("ai-human")}
                       variant="outline"
-                      className="w-full justify-start text-left border-white/20 text-white hover:bg-white/10"
+                      className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
                       data-testid="button-ai-human"
                     >
                       AI + Human Advantage
@@ -372,7 +388,7 @@ export function VanessaChat({
                     <Button
                       onClick={() => handleTopicSelect("talk-human")}
                       variant="outline"
-                      className="w-full justify-start text-left border-white/20 text-white hover:bg-white/10"
+                      className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
                       data-testid="button-talk-human"
                     >
                       Talk to a Human Expert
@@ -382,44 +398,60 @@ export function VanessaChat({
               </div>
             )}
 
-            {/* Sparkle effect */}
+            {/* Luminous sparkle effects */}
             <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
-              <Sparkles className="absolute top-4 right-4 h-4 w-4 text-violet-300 opacity-60 animate-pulse" />
+              <Sparkles className="absolute top-4 right-4 h-5 w-5 text-violet-500 opacity-70 animate-pulse" />
               <Sparkles
-                className="absolute bottom-20 left-6 h-3 w-3 text-blue-300 opacity-40 animate-pulse"
+                className="absolute bottom-20 left-6 h-4 w-4 text-blue-500 opacity-50 animate-pulse"
                 style={{ animationDelay: "1s" }}
               />
             </div>
-          </Card>
+          </div>
         )}
       </div>
     );
   }
 
-  // Full-screen modal mode (default)
+  // Full-screen luminous glass modal mode
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-300"
       style={{
         background:
-          "radial-gradient(ellipse at center, rgba(139, 92, 246, 0.15) 0%, rgba(59, 130, 246, 0.1) 50%, rgba(0, 0, 0, 0.4) 100%)",
-        backdropFilter: "blur(8px)",
+          "radial-gradient(ellipse at center, rgba(127, 61, 244, 0.15) 0%, rgba(58, 58, 248, 0.1) 50%, rgba(0, 0, 0, 0.3) 100%)",
+        backdropFilter: "blur(12px)",
       }}
       onClick={onClose}
     >
-      <Card
-        className="w-full max-w-lg h-[600px] flex flex-col relative animate-in slide-in-from-bottom-4 duration-500 border-violet-500/20 overflow-hidden"
+      <div
+        className="w-full max-w-lg h-[600px] flex flex-col relative animate-in slide-in-from-bottom-4 duration-500 rounded-3xl overflow-hidden"
         style={{
           background:
-            "linear-gradient(135deg, rgba(139, 92, 246, 0.95) 0%, rgba(30, 27, 75, 0.98) 100%)",
+            "linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(243, 232, 255, 0.98) 100%)",
+          backdropFilter: "blur(20px)",
+          boxShadow:
+            "0 0 60px rgba(127, 61, 244, 0.4), 0 8px 32px rgba(0, 0, 0, 0.12), inset 0 0 0 1px rgba(127, 61, 244, 0.3)",
         }}
         onClick={(e) => e.stopPropagation()}
         data-testid="vanessa-chat-window"
       >
-        {/* Header */}
-        <div className="flex items-center gap-3 p-4 border-b border-white/10">
+        {/* Animated glow accent border */}
+        <div className="absolute inset-0 rounded-3xl pointer-events-none overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-[#3A3AF8]/30 via-[#7F3DF4]/30 to-[#3A3AF8]/30 opacity-60 animate-pulse" 
+               style={{ 
+                 mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                 WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                 maskComposite: 'exclude',
+                 WebkitMaskComposite: 'xor',
+                 padding: '2px'
+               }} 
+          />
+        </div>
+
+        {/* Header with glass effect */}
+        <div className="flex items-center gap-3 p-4 border-b border-violet-200/50 backdrop-blur-sm">
           <Avatar
-            className="h-12 w-12 ring-2 ring-white/20"
+            className="h-12 w-12 ring-2 ring-violet-400/40"
             data-testid="avatar-vanessa"
           >
             <AvatarImage src={vanessaPhoto} alt="Vanessa" />
@@ -429,28 +461,28 @@ export function VanessaChat({
           </Avatar>
           <div className="flex-1">
             <h3
-              className="font-semibold text-white"
+              className="font-bold text-gray-900"
               data-testid="text-vanessa-name"
             >
               Vanessa
             </h3>
-            <p className="text-xs text-white/70">OnSpot Virtual Assistant</p>
-            <p className="text-xs text-violet-300">
-              Superhuman Assistant — In Training
+            <p className="text-xs text-gray-600">OnSpot Virtual Assistant</p>
+            <p className="text-xs font-medium bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent">
+              Intelligent, Calm, Luminous
             </p>
           </div>
           <Button
             size="icon"
             variant="ghost"
             onClick={onClose}
-            className="text-white/70 hover:text-white hover:bg-white/10"
+            className="text-gray-600 hover:text-gray-900 hover:bg-violet-100/60"
             data-testid="button-minimize-chat"
           >
             <X className="h-5 w-5" />
           </Button>
         </div>
 
-        {/* Messages */}
+        {/* Messages with enhanced contrast */}
         <div
           className="flex-1 overflow-y-auto p-4 space-y-4"
           data-testid="chat-messages"
@@ -461,10 +493,10 @@ export function VanessaChat({
               className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2 duration-300`}
             >
               <div
-                className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
+                className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-sm ${
                   message.sender === "user"
-                    ? "bg-white text-gray-900"
-                    : "bg-white/10 text-white backdrop-blur-sm"
+                    ? "bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white"
+                    : "bg-white/80 text-gray-900 backdrop-blur-sm border border-violet-200/40"
                 }`}
                 data-testid={`message-${message.sender}-${message.id}`}
               >
@@ -474,15 +506,15 @@ export function VanessaChat({
                     data-testid="typing-indicator"
                   >
                     <div
-                      className="w-2 h-2 bg-white/60 rounded-full animate-bounce"
+                      className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"
                       style={{ animationDelay: "0ms" }}
                     />
                     <div
-                      className="w-2 h-2 bg-white/60 rounded-full animate-bounce"
+                      className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"
                       style={{ animationDelay: "150ms" }}
                     />
                     <div
-                      className="w-2 h-2 bg-white/60 rounded-full animate-bounce"
+                      className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"
                       style={{ animationDelay: "300ms" }}
                     />
                   </div>
@@ -496,14 +528,14 @@ export function VanessaChat({
           ))}
         </div>
 
-        {/* Interactive Options */}
+        {/* Interactive Options with glass buttons */}
         {showOptions && (
-          <div className="p-4 border-t border-white/10 space-y-2 animate-in slide-in-from-bottom-2 duration-300">
+          <div className="p-4 border-t border-violet-200/50 space-y-2 animate-in slide-in-from-bottom-2 duration-300 backdrop-blur-sm">
             {selectedTopic === "talk-human" ? (
               <div className="flex gap-2">
                 <Button
                   onClick={handleBookCall}
-                  className="flex-1 bg-white text-violet-600 hover:bg-white/90"
+                  className="flex-1 bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white hover:shadow-lg hover:scale-[1.02] transition-all duration-300"
                   data-testid="button-book-call"
                 >
                   Book a Call
@@ -514,7 +546,7 @@ export function VanessaChat({
                     setShowOptions(true);
                   }}
                   variant="outline"
-                  className="flex-1 border-white/20 text-white hover:bg-white/10"
+                  className="flex-1 border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
                   data-testid="button-keep-exploring"
                 >
                   Keep Exploring
@@ -525,7 +557,7 @@ export function VanessaChat({
                 <Button
                   onClick={() => handleTopicSelect("how-it-works")}
                   variant="outline"
-                  className="w-full justify-start text-left border-white/20 text-white hover:bg-white/10"
+                  className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
                   data-testid="button-how-it-works"
                 >
                   How OnSpot Outsourcing Works
@@ -533,7 +565,7 @@ export function VanessaChat({
                 <Button
                   onClick={() => handleTopicSelect("pricing")}
                   variant="outline"
-                  className="w-full justify-start text-left border-white/20 text-white hover:bg-white/10"
+                  className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
                   data-testid="button-pricing"
                 >
                   See Pricing Models
@@ -541,7 +573,7 @@ export function VanessaChat({
                 <Button
                   onClick={() => handleTopicSelect("ai-human")}
                   variant="outline"
-                  className="w-full justify-start text-left border-white/20 text-white hover:bg-white/10"
+                  className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
                   data-testid="button-ai-human"
                 >
                   AI + Human Advantage
@@ -549,7 +581,7 @@ export function VanessaChat({
                 <Button
                   onClick={() => handleTopicSelect("talk-human")}
                   variant="outline"
-                  className="w-full justify-start text-left border-white/20 text-white hover:bg-white/10"
+                  className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
                   data-testid="button-talk-human"
                 >
                   Talk to a Human Expert
@@ -559,15 +591,15 @@ export function VanessaChat({
           </div>
         )}
 
-        {/* Sparkle effect */}
+        {/* Luminous sparkle effects */}
         <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
-          <Sparkles className="absolute top-4 right-4 h-4 w-4 text-violet-300 opacity-60 animate-pulse" />
+          <Sparkles className="absolute top-4 right-4 h-5 w-5 text-violet-500 opacity-70 animate-pulse" />
           <Sparkles
-            className="absolute bottom-20 left-6 h-3 w-3 text-blue-300 opacity-40 animate-pulse"
+            className="absolute bottom-20 left-6 h-4 w-4 text-blue-500 opacity-50 animate-pulse"
             style={{ animationDelay: "1s" }}
           />
         </div>
-      </Card>
+      </div>
     </div>
   );
 }
