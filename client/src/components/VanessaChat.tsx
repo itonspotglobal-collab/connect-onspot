@@ -44,7 +44,7 @@ export function VanessaChat({
   const scrollAnimationFrameRef = useRef<number | null>(null);
   const lastScrollTopRef = useRef(0);
 
-  const openingMessages = [
+  const openingMessages = useRef([
     {
       id: 1,
       text: "Hi there! I'm Vanessa, your OnSpot Virtual Assistant.",
@@ -60,7 +60,7 @@ export function VanessaChat({
       text: "For now, I can help you get started with Outsourcing through OnSpot.\nWould you like to explore how it works?",
       sender: "vanessa" as const,
     },
-  ];
+  ]).current;
 
   const faqResponses: Record<string, string[]> = {
     "how-it-works": [
@@ -154,26 +154,31 @@ export function VanessaChat({
     };
   }, [isOpen, isPinnedToBottom]);
 
-  // Start message sequence when chat opens
+  // Start message sequence when chat opens - always reset and restart
   useEffect(() => {
     if (!isOpen) return;
     
-    // Reset and start fresh conversation when opening with no messages
-    if (messages.length === 0) {
-      const timer = setTimeout(() => {
-        // Trigger first message
-        const firstMessage = openingMessages[0];
-        setMessages([{ ...firstMessage, isTyping: true }]);
-        
-        setTimeout(() => {
-          setMessages([{ ...firstMessage, isTyping: false }]);
-          setCurrentMessageIndex(1);
-        }, 1200);
-      }, 300);
+    // Always reset conversation state when chat opens
+    setMessages([]);
+    setCurrentMessageIndex(0);
+    setShowOptions(false);
+    setSelectedTopic(null);
+    
+    const timer = setTimeout(() => {
+      // Trigger first message
+      const firstMessage = openingMessages[0];
+      setMessages([{ ...firstMessage, isTyping: true }]);
       
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen, messages.length, openingMessages]);
+      setTimeout(() => {
+        setMessages([{ ...firstMessage, isTyping: false }]);
+        setCurrentMessageIndex(1);
+      }, 1200);
+    }, 300);
+    
+    return () => clearTimeout(timer);
+    // Only run when isOpen changes to true
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   // Display subsequent messages sequentially with typing animation
   useEffect(() => {
