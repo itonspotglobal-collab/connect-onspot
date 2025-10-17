@@ -264,7 +264,7 @@ export function VanessaChat({
                   OnSpot Virtual Assistant
                 </p>
                 <p className="text-xs font-medium bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent">
-                  Intelligent, Calm, Luminous
+                  Superhuman Assistant — In Training
                 </p>
               </div>
               <div className="flex gap-1">
@@ -468,7 +468,7 @@ export function VanessaChat({
             </h3>
             <p className="text-xs text-gray-600">OnSpot Virtual Assistant</p>
             <p className="text-xs font-medium bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent">
-              Intelligent, Calm, Luminous
+              Superhuman Assistant — In Training
             </p>
           </div>
           <Button
