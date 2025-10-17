@@ -253,6 +253,26 @@ const talentProfiles = [
     skill: "Lead Generation",
     photo: PaigePhoto,
   },
+  {
+    name: "Marcus Rodriguez",
+    skill: "Full-Stack Developer",
+    photo: FrederickPhoto,
+  },
+  {
+    name: "Sophia Ahmed",
+    skill: "UX Designer",
+    photo: AmiraPhoto,
+  },
+  {
+    name: "Elena Gonzalez",
+    skill: "Project Manager",
+    photo: JuliePhoto,
+  },
+  {
+    name: "Rachel Thompson",
+    skill: "Social Media Manager",
+    photo: PaigePhoto,
+  },
 ];
 
 export default function Home() {
