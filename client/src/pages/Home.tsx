@@ -179,6 +179,39 @@ const testimonials = [
   },
 ];
 
+const talentProfiles = [
+  {
+    name: "Maria Santos",
+    skill: "Customer Success",
+    photo: FrederickPhoto,
+  },
+  {
+    name: "Carlos Rivera",
+    skill: "Data Analytics",
+    photo: AmiraPhoto,
+  },
+  {
+    name: "Sofia Reyes",
+    skill: "Executive Assistant",
+    photo: JuliePhoto,
+  },
+  {
+    name: "Miguel Torres",
+    skill: "Lead Generation",
+    photo: PaigePhoto,
+  },
+  {
+    name: "Ana Flores",
+    skill: "Content Writing",
+    photo: FrederickPhoto,
+  },
+  {
+    name: "Diego Cruz",
+    skill: "DevOps Engineer",
+    photo: AmiraPhoto,
+  },
+];
+
 export default function Home() {
   const [showVanessaChat, setShowVanessaChat] = useState(false);
   const [isScrolledPastHero, setIsScrolledPastHero] = useState(false);
@@ -644,44 +677,214 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Call to Action */}
-      <div className="container mx-auto px-4 sm:px-6">
-        <Card className="bg-primary/5 dark:bg-primary/10 border-primary/20">
-          <CardContent className="p-6 sm:p-8 lg:p-10 text-center space-y-4 sm:space-y-5">
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold px-2">
-              Ready to Scale Your Operations?
+      {/* The Experience — One System. Your Unfair Advantage */}
+      <div className="relative py-24 sm:py-32 lg:py-40 overflow-hidden">
+        {/* Gradient glow background */}
+        <div className="absolute inset-0 bg-gradient-to-r from-violet-600/20 via-blue-600/20 to-cyan-500/20"></div>
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-1/2 -left-1/4 w-[1000px] h-[1000px] bg-gradient-radial from-violet-500/30 to-transparent rounded-full blur-3xl"></div>
+          <div className="absolute -bottom-1/2 -right-1/4 w-[1000px] h-[1000px] bg-gradient-radial from-blue-500/30 to-transparent rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="container mx-auto px-4 sm:px-6 relative z-10">
+          {/* Title */}
+          <div className="text-center mb-16 sm:mb-20 space-y-4">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight">
+              The Experience
             </h2>
-            <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto px-4">
-              Join 85+ companies already saving millions with our OnSpot talent
-              network. Start building your dream team today.
+            <p className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent">
+              One System. Your Unfair Advantage.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-2 sm:pt-4">
+          </div>
+
+          {/* OnSpot Connect Interface Mockup */}
+          <div className="max-w-6xl mx-auto">
+            <div className="relative bg-background/30 backdrop-blur-xl border border-white/20 rounded-3xl p-8 sm:p-12 lg:p-16">
+              {/* Glowing wireframe interface */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+                {/* Left Column - AI Assistant */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-violet-600 to-blue-600 flex items-center justify-center">
+                      <Bot className="w-5 h-5 text-white" />
+                    </div>
+                    <span className="text-lg font-semibold">Vanessa AI Assistant</span>
+                  </div>
+                  <div className="space-y-3">
+                    {/* Chat bubbles */}
+                    <div className="bg-violet-500/20 border border-violet-500/30 rounded-2xl rounded-tl-sm p-4">
+                      <p className="text-sm text-foreground/90">How can I help you scale today?</p>
+                    </div>
+                    <div className="bg-blue-500/20 border border-blue-500/30 rounded-2xl rounded-tr-sm p-4 ml-8">
+                      <p className="text-sm text-foreground/90">Find me 3 data analysts</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column - Dashboard & Team */}
+                <div className="space-y-6">
+                  {/* Task Flow */}
+                  <div className="bg-background/40 border border-white/10 rounded-2xl p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-sm font-semibold">Task Flow</span>
+                      <CheckCircle2 className="w-4 h-4 text-green-500" />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-2 bg-gradient-to-r from-violet-600 to-blue-600 rounded-full w-3/4"></div>
+                      <div className="h-2 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full w-1/2"></div>
+                    </div>
+                  </div>
+
+                  {/* Managed Team */}
+                  <div className="bg-background/40 border border-white/10 rounded-2xl p-5">
+                    <span className="text-sm font-semibold mb-3 block">Managed Team</span>
+                    <div className="flex -space-x-2">
+                      {talentProfiles.slice(0, 4).map((profile, i) => (
+                        <div
+                          key={i}
+                          className="w-8 h-8 rounded-full border-2 border-background overflow-hidden"
+                        >
+                          <img src={profile.photo} alt={profile.name} className="w-full h-full object-cover" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* KPI Dashboard */}
+                  <div className="bg-background/40 border border-white/10 rounded-2xl p-5">
+                    <span className="text-sm font-semibold mb-3 block">Live KPIs</span>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-green-500">98%</p>
+                        <p className="text-xs text-muted-foreground">Uptime</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-blue-500">24h</p>
+                        <p className="text-xs text-muted-foreground">Response</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-violet-500">5.0</p>
+                        <p className="text-xs text-muted-foreground">Rating</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Decorative glow elements */}
+              <div className="absolute -top-10 -left-10 w-40 h-40 bg-violet-500/20 rounded-full blur-3xl animate-gentle-float"></div>
+              <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl animate-gentle-float" style={{ animationDelay: "1s" }}></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* The Proof — Global Talent, Human Excellence */}
+      <div className="relative py-24 sm:py-32 overflow-hidden">
+        <div className="container mx-auto px-4 sm:px-6 relative z-10">
+          {/* Title */}
+          <div className="text-center mb-16 sm:mb-20 space-y-4">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight">
+              The Proof
+            </h2>
+            <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto">
+              Powered by professionals from the Philippines and beyond.
+            </p>
+            <p className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent">
+              The Superhuman BPO Network.
+            </p>
+          </div>
+
+          {/* Talent Profiles Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 sm:gap-8 max-w-6xl mx-auto">
+            {talentProfiles.map((profile, index) => (
+              <div
+                key={index}
+                className="group relative"
+                data-testid={`talent-profile-${index}`}
+              >
+                {/* Profile Image - blurred initially */}
+                <div className="relative aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-violet-500/10 to-blue-500/10">
+                  <img
+                    src={profile.photo}
+                    alt={profile.name}
+                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 blur-sm group-hover:blur-none opacity-60 group-hover:opacity-100 transition-all duration-500"
+                  />
+                  
+                  {/* Overlay - reveals on hover */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end p-4">
+                    <div className="text-white">
+                      <p className="font-semibold text-sm">{profile.name}</p>
+                      <p className="text-xs text-white/80">{profile.skill}</p>
+                    </div>
+                  </div>
+
+                  {/* Glow effect */}
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                    <div className="absolute inset-0 bg-gradient-to-r from-violet-500/20 to-blue-500/20 blur-xl"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* The Call — Ready to Become Superhuman */}
+      <div className="relative py-32 sm:py-40 lg:py-48 overflow-hidden">
+        {/* Full-screen gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-violet-600/30 via-blue-600/30 to-cyan-500/30"></div>
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-radial from-violet-500/20 via-transparent to-transparent"></div>
+        </div>
+
+        <div className="container mx-auto px-4 sm:px-6 relative z-10">
+          <div className="text-center max-w-4xl mx-auto space-y-12">
+            {/* Main heading */}
+            <div className="space-y-6">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight">
+                <span className="block">Ready to Become</span>
+                <span className="block bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent">
+                  Superhuman?
+                </span>
+              </h2>
+              
+              <div className="space-y-4 max-w-2xl mx-auto">
+                <p className="text-lg sm:text-xl lg:text-2xl font-light text-foreground/90">
+                  AI first. Humans when it matters.
+                </p>
+                <p className="text-xl sm:text-2xl lg:text-3xl font-semibold">
+                  Join the Superhuman Revolution.
+                </p>
+              </div>
+            </div>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 pt-8">
               <Button
                 size="lg"
-                className="min-h-[48px] w-full sm:w-auto"
-                asChild
-                data-testid="button-get-started"
+                className="min-h-[56px] px-8 text-base sm:text-lg w-full sm:w-auto bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700"
+                onClick={() => setShowVanessaChat(true)}
+                data-testid="button-launch-ai"
               >
-                <Link href="/lead-intake">
-                  <Users className="w-5 h-5 mr-2" />
-                  Get Started Now
-                </Link>
+                <Bot className="w-5 h-5 mr-2" />
+                Launch AI Assistant
               </Button>
               <Button
                 variant="outline"
                 size="lg"
-                className="min-h-[48px] w-full sm:w-auto"
+                className="min-h-[56px] px-8 text-base sm:text-lg w-full sm:w-auto border-2 bg-background/50 backdrop-blur-sm hover:bg-background/80"
                 asChild
-                data-testid="button-learn-more"
+                data-testid="button-get-team"
               >
                 <Link href="/lead-intake">
-                  <Clock className="w-5 h-5 mr-2" />
-                  Schedule Consultation
+                  <Users className="w-5 h-5 mr-2" />
+                  Get Managed Team
                 </Link>
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       {/* Vanessa AI Assistant Chat */}
