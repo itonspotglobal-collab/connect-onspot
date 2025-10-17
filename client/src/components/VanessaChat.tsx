@@ -73,6 +73,16 @@ export function VanessaChat({
     ],
   };
 
+  // Prevent body scroll when popup is open
+  useEffect(() => {
+    if (isOpen && !isSticky) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = '';
+      };
+    }
+  }, [isOpen, isSticky]);
+
   // Start message sequence when chat opens
   useEffect(() => {
     if (isOpen && messages.length === 0) {
@@ -240,8 +250,8 @@ export function VanessaChat({
               />
             </div>
 
-            {/* Header with glass effect */}
-            <div className="flex items-center gap-3 p-3 md:p-4 border-b border-violet-200/50 backdrop-blur-sm">
+            {/* Header with glass effect - pinned */}
+            <div className="flex items-center gap-3 p-3 md:p-4 border-b border-violet-200/50 backdrop-blur-sm flex-shrink-0">
               <Avatar className="h-12 w-12 ring-2 ring-violet-400/40 overflow-hidden bg-gradient-to-br from-violet-100 to-blue-100">
                 <AvatarImage
                   src={vanessaPhoto}
@@ -289,9 +299,13 @@ export function VanessaChat({
               </div>
             </div>
 
-            {/* Messages with enhanced contrast */}
+            {/* Messages with enhanced contrast - scrollable with momentum */}
             <div
-              className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4"
+              className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4 min-h-0"
+              style={{
+                WebkitOverflowScrolling: 'touch',
+                overscrollBehavior: 'contain',
+              }}
               data-testid="chat-messages"
             >
               {messages.map((message) => (
@@ -335,9 +349,15 @@ export function VanessaChat({
               ))}
             </div>
 
-            {/* Interactive Options with glass buttons */}
+            {/* Interactive Options with glass buttons - sticky footer */}
             {showOptions && (
-              <div className="p-3 md:p-4 border-t border-violet-200/50 space-y-2 animate-in slide-in-from-bottom-2 duration-300 backdrop-blur-sm">
+              <div 
+                className="p-3 md:p-4 border-t border-violet-200/50 space-y-2 animate-in slide-in-from-bottom-2 duration-300 backdrop-blur-sm flex-shrink-0"
+                style={{
+                  position: 'sticky',
+                  bottom: 0,
+                }}
+              >
                 {selectedTopic === "talk-human" ? (
                   <div className="flex gap-2">
                     <Button
@@ -412,25 +432,28 @@ export function VanessaChat({
     );
   }
 
-  // Full-screen luminous glass modal mode - optimized for mobile
+  // Full-screen luminous glass modal mode - optimized for mobile scrolling
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 md:py-8 animate-in fade-in duration-300"
+      className="fixed inset-0 z-50 flex items-center justify-center animate-in fade-in duration-300"
       style={{
         background:
           "radial-gradient(ellipse at center, rgba(127, 61, 244, 0.15) 0%, rgba(58, 58, 248, 0.1) 50%, rgba(0, 0, 0, 0.3) 100%)",
         backdropFilter: "blur(12px)",
+        padding: "16px",
+        paddingBottom: "max(16px, env(safe-area-inset-bottom))",
       }}
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg h-[calc(100vh-48px)] md:h-[600px] max-h-[700px] flex flex-col relative animate-in slide-in-from-bottom-4 duration-500 rounded-3xl overflow-hidden my-auto"
+        className="w-full max-w-lg flex flex-col relative animate-in slide-in-from-bottom-4 duration-500 rounded-3xl overflow-hidden my-auto"
         style={{
           background:
             "linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(243, 232, 255, 0.98) 100%)",
           backdropFilter: "blur(20px)",
           boxShadow:
             "0 0 60px rgba(127, 61, 244, 0.4), 0 8px 32px rgba(0, 0, 0, 0.12), inset 0 0 0 1px rgba(127, 61, 244, 0.3)",
+          maxHeight: "calc(100dvh - 32px)",
         }}
         onClick={(e) => e.stopPropagation()}
         data-testid="vanessa-chat-window"
@@ -448,8 +471,8 @@ export function VanessaChat({
           />
         </div>
 
-        {/* Header with glass effect */}
-        <div className="flex items-center gap-3 p-4 md:p-5 border-b border-violet-200/50 backdrop-blur-sm">
+        {/* Header with glass effect - pinned */}
+        <div className="flex items-center gap-3 p-4 md:p-5 border-b border-violet-200/50 backdrop-blur-sm flex-shrink-0">
           <Avatar
             className="h-12 w-12 ring-2 ring-violet-400/40"
             data-testid="avatar-vanessa"
@@ -482,9 +505,13 @@ export function VanessaChat({
           </Button>
         </div>
 
-        {/* Messages with enhanced contrast */}
+        {/* Messages with enhanced contrast - scrollable section with momentum */}
         <div
-          className="flex-1 overflow-y-auto p-4 md:p-5 space-y-3 md:space-y-4"
+          className="flex-1 overflow-y-auto p-4 md:p-5 space-y-3 md:space-y-4 min-h-0"
+          style={{
+            WebkitOverflowScrolling: 'touch',
+            overscrollBehavior: 'contain',
+          }}
           data-testid="chat-messages"
         >
           {messages.map((message) => (
@@ -528,9 +555,16 @@ export function VanessaChat({
           ))}
         </div>
 
-        {/* Interactive Options with glass buttons */}
+        {/* Interactive Options with glass buttons - sticky footer */}
         {showOptions && (
-          <div className="p-4 md:p-5 border-t border-violet-200/50 space-y-2 animate-in slide-in-from-bottom-2 duration-300 backdrop-blur-sm">
+          <div 
+            className="p-4 md:p-5 border-t border-violet-200/50 space-y-2 animate-in slide-in-from-bottom-2 duration-300 backdrop-blur-sm flex-shrink-0"
+            style={{
+              position: 'sticky',
+              bottom: 0,
+              paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
+            }}
+          >
             {selectedTopic === "talk-human" ? (
               <div className="flex gap-2">
                 <Button
