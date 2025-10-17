@@ -23,6 +23,14 @@ import {
   Zap,
   Sparkles,
   MessageCircle,
+  Mail,
+  Phone,
+  MapPinIcon,
+  Linkedin,
+  Facebook,
+  Twitter,
+  Instagram,
+  ChevronDown,
 } from "lucide-react";
 import { SiAmazon, SiQuickbooks, SiReplit, SiStripe } from "react-icons/si";
 import { Link } from "wouter";
@@ -278,6 +286,7 @@ const talentProfiles = [
 export default function Home() {
   const [showVanessaChat, setShowVanessaChat] = useState(false);
   const [isScrolledPastHero, setIsScrolledPastHero] = useState(false);
+  const [expandedFooterSection, setExpandedFooterSection] = useState<string | null>(null);
 
   // Track scroll position to determine if past hero section
   useEffect(() => {
@@ -1220,6 +1229,158 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Sticky Launch Vanessa Micro-bar */}
+      <div className="sticky bottom-0 z-40 bg-gradient-to-r from-violet-950/90 via-violet-900/90 to-blue-950/90 backdrop-blur-xl border-t border-white/10">
+        <div className="container mx-auto px-4 sm:px-6">
+          <button
+            onClick={() => setShowVanessaChat(true)}
+            className="w-full py-4 sm:py-3 flex items-center justify-center gap-3 group hover-elevate transition-all duration-300"
+            data-testid="button-sticky-vanessa"
+          >
+            <Bot className="w-5 h-5 text-violet-400 group-hover:text-violet-300 transition-colors" />
+            <span className="text-sm sm:text-base font-medium text-foreground/90 group-hover:text-foreground transition-colors">
+              Need help? Launch Vanessa
+            </span>
+            <ArrowRight className="w-4 h-4 text-violet-400 group-hover:translate-x-1 transition-transform" />
+          </button>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <footer className="relative bg-gradient-to-b from-black via-violet-950/30 to-black border-t border-white/10">
+        {/* AI Pulse Line */}
+        <div className="absolute top-0 left-0 right-0 h-px overflow-hidden">
+          <div className="h-full w-1/3 bg-gradient-to-r from-transparent via-violet-500 to-transparent animate-pulse" style={{ animation: 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}></div>
+        </div>
+
+        <div className="container mx-auto px-4 sm:px-6 py-16 sm:py-20 lg:py-24">
+          {/* Footer Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 lg:gap-16 max-w-7xl mx-auto">
+            {/* About Section */}
+            <div className="space-y-6">
+              <button
+                onClick={() => setExpandedFooterSection(expandedFooterSection === 'about' ? null : 'about')}
+                className="w-full flex items-center justify-between lg:cursor-default group"
+                data-testid="footer-about-toggle"
+              >
+                <h3 className="text-lg sm:text-xl font-semibold bg-gradient-to-r from-white to-violet-300 bg-clip-text text-transparent">
+                  About OnSpot
+                </h3>
+                <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform lg:hidden ${expandedFooterSection === 'about' ? 'rotate-180' : ''}`} />
+              </button>
+              
+              <div className={`space-y-4 ${expandedFooterSection === 'about' || window.innerWidth >= 1024 ? 'block' : 'hidden'} lg:block`}>
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                  The Superhuman System. AI-first infrastructure meets Filipino excellence. Scale your business with intelligence that never sleeps.
+                </p>
+                <div className="flex gap-4 pt-2">
+                  <a href="#" className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors group" data-testid="social-linkedin">
+                    <Linkedin className="w-5 h-5 text-muted-foreground group-hover:text-violet-400 transition-colors" />
+                  </a>
+                  <a href="#" className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors group" data-testid="social-facebook">
+                    <Facebook className="w-5 h-5 text-muted-foreground group-hover:text-violet-400 transition-colors" />
+                  </a>
+                  <a href="#" className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors group" data-testid="social-twitter">
+                    <Twitter className="w-5 h-5 text-muted-foreground group-hover:text-violet-400 transition-colors" />
+                  </a>
+                  <a href="#" className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors group" data-testid="social-instagram">
+                    <Instagram className="w-5 h-5 text-muted-foreground group-hover:text-violet-400 transition-colors" />
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation Section */}
+            <div className="space-y-6">
+              <button
+                onClick={() => setExpandedFooterSection(expandedFooterSection === 'nav' ? null : 'nav')}
+                className="w-full flex items-center justify-between lg:cursor-default group"
+                data-testid="footer-nav-toggle"
+              >
+                <h3 className="text-lg sm:text-xl font-semibold bg-gradient-to-r from-white to-violet-300 bg-clip-text text-transparent">
+                  Navigation
+                </h3>
+                <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform lg:hidden ${expandedFooterSection === 'nav' ? 'rotate-180' : ''}`} />
+              </button>
+              
+              <div className={`space-y-3 ${expandedFooterSection === 'nav' || window.innerWidth >= 1024 ? 'block' : 'hidden'} lg:block`}>
+                <Link href="/hire-talent">
+                  <a className="block text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors py-1" data-testid="footer-link-hire">
+                    Hire Talent
+                  </a>
+                </Link>
+                <Link href="/lead-intake">
+                  <a className="block text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors py-1" data-testid="footer-link-managed">
+                    Managed Services
+                  </a>
+                </Link>
+                <button
+                  onClick={() => setShowVanessaChat(true)}
+                  className="block text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors py-1 text-left"
+                  data-testid="footer-link-ai"
+                >
+                  AI Assistant
+                </button>
+                <Link href="/waitlist">
+                  <a className="block text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors py-1" data-testid="footer-link-waitlist">
+                    Join Waitlist
+                  </a>
+                </Link>
+                <Link href="/about">
+                  <a className="block text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors py-1" data-testid="footer-link-about">
+                    About Us
+                  </a>
+                </Link>
+              </div>
+            </div>
+
+            {/* Connect Section */}
+            <div className="space-y-6">
+              <button
+                onClick={() => setExpandedFooterSection(expandedFooterSection === 'connect' ? null : 'connect')}
+                className="w-full flex items-center justify-between lg:cursor-default group"
+                data-testid="footer-connect-toggle"
+              >
+                <h3 className="text-lg sm:text-xl font-semibold bg-gradient-to-r from-white to-violet-300 bg-clip-text text-transparent">
+                  Connect
+                </h3>
+                <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform lg:hidden ${expandedFooterSection === 'connect' ? 'rotate-180' : ''}`} />
+              </button>
+              
+              <div className={`space-y-4 ${expandedFooterSection === 'connect' || window.innerWidth >= 1024 ? 'block' : 'hidden'} lg:block`}>
+                <a href="mailto:hello@onspotglobal.com" className="flex items-center gap-3 text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors group" data-testid="footer-email">
+                  <Mail className="w-5 h-5 flex-shrink-0" />
+                  <span>hello@onspotglobal.com</span>
+                </a>
+                <a href="tel:+1234567890" className="flex items-center gap-3 text-sm sm:text-base text-muted-foreground hover:text-violet-400 transition-colors group" data-testid="footer-phone">
+                  <Phone className="w-5 h-5 flex-shrink-0" />
+                  <span>+1 (234) 567-890</span>
+                </a>
+                <div className="flex items-start gap-3 text-sm sm:text-base text-muted-foreground">
+                  <MapPinIcon className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                  <span>Global HQ<br />Manila, Philippines</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Bar */}
+          <div className="mt-16 pt-8 border-t border-white/10">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+              <p>© 2025 OnSpot Global. All rights reserved.</p>
+              <div className="flex gap-6">
+                <Link href="/privacy">
+                  <a className="hover:text-violet-400 transition-colors" data-testid="footer-privacy">Privacy Policy</a>
+                </Link>
+                <Link href="/terms">
+                  <a className="hover:text-violet-400 transition-colors" data-testid="footer-terms">Terms of Service</a>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
 
       {/* Vanessa AI Assistant Chat */}
       {showVanessaChat ? (
