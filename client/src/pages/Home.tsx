@@ -1299,7 +1299,13 @@ export default function Home() {
               </div>
               
               {/* Social Icons - Single horizontal row, never wrapping */}
-              <div className="flex gap-2 sm:gap-3 justify-center md:justify-start overflow-x-auto scrollbar-hide transition-all duration-300" style={{ flexWrap: 'nowrap' }}>
+              <div 
+                className="flex gap-2 sm:gap-3 justify-center md:justify-start overflow-x-auto scrollbar-hide transition-all duration-300" 
+                style={{ 
+                  flexWrap: 'nowrap',
+                  marginTop: 'clamp(20px, 3vh, 32px)'
+                }}
+              >
                 <a href="#" className="relative w-11 h-11 rounded-full bg-white/[0.03] backdrop-blur-sm border border-slate-300 dark:border-white/10 hover:bg-gradient-to-br hover:from-violet-500/30 hover:to-blue-500/30 hover:border-violet-400/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group" data-testid="social-linkedin">
                   <Linkedin className="w-5 h-5 text-slate-600 dark:text-slate-300 group-hover:text-violet-600 dark:group-hover:text-violet-400 group-hover:scale-110 transition-all duration-300" />
                 </a>
