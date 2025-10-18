@@ -58,8 +58,6 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
-import { LoginDialog } from "@/components/LoginDialog";
-import { SignUpDialog } from "@/components/SignUpDialog";
 import { VanessaChat } from "@/components/VanessaChat";
 
 // Service definitions for mega menu
@@ -738,7 +736,6 @@ export function TopNavigation() {
             </Button>
           </div>
         </div>
-      </nav>
 
       {/* Mobile Menu Panel - slide down with transform/opacity */}
       <div
