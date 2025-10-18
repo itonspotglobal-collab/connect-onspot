@@ -102,9 +102,9 @@ export function ComingSoon({
     window.addEventListener('resize', resizeCanvas);
 
     const centerX = canvas.offsetWidth / 2;
-    const centerY = canvas.offsetHeight * 0.42;
-    const brainWidth = Math.min(canvas.offsetWidth * 0.35, 350);
-    const brainHeight = brainWidth * 0.7;
+    const centerY = canvas.offsetHeight / 2;
+    const brainWidth = canvas.offsetWidth * 0.85;
+    const brainHeight = canvas.offsetHeight * 0.7;
 
     const springEase = (t: number): number => {
       return 1 - Math.pow(1 - t, 3) * Math.cos(t * 4 * Math.PI);
@@ -130,7 +130,7 @@ export function ComingSoon({
           vx: (Math.random() - 0.5) * 0.1,
           vy: (Math.random() - 0.5) * 0.1,
           opacity: 0,
-          targetOpacity: 0.85,
+          targetOpacity: 0.35,
           scale: 0,
           targetScale: 1,
           twinkle: Math.random() * Math.PI * 2
@@ -157,7 +157,7 @@ export function ComingSoon({
               from: i,
               to: index,
               opacity: 0,
-              targetOpacity: 0.4,
+              targetOpacity: 0.15,
               signalPosition: 0,
               hasSignal: false,
               nextSignalTime: Date.now() + Math.random() * 2000 + 1800
@@ -240,7 +240,7 @@ export function ComingSoon({
         });
       } else if (currentElapsed < growDuration + holdDuration + bloomDuration) {
         const bloomProgress = (currentElapsed - growDuration - holdDuration) / bloomDuration;
-        const bloomBoost = bloomProgress * 0.08;
+        const bloomBoost = bloomProgress * 0.05;
 
         nodesRef.current.forEach(node => {
           node.opacity = Math.min(1, node.targetOpacity + bloomBoost);
@@ -273,9 +273,9 @@ export function ComingSoon({
         gradient.addColorStop(1, `rgba(155, 92, 255, ${conn.opacity})`);
 
         ctx.strokeStyle = gradient;
-        ctx.lineWidth = 1.5;
-        ctx.shadowBlur = 8;
-        ctx.shadowColor = 'rgba(91, 124, 255, 0.3)';
+        ctx.lineWidth = 2;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = `rgba(91, 124, 255, ${conn.opacity * 0.4})`;
         ctx.beginPath();
         ctx.moveTo(fromNode.x, fromNode.y);
         ctx.lineTo(toNode.x, toNode.y);
@@ -297,18 +297,18 @@ export function ComingSoon({
       ctx.shadowBlur = 0;
 
       nodesRef.current.forEach(node => {
-        const outerRadius = Math.max(0.1, 4 * node.scale);
-        const innerRadius = Math.max(0.1, 2 * node.scale);
+        const outerRadius = Math.max(0.1, 6 * node.scale);
+        const innerRadius = Math.max(0.1, 3 * node.scale);
         
         ctx.fillStyle = `rgba(91, 124, 255, ${node.opacity})`;
-        ctx.shadowBlur = 10;
+        ctx.shadowBlur = 12;
         ctx.shadowColor = `rgba(139, 92, 246, ${node.opacity * 0.5})`;
         ctx.beginPath();
         ctx.arc(node.x, node.y, outerRadius, 0, Math.PI * 2);
         ctx.fill();
         
         ctx.fillStyle = `rgba(255, 255, 255, ${node.opacity * 0.8})`;
-        ctx.shadowBlur = 6;
+        ctx.shadowBlur = 8;
         ctx.shadowColor = `rgba(255, 255, 255, ${node.opacity * 0.6})`;
         ctx.beginPath();
         ctx.arc(node.x, node.y, innerRadius, 0, Math.PI * 2);
@@ -367,7 +367,7 @@ export function ComingSoon({
       <canvas
         ref={canvasRef}
         className="absolute inset-0 w-full h-full pointer-events-none"
-        style={{ opacity: 0.85 }}
+        style={{ opacity: 1 }}
       />
 
       {/* Content */}
