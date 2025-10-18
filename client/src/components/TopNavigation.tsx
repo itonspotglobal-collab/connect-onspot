@@ -627,18 +627,88 @@ export function TopNavigation() {
                   ref={(el) => { itemRefs.current[index] = el; }}
                 >
                   {hasMegaMenu ? (
-                    <button
-                      className={`py-2 text-sm font-medium transition-all duration-300 rounded-lg hover-elevate flex items-center gap-1 whitespace-nowrap ${
-                        isActive
-                          ? "text-white bg-white/10 border border-white/40"
-                          : "text-white/90"
-                      }`}
-                      style={{ paddingLeft: 'clamp(10px, 1.2vw, 16px)', paddingRight: 'clamp(10px, 1.2vw, 16px)' }}
-                      data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
+                    <div 
+                      onMouseEnter={() => handleMouseEnter(item.title)}
+                      onMouseLeave={handleMouseLeave}
                     >
-                      {item.title}
-                      <ChevronDown className="h-3 w-3" />
-                    </button>
+                      <button
+                        className={`py-2 text-sm font-medium transition-all duration-300 rounded-lg hover-elevate flex items-center gap-1 whitespace-nowrap ${
+                          isActive || activeDropdown === item.title
+                            ? "text-white bg-white/10 border border-white/40"
+                            : "text-white/90"
+                        }`}
+                        style={{ paddingLeft: 'clamp(10px, 1.2vw, 16px)', paddingRight: 'clamp(10px, 1.2vw, 16px)' }}
+                        data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
+                      >
+                        {item.title}
+                        <ChevronDown className="h-3 w-3" />
+                      </button>
+
+                      {/* Desktop Mega Menu Dropdown */}
+                      {activeDropdown === item.title && (
+                        <div
+                          className="absolute left-0 right-0 top-full mt-2 shadow-2xl"
+                          style={{
+                            background: "linear-gradient(135deg, #474ead 0%, #5a5dc7 50%, #6366f1 100%)",
+                            zIndex: 100,
+                          }}
+                          onMouseEnter={handleDropdownMouseEnter}
+                          onMouseLeave={handleDropdownMouseLeave}
+                        >
+                          <div className="mx-auto max-w-7xl px-6 py-8">
+                            <div className="grid grid-cols-3 gap-6">
+                              {/* Services dropdown */}
+                              {item.services && Object.entries(item.services).map(([key, service]) => (
+                                <Link
+                                  key={key}
+                                  href={service.path}
+                                  className="block p-4 rounded-lg hover:bg-white/10 transition-colors group"
+                                  data-testid={`dropdown-link-${key}`}
+                                >
+                                  <h3 className="text-white font-semibold mb-1 flex items-center gap-2">
+                                    {service.title}
+                                    <ArrowRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                  </h3>
+                                  <p className="text-white/70 text-sm">{service.subtitle}</p>
+                                </Link>
+                              ))}
+                              
+                              {/* Work categories dropdown */}
+                              {item.categories && Object.entries(item.categories).map(([key, category]) => (
+                                <Link
+                                  key={key}
+                                  href={category.path}
+                                  className="block p-4 rounded-lg hover:bg-white/10 transition-colors group"
+                                  data-testid={`dropdown-link-${key}`}
+                                >
+                                  <h3 className="text-white font-semibold mb-1 flex items-center gap-2">
+                                    {category.title}
+                                    <ArrowRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                  </h3>
+                                  <p className="text-white/70 text-sm">{category.subtitle}</p>
+                                </Link>
+                              ))}
+                              
+                              {/* Why OnSpot dropdown */}
+                              {item.whyOnSpot && Object.entries(item.whyOnSpot).map(([key, section]) => (
+                                <Link
+                                  key={key}
+                                  href={section.path}
+                                  className="block p-4 rounded-lg hover:bg-white/10 transition-colors group"
+                                  data-testid={`dropdown-link-${key}`}
+                                >
+                                  <h3 className="text-white font-semibold mb-1 flex items-center gap-2">
+                                    {section.title}
+                                    <ArrowRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                  </h3>
+                                  <p className="text-white/70 text-sm">{section.subtitle}</p>
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   ) : (
                     <Link
                       href={item.path}
