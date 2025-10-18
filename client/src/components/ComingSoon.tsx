@@ -80,7 +80,7 @@ export function ComingSoon({
                     <img
                       src={onspotLogo}
                       alt="OnSpot"
-                      className="h-8 sm:h-10 lg:h-12 w-auto mx-auto lg:mx-0 opacity-90 hover:opacity-100 transition-opacity cursor-pointer"
+                      className="h-6 sm:h-7 lg:h-8 w-auto mx-auto lg:mx-0 opacity-40 hover:opacity-60 transition-opacity cursor-pointer"
                       data-testid="logo-onspot"
                     />
                   </Link>
@@ -109,7 +109,7 @@ export function ComingSoon({
                   className={`transition-all duration-1000 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
                   style={{ transitionDelay: '0.2s' }}
                 >
-                  <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight">
+                  <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight pb-2">
                     <span className="block bg-gradient-to-r from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent">
                       The next evolution of{" "}
                     </span>
@@ -166,13 +166,15 @@ export function ComingSoon({
 
               {/* Right Side: Pulsing Brain */}
               <div className="relative flex items-center justify-center lg:justify-end">
-                <div className="relative w-64 h-64 sm:w-80 sm:h-80 lg:w-96 lg:h-96">
+                <div className="relative w-72 h-72 sm:w-96 sm:h-96 lg:w-[420px] lg:h-[420px]">
                   {/* Luminous swirl effect - matching homepage */}
                   <div className="absolute inset-0 bg-gradient-to-tr from-violet-500/30 via-blue-500/30 to-cyan-500/30 rounded-full blur-3xl opacity-80 animate-gentle-float"></div>
                   <div className="absolute inset-0 bg-gradient-to-bl from-blue-500/40 via-violet-500/40 to-purple-500/40 rounded-full blur-2xl opacity-70 animate-slow-spin"></div>
                   
-                  {/* Brain with gentle pulse */}
-                  <div className="absolute inset-0 flex items-center justify-center animate-gentle-pulse">
+                  {/* Brain with stronger pulse */}
+                  <div className="absolute inset-0 flex items-center justify-center" style={{
+                    animation: prefersReducedMotion ? 'none' : 'strongPulse 3s ease-in-out infinite'
+                  }}>
                     <div className="w-full h-full flex items-center justify-center">
                       <BrainGradient />
                     </div>

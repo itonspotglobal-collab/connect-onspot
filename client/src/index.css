@@ -620,6 +620,18 @@
     }
   }
 
+  /* Stronger pulse animation for brain */
+  @keyframes strongPulse {
+    0%, 100% {
+      opacity: 0.85;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.15);
+    }
+  }
+
   .animate-gentle-float {
     animation: gentleFloat 6s ease-in-out infinite;
   }

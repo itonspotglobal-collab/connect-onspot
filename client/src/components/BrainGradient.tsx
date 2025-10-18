@@ -28,40 +28,20 @@ export function BrainGradient() {
       {/* Background glow */}
       <circle cx="400" cy="400" r="350" fill="url(#brainGlow)" opacity="0.5"/>
       
-      {/* Left hemisphere */}
+      {/* Left hemisphere - simplified, no lung-like details */}
       <path
         d="M 250 400 Q 200 300, 250 200 Q 300 150, 350 200 Q 380 250, 360 300 Q 340 350, 320 380 Q 300 400, 250 400 Z"
         fill="url(#brainGradient1)"
         filter="url(#glow)"
         opacity="0.9"
       />
-      <path
-        d="M 280 250 Q 260 220, 290 200 Q 320 190, 330 220 Q 335 250, 310 270 Q 290 280, 280 250 Z"
-        fill="url(#brainGradient1)"
-        opacity="0.7"
-      />
-      <path
-        d="M 240 330 Q 220 310, 240 290 Q 260 280, 270 300 Q 275 320, 255 335 Q 245 340, 240 330 Z"
-        fill="url(#brainGradient1)"
-        opacity="0.6"
-      />
       
-      {/* Right hemisphere */}
+      {/* Right hemisphere - simplified, no lung-like details */}
       <path
         d="M 550 400 Q 600 300, 550 200 Q 500 150, 450 200 Q 420 250, 440 300 Q 460 350, 480 380 Q 500 400, 550 400 Z"
         fill="url(#brainGradient1)"
         filter="url(#glow)"
         opacity="0.9"
-      />
-      <path
-        d="M 520 250 Q 540 220, 510 200 Q 480 190, 470 220 Q 465 250, 490 270 Q 510 280, 520 250 Z"
-        fill="url(#brainGradient1)"
-        opacity="0.7"
-      />
-      <path
-        d="M 560 330 Q 580 310, 560 290 Q 540 280, 530 300 Q 525 320, 545 335 Q 555 340, 560 330 Z"
-        fill="url(#brainGradient1)"
-        opacity="0.6"
       />
       
       {/* Connecting corpus callosum */}
