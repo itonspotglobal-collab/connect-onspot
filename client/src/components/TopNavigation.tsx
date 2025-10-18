@@ -145,7 +145,7 @@ const serviceDetails = {
     ],
     pricing: "From $99/month",
     scale: "Unlimited tasks",
-    path: "/pricing",
+    path: "/ai-assistant",
     popular: false,
   },
 };
