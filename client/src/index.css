@@ -1044,4 +1044,59 @@
   .animate-text-cycle {
     animation: text-cycle 3s ease-in-out;
   }
+
+  @keyframes brain-connection {
+    0% {
+      stroke-dashoffset: 100;
+      opacity: 0;
+    }
+    50% {
+      opacity: 0.6;
+    }
+    100% {
+      stroke-dashoffset: 0;
+      opacity: 0.4;
+    }
+  }
+
+  @keyframes node-activate {
+    0% {
+      opacity: 0;
+      transform: scale(0.3);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(1.2);
+    }
+    100% {
+      opacity: 0.6;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes energy-wave {
+    0% {
+      r: 10%;
+      opacity: 0;
+    }
+    50% {
+      opacity: 0.4;
+    }
+    100% {
+      r: 25%;
+      opacity: 0;
+    }
+  }
+
+  .animate-brain-connection {
+    animation: brain-connection 2s ease-out forwards;
+  }
+
+  .animate-node-activate {
+    animation: node-activate 1.5s ease-out forwards;
+  }
+
+  .animate-energy-wave {
+    animation: energy-wave 4s ease-in-out infinite;
+  }
 }
