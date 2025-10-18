@@ -574,15 +574,16 @@ export function TopNavigation() {
           className="mx-auto flex items-center justify-between relative"
           style={{
             height: 'var(--nav-h)',
-            paddingLeft: 'var(--nav-px)',
-            paddingRight: 'var(--nav-px)',
-            maxWidth: 'min(var(--nav-container-max), 100%)',
+            paddingLeft: 'clamp(16px, 4vw, 24px)',
+            paddingRight: 'clamp(16px, 4vw, 24px)',
+            maxWidth: 'min(1200px, 92vw)',
+            width: '100%',
           }}
         >
-          {/* Logo */}
+          {/* Zone 1: Logo */}
           <Link
             href="/"
-            className="flex items-center relative z-10 hover-elevate transition-all duration-300"
+            className="flex items-center relative z-10 hover-elevate transition-all duration-300 flex-shrink-0"
             data-testid="logo-home"
           >
             <img
@@ -592,14 +593,165 @@ export function TopNavigation() {
             />
           </Link>
 
-          {/* Desktop Navigation Items */}
+          {/* Zone 2: Desktop Navigation Links (centered) */}
           <div 
-            className="hidden md:flex items-center relative z-10 flex-1 justify-end"
+            ref={navLinksRef}
+            className="hidden md:flex items-center relative z-10 flex-1 justify-center"
             style={{ 
-              gap: 'clamp(8px, 1.5vw, 24px)',
-              marginRight: 'clamp(16px, 2vw, 32px)'
+              gap: 'clamp(8px, 1.2vw, 16px)',
+              flexWrap: 'nowrap',
             }}
           >
+            {navigationItems.slice(0, visibleItems).map((item, index) => {
+              const hasMegaMenu = "megaMenu" in item && item.megaMenu;
+              const isActive =
+                location === item.path ||
+                (hasMegaMenu &&
+                  item.services &&
+                  Object.values(item.services).some(
+                    (service) => location === service.path,
+                  )) ||
+                (hasMegaMenu &&
+                  item.categories &&
+                  Object.values(item.categories).some(
+                    (category) => location === category.path,
+                  )) ||
+                (hasMegaMenu &&
+                  item.whyOnSpot &&
+                  Object.values(item.whyOnSpot).some(
+                    (section) => location === section.path,
+                  ));
+              
+              return (
+                <div 
+                  key={item.title}
+                  ref={(el) => { itemRefs.current[index] = el; }}
+                >
+                  {hasMegaMenu ? (
+                    <button
+                      className={`py-2 text-sm font-medium transition-all duration-300 rounded-lg hover-elevate flex items-center gap-1 whitespace-nowrap ${
+                        isActive
+                          ? "text-white bg-white/10 border border-white/40"
+                          : "text-white/90"
+                      }`}
+                      style={{ paddingLeft: 'clamp(10px, 1.2vw, 16px)', paddingRight: 'clamp(10px, 1.2vw, 16px)' }}
+                      data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
+                    >
+                      {item.title}
+                      <ChevronDown className="h-3 w-3" />
+                    </button>
+                  ) : (
+                    <Link
+                      href={item.path}
+                      className={`py-2 text-sm font-medium transition-all duration-300 rounded-lg hover-elevate whitespace-nowrap ${
+                        location === item.path
+                          ? "text-white bg-white/10 border border-white/40"
+                          : "text-white/90"
+                      }`}
+                      style={{ paddingLeft: 'clamp(10px, 1.2vw, 16px)', paddingRight: 'clamp(10px, 1.2vw, 16px)' }}
+                      data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
+                    >
+                      {item.title}
+                    </Link>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* "More ▾" button for tablet Priority+ pattern */}
+            {visibleItems < navigationItems.length && window.innerWidth > 768 && window.innerWidth <= 1024 && (
+              <div className="relative">
+                <button
+                  onClick={() => setMoreMenuOpen(!moreMenuOpen)}
+                  className="py-2 text-sm font-medium transition-all duration-300 rounded-lg hover-elevate flex items-center gap-1 text-white/90"
+                  style={{ paddingLeft: 'clamp(10px, 1.2vw, 16px)', paddingRight: 'clamp(10px, 1.2vw, 16px)' }}
+                  aria-expanded={moreMenuOpen}
+                  data-testid="nav-more-button"
+                >
+                  More
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform duration-200 ${
+                      moreMenuOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {/* More dropdown menu */}
+                {moreMenuOpen && (
+                  <div
+                    className="absolute top-full left-0 mt-2 w-56 rounded-lg border border-white/20 backdrop-blur-md shadow-2xl overflow-hidden"
+                    style={{
+                      background: "linear-gradient(135deg, #474ead 0%, #5a5dc7 50%, #6366f1 100%)",
+                      zIndex: 100,
+                    }}
+                    role="menu"
+                  >
+                    <div className="py-2">
+                      {navigationItems.slice(visibleItems).map((item) => (
+                        <Link
+                          key={item.path}
+                          href={item.path}
+                          className="block px-4 py-2 text-sm font-medium text-white/90 hover:bg-white/10 transition-colors"
+                          role="menuitem"
+                          data-testid={`more-menu-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
+                        >
+                          {item.title}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Zone 3: Access Portal CTA (right) */}
+          <div 
+            className="flex items-center relative z-10 flex-shrink-0"
+            style={{ gap: 'clamp(8px, 1vw, 12px)' }}
+          >
+            {/* Mobile Menu Toggle */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden p-2 text-white hover:bg-white/10 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+              aria-label="Toggle menu"
+              aria-expanded={isMobileMenuOpen}
+              data-testid="mobile-menu-toggle"
+            >
+              {isMobileMenuOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
+            </button>
+
+            {/* Access Portal Button - visible on all screens */}
+            <Button
+              onClick={() => setShowPortal(true)}
+              variant="outline"
+              size="sm"
+              className="border-white/50 text-white hover:bg-white/10 whitespace-nowrap hidden md:flex"
+              data-testid="access-portal-button"
+            >
+              Access Portal
+            </Button>
+          </div>
+        </div>
+      </nav>
+
+      {/* Mobile Menu Panel - slide down with transform/opacity */}
+      <div
+        className={`mobile-menu-panel md:hidden fixed left-0 right-0 bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] backdrop-blur-md border-t border-white/10 shadow-2xl overflow-hidden transition-all duration-300 ease-out ${
+          isMobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+        style={{
+          top: 'var(--nav-h)',
+          transform: isMobileMenuOpen ? 'translateY(0)' : 'translateY(-100%)',
+          zIndex: 40,
+        }}
+      >
+        <div className="max-h-[calc(100vh-var(--nav-h))] overflow-y-auto px-4 py-6">
+          <div className="space-y-2">
             {navigationItems.map((item) => {
               const hasMegaMenu = "megaMenu" in item && item.megaMenu;
               const isActive =
@@ -1189,210 +1341,20 @@ export function TopNavigation() {
               );
             })}
           </div>
-
-          {/* Mobile Menu Button & Authentication Section */}
-          <div 
-            className="flex items-center relative z-10"
-            style={{ gap: 'clamp(8px, 1vw, 12px)' }}
-          >
-            {/* Mobile Menu Toggle */}
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2 text-white hover:bg-white/10 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-              aria-label="Toggle menu"
-              data-testid="mobile-menu-toggle"
-            >
-              {isMobileMenuOpen ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
-            </button>
-            {isLoading ? (
-              // Loading state during authentication check
-              <div
-                className="flex items-center gap-2 px-3 py-2 text-sm text-white/80"
-                data-testid="auth-loading"
-              >
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Loading...</span>
-              </div>
-            ) : isAuthenticated && user ? (
-              // Authenticated user menu
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="flex items-center gap-2 px-3 py-2 text-white hover:bg-white/10 border border-white/30 rounded-lg"
-                    data-testid="user-menu-trigger"
-                  >
-                    <Avatar className="w-8 h-8">
-                      <AvatarImage
-                        src={user.profileImageUrl || undefined}
-                        alt={user.firstName || user.email}
-                      />
-                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                        {user.firstName
-                          ? user.firstName.charAt(0).toUpperCase()
-                          : user.email.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col items-start text-left">
-                      <span className="text-sm font-medium">
-                        {user.firstName ||
-                          user.username ||
-                          user.email.split("@")[0]}
-                      </span>
-                      <span className="text-xs text-white/70 capitalize">
-                        {user.role}
-                      </span>
-                    </div>
-                    <ChevronDown className="w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel className="flex items-center gap-2">
-                    <Avatar className="w-6 h-6">
-                      <AvatarImage
-                        src={user.profileImageUrl || undefined}
-                        alt={user.firstName || user.email}
-                      />
-                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                        {user.firstName
-                          ? user.firstName.charAt(0).toUpperCase()
-                          : user.email.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium">
-                        {user.firstName && user.lastName
-                          ? `${user.firstName} ${user.lastName}`
-                          : user.firstName || user.username || "User"}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {user.email}
-                      </span>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-
-                  {/* Navigation based on user type */}
-                  {user.role === "client" ? (
-                    <>
-                      <DropdownMenuItem asChild>
-                        <Link
-                          href="/dashboard"
-                          className="w-full"
-                          data-testid="menu-dashboard"
-                        >
-                          <BarChart3 className="w-4 h-4 mr-2" />
-                          Dashboard
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link
-                          href="/talent"
-                          className="w-full"
-                          data-testid="menu-find-talent"
-                        >
-                          <Users className="w-4 h-4 mr-2" />
-                          Find Talent
-                        </Link>
-                      </DropdownMenuItem>
-                    </>
-                  ) : (
-                    <>
-                      <DropdownMenuItem asChild>
-                        <Link
-                          href="/hired-talent-portal"
-                          className="w-full"
-                          data-testid="menu-talent-portal"
-                        >
-                          <User className="w-4 h-4 mr-2" />
-                          Talent Portal
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link
-                          href="/find-work"
-                          className="w-full"
-                          data-testid="menu-find-work"
-                        >
-                          <Zap className="w-4 h-4 mr-2" />
-                          Find Work
-                        </Link>
-                      </DropdownMenuItem>
-                    </>
-                  )}
-
-                  <DropdownMenuItem asChild>
-                    <Link
-                      href="/settings"
-                      className="w-full"
-                      data-testid="menu-settings"
-                    >
-                      <Settings className="w-4 h-4 mr-2" />
-                      Settings
-                    </Link>
-                  </DropdownMenuItem>
-
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={async () => {
-                      setIsLoggingOut(true);
-                      try {
-                        await logout();
-                        console.log("✅ User logged out successfully");
-                      } catch (error) {
-                        console.error("❌ Logout failed:", error);
-                      } finally {
-                        setIsLoggingOut(false);
-                      }
-                    }}
-                    className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950"
-                    data-testid="menu-logout"
-                    disabled={isLoggingOut}
-                  >
-                    {isLoggingOut ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Logging out...
-                      </>
-                    ) : (
-                      <>
-                        <LogOut className="w-4 h-4 mr-2" />
-                        Sign Out
-                      </>
-                    )}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              // Not authenticated - show futuristic AI access portal button (desktop only)
-              <button
-                onClick={() => {
-                  setModalStep(1);
-                  setSelectedPortal(null);
-                  setShowPortal(true);
-                }}
-                className="hidden md:flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white font-bold text-sm tracking-wide uppercase transition-all duration-500 hover:scale-105 hover:shadow-[0_0_30px_rgba(58,58,248,0.6)] relative overflow-hidden group whitespace-nowrap"
-                data-testid="button-access-portal"
-              >
-                {/* Animated gradient shimmer overlay */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
-
-                <Sparkles className="w-4 h-4 relative z-10" />
-                <span className="relative z-10">Access Portal</span>
-
-                {/* Glow effect */}
-                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] opacity-0 group-hover:opacity-75 blur-md transition-opacity duration-500"></div>
-              </button>
-            )}
-          </div>
         </div>
-      </nav>
+        <div className="px-4 py-3 border-t border-white/10">
+          <Link
+            href="/hire-talent"
+            className="block w-full py-2 px-4 text-center text-sm font-medium text-white bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+            data-testid="mobile-hire-talent"
+            onClick={() => setIsMobileMenuOpen(false)}
+          >
+            Get Started
+          </Link>
+        </div>
+      </div>
 
-      {/* Mobile Menu Panel - Transform/Opacity based (no display:none) */}
+      {/* Rest of mobile menu content from old implementation */}
       <div 
         className="mobile-menu-panel md:hidden"
         data-state={isMobileMenuOpen ? "open" : "closed"}
