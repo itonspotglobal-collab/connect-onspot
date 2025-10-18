@@ -182,25 +182,20 @@ export function ComingSoon({
                     aspectRatio: '1/1'
                   }}
                 >
-                  {/* Breathing radial glow container with fixed size */}
-                  <div 
-                    className="absolute inset-0"
-                    style={{
-                      animation: prefersReducedMotion ? 'none' : 'breathingPulse 6s ease-in-out infinite'
-                    }}
-                  >
-                    {/* First luminous gradient layer - concentrates when small, radiates when large */}
+                  {/* Fixed container - light flows inside, no shape scaling */}
+                  <div className="absolute inset-0">
+                    {/* First flowing gradient layer - light pulses from center outward */}
                     <div 
-                      className="absolute inset-0 bg-gradient-to-tr from-violet-500/30 via-blue-500/30 to-cyan-500/30 rounded-full blur-3xl"
+                      className="absolute inset-0 bg-gradient-to-tr from-violet-500/30 via-blue-500/30 to-cyan-500/30 rounded-full"
                       style={{
-                        animation: prefersReducedMotion ? 'gentleFloat 6s ease-in-out infinite' : 'gentleFloat 6s ease-in-out infinite, breathingGradient1 6s ease-in-out infinite'
+                        animation: prefersReducedMotion ? 'none' : 'organicFloat 7s ease-in-out infinite, flowingGradient1 6s ease-in-out infinite'
                       }}
                     ></div>
-                    {/* Second luminous gradient layer - synchronized breathing */}
+                    {/* Second flowing gradient layer - synchronized energy flow */}
                     <div 
-                      className="absolute inset-0 bg-gradient-to-bl from-blue-500/40 via-violet-500/40 to-purple-500/40 rounded-full blur-2xl"
+                      className="absolute inset-0 bg-gradient-to-bl from-blue-500/40 via-violet-500/40 to-purple-500/40 rounded-full"
                       style={{
-                        animation: prefersReducedMotion ? 'slowSpin 20s linear infinite' : 'slowSpin 20s linear infinite, breathingGradient2 6s ease-in-out infinite'
+                        animation: prefersReducedMotion ? 'none' : 'organicSpin 20s linear infinite, flowingGradient2 6s ease-in-out infinite'
                       }}
                     ></div>
                   </div>
