@@ -1032,64 +1032,13 @@ export function TopNavigation() {
                     }}
                   ></div>
 
-                  {/* Breathing Brain Network - Behind Title */}
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="relative w-full h-full max-w-[700px] max-h-[700px]">
-                      <NeuralBrain nodeCount={180} opacity={0.6} className="w-full h-full" />
-                    </div>
-                  </div>
-
-                  {/* Multi-layer Neural Pulse System */}
+                  {/* Subtle Center Pulse */}
                   <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none">
-                    <div className="relative w-[800px] h-[800px]">
-                      {/* Outer expanding ring 1 */}
+                    <div className="relative w-[600px] h-[600px]">
                       <div
-                        className="absolute inset-0 rounded-full border-2 border-[#5B7CFF]/20 animate-pulse"
-                        style={{ 
-                          animationDuration: "5s",
-                          boxShadow: '0 0 60px rgba(91, 124, 255, 0.4), inset 0 0 60px rgba(91, 124, 255, 0.2)'
-                        }}
-                      ></div>
-                      {/* Outer expanding ring 2 */}
-                      <div
-                        className="absolute inset-[5%] rounded-full border-2 border-[#7F3DF4]/25 animate-pulse"
-                        style={{ 
-                          animationDuration: "4.5s",
-                          animationDelay: "0.3s",
-                          boxShadow: '0 0 50px rgba(127, 61, 244, 0.3), inset 0 0 50px rgba(127, 61, 244, 0.2)'
-                        }}
-                      ></div>
-                      {/* Middle energy layer */}
-                      <div
-                        className="absolute inset-[15%] rounded-full bg-gradient-to-r from-[#3A3AF8]/30 to-[#7F3DF4]/30 blur-3xl animate-pulse"
+                        className="absolute inset-[20%] rounded-full bg-gradient-to-r from-[#3A3AF8]/20 to-[#7F3DF4]/20 blur-3xl animate-pulse"
                         style={{
-                          animationDuration: "3.5s",
-                          animationDelay: "0.6s",
-                        }}
-                      ></div>
-                      {/* Inner glow layer */}
-                      <div
-                        className="absolute inset-[25%] rounded-full bg-gradient-to-br from-[#5B7CFF]/40 to-[#9B5CFF]/40 blur-2xl animate-pulse"
-                        style={{
-                          animationDuration: "3s",
-                          animationDelay: "0.9s",
-                        }}
-                      ></div>
-                      {/* Core brilliant pulse */}
-                      <div
-                        className="absolute inset-[40%] rounded-full bg-gradient-to-r from-[#3A3AF8]/60 to-[#7F3DF4]/60 blur-xl animate-pulse"
-                        style={{
-                          animationDuration: "2.5s",
-                          animationDelay: "1.2s",
-                          boxShadow: '0 0 80px rgba(91, 124, 255, 0.8), 0 0 120px rgba(127, 61, 244, 0.6)'
-                        }}
-                      ></div>
-                      {/* Central bright core */}
-                      <div
-                        className="absolute inset-[45%] rounded-full bg-white/20 blur-md animate-pulse"
-                        style={{
-                          animationDuration: "2s",
-                          animationDelay: "1.5s",
+                          animationDuration: "4s",
                         }}
                       ></div>
                     </div>
