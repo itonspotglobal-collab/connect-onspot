@@ -90,7 +90,7 @@ export function ComingSoon({
                   className={`transition-all duration-1000 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
                 >
                   <p 
-                    className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wider text-center md:text-left"
+                    className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wider text-center lg:text-left"
                     data-testid="text-coming-soon"
                   >
                     {typedText}
@@ -104,7 +104,7 @@ export function ComingSoon({
 
                 {/* OnSpot Logo - blends with headline */}
                 <div 
-                  className={`transition-all duration-1000 flex justify-center md:justify-start ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                  className={`transition-all duration-1000 flex justify-center lg:justify-start ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
                   style={{ transitionDelay: '0.1s' }}
                 >
                   <Link href="/">
@@ -128,7 +128,7 @@ export function ComingSoon({
                   style={{ transitionDelay: '0.2s', overflow: 'visible' }}
                 >
                   <h2 
-                    className="text-4xl sm:text-5xl lg:text-6xl font-bold"
+                    className="text-4xl sm:text-5xl lg:text-6xl font-bold text-center lg:text-left"
                     style={{
                       lineHeight: '1.08',
                       paddingBottom: '0.08em',
@@ -153,7 +153,7 @@ export function ComingSoon({
                   style={{ transitionDelay: '0.3s' }}
                 >
                   <div className="space-y-4">
-                    <p className="text-lg sm:text-xl lg:text-2xl font-light text-foreground/90 leading-relaxed">
+                    <p className="text-lg sm:text-xl lg:text-2xl font-light text-foreground/90 leading-relaxed text-center lg:text-left">
                       {subtitle}
                     </p>
                   </div>
@@ -161,7 +161,7 @@ export function ComingSoon({
 
                 {/* CTAs */}
                 <div 
-                  className={`flex flex-col md:flex-row justify-center md:justify-start items-center transition-all duration-1000 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                  className={`flex flex-col md:flex-row justify-center lg:justify-start items-center transition-all duration-1000 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
                   style={{ 
                     transitionDelay: '0.4s',
                     gap: 'clamp(12px, 1.5vw, 16px)',
