@@ -297,18 +297,21 @@ export function ComingSoon({
       ctx.shadowBlur = 0;
 
       nodesRef.current.forEach(node => {
+        const outerRadius = Math.max(0.1, 4 * node.scale);
+        const innerRadius = Math.max(0.1, 2 * node.scale);
+        
         ctx.fillStyle = `rgba(91, 124, 255, ${node.opacity})`;
         ctx.shadowBlur = 10;
         ctx.shadowColor = `rgba(139, 92, 246, ${node.opacity * 0.5})`;
         ctx.beginPath();
-        ctx.arc(node.x, node.y, 4 * node.scale, 0, Math.PI * 2);
+        ctx.arc(node.x, node.y, outerRadius, 0, Math.PI * 2);
         ctx.fill();
         
         ctx.fillStyle = `rgba(255, 255, 255, ${node.opacity * 0.8})`;
         ctx.shadowBlur = 6;
         ctx.shadowColor = `rgba(255, 255, 255, ${node.opacity * 0.6})`;
         ctx.beginPath();
-        ctx.arc(node.x, node.y, 2 * node.scale, 0, Math.PI * 2);
+        ctx.arc(node.x, node.y, innerRadius, 0, Math.PI * 2);
         ctx.fill();
       });
 
