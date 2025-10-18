@@ -884,34 +884,25 @@ export function TopNavigation() {
                   className="relative hero-investor flex items-center justify-center min-h-[700px] rounded-2xl overflow-hidden"
                   data-testid="modal-step-awakening"
                 >
-                <div className="p-8">
-                  <div className="mb-6">
-                    <h3 className="text-2xl font-bold text-white mb-2">
-                      Our Services
-                    </h3>
-                    <p className="text-white/80 text-sm">
-                      Choose the perfect solution for your business needs
-                    </p>
-                  </div>
+                  {/* Gradient Overlay */}
+                  <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      background:
+                        "linear-gradient(to bottom, rgba(15,15,60,0.3) 0%, rgba(0,0,0,0.0) 35%, rgba(0,0,0,0.0) 65%, rgba(15,15,60,0.3) 100%)",
+                    }}
+                  ></div>
 
-                  <div className="grid grid-cols-5 gap-4">
-
-                    {/* Services Mega Menu */}
-                    {activeDropdown === item.title && item.services && (
+                  {/* AI Pulse Orb - Animated Background Effect */}
+                  <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none">
+                    <div className="relative w-[600px] h-[600px]">
+                      {/* Outer pulse ring */}
                       <div
-                        className="fixed left-1/2 transform -translate-x-1/2 w-[min(100vw-2rem,1400px)] rounded-lg border border-white/20 backdrop-blur-md shadow-2xl mx-4"
-                        style={{
-                          top: 'calc(var(--nav-h) + 8px)',
-                          background: "linear-gradient(135deg, #474ead 0%, #5a5dc7 50%, #6366f1 100%)",
-                          zIndex: 100,
-                        }}
-                        onMouseEnter={handleDropdownMouseEnter}
-                        onMouseLeave={handleDropdownMouseLeave}
-                      >
-                        <div className="p-8">
-                          <div className="mb-6">
-                            <h3 className="text-2xl font-bold text-white mb-2">
-                              Our Services
+                        className="absolute inset-0 rounded-full bg-gradient-to-r from-[#3A3AF8]/20 to-[#7F3DF4]/20 blur-3xl animate-pulse"
+                        style={{ animationDuration: "4s" }}
+                      ></div>
+                      {/* Inner glow */}
+                      <div
                             </h3>
                             <p className="text-white/80 text-sm">
                               Choose the perfect solution for your business
