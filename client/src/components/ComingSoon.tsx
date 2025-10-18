@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Bot, ArrowRight } from "lucide-react";
 import { VanessaChat } from "@/components/VanessaChat";
 import { BrainGradient } from "@/components/BrainGradient";
+import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
 
 interface ComingSoonProps {
   title?: string;
@@ -57,22 +58,6 @@ export function ComingSoon({
 
   return (
     <div className="w-full relative overflow-hidden" style={{ minHeight: '100svh' }}>
-      {/* OnSpot Logo - Top Center */}
-      <div className="absolute top-8 left-1/2 -translate-x-1/2 z-30">
-        <Link href="/">
-          <h1 
-            className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent opacity-40 hover:opacity-70 transition-opacity cursor-pointer"
-            style={{ 
-              textShadow: '0 0 20px rgba(139, 92, 246, 0.15)',
-              letterSpacing: '-0.02em'
-            }}
-            data-testid="logo-onspot"
-          >
-            OnSpot
-          </h1>
-        </Link>
-      </div>
-
       {/* AI + Human Advantage Style Section */}
       <div className="relative py-24 sm:py-32 lg:py-40 overflow-hidden flex items-center" style={{ minHeight: '100svh' }}>
         {/* Luminous gradient background */}
@@ -87,12 +72,27 @@ export function ComingSoon({
               
               {/* Left Side: Typography */}
               <div className="text-center lg:text-left space-y-6 sm:space-y-8">
-                {/* Coming Soon Label */}
+                {/* OnSpot Logo */}
                 <div 
                   className={`transition-all duration-1000 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
                 >
+                  <Link href="/">
+                    <img
+                      src={onspotLogo}
+                      alt="OnSpot"
+                      className="h-8 sm:h-10 lg:h-12 w-auto mx-auto lg:mx-0 opacity-90 hover:opacity-100 transition-opacity cursor-pointer"
+                      data-testid="logo-onspot"
+                    />
+                  </Link>
+                </div>
+
+                {/* Coming Soon Label */}
+                <div 
+                  className={`transition-all duration-1000 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                  style={{ transitionDelay: '0.1s' }}
+                >
                   <p 
-                    className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wider mb-4"
+                    className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wider"
                     data-testid="text-coming-soon"
                   >
                     {typedText}
@@ -107,11 +107,14 @@ export function ComingSoon({
                 {/* Main Headline */}
                 <div 
                   className={`transition-all duration-1000 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-                  style={{ transitionDelay: '0.1s' }}
+                  style={{ transitionDelay: '0.2s' }}
                 >
                   <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight">
                     <span className="block bg-gradient-to-r from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent">
-                      {title}
+                      The next evolution of{" "}
+                    </span>
+                    <span className="block bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent">
+                      outsourcing.
                     </span>
                   </h2>
                 </div>
@@ -119,7 +122,7 @@ export function ComingSoon({
                 {/* Subtitle */}
                 <div 
                   className={`transition-all duration-1000 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-                  style={{ transitionDelay: '0.2s' }}
+                  style={{ transitionDelay: '0.3s' }}
                 >
                   <div className="space-y-4">
                     <p className="text-lg sm:text-xl lg:text-2xl font-light text-foreground/90 leading-relaxed">
@@ -131,7 +134,7 @@ export function ComingSoon({
                 {/* CTAs */}
                 <div 
                   className={`flex flex-col sm:flex-row items-center lg:items-start gap-3 sm:gap-4 transition-all duration-1000 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-                  style={{ transitionDelay: '0.3s' }}
+                  style={{ transitionDelay: '0.4s' }}
                 >
                   {/* Primary: Launch AI Assistant */}
                   <Button
