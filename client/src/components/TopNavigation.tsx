@@ -381,14 +381,41 @@ export function TopNavigation() {
   const lastScrollY = useRef(0);
   const ticking = useRef(false);
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const navRef = useRef<HTMLElement>(null);
+
+  // Close mobile menu when resizing to desktop
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768 && isMobileMenuOpen) {
+        setIsMobileMenuOpen(false);
+        setActiveDropdown(null);
+      }
+    };
+
+    const resizeObserver = new ResizeObserver(() => {
+      handleResize();
+    });
+
+    if (typeof window !== 'undefined') {
+      resizeObserver.observe(document.body);
+      window.addEventListener('resize', handleResize);
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('resize', handleResize);
+      }
+    };
+  }, [isMobileMenuOpen]);
 
   useEffect(() => {
     const controlNavbar = () => {
       const currentScrollY = Math.max(0, window.scrollY);
       const scrollDelta = Math.abs(currentScrollY - lastScrollY.current);
 
-      // Update scrolled state for nav-over-hero styling
-      setIsScrolled(currentScrollY > 16);
+      // Update scrolled state for nav-over-hero styling (add shadow)
+      setIsScrolled(currentScrollY > 10);
 
       // Only process if scroll delta is significant (prevents flicker)
       if (scrollDelta < 10) {
@@ -402,6 +429,11 @@ export function TopNavigation() {
       } else if (currentScrollY > lastScrollY.current && currentScrollY > 200) {
         // Scrolling down - hide navbar (with minimum scroll threshold)
         setIsVisible(false);
+        // Close mobile menu when scrolling down
+        if (isMobileMenuOpen) {
+          setIsMobileMenuOpen(false);
+          setActiveDropdown(null);
+        }
       } else if (currentScrollY < lastScrollY.current) {
         // Scrolling up - show navbar
         setIsVisible(true);
@@ -420,7 +452,7 @@ export function TopNavigation() {
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [isMobileMenuOpen]);
 
   // Dropdown handlers
   const handleMouseEnter = (title: string) => {
@@ -451,15 +483,24 @@ export function TopNavigation() {
   return (
     <>
       {/* Navigation Spacer - prevents content overlap */}
-      <div className="h-16" aria-hidden="true" />
+      <div style={{ height: 'var(--nav-h)' }} aria-hidden="true" />
 
       <nav
-        className={`nav-over-hero transition-transform duration-300 ease-in-out ${
+        ref={navRef}
+        className={`nav-over-hero fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] ${
           isVisible ? "translate-y-0" : "-translate-y-full"
-        }`}
+        } ${isScrolled ? "nav-scrolled" : ""}`}
         data-scrolled={isScrolled}
       >
-        <div className="container flex h-16 items-center justify-between px-4 relative">
+        <div 
+          className="mx-auto flex items-center justify-between relative"
+          style={{
+            height: 'var(--nav-h)',
+            paddingLeft: 'var(--nav-px)',
+            paddingRight: 'var(--nav-px)',
+            maxWidth: 'min(1536px, 100%)', // xl breakpoint with tablet step-down
+          }}
+        >
           {/* Logo */}
           <Link
             href="/"
@@ -474,7 +515,10 @@ export function TopNavigation() {
           </Link>
 
           {/* Desktop Navigation Items */}
-          <div className="hidden md:flex items-center space-x-2 relative z-10">
+          <div 
+            className="hidden md:flex items-center relative z-10"
+            style={{ gap: 'var(--nav-gap)' }}
+          >
             {navigationItems.map((item) => {
               const hasMegaMenu = "megaMenu" in item && item.megaMenu;
               const isActive =
@@ -1254,15 +1298,28 @@ export function TopNavigation() {
             )}
           </div>
         </div>
+      </nav>
 
-        {/* Mobile Navigation - Collapsible */}
-        <div
-          className={`md:hidden border-t border-white/20 transition-all duration-300 ease-in-out overflow-hidden ${
-            isMobileMenuOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
-          }`}
+      {/* Mobile Menu Panel - Transform/Opacity based (no display:none) */}
+      <div 
+        className="mobile-menu-panel md:hidden"
+        data-state={isMobileMenuOpen ? "open" : "closed"}
+        aria-hidden={!isMobileMenuOpen}
+      >
+        <div 
+          className="mx-auto"
+          style={{
+            paddingLeft: 'var(--nav-px)',
+            paddingRight: 'var(--nav-px)',
+            paddingTop: 'clamp(12px, 2vh, 16px)',
+            paddingBottom: 'clamp(12px, 2vh, 16px)',
+            maxWidth: 'min(1536px, 100%)',
+          }}
         >
-          <div className="container px-4 py-4">
-            <div className="flex flex-col gap-3">
+          <div 
+            className="flex flex-col"
+            style={{ gap: 'clamp(8px, 1.5vh, 12px)' }}
+          >
               {navigationItems.map((item) => {
                 const hasMegaMenu = "megaMenu" in item && item.megaMenu;
                 const isActive =
@@ -1535,10 +1592,9 @@ export function TopNavigation() {
                   </button>
                 </>
               )}
-            </div>
           </div>
         </div>
-      </nav>
+      </div>
 
       {/* Access Portal Modal - All Steps */}
       <Dialog
