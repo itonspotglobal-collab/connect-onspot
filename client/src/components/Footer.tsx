@@ -121,11 +121,11 @@ export function Footer() {
           {/* Compact Navigation Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10">
             {/* Services */}
-            <div className="space-y-3">
+            <div className="space-y-5">
               <h3 className="font-semibold text-white text-base sm:text-lg tracking-wide border-b border-white/20 pb-2">
                 Solutions
               </h3>
-              <ul className="space-y-2.5 sm:space-y-2 text-white/85 text-sm sm:text-base">
+              <ul className="space-y-2.5 sm:space-y-2 text-white/85 text-sm sm:text-base pt-1">
                 <li>
                   <Link
                     href="/hire-talent"
@@ -175,11 +175,11 @@ export function Footer() {
             </div>
 
             {/* Company */}
-            <div className="space-y-3">
+            <div className="space-y-5">
               <h3 className="font-semibold text-white text-base sm:text-lg tracking-wide border-b border-white/20 pb-2">
                 Company
               </h3>
-              <ul className="space-y-2.5 sm:space-y-2 text-white/85 text-sm sm:text-base">
+              <ul className="space-y-2.5 sm:space-y-2 text-white/85 text-sm sm:text-base pt-1">
                 <li>
                   <Link
                     href="/why-onspot"
@@ -247,11 +247,11 @@ export function Footer() {
             </div>
 
             {/* Contact */}
-            <div className="space-y-3">
+            <div className="space-y-5">
               <h3 className="font-semibold text-white text-base sm:text-lg tracking-wide border-b border-white/20 pb-2">
                 Contact Us
               </h3>
-              <ul className="space-y-3 sm:space-y-2.5 text-white/85 text-sm sm:text-base">
+              <ul className="space-y-3 sm:space-y-2.5 text-white/85 text-sm sm:text-base pt-1">
                 <li className="flex items-center space-x-3 hover:text-white transition-colors duration-200">
                   <Mail className="h-4 w-4 text-white/70" />
                   <span>hello@onspot.com</span>
