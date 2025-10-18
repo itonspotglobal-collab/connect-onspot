@@ -1369,7 +1369,7 @@ export default function Home() {
                   Managed Services
                 </Link>
                 <Link
-                  href="/pricing"
+                  href="/ai-assistant"
                   className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
                   data-testid="footer-link-ai"
                 >

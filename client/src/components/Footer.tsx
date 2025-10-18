@@ -155,11 +155,11 @@ export function Footer() {
                 </li>
                 <li>
                   <Link
-                    href="/pricing"
+                    href="/ai-assistant"
                     className="hover:text-white transition-all duration-200 hover:translate-x-1"
-                    data-testid="footer-pricing"
+                    data-testid="footer-ai-assistant"
                   >
-                    Pricing
+                    AI Assistant
                   </Link>
                 </li>
                 <li>
@@ -346,7 +346,7 @@ export function Footer() {
                 asChild
                 data-testid="download-ios"
               >
-                <Link href="/pricing" aria-label="Download on App Store">
+                <Link href="/ai-assistant" aria-label="Download on App Store">
                   <SiApple className="h-5 w-5 sm:h-4 sm:w-4 mr-2" />
                   <div className="text-left">
                     <div className="text-xs opacity-90">Download on the</div>
@@ -362,7 +362,7 @@ export function Footer() {
                 asChild
                 data-testid="download-android"
               >
-                <Link href="/pricing" aria-label="Get it on Google Play">
+                <Link href="/ai-assistant" aria-label="Get it on Google Play">
                   <SiGoogleplay className="h-5 w-5 sm:h-4 sm:w-4 mr-2" />
                   <div className="text-left">
                     <div className="text-xs opacity-90">Get it on</div>

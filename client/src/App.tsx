@@ -49,6 +49,7 @@ function ImmersiveRouter() {
   return (
     <Switch>
       <Route path="/ai-assistant" component={ComingSoon} />
+      <Route path="/waitlist" component={ComingSoon} />
       <Route path="/pricing" component={ComingSoon} />
       <Route path="/enterprise" component={ComingSoon} />
       <Route path="/affiliate-marketing" component={ComingSoon} />
@@ -184,6 +185,7 @@ function AppContent() {
     <Switch>
       {/* Immersive Routes - Full screen without navigation */}
       <Route path="/ai-assistant" component={ImmersiveRouter} />
+      <Route path="/waitlist" component={ImmersiveRouter} />
       <Route path="/pricing" component={ImmersiveRouter} />
       <Route path="/enterprise" component={ImmersiveRouter} />
       <Route path="/affiliate-marketing" component={ImmersiveRouter} />
