@@ -71,27 +71,9 @@ export function ComingSoon({
               
               {/* Left Side: Typography */}
               <div className="text-center lg:text-left space-y-6 sm:space-y-8" style={{ overflow: 'visible' }}>
-                {/* OnSpot Logo */}
-                <div 
-                  className={`transition-all duration-1000 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-                >
-                  <Link href="/">
-                    <img
-                      src={onspotLogo}
-                      alt="OnSpot"
-                      className="h-8 sm:h-9 lg:h-10 w-auto mx-auto lg:mx-0 opacity-75 hover:opacity-95 transition-all duration-300 cursor-pointer"
-                      style={{
-                        filter: 'drop-shadow(0 0 12px rgba(139, 92, 246, 0.15))'
-                      }}
-                      data-testid="logo-onspot"
-                    />
-                  </Link>
-                </div>
-
                 {/* Coming Soon Label */}
                 <div 
                   className={`transition-all duration-1000 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-                  style={{ transitionDelay: '0.1s' }}
                 >
                   <p 
                     className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wider"
@@ -104,6 +86,26 @@ export function ComingSoon({
                       </span>
                     )}
                   </p>
+                </div>
+
+                {/* OnSpot Logo - blends with headline */}
+                <div 
+                  className={`transition-all duration-1000 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                  style={{ transitionDelay: '0.1s' }}
+                >
+                  <Link href="/">
+                    <img
+                      src={onspotLogo}
+                      alt="OnSpot"
+                      className="mx-auto lg:mx-0 opacity-85 hover:opacity-100 transition-all duration-300 cursor-pointer"
+                      style={{
+                        width: 'clamp(120px, 12vw, 200px)',
+                        height: 'auto',
+                        filter: 'drop-shadow(0 0 8px rgba(139, 92, 246, 0.12))'
+                      }}
+                      data-testid="logo-onspot"
+                    />
+                  </Link>
                 </div>
 
                 {/* Main Headline */}
