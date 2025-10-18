@@ -1268,7 +1268,13 @@ export default function Home() {
           {/* Footer Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-12 lg:gap-8 max-w-7xl mx-auto">
             {/* Brand Section - Spans 2 columns */}
-            <div className="lg:col-span-2 space-y-8 pb-8 md:pb-0 border-b md:border-b-0 border-white/10 text-center md:text-left">
+            <div 
+              className="lg:col-span-2 space-y-8 md:pb-0 md:border-b-0 text-center md:text-left"
+              style={{
+                paddingBottom: 'clamp(8px, 1.2vh, 16px)',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.06)'
+              }}
+            >
               <div className="space-y-6 relative flex flex-col items-center md:items-start">
                 <div className="relative inline-block">
                   <img
@@ -1312,10 +1318,19 @@ export default function Home() {
             </div>
 
             {/* Navigation Section */}
-            <div className="space-y-3 md:space-y-6 pb-6 md:pb-0 border-b md:border-b-0 border-white/10 text-center md:text-left">
+            <div 
+              className="md:space-y-6 md:border-b-0 text-center md:text-left"
+              style={{
+                paddingBottom: 'clamp(8px, 1.2vh, 16px)',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.06)'
+              }}
+            >
               <button
                 onClick={() => toggleFooterSection('navigation')}
-                className="flex items-center justify-between w-full md:cursor-default"
+                className="flex items-center justify-between w-full md:cursor-default md:!p-0"
+                style={{
+                  padding: 'clamp(6px, 1vh, 12px) 0'
+                }}
                 data-testid="footer-accordion-navigation"
               >
                 <h3 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-white tracking-wide">
@@ -1330,6 +1345,9 @@ export default function Home() {
                     ? 'opacity-100 max-h-96' 
                     : 'opacity-0 max-h-0 overflow-hidden'
                 }`}
+                style={{
+                  marginTop: expandedFooterSection === 'navigation' ? 'clamp(4px, 0.8vh, 10px)' : '0'
+                }}
               >
                 <Link href="/hire-talent" className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-hire">
                   Hire Talent
@@ -1360,10 +1378,19 @@ export default function Home() {
             </div>
 
             {/* Company Section */}
-            <div className="space-y-3 md:space-y-6 pb-6 md:pb-0 border-b md:border-b-0 border-white/10 text-center md:text-left">
+            <div 
+              className="md:space-y-6 md:border-b-0 text-center md:text-left"
+              style={{
+                paddingBottom: 'clamp(8px, 1.2vh, 16px)',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.06)'
+              }}
+            >
               <button
                 onClick={() => toggleFooterSection('company')}
-                className="flex items-center justify-between w-full md:cursor-default"
+                className="flex items-center justify-between w-full md:cursor-default md:!p-0"
+                style={{
+                  padding: 'clamp(6px, 1vh, 12px) 0'
+                }}
                 data-testid="footer-accordion-company"
               >
                 <h3 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-white tracking-wide">
@@ -1378,6 +1405,9 @@ export default function Home() {
                     ? 'opacity-100 max-h-96' 
                     : 'opacity-0 max-h-0 overflow-hidden'
                 }`}
+                style={{
+                  marginTop: expandedFooterSection === 'company' ? 'clamp(4px, 0.8vh, 10px)' : '0'
+                }}
               >
                 <Link href="/why-onspot" className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-why">
                   Why OnSpot
@@ -1404,10 +1434,19 @@ export default function Home() {
             </div>
 
             {/* Download Section */}
-            <div className="space-y-3 md:space-y-6 pb-6 md:pb-0 border-b md:border-b-0 border-white/10 text-center md:text-left">
+            <div 
+              className="md:space-y-6 md:border-b-0 text-center md:text-left"
+              style={{
+                paddingBottom: 'clamp(8px, 1.2vh, 16px)',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.06)'
+              }}
+            >
               <button
                 onClick={() => toggleFooterSection('download')}
-                className="flex items-center justify-between w-full md:cursor-default"
+                className="flex items-center justify-between w-full md:cursor-default md:!p-0"
+                style={{
+                  padding: 'clamp(6px, 1vh, 12px) 0'
+                }}
                 data-testid="footer-accordion-download"
               >
                 <h3 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-white tracking-wide">
@@ -1422,6 +1461,9 @@ export default function Home() {
                     ? 'opacity-100 max-h-96' 
                     : 'opacity-0 max-h-0 overflow-hidden'
                 }`}
+                style={{
+                  marginTop: expandedFooterSection === 'download' ? 'clamp(4px, 0.8vh, 10px)' : '0'
+                }}
               >
                 <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
                   Take OnSpot with you wherever you go. Manage projects and track progress on the move.
@@ -1444,10 +1486,13 @@ export default function Home() {
             </div>
 
             {/* Connect Section */}
-            <div className="space-y-3 md:space-y-6 text-center md:text-left">
+            <div className="md:space-y-6 text-center md:text-left">
               <button
                 onClick={() => toggleFooterSection('connect')}
-                className="flex items-center justify-between w-full md:cursor-default"
+                className="flex items-center justify-between w-full md:cursor-default md:!p-0"
+                style={{
+                  padding: 'clamp(6px, 1vh, 12px) 0'
+                }}
                 data-testid="footer-accordion-connect"
               >
                 <h3 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-white tracking-wide">
@@ -1462,6 +1507,9 @@ export default function Home() {
                     ? 'opacity-100 max-h-96' 
                     : 'opacity-0 max-h-0 overflow-hidden'
                 }`}
+                style={{
+                  marginTop: expandedFooterSection === 'connect' ? 'clamp(4px, 0.8vh, 10px)' : '0'
+                }}
               >
                 <a href="mailto:hello@onspotglobal.com" className="flex items-center justify-center md:justify-start gap-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-300 group" data-testid="footer-email">
                   <Mail className="w-5 h-5 flex-shrink-0 group-hover:scale-110 transition-transform duration-300" />
