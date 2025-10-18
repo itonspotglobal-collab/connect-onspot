@@ -11,6 +11,12 @@ interface ComingSoonProps {
   showIllustration?: boolean;
 }
 
+const cyclingMessages = [
+  "Preparing your experience…",
+  "Calibrating intelligence…",
+  "Coming soon — your unfair advantage."
+];
+
 export function ComingSoon({ 
   title = "The next evolution of outsourcing.",
   subtitle = "Powered by intelligence and human brilliance.",
@@ -19,6 +25,7 @@ export function ComingSoon({
 }: ComingSoonProps) {
   const [showVanessaChat, setShowVanessaChat] = useState(false);
   const [nodes, setNodes] = useState<Array<{ x: number; y: number; delay: number }>>([]);
+  const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
 
   useEffect(() => {
     const generateNodes = () => {
@@ -34,6 +41,13 @@ export function ComingSoon({
       setNodes(newNodes);
     };
     generateNodes();
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentMessageIndex((prev) => (prev + 1) % cyclingMessages.length);
+    }, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -90,16 +104,16 @@ export function ComingSoon({
         ))}
       </svg>
 
-      {/* Central AI brain glow */}
+      {/* Central AI brain glow - progressively growing */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-        {/* Outer ripple */}
-        <div className="absolute inset-0 w-[600px] h-[600px] -ml-[300px] -mt-[300px] rounded-full bg-gradient-radial from-violet-500/20 to-transparent animate-pulse-glow"></div>
+        {/* Outer ripple - slow grow */}
+        <div className="absolute inset-0 w-[600px] h-[600px] -ml-[300px] -mt-[300px] rounded-full bg-gradient-radial from-violet-500/20 to-transparent animate-brain-activate"></div>
         
-        {/* Middle ripple */}
-        <div className="absolute inset-0 w-[400px] h-[400px] -ml-[200px] -mt-[200px] rounded-full bg-gradient-radial from-blue-500/30 to-transparent animate-pulse-glow" style={{ animationDelay: '0.5s' }}></div>
+        {/* Middle ripple - medium grow */}
+        <div className="absolute inset-0 w-[400px] h-[400px] -ml-[200px] -mt-[200px] rounded-full bg-gradient-radial from-blue-500/30 to-transparent animate-brain-activate" style={{ animationDelay: '1s', animationDuration: '4s' }}></div>
         
-        {/* Core brain */}
-        <div className="absolute inset-0 w-[200px] h-[200px] -ml-[100px] -mt-[100px] rounded-full bg-gradient-radial from-white/40 via-violet-400/30 to-transparent animate-charge-up"></div>
+        {/* Core brain - breathing */}
+        <div className="absolute inset-0 w-[200px] h-[200px] -ml-[100px] -mt-[100px] rounded-full bg-gradient-radial from-white/40 via-violet-400/30 to-transparent animate-brain-pulse"></div>
       </div>
 
       {/* Floating particles */}
@@ -120,14 +134,19 @@ export function ComingSoon({
       {/* Content */}
       <div className="container mx-auto px-6 relative z-10 text-center max-w-5xl">
         <div className="space-y-8 animate-fade-in-up">
-          {/* Headline */}
-          <h1 
-            className="font-bold tracking-tight leading-tight text-white drop-shadow-2xl"
-            style={{ fontSize: 'clamp(2.5rem, 7vw, 5rem)' }}
-            data-testid="text-title"
-          >
-            {title}
-          </h1>
+          {/* Energy shimmer behind headline */}
+          <div className="relative">
+            <div className="absolute inset-0 -top-4 -bottom-4 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-energy-pulse pointer-events-none"></div>
+            
+            {/* Headline */}
+            <h1 
+              className="relative font-bold tracking-tight leading-tight text-white drop-shadow-2xl"
+              style={{ fontSize: 'clamp(2.5rem, 7vw, 5rem)' }}
+              data-testid="text-title"
+            >
+              {title}
+            </h1>
+          </div>
           
           {/* Subtext */}
           <p 
@@ -169,9 +188,9 @@ export function ComingSoon({
             </Button>
           </div>
 
-          {/* Status indicator */}
+          {/* Cycling status messages */}
           <div 
-            className="flex items-center justify-center gap-2 opacity-60"
+            className="flex items-center justify-center gap-2 opacity-70 min-h-[32px]"
             style={{ paddingTop: 'clamp(2rem, 4vw, 3rem)' }}
           >
             <div className="flex gap-1.5">
@@ -179,8 +198,12 @@ export function ComingSoon({
               <div className="w-2 h-2 rounded-full bg-white/60 animate-pulse-dot" style={{ animationDelay: '0.2s' }}></div>
               <div className="w-2 h-2 rounded-full bg-white/60 animate-pulse-dot" style={{ animationDelay: '0.4s' }}></div>
             </div>
-            <p className="text-sm text-white/70 font-light tracking-wide ml-2" data-testid="text-status">
-              Preparing your experience
+            <p 
+              className="text-sm text-white/80 font-light tracking-wide ml-2 animate-text-cycle" 
+              data-testid="text-status"
+              key={currentMessageIndex}
+            >
+              {cyclingMessages[currentMessageIndex]}
             </p>
           </div>
         </div>

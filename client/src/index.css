@@ -969,4 +969,79 @@
   .animate-shimmer-progress {
     animation: shimmer-progress 2s ease-in-out infinite;
   }
+
+  @keyframes brain-activate {
+    0% {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    50% {
+      opacity: 0.6;
+      transform: scale(1.1);
+    }
+    100% {
+      opacity: 0.3;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes brain-pulse {
+    0%, 100% {
+      opacity: 0.4;
+      transform: scale(0.95);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(1.05);
+    }
+  }
+
+  @keyframes energy-pulse {
+    0% {
+      opacity: 0;
+      transform: translateX(-100%);
+    }
+    50% {
+      opacity: 0.4;
+    }
+    100% {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+  }
+
+  @keyframes text-cycle {
+    0% {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    10% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    90% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+  }
+
+  .animate-brain-activate {
+    animation: brain-activate 6s ease-out forwards;
+  }
+
+  .animate-brain-pulse {
+    animation: brain-pulse 3s ease-in-out infinite;
+  }
+
+  .animate-energy-pulse {
+    animation: energy-pulse 4s ease-in-out infinite;
+  }
+
+  .animate-text-cycle {
+    animation: text-cycle 3s ease-in-out;
+  }
 }
