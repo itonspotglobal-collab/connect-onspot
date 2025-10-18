@@ -349,13 +349,13 @@ export function Footer() {
                 asChild
                 data-testid="download-ios"
               >
-                <a href="#" aria-label="Download on App Store">
+                <Link href="/pricing" aria-label="Download on App Store">
                   <SiApple className="h-5 w-5 sm:h-4 sm:w-4 mr-2" />
                   <div className="text-left">
                     <div className="text-xs opacity-90">Download on the</div>
                     <div className="font-semibold text-sm sm:text-xs">App Store</div>
                   </div>
-                </a>
+                </Link>
               </Button>
 
               <Button
@@ -365,13 +365,13 @@ export function Footer() {
                 asChild
                 data-testid="download-android"
               >
-                <a href="#" aria-label="Get it on Google Play">
+                <Link href="/pricing" aria-label="Get it on Google Play">
                   <SiGoogleplay className="h-5 w-5 sm:h-4 sm:w-4 mr-2" />
                   <div className="text-left">
                     <div className="text-xs opacity-90">Get it on</div>
                     <div className="font-semibold text-sm sm:text-xs">Google Play</div>
                   </div>
-                </a>
+                </Link>
               </Button>
             </div>
           </div>
