@@ -1417,16 +1417,6 @@ export function TopNavigation() {
                       ></div>
                     </div>
                   </div>
-                      {/* Core light */}
-                      <div
-                        className="absolute inset-[40%] rounded-full bg-gradient-to-r from-[#3A3AF8]/40 to-[#7F3DF4]/40 blur-xl animate-pulse"
-                        style={{
-                          animationDuration: "2s",
-                          animationDelay: "1s",
-                        }}
-                      ></div>
-                    </div>
-                  </div>
 
                   {/* Content Container */}
                   <div className="relative z-10 flex flex-col items-center text-center space-y-10 px-8 py-12 max-w-3xl">
