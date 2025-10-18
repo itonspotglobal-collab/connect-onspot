@@ -1,30 +1,15 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Bot, ArrowRight } from "lucide-react";
 import { VanessaChat } from "@/components/VanessaChat";
+import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
 
 interface ComingSoonProps {
   title?: string;
   subtitle?: string;
   message?: string;
   showIllustration?: boolean;
-}
-
-interface Node {
-  x: number;
-  y: number;
-  opacity: number;
-  twinkle: number;
-}
-
-interface Connection {
-  from: number;
-  to: number;
-  opacity: number;
-  signalPosition: number;
-  hasSignal: boolean;
-  nextSignalTime: number;
 }
 
 export function ComingSoon({ 
@@ -38,18 +23,12 @@ export function ComingSoon({
   const [showDots, setShowDots] = useState(0);
   const [showTitle, setShowTitle] = useState(false);
   const [showSubtitle, setShowSubtitle] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const animationRef = useRef<number>();
-  const nodesRef = useRef<Node[]>([]);
-  const connectionsRef = useRef<Connection[]>([]);
-  const breathPhaseRef = useRef<number>(0);
-  const prefersReducedMotion = useRef(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const comingSoonText = "COMING SOON";
   
   useEffect(() => {
-    if (prefersReducedMotion.current) {
+    if (prefersReducedMotion) {
       setTypedText(comingSoonText);
       setShowTitle(true);
       setShowSubtitle(true);
@@ -79,251 +58,6 @@ export function ComingSoon({
     };
   }, []);
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const container = containerRef.current;
-    if (!canvas || !container) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const resizeCanvas = () => {
-      const dpr = window.devicePixelRatio || 1;
-      const containerWidth = container.offsetWidth;
-      const containerHeight = container.offsetHeight;
-      
-      canvas.width = containerWidth * dpr;
-      canvas.height = containerHeight * dpr;
-      ctx.scale(dpr, dpr);
-      
-      if (nodesRef.current.length > 0) {
-        initializeNetwork();
-      }
-    };
-
-    const isMobile = window.innerWidth < 768;
-    const nodeCount = isMobile 
-      ? Math.floor(220 + Math.random() * 100)
-      : Math.floor(360 + Math.random() * 160);
-
-    const initializeNetwork = () => {
-      const containerWidth = container.offsetWidth;
-      const containerHeight = container.offsetHeight;
-      const centerX = containerWidth / 2;
-      const centerY = containerHeight / 2;
-      const brainWidth = containerWidth * 0.7;
-      const brainHeight = containerHeight * 0.65;
-
-      const nodes: Node[] = [];
-      for (let i = 0; i < nodeCount; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const radiusX = (Math.random() * 0.5 + 0.5) * brainWidth / 2;
-        const radiusY = (Math.random() * 0.5 + 0.5) * brainHeight / 2;
-        
-        const lobe = i % 2;
-        const lobeOffsetX = lobe === 0 ? -brainWidth * 0.12 : brainWidth * 0.12;
-        
-        nodes.push({
-          x: centerX + lobeOffsetX + Math.cos(angle) * radiusX,
-          y: centerY + Math.sin(angle) * radiusY,
-          opacity: 1,
-          twinkle: Math.random() * Math.PI * 2
-        });
-      }
-
-      const connections: Connection[] = [];
-      const linksPerNode = 3 + Math.floor(Math.random() * 3);
-      
-      nodes.forEach((node, i) => {
-        const distances = nodes
-          .map((other, j) => ({ 
-            index: j, 
-            dist: Math.hypot(other.x - node.x, other.y - node.y) 
-          }))
-          .filter(d => d.index !== i)
-          .sort((a, b) => a.dist - b.dist)
-          .slice(0, linksPerNode);
-
-        distances.forEach(({ index }) => {
-          if (!connections.some(c => 
-            (c.from === i && c.to === index) || 
-            (c.from === index && c.to === i)
-          )) {
-            connections.push({
-              from: i,
-              to: index,
-              opacity: 1,
-              signalPosition: 0,
-              hasSignal: false,
-              nextSignalTime: Date.now() + Math.random() * 600 + 1800
-            });
-          }
-        });
-      });
-
-      nodesRef.current = nodes;
-      connectionsRef.current = connections;
-    };
-
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-
-    const drawNetwork = (timestamp: number) => {
-      if (!ctx || !canvas) return;
-
-      const containerWidth = container.offsetWidth;
-      const containerHeight = container.offsetHeight;
-      
-      ctx.clearRect(0, 0, containerWidth, containerHeight);
-
-      if (!prefersReducedMotion.current) {
-        breathPhaseRef.current += 0.01;
-        const sineWave = Math.sin(breathPhaseRef.current);
-        const currentScale = 0.96 + (sineWave * 0.04);
-        const normalizedScale = (currentScale - 0.96) / 0.08;
-        const globalOpacity = 0.9 - (normalizedScale * 0.35);
-
-        ctx.save();
-        ctx.translate(containerWidth / 2, containerHeight / 2);
-        ctx.scale(currentScale, currentScale);
-        ctx.translate(-containerWidth / 2, -containerHeight / 2);
-
-        const lineWidth = 1 + Math.random() * 0.6;
-        const nodeSize = 2 + Math.random() * 1.5;
-
-        connectionsRef.current.forEach(conn => {
-          const fromNode = nodesRef.current[conn.from];
-          const toNode = nodesRef.current[conn.to];
-          if (!fromNode || !toNode) return;
-
-          const gradient = ctx.createLinearGradient(
-            fromNode.x, fromNode.y, 
-            toNode.x, toNode.y
-          );
-          gradient.addColorStop(0, `rgba(91, 124, 255, ${conn.opacity * globalOpacity})`);
-          gradient.addColorStop(0.5, `rgba(123, 104, 238, ${conn.opacity * globalOpacity})`);
-          gradient.addColorStop(1, `rgba(155, 92, 255, ${conn.opacity * globalOpacity})`);
-
-          ctx.strokeStyle = gradient;
-          ctx.lineWidth = lineWidth;
-          ctx.shadowBlur = 8;
-          ctx.shadowColor = `rgba(91, 124, 255, ${globalOpacity * 0.3})`;
-          ctx.beginPath();
-          ctx.moveTo(fromNode.x, fromNode.y);
-          ctx.lineTo(toNode.x, toNode.y);
-          ctx.stroke();
-
-          if (!conn.hasSignal && timestamp > conn.nextSignalTime) {
-            conn.hasSignal = true;
-            conn.signalPosition = 0;
-          }
-
-          if (conn.hasSignal) {
-            conn.signalPosition += 0.018;
-            if (conn.signalPosition > 1) {
-              conn.hasSignal = false;
-              conn.signalPosition = 0;
-              conn.nextSignalTime = timestamp + Math.random() * 600 + 1800;
-            } else {
-              const signalX = fromNode.x + (toNode.x - fromNode.x) * conn.signalPosition;
-              const signalY = fromNode.y + (toNode.y - fromNode.y) * conn.signalPosition;
-              
-              ctx.shadowBlur = 10;
-              ctx.shadowColor = 'rgba(255, 255, 255, 0.9)';
-              ctx.fillStyle = `rgba(255, 255, 255, ${globalOpacity * 0.95})`;
-              ctx.beginPath();
-              ctx.arc(signalX, signalY, 2.5, 0, Math.PI * 2);
-              ctx.fill();
-            }
-          }
-        });
-
-        ctx.shadowBlur = 0;
-
-        nodesRef.current.forEach(node => {
-          node.twinkle += 0.03;
-          const twinkleBoost = Math.sin(node.twinkle) * 0.1;
-          const shouldTwinkle = Math.random() > 0.98;
-          const twinkleEffect = shouldTwinkle ? twinkleBoost : 0;
-
-          const nodeOpacity = (node.opacity + twinkleEffect) * globalOpacity;
-          
-          ctx.fillStyle = `rgba(91, 124, 255, ${nodeOpacity})`;
-          ctx.shadowBlur = 10;
-          ctx.shadowColor = `rgba(139, 92, 246, ${nodeOpacity * 0.5})`;
-          ctx.beginPath();
-          ctx.arc(node.x, node.y, nodeSize, 0, Math.PI * 2);
-          ctx.fill();
-          
-          ctx.fillStyle = `rgba(255, 255, 255, ${nodeOpacity * 0.85})`;
-          ctx.shadowBlur = 6;
-          ctx.shadowColor = `rgba(255, 255, 255, ${nodeOpacity * 0.6})`;
-          ctx.beginPath();
-          ctx.arc(node.x, node.y, nodeSize * 0.5, 0, Math.PI * 2);
-          ctx.fill();
-        });
-
-        ctx.restore();
-      } else {
-        const lineWidth = 1.2;
-        const nodeSize = 2.5;
-        const staticOpacity = 0.7;
-
-        connectionsRef.current.forEach(conn => {
-          const fromNode = nodesRef.current[conn.from];
-          const toNode = nodesRef.current[conn.to];
-          if (!fromNode || !toNode) return;
-
-          const gradient = ctx.createLinearGradient(
-            fromNode.x, fromNode.y, 
-            toNode.x, toNode.y
-          );
-          gradient.addColorStop(0, `rgba(91, 124, 255, ${staticOpacity})`);
-          gradient.addColorStop(0.5, `rgba(123, 104, 238, ${staticOpacity})`);
-          gradient.addColorStop(1, `rgba(155, 92, 255, ${staticOpacity})`);
-
-          ctx.strokeStyle = gradient;
-          ctx.lineWidth = lineWidth;
-          ctx.beginPath();
-          ctx.moveTo(fromNode.x, fromNode.y);
-          ctx.lineTo(toNode.x, toNode.y);
-          ctx.stroke();
-        });
-
-        nodesRef.current.forEach(node => {
-          ctx.fillStyle = `rgba(91, 124, 255, ${staticOpacity})`;
-          ctx.beginPath();
-          ctx.arc(node.x, node.y, nodeSize, 0, Math.PI * 2);
-          ctx.fill();
-          
-          ctx.fillStyle = `rgba(255, 255, 255, ${staticOpacity * 0.85})`;
-          ctx.beginPath();
-          ctx.arc(node.x, node.y, nodeSize * 0.5, 0, Math.PI * 2);
-          ctx.fill();
-        });
-      }
-
-      if (!prefersReducedMotion.current) {
-        animationRef.current = requestAnimationFrame(drawNetwork);
-      }
-    };
-
-    initializeNetwork();
-    
-    if (prefersReducedMotion.current) {
-      drawNetwork(0);
-    } else {
-      animationRef.current = requestAnimationFrame(drawNetwork);
-    }
-
-    return () => {
-      window.removeEventListener('resize', resizeCanvas);
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, []);
-
   return (
     <div 
       className="w-full flex flex-col items-center justify-center relative overflow-hidden"
@@ -332,63 +66,58 @@ export function ComingSoon({
         background: 'radial-gradient(ellipse at center, #ffffff 0%, #fdfbff 40%, #f8f6fe 100%)'
       }}
     >
-      {/* OnSpot Logo - faintly glowing at top center */}
-      <div className="absolute top-8 left-1/2 -translate-x-1/2 z-20">
-        <Link href="/">
-          <h1 
-            className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent opacity-40 hover:opacity-60 transition-opacity cursor-pointer"
-            style={{ 
-              textShadow: '0 0 20px rgba(139, 92, 246, 0.15)',
-              letterSpacing: '-0.02em'
-            }}
-            data-testid="logo-onspot"
-          >
-            OnSpot
-          </h1>
-        </Link>
+      {/* Ambient glow orbs for depth */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/3 w-[500px] h-[500px] bg-gradient-radial from-violet-500/10 to-transparent rounded-full blur-3xl animate-gentle-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/3 w-[500px] h-[500px] bg-gradient-radial from-blue-500/10 to-transparent rounded-full blur-3xl animate-gentle-pulse" style={{ animationDelay: '1.5s' }}></div>
       </div>
 
-      {/* Fixed Neural Brain Container - centered, size clamp, animates internally */}
-      <div 
-        ref={containerRef}
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-        style={{
-          width: 'clamp(520px, 52vw, 980px)',
-          height: 'clamp(520px, 52vw, 980px)',
-          maxWidth: '95vw',
-          maxHeight: '95vh'
-        }}
-      >
-        <canvas
-          ref={canvasRef}
-          className="w-full h-full"
-        />
-      </div>
-
-      {/* Content - perfectly centered grid */}
+      {/* Content Container - perfectly centered */}
       <div className="container mx-auto px-6 relative z-10 flex items-center justify-center" style={{ minHeight: '100svh' }}>
         <div 
-          className="text-center flex flex-col items-center"
+          className="text-center flex flex-col items-center w-full max-w-5xl"
           style={{
-            gap: 'clamp(12px, 2.5vh, 28px)',
-            maxWidth: '68ch'
+            gap: 'clamp(16px, 3vh, 40px)'
           }}
         >
+          {/* Pulsing OnSpot Logo - Main Focus */}
+          <div className="relative mb-8">
+            <div className="relative group">
+              {/* Pulsing gradient glow effect - similar to homepage */}
+              <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-blue-600 rounded-full blur-3xl opacity-40 group-hover:opacity-60 transition-opacity duration-500 animate-gentle-pulse"></div>
+              
+              {/* OnSpot Logo Container */}
+              <div 
+                className="relative bg-white/80 backdrop-blur-sm rounded-3xl p-8 sm:p-10 lg:p-12 border border-white/40 shadow-xl"
+                style={{
+                  width: 'clamp(280px, 40vw, 420px)',
+                  height: 'auto'
+                }}
+              >
+                <img
+                  src={onspotLogo}
+                  alt="OnSpot"
+                  className="w-full h-auto"
+                  data-testid="logo-onspot"
+                />
+              </div>
+
+              {/* Secondary outer glow ring */}
+              <div className="absolute inset-0 bg-gradient-to-r from-violet-400/20 to-blue-400/20 rounded-full blur-2xl opacity-60 animate-gentle-pulse scale-110" style={{ animationDelay: '1s' }}></div>
+            </div>
+          </div>
+
           {/* Coming soon tag - always visible */}
           <div 
-            className="inline-flex items-center justify-center px-4 py-2 rounded-lg"
-            style={{
-              backdropFilter: 'blur(4px)',
-              backgroundColor: 'rgba(255, 255, 255, 0.4)',
-              textShadow: '0 1px 2px rgba(255, 255, 255, 0.8)'
-            }}
+            className="inline-flex items-center justify-center px-5 py-2.5 rounded-full border border-violet-200/60 bg-white/70 backdrop-blur-sm shadow-sm"
+            data-testid="badge-coming-soon"
           >
             <p 
-              className="text-slate-600 font-light tracking-[0.3em] uppercase text-xs sm:text-sm"
+              className="font-medium tracking-[0.3em] uppercase text-sm bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent"
               data-testid="text-coming-soon"
             >
               {typedText}
-              {!prefersReducedMotion.current && typedText === comingSoonText && (
+              {!prefersReducedMotion && typedText === comingSoonText && (
                 <span className="inline-block ml-1">
                   {'.'.repeat(showDots)}
                 </span>
@@ -396,17 +125,16 @@ export function ComingSoon({
             </p>
           </div>
 
-          {/* Main Headline */}
+          {/* Main Headline - Large, Bold, Exciting */}
           <div 
             className={`transition-all duration-1000 ${showTitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
           >
             <h1 
-              className="font-bold tracking-tight leading-tight bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 bg-clip-text text-transparent"
+              className="font-bold tracking-tight leading-[1.1] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 bg-clip-text text-transparent"
               style={{ 
                 fontSize: 'clamp(34px, 7vw, 84px)',
-                backdropFilter: 'blur(5px)',
-                textShadow: '0 0 1px rgba(255, 255, 255, 0.9), 0 2px 8px rgba(255, 255, 255, 0.6)',
-                WebkitTextStroke: '0.5px rgba(255, 255, 255, 0.3)'
+                maxWidth: '68ch',
+                textWrap: 'balance'
               }}
               data-testid="text-title"
             >
@@ -414,7 +142,7 @@ export function ComingSoon({
             </h1>
           </div>
           
-          {/* Subtext */}
+          {/* Subtext - Clean, Readable */}
           <div 
             className={`transition-all duration-1000 ${showSubtitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
           >
@@ -422,8 +150,8 @@ export function ComingSoon({
               className="font-medium text-slate-600 leading-relaxed"
               style={{ 
                 fontSize: 'clamp(16px, 2.2vw, 22px)',
-                backdropFilter: 'blur(6px)',
-                textShadow: '0 0 1px rgba(255, 255, 255, 0.95), 0 1px 4px rgba(255, 255, 255, 0.7)'
+                maxWidth: '68ch',
+                textWrap: 'balance'
               }}
               data-testid="text-subtitle"
             >
@@ -431,7 +159,7 @@ export function ComingSoon({
             </p>
           </div>
 
-          {/* CTA Buttons */}
+          {/* CTA Buttons - Gradient Primary + Glass Secondary */}
           <div 
             className={`flex flex-col sm:flex-row items-center justify-center transition-all duration-1000 ${showSubtitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
             style={{ 
@@ -444,7 +172,7 @@ export function ComingSoon({
             <Button
               size="lg"
               onClick={() => setShowVanessaChat(true)}
-              className="group relative overflow-hidden min-h-[56px] px-8 text-base sm:text-lg w-full sm:w-auto bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 rounded-2xl"
+              className="group relative overflow-hidden min-h-[56px] px-8 text-base sm:text-lg w-full sm:w-auto bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 rounded-2xl hover:shadow-[0_0_30px_rgba(139,92,246,0.4)]"
               data-testid="button-launch-ai"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
@@ -465,6 +193,16 @@ export function ComingSoon({
                 <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
               </Link>
             </Button>
+          </div>
+
+          {/* Small tagline at bottom */}
+          <div 
+            className={`transition-all duration-1000 mt-8 ${showSubtitle ? 'opacity-100' : 'opacity-0'}`}
+            style={{ transitionDelay: '0.6s' }}
+          >
+            <p className="text-sm text-slate-500 font-light italic">
+              Where AI meets human brilliance
+            </p>
           </div>
         </div>
       </div>
