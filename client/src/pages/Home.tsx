@@ -243,43 +243,43 @@ const transformationStories = [
 
 const talentProfiles = [
   {
-    name: "Frederick Chen",
-    skill: "Customer Success",
-    photo: FrederickPhoto,
-  },
-  {
-    name: "Amira Patel",
-    skill: "Data Analytics",
-    photo: AmiraPhoto,
-  },
-  {
-    name: "Julie Martinez",
-    skill: "Executive Assistant",
-    photo: JuliePhoto,
-  },
-  {
-    name: "Paige Williams",
-    skill: "Lead Generation",
+    name: "Rachel Thompson",
+    role: "Social Media Manager",
     photo: PaigePhoto,
   },
   {
-    name: "Marcus Rodriguez",
-    skill: "Full-Stack Developer",
+    name: "Ethan Cruz",
+    role: "AI Operations Specialist",
     photo: FrederickPhoto,
   },
   {
-    name: "Sophia Ahmed",
-    skill: "UX Designer",
+    name: "Sophie Pendon",
+    role: "Virtual Assistant",
     photo: AmiraPhoto,
   },
   {
-    name: "Elena Gonzalez",
-    skill: "Project Manager",
+    name: "Marcus Rivera",
+    role: "Automation Engineer",
+    photo: FrederickPhoto,
+  },
+  {
+    name: "Aisha Patel",
+    role: "Talent Acquisition Lead",
     photo: JuliePhoto,
   },
   {
-    name: "Rachel Thompson",
-    skill: "Social Media Manager",
+    name: "Liam Bennett",
+    role: "Performance Analyst",
+    photo: FrederickPhoto,
+  },
+  {
+    name: "Clara Gomez",
+    role: "Customer Support Representative",
+    photo: AmiraPhoto,
+  },
+  {
+    name: "Noah Tan",
+    role: "Technical Support Representative",
     photo: PaigePhoto,
   },
 ];
@@ -1155,40 +1155,40 @@ export default function Home() {
               The Proof
             </h2>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto">
-              Powered by professionals from the Philippines and beyond.
+              Powered by professionals from US, Philippines, and beyond.
             </p>
             <p className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent">
               The Superhuman BPO Network.
             </p>
           </div>
 
-          {/* Talent Profiles Grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 max-w-5xl mx-auto">
+          {/* Talent Profiles Grid - 2x4 responsive grid */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 max-w-6xl mx-auto">
             {talentProfiles.map((profile, index) => (
               <div
                 key={index}
-                className="group relative"
+                className="group relative cursor-pointer"
                 data-testid={`talent-profile-${index}`}
               >
-                {/* Profile Image - blurred initially */}
-                <div className="relative aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-violet-500/10 to-blue-500/10">
+                {/* Profile Image Card - blurred inactive, sharp on hover */}
+                <div className="relative aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-violet-500/10 to-blue-500/10 transition-transform duration-500 group-hover:scale-105">
                   <img
                     src={profile.photo}
                     alt={profile.name}
-                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 blur-sm group-hover:blur-none opacity-60 group-hover:opacity-100 transition-all duration-500"
+                    className="w-full h-full object-cover blur-sm group-hover:blur-none opacity-60 group-hover:opacity-100 transition-all duration-500"
                   />
                   
-                  {/* Overlay - reveals on hover */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end p-4">
-                    <div className="text-white">
-                      <p className="font-semibold text-sm">{profile.name}</p>
-                      <p className="text-xs text-white/80">{profile.skill}</p>
+                  {/* Semi-transparent gradient overlay with name/title - reveals on hover */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end p-4">
+                    <div className="text-white transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
+                      <p className="font-semibold text-sm sm:text-base leading-tight">{profile.name}</p>
+                      <p className="text-xs sm:text-sm text-white/90 mt-1">{profile.role}</p>
                     </div>
                   </div>
 
-                  {/* Glow effect */}
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                    <div className="absolute inset-0 bg-gradient-to-r from-violet-500/20 to-blue-500/20 blur-xl"></div>
+                  {/* Soft glow effect on hover */}
+                  <div className="absolute -inset-1 opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10">
+                    <div className="absolute inset-0 bg-gradient-to-r from-violet-500/30 to-blue-500/30 blur-xl rounded-2xl"></div>
                   </div>
                 </div>
               </div>
