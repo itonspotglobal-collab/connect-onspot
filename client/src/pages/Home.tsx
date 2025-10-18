@@ -1265,22 +1265,24 @@ export default function Home() {
         </div>
 
         <div className="container mx-auto px-4 sm:px-6 py-16 sm:py-20 lg:py-24">
-          {/* Footer Grid */}
+          {/* Footer Grid - Fluid responsive layout */}
           <div 
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 md:gap-x-12 md:gap-y-12 lg:gap-8 max-w-7xl mx-auto"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 max-w-7xl mx-auto transition-all duration-500 ease-in-out"
             style={{
-              rowGap: 'clamp(4px, 0.6vh, 8px)'
+              rowGap: 'clamp(4px, 0.6vh, 8px)',
+              columnGap: 'clamp(24px, 3vw, 48px)'
             }}
           >
-            {/* Brand Section - Spans 2 columns */}
+            {/* Brand Section - Spans 2 columns on tablet/desktop */}
             <div 
-              className="lg:col-span-2 space-y-8 md:pb-0 md:border-b-0 text-center md:text-left"
+              className="md:col-span-2 lg:col-span-2 md:pb-0 md:border-b-0"
               style={{
                 paddingBottom: 'clamp(16px, 2.5vh, 24px)',
-                borderBottom: '1px solid rgba(255, 255, 255, 0.06)'
+                borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+                transition: 'all 0.3s ease-in-out'
               }}
             >
-              <div className="space-y-6 relative flex flex-col items-center md:items-start">
+              <div className="space-y-6 sm:space-y-8 relative flex flex-col items-center md:items-start transition-all duration-300">
                 <div className="relative inline-block">
                   <img
                     src={onspotLogo}
@@ -1291,13 +1293,13 @@ export default function Home() {
                   <div className="absolute -inset-2 bg-gradient-to-r from-violet-500/20 to-blue-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
                 </div>
                 
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-md">
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-md text-center md:text-left transition-all duration-300">
                   The growth engine of the modern era. Built by entrepreneurs, for entrepreneurs—our Superhuman System fuses AI-first infrastructure with human excellence to scale businesses and empower people to perform beyond limits.
                 </p>
               </div>
               
-              {/* Social Icons - Floating outside */}
-              <div className="flex gap-3 justify-center md:justify-start flex-wrap">
+              {/* Social Icons - Single horizontal row, never wrapping */}
+              <div className="flex gap-2 sm:gap-3 justify-center md:justify-start overflow-x-auto scrollbar-hide transition-all duration-300" style={{ flexWrap: 'nowrap' }}>
                 <a href="#" className="relative w-11 h-11 rounded-full bg-white/[0.03] backdrop-blur-sm border border-slate-300 dark:border-white/10 hover:bg-gradient-to-br hover:from-violet-500/30 hover:to-blue-500/30 hover:border-violet-400/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group" data-testid="social-linkedin">
                   <Linkedin className="w-5 h-5 text-slate-600 dark:text-slate-300 group-hover:text-violet-600 dark:group-hover:text-violet-400 group-hover:scale-110 transition-all duration-300" />
                 </a>
@@ -1324,7 +1326,7 @@ export default function Home() {
 
             {/* Navigation Section */}
             <div 
-              className="md:space-y-6 md:border-b-0 text-center md:text-left"
+              className="md:space-y-6 md:border-b-0 transition-all duration-300"
               style={{
                 paddingBottom: 'clamp(4px, 0.6vh, 8px)',
                 borderBottom: '1px solid rgba(255, 255, 255, 0.06)'
@@ -1332,13 +1334,13 @@ export default function Home() {
             >
               <button
                 onClick={() => toggleFooterSection('navigation')}
-                className="flex items-center justify-between w-full md:cursor-default md:!p-0"
+                className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left"
                 style={{
                   padding: 'clamp(4px, 0.6vh, 8px) 0'
                 }}
                 data-testid="footer-accordion-navigation"
               >
-                <h3 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-white tracking-wide">
+                <h3 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-white tracking-wide text-left">
                   Navigation
                 </h3>
                 <ChevronDown className={`w-5 h-5 text-slate-600 dark:text-slate-400 transition-transform duration-300 md:hidden ${expandedFooterSection === 'navigation' ? 'rotate-180' : ''}`} />
@@ -1384,7 +1386,7 @@ export default function Home() {
 
             {/* Company Section */}
             <div 
-              className="md:space-y-6 md:border-b-0 text-center md:text-left"
+              className="md:space-y-6 md:border-b-0 transition-all duration-300"
               style={{
                 paddingBottom: 'clamp(4px, 0.6vh, 8px)',
                 borderBottom: '1px solid rgba(255, 255, 255, 0.06)'
@@ -1392,13 +1394,13 @@ export default function Home() {
             >
               <button
                 onClick={() => toggleFooterSection('company')}
-                className="flex items-center justify-between w-full md:cursor-default md:!p-0"
+                className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left"
                 style={{
                   padding: 'clamp(4px, 0.6vh, 8px) 0'
                 }}
                 data-testid="footer-accordion-company"
               >
-                <h3 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-white tracking-wide">
+                <h3 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-white tracking-wide text-left">
                   Company
                 </h3>
                 <ChevronDown className={`w-5 h-5 text-slate-600 dark:text-slate-400 transition-transform duration-300 md:hidden ${expandedFooterSection === 'company' ? 'rotate-180' : ''}`} />
@@ -1440,7 +1442,7 @@ export default function Home() {
 
             {/* Download Section */}
             <div 
-              className="md:space-y-6 md:border-b-0 text-center md:text-left"
+              className="md:space-y-6 md:border-b-0 transition-all duration-300"
               style={{
                 paddingBottom: 'clamp(4px, 0.6vh, 8px)',
                 borderBottom: '1px solid rgba(255, 255, 255, 0.06)'
@@ -1448,13 +1450,13 @@ export default function Home() {
             >
               <button
                 onClick={() => toggleFooterSection('download')}
-                className="flex items-center justify-between w-full md:cursor-default md:!p-0"
+                className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left"
                 style={{
                   padding: 'clamp(4px, 0.6vh, 8px) 0'
                 }}
                 data-testid="footer-accordion-download"
               >
-                <h3 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-white tracking-wide">
+                <h3 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-white tracking-wide text-left">
                   Download Platform
                 </h3>
                 <ChevronDown className={`w-5 h-5 text-slate-600 dark:text-slate-400 transition-transform duration-300 md:hidden ${expandedFooterSection === 'download' ? 'rotate-180' : ''}`} />
@@ -1491,16 +1493,16 @@ export default function Home() {
             </div>
 
             {/* Connect Section */}
-            <div className="md:space-y-6 text-center md:text-left">
+            <div className="md:space-y-6 transition-all duration-300">
               <button
                 onClick={() => toggleFooterSection('connect')}
-                className="flex items-center justify-between w-full md:cursor-default md:!p-0"
+                className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left"
                 style={{
                   padding: 'clamp(4px, 0.6vh, 8px) 0'
                 }}
                 data-testid="footer-accordion-connect"
               >
-                <h3 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-white tracking-wide">
+                <h3 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-white tracking-wide text-left">
                   Connect
                 </h3>
                 <ChevronDown className={`w-5 h-5 text-slate-600 dark:text-slate-400 transition-transform duration-300 md:hidden ${expandedFooterSection === 'connect' ? 'rotate-180' : ''}`} />
