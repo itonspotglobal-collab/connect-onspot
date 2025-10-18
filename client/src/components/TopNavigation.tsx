@@ -986,8 +986,20 @@ export function TopNavigation() {
         {modalStep === 1 ? (
           <DialogPortal>
             <DialogOverlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-300" />
-            <div className="fixed inset-0 z-50 flex items-center justify-center pt-[100px] pb-8 px-4 overflow-y-auto">
-              <div className="w-full max-w-5xl animate-in fade-in slide-in-from-bottom-6 duration-500 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-bottom-6 relative my-auto">
+            <div 
+              className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto"
+              style={{
+                padding: 'clamp(2rem, 5vh, 4rem)',
+                minHeight: '100vh',
+              }}
+            >
+              <div 
+                className="relative animate-in fade-in slide-in-from-bottom-6 duration-500 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-bottom-6 my-auto"
+                style={{
+                  width: 'min(90%, 900px)',
+                  maxHeight: '90vh',
+                }}
+              >
                 <DialogTitle className="sr-only">
                   Superhuman BPO Awakening
                 </DialogTitle>
@@ -1001,9 +1013,12 @@ export function TopNavigation() {
                   <span className="sr-only">Close</span>
                 </button>
                 <div
-                  className="relative flex items-center justify-center min-h-[700px] rounded-2xl overflow-hidden"
+                  className="relative flex items-center justify-center rounded-2xl overflow-hidden"
                   style={{
                     background: 'linear-gradient(135deg, #0f0f3c 0%, #1a1a4e 25%, #252560 50%, #1a1a4e 75%, #0f0f3c 100%)',
+                    minHeight: 'min(700px, 80vh)',
+                    maxHeight: '90vh',
+                    overflowY: 'auto',
                   }}
                   data-testid="modal-step-awakening"
                 >
@@ -1194,12 +1209,24 @@ export function TopNavigation() {
         ) : modalStep === 2 ? (
           <DialogPortal>
             <DialogOverlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-300" />
-            <div className="fixed inset-0 z-50 flex items-center justify-center pt-[100px] pb-8 px-4 overflow-y-auto">
-              <div className="w-full max-w-3xl animate-in fade-in slide-in-from-bottom-6 duration-500 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-bottom-6 relative my-auto">
+            <div 
+              className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto"
+              style={{
+                padding: 'clamp(2rem, 5vh, 4rem)',
+                minHeight: '100vh',
+              }}
+            >
+              <div 
+                className="relative animate-in fade-in slide-in-from-bottom-6 duration-500 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-bottom-6 my-auto"
+                style={{
+                  width: 'min(90%, 900px)',
+                  maxHeight: '90vh',
+                }}
+              >
                 <DialogTitle className="sr-only">
                   Contact Information
                 </DialogTitle>
-                {/* Close Button - continuing from here */}
+                {/* Close Button */}
                 <button
                   onClick={() => setShowPortal(false)}
                   className="absolute right-4 top-4 z-50 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-white"
@@ -1209,7 +1236,12 @@ export function TopNavigation() {
                   <span className="sr-only">Close</span>
                 </button>
                 <div
-                  className="relative hero-investor flex items-center justify-center min-h-[650px] rounded-2xl overflow-hidden"
+                  className="relative hero-investor flex items-center justify-center rounded-2xl overflow-hidden"
+                  style={{
+                    minHeight: 'min(650px, 80vh)',
+                    maxHeight: '90vh',
+                    overflowY: 'auto',
+                  }}
                   data-testid="modal-step-contact-form"
                 >
                   {/* Gradient Overlay */}
