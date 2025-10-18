@@ -128,17 +128,14 @@ export function ComingSoon({
                   style={{ transitionDelay: '0.2s', overflow: 'visible' }}
                 >
                   <h2 
-                    className="text-4xl sm:text-5xl lg:text-6xl font-bold text-center lg:text-left px-4 lg:px-0"
+                    className="text-4xl sm:text-5xl lg:text-6xl font-bold text-center lg:text-left"
                     style={{
                       lineHeight: '1.08',
                       paddingBottom: '0.08em',
                       textWrap: 'balance',
                       hyphens: 'none',
                       WebkitTransform: 'translateZ(0)',
-                      overflow: 'visible',
-                      maxWidth: '100%',
-                      marginLeft: 'auto',
-                      marginRight: 'auto'
+                      overflow: 'visible'
                     } as React.CSSProperties}
                   >
                     <span className="block bg-gradient-to-r from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent">
@@ -155,7 +152,7 @@ export function ComingSoon({
                   className={`transition-all duration-1000 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
                   style={{ transitionDelay: '0.3s' }}
                 >
-                  <div className="space-y-4 px-4 lg:px-0">
+                  <div className="space-y-4">
                     <p className="text-lg sm:text-xl lg:text-2xl font-light text-foreground/90 leading-relaxed text-center lg:text-left">
                       {subtitle}
                     </p>
