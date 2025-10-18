@@ -378,10 +378,14 @@ export function TopNavigation() {
     phone: "",
   });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [visibleItems, setVisibleItems] = useState<number>(navigationItems.length);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const lastScrollY = useRef(0);
   const ticking = useRef(false);
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const navRef = useRef<HTMLElement>(null);
+  const navLinksRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   // Close mobile menu when resizing to desktop
   useEffect(() => {
@@ -453,6 +457,80 @@ export function TopNavigation() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [isMobileMenuOpen]);
+
+  // Priority+ pattern: ResizeObserver for adaptive navigation
+  useEffect(() => {
+    const handlePriorityPlus = () => {
+      // Only apply Priority+ pattern for tablet range (769-1024px)
+      if (window.innerWidth <= 768 || window.innerWidth > 1024) {
+        setVisibleItems(navigationItems.length);
+        return;
+      }
+
+      if (!navLinksRef.current || itemRefs.current.length === 0) return;
+
+      const container = navLinksRef.current;
+      const containerWidth = container.offsetWidth;
+      const moreButtonWidth = 80; // Approximate width of "More ▾" button
+      let totalWidth = 0;
+      let visibleCount = 0;
+
+      // Calculate how many items can fit
+      for (let i = 0; i < itemRefs.current.length; i++) {
+        const item = itemRefs.current[i];
+        if (!item) continue;
+        
+        const itemWidth = item.offsetWidth + 16; // Add gap
+        if (totalWidth + itemWidth + moreButtonWidth < containerWidth) {
+          totalWidth += itemWidth;
+          visibleCount++;
+        } else {
+          break;
+        }
+      }
+
+      setVisibleItems(visibleCount);
+    };
+
+    const resizeObserver = new ResizeObserver(handlePriorityPlus);
+    
+    if (navLinksRef.current) {
+      resizeObserver.observe(navLinksRef.current);
+    }
+
+    // Also handle window resize
+    window.addEventListener('resize', handlePriorityPlus);
+    
+    // Initial calculation
+    handlePriorityPlus();
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', handlePriorityPlus);
+    };
+  }, []);
+
+  // Close More dropdown on ESC and resize
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setMoreMenuOpen(false);
+        setActiveDropdown(null);
+      }
+    };
+
+    const handleResize = () => {
+      setMoreMenuOpen(false);
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   // Dropdown handlers
   const handleMouseEnter = (title: string) => {
