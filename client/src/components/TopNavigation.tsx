@@ -794,16 +794,40 @@ export function TopNavigation() {
               )}
             </button>
 
-            {/* Access Portal Button - visible on all screens */}
-            <Button
+            {/* Access Portal Button - Intelligent Design */}
+            <button
               onClick={() => setShowPortal(true)}
-              variant="outline"
-              size="sm"
-              className="border-white/50 text-white hover:bg-white/10 whitespace-nowrap hidden md:flex"
+              className="relative group hidden md:flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm text-white whitespace-nowrap overflow-hidden transition-all duration-300 hover:scale-105"
+              style={{
+                background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)',
+                boxShadow: '0 4px 15px rgba(58, 58, 248, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+              }}
               data-testid="access-portal-button"
             >
-              Access Portal
-            </Button>
+              {/* Animated shimmer overlay */}
+              <div 
+                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                style={{
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%)',
+                  animation: 'shimmer 2s infinite',
+                }}
+              ></div>
+              
+              {/* Breathing glow effect */}
+              <div 
+                className="absolute inset-0 rounded-lg opacity-60 group-hover:opacity-100 blur-md transition-opacity duration-500"
+                style={{
+                  background: 'linear-gradient(135deg, #3A3AF8 0%, #7F3DF4 100%)',
+                  animation: 'portal-breathe 3s ease-in-out infinite',
+                  zIndex: -1,
+                }}
+              ></div>
+              
+              <span className="relative z-10 flex items-center gap-2">
+                <Zap className="w-4 h-4 animate-pulse" />
+                Access Portal
+              </span>
+            </button>
           </div>
         </div>
 
@@ -909,16 +933,39 @@ export function TopNavigation() {
           </div>
         </div>
         <div className="px-4 py-3 border-t border-white/10">
-          <Button
-            asChild
-            variant="outline"
-            className="w-full border-white/50 text-white hover:bg-white/10"
+          <button
+            onClick={() => { setShowPortal(true); setIsMobileMenuOpen(false); }}
+            className="relative group w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-lg font-bold text-base text-white overflow-hidden transition-all duration-300"
+            style={{
+              background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)',
+              boxShadow: '0 6px 20px rgba(58, 58, 248, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
+            }}
             data-testid="mobile-access-portal"
           >
-            <button onClick={() => { setShowPortal(true); setIsMobileMenuOpen(false); }}>
+            {/* Animated shimmer overlay */}
+            <div 
+              className="absolute inset-0 opacity-0 group-active:opacity-100 transition-opacity duration-300"
+              style={{
+                background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%)',
+                animation: 'shimmer 2s infinite',
+              }}
+            ></div>
+            
+            {/* Breathing glow effect */}
+            <div 
+              className="absolute inset-0 rounded-lg opacity-70 blur-lg transition-opacity duration-500"
+              style={{
+                background: 'linear-gradient(135deg, #3A3AF8 0%, #7F3DF4 100%)',
+                animation: 'portal-breathe 3s ease-in-out infinite',
+                zIndex: -1,
+              }}
+            ></div>
+            
+            <span className="relative z-10 flex items-center gap-2">
+              <Zap className="w-5 h-5 animate-pulse" />
               Access Portal
-            </button>
-          </Button>
+            </span>
+          </button>
         </div>
       </div>
 
