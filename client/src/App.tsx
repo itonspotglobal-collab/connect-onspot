@@ -44,6 +44,19 @@ import InvestorsCorner from "@/pages/InvestorsCorner";
 import ProfileSettings from "@/pages/ProfileSettings";
 import Powerapp from "@/pages/Powerapp";
 
+// Immersive Routes - Full screen without navigation (for campaigns and reveals)
+function ImmersiveRouter() {
+  return (
+    <Switch>
+      <Route path="/pricing" component={ComingSoon} />
+      <Route path="/enterprise" component={ComingSoon} />
+      <Route path="/affiliate-marketing" component={ComingSoon} />
+      <Route path="/bpo-partner" component={ComingSoon} />
+      <Route component={NotFound} />
+    </Switch>
+  );
+}
+
 // Public Routes - Always available regardless of authentication
 function PublicRouter() {
   const { isAuthenticated, user } = useAuth();
@@ -89,10 +102,6 @@ function PublicRouter() {
           <Route path="/why-onspot/integrator-system" component={WhyOnSpotIntegratorSystem} />
           <Route path="/why-onspot/value-calculator" component={WhyOnSpotValueCalculator} />
           <Route path="/amazing" component={Amazing} />
-          <Route path="/pricing" component={ComingSoon} />
-          <Route path="/enterprise" component={ComingSoon} />
-          <Route path="/affiliate-marketing" component={ComingSoon} />
-          <Route path="/bpo-partner" component={ComingSoon} />
           <Route path="/insights" component={Insights} />
           <Route path="/payment-protection" component={PaymentProtection} />
           <Route path="/client-verification" component={ClientVerification} />
@@ -172,6 +181,12 @@ function AppContent() {
   // Always show public routes, but protected routes will handle their own redirects
   return (
     <Switch>
+      {/* Immersive Routes - Full screen without navigation */}
+      <Route path="/pricing" component={ImmersiveRouter} />
+      <Route path="/enterprise" component={ImmersiveRouter} />
+      <Route path="/affiliate-marketing" component={ImmersiveRouter} />
+      <Route path="/bpo-partner" component={ImmersiveRouter} />
+      
       {/* Public Routes - Always available */}
       <Route path="/" component={PublicRouter} />
       <Route path="/hire-talent" component={PublicRouter} />
@@ -181,10 +196,6 @@ function AppContent() {
       <Route path="/why-onspot" component={PublicRouter} />
       <Route path="/why-onspot/:page" component={PublicRouter} />
       <Route path="/amazing" component={PublicRouter} />
-      <Route path="/pricing" component={PublicRouter} />
-      <Route path="/enterprise" component={PublicRouter} />
-      <Route path="/affiliate-marketing" component={PublicRouter} />
-      <Route path="/bpo-partner" component={PublicRouter} />
       <Route path="/insights" component={PublicRouter} />
       <Route path="/payment-protection" component={PublicRouter} />
       <Route path="/client-verification" component={PublicRouter} />

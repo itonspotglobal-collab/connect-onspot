@@ -19,6 +19,7 @@ Preferred communication style: Simple, everyday language.
 - **Domain-Based Routing**: Automatic routing based on subdomain detection:
   - `onspotglobal.com` → Primary domain serving main public site (home page, marketing pages, etc.)
   - `talent.onspotglobal.com` → Talent Portal (auto-redirects to /talent-portal)
+- **Immersive Routes**: Full-screen experiences without navigation for campaigns and reveals (`/pricing`, `/enterprise`, `/affiliate-marketing`, `/bpo-partner`) using ImmersiveRouter component
 - **Design System**: Apple-inspired interface with light/dark mode support, consistent spacing (4, 6, 8, 12, 16, 24 unit increments), and professional typography using SF Pro Display system fonts
 
 ### Backend Architecture
@@ -79,3 +80,32 @@ Preferred communication style: Simple, everyday language.
 - **Lindy.ai**: Embedded AI chatbot for customer support and lead qualification
   - **Configuration**: Requires domain whitelisting in Lindy.ai dashboard
   - **Current Status**: Embed script installed, pending domain configuration on Lindy.ai side
+
+## Recent Changes
+
+### Coming Soon Page (October 18, 2025)
+- **Purpose**: Immersive full-screen experience for campaign reveals and marketing pages (`/pricing`, `/enterprise`, `/affiliate-marketing`, `/bpo-partner`)
+- **Design Philosophy**: Bright, cinematic, intelligent, and inspiring - like watching the birth of intelligence
+- **Key Features**:
+  - **No Navigation**: Only OnSpot logo faintly glowing at top center for focused, distraction-free experience
+  - **Neural Network Animation**: High-performance Canvas-based animation (60fps target using requestAnimationFrame)
+    - Grows from 0 to 150-220 nodes over 1.6s with spring easing
+    - Two-lobe brain structure with 2-3 connections per node
+    - Gradient strokes (#5B7CFF→#9B5CFF) with soft outer glow
+    - Breathing scale animation (0.985↔1 over 6s)
+    - Traveling signal pulses along random paths (every 1.8-2.4s)
+    - Node twinkle effects for visual interest
+    - Full cycle: grow (1.6s) → hold (2.5s) → bloom (+8% brightness, 300ms) → dissolve (900ms) → loop (~6-7s total)
+  - **Sequential Text Reveal**:
+    - "COMING SOON..." with typing animation + looping dots
+    - "The next evolution of outsourcing." fades in after 1.8s
+    - "Powered by intelligence and human brilliance." fades in after 2.4s
+  - **Backdrop Design**: Light text halo with backdrop-blur for contrast against neural network
+  - **Accessibility**: Respects `prefers-reduced-motion` - renders static full network without growth/typing animations
+  - **CTAs**: Same gradient buttons as homepage (Launch AI Assistant, Explore OnSpot) with hover shimmer effects
+- **Technical Implementation**:
+  - ImmersiveRouter component for routes without TopNavigation
+  - Full-screen layout (fixed positioning) for cinematic effect
+  - Clean white → very-pale-lavender radial gradient background
+  - Base neural network opacity: 0.85 for visual hierarchy
+  - Performance optimized with no heavy libraries

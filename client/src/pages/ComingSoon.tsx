@@ -13,7 +13,7 @@ export default function ComingSoon() {
       metaDescription.setAttribute('name', 'description');
       document.head.appendChild(metaDescription);
     }
-    metaDescription.setAttribute('content', 'Something amazing is coming to OnSpot! We\'re crafting an incredible experience just for you. Stay tuned for exciting new features and capabilities.');
+    metaDescription.setAttribute('content', 'The next evolution of outsourcing is coming soon. Powered by intelligence and human brilliance. OnSpot is preparing an extraordinary experience.');
     
     // Cleanup function to restore original title when component unmounts
     return () => {
@@ -21,5 +21,10 @@ export default function ComingSoon() {
     };
   }, []);
 
-  return <ComingSoonComponent />;
+  // Render full-screen immersive experience without navigation
+  return (
+    <div className="fixed inset-0 w-full h-full">
+      <ComingSoonComponent />
+    </div>
+  );
 }
