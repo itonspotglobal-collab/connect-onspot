@@ -189,9 +189,20 @@ export function ComingSoon({
                       animation: prefersReducedMotion ? 'none' : 'breathingPulse 6s ease-in-out infinite'
                     }}
                   >
-                    {/* Luminous swirl effect - matching homepage */}
-                    <div className="absolute inset-0 bg-gradient-to-tr from-violet-500/30 via-blue-500/30 to-cyan-500/30 rounded-full blur-3xl opacity-80 animate-gentle-float"></div>
-                    <div className="absolute inset-0 bg-gradient-to-bl from-blue-500/40 via-violet-500/40 to-purple-500/40 rounded-full blur-2xl opacity-70 animate-slow-spin"></div>
+                    {/* First luminous gradient layer - concentrates when small, radiates when large */}
+                    <div 
+                      className="absolute inset-0 bg-gradient-to-tr from-violet-500/30 via-blue-500/30 to-cyan-500/30 rounded-full blur-3xl"
+                      style={{
+                        animation: prefersReducedMotion ? 'gentleFloat 6s ease-in-out infinite' : 'gentleFloat 6s ease-in-out infinite, breathingGradient1 6s ease-in-out infinite'
+                      }}
+                    ></div>
+                    {/* Second luminous gradient layer - synchronized breathing */}
+                    <div 
+                      className="absolute inset-0 bg-gradient-to-bl from-blue-500/40 via-violet-500/40 to-purple-500/40 rounded-full blur-2xl"
+                      style={{
+                        animation: prefersReducedMotion ? 'slowSpin 20s linear infinite' : 'slowSpin 20s linear infinite, breathingGradient2 6s ease-in-out infinite'
+                      }}
+                    ></div>
                   </div>
                 </div>
               </div>
