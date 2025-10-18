@@ -14,12 +14,7 @@ interface ComingSoonProps {
 interface Node {
   x: number;
   y: number;
-  vx: number;
-  vy: number;
   opacity: number;
-  targetOpacity: number;
-  scale: number;
-  targetScale: number;
   twinkle: number;
 }
 
@@ -27,7 +22,6 @@ interface Connection {
   from: number;
   to: number;
   opacity: number;
-  targetOpacity: number;
   signalPosition: number;
   hasSignal: boolean;
   nextSignalTime: number;
@@ -45,10 +39,11 @@ export function ComingSoon({
   const [showTitle, setShowTitle] = useState(false);
   const [showSubtitle, setShowSubtitle] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number>();
   const nodesRef = useRef<Node[]>([]);
   const connectionsRef = useRef<Connection[]>([]);
-  const cycleStartTimeRef = useRef<number>(0);
+  const breathPhaseRef = useRef<number>(0);
   const prefersReducedMotion = useRef(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
   const comingSoonText = "COMING SOON";
@@ -69,11 +64,11 @@ export function ComingSoon({
       } else {
         clearInterval(typeInterval);
       }
-    }, 80);
+    }, 120);
 
     const dotsInterval = setInterval(() => {
       setShowDots(prev => (prev + 1) % 4);
-    }, 400);
+    }, 500);
 
     setTimeout(() => setShowTitle(true), 1800);
     setTimeout(() => setShowSubtitle(true), 2400);
@@ -86,64 +81,65 @@ export function ComingSoon({
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     const resizeCanvas = () => {
       const dpr = window.devicePixelRatio || 1;
-      canvas.width = canvas.offsetWidth * dpr;
-      canvas.height = canvas.offsetHeight * dpr;
+      const containerWidth = container.offsetWidth;
+      const containerHeight = container.offsetHeight;
+      
+      canvas.width = containerWidth * dpr;
+      canvas.height = containerHeight * dpr;
       ctx.scale(dpr, dpr);
+      
+      if (nodesRef.current.length > 0) {
+        initializeNetwork();
+      }
     };
 
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
+    const isMobile = window.innerWidth < 768;
+    const nodeCount = isMobile 
+      ? Math.floor(220 + Math.random() * 100)
+      : Math.floor(360 + Math.random() * 160);
 
-    const centerX = canvas.offsetWidth / 2;
-    const centerY = canvas.offsetHeight / 2;
-    const brainWidth = canvas.offsetWidth * 0.85;
-    const brainHeight = canvas.offsetHeight * 0.7;
+    const initializeNetwork = () => {
+      const containerWidth = container.offsetWidth;
+      const containerHeight = container.offsetHeight;
+      const centerX = containerWidth / 2;
+      const centerY = containerHeight / 2;
+      const brainWidth = containerWidth * 0.7;
+      const brainHeight = containerHeight * 0.65;
 
-    const springEase = (t: number): number => {
-      return 1 - Math.pow(1 - t, 3) * Math.cos(t * 4 * Math.PI);
-    };
-
-    const lerp = (start: number, end: number, factor: number): number => {
-      return start + (end - start) * factor;
-    };
-
-    const createNodes = (count: number) => {
       const nodes: Node[] = [];
-      for (let i = 0; i < count; i++) {
+      for (let i = 0; i < nodeCount; i++) {
         const angle = Math.random() * Math.PI * 2;
         const radiusX = (Math.random() * 0.5 + 0.5) * brainWidth / 2;
         const radiusY = (Math.random() * 0.5 + 0.5) * brainHeight / 2;
         
         const lobe = i % 2;
-        const lobeOffsetX = lobe === 0 ? -brainWidth * 0.15 : brainWidth * 0.15;
+        const lobeOffsetX = lobe === 0 ? -brainWidth * 0.12 : brainWidth * 0.12;
         
         nodes.push({
           x: centerX + lobeOffsetX + Math.cos(angle) * radiusX,
           y: centerY + Math.sin(angle) * radiusY,
-          vx: (Math.random() - 0.5) * 0.1,
-          vy: (Math.random() - 0.5) * 0.1,
-          opacity: 0,
-          targetOpacity: 0.35,
-          scale: 0,
-          targetScale: 1,
+          opacity: 1,
           twinkle: Math.random() * Math.PI * 2
         });
       }
-      return nodes;
-    };
 
-    const createConnections = (nodes: Node[], linksPerNode: number) => {
       const connections: Connection[] = [];
+      const linksPerNode = 3 + Math.floor(Math.random() * 3);
+      
       nodes.forEach((node, i) => {
         const distances = nodes
-          .map((other, j) => ({ index: j, dist: Math.hypot(other.x - node.x, other.y - node.y) }))
+          .map((other, j) => ({ 
+            index: j, 
+            dist: Math.hypot(other.x - node.x, other.y - node.y) 
+          }))
           .filter(d => d.index !== i)
           .sort((a, b) => a.dist - b.dist)
           .slice(0, linksPerNode);
@@ -156,185 +152,168 @@ export function ComingSoon({
             connections.push({
               from: i,
               to: index,
-              opacity: 0,
-              targetOpacity: 0.15,
+              opacity: 1,
               signalPosition: 0,
               hasSignal: false,
-              nextSignalTime: Date.now() + Math.random() * 2000 + 1800
+              nextSignalTime: Date.now() + Math.random() * 600 + 1800
             });
           }
         });
       });
-      return connections;
+
+      nodesRef.current = nodes;
+      connectionsRef.current = connections;
     };
 
-    const drawBrain = (timestamp: number) => {
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    const drawNetwork = (timestamp: number) => {
       if (!ctx || !canvas) return;
 
-      ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
+      const containerWidth = container.offsetWidth;
+      const containerHeight = container.offsetHeight;
+      
+      ctx.clearRect(0, 0, containerWidth, containerHeight);
 
-      const cycleDuration = 6700;
-      const growDuration = 1600;
-      const holdDuration = 2500;
-      const bloomDuration = 300;
-      const dissolveDuration = 900;
+      if (!prefersReducedMotion.current) {
+        breathPhaseRef.current += 0.01;
+        const sineWave = Math.sin(breathPhaseRef.current);
+        const currentScale = 0.96 + (sineWave * 0.04);
+        const normalizedScale = (currentScale - 0.96) / 0.08;
+        const globalOpacity = 0.9 - (normalizedScale * 0.35);
 
-      if (cycleStartTimeRef.current === 0) {
-        cycleStartTimeRef.current = timestamp;
-      }
+        ctx.save();
+        ctx.translate(containerWidth / 2, containerHeight / 2);
+        ctx.scale(currentScale, currentScale);
+        ctx.translate(-containerWidth / 2, -containerHeight / 2);
 
-      const elapsed = timestamp - cycleStartTimeRef.current;
-      const cycleProgress = elapsed / cycleDuration;
-
-      if (cycleProgress >= 1) {
-        cycleStartTimeRef.current = timestamp;
-        nodesRef.current = [];
-        connectionsRef.current = [];
-      }
-
-      const currentElapsed = elapsed % cycleDuration;
-
-      if (currentElapsed < growDuration) {
-        const growProgress = currentElapsed / growDuration;
-        const easedProgress = springEase(growProgress);
-
-        if (nodesRef.current.length === 0) {
-          const targetNodeCount = Math.floor(150 + Math.random() * 70);
-          nodesRef.current = createNodes(targetNodeCount);
-          connectionsRef.current = createConnections(nodesRef.current, 2 + Math.floor(Math.random() * 2));
-        }
-
-        nodesRef.current.forEach(node => {
-          node.scale = easedProgress;
-          node.opacity = easedProgress * node.targetOpacity;
-        });
+        const lineWidth = 1 + Math.random() * 0.6;
+        const nodeSize = 2 + Math.random() * 1.5;
 
         connectionsRef.current.forEach(conn => {
-          conn.opacity = easedProgress * conn.targetOpacity;
-        });
-      } else if (currentElapsed < growDuration + holdDuration) {
-        const breathProgress = (currentElapsed - growDuration) / 6000;
-        const breathScale = 0.985 + Math.sin(breathProgress * Math.PI * 2) * 0.015;
+          const fromNode = nodesRef.current[conn.from];
+          const toNode = nodesRef.current[conn.to];
+          if (!fromNode || !toNode) return;
 
-        nodesRef.current.forEach(node => {
-          node.scale = breathScale;
-          node.twinkle += 0.05;
-          const twinkleBoost = Math.sin(node.twinkle) * 0.15;
-          node.opacity = Math.min(1, node.targetOpacity + twinkleBoost);
-        });
+          const gradient = ctx.createLinearGradient(
+            fromNode.x, fromNode.y, 
+            toNode.x, toNode.y
+          );
+          gradient.addColorStop(0, `rgba(91, 124, 255, ${conn.opacity * globalOpacity})`);
+          gradient.addColorStop(0.5, `rgba(123, 104, 238, ${conn.opacity * globalOpacity})`);
+          gradient.addColorStop(1, `rgba(155, 92, 255, ${conn.opacity * globalOpacity})`);
 
-        connectionsRef.current.forEach(conn => {
+          ctx.strokeStyle = gradient;
+          ctx.lineWidth = lineWidth;
+          ctx.shadowBlur = 8;
+          ctx.shadowColor = `rgba(91, 124, 255, ${globalOpacity * 0.3})`;
+          ctx.beginPath();
+          ctx.moveTo(fromNode.x, fromNode.y);
+          ctx.lineTo(toNode.x, toNode.y);
+          ctx.stroke();
+
           if (!conn.hasSignal && timestamp > conn.nextSignalTime) {
             conn.hasSignal = true;
             conn.signalPosition = 0;
           }
 
           if (conn.hasSignal) {
-            conn.signalPosition += 0.02;
+            conn.signalPosition += 0.018;
             if (conn.signalPosition > 1) {
               conn.hasSignal = false;
               conn.signalPosition = 0;
               conn.nextSignalTime = timestamp + Math.random() * 600 + 1800;
+            } else {
+              const signalX = fromNode.x + (toNode.x - fromNode.x) * conn.signalPosition;
+              const signalY = fromNode.y + (toNode.y - fromNode.y) * conn.signalPosition;
+              
+              ctx.shadowBlur = 10;
+              ctx.shadowColor = 'rgba(255, 255, 255, 0.9)';
+              ctx.fillStyle = `rgba(255, 255, 255, ${globalOpacity * 0.95})`;
+              ctx.beginPath();
+              ctx.arc(signalX, signalY, 2.5, 0, Math.PI * 2);
+              ctx.fill();
             }
           }
         });
-      } else if (currentElapsed < growDuration + holdDuration + bloomDuration) {
-        const bloomProgress = (currentElapsed - growDuration - holdDuration) / bloomDuration;
-        const bloomBoost = bloomProgress * 0.05;
+
+        ctx.shadowBlur = 0;
 
         nodesRef.current.forEach(node => {
-          node.opacity = Math.min(1, node.targetOpacity + bloomBoost);
+          node.twinkle += 0.03;
+          const twinkleBoost = Math.sin(node.twinkle) * 0.1;
+          const shouldTwinkle = Math.random() > 0.98;
+          const twinkleEffect = shouldTwinkle ? twinkleBoost : 0;
+
+          const nodeOpacity = (node.opacity + twinkleEffect) * globalOpacity;
+          
+          ctx.fillStyle = `rgba(91, 124, 255, ${nodeOpacity})`;
+          ctx.shadowBlur = 10;
+          ctx.shadowColor = `rgba(139, 92, 246, ${nodeOpacity * 0.5})`;
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, nodeSize, 0, Math.PI * 2);
+          ctx.fill();
+          
+          ctx.fillStyle = `rgba(255, 255, 255, ${nodeOpacity * 0.85})`;
+          ctx.shadowBlur = 6;
+          ctx.shadowColor = `rgba(255, 255, 255, ${nodeOpacity * 0.6})`;
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, nodeSize * 0.5, 0, Math.PI * 2);
+          ctx.fill();
         });
 
-        connectionsRef.current.forEach(conn => {
-          conn.opacity = Math.min(1, conn.targetOpacity + bloomBoost);
-        });
+        ctx.restore();
       } else {
-        const dissolveProgress = (currentElapsed - growDuration - holdDuration - bloomDuration) / dissolveDuration;
-        
+        const lineWidth = 1.2;
+        const nodeSize = 2.5;
+        const staticOpacity = 0.7;
+
         connectionsRef.current.forEach(conn => {
-          conn.opacity = conn.targetOpacity * (1 - Math.min(1, dissolveProgress * 1.5));
+          const fromNode = nodesRef.current[conn.from];
+          const toNode = nodesRef.current[conn.to];
+          if (!fromNode || !toNode) return;
+
+          const gradient = ctx.createLinearGradient(
+            fromNode.x, fromNode.y, 
+            toNode.x, toNode.y
+          );
+          gradient.addColorStop(0, `rgba(91, 124, 255, ${staticOpacity})`);
+          gradient.addColorStop(0.5, `rgba(123, 104, 238, ${staticOpacity})`);
+          gradient.addColorStop(1, `rgba(155, 92, 255, ${staticOpacity})`);
+
+          ctx.strokeStyle = gradient;
+          ctx.lineWidth = lineWidth;
+          ctx.beginPath();
+          ctx.moveTo(fromNode.x, fromNode.y);
+          ctx.lineTo(toNode.x, toNode.y);
+          ctx.stroke();
         });
 
         nodesRef.current.forEach(node => {
-          node.opacity = node.targetOpacity * (1 - Math.min(1, dissolveProgress));
-          node.scale = 1 - dissolveProgress * 0.8;
+          ctx.fillStyle = `rgba(91, 124, 255, ${staticOpacity})`;
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, nodeSize, 0, Math.PI * 2);
+          ctx.fill();
+          
+          ctx.fillStyle = `rgba(255, 255, 255, ${staticOpacity * 0.85})`;
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, nodeSize * 0.5, 0, Math.PI * 2);
+          ctx.fill();
         });
       }
 
-      connectionsRef.current.forEach(conn => {
-        const fromNode = nodesRef.current[conn.from];
-        const toNode = nodesRef.current[conn.to];
-        if (!fromNode || !toNode) return;
-
-        const gradient = ctx.createLinearGradient(fromNode.x, fromNode.y, toNode.x, toNode.y);
-        gradient.addColorStop(0, `rgba(91, 124, 255, ${conn.opacity})`);
-        gradient.addColorStop(0.5, `rgba(123, 104, 238, ${conn.opacity})`);
-        gradient.addColorStop(1, `rgba(155, 92, 255, ${conn.opacity})`);
-
-        ctx.strokeStyle = gradient;
-        ctx.lineWidth = 2;
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = `rgba(91, 124, 255, ${conn.opacity * 0.4})`;
-        ctx.beginPath();
-        ctx.moveTo(fromNode.x, fromNode.y);
-        ctx.lineTo(toNode.x, toNode.y);
-        ctx.stroke();
-
-        if (conn.hasSignal) {
-          const signalX = lerp(fromNode.x, toNode.x, conn.signalPosition);
-          const signalY = lerp(fromNode.y, toNode.y, conn.signalPosition);
-          
-          ctx.shadowBlur = 12;
-          ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
-          ctx.fillStyle = `rgba(255, 255, 255, ${conn.opacity * 0.9})`;
-          ctx.beginPath();
-          ctx.arc(signalX, signalY, 3, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      });
-
-      ctx.shadowBlur = 0;
-
-      nodesRef.current.forEach(node => {
-        const outerRadius = Math.max(0.1, 6 * node.scale);
-        const innerRadius = Math.max(0.1, 3 * node.scale);
-        
-        ctx.fillStyle = `rgba(91, 124, 255, ${node.opacity})`;
-        ctx.shadowBlur = 12;
-        ctx.shadowColor = `rgba(139, 92, 246, ${node.opacity * 0.5})`;
-        ctx.beginPath();
-        ctx.arc(node.x, node.y, outerRadius, 0, Math.PI * 2);
-        ctx.fill();
-        
-        ctx.fillStyle = `rgba(255, 255, 255, ${node.opacity * 0.8})`;
-        ctx.shadowBlur = 8;
-        ctx.shadowColor = `rgba(255, 255, 255, ${node.opacity * 0.6})`;
-        ctx.beginPath();
-        ctx.arc(node.x, node.y, innerRadius, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
-      ctx.shadowBlur = 0;
-
       if (!prefersReducedMotion.current) {
-        animationRef.current = requestAnimationFrame(drawBrain);
+        animationRef.current = requestAnimationFrame(drawNetwork);
       }
     };
 
+    initializeNetwork();
+    
     if (prefersReducedMotion.current) {
-      nodesRef.current = createNodes(200);
-      connectionsRef.current = createConnections(nodesRef.current, 3);
-      nodesRef.current.forEach(node => {
-        node.opacity = node.targetOpacity;
-        node.scale = 1;
-      });
-      connectionsRef.current.forEach(conn => {
-        conn.opacity = conn.targetOpacity;
-      });
-      drawBrain(0);
+      drawNetwork(0);
     } else {
-      animationRef.current = requestAnimationFrame(drawBrain);
+      animationRef.current = requestAnimationFrame(drawNetwork);
     }
 
     return () => {
@@ -346,7 +325,13 @@ export function ComingSoon({
   }, []);
 
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden bg-gradient-radial from-white via-slate-50 to-purple-50/20">
+    <div 
+      className="w-full flex flex-col items-center justify-center relative overflow-hidden"
+      style={{
+        minHeight: '100svh',
+        background: 'radial-gradient(ellipse at center, #ffffff 0%, #fdfbff 40%, #f8f6fe 100%)'
+      }}
+    >
       {/* OnSpot Logo - faintly glowing at top center */}
       <div className="absolute top-8 left-1/2 -translate-x-1/2 z-20">
         <Link href="/">
@@ -363,18 +348,41 @@ export function ComingSoon({
         </Link>
       </div>
 
-      {/* Neural Network Canvas */}
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0 w-full h-full pointer-events-none"
-        style={{ opacity: 1 }}
-      />
+      {/* Fixed Neural Brain Container - centered, size clamp, animates internally */}
+      <div 
+        ref={containerRef}
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+        style={{
+          width: 'clamp(520px, 52vw, 980px)',
+          height: 'clamp(520px, 52vw, 980px)',
+          maxWidth: '95vw',
+          maxHeight: '95vh'
+        }}
+      >
+        <canvas
+          ref={canvasRef}
+          className="w-full h-full"
+        />
+      </div>
 
-      {/* Content */}
-      <div className="container mx-auto px-6 relative z-10 text-center max-w-5xl">
-        <div className="space-y-6">
-          {/* Coming soon... with typing effect */}
-          <div className="min-h-[32px] backdrop-blur-sm bg-white/30 rounded-lg px-4 py-2 inline-block">
+      {/* Content - perfectly centered grid */}
+      <div className="container mx-auto px-6 relative z-10 flex items-center justify-center" style={{ minHeight: '100svh' }}>
+        <div 
+          className="text-center flex flex-col items-center"
+          style={{
+            gap: 'clamp(12px, 2.5vh, 28px)',
+            maxWidth: '68ch'
+          }}
+        >
+          {/* Coming soon tag - always visible */}
+          <div 
+            className="inline-flex items-center justify-center px-4 py-2 rounded-lg"
+            style={{
+              backdropFilter: 'blur(4px)',
+              backgroundColor: 'rgba(255, 255, 255, 0.4)',
+              textShadow: '0 1px 2px rgba(255, 255, 255, 0.8)'
+            }}
+          >
             <p 
               className="text-slate-600 font-light tracking-[0.3em] uppercase text-xs sm:text-sm"
               data-testid="text-coming-soon"
@@ -390,13 +398,15 @@ export function ComingSoon({
 
           {/* Main Headline */}
           <div 
-            className={`transition-all duration-1000 backdrop-blur-md bg-white/40 rounded-2xl px-8 py-6 inline-block ${showTitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+            className={`transition-all duration-1000 ${showTitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
           >
             <h1 
               className="font-bold tracking-tight leading-tight bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 bg-clip-text text-transparent"
               style={{ 
-                fontSize: 'clamp(2rem, 6vw, 4rem)',
-                textShadow: '0 2px 20px rgba(0, 0, 0, 0.05)'
+                fontSize: 'clamp(34px, 7vw, 84px)',
+                backdropFilter: 'blur(5px)',
+                textShadow: '0 0 1px rgba(255, 255, 255, 0.9), 0 2px 8px rgba(255, 255, 255, 0.6)',
+                WebkitTextStroke: '0.5px rgba(255, 255, 255, 0.3)'
               }}
               data-testid="text-title"
             >
@@ -409,8 +419,12 @@ export function ComingSoon({
             className={`transition-all duration-1000 ${showSubtitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
           >
             <p 
-              className="font-medium text-slate-600 leading-relaxed backdrop-blur-sm bg-white/20 rounded-xl px-6 py-3 inline-block"
-              style={{ fontSize: 'clamp(1.125rem, 2.5vw, 1.5rem)' }}
+              className="font-medium text-slate-600 leading-relaxed"
+              style={{ 
+                fontSize: 'clamp(16px, 2.2vw, 22px)',
+                backdropFilter: 'blur(6px)',
+                textShadow: '0 0 1px rgba(255, 255, 255, 0.95), 0 1px 4px rgba(255, 255, 255, 0.7)'
+              }}
               data-testid="text-subtitle"
             >
               {subtitle}
@@ -419,9 +433,10 @@ export function ComingSoon({
 
           {/* CTA Buttons */}
           <div 
-            className={`flex flex-col sm:flex-row items-center justify-center gap-4 transition-all duration-1000 ${showSubtitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+            className={`flex flex-col sm:flex-row items-center justify-center transition-all duration-1000 ${showSubtitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
             style={{ 
               paddingTop: 'clamp(2rem, 5vw, 4rem)',
+              gap: 'clamp(12px, 2vh, 20px)',
               transitionDelay: '0.3s'
             }}
           >
