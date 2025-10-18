@@ -1,0 +1,74 @@
+Goal:
+Redesign the Coming Soon page to match the OnSpot homepage vibe — clean, premium, emotional, and adaptive to all screen sizes. It must fit within one screen (no scroll) and instantly inspire anticipation and imagination.
+
+⸻
+
+Vibe & Feel
+	•	Calm brilliance, futuristic, elegant minimalism.
+	•	Feels like something powerful is about to launch.
+	•	Inspired by Apple launch pages — light, balanced, and confident.
+	•	Keep the viewer curious without clutter.
+
+⸻
+
+Layout
+	•	One full-screen hero section (100vh).
+	•	Center all content vertically and horizontally.
+	•	Use fluid spacing and adaptive typography (clamp() values).
+	•	No scroll on desktop or mobile.
+	•	Max text width: 68ch for perfect line balance.
+
+⸻
+
+Content Order
+	1.	Headline: “Too much brilliance loading at once.”
+	2.	Kicker: “We’re optimizing your experience — the best is about to go live.”
+	3.	Subtext: short paragraph about OnSpot crafting the next evolution of outsourcing.
+	4.	Two CTA buttons (centered):
+	•	Primary: Launch AI Assistant (gradient blue→purple, same as homepage)
+	•	Secondary: Explore OnSpot (glass/ghost style)
+	5.	Subtle progress bar below buttons (animated shimmer).
+	6.	Optional note: “Preparing your experience…”
+
+⸻
+
+Background & Visuals
+	•	Gradient: linear-gradient(35deg, #474EAD 0%, #6A4CFF 100%)
+	•	Add soft radial glow behind headline for depth.
+	•	Optional light particles (opacity 0.1–0.2).
+	•	No big orbs or heavy graphics — keep minimal.
+
+⸻
+
+Typography
+	•	Headline: bold, large, center-aligned, 2 lines max.
+	•	Kicker: medium weight, soft tone.
+	•	Subtext: lighter opacity (0.8), max width 68ch.
+
+⸻
+
+Animation & Motion
+	•	Smooth fade-in + slide-up sequence for hero text (staggered 300–500ms).
+	•	Progress bar shimmer loop (slow, 2–3s).
+	•	Disable motion for users who prefer reduced motion.
+
+⸻
+
+Responsiveness
+	•	All text and spacing must scale smoothly.
+	•	CTAs stack vertically on small screens.
+	•	Page always fits in one view.
+	•	Maintain perfect alignment and spacing harmony.
+
+⸻
+
+Performance & Accessibility
+	•	Use light assets only (no heavy scripts).
+	•	Maintain color contrast and keyboard focus states.
+	•	Target LCP < 2s and no layout shift.
+
+⸻
+
+Optional
+	•	Add a small Vanessa avatar (bottom corner, faded) with tooltip:
+“Vanessa is getting ready to assist you soon.”
