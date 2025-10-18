@@ -514,12 +514,12 @@ export function TopNavigation() {
             />
           </Link>
 
-          {/* Center: Desktop Navigation Items */}
+          {/* Desktop Navigation Items */}
           <div 
-            className="hidden md:flex items-center flex-1 justify-center relative z-10"
+            className="hidden md:flex items-center relative z-10 flex-1 justify-end"
             style={{ 
-              gap: 'var(--nav-gap)',
-              maxWidth: 'min(800px, 60%)'
+              gap: 'clamp(8px, 1.5vw, 24px)',
+              marginRight: 'clamp(16px, 2vw, 32px)'
             }}
           >
             {navigationItems.map((item) => {
@@ -570,8 +570,9 @@ export function TopNavigation() {
                     {/* Services Mega Menu */}
                     {activeDropdown === item.title && item.services && (
                       <div
-                        className="fixed top-16 left-1/2 transform -translate-x-1/2 mt-2 w-[min(100vw-2rem,1400px)] rounded-lg border border-white/20 backdrop-blur-md shadow-2xl z-50 mx-4"
+                        className="fixed left-1/2 transform -translate-x-1/2 w-[min(100vw-2rem,1400px)] rounded-lg border border-white/20 backdrop-blur-md shadow-2xl z-50 mx-4"
                         style={{
+                          top: 'calc(var(--nav-h) + 8px)',
                           background: "var(--gradient-investor-hero)",
                         }}
                         onMouseEnter={handleDropdownMouseEnter}
@@ -718,8 +719,9 @@ export function TopNavigation() {
                     {/* Find Work Categories Mega Menu */}
                     {activeDropdown === item.title && item.categories && (
                       <div
-                        className="fixed top-16 left-1/2 transform -translate-x-1/2 mt-2 w-[min(100vw-2rem,1200px)] max-h-[calc(100vh-5rem)] rounded-lg border border-white/20 backdrop-blur-md shadow-2xl z-50 mx-4 overflow-hidden"
+                        className="fixed left-1/2 transform -translate-x-1/2 w-[min(100vw-2rem,1200px)] max-h-[calc(100vh-5rem)] rounded-lg border border-white/20 backdrop-blur-md shadow-2xl z-50 mx-4 overflow-hidden"
                         style={{
+                          top: 'calc(var(--nav-h) + 8px)',
                           background:
                             "linear-gradient(135deg, #474ead 0%, #5a5dc7 50%, #6366f1 100%)",
                         }}
@@ -919,8 +921,9 @@ export function TopNavigation() {
                     {/* Why OnSpot Mega Menu */}
                     {activeDropdown === item.title && item.whyOnSpot && (
                       <div
-                        className="fixed top-16 left-1/2 transform -translate-x-1/2 mt-2 w-[min(100vw-2rem,1200px)] max-h-[calc(100vh-5rem)] rounded-lg border border-white/20 backdrop-blur-md shadow-2xl z-50 mx-4 overflow-hidden"
+                        className="fixed left-1/2 transform -translate-x-1/2 w-[min(100vw-2rem,1200px)] max-h-[calc(100vh-5rem)] rounded-lg border border-white/20 backdrop-blur-md shadow-2xl z-50 mx-4 overflow-hidden"
                         style={{
+                          top: 'calc(var(--nav-h) + 8px)',
                           background:
                             "linear-gradient(135deg, #474ead 0%, #5a5dc7 50%, #6366f1 100%)",
                         }}
@@ -1109,7 +1112,7 @@ export function TopNavigation() {
           {/* Mobile Menu Button & Authentication Section */}
           <div 
             className="flex items-center relative z-10"
-            style={{ gap: 'clamp(12px, 1.5vw, 20px)' }}
+            style={{ gap: 'clamp(8px, 1vw, 12px)' }}
           >
             {/* Mobile Menu Toggle */}
             <button
@@ -1291,13 +1294,7 @@ export function TopNavigation() {
                   setSelectedPortal(null);
                   setShowPortal(true);
                 }}
-                className="hidden md:flex items-center gap-2 rounded-full bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white font-bold text-sm tracking-wide uppercase transition-all duration-500 hover:scale-105 hover:shadow-[0_0_30px_rgba(58,58,248,0.6)] relative overflow-hidden group"
-                style={{
-                  paddingLeft: 'clamp(16px, 2vw, 24px)',
-                  paddingRight: 'clamp(16px, 2vw, 24px)',
-                  paddingTop: 'clamp(8px, 1vh, 10px)',
-                  paddingBottom: 'clamp(8px, 1vh, 10px)'
-                }}
+                className="hidden md:flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white font-bold text-sm tracking-wide uppercase transition-all duration-500 hover:scale-105 hover:shadow-[0_0_30px_rgba(58,58,248,0.6)] relative overflow-hidden group whitespace-nowrap"
                 data-testid="button-access-portal"
               >
                 {/* Animated gradient shimmer overlay */}
