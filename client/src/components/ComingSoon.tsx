@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Bot, ArrowRight } from "lucide-react";
 import { VanessaChat } from "@/components/VanessaChat";
-import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
+import { BrainGradient } from "@/components/BrainGradient";
 
 interface ComingSoonProps {
   title?: string;
@@ -21,8 +21,7 @@ export function ComingSoon({
   const [showVanessaChat, setShowVanessaChat] = useState(false);
   const [typedText, setTypedText] = useState("");
   const [showDots, setShowDots] = useState(0);
-  const [showTitle, setShowTitle] = useState(false);
-  const [showSubtitle, setShowSubtitle] = useState(false);
+  const [showContent, setShowContent] = useState(false);
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const comingSoonText = "COMING SOON";
@@ -30,8 +29,7 @@ export function ComingSoon({
   useEffect(() => {
     if (prefersReducedMotion) {
       setTypedText(comingSoonText);
-      setShowTitle(true);
-      setShowSubtitle(true);
+      setShowContent(true);
       return;
     }
 
@@ -49,8 +47,7 @@ export function ComingSoon({
       setShowDots(prev => (prev + 1) % 4);
     }, 500);
 
-    setTimeout(() => setShowTitle(true), 1800);
-    setTimeout(() => setShowSubtitle(true), 2400);
+    setTimeout(() => setShowContent(true), 800);
 
     return () => {
       clearInterval(typeInterval);
@@ -60,149 +57,198 @@ export function ComingSoon({
 
   return (
     <div 
-      className="w-full flex flex-col items-center justify-center relative overflow-hidden"
+      className="w-full relative overflow-hidden"
       style={{
         minHeight: '100svh',
         background: 'radial-gradient(ellipse at center, #ffffff 0%, #fdfbff 40%, #f8f6fe 100%)'
       }}
     >
-      {/* Ambient glow orbs for depth */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/3 w-[500px] h-[500px] bg-gradient-radial from-violet-500/10 to-transparent rounded-full blur-3xl animate-gentle-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/3 w-[500px] h-[500px] bg-gradient-radial from-blue-500/10 to-transparent rounded-full blur-3xl animate-gentle-pulse" style={{ animationDelay: '1.5s' }}></div>
+      {/* OnSpot Logo - Top Center */}
+      <div className="absolute top-8 left-1/2 -translate-x-1/2 z-30">
+        <Link href="/">
+          <h1 
+            className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent opacity-40 hover:opacity-70 transition-opacity cursor-pointer"
+            style={{ 
+              textShadow: '0 0 20px rgba(139, 92, 246, 0.15)',
+              letterSpacing: '-0.02em'
+            }}
+            data-testid="logo-onspot"
+          >
+            OnSpot
+          </h1>
+        </Link>
       </div>
 
-      {/* Content Container - perfectly centered */}
-      <div className="container mx-auto px-6 relative z-10 flex items-center justify-center" style={{ minHeight: '100svh' }}>
-        <div 
-          className="text-center flex flex-col items-center w-full max-w-5xl"
-          style={{
-            gap: 'clamp(16px, 3vh, 40px)'
-          }}
-        >
-          {/* Pulsing OnSpot Logo - Main Focus */}
-          <div className="relative mb-8">
-            <div className="relative group">
-              {/* Pulsing gradient glow effect - similar to homepage */}
-              <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-blue-600 rounded-full blur-3xl opacity-40 group-hover:opacity-60 transition-opacity duration-500 animate-gentle-pulse"></div>
-              
-              {/* OnSpot Logo Container */}
-              <div 
-                className="relative bg-white/80 backdrop-blur-sm rounded-3xl p-8 sm:p-10 lg:p-12 border border-white/40 shadow-xl"
-                style={{
-                  width: 'clamp(280px, 40vw, 420px)',
-                  height: 'auto'
-                }}
+      {/* 12-Column Grid Container */}
+      <div 
+        className="mx-auto relative flex items-center justify-center"
+        style={{
+          maxWidth: 'clamp(1280px, 90vw, 1440px)',
+          padding: '0 clamp(16px, 4vw, 48px)',
+          minHeight: '100svh'
+        }}
+      >
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 w-full items-center relative">
+          
+          {/* Left Side: Content (Cols 1-6) */}
+          <div 
+            className="lg:col-span-6 relative z-20 flex flex-col"
+            style={{
+              gap: 'clamp(12px, 2.8vh, 28px)'
+            }}
+          >
+            {/* Coming Soon - Plain Text */}
+            <div 
+              className={`transition-all duration-1000 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+            >
+              <p 
+                className="font-medium tracking-[0.25em] uppercase text-xs sm:text-sm bg-gradient-to-r from-violet-600/90 to-blue-600/90 bg-clip-text text-transparent"
+                data-testid="text-coming-soon"
               >
-                <img
-                  src={onspotLogo}
-                  alt="OnSpot"
-                  className="w-full h-auto"
-                  data-testid="logo-onspot"
-                />
-              </div>
+                {typedText}
+                {!prefersReducedMotion && typedText === comingSoonText && (
+                  <span className="inline-block ml-1">
+                    {'.'.repeat(showDots)}
+                  </span>
+                )}
+              </p>
+            </div>
 
-              {/* Secondary outer glow ring */}
-              <div className="absolute inset-0 bg-gradient-to-r from-violet-400/20 to-blue-400/20 rounded-full blur-2xl opacity-60 animate-gentle-pulse scale-110" style={{ animationDelay: '1s' }}></div>
+            {/* H1 - Main Headline */}
+            <div 
+              className={`transition-all duration-1000 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+              style={{ transitionDelay: '0.1s' }}
+            >
+              <h1 
+                className="font-bold tracking-tight bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 bg-clip-text text-transparent"
+                style={{ 
+                  fontSize: 'clamp(34px, 7vw, 96px)',
+                  lineHeight: '1.05',
+                  letterSpacing: '-0.01em',
+                  maxWidth: '68ch',
+                  textShadow: '0 1px 0 #fff, 0 0 24px rgba(140, 120, 255, 0.25)'
+                }}
+                data-testid="text-title"
+              >
+                {title}
+              </h1>
+            </div>
+            
+            {/* Subline */}
+            <div 
+              className={`transition-all duration-1000 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+              style={{ transitionDelay: '0.2s' }}
+            >
+              <p 
+                className="font-medium text-slate-600 leading-relaxed"
+                style={{ 
+                  fontSize: 'clamp(16px, 2.2vw, 22px)',
+                  opacity: 0.8,
+                  maxWidth: '68ch'
+                }}
+                data-testid="text-subtitle"
+              >
+                {subtitle}
+              </p>
+            </div>
+
+            {/* CTAs - Homepage Style */}
+            <div 
+              className={`flex flex-col sm:flex-row items-start gap-3 sm:gap-4 transition-all duration-1000 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+              style={{ 
+                transitionDelay: '0.3s',
+                paddingTop: 'clamp(1rem, 2vh, 2rem)'
+              }}
+            >
+              {/* Primary: Launch AI Assistant */}
+              <Button
+                size="lg"
+                onClick={() => setShowVanessaChat(true)}
+                className="group relative overflow-hidden min-h-[54px] px-8 text-base w-full sm:w-auto bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700 text-white font-semibold transition-all duration-300 rounded-2xl shadow-lg hover:shadow-xl"
+                data-testid="button-launch-ai"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+                <Bot className="w-5 h-5 mr-2 relative z-10" />
+                <span className="relative z-10">Launch AI Assistant</span>
+              </Button>
+
+              {/* Secondary: Explore OnSpot */}
+              <Button
+                variant="outline"
+                size="lg"
+                className="group relative overflow-hidden min-h-[54px] px-8 text-base w-full sm:w-auto border-2 border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 font-medium backdrop-blur-sm bg-white/60 transition-all duration-300 rounded-2xl shadow-sm hover:shadow-md"
+                asChild
+                data-testid="button-explore-onspot"
+              >
+                <Link href="/">
+                  Explore OnSpot
+                  <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </Button>
             </div>
           </div>
 
-          {/* Coming soon tag - always visible */}
+          {/* Right Side: Brain Image (Cols 7-12) - Desktop Only */}
           <div 
-            className="inline-flex items-center justify-center px-5 py-2.5 rounded-full border border-violet-200/60 bg-white/70 backdrop-blur-sm shadow-sm"
-            data-testid="badge-coming-soon"
-          >
-            <p 
-              className="font-medium tracking-[0.3em] uppercase text-sm bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent"
-              data-testid="text-coming-soon"
-            >
-              {typedText}
-              {!prefersReducedMotion && typedText === comingSoonText && (
-                <span className="inline-block ml-1">
-                  {'.'.repeat(showDots)}
-                </span>
-              )}
-            </p>
-          </div>
-
-          {/* Main Headline - Large, Bold, Exciting */}
-          <div 
-            className={`transition-all duration-1000 ${showTitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-          >
-            <h1 
-              className="font-bold tracking-tight leading-[1.1] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 bg-clip-text text-transparent"
-              style={{ 
-                fontSize: 'clamp(34px, 7vw, 84px)',
-                maxWidth: '68ch',
-                textWrap: 'balance'
-              }}
-              data-testid="text-title"
-            >
-              {title}
-            </h1>
-          </div>
-          
-          {/* Subtext - Clean, Readable */}
-          <div 
-            className={`transition-all duration-1000 ${showSubtitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-          >
-            <p 
-              className="font-medium text-slate-600 leading-relaxed"
-              style={{ 
-                fontSize: 'clamp(16px, 2.2vw, 22px)',
-                maxWidth: '68ch',
-                textWrap: 'balance'
-              }}
-              data-testid="text-subtitle"
-            >
-              {subtitle}
-            </p>
-          </div>
-
-          {/* CTA Buttons - Gradient Primary + Glass Secondary */}
-          <div 
-            className={`flex flex-col sm:flex-row items-center justify-center transition-all duration-1000 ${showSubtitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-            style={{ 
-              paddingTop: 'clamp(2rem, 5vw, 4rem)',
-              gap: 'clamp(12px, 2vh, 20px)',
-              transitionDelay: '0.3s'
+            className="hidden lg:block lg:col-span-6 relative"
+            style={{
+              position: 'relative',
+              overflow: 'visible'
             }}
           >
-            {/* Primary: Launch AI Assistant */}
-            <Button
-              size="lg"
-              onClick={() => setShowVanessaChat(true)}
-              className="group relative overflow-hidden min-h-[56px] px-8 text-base sm:text-lg w-full sm:w-auto bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 rounded-2xl hover:shadow-[0_0_30px_rgba(139,92,246,0.4)]"
-              data-testid="button-launch-ai"
+            <div
+              className="brain-container"
+              style={{
+                position: 'absolute',
+                right: 0,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: 'clamp(420px, 44vw, 800px)',
+                marginLeft: '-2%',
+                willChange: 'transform, opacity'
+              }}
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-              <Bot className="w-5 h-5 mr-2 relative z-10" />
-              <span className="relative z-10">Launch AI Assistant</span>
-            </Button>
-
-            {/* Secondary: Explore OnSpot */}
-            <Button
-              variant="outline"
-              size="lg"
-              className="group relative overflow-hidden min-h-[56px] px-8 text-base sm:text-lg w-full sm:w-auto border-2 border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 font-medium backdrop-blur-sm bg-white/60 shadow-sm hover:shadow-md transition-all duration-300 rounded-2xl"
-              asChild
-              data-testid="button-explore-onspot"
-            >
-              <Link href="/">
-                Explore OnSpot
-                <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </Button>
+              {/* Rotating hue sweep overlay */}
+              <div 
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background: 'radial-gradient(circle, rgba(139, 92, 246, 0.3) 0%, rgba(59, 130, 246, 0.2) 50%, transparent 100%)',
+                  mixBlendMode: 'screen',
+                  opacity: 0.15,
+                  animation: 'rotateSlow 18s linear infinite'
+                }}
+              />
+              
+              <div
+                style={{
+                  animation: prefersReducedMotion ? 'none' : 'brainPulse 6s ease-in-out infinite',
+                  willChange: 'transform, opacity'
+                }}
+                data-testid="brain-image"
+              >
+                <BrainGradient />
+              </div>
+            </div>
           </div>
 
-          {/* Small tagline at bottom */}
+          {/* Mobile: Brain Behind Text */}
           <div 
-            className={`transition-all duration-1000 mt-8 ${showSubtitle ? 'opacity-100' : 'opacity-0'}`}
-            style={{ transitionDelay: '0.6s' }}
+            className="lg:hidden absolute inset-0 flex items-center justify-center pointer-events-none"
+            style={{
+              zIndex: 1
+            }}
           >
-            <p className="text-sm text-slate-500 font-light italic">
-              Where AI meets human brilliance
-            </p>
+            <div
+              style={{
+                width: 'clamp(420px, 84vw, 820px)',
+                maxWidth: '90vw',
+                opacity: 0.5,
+                animation: prefersReducedMotion ? 'none' : 'brainPulse 6s ease-in-out infinite',
+                willChange: 'transform, opacity'
+              }}
+            >
+              <BrainGradient />
+            </div>
           </div>
         </div>
       </div>
@@ -214,6 +260,44 @@ export function ComingSoon({
           onClose={() => setShowVanessaChat(false)}
         />
       )}
+
+      <style>{`
+        @keyframes brainPulse {
+          0% {
+            transform: translateY(-50%) scale(0.96);
+            opacity: 0.9;
+          }
+          50% {
+            transform: translateY(-50%) scale(1.06);
+            opacity: 0.55;
+          }
+          100% {
+            transform: translateY(-50%) scale(0.96);
+            opacity: 0.9;
+          }
+        }
+
+        @keyframes rotateSlow {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
+        @media (max-width: 1024px) {
+          .brain-container {
+            display: none;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .flex-col.sm\\:flex-row {
+            flex-direction: column;
+          }
+        }
+      `}</style>
     </div>
   );
 }
