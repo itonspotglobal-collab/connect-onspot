@@ -67,10 +67,10 @@ export function ComingSoon({
         
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
           <div className="max-w-5xl mx-auto" style={{ overflow: 'visible' }}>
-            <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center" style={{ overflow: 'visible' }}>
+            <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center relative" style={{ overflow: 'visible' }}>
               
               {/* Left Side: Typography */}
-              <div className="text-center lg:text-left space-y-6 sm:space-y-8" style={{ overflow: 'visible' }}>
+              <div className="text-center lg:text-left space-y-6 sm:space-y-8 relative z-10" style={{ overflow: 'visible' }}>
                 {/* Coming Soon Label */}
                 <div 
                   className={`transition-all duration-1000 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
@@ -116,8 +116,8 @@ export function ComingSoon({
                   <h2 
                     className="text-4xl sm:text-5xl lg:text-6xl font-bold"
                     style={{
-                      lineHeight: '1.15',
-                      paddingBottom: '0.25em',
+                      lineHeight: '1.08',
+                      paddingBottom: '0.08em',
                       textWrap: 'balance',
                       hyphens: 'none',
                       WebkitTransform: 'translateZ(0)',
@@ -148,13 +148,20 @@ export function ComingSoon({
                 {/* CTAs */}
                 <div 
                   className={`flex flex-col sm:flex-row items-center lg:items-start gap-3 sm:gap-4 transition-all duration-1000 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-                  style={{ transitionDelay: '0.4s' }}
+                  style={{ 
+                    transitionDelay: '0.4s',
+                    paddingBottom: 'max(12px, env(safe-area-inset-bottom))'
+                  }}
                 >
                   {/* Primary: Launch AI Assistant */}
                   <Button
                     size="lg"
                     onClick={() => setShowVanessaChat(true)}
-                    className="group relative overflow-hidden min-h-[54px] px-8 text-base w-full sm:w-auto bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700 text-white font-semibold transition-all duration-300 rounded-2xl shadow-lg hover:shadow-xl hover:shadow-[0_0_30px_rgba(139,92,246,0.4)]"
+                    className="group relative overflow-hidden px-8 text-base w-full sm:w-auto bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700 text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-[0_0_30px_rgba(139,92,246,0.4)]"
+                    style={{
+                      minHeight: '56px',
+                      borderRadius: '14px'
+                    }}
                     data-testid="button-launch-ai"
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
@@ -166,7 +173,11 @@ export function ComingSoon({
                   <Button
                     variant="outline"
                     size="lg"
-                    className="group relative overflow-hidden min-h-[54px] px-8 text-base w-full sm:w-auto border-2 border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 font-medium backdrop-blur-sm bg-white/60 transition-all duration-300 rounded-2xl shadow-sm hover:shadow-md"
+                    className="group relative overflow-hidden px-8 text-base w-full sm:w-auto border-2 border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 font-medium backdrop-blur-sm bg-white/60 transition-all duration-300 shadow-sm hover:shadow-md"
+                    style={{
+                      minHeight: '56px',
+                      borderRadius: '14px'
+                    }}
                     asChild
                     data-testid="button-explore-onspot"
                   >
@@ -179,28 +190,36 @@ export function ComingSoon({
               </div>
 
               {/* Right Side: Breathing Radial Orb */}
-              <div className="relative flex items-center justify-center lg:justify-end">
+              <div className="absolute lg:relative inset-0 lg:inset-auto flex items-center justify-center lg:justify-end pointer-events-none -z-10 lg:z-auto">
                 <div 
-                  className="relative lg:opacity-100 opacity-50"
+                  className="relative"
                   style={{
-                    width: 'clamp(420px, 44vw, 820px)',
-                    aspectRatio: '1/1'
+                    width: typeof window !== 'undefined' && window.innerWidth <= 640 
+                      ? 'clamp(680px, 120vw, 1200px)' 
+                      : 'clamp(420px, 44vw, 820px)',
+                    aspectRatio: '1/1',
+                    opacity: 1,
+                    overflow: 'visible'
                   }}
                 >
                   {/* Fixed container - light flows inside, no shape scaling */}
-                  <div className="absolute inset-0">
+                  <div className="absolute inset-0" style={{ overflow: 'visible' }}>
                     {/* First flowing gradient layer - light pulses from center outward */}
                     <div 
                       className="absolute inset-0 bg-gradient-to-tr from-violet-500/30 via-blue-500/30 to-cyan-500/30 rounded-full"
                       style={{
-                        animation: prefersReducedMotion ? 'none' : 'organicFloat 7s ease-in-out infinite, flowingGradient1 6s ease-in-out infinite'
+                        animation: prefersReducedMotion ? 'none' : 'organicFloat 7s ease-in-out infinite, flowingGradient1 7s ease-in-out infinite',
+                        backgroundPosition: 'center',
+                        transformOrigin: '50% 50%'
                       }}
                     ></div>
                     {/* Second flowing gradient layer - synchronized energy flow */}
                     <div 
                       className="absolute inset-0 bg-gradient-to-bl from-blue-500/40 via-violet-500/40 to-purple-500/40 rounded-full"
                       style={{
-                        animation: prefersReducedMotion ? 'none' : 'organicSpin 20s linear infinite, flowingGradient2 6s ease-in-out infinite'
+                        animation: prefersReducedMotion ? 'none' : 'organicSpin 20s linear infinite, flowingGradient2 7s ease-in-out infinite',
+                        backgroundPosition: 'center',
+                        transformOrigin: '50% 50%'
                       }}
                     ></div>
                   </div>
