@@ -498,7 +498,7 @@ export function TopNavigation() {
             height: 'var(--nav-h)',
             paddingLeft: 'var(--nav-px)',
             paddingRight: 'var(--nav-px)',
-            maxWidth: 'min(1536px, 100%)', // xl breakpoint with tablet step-down
+            maxWidth: 'min(var(--nav-container-max), 100%)',
           }}
         >
           {/* Logo */}
@@ -1313,7 +1313,7 @@ export function TopNavigation() {
             paddingRight: 'var(--nav-px)',
             paddingTop: 'clamp(12px, 2vh, 16px)',
             paddingBottom: 'clamp(12px, 2vh, 16px)',
-            maxWidth: 'min(1536px, 100%)',
+            maxWidth: 'min(var(--nav-container-max), 100%)',
           }}
         >
           <div 
