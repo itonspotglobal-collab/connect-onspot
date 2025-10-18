@@ -514,10 +514,13 @@ export function TopNavigation() {
             />
           </Link>
 
-          {/* Desktop Navigation Items */}
+          {/* Center: Desktop Navigation Items */}
           <div 
-            className="hidden md:flex items-center relative z-10"
-            style={{ gap: 'var(--nav-gap)' }}
+            className="hidden md:flex items-center flex-1 justify-center relative z-10"
+            style={{ 
+              gap: 'var(--nav-gap)',
+              maxWidth: 'min(800px, 60%)'
+            }}
           >
             {navigationItems.map((item) => {
               const hasMegaMenu = "megaMenu" in item && item.megaMenu;
@@ -548,11 +551,12 @@ export function TopNavigation() {
                     onMouseLeave={handleMouseLeave}
                   >
                     <button
-                      className={`px-4 py-2 text-sm font-medium transition-all duration-300 rounded-lg hover-elevate flex items-center gap-1 ${
+                      className={`py-2 text-sm font-medium transition-all duration-300 rounded-lg hover-elevate flex items-center gap-1 ${
                         isActive
                           ? "text-white bg-white/10 border border-white/40"
                           : "text-white/90"
                       }`}
+                      style={{ paddingLeft: 'var(--nav-item-px)', paddingRight: 'var(--nav-item-px)' }}
                       data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
                     >
                       {item.title}
@@ -1088,11 +1092,12 @@ export function TopNavigation() {
                 <Link
                   key={item.path}
                   href={item.path}
-                  className={`px-4 py-2 text-sm font-medium transition-all duration-300 rounded-lg hover-elevate ${
+                  className={`py-2 text-sm font-medium transition-all duration-300 rounded-lg hover-elevate ${
                     location === item.path
                       ? "text-white bg-white/10 border border-white/40"
                       : "text-white/90"
                   }`}
+                  style={{ paddingLeft: 'var(--nav-item-px)', paddingRight: 'var(--nav-item-px)' }}
                   data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
                 >
                   {item.title}
@@ -1102,7 +1107,10 @@ export function TopNavigation() {
           </div>
 
           {/* Mobile Menu Button & Authentication Section */}
-          <div className="flex items-center gap-3 relative z-10">
+          <div 
+            className="flex items-center relative z-10"
+            style={{ gap: 'clamp(12px, 1.5vw, 20px)' }}
+          >
             {/* Mobile Menu Toggle */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -1283,7 +1291,13 @@ export function TopNavigation() {
                   setSelectedPortal(null);
                   setShowPortal(true);
                 }}
-                className="hidden md:flex items-center gap-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white font-bold text-sm tracking-wide uppercase transition-all duration-500 hover:scale-105 hover:shadow-[0_0_30px_rgba(58,58,248,0.6)] relative overflow-hidden group"
+                className="hidden md:flex items-center gap-2 rounded-full bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white font-bold text-sm tracking-wide uppercase transition-all duration-500 hover:scale-105 hover:shadow-[0_0_30px_rgba(58,58,248,0.6)] relative overflow-hidden group"
+                style={{
+                  paddingLeft: 'clamp(16px, 2vw, 24px)',
+                  paddingRight: 'clamp(16px, 2vw, 24px)',
+                  paddingTop: 'clamp(8px, 1vh, 10px)',
+                  paddingBottom: 'clamp(8px, 1vh, 10px)'
+                }}
                 data-testid="button-access-portal"
               >
                 {/* Animated gradient shimmer overlay */}

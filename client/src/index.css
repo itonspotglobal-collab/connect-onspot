@@ -126,9 +126,10 @@
   
   /* Fluid Navigation Variables */
   --nav-h: clamp(56px, 7vh, 64px);
-  --nav-px: clamp(12px, 2vw, 16px);
+  --nav-px: clamp(16px, 2.5vw, 24px);
   --nav-py: clamp(8px, 1.5vh, 12px);
-  --nav-gap: clamp(4px, 1vw, 8px);
+  --nav-gap: clamp(12px, 2vw, 32px);
+  --nav-item-px: clamp(12px, 1.5vw, 20px);
   --nav-font-size: clamp(0.875rem, 1.5vw, 1rem);
   --nav-shadow-scrolled: 0 2px 8px rgba(0, 0, 0, 0.08);
   --nav-container-max: 1536px; /* Default, overridden by media queries */
