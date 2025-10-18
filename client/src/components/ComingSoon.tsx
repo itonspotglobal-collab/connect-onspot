@@ -58,7 +58,7 @@ export function ComingSoon({
   return (
     <div className="w-full relative overflow-hidden" style={{ minHeight: '100svh' }}>
       {/* AI + Human Advantage Style Section */}
-      <div className="relative py-24 sm:py-32 lg:py-40 overflow-hidden flex items-center" style={{ minHeight: '100svh' }}>
+      <div className="relative py-24 sm:py-32 lg:py-40 flex items-center" style={{ minHeight: '100svh', overflow: 'visible' }}>
         {/* Luminous gradient background */}
         <div className="absolute inset-0 bg-gradient-to-b from-background via-violet-500/5 to-background"></div>
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -66,11 +66,11 @@ export function ComingSoon({
         </div>
         
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
-          <div className="max-w-5xl mx-auto">
-            <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          <div className="max-w-5xl mx-auto" style={{ overflow: 'visible' }}>
+            <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center" style={{ overflow: 'visible' }}>
               
               {/* Left Side: Typography */}
-              <div className="text-center lg:text-left space-y-6 sm:space-y-8">
+              <div className="text-center lg:text-left space-y-6 sm:space-y-8" style={{ overflow: 'visible' }}>
                 {/* OnSpot Logo */}
                 <div 
                   className={`transition-all duration-1000 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
@@ -106,9 +106,18 @@ export function ComingSoon({
                 {/* Main Headline */}
                 <div 
                   className={`transition-all duration-1000 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-                  style={{ transitionDelay: '0.2s' }}
+                  style={{ transitionDelay: '0.2s', overflow: 'visible' }}
                 >
-                  <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight pb-2">
+                  <h2 
+                    className="text-4xl sm:text-5xl lg:text-6xl font-bold"
+                    style={{
+                      lineHeight: '1.06',
+                      paddingBottom: '0.08em',
+                      textWrap: 'balance',
+                      hyphens: 'none',
+                      WebkitTransform: 'translateZ(0)'
+                    } as React.CSSProperties}
+                  >
                     <span className="block bg-gradient-to-r from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent">
                       The next evolution of{" "}
                     </span>
