@@ -1266,7 +1266,12 @@ export default function Home() {
 
         <div className="container mx-auto px-4 sm:px-6 py-16 sm:py-20 lg:py-24">
           {/* Footer Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-12 lg:gap-8 max-w-7xl mx-auto">
+          <div 
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 md:gap-x-12 md:gap-y-12 lg:gap-8 max-w-7xl mx-auto"
+            style={{
+              rowGap: 'clamp(8px, 1.2vh, 16px)'
+            }}
+          >
             {/* Brand Section - Spans 2 columns */}
             <div 
               className="lg:col-span-2 space-y-8 md:pb-0 md:border-b-0 text-center md:text-left"
