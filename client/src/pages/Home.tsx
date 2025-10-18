@@ -386,51 +386,49 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Gradient Transition from Hero to Content */}
-      <div className="relative h-[10vh]">
-        {/* Smooth gradient fade from dark blue to light bluish-white */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0a1628] via-[#e8f0fe] to-slate-50 dark:from-[#0a1628] dark:via-slate-900 dark:to-background"></div>
-        
-        {/* Soft 1px highlight divider at bottom for balance */}
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[85%]">
-          <div className="h-px bg-gradient-to-r from-transparent via-violet-300/40 to-transparent"></div>
-        </div>
-      </div>
-
-      {/* Trusted By Section - AI-Inspired Minimalist Design */}
-      <div className="relative overflow-hidden pb-24 sm:pb-32 bg-slate-50 dark:bg-background">
-        {/* Subtle AI Glow Effects */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
-          <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-gradient-radial from-violet-500/15 to-transparent rounded-full blur-3xl animate-gentle-float"></div>
-          <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-gradient-radial from-blue-500/10 to-transparent rounded-full blur-3xl animate-slow-spin"></div>
+      {/* Trusted By Section - Premium Apple-Style Design */}
+      <div className="relative overflow-hidden bg-[#f7f9ff] dark:bg-background" style={{ padding: 'clamp(4rem, 8vw, 8rem) 0' }}>
+        {/* Centered 1px highlight line with soft contact shadow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[85%] pointer-events-none">
+          {/* Soft contact shadow for depth */}
+          <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-b from-violet-500/5 via-blue-500/3 to-transparent blur-sm"></div>
+          {/* Centered highlight line */}
+          <div className="h-px bg-gradient-to-r from-transparent via-violet-400/25 to-transparent"></div>
         </div>
 
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
           <div className="text-center space-y-12 sm:space-y-16">
-            {/* Sleek Typography */}
-            <div className="space-y-4 sm:space-y-6 max-w-4xl mx-auto">
+            {/* Balanced Typography */}
+            <div className="space-y-4 sm:space-y-6 mx-auto">
               <p className="text-xs sm:text-sm font-medium uppercase tracking-[0.2em] bg-gradient-to-r from-violet-600/80 to-blue-600/80 bg-clip-text text-transparent">
                 Trusted by
               </p>
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-light tracking-tight leading-tight px-4">
-                Global brands, hundreds of entrepreneurs,
-                <br className="hidden sm:block" />
-                <span className="font-semibold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                  and thousands of professionals.
-                </span>
+              <h2 
+                className="font-light tracking-tight leading-tight mx-auto"
+                style={{
+                  fontSize: 'clamp(1.75rem, 4vw, 3rem)',
+                  textWrap: 'balance',
+                  maxWidth: '62ch'
+                }}
+              >
+                Trusted by global brands, hundreds of entrepreneurs, and thousands of professionals worldwide.
               </h2>
             </div>
 
-            {/* Floating Logo Grid with Glow Effects */}
+            {/* Auto-fit Logo Grid */}
             <div className="relative py-8 sm:py-12">
-              {/* Shimmer overlay effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer pointer-events-none"></div>
-              
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-8 sm:gap-10 lg:gap-12 items-center justify-items-center">
+              <div 
+                className="mx-auto items-center justify-items-center"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                  gap: 'clamp(2rem, 4vw, 3rem)'
+                }}
+              >
                 {trustedBrands.map((brand, index) => (
                   <div
                     key={index}
-                    className="group relative flex items-center justify-center"
+                    className="group relative flex items-center justify-center w-full"
                     style={{
                       animation: `float ${3 + index * 0.3}s ease-in-out infinite`,
                       animationDelay: `${index * 0.15}s`,
