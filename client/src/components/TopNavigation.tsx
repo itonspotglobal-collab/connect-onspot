@@ -32,6 +32,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
+import { NeuralBrain } from "@/components/NeuralBrain";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -1000,100 +1001,21 @@ export function TopNavigation() {
                   <span className="sr-only">Close</span>
                 </button>
                 <div
-                  className="relative flex items-center justify-center min-h-[700px] rounded-2xl overflow-hidden"
-                  style={{
-                    background: 'linear-gradient(135deg, #0f0f3c 0%, #1a1a4e 25%, #252560 50%, #1a1a4e 75%, #0f0f3c 100%)',
-                  }}
+                  className="relative flex items-center justify-center min-h-[700px] rounded-2xl overflow-hidden bg-white"
                   data-testid="modal-step-awakening"
                 >
-                  {/* Animated Grid Background */}
-                  <div 
-                    className="absolute inset-0 opacity-10"
-                    style={{
-                      backgroundImage: 'linear-gradient(rgba(91, 124, 255, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(91, 124, 255, 0.3) 1px, transparent 1px)',
-                      backgroundSize: '50px 50px',
-                      animation: 'grid-move 20s linear infinite',
-                    }}
-                  ></div>
-
-                  {/* Multi-layer Neural Pulse System */}
-                  <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none">
-                    <div className="relative w-[800px] h-[800px]">
-                      {/* Outer expanding ring 1 */}
-                      <div
-                        className="absolute inset-0 rounded-full border-2 border-[#5B7CFF]/20 animate-pulse"
-                        style={{ 
-                          animationDuration: "5s",
-                          boxShadow: '0 0 60px rgba(91, 124, 255, 0.4), inset 0 0 60px rgba(91, 124, 255, 0.2)'
-                        }}
-                      ></div>
-                      {/* Outer expanding ring 2 */}
-                      <div
-                        className="absolute inset-[5%] rounded-full border-2 border-[#7F3DF4]/25 animate-pulse"
-                        style={{ 
-                          animationDuration: "4.5s",
-                          animationDelay: "0.3s",
-                          boxShadow: '0 0 50px rgba(127, 61, 244, 0.3), inset 0 0 50px rgba(127, 61, 244, 0.2)'
-                        }}
-                      ></div>
-                      {/* Middle energy layer */}
-                      <div
-                        className="absolute inset-[15%] rounded-full bg-gradient-to-r from-[#3A3AF8]/30 to-[#7F3DF4]/30 blur-3xl animate-pulse"
-                        style={{
-                          animationDuration: "3.5s",
-                          animationDelay: "0.6s",
-                        }}
-                      ></div>
-                      {/* Inner glow layer */}
-                      <div
-                        className="absolute inset-[25%] rounded-full bg-gradient-to-br from-[#5B7CFF]/40 to-[#9B5CFF]/40 blur-2xl animate-pulse"
-                        style={{
-                          animationDuration: "3s",
-                          animationDelay: "0.9s",
-                        }}
-                      ></div>
-                      {/* Core brilliant pulse */}
-                      <div
-                        className="absolute inset-[40%] rounded-full bg-gradient-to-r from-[#3A3AF8]/60 to-[#7F3DF4]/60 blur-xl animate-pulse"
-                        style={{
-                          animationDuration: "2.5s",
-                          animationDelay: "1.2s",
-                          boxShadow: '0 0 80px rgba(91, 124, 255, 0.8), 0 0 120px rgba(127, 61, 244, 0.6)'
-                        }}
-                      ></div>
-                      {/* Central bright core */}
-                      <div
-                        className="absolute inset-[45%] rounded-full bg-white/20 blur-md animate-pulse"
-                        style={{
-                          animationDuration: "2s",
-                          animationDelay: "1.5s",
-                        }}
-                      ></div>
+                  {/* Breathing Brain Network - Behind Title */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="relative w-full h-full max-w-[600px] max-h-[600px]">
+                      <NeuralBrain nodeCount={180} opacity={0.4} className="w-full h-full" />
                     </div>
                   </div>
 
-                  {/* Floating Particle Effects */}
-                  <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                    {[...Array(20)].map((_, i) => (
-                      <div
-                        key={i}
-                        className="absolute w-1 h-1 bg-blue-400/60 rounded-full"
-                        style={{
-                          left: `${Math.random() * 100}%`,
-                          top: `${Math.random() * 100}%`,
-                          animation: `float ${3 + Math.random() * 4}s ease-in-out infinite`,
-                          animationDelay: `${Math.random() * 3}s`,
-                          boxShadow: '0 0 10px rgba(91, 124, 255, 0.8)'
-                        }}
-                      ></div>
-                    ))}
-                  </div>
-
-                  {/* Gradient Overlay for depth */}
+                  {/* Subtle radial gradient for depth */}
                   <div
                     className="absolute inset-0 pointer-events-none"
                     style={{
-                      background: "radial-gradient(ellipse at center, transparent 0%, rgba(15,15,60,0.4) 70%, rgba(0,0,0,0.6) 100%)",
+                      background: "radial-gradient(ellipse at center, transparent 30%, rgba(255,255,255,0.6) 80%, rgba(255,255,255,0.9) 100%)",
                     }}
                   ></div>
 
@@ -1101,12 +1023,16 @@ export function TopNavigation() {
                   <div className="relative z-10 flex flex-col items-center text-center space-y-10 px-8 py-12 max-w-3xl">
                     {/* Headline - Fade in with delay */}
                     <h1
-                      className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light tracking-tight text-white animate-in fade-in slide-in-from-bottom-4 duration-1000"
+                      className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light tracking-tight animate-in fade-in slide-in-from-bottom-4 duration-1000"
                       style={{
                         fontFamily: "Inter, sans-serif",
-                        letterSpacing: "-0.02em",
+                        letterSpacing: "-0.03em",
                         animationDelay: "300ms",
                         animationFillMode: "backwards",
+                        background: 'linear-gradient(135deg, #1a1a2e 0%, #3A3AF8 50%, #7F3DF4 100%)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        backgroundClip: 'text',
                       }}
                     >
                       The first Superhuman BPO is awakening.
@@ -1114,7 +1040,7 @@ export function TopNavigation() {
 
                     {/* Subcopy - Delayed fade in */}
                     <p
-                      className="text-lg sm:text-xl md:text-2xl font-light text-white/80 animate-in fade-in slide-in-from-bottom-4 duration-1000"
+                      className="text-xl sm:text-2xl md:text-3xl font-light text-gray-600 animate-in fade-in slide-in-from-bottom-4 duration-1000"
                       style={{
                         fontFamily: "Inter, sans-serif",
                         animationDelay: "800ms",
@@ -1132,24 +1058,44 @@ export function TopNavigation() {
                         animationFillMode: "backwards",
                       }}
                     >
-                      <Button
+                      <button
                         onClick={() => setModalStep(2)}
-                        size="lg"
-                        className="relative group px-8 py-6 text-lg font-medium bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white border-0 hover:shadow-[0_0_40px_rgba(58,58,248,0.6)] transition-all duration-500 hover:scale-105"
+                        className="relative group px-10 py-5 text-lg font-semibold text-white rounded-xl overflow-hidden transition-all duration-500 hover:scale-105 shadow-lg hover:shadow-2xl"
+                        style={{
+                          background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)',
+                          boxShadow: '0 8px 30px rgba(58, 58, 248, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                        }}
                         data-testid="button-continue-to-contact-form"
                       >
-                        <span className="relative z-10 flex items-center gap-2">
+                        {/* Animated shimmer overlay */}
+                        <div 
+                          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                          style={{
+                            background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%)',
+                            animation: 'shimmer 2s infinite',
+                          }}
+                        ></div>
+                        
+                        {/* Breathing glow effect */}
+                        <div 
+                          className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 blur-2xl transition-opacity duration-500"
+                          style={{
+                            background: 'linear-gradient(135deg, #3A3AF8 0%, #7F3DF4 100%)',
+                            zIndex: -1,
+                          }}
+                        ></div>
+                        
+                        <span className="relative z-10 flex items-center gap-3">
+                          <Zap className="w-5 h-5" />
                           Be the first to experience it
                           <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
                         </span>
-                        {/* Animated glow effect */}
-                        <div className="absolute inset-0 rounded-md bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500"></div>
-                      </Button>
+                      </button>
                     </div>
 
                     {/* Microtext */}
                     <p
-                      className="text-sm text-white/40 animate-in fade-in duration-1000"
+                      className="text-sm text-gray-400 animate-in fade-in duration-1000"
                       style={{
                         fontFamily: "Inter, sans-serif",
                         animationDelay: "1700ms",
