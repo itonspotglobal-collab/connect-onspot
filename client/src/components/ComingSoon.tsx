@@ -79,7 +79,10 @@ export function ComingSoon({
                     <img
                       src={onspotLogo}
                       alt="OnSpot"
-                      className="h-6 sm:h-7 lg:h-8 w-auto mx-auto lg:mx-0 opacity-40 hover:opacity-60 transition-opacity cursor-pointer"
+                      className="h-8 sm:h-9 lg:h-10 w-auto mx-auto lg:mx-0 opacity-75 hover:opacity-95 transition-all duration-300 cursor-pointer"
+                      style={{
+                        filter: 'drop-shadow(0 0 12px rgba(139, 92, 246, 0.15))'
+                      }}
                       data-testid="logo-onspot"
                     />
                   </Link>
