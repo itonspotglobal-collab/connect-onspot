@@ -903,43 +903,160 @@ export function TopNavigation() {
                       ></div>
                       {/* Inner glow */}
                       <div
-                            </h3>
-                            <p className="text-white/80 text-sm">
-                              Choose the perfect solution for your business
-                              needs
-                            </p>
-                          </div>
+                        className="absolute inset-[20%] rounded-full bg-gradient-to-r from-[#3A3AF8]/30 to-[#7F3DF4]/30 blur-2xl animate-pulse"
+                        style={{
+                          animationDuration: "3s",
+                          animationDelay: "0.5s",
+                        }}
+                      ></div>
+                      {/* Core pulse */}
+                      <div
+                        className="absolute inset-[40%] rounded-full bg-gradient-to-r from-[#3A3AF8]/50 to-[#7F3DF4]/50 blur-xl animate-pulse"
+                        style={{
+                          animationDuration: "2s",
+                          animationDelay: "1s",
+                        }}
+                      ></div>
+                    </div>
+                  </div>
 
-                          <div className="grid grid-cols-5 gap-4">
-                            {Object.entries(item.services).map(
-                              ([key, service]) => (
-                                <Card
-                                  key={key}
-                                  className="relative overflow-hidden border-white/20 bg-white/10 backdrop-blur-md hover-elevate transition-all duration-300 group"
-                                >
-                                  <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                                  <CardContent className="relative p-4">
-                                    <div className="flex items-start gap-4 mb-4">
-                                      <div className="w-12 h-12 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
-                                        <service.icon className="w-6 h-6 text-white" />
-                                      </div>
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-2">
-                                          <h4 className="text-lg font-bold text-white truncate">
-                                            {service.title}
-                                          </h4>
-                                          {service.popular && (
-                                            <Badge className="bg-yellow-500 text-black text-xs px-2 py-1 font-semibold">
-                                              Popular
-                                            </Badge>
-                                          )}
-                                        </div>
-                                        <p className="text-white/70 text-sm font-medium mb-1">
-                                          {service.subtitle}
-                                        </p>
-                                        <p className="text-white/60 text-xs leading-relaxed mb-3">
-                                          {service.description}
-                                        </p>
+                  {/* Content Container */}
+                  <div className="relative z-10 flex flex-col items-center text-center space-y-10 px-8 py-12 max-w-3xl">
+                    {/* Headline - Fade in with delay */}
+                    <h1
+                      className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light tracking-tight text-white animate-in fade-in slide-in-from-bottom-4 duration-1000"
+                      style={{
+                        fontFamily: "Inter, sans-serif",
+                        letterSpacing: "-0.02em",
+                        animationDelay: "300ms",
+                        animationFillMode: "backwards",
+                      }}
+                    >
+                      The first Superhuman BPO is awakening.
+                    </h1>
+
+                    {/* Subcopy - Delayed fade in */}
+                    <p
+                      className="text-lg sm:text-xl md:text-2xl font-light text-white/80 animate-in fade-in slide-in-from-bottom-4 duration-1000"
+                      style={{
+                        fontFamily: "Inter, sans-serif",
+                        animationDelay: "800ms",
+                        animationFillMode: "backwards",
+                      }}
+                    >
+                      AI first. Humans when it matters.
+                    </p>
+
+                    {/* CTA Button with Glow Animation */}
+                    <div
+                      className="animate-in fade-in slide-in-from-bottom-4 duration-1000"
+                      style={{
+                        animationDelay: "1300ms",
+                        animationFillMode: "backwards",
+                      }}
+                    >
+                      <Button
+                        onClick={() => setModalStep(2)}
+                        size="lg"
+                        className="relative group px-8 py-6 text-lg font-medium bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] text-white border-0 hover:shadow-[0_0_40px_rgba(58,58,248,0.6)] transition-all duration-500 hover:scale-105"
+                        data-testid="button-continue-to-contact-form"
+                      >
+                        <span className="relative z-10 flex items-center gap-2">
+                          Be the first to experience it
+                          <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
+                        </span>
+                        {/* Animated glow effect */}
+                        <div className="absolute inset-0 rounded-md bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500"></div>
+                      </Button>
+                    </div>
+
+                    {/* Microtext */}
+                    <p
+                      className="text-sm text-white/40 animate-in fade-in duration-1000"
+                      style={{
+                        fontFamily: "Inter, sans-serif",
+                        animationDelay: "1700ms",
+                        animationFillMode: "backwards",
+                      }}
+                    >
+                      Your AI-powered outsourcing revolution starts now
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </DialogPortal>
+        ) : modalStep === 2 ? (
+          <DialogPortal>
+            <DialogOverlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-300" />
+            <div className="fixed inset-0 z-50 flex items-center justify-center pt-[100px] pb-8 px-4 overflow-y-auto">
+              <div className="w-full max-w-3xl animate-in fade-in slide-in-from-bottom-6 duration-500 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-bottom-6 relative my-auto">
+                <DialogTitle className="sr-only">
+                  Contact Information
+                </DialogTitle>
+                {/* Close Button - continuing from here */}
+                <button
+                  onClick={() => setShowPortal(false)}
+                  className="absolute right-4 top-4 z-50 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-white"
+                  data-testid="button-close-modal"
+                >
+                  <X className="h-6 w-6" />
+                  <span className="sr-only">Close</span>
+                </button>
+                <div
+                  className="relative hero-investor flex items-center justify-center min-h-[650px] rounded-2xl overflow-hidden"
+                  data-testid="modal-step-contact-form"
+                >
+                  {/* Gradient Overlay */}
+                  <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      background:
+                        "linear-gradient(to bottom, rgba(15,15,60,0.45) 0%, rgba(0,0,0,0.0) 25%, rgba(0,0,0,0.0) 75%, rgba(15,15,60,0.45) 100%)",
+                    }}
+                  ></div>
+
+                  {/* Subtle AI Pulse */}
+                  <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none opacity-50">
+                    <div className="relative w-[400px] h-[400px]">
+                      <div
+                        className="absolute inset-0 rounded-full bg-gradient-to-r from-[#3A3AF8]/15 to-[#7F3DF4]/15 blur-3xl animate-pulse"
+                        style={{ animationDuration: "4s" }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* Contact Form */}
+                  <div className="relative z-10 w-full px-8 py-12 max-w-2xl">
+                    <div className="text-center mb-8 space-y-3">
+                      <h2
+                        className="text-3xl sm:text-4xl md:text-5xl font-light tracking-tight text-white"
+                        style={{
+                          fontFamily: "Inter, sans-serif",
+                          letterSpacing: "-0.02em",
+                        }}
+                      >
+                        Join the Revolution
+                      </h2>
+                      <p
+                        className="text-base sm:text-lg text-white/70"
+                        style={{ fontFamily: "Inter, sans-serif" }}
+                      >
+                        Be among the first to transform your business with
+                        AI-powered outsourcing
+                      </p>
+                    </div>
+
+                    <form
+                      className="space-y-5"
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        const response = await fetch("/api/waitlist", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(contactForm),
+                          });
+                          if (response.ok) {
                                       </div>
                                     </div>
 
