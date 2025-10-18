@@ -1337,13 +1337,13 @@ export default function Home() {
                 <Link href="/lead-intake" className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-managed">
                   Managed Services
                 </Link>
-                <button
-                  onClick={() => setShowVanessaChat(true)}
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300 text-center md:text-left w-full"
+                <Link
+                  href="/pricing"
+                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
                   data-testid="footer-link-ai"
                 >
                   AI Assistant
-                </button>
+                </Link>
                 <Link href="/waitlist" className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-waitlist">
                   Join Waitlist
                 </Link>
