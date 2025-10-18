@@ -65,15 +65,32 @@ export function ComingSoon({
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-violet-500/20 via-blue-500/10 to-transparent rounded-full blur-3xl opacity-60"></div>
         </div>
         
-        <div className="container mx-auto px-4 sm:px-6 relative z-10">
-          <div className="max-w-5xl mx-auto" style={{ overflow: 'visible' }}>
+        <div className="relative z-10 w-full" style={{ overflow: 'visible' }}>
+          <div 
+            className="relative"
+            style={{ 
+              overflow: 'visible',
+              maxWidth: '1200px',
+              marginLeft: 'clamp(1rem, 5vw, 3rem)',
+              marginRight: 'auto',
+              paddingLeft: 'clamp(1rem, 3vw, 2rem)',
+              paddingRight: 'clamp(1rem, 3vw, 2rem)'
+            }}
+          >
             <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center relative" style={{ overflow: 'visible' }}>
               
               {/* Left Side: Typography */}
-              <div className="text-center lg:text-left space-y-6 sm:space-y-8 relative z-10" style={{ overflow: 'visible' }}>
+              <div className="space-y-6 sm:space-y-8 relative z-10" style={{ 
+                overflow: 'visible',
+                width: '100%',
+                maxWidth: 'clamp(100%, 90vw, 600px)',
+                marginLeft: 'clamp(0px, calc((100vw - 1024px) / 2), auto)',
+                marginRight: 'auto'
+              }}>
                 {/* Coming Soon Label */}
                 <div 
                   className={`transition-all duration-1000 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                  style={{ textAlign: 'left' }}
                 >
                   <p 
                     className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wider"
@@ -91,13 +108,13 @@ export function ComingSoon({
                 {/* OnSpot Logo - blends with headline */}
                 <div 
                   className={`transition-all duration-1000 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-                  style={{ transitionDelay: '0.1s' }}
+                  style={{ transitionDelay: '0.1s', textAlign: 'left' }}
                 >
                   <Link href="/">
                     <img
                       src={onspotLogo}
                       alt="OnSpot"
-                      className="mx-auto lg:mx-0 opacity-85 hover:opacity-100 transition-all duration-300 cursor-pointer"
+                      className="opacity-85 hover:opacity-100 transition-all duration-300 cursor-pointer"
                       style={{
                         width: 'clamp(120px, 12vw, 200px)',
                         height: 'auto',
@@ -147,7 +164,7 @@ export function ComingSoon({
 
                 {/* CTAs */}
                 <div 
-                  className={`flex flex-col sm:flex-row items-center lg:items-start gap-3 sm:gap-4 transition-all duration-1000 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                  className={`flex flex-col sm:flex-row items-stretch sm:items-start gap-3 transition-all duration-1000 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
                   style={{ 
                     transitionDelay: '0.4s',
                     paddingBottom: 'max(12px, env(safe-area-inset-bottom))'
@@ -157,10 +174,12 @@ export function ComingSoon({
                   <Button
                     size="lg"
                     onClick={() => setShowVanessaChat(true)}
-                    className="group relative overflow-hidden px-8 text-base w-full sm:w-auto bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700 text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-[0_0_30px_rgba(139,92,246,0.4)]"
+                    className="group relative overflow-hidden px-8 text-base bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700 text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-[0_0_30px_rgba(139,92,246,0.4)]"
                     style={{
                       minHeight: '56px',
-                      borderRadius: '14px'
+                      borderRadius: '14px',
+                      width: '100%',
+                      maxWidth: 'clamp(100%, 100%, 280px)'
                     }}
                     data-testid="button-launch-ai"
                   >
@@ -173,10 +192,12 @@ export function ComingSoon({
                   <Button
                     variant="outline"
                     size="lg"
-                    className="group relative overflow-hidden px-8 text-base w-full sm:w-auto border-2 border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 font-medium backdrop-blur-sm bg-white/60 transition-all duration-300 shadow-sm hover:shadow-md"
+                    className="group relative overflow-hidden px-8 text-base border-2 border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 font-medium backdrop-blur-sm bg-white/60 transition-all duration-300 shadow-sm hover:shadow-md"
                     style={{
                       minHeight: '56px',
-                      borderRadius: '14px'
+                      borderRadius: '14px',
+                      width: '100%',
+                      maxWidth: 'clamp(100%, 100%, 280px)'
                     }}
                     asChild
                     data-testid="button-explore-onspot"
