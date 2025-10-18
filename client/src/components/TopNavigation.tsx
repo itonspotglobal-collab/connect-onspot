@@ -803,7 +803,7 @@ export function TopNavigation() {
                         className="fixed left-1/2 transform -translate-x-1/2 w-[min(100vw-2rem,1400px)] rounded-lg border border-white/20 backdrop-blur-md shadow-2xl mx-4"
                         style={{
                           top: 'calc(var(--nav-h) + 8px)',
-                          background: "var(--gradient-investor-hero)",
+                          background: "linear-gradient(135deg, #474ead 0%, #5a5dc7 50%, #6366f1 100%)",
                           zIndex: 100,
                         }}
                         onMouseEnter={handleDropdownMouseEnter}
@@ -1398,17 +1398,20 @@ export function TopNavigation() {
                             activeDropdown === item.title ? null : item.title,
                           )
                         }
-                        className={`w-full px-4 py-3 text-base font-medium transition-all duration-300 rounded-lg hover-elevate min-h-[48px] flex items-center justify-between ${
-                          isActive
-                            ? "text-white bg-white/10 border border-white/30"
-                            : "text-white/90 bg-white/5"
+                        className={`w-full px-4 py-3.5 text-base font-semibold transition-all duration-300 rounded-xl min-h-[52px] flex items-center justify-between group relative overflow-hidden ${
+                          isActive || activeDropdown === item.title
+                            ? "text-white bg-white/15 border-2 border-white/40 shadow-lg shadow-white/10"
+                            : "text-white/90 bg-white/8 border border-white/20 hover:bg-white/12 hover:border-white/30"
                         }`}
                         data-testid={`mobile-nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
                       >
-                        {item.title}
+                        {/* Animated background shimmer */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                        
+                        <span className="relative z-10">{item.title}</span>
                         <ChevronDown
-                          className={`h-5 w-5 transition-transform duration-200 ${
-                            activeDropdown === item.title ? "rotate-180" : ""
+                          className={`h-5 w-5 transition-all duration-300 relative z-10 ${
+                            activeDropdown === item.title ? "rotate-180 text-white" : "text-white/70"
                           }`}
                         />
                       </button>
@@ -1423,12 +1426,12 @@ export function TopNavigation() {
                           }}
                         >
                           <div className="p-4">
-                            <div className="mb-4">
-                              <h3 className="text-lg font-bold text-white mb-1">
-                                Our Services
+                            <div className="mb-4 text-center pb-3 border-b border-white/20">
+                              <h3 className="text-xl font-bold text-white mb-2 drop-shadow-lg">
+                                ✨ Our Services
                               </h3>
-                              <p className="text-white/70 text-xs">
-                                Choose your solution
+                              <p className="text-white/80 text-sm font-medium">
+                                Choose your perfect solution
                               </p>
                             </div>
                             <div className="space-y-3">
@@ -1437,10 +1440,10 @@ export function TopNavigation() {
                                   <Link
                                     key={service.path}
                                     href={service.path}
-                                    className={`block p-3 rounded-lg border border-white/20 bg-white/10 hover:bg-white/20 transition-all duration-200 group ${
+                                    className={`block p-4 rounded-xl border-2 transition-all duration-300 group active:scale-[0.98] ${
                                       location === service.path
-                                        ? "bg-white/20 border-white/40"
-                                        : ""
+                                        ? "bg-white/25 border-white/50 shadow-lg shadow-white/20"
+                                        : "bg-white/10 border-white/25 hover:bg-white/20 hover:border-white/40 hover:shadow-md hover:shadow-white/10"
                                     }`}
                                     onClick={() => {
                                       setActiveDropdown(null);
@@ -1449,24 +1452,24 @@ export function TopNavigation() {
                                     data-testid={`mobile-service-${key}`}
                                   >
                                     <div className="flex items-start gap-3">
-                                      <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
-                                        <service.icon className="w-4 h-4 text-white" />
+                                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-white/30 to-white/10 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                                        <service.icon className="w-5 h-5 text-white drop-shadow-sm" />
                                       </div>
                                       <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-1">
-                                          <h4 className="text-sm font-bold text-white truncate">
+                                        <div className="flex items-center gap-2 mb-1.5">
+                                          <h4 className="text-sm font-bold text-white truncate group-hover:text-white/100 transition-colors">
                                             {service.title}
                                           </h4>
                                           {service.popular && (
-                                            <Badge className="bg-yellow-500 text-black text-xs px-1 py-0.5 font-semibold">
-                                              Popular
+                                            <Badge className="bg-yellow-400 text-black text-xs px-1.5 py-0.5 font-bold shadow-sm">
+                                              ⭐ Hot
                                             </Badge>
                                           )}
                                         </div>
-                                        <p className="text-white/70 text-xs mb-1">
+                                        <p className="text-white/80 text-xs mb-1 font-medium">
                                           {service.subtitle}
                                         </p>
-                                        <p className="text-white/60 text-xs leading-relaxed">
+                                        <p className="text-white/65 text-xs leading-relaxed">
                                           {service.description}
                                         </p>
                                       </div>
@@ -1489,13 +1492,14 @@ export function TopNavigation() {
                           }}
                         >
                           {/* Mobile Header */}
-                          <div className="p-4 border-b border-white/10 bg-gradient-to-b from-[#474ead] to-transparent backdrop-blur-sm">
+                          <div className="p-5 border-b border-white/20 bg-gradient-to-b from-[#474ead]/80 to-transparent backdrop-blur-sm sticky top-0 z-10">
                             <div className="text-center">
-                              <h3 className="text-lg font-bold text-white mb-1">
-                                Find Work
+                              <h3 className="text-xl font-bold text-white mb-2 drop-shadow-lg flex items-center justify-center gap-2">
+                                <span className="text-[hsl(var(--gold-yellow))]">💼</span>
+                                Find Amazing Work
                               </h3>
-                              <p className="text-white/70 text-xs">
-                                Discover opportunities in 6 categories
+                              <p className="text-white/85 text-sm font-medium">
+                                6 high-demand categories • Top rates
                               </p>
                             </div>
                           </div>
@@ -1508,10 +1512,10 @@ export function TopNavigation() {
                                   <Link
                                     key={category.path}
                                     href={category.path}
-                                    className={`block p-4 rounded-lg border border-white/20 bg-white/5 hover:bg-white/15 hover:border-white/40 transition-all duration-300 group hover:scale-[1.02] ${
+                                    className={`block p-4 rounded-xl border-2 transition-all duration-300 group active:scale-[0.98] relative overflow-hidden ${
                                       location === category.path
-                                        ? "bg-white/20 border-white/40 scale-[1.02]"
-                                        : ""
+                                        ? "bg-white/25 border-[hsl(var(--gold-yellow)/0.6)] shadow-lg shadow-[hsl(var(--gold-yellow)/0.2)]"
+                                        : "bg-white/10 border-white/25 hover:bg-white/20 hover:border-[hsl(var(--gold-yellow)/0.4)] hover:shadow-md hover:shadow-white/10"
                                     }`}
                                     onClick={() => {
                                       setActiveDropdown(null);
@@ -1519,42 +1523,45 @@ export function TopNavigation() {
                                     }}
                                     data-testid={`mobile-category-${key}`}
                                   >
-                                    <div className="flex items-start gap-3">
-                                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[hsl(var(--gold-yellow)/0.3)] to-[hsl(var(--gold-yellow)/0.1)] flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
-                                        <category.icon className="w-5 h-5 text-[hsl(var(--gold-yellow))]" />
+                                    {/* Subtle gold glow on hover */}
+                                    <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--gold-yellow)/0.1)] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                    
+                                    <div className="flex items-start gap-3 relative z-10">
+                                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[hsl(var(--gold-yellow)/0.35)] to-[hsl(var(--gold-yellow)/0.15)] flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-[hsl(var(--gold-yellow)/0.2)]">
+                                        <category.icon className="w-6 h-6 text-[hsl(var(--gold-yellow))] drop-shadow-sm" />
                                       </div>
                                       <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-1">
-                                          <h4 className="text-sm font-bold text-white truncate group-hover:text-[hsl(var(--gold-yellow)/0.95)] transition-colors duration-300">
+                                        <div className="flex items-center gap-2 mb-1.5">
+                                          <h4 className="text-sm font-bold text-white truncate group-hover:text-[hsl(var(--gold-yellow))] transition-colors duration-300">
                                             {category.title}
                                           </h4>
                                           {category.popular && (
-                                            <Badge className="bg-[hsl(var(--gold-yellow))] text-black text-xs px-1.5 py-0.5 font-semibold animate-pulse">
-                                              Hot
+                                            <Badge className="bg-[hsl(var(--gold-yellow))] text-black text-xs px-1.5 py-0.5 font-bold shadow-sm">
+                                              ⭐ Hot
                                             </Badge>
                                           )}
                                         </div>
-                                        <p className="text-white/75 text-xs mb-2 group-hover:text-white/90 transition-colors duration-300">
+                                        <p className="text-white/80 text-xs mb-2 font-medium group-hover:text-white/95 transition-colors duration-300">
                                           {category.subtitle}
                                         </p>
                                         <div className="flex items-center justify-between text-xs">
-                                          <span className="text-[hsl(var(--gold-yellow)/0.8)] font-semibold">
+                                          <span className="text-[hsl(var(--gold-yellow)/0.9)] font-bold">
                                             {category.averageRate}
                                           </span>
                                           <span
-                                            className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                            className={`px-2 py-1 rounded-full text-xs font-bold shadow-sm ${
                                               category.demand === "Very High"
-                                                ? "bg-green-500/20 text-green-300"
+                                                ? "bg-green-400/25 text-green-200 border border-green-300/30"
                                                 : category.demand === "High"
-                                                  ? "bg-yellow-500/20 text-yellow-300"
-                                                  : "bg-blue-500/20 text-blue-300"
+                                                  ? "bg-yellow-400/25 text-yellow-200 border border-yellow-300/30"
+                                                  : "bg-blue-400/25 text-blue-200 border border-blue-300/30"
                                             }`}
                                           >
                                             {category.demand} Demand
                                           </span>
                                         </div>
                                       </div>
-                                      <ArrowRight className="w-4 h-4 text-white/60 group-hover:text-white group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
+                                      <ArrowRight className="w-5 h-5 text-white/50 group-hover:text-[hsl(var(--gold-yellow))] group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
                                     </div>
                                   </Link>
                                 ),
@@ -1563,12 +1570,12 @@ export function TopNavigation() {
                           </div>
 
                           {/* Mobile Footer */}
-                          <div className="p-4 border-t border-white/10 bg-gradient-to-t from-[#474ead] to-transparent backdrop-blur-sm">
-                            <div className="flex gap-2">
+                          <div className="p-4 border-t border-white/20 bg-gradient-to-t from-[#474ead]/80 to-transparent backdrop-blur-sm sticky bottom-0 z-10">
+                            <div className="flex gap-3">
                               <Button
                                 asChild
-                                size="sm"
-                                className="flex-1 bg-[hsl(var(--gold-yellow))] text-black hover:bg-[hsl(var(--gold-yellow)/0.9)] font-bold"
+                                size="default"
+                                className="flex-1 bg-[hsl(var(--gold-yellow))] text-black hover:bg-[hsl(var(--gold-yellow)/0.9)] font-bold shadow-lg hover:shadow-xl hover:shadow-[hsl(var(--gold-yellow)/0.3)] transition-all duration-300"
                               >
                                 <Link
                                   href="/find-work"
@@ -1577,14 +1584,14 @@ export function TopNavigation() {
                                     setIsMobileMenuOpen(false);
                                   }}
                                 >
-                                  All Jobs
+                                  🔥 Browse All Jobs
                                 </Link>
                               </Button>
                               <Button
                                 asChild
-                                size="sm"
+                                size="default"
                                 variant="outline"
-                                className="border-white/50 text-white hover:bg-white/10"
+                                className="border-2 border-white/50 text-white hover:bg-white/15 font-semibold"
                               >
                                 <Link
                                   href="/get-hired"
@@ -1593,7 +1600,7 @@ export function TopNavigation() {
                                     setIsMobileMenuOpen(false);
                                   }}
                                 >
-                                  Get Started
+                                  Get Started →
                                 </Link>
                               </Button>
                             </div>
@@ -1608,15 +1615,18 @@ export function TopNavigation() {
                   <Link
                     key={item.path}
                     href={item.path}
-                    className={`w-full px-4 py-3 text-base font-medium transition-all duration-300 rounded-lg hover-elevate min-h-[48px] flex items-center ${
+                    className={`w-full px-4 py-3.5 text-base font-semibold transition-all duration-300 rounded-xl min-h-[52px] flex items-center relative overflow-hidden group ${
                       location === item.path
-                        ? "text-white bg-white/10 border border-white/30"
-                        : "text-white/90 bg-white/5"
+                        ? "text-white bg-white/15 border-2 border-white/40 shadow-lg shadow-white/10"
+                        : "text-white/90 bg-white/8 border border-white/20 hover:bg-white/12 hover:border-white/30 active:scale-[0.98]"
                     }`}
                     onClick={() => setIsMobileMenuOpen(false)}
                     data-testid={`mobile-nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
                   >
-                    {item.title}
+                    {/* Animated background shimmer */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                    
+                    <span className="relative z-10">{item.title}</span>
                   </Link>
                 );
               })}
