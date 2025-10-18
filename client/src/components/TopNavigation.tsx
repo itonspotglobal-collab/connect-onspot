@@ -378,6 +378,7 @@ export function TopNavigation() {
     phone: "",
   });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [mobileAccordionOpen, setMobileAccordionOpen] = useState<string | null>(null);
   const [visibleItems, setVisibleItems] = useState<number>(navigationItems.length);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const lastScrollY = useRef(0);
@@ -754,48 +755,146 @@ export function TopNavigation() {
           <div className="space-y-2">
             {navigationItems.map((item) => {
               const hasMegaMenu = "megaMenu" in item && item.megaMenu;
-              const isActive =
-                location === item.path ||
-                (hasMegaMenu &&
-                  item.services &&
-                  Object.values(item.services).some(
-                    (service) => location === service.path,
-                  )) ||
-                (hasMegaMenu &&
-                  item.categories &&
-                  Object.values(item.categories).some(
-                    (category) => location === category.path,
-                  )) ||
-                (hasMegaMenu &&
-                  item.whyOnSpot &&
-                  Object.values(item.whyOnSpot).some(
-                    (section) => location === section.path,
-                  ));
+              const isExpanded = mobileAccordionOpen === item.title;
 
               if (hasMegaMenu) {
                 return (
-                  <div
-                    key={item.title}
-                    className="relative"
-                    onMouseEnter={() => handleMouseEnter(item.title)}
-                    onMouseLeave={handleMouseLeave}
-                  >
+                  <div key={item.title} className="border-b border-white/10 pb-2">
                     <button
-                      className={`py-2 text-sm font-medium transition-all duration-300 rounded-lg hover-elevate flex items-center gap-1 ${
-                        isActive
-                          ? "text-white bg-white/10 border border-white/40"
-                          : "text-white/90"
-                      }`}
-                      style={{ paddingLeft: 'var(--nav-item-px)', paddingRight: 'var(--nav-item-px)' }}
-                      data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
+                      onClick={() => setMobileAccordionOpen(isExpanded ? null : item.title)}
+                      className="w-full py-3 px-4 text-left text-white font-medium flex items-center justify-between hover:bg-white/10 rounded-lg transition-colors"
+                      data-testid={`mobile-nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
                     >
-                      {item.title}
+                      <span>{item.title}</span>
                       <ChevronDown
                         className={`h-4 w-4 transition-transform duration-200 ${
-                          activeDropdown === item.title ? "rotate-180" : ""
+                          isExpanded ? "rotate-180" : ""
                         }`}
                       />
                     </button>
+                    
+                    {/* Accordion Content */}
+                    {isExpanded && (
+                      <div className="mt-2 space-y-1 pl-4">
+                        {/* Services dropdown */}
+                        {item.services && Object.entries(item.services).map(([key, service]) => (
+                          <Link
+                            key={key}
+                            href={service.path}
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className="block py-2 px-3 text-white/80 hover:text-white hover:bg-white/10 rounded-md text-sm transition-colors"
+                            data-testid={`mobile-link-${key}`}
+                          >
+                            {service.title}
+                          </Link>
+                        ))}
+                        
+                        {/* Work categories dropdown */}
+                        {item.categories && Object.entries(item.categories).map(([key, category]) => (
+                          <Link
+                            key={key}
+                            href={category.path}
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className="block py-2 px-3 text-white/80 hover:text-white hover:bg-white/10 rounded-md text-sm transition-colors"
+                            data-testid={`mobile-link-${key}`}
+                          >
+                            {category.title}
+                          </Link>
+                        ))}
+                        
+                        {/* Why OnSpot dropdown */}
+                        {item.whyOnSpot && Object.entries(item.whyOnSpot).map(([key, section]) => (
+                          <Link
+                            key={key}
+                            href={section.path}
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className="block py-2 px-3 text-white/80 hover:text-white hover:bg-white/10 rounded-md text-sm transition-colors"
+                            data-testid={`mobile-link-${key}`}
+                          >
+                            {section.title}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              return (
+                <Link
+                  key={item.path}
+                  href={item.path}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`block py-3 px-4 text-white font-medium hover:bg-white/10 rounded-lg transition-colors ${
+                    location === item.path ? "bg-white/10" : ""
+                  }`}
+                  data-testid={`mobile-nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
+                >
+                  {item.title}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+        <div className="px-4 py-3 border-t border-white/10">
+          <Button
+            asChild
+            variant="outline"
+            className="w-full border-white/50 text-white hover:bg-white/10"
+            data-testid="mobile-access-portal"
+          >
+            <button onClick={() => { setShowPortal(true); setIsMobileMenuOpen(false); }}>
+              Access Portal
+            </button>
+          </Button>
+        </div>
+      </div>
+
+      {/* Access Portal Modal - All Steps */}
+      <Dialog
+        open={showPortal}
+        onOpenChange={(open) => {
+          setShowPortal(open);
+          if (!open) {
+            // Reset modal state when closing
+            setModalStep(1);
+            setSelectedPortal(null);
+          }
+        }}
+      >
+        {/* Step 1: Cinematic Awakening Modal */}
+        {modalStep === 1 ? (
+          <DialogPortal>
+            <DialogOverlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-300" />
+            <div className="fixed inset-0 z-50 flex items-center justify-center pt-[100px] pb-8 px-4 overflow-y-auto">
+              <div className="w-full max-w-5xl animate-in fade-in slide-in-from-bottom-6 duration-500 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-bottom-6 relative my-auto">
+                <DialogTitle className="sr-only">
+                  Superhuman BPO Awakening
+                </DialogTitle>
+                {/* Close Button */}
+                <button
+                  onClick={() => setShowPortal(false)}
+                  className="absolute right-4 top-4 z-50 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-white"
+                  data-testid="button-close-modal"
+                >
+                  <X className="h-6 w-6" />
+                  <span className="sr-only">Close</span>
+                </button>
+                <div
+                  className="relative hero-investor flex items-center justify-center min-h-[700px] rounded-2xl overflow-hidden"
+                  data-testid="modal-step-awakening"
+                >
+                <div className="p-8">
+                  <div className="mb-6">
+                    <h3 className="text-2xl font-bold text-white mb-2">
+                      Our Services
+                    </h3>
+                    <p className="text-white/80 text-sm">
+                      Choose the perfect solution for your business needs
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-5 gap-4">
 
                     {/* Services Mega Menu */}
                     {activeDropdown === item.title && item.services && (
