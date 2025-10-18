@@ -386,15 +386,23 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Trusted By Section - AI-Inspired Minimalist Design */}
-      <div className="relative overflow-hidden -mt-32 pt-32 pb-24 sm:pb-32">
-        {/* Seamless Gradient Blend from Hero */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/80 to-background"></div>
+      {/* Gradient Transition from Hero to Content */}
+      <div className="relative h-[10vh]">
+        {/* Smooth gradient fade from dark blue to light bluish-white */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0a1628] via-[#e8f0fe] to-slate-50 dark:from-[#0a1628] dark:via-slate-900 dark:to-background"></div>
         
+        {/* Soft 1px highlight divider at bottom for balance */}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[85%]">
+          <div className="h-px bg-gradient-to-r from-transparent via-violet-300/40 to-transparent"></div>
+        </div>
+      </div>
+
+      {/* Trusted By Section - AI-Inspired Minimalist Design */}
+      <div className="relative overflow-hidden pb-24 sm:pb-32 bg-slate-50 dark:bg-background">
         {/* Subtle AI Glow Effects */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40">
-          <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-gradient-radial from-violet-500/20 to-transparent rounded-full blur-3xl animate-gentle-float"></div>
-          <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-gradient-radial from-blue-500/15 to-transparent rounded-full blur-3xl animate-slow-spin"></div>
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
+          <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-gradient-radial from-violet-500/15 to-transparent rounded-full blur-3xl animate-gentle-float"></div>
+          <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-gradient-radial from-blue-500/10 to-transparent rounded-full blur-3xl animate-slow-spin"></div>
         </div>
 
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
