@@ -1281,7 +1281,7 @@ export default function Home() {
                 </div>
                 
                 <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-md">
-                  The growth engine behind modern businesses—built by entrepreneurs, for entrepreneurs. We deliver the Superhuman System. AI-first infrastructure meets people excellence. Scale your business with system and intelligence that never sleeps.
+                  The growth engine of the modern era. Built by entrepreneurs, for entrepreneurs—our Superhuman System fuses AI-first infrastructure with human excellence to scale businesses and empower people to perform beyond limits.
                 </p>
               </div>
               

@@ -48,10 +48,7 @@ export function Footer() {
               <div className="absolute inset-0 bg-white/20 blur-lg rounded-lg opacity-30"></div>
             </div>
             <p className="text-white/95 max-w-lg leading-relaxed text-sm sm:text-base font-light">
-              The growth engine behind modern businesses—built by entrepreneurs,
-              for entrepreneurs. We deliver world-class teams and performance
-              systems that slash costs by up to 70% while unlocking up to 8X
-              faster growth.
+              The growth engine of the modern era. Built by entrepreneurs, for entrepreneurs—our Superhuman System fuses AI-first infrastructure with human excellence to scale businesses and empower people to perform beyond limits.
             </p>
             <div className="flex flex-wrap gap-2">
               <Button
