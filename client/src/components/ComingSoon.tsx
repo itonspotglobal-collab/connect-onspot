@@ -111,11 +111,12 @@ export function ComingSoon({
                   <h2 
                     className="text-4xl sm:text-5xl lg:text-6xl font-bold"
                     style={{
-                      lineHeight: '1.06',
-                      paddingBottom: '0.08em',
+                      lineHeight: '1.15',
+                      paddingBottom: '0.25em',
                       textWrap: 'balance',
                       hyphens: 'none',
-                      WebkitTransform: 'translateZ(0)'
+                      WebkitTransform: 'translateZ(0)',
+                      overflow: 'visible'
                     } as React.CSSProperties}
                   >
                     <span className="block bg-gradient-to-r from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent">
