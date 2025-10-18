@@ -1354,32 +1354,63 @@ export function TopNavigation() {
         </div>
       </div>
 
-      {/* Rest of mobile menu content from old implementation */}
-      <div 
-        className="mobile-menu-panel md:hidden"
-        data-state={isMobileMenuOpen ? "open" : "closed"}
-        aria-hidden={!isMobileMenuOpen}
+      {/* Access Portal Modal - All Steps */}
+      <Dialog
+        open={showPortal}
+        onOpenChange={(open) => {
+          setShowPortal(open);
+          if (!open) {
+            // Reset modal state when closing
+            setModalStep(1);
+            setSelectedPortal(null);
+          }
+        }}
       >
-        <div 
-          className="mx-auto"
-          style={{
-            paddingLeft: 'var(--nav-px)',
-            paddingRight: 'var(--nav-px)',
-            paddingTop: 'clamp(12px, 2vh, 16px)',
-            paddingBottom: 'clamp(12px, 2vh, 16px)',
-            maxWidth: 'min(var(--nav-container-max), 100%)',
-          }}
-        >
-          <div 
-            className="flex flex-col"
-            style={{ gap: 'clamp(8px, 1.5vh, 12px)' }}
-          >
-              {navigationItems.map((item) => {
-                const hasMegaMenu = "megaMenu" in item && item.megaMenu;
-                const isActive =
-                  location === item.path ||
-                  (hasMegaMenu &&
-                    item.services &&
+        {/* Step 1: Cinematic Awakening Modal */}
+        {modalStep === 1 ? (
+          <DialogPortal>
+            <DialogOverlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-300" />
+            <div className="fixed inset-0 z-50 flex items-center justify-center pt-[100px] pb-8 px-4 overflow-y-auto">
+              <div className="w-full max-w-5xl animate-in fade-in slide-in-from-bottom-6 duration-500 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-bottom-6 relative my-auto">
+                <DialogTitle className="sr-only">
+                  Superhuman BPO Awakening
+                </DialogTitle>
+                {/* Close Button */}
+                <button
+                  onClick={() => setShowPortal(false)}
+                  className="absolute right-4 top-4 z-50 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-white"
+                  data-testid="button-close-modal"
+                >
+                  <X className="h-6 w-6" />
+                  <span className="sr-only">Close</span>
+                </button>
+                <div
+                  className="relative hero-investor flex items-center justify-center min-h-[600px] rounded-2xl overflow-hidden"
+                  data-testid="modal-step-intro"
+                >
+                  {/* Gradient Overlay for Depth */}
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60"></div>
+
+                  {/* AI Pulse Orb - Animated Background Effect */}
+                  <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none">
+                    <div className="relative w-[600px] h-[600px]">
+                      {/* Outer pulse ring */}
+                      <div
+                        className="absolute inset-0 rounded-full bg-gradient-to-r from-[#3A3AF8]/20 to-[#7F3DF4]/20 blur-3xl animate-pulse"
+                        style={{ animationDuration: "4s" }}
+                      ></div>
+                      {/* Inner glow */}
+                      <div
+                        className="absolute inset-[20%] rounded-full bg-gradient-to-r from-[#3A3AF8]/30 to-[#7F3DF4]/30 blur-2xl animate-pulse"
+                        style={{
+                          animationDuration: "3s",
+                          animationDelay: "0.5s",
+                        }}
+                      ></div>
+                      {/* Core pulse */}
+                      <div
+                        className="absolute inset-[40%] rounded-full bg-gradient-to-r from-[#3A3AF8]/50 to-[#7F3DF4]/50 blur-xl animate-pulse"
+                        style={{
                     Object.values(item.services).some(
                       (service) => location === service.path,
                     )) ||
