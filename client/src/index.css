@@ -620,15 +620,13 @@
     }
   }
 
-  /* Stronger pulse animation for brain */
-  @keyframes strongPulse {
+  /* Breathing pulse animation for radial orb */
+  @keyframes breathingPulse {
     0%, 100% {
-      opacity: 0.85;
-      transform: scale(1);
+      transform: scale(0.96);
     }
     50% {
-      opacity: 1;
-      transform: scale(1.15);
+      transform: scale(1.08);
     }
   }
 

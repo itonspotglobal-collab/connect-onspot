@@ -3,7 +3,6 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Bot, ArrowRight } from "lucide-react";
 import { VanessaChat } from "@/components/VanessaChat";
-import { BrainGradient } from "@/components/BrainGradient";
 import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
 
 interface ComingSoonProps {
@@ -164,20 +163,25 @@ export function ComingSoon({
                 </div>
               </div>
 
-              {/* Right Side: Pulsing Brain */}
+              {/* Right Side: Breathing Radial Orb */}
               <div className="relative flex items-center justify-center lg:justify-end">
-                <div className="relative w-72 h-72 sm:w-96 sm:h-96 lg:w-[420px] lg:h-[420px]">
-                  {/* Luminous swirl effect - matching homepage */}
-                  <div className="absolute inset-0 bg-gradient-to-tr from-violet-500/30 via-blue-500/30 to-cyan-500/30 rounded-full blur-3xl opacity-80 animate-gentle-float"></div>
-                  <div className="absolute inset-0 bg-gradient-to-bl from-blue-500/40 via-violet-500/40 to-purple-500/40 rounded-full blur-2xl opacity-70 animate-slow-spin"></div>
-                  
-                  {/* Brain with stronger pulse */}
-                  <div className="absolute inset-0 flex items-center justify-center" style={{
-                    animation: prefersReducedMotion ? 'none' : 'strongPulse 3s ease-in-out infinite'
-                  }}>
-                    <div className="w-full h-full flex items-center justify-center">
-                      <BrainGradient />
-                    </div>
+                <div 
+                  className="relative lg:opacity-100 opacity-50"
+                  style={{
+                    width: 'clamp(420px, 44vw, 820px)',
+                    aspectRatio: '1/1'
+                  }}
+                >
+                  {/* Breathing radial glow container with fixed size */}
+                  <div 
+                    className="absolute inset-0"
+                    style={{
+                      animation: prefersReducedMotion ? 'none' : 'breathingPulse 6s ease-in-out infinite'
+                    }}
+                  >
+                    {/* Luminous swirl effect - matching homepage */}
+                    <div className="absolute inset-0 bg-gradient-to-tr from-violet-500/30 via-blue-500/30 to-cyan-500/30 rounded-full blur-3xl opacity-80 animate-gentle-float"></div>
+                    <div className="absolute inset-0 bg-gradient-to-bl from-blue-500/40 via-violet-500/40 to-purple-500/40 rounded-full blur-2xl opacity-70 animate-slow-spin"></div>
                   </div>
                 </div>
               </div>
