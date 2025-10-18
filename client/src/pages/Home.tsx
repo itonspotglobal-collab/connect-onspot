@@ -1269,14 +1269,14 @@ export default function Home() {
           <div 
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 md:gap-x-12 md:gap-y-12 lg:gap-8 max-w-7xl mx-auto"
             style={{
-              rowGap: 'clamp(8px, 1.2vh, 16px)'
+              rowGap: 'clamp(4px, 0.6vh, 8px)'
             }}
           >
             {/* Brand Section - Spans 2 columns */}
             <div 
               className="lg:col-span-2 space-y-8 md:pb-0 md:border-b-0 text-center md:text-left"
               style={{
-                paddingBottom: 'clamp(8px, 1.2vh, 16px)',
+                paddingBottom: 'clamp(4px, 0.6vh, 8px)',
                 borderBottom: '1px solid rgba(255, 255, 255, 0.06)'
               }}
             >
@@ -1326,7 +1326,7 @@ export default function Home() {
             <div 
               className="md:space-y-6 md:border-b-0 text-center md:text-left"
               style={{
-                paddingBottom: 'clamp(8px, 1.2vh, 16px)',
+                paddingBottom: 'clamp(4px, 0.6vh, 8px)',
                 borderBottom: '1px solid rgba(255, 255, 255, 0.06)'
               }}
             >
@@ -1334,7 +1334,7 @@ export default function Home() {
                 onClick={() => toggleFooterSection('navigation')}
                 className="flex items-center justify-between w-full md:cursor-default md:!p-0"
                 style={{
-                  padding: 'clamp(6px, 1vh, 12px) 0'
+                  padding: 'clamp(4px, 0.6vh, 8px) 0'
                 }}
                 data-testid="footer-accordion-navigation"
               >
@@ -1351,7 +1351,7 @@ export default function Home() {
                     : 'opacity-0 max-h-0 overflow-hidden'
                 }`}
                 style={{
-                  marginTop: expandedFooterSection === 'navigation' ? 'clamp(4px, 0.8vh, 10px)' : '0'
+                  marginTop: expandedFooterSection === 'navigation' ? 'clamp(4px, 0.5vh, 6px)' : '0'
                 }}
               >
                 <Link href="/hire-talent" className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-hire">
@@ -1386,7 +1386,7 @@ export default function Home() {
             <div 
               className="md:space-y-6 md:border-b-0 text-center md:text-left"
               style={{
-                paddingBottom: 'clamp(8px, 1.2vh, 16px)',
+                paddingBottom: 'clamp(4px, 0.6vh, 8px)',
                 borderBottom: '1px solid rgba(255, 255, 255, 0.06)'
               }}
             >
@@ -1394,7 +1394,7 @@ export default function Home() {
                 onClick={() => toggleFooterSection('company')}
                 className="flex items-center justify-between w-full md:cursor-default md:!p-0"
                 style={{
-                  padding: 'clamp(6px, 1vh, 12px) 0'
+                  padding: 'clamp(4px, 0.6vh, 8px) 0'
                 }}
                 data-testid="footer-accordion-company"
               >
@@ -1411,7 +1411,7 @@ export default function Home() {
                     : 'opacity-0 max-h-0 overflow-hidden'
                 }`}
                 style={{
-                  marginTop: expandedFooterSection === 'company' ? 'clamp(4px, 0.8vh, 10px)' : '0'
+                  marginTop: expandedFooterSection === 'company' ? 'clamp(4px, 0.5vh, 6px)' : '0'
                 }}
               >
                 <Link href="/why-onspot" className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-why">
@@ -1442,7 +1442,7 @@ export default function Home() {
             <div 
               className="md:space-y-6 md:border-b-0 text-center md:text-left"
               style={{
-                paddingBottom: 'clamp(8px, 1.2vh, 16px)',
+                paddingBottom: 'clamp(4px, 0.6vh, 8px)',
                 borderBottom: '1px solid rgba(255, 255, 255, 0.06)'
               }}
             >
@@ -1450,7 +1450,7 @@ export default function Home() {
                 onClick={() => toggleFooterSection('download')}
                 className="flex items-center justify-between w-full md:cursor-default md:!p-0"
                 style={{
-                  padding: 'clamp(6px, 1vh, 12px) 0'
+                  padding: 'clamp(4px, 0.6vh, 8px) 0'
                 }}
                 data-testid="footer-accordion-download"
               >
@@ -1467,7 +1467,7 @@ export default function Home() {
                     : 'opacity-0 max-h-0 overflow-hidden'
                 }`}
                 style={{
-                  marginTop: expandedFooterSection === 'download' ? 'clamp(4px, 0.8vh, 10px)' : '0'
+                  marginTop: expandedFooterSection === 'download' ? 'clamp(4px, 0.5vh, 6px)' : '0'
                 }}
               >
                 <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
@@ -1496,7 +1496,7 @@ export default function Home() {
                 onClick={() => toggleFooterSection('connect')}
                 className="flex items-center justify-between w-full md:cursor-default md:!p-0"
                 style={{
-                  padding: 'clamp(6px, 1vh, 12px) 0'
+                  padding: 'clamp(4px, 0.6vh, 8px) 0'
                 }}
                 data-testid="footer-accordion-connect"
               >
@@ -1513,7 +1513,7 @@ export default function Home() {
                     : 'opacity-0 max-h-0 overflow-hidden'
                 }`}
                 style={{
-                  marginTop: expandedFooterSection === 'connect' ? 'clamp(4px, 0.8vh, 10px)' : '0'
+                  marginTop: expandedFooterSection === 'connect' ? 'clamp(4px, 0.5vh, 6px)' : '0'
                 }}
               >
                 <a href="mailto:hello@onspotglobal.com" className="flex items-center justify-center md:justify-start gap-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-300 group" data-testid="footer-email">
