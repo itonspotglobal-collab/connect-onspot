@@ -953,44 +953,102 @@ export function TopNavigation() {
                   <span className="sr-only">Close</span>
                 </button>
                 <div
-                  className="relative hero-investor flex items-center justify-center min-h-[700px] rounded-2xl overflow-hidden"
+                  className="relative flex items-center justify-center min-h-[700px] rounded-2xl overflow-hidden"
+                  style={{
+                    background: 'linear-gradient(135deg, #0f0f3c 0%, #1a1a4e 25%, #252560 50%, #1a1a4e 75%, #0f0f3c 100%)',
+                  }}
                   data-testid="modal-step-awakening"
                 >
-                  {/* Gradient Overlay */}
-                  <div
-                    className="absolute inset-0 pointer-events-none"
+                  {/* Animated Grid Background */}
+                  <div 
+                    className="absolute inset-0 opacity-10"
                     style={{
-                      background:
-                        "linear-gradient(to bottom, rgba(15,15,60,0.3) 0%, rgba(0,0,0,0.0) 35%, rgba(0,0,0,0.0) 65%, rgba(15,15,60,0.3) 100%)",
+                      backgroundImage: 'linear-gradient(rgba(91, 124, 255, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(91, 124, 255, 0.3) 1px, transparent 1px)',
+                      backgroundSize: '50px 50px',
+                      animation: 'grid-move 20s linear infinite',
                     }}
                   ></div>
 
-                  {/* AI Pulse Orb - Animated Background Effect */}
+                  {/* Multi-layer Neural Pulse System */}
                   <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none">
-                    <div className="relative w-[600px] h-[600px]">
-                      {/* Outer pulse ring */}
+                    <div className="relative w-[800px] h-[800px]">
+                      {/* Outer expanding ring 1 */}
                       <div
-                        className="absolute inset-0 rounded-full bg-gradient-to-r from-[#3A3AF8]/20 to-[#7F3DF4]/20 blur-3xl animate-pulse"
-                        style={{ animationDuration: "4s" }}
-                      ></div>
-                      {/* Inner glow */}
-                      <div
-                        className="absolute inset-[20%] rounded-full bg-gradient-to-r from-[#3A3AF8]/30 to-[#7F3DF4]/30 blur-2xl animate-pulse"
-                        style={{
-                          animationDuration: "3s",
-                          animationDelay: "0.5s",
+                        className="absolute inset-0 rounded-full border-2 border-[#5B7CFF]/20 animate-pulse"
+                        style={{ 
+                          animationDuration: "5s",
+                          boxShadow: '0 0 60px rgba(91, 124, 255, 0.4), inset 0 0 60px rgba(91, 124, 255, 0.2)'
                         }}
                       ></div>
-                      {/* Core pulse */}
+                      {/* Outer expanding ring 2 */}
                       <div
-                        className="absolute inset-[40%] rounded-full bg-gradient-to-r from-[#3A3AF8]/50 to-[#7F3DF4]/50 blur-xl animate-pulse"
+                        className="absolute inset-[5%] rounded-full border-2 border-[#7F3DF4]/25 animate-pulse"
+                        style={{ 
+                          animationDuration: "4.5s",
+                          animationDelay: "0.3s",
+                          boxShadow: '0 0 50px rgba(127, 61, 244, 0.3), inset 0 0 50px rgba(127, 61, 244, 0.2)'
+                        }}
+                      ></div>
+                      {/* Middle energy layer */}
+                      <div
+                        className="absolute inset-[15%] rounded-full bg-gradient-to-r from-[#3A3AF8]/30 to-[#7F3DF4]/30 blur-3xl animate-pulse"
+                        style={{
+                          animationDuration: "3.5s",
+                          animationDelay: "0.6s",
+                        }}
+                      ></div>
+                      {/* Inner glow layer */}
+                      <div
+                        className="absolute inset-[25%] rounded-full bg-gradient-to-br from-[#5B7CFF]/40 to-[#9B5CFF]/40 blur-2xl animate-pulse"
+                        style={{
+                          animationDuration: "3s",
+                          animationDelay: "0.9s",
+                        }}
+                      ></div>
+                      {/* Core brilliant pulse */}
+                      <div
+                        className="absolute inset-[40%] rounded-full bg-gradient-to-r from-[#3A3AF8]/60 to-[#7F3DF4]/60 blur-xl animate-pulse"
+                        style={{
+                          animationDuration: "2.5s",
+                          animationDelay: "1.2s",
+                          boxShadow: '0 0 80px rgba(91, 124, 255, 0.8), 0 0 120px rgba(127, 61, 244, 0.6)'
+                        }}
+                      ></div>
+                      {/* Central bright core */}
+                      <div
+                        className="absolute inset-[45%] rounded-full bg-white/20 blur-md animate-pulse"
                         style={{
                           animationDuration: "2s",
-                          animationDelay: "1s",
+                          animationDelay: "1.5s",
                         }}
                       ></div>
                     </div>
                   </div>
+
+                  {/* Floating Particle Effects */}
+                  <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                    {[...Array(20)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="absolute w-1 h-1 bg-blue-400/60 rounded-full"
+                        style={{
+                          left: `${Math.random() * 100}%`,
+                          top: `${Math.random() * 100}%`,
+                          animation: `float ${3 + Math.random() * 4}s ease-in-out infinite`,
+                          animationDelay: `${Math.random() * 3}s`,
+                          boxShadow: '0 0 10px rgba(91, 124, 255, 0.8)'
+                        }}
+                      ></div>
+                    ))}
+                  </div>
+
+                  {/* Gradient Overlay for depth */}
+                  <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      background: "radial-gradient(ellipse at center, transparent 0%, rgba(15,15,60,0.4) 70%, rgba(0,0,0,0.6) 100%)",
+                    }}
+                  ></div>
 
                   {/* Content Container */}
                   <div className="relative z-10 flex flex-col items-center text-center space-y-10 px-8 py-12 max-w-3xl">
