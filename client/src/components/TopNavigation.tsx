@@ -842,14 +842,19 @@ export function TopNavigation() {
                     
                     {/* Accordion Content */}
                     {isExpanded && (
-                      <div className="mt-2 space-y-1 bg-[#1e1e4a] rounded-lg p-3 border border-white/10">
+                      <div 
+                        className="mt-2 space-y-2 rounded-xl p-4 border border-white/20 shadow-lg backdrop-blur-sm"
+                        style={{
+                          background: 'linear-gradient(135deg, #4338ca 0%, #6366f1 100%)'
+                        }}
+                      >
                         {/* Services dropdown */}
                         {item.services && Object.entries(item.services).map(([key, service]) => (
                           <Link
                             key={key}
                             href={service.path}
                             onClick={() => setIsMobileMenuOpen(false)}
-                            className="block py-3 px-4 bg-[#2a2a5e] text-white hover:bg-[#3a3a7e] rounded-md text-base transition-colors font-semibold shadow-sm"
+                            className="block py-3 px-4 bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 rounded-lg text-base transition-all duration-200 font-semibold shadow-md border border-white/10"
                             data-testid={`mobile-link-${key}`}
                           >
                             {service.title}
@@ -862,7 +867,7 @@ export function TopNavigation() {
                             key={key}
                             href={category.path}
                             onClick={() => setIsMobileMenuOpen(false)}
-                            className="block py-3 px-4 bg-[#2a2a5e] text-white hover:bg-[#3a3a7e] rounded-md text-base transition-colors font-semibold shadow-sm"
+                            className="block py-3 px-4 bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 rounded-lg text-base transition-all duration-200 font-semibold shadow-md border border-white/10"
                             data-testid={`mobile-link-${key}`}
                           >
                             {category.title}
@@ -875,7 +880,7 @@ export function TopNavigation() {
                             key={key}
                             href={section.path}
                             onClick={() => setIsMobileMenuOpen(false)}
-                            className="block py-3 px-4 bg-[#2a2a5e] text-white hover:bg-[#3a3a7e] rounded-md text-base transition-colors font-semibold shadow-sm"
+                            className="block py-3 px-4 bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 rounded-lg text-base transition-all duration-200 font-semibold shadow-md border border-white/10"
                             data-testid={`mobile-link-${key}`}
                           >
                             {section.title}
