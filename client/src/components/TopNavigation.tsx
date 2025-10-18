@@ -842,14 +842,14 @@ export function TopNavigation() {
                     
                     {/* Accordion Content */}
                     {isExpanded && (
-                      <div className="mt-2 space-y-1 pl-4">
+                      <div className="mt-2 space-y-1 pl-4 py-2 bg-black/20 rounded-lg">
                         {/* Services dropdown */}
                         {item.services && Object.entries(item.services).map(([key, service]) => (
                           <Link
                             key={key}
                             href={service.path}
                             onClick={() => setIsMobileMenuOpen(false)}
-                            className="block py-2 px-3 text-white/80 hover:text-white hover:bg-white/10 rounded-md text-sm transition-colors"
+                            className="block py-2 px-3 text-white hover:text-white hover:bg-white/10 rounded-md text-sm transition-colors font-medium"
                             data-testid={`mobile-link-${key}`}
                           >
                             {service.title}
@@ -862,7 +862,7 @@ export function TopNavigation() {
                             key={key}
                             href={category.path}
                             onClick={() => setIsMobileMenuOpen(false)}
-                            className="block py-2 px-3 text-white/80 hover:text-white hover:bg-white/10 rounded-md text-sm transition-colors"
+                            className="block py-2 px-3 text-white hover:text-white hover:bg-white/10 rounded-md text-sm transition-colors font-medium"
                             data-testid={`mobile-link-${key}`}
                           >
                             {category.title}
@@ -875,7 +875,7 @@ export function TopNavigation() {
                             key={key}
                             href={section.path}
                             onClick={() => setIsMobileMenuOpen(false)}
-                            className="block py-2 px-3 text-white/80 hover:text-white hover:bg-white/10 rounded-md text-sm transition-colors"
+                            className="block py-2 px-3 text-white hover:text-white hover:bg-white/10 rounded-md text-sm transition-colors font-medium"
                             data-testid={`mobile-link-${key}`}
                           >
                             {section.title}
