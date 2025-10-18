@@ -132,7 +132,7 @@ const serviceDetails = {
     popular: false,
   },
   aiVA: {
-    title: "AI Virtual Assistant",
+    title: "AI-Assistant",
     subtitle: "Automated efficiency",
     description:
       "AI-powered automation for repetitive tasks and data processing",
