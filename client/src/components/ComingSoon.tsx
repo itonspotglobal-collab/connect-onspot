@@ -65,35 +65,32 @@ export function ComingSoon({
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-violet-500/20 via-blue-500/10 to-transparent rounded-full blur-3xl opacity-60"></div>
         </div>
         
-        <div className="relative z-10 w-full" style={{ overflow: 'visible' }}>
+        <div className="relative z-10 w-full flex items-center justify-center" style={{ overflow: 'visible' }}>
           <div 
-            className="relative"
+            className="relative w-full"
             style={{ 
               overflow: 'visible',
               maxWidth: '1200px',
-              marginLeft: 'clamp(1rem, 5vw, 3rem)',
-              marginRight: 'auto',
-              paddingLeft: 'clamp(1rem, 3vw, 2rem)',
-              paddingRight: 'clamp(1rem, 3vw, 2rem)'
+              paddingLeft: 'clamp(1.5rem, 4vw, 3rem)',
+              paddingRight: 'clamp(1.5rem, 4vw, 3rem)',
+              marginLeft: 'auto',
+              marginRight: 'auto'
             }}
           >
             <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center relative" style={{ overflow: 'visible' }}>
               
               {/* Left Side: Typography */}
-              <div className="space-y-6 sm:space-y-8 relative z-10" style={{ 
+              <div className="relative z-10" style={{ 
                 overflow: 'visible',
-                width: '100%',
-                maxWidth: 'clamp(100%, 90vw, 600px)',
-                marginLeft: 'clamp(0px, calc((100vw - 1024px) / 2), auto)',
-                marginRight: 'auto'
+                width: '100%'
               }}>
+                <div className="space-y-6 md:space-y-8">
                 {/* Coming Soon Label */}
                 <div 
                   className={`transition-all duration-1000 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-                  style={{ textAlign: 'left' }}
                 >
                   <p 
-                    className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wider"
+                    className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wider text-center md:text-left"
                     data-testid="text-coming-soon"
                   >
                     {typedText}
@@ -107,8 +104,8 @@ export function ComingSoon({
 
                 {/* OnSpot Logo - blends with headline */}
                 <div 
-                  className={`transition-all duration-1000 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-                  style={{ transitionDelay: '0.1s', textAlign: 'left' }}
+                  className={`transition-all duration-1000 flex justify-center md:justify-start ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                  style={{ transitionDelay: '0.1s' }}
                 >
                   <Link href="/">
                     <img
@@ -164,22 +161,25 @@ export function ComingSoon({
 
                 {/* CTAs */}
                 <div 
-                  className={`flex flex-col sm:flex-row items-stretch sm:items-start gap-3 transition-all duration-1000 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                  className={`flex flex-col md:flex-row justify-center md:justify-start items-center transition-all duration-1000 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
                   style={{ 
                     transitionDelay: '0.4s',
-                    paddingBottom: 'max(12px, env(safe-area-inset-bottom))'
+                    gap: 'clamp(12px, 1.5vw, 16px)',
+                    paddingBottom: 'max(16px, env(safe-area-inset-bottom))'
                   }}
                 >
                   {/* Primary: Launch AI Assistant */}
                   <Button
                     size="lg"
                     onClick={() => setShowVanessaChat(true)}
-                    className="group relative overflow-hidden px-8 text-base bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700 text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-[0_0_30px_rgba(139,92,246,0.4)]"
+                    className="group relative overflow-hidden text-base bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700 text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-[0_0_30px_rgba(139,92,246,0.4)]"
                     style={{
-                      minHeight: '56px',
+                      minHeight: 'clamp(52px, 5.5vw, 56px)',
                       borderRadius: '14px',
                       width: '100%',
-                      maxWidth: 'clamp(100%, 100%, 280px)'
+                      maxWidth: '280px',
+                      paddingLeft: 'clamp(1.5rem, 3vw, 2rem)',
+                      paddingRight: 'clamp(1.5rem, 3vw, 2rem)'
                     }}
                     data-testid="button-launch-ai"
                   >
@@ -192,12 +192,14 @@ export function ComingSoon({
                   <Button
                     variant="outline"
                     size="lg"
-                    className="group relative overflow-hidden px-8 text-base border-2 border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 font-medium backdrop-blur-sm bg-white/60 transition-all duration-300 shadow-sm hover:shadow-md"
+                    className="group relative overflow-hidden text-base border-2 border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 font-medium backdrop-blur-sm bg-white/60 transition-all duration-300 shadow-sm hover:shadow-md"
                     style={{
-                      minHeight: '56px',
+                      minHeight: 'clamp(52px, 5.5vw, 56px)',
                       borderRadius: '14px',
                       width: '100%',
-                      maxWidth: 'clamp(100%, 100%, 280px)'
+                      maxWidth: '280px',
+                      paddingLeft: 'clamp(1.5rem, 3vw, 2rem)',
+                      paddingRight: 'clamp(1.5rem, 3vw, 2rem)'
                     }}
                     asChild
                     data-testid="button-explore-onspot"
@@ -208,16 +210,15 @@ export function ComingSoon({
                     </Link>
                   </Button>
                 </div>
+                </div>
               </div>
 
               {/* Right Side: Breathing Radial Orb */}
-              <div className="absolute lg:relative inset-0 lg:inset-auto flex items-center justify-center lg:justify-end pointer-events-none -z-10 lg:z-auto">
+              <div className="absolute lg:relative inset-0 lg:inset-auto flex items-center justify-center pointer-events-none -z-10 lg:z-auto">
                 <div 
                   className="relative"
                   style={{
-                    width: typeof window !== 'undefined' && window.innerWidth <= 640 
-                      ? 'clamp(680px, 120vw, 1200px)' 
-                      : 'clamp(420px, 44vw, 820px)',
+                    width: 'clamp(min(680px, 120vw), 60vw, 820px)',
                     aspectRatio: '1/1',
                     opacity: 1,
                     overflow: 'visible'
