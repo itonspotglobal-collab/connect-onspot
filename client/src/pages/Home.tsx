@@ -1276,7 +1276,7 @@ export default function Home() {
             <div 
               className="lg:col-span-2 space-y-8 md:pb-0 md:border-b-0 text-center md:text-left"
               style={{
-                paddingBottom: 'clamp(4px, 0.6vh, 8px)',
+                paddingBottom: 'clamp(16px, 2.5vh, 24px)',
                 borderBottom: '1px solid rgba(255, 255, 255, 0.06)'
               }}
             >
