@@ -16,6 +16,7 @@ import { DomainRouter } from "@/components/DomainRouter";
 import { VanessaChat } from "@/components/VanessaChat";
 import { Button } from "@/components/ui/button";
 import { MessageCircle } from "lucide-react";
+import { HeadSEO } from "@/components/HeadSEO";
 import Home from "@/pages/Home";
 import TalentSearch from "@/pages/TalentSearch";
 import Dashboard from "@/pages/Dashboard";
@@ -308,6 +309,8 @@ function App() {
         <ThemeProvider defaultTheme="light" storageKey="onspot-ui-theme">
           <AuthProvider>
             <VanessaProvider>
+              {/* Dynamic SEO + GEO meta tags and schemas (US/PH) */}
+              <HeadSEO />
               <DomainRouter>
                 <NewUserOnboardingWrapper>
                   <AppContent />

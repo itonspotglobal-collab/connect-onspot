@@ -1,0 +1,8 @@
+# OnSpot - Robots.txt
+# Allow global crawl for both US and PH pages
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://www.onspotglobal.com/sitemap.xml
