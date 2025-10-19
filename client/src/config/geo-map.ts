@@ -11,8 +11,8 @@ export interface GeoRoute {
 }
 
 export const GEO_MAP: GeoRoute[] = [
-  // Philippines-facing pages (operations/talent)
-  { pattern: /^\/(jobs|careers|apply|operations|talent-portal)(\/|$)/i, region: "PH" },
+  // Philippines-facing pages (operations/talent recruitment)
+  { pattern: /^\/(find-work|get-hired|talent-portal|jobs|careers|apply|operations)(\/|$)/i, region: "PH" },
   
   // US-facing pages (default - clients/leads)
   { pattern: /.*/, region: "US" }

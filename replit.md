@@ -83,6 +83,28 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### Dual SEO + GEO Setup (US + Philippines) - October 19, 2025
+- **Purpose**: Comprehensive dual geo-targeting SEO implementation for US (clients) and Philippines (talent) audiences
+- **Brand Strategy**: "OnSpot" visible everywhere, "OnSpot Global" as hidden legal name in schema for ranking continuity
+- **Key Implementation**:
+  - Created `GEO_MAP` configuration (`client/src/config/geo-map.ts`) to identify US vs PH pages via regex patterns
+  - Built dynamic `HeadSEO` component that auto-injects region-specific meta tags and JSON-LD schemas based on route
+  - **US Pages** (client-facing): Service schema with `areaServed: "US"` + offering catalog (AI VA, Managed Services, Resourced Services)
+  - **PH Pages** (talent-facing): EmploymentAgency schema with Cebu City address + geo coordinates
+  - Created `robots.txt` allowing global crawl access with sitemap reference
+  - Created comprehensive `sitemap.xml` with both US and PH URLs, proper priorities, and changefreq
+  - Updated `client/index.html` to remove static schemas (now fully dynamic via HeadSEO)
+- **Route Classification**:
+  - US routes (default): `/`, `/hire-talent`, `/why-onspot/*`, `/pricing`, `/enterprise`, `/investors`, etc.
+  - PH routes: `/find-work`, `/get-hired`, `/talent-portal`, `/jobs`, `/careers`, `/apply`, `/operations`
+- **SEO Features**:
+  - Dynamic canonical URLs matching current pathname
+  - Geo-specific meta tags (`geo.region`, `geo.placename`, coordinates for PH)
+  - Organization schema globally with both `name` and `legalName` fields
+  - WebSite schema with SearchAction for hire-talent endpoint
+  - Region-adaptive Service/EmploymentAgency schemas
+- **No Visible Changes**: All modifications in `<head>` only - zero layout/content/copy changes per requirements
+
 ### Coming Soon Page (October 18, 2025)
 - **Purpose**: Immersive full-screen experience for campaign reveals and marketing pages (`/pricing`, `/enterprise`, `/affiliate-marketing`, `/bpo-partner`)
 - **Design Philosophy**: Bright, cinematic, intelligent, and inspiring - like watching the birth of intelligence
