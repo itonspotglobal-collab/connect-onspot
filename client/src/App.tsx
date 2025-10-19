@@ -182,6 +182,13 @@ function AppContent() {
       <Route path="/affiliate-marketing" component={ImmersivePage} />
       <Route path="/bpo-partner" component={ImmersivePage} />
       
+      {/* Service Routes - Also immersive */}
+      <Route path="/services/ai-assistant" component={ImmersivePage} />
+      <Route path="/services/managed" component={ImmersivePage} />
+      <Route path="/services/resourced" component={ImmersivePage} />
+      <Route path="/services/enterprise" component={ImmersivePage} />
+      <Route path="/services/human-va" component={ImmersivePage} />
+      
       {/* Public Routes - Always available */}
       <Route path="/" component={PublicRouter} />
       <Route path="/hire-talent" component={PublicRouter} />

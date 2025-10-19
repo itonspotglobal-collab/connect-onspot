@@ -19,7 +19,9 @@ Preferred communication style: Simple, everyday language.
 - **Domain-Based Routing**: Automatic routing based on subdomain detection:
   - `onspotglobal.com` → Primary domain serving main public site (home page, marketing pages, etc.)
   - `talent.onspotglobal.com` → Talent Portal (auto-redirects to /talent-portal)
-- **Immersive Routes**: Full-screen experiences without navigation for campaigns and reveals (`/pricing`, `/enterprise`, `/affiliate-marketing`, `/bpo-partner`) using ImmersiveRouter component
+- **Immersive Routes**: Full-screen experiences without navigation for campaigns and reveals using ImmersivePage component:
+  - Campaign pages: `/pricing`, `/enterprise`, `/affiliate-marketing`, `/bpo-partner`, `/waitlist`, `/ai-assistant`
+  - Service pages: `/services/ai-assistant`, `/services/managed`, `/services/resourced`, `/services/enterprise`, `/services/human-va`
 - **Design System**: Apple-inspired interface with light/dark mode support, consistent spacing (4, 6, 8, 12, 16, 24 unit increments), and professional typography using SF Pro Display system fonts
 
 ### Backend Architecture
