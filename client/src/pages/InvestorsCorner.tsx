@@ -393,7 +393,7 @@ export default function InvestorsCorner() {
   useEffect(() => {
     // Set page title
     document.title =
-      "Investors Corner - OnSpot Global | Investment Opportunity";
+      "Investors Corner - OnSpot | Investment Opportunity";
 
     // Update or create meta tags
     const updateMetaTag = (property: string, content: string) => {
@@ -423,13 +423,13 @@ export default function InvestorsCorner() {
     // Update meta description
     updateMetaName(
       "description",
-      "Investment opportunity in OnSpot Global - The evolution of outsourcing. Built by entrepreneurs for entrepreneurs. 80+ clients served, $50M+ value delivered, battle-tested growth with 500+ resources deployed.",
+      "Investment opportunity in OnSpot - The evolution of outsourcing. Built by entrepreneurs for entrepreneurs. 80+ clients served, $50M+ value delivered, battle-tested growth with 500+ resources deployed.",
     );
 
     // Update Open Graph tags
     updateMetaTag(
       "og:title",
-      "Investors Corner - OnSpot Global | Investment Opportunity",
+      "Investors Corner - OnSpot | Investment Opportunity",
     );
     updateMetaTag(
       "og:description",
@@ -440,7 +440,7 @@ export default function InvestorsCorner() {
 
     // Twitter Card tags
     updateMetaName("twitter:card", "summary_large_image");
-    updateMetaName("twitter:title", "Investors Corner - OnSpot Global");
+    updateMetaName("twitter:title", "Investors Corner - OnSpot");
     updateMetaName(
       "twitter:description",
       "Investment opportunity in the evolution of outsourcing. 80+ clients, $50M+ value delivered, battle-tested platform ready to scale globally.",
@@ -448,7 +448,7 @@ export default function InvestorsCorner() {
 
     // Cleanup function to restore original meta tags when component unmounts
     return () => {
-      document.title = "OnSpot - Making Outsourcing Easy";
+      document.title = "OnSpot — The Superhuman Outsourcing System";
     };
   }, []);
 
@@ -708,7 +708,7 @@ export default function InvestorsCorner() {
                     Nur Laminero & Jake Wainberg
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    Co-Founders, OnSpot Global
+                    Co-Founders, OnSpot
                   </div>
                 </div>
               </div>

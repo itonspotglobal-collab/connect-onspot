@@ -1544,7 +1544,7 @@ export default function Home() {
           <div className="mt-16 pt-8 border-t border-slate-300 dark:border-white/[0.12]">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs sm:text-sm text-slate-600 dark:text-white/70">
               <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-center sm:text-left">
-                <p className="hover:text-slate-800 dark:hover:text-white/90 transition-colors duration-300">© 2025 OnSpot Global. All rights reserved.</p>
+                <p className="hover:text-slate-800 dark:hover:text-white/90 transition-colors duration-300">© 2025 OnSpot. All rights reserved.</p>
                 <span className="hidden sm:inline text-slate-400 dark:text-white/30">·</span>
                 <p className="text-[10px] sm:text-xs text-slate-500 dark:text-white/50">Powered by OnSpot Intelligence</p>
               </div>

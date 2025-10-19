@@ -1,4 +1,4 @@
-# OnSpot Global Talent Marketplace - Design Guidelines
+# OnSpot Talent Marketplace - Design Guidelines
 
 ## Design Philosophy
 **Professional Marketplace Excellence**: OnSpot embodies the sophistication of enterprise-grade talent platforms while maintaining the accessibility and trust of global marketplaces. We blend corporate professionalism with human-centered design to create an environment where both clients and talent feel confident, valued, and empowered.
