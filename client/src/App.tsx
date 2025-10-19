@@ -45,19 +45,9 @@ import InvestorsCorner from "@/pages/InvestorsCorner";
 import ProfileSettings from "@/pages/ProfileSettings";
 import Powerapp from "@/pages/Powerapp";
 
-// Immersive Routes - Full screen without navigation (for campaigns and reveals)
-function ImmersiveRouter() {
-  return (
-    <Switch>
-      <Route path="/ai-assistant" component={ComingSoon} />
-      <Route path="/waitlist" component={ComingSoon} />
-      <Route path="/pricing" component={ComingSoon} />
-      <Route path="/enterprise" component={ComingSoon} />
-      <Route path="/affiliate-marketing" component={ComingSoon} />
-      <Route path="/bpo-partner" component={ComingSoon} />
-      <Route component={NotFound} />
-    </Switch>
-  );
+// Immersive Page Wrapper - Full screen without navigation (for campaigns and reveals)
+function ImmersivePage() {
+  return <ComingSoon />;
 }
 
 // Public Routes - Always available regardless of authentication
@@ -185,12 +175,12 @@ function AppContent() {
   return (
     <Switch>
       {/* Immersive Routes - Full screen without navigation */}
-      <Route path="/ai-assistant" component={ImmersiveRouter} />
-      <Route path="/waitlist" component={ImmersiveRouter} />
-      <Route path="/pricing" component={ImmersiveRouter} />
-      <Route path="/enterprise" component={ImmersiveRouter} />
-      <Route path="/affiliate-marketing" component={ImmersiveRouter} />
-      <Route path="/bpo-partner" component={ImmersiveRouter} />
+      <Route path="/ai-assistant" component={ImmersivePage} />
+      <Route path="/waitlist" component={ImmersivePage} />
+      <Route path="/pricing" component={ImmersivePage} />
+      <Route path="/enterprise" component={ImmersivePage} />
+      <Route path="/affiliate-marketing" component={ImmersivePage} />
+      <Route path="/bpo-partner" component={ImmersivePage} />
       
       {/* Public Routes - Always available */}
       <Route path="/" component={PublicRouter} />
