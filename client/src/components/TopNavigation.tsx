@@ -619,7 +619,7 @@ export function TopNavigation() {
                   {hasMegaMenu ? (
                     <div className="relative">
                       <button
-                        className={`relative py-2 text-sm font-medium transition-all duration-300 rounded-lg hover-elevate flex items-center gap-1 whitespace-nowrap ${
+                        className={`py-2 text-sm font-medium transition-all duration-300 rounded-lg hover-elevate flex items-center gap-1 whitespace-nowrap ${
                           isActive || activeDropdown === item.title
                             ? "text-white bg-white/10 border border-white/40"
                             : "text-white/90"
@@ -627,7 +627,6 @@ export function TopNavigation() {
                         style={{ 
                           paddingLeft: 'clamp(10px, 1.2vw, 16px)', 
                           paddingRight: 'clamp(10px, 1.2vw, 16px)',
-                          zIndex: 102,
                         }}
                         data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
                         onMouseEnter={() => handleMouseEnter(item.title)}
@@ -650,17 +649,16 @@ export function TopNavigation() {
                           
                           {/* Mega Menu Panel with hover bridge */}
                           <div
-                            className="absolute left-0 right-0"
+                            className="fixed left-0 right-0"
                             style={{
-                              top: "100%",
-                              marginTop: "-2px",
-                              paddingTop: "2px",
+                              top: "var(--nav-h)",
                               zIndex: 100,
                             }}
                             onMouseEnter={() => handleMouseEnter(item.title)}
                             onMouseLeave={handleMouseLeave}
                           >
                             <div
+                              className="mx-auto"
                               style={{
                                 background: "rgba(44, 48, 114, 0.86)",
                                 backdropFilter: "blur(24px)",
@@ -668,7 +666,7 @@ export function TopNavigation() {
                                 boxShadow: "0 24px 64px rgba(0, 0, 0, 0.24), 0 0 0 1px rgba(255, 255, 255, 0.08)",
                                 borderRadius: "20px",
                                 animation: "megaMenuIn 160ms ease-out",
-                                marginTop: "2px",
+                                maxWidth: "min(1200px, 92vw)",
                               }}
                             >
                             <div className="mx-auto max-w-7xl" style={{ padding: "32px" }}>
