@@ -21,7 +21,7 @@ interface HeadSEOProps {
 
 export function HeadSEO({ 
   title = "OnSpot — The Superhuman Outsourcing System",
-  description = "OnSpot bridges BPO and freelancing with AI-powered talent matching, performance management, and seamless outsourcing integration for B2B and B2C clients.",
+  description = "The growth engine of modern business. Built by entrepreneurs, for entrepreneurs—our Superhuman Outsourcing System fuses AI-first infrastructure with human excellence to scale businesses and empower people to perform beyond limits.",
   ogImage = "https://www.onspotglobal.com/assets/og/onspot-home.jpg"
 }: HeadSEOProps) {
   const [location] = useLocation();
