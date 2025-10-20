@@ -652,7 +652,7 @@ export function TopNavigation() {
                   {hasMegaMenu ? (
                     <div className="relative">
                       <button
-                        className={`relative py-2 text-sm font-medium transition-all duration-300 rounded-lg hover-elevate flex items-center gap-1 whitespace-nowrap ${
+                        className={`py-2 text-sm font-medium transition-all duration-300 rounded-lg hover-elevate active-elevate-2 flex items-center gap-1 whitespace-nowrap ${
                           isActive || activeDropdown === item.title
                             ? "text-white bg-white/10 border border-white/40"
                             : "text-white/90"
@@ -660,10 +660,10 @@ export function TopNavigation() {
                         style={{ 
                           paddingLeft: 'clamp(10px, 1.2vw, 16px)', 
                           paddingRight: 'clamp(10px, 1.2vw, 16px)',
-                          zIndex: 102,
                         }}
                         data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
                         onMouseEnter={() => handleMouseEnter(item.title)}
+                        onFocus={() => handleMouseEnter(item.title)}
                       >
                         {item.title}
                         <ChevronDown className="h-3 w-3" />
@@ -865,7 +865,7 @@ export function TopNavigation() {
                   ) : (
                     <Link
                       href={item.path}
-                      className={`py-2 text-sm font-medium transition-all duration-300 rounded-lg hover-elevate whitespace-nowrap ${
+                      className={`py-2 text-sm font-medium transition-all duration-300 rounded-lg hover-elevate active-elevate-2 whitespace-nowrap ${
                         location === item.path
                           ? "text-white bg-white/10 border border-white/40"
                           : "text-white/90"
@@ -885,7 +885,7 @@ export function TopNavigation() {
               <div className="relative">
                 <button
                   onClick={() => setMoreMenuOpen(!moreMenuOpen)}
-                  className="py-2 text-sm font-medium transition-all duration-300 rounded-lg hover-elevate flex items-center gap-1 text-white/90"
+                  className="py-2 text-sm font-medium transition-all duration-300 rounded-lg hover-elevate active-elevate-2 flex items-center gap-1 text-white/90"
                   style={{ paddingLeft: 'clamp(10px, 1.2vw, 16px)', paddingRight: 'clamp(10px, 1.2vw, 16px)' }}
                   aria-expanded={moreMenuOpen}
                   data-testid="nav-more-button"
