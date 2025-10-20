@@ -616,11 +616,7 @@ export function TopNavigation() {
                   ref={(el) => { itemRefs.current[index] = el; }}
                 >
                   {hasMegaMenu ? (
-                    <div 
-                      className="relative"
-                      onMouseEnter={() => handleMouseEnter(item.title)}
-                      onMouseLeave={handleMouseLeave}
-                    >
+                    <div>
                       <button
                         className={`py-2 text-sm font-medium transition-all duration-300 rounded-lg hover-elevate flex items-center gap-1 whitespace-nowrap ${
                           isActive || activeDropdown === item.title
@@ -629,6 +625,7 @@ export function TopNavigation() {
                         }`}
                         style={{ paddingLeft: 'clamp(10px, 1.2vw, 16px)', paddingRight: 'clamp(10px, 1.2vw, 16px)' }}
                         data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
+                        onMouseEnter={() => handleMouseEnter(item.title)}
                       >
                         {item.title}
                         <ChevronDown className="h-3 w-3" />
@@ -646,14 +643,17 @@ export function TopNavigation() {
                             }}
                           />
                           
-                          {/* Mega Menu Panel - Extends from button to dropdown with no gap */}
+                          {/* Mega Menu Panel with hover bridge */}
                           <div
                             className="absolute left-0 right-0"
                             style={{
-                              top: 0,
-                              paddingTop: "calc(100% + 12px)",
+                              top: "100%",
+                              marginTop: "-2px",
+                              paddingTop: "2px",
                               zIndex: 100,
                             }}
+                            onMouseEnter={() => handleMouseEnter(item.title)}
+                            onMouseLeave={handleMouseLeave}
                           >
                             <div
                               style={{
@@ -663,6 +663,7 @@ export function TopNavigation() {
                                 boxShadow: "0 24px 64px rgba(0, 0, 0, 0.24), 0 0 0 1px rgba(255, 255, 255, 0.08)",
                                 borderRadius: "20px",
                                 animation: "megaMenuIn 160ms ease-out",
+                                marginTop: "2px",
                               }}
                             >
                             <div className="mx-auto max-w-7xl" style={{ padding: "32px" }}>
