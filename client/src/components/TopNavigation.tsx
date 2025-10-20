@@ -579,6 +579,18 @@ export function TopNavigation() {
     };
   }, []);
 
+  // Close mega menu on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      if (activeDropdown) {
+        setActiveDropdown(null);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [activeDropdown]);
+
   return (
     <>
       {/* Navigation Spacer - prevents content overlap */}
@@ -662,6 +674,9 @@ export function TopNavigation() {
                         data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
                         onMouseEnter={() => handleMouseEnter(item.title)}
                         onFocus={() => handleMouseEnter(item.title)}
+                        aria-expanded={activeDropdown === item.title}
+                        aria-haspopup="true"
+                        aria-label={`${item.title} menu`}
                       >
                         {item.title}
                         <ChevronDown className="h-3 w-3" />
@@ -801,10 +816,9 @@ export function TopNavigation() {
         <>
           {/* Page Scrim - dims background content */}
           <div
-            className="fixed inset-0 bg-black/30 dark:bg-black/50"
+            className="mega-menu-scrim fixed inset-0 bg-black/30 dark:bg-black/50"
             style={{
               zIndex: 99,
-              animation: "fadeIn 160ms ease-out",
             }}
             onMouseEnter={handleMouseLeave}
           />
@@ -836,8 +850,8 @@ export function TopNavigation() {
                 maxWidth: "min(1200px, 92vw)",
               }}
             >
-              <div className="mx-auto max-w-7xl" style={{ padding: "40px 48px" }}>
-                <div className="grid grid-cols-3 gap-12">
+              <div className="mx-auto max-w-7xl" style={{ padding: "28px 32px" }}>
+                <div className="grid grid-cols-3 gap-8" style={{ gap: "32px" }}>
                   {(() => {
                     const activeItem = navigationItems.find(item => item.title === activeDropdown);
                     if (!activeItem) return null;

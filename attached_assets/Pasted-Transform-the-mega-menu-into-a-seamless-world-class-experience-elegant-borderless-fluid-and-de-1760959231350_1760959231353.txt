@@ -1,0 +1,52 @@
+Transform the mega menu into a seamless, world-class experience — elegant, borderless, fluid, and deeply integrated with the overall brand aesthetic of OnSpot.
+
+Core Design Vibe:
+	•	The entire mega menu should feel like one continuous, translucent glass surface, with no inner boxes or borders around content.
+	•	Remove all visible outlines, borders, and drop shadows inside the menu. Text and spacing should float effortlessly within the shared surface.
+	•	Use a soft glassmorphism effect for the background:
+	•	background: rgba(44,48,114,.86)
+	•	backdrop-filter: blur(10px) saturate(110%)
+	•	subtle border: 1px solid rgba(255,255,255,.08)
+	•	radius: 20px
+	•	The overall look should be elegant, simple, and calm, not mechanical. It should feel designed — not coded.
+
+Glow & Motion:
+	•	Replace the boxy hover states in the top navigation with a glow style identical to the “Launch AI Assistant” button.
+	•	The glow should radiate softly outward with a diffused gradient and a smooth fade, creating a sense of connection and light.
+	•	On hover or when active (aria-expanded=true):
+	•	Slight lift (translateY(-1px))
+	•	Subtle halo glow (radial-gradient + linear-gradient), same color tone as the purple-blue CTA button.
+	•	Smooth ease timing: cubic-bezier(.2,.8,.2,1) over 180ms.
+
+User Experience Rules:
+	•	Hovering a top nav item with a mega panel opens it automatically after a 100ms intent delay.
+	•	Moving across other mega items transitions panels smoothly with no flicker.
+	•	Hovering any non-mega item (like “Amazing”) or leaving the header/panel zone closes the mega menu gracefully (≈150ms delay).
+	•	When open, a subtle scrim dims the hero section below to focus the user’s attention.
+	•	Always close on scroll, Esc, or touch outside.
+
+Content Layout:
+	•	Use a clean 3-column grid with equal spacing (gap: 32px, padding: 28px 32px).
+	•	Remove card backgrounds; only text and white space remain.
+	•	Titles: white, semibold; descriptions: muted gray (#B8BCE3).
+	•	Each link should be clickable across the full width of its text block, with a soft leftward motion or color change on hover — no boxes.
+
+Motion & Feel:
+	•	Opening/closing animation: opacity fade + scale/translate (0.98 → 1.0, Y+6px → 0).
+	•	Duration: 160ms for open, 150ms for close.
+	•	Everything must feel buttery-smooth and responsive, like Apple.com or Linear.app interactions.
+
+Accessibility & Quality:
+	•	Full keyboard and screen-reader support (aria-expanded, aria-haspopup, aria-labelledby).
+	•	Tab and focus states mimic hover glow.
+	•	Mobile converts to a lightweight accordion with consistent animations.
+
+Performance Goals:
+	•	All transitions GPU-accelerated (use transform and opacity only).
+	•	Keep paint cost low; no heavy shadows or nested blurs.
+	•	Ensure zero flicker and no “stuck open” state under any condition.
+
+Overall Design Intent:
+The mega menu should feel alive yet minimal — like touching light. It should breathe with motion, match the purple-blue glow energy of OnSpot, and create an emotional response of sophistication and calm power.
+
+Think of this as “Apple x Linear x OnSpot” — clean lines, beautiful light, instant response, and intelligent UX flow.
