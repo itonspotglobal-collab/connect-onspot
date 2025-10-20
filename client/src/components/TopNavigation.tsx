@@ -809,7 +809,7 @@ export function TopNavigation() {
             onMouseEnter={handleMouseLeave}
           />
           
-          {/* Mega Menu Panel */}
+          {/* Mega Menu Panel - One Translucent Surface */}
           <div
             className="fixed left-0 right-0"
             style={{
@@ -823,30 +823,30 @@ export function TopNavigation() {
               }
             }}
             onMouseLeave={handleMouseLeave}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                setActiveDropdown(null);
+              }
+            }}
           >
             <div
+              className="mega-menu-panel"
               style={{
-                background: "rgba(44, 48, 114, 0.86)",
-                backdropFilter: "blur(24px)",
-                WebkitBackdropFilter: "blur(24px)",
-                boxShadow: "0 24px 64px rgba(0, 0, 0, 0.24), 0 0 0 1px rgba(255, 255, 255, 0.08)",
-                borderRadius: "20px",
-                animation: "megaMenuIn 160ms ease-out",
                 margin: "0 auto",
                 maxWidth: "min(1200px, 92vw)",
               }}
             >
-              <div className="mx-auto max-w-7xl" style={{ padding: "32px" }}>
-                <div className="grid grid-cols-3 gap-8">
+              <div className="mx-auto max-w-7xl" style={{ padding: "40px 48px" }}>
+                <div className="grid grid-cols-3 gap-12">
                   {(() => {
                     const activeItem = navigationItems.find(item => item.title === activeDropdown);
                     if (!activeItem) return null;
 
-                    const links = [];
+                    const columns = [];
                     
                     // Services dropdown
                     if ('services' in activeItem && activeItem.services) {
-                      links.push(...Object.entries(activeItem.services).map(([key, service]) => (
+                      const serviceLinks = Object.entries(activeItem.services).map(([key, service]) => (
                         <Link
                           key={key}
                           href={service.path}
@@ -861,12 +861,19 @@ export function TopNavigation() {
                             {service.subtitle}
                           </p>
                         </Link>
-                      )));
+                      ));
+                      serviceLinks.forEach((link, index) => {
+                        columns.push(
+                          <div key={`service-${index}`} className="mega-menu-column">
+                            {link}
+                          </div>
+                        );
+                      });
                     }
                     
                     // Work categories dropdown
                     if ('categories' in activeItem && activeItem.categories) {
-                      links.push(...Object.entries(activeItem.categories).map(([key, category]) => (
+                      const categoryLinks = Object.entries(activeItem.categories).map(([key, category]) => (
                         <Link
                           key={key}
                           href={category.path}
@@ -881,12 +888,19 @@ export function TopNavigation() {
                             {category.subtitle}
                           </p>
                         </Link>
-                      )));
+                      ));
+                      categoryLinks.forEach((link, index) => {
+                        columns.push(
+                          <div key={`category-${index}`} className="mega-menu-column">
+                            {link}
+                          </div>
+                        );
+                      });
                     }
                     
                     // Why OnSpot dropdown
                     if ('whyOnSpot' in activeItem && activeItem.whyOnSpot) {
-                      links.push(...Object.entries(activeItem.whyOnSpot).map(([key, section]) => (
+                      const whyLinks = Object.entries(activeItem.whyOnSpot).map(([key, section]) => (
                         <Link
                           key={key}
                           href={section.path}
@@ -901,10 +915,17 @@ export function TopNavigation() {
                             {section.subtitle}
                           </p>
                         </Link>
-                      )));
+                      ));
+                      whyLinks.forEach((link, index) => {
+                        columns.push(
+                          <div key={`why-${index}`} className="mega-menu-column">
+                            {link}
+                          </div>
+                        );
+                      });
                     }
 
-                    return links;
+                    return columns;
                   })()}
                 </div>
               </div>
