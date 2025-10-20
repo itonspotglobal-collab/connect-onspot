@@ -584,10 +584,11 @@ export function TopNavigation() {
           {/* Zone 2: Desktop Navigation Links (centered) */}
           <div 
             ref={navLinksRef}
-            className="hidden md:flex items-center relative z-10 flex-1 justify-center"
+            className="hidden md:flex items-center relative flex-1 justify-center"
             style={{ 
               gap: 'clamp(8px, 1.2vw, 16px)',
               flexWrap: 'nowrap',
+              zIndex: 101,
             }}
           >
             {navigationItems.slice(0, visibleItems).map((item, index) => {
@@ -616,14 +617,18 @@ export function TopNavigation() {
                   ref={(el) => { itemRefs.current[index] = el; }}
                 >
                   {hasMegaMenu ? (
-                    <div>
+                    <div className="relative">
                       <button
-                        className={`py-2 text-sm font-medium transition-all duration-300 rounded-lg hover-elevate flex items-center gap-1 whitespace-nowrap ${
+                        className={`relative py-2 text-sm font-medium transition-all duration-300 rounded-lg hover-elevate flex items-center gap-1 whitespace-nowrap ${
                           isActive || activeDropdown === item.title
                             ? "text-white bg-white/10 border border-white/40"
                             : "text-white/90"
                         }`}
-                        style={{ paddingLeft: 'clamp(10px, 1.2vw, 16px)', paddingRight: 'clamp(10px, 1.2vw, 16px)' }}
+                        style={{ 
+                          paddingLeft: 'clamp(10px, 1.2vw, 16px)', 
+                          paddingRight: 'clamp(10px, 1.2vw, 16px)',
+                          zIndex: 102,
+                        }}
                         data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
                         onMouseEnter={() => handleMouseEnter(item.title)}
                       >
@@ -820,7 +825,7 @@ export function TopNavigation() {
                               </div>
                             </div>
                           </div>
-                          </div>
+                        </div>
                         </>
                       )}
                     </div>
