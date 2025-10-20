@@ -243,6 +243,15 @@ export function Footer() {
                     About Us
                   </a>
                 </li>
+                <li>
+                  <Link
+                    href="/operations-playbook"
+                    className="hover:text-white transition-all duration-200 hover:translate-x-1"
+                    data-testid="footer-operations-playbook"
+                  >
+                    Delivery Playbook
+                  </Link>
+                </li>
               </ul>
             </div>
 
