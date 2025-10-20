@@ -648,29 +648,40 @@ export function TopNavigation() {
                       {/* Desktop Mega Menu Dropdown */}
                       {activeDropdown === item.title && (
                         <div
-                          className="absolute left-0 right-0 top-full mt-2 shadow-2xl"
+                          className="absolute left-0 right-0 top-full mt-3 rounded-2xl overflow-hidden"
                           style={{
-                            background: "linear-gradient(135deg, #474ead 0%, #5a5dc7 50%, #6366f1 100%)",
+                            background: "rgba(15, 15, 25, 0.85)",
+                            backdropFilter: "blur(20px)",
+                            WebkitBackdropFilter: "blur(20px)",
+                            boxShadow: "0 20px 60px rgba(0, 0, 0, 0.4), 0 0 1px rgba(255, 255, 255, 0.1)",
+                            border: "1px solid rgba(255, 255, 255, 0.1)",
                             zIndex: 100,
                           }}
                           onMouseEnter={handleDropdownMouseEnter}
                           onMouseLeave={handleDropdownMouseLeave}
                         >
-                          <div className="mx-auto max-w-7xl px-6 py-8">
-                            <div className="grid grid-cols-3 gap-6">
+                          <div className="mx-auto max-w-7xl px-8 py-10">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                               {/* Services dropdown */}
                               {item.services && Object.entries(item.services).map(([key, service]) => (
                                 <Link
                                   key={key}
                                   href={service.path}
-                                  className="block p-4 rounded-lg hover:bg-white/10 transition-colors group"
+                                  className="block p-5 rounded-xl border border-white/5 bg-white/5 backdrop-blur-sm transition-all duration-300 group hover:-translate-y-1"
+                                  style={{
+                                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)"
+                                  }}
                                   data-testid={`dropdown-link-${key}`}
                                 >
-                                  <h3 className="text-white font-semibold mb-1 flex items-center gap-2">
-                                    {service.title}
-                                    <ArrowRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                  </h3>
-                                  <p className="text-white/70 text-sm">{service.subtitle}</p>
+                                  <div className="flex items-start justify-between mb-3">
+                                    <h3 className="text-white font-bold text-base leading-tight">
+                                      {service.title}
+                                    </h3>
+                                    <ArrowRight className="h-4 w-4 text-white/40 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0 ml-2" />
+                                  </div>
+                                  <p className="text-white/60 text-sm leading-relaxed">
+                                    {service.subtitle}
+                                  </p>
                                 </Link>
                               ))}
                               
@@ -679,14 +690,21 @@ export function TopNavigation() {
                                 <Link
                                   key={key}
                                   href={category.path}
-                                  className="block p-4 rounded-lg hover:bg-white/10 transition-colors group"
+                                  className="block p-5 rounded-xl border border-white/5 bg-white/5 backdrop-blur-sm transition-all duration-300 group hover:-translate-y-1"
+                                  style={{
+                                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)"
+                                  }}
                                   data-testid={`dropdown-link-${key}`}
                                 >
-                                  <h3 className="text-white font-semibold mb-1 flex items-center gap-2">
-                                    {category.title}
-                                    <ArrowRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                  </h3>
-                                  <p className="text-white/70 text-sm">{category.subtitle}</p>
+                                  <div className="flex items-start justify-between mb-3">
+                                    <h3 className="text-white font-bold text-base leading-tight">
+                                      {category.title}
+                                    </h3>
+                                    <ArrowRight className="h-4 w-4 text-white/40 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0 ml-2" />
+                                  </div>
+                                  <p className="text-white/60 text-sm leading-relaxed">
+                                    {category.subtitle}
+                                  </p>
                                 </Link>
                               ))}
                               
@@ -695,14 +713,21 @@ export function TopNavigation() {
                                 <Link
                                   key={key}
                                   href={section.path}
-                                  className="block p-4 rounded-lg hover:bg-white/10 transition-colors group"
+                                  className="block p-5 rounded-xl border border-white/5 bg-white/5 backdrop-blur-sm transition-all duration-300 group hover:-translate-y-1"
+                                  style={{
+                                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)"
+                                  }}
                                   data-testid={`dropdown-link-${key}`}
                                 >
-                                  <h3 className="text-white font-semibold mb-1 flex items-center gap-2">
-                                    {section.title}
-                                    <ArrowRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                  </h3>
-                                  <p className="text-white/70 text-sm">{section.subtitle}</p>
+                                  <div className="flex items-start justify-between mb-3">
+                                    <h3 className="text-white font-bold text-base leading-tight">
+                                      {section.title}
+                                    </h3>
+                                    <ArrowRight className="h-4 w-4 text-white/40 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0 ml-2" />
+                                  </div>
+                                  <p className="text-white/60 text-sm leading-relaxed">
+                                    {section.subtitle}
+                                  </p>
                                 </Link>
                               ))}
                             </div>
@@ -749,19 +774,23 @@ export function TopNavigation() {
                 {/* More dropdown menu */}
                 {moreMenuOpen && (
                   <div
-                    className="absolute top-full left-0 mt-2 w-56 rounded-lg border border-white/20 backdrop-blur-md shadow-2xl overflow-hidden"
+                    className="absolute top-full left-0 mt-3 w-64 rounded-xl overflow-hidden"
                     style={{
-                      background: "linear-gradient(135deg, #474ead 0%, #5a5dc7 50%, #6366f1 100%)",
+                      background: "rgba(15, 15, 25, 0.85)",
+                      backdropFilter: "blur(20px)",
+                      WebkitBackdropFilter: "blur(20px)",
+                      boxShadow: "0 20px 60px rgba(0, 0, 0, 0.4), 0 0 1px rgba(255, 255, 255, 0.1)",
+                      border: "1px solid rgba(255, 255, 255, 0.1)",
                       zIndex: 100,
                     }}
                     role="menu"
                   >
-                    <div className="py-2">
+                    <div className="py-3">
                       {navigationItems.slice(visibleItems).map((item) => (
                         <Link
                           key={item.path}
                           href={item.path}
-                          className="block px-4 py-2 text-sm font-medium text-white/90 hover:bg-white/10 transition-colors"
+                          className="block px-5 py-3 text-sm font-semibold text-white/90 hover:bg-white/10 hover:text-white transition-all duration-200"
                           role="menuitem"
                           data-testid={`more-menu-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
                         >

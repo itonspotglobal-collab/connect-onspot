@@ -21,10 +21,10 @@ export default function WhyOnSpotReviews() {
   const reviews = [
     {
       rating: 5,
-      text: "OnSpot completely transformed our operations. What used to take our team weeks now happens in days. The level of expertise and professionalism from their team is unmatched. We've saved over $200K annually while improving our service quality.",
-      author: "Michael Chen",
+      text: "The professionalism and consistency of the OnSpot team. Communication is always clear and easy, and I appreciate how they provide structured updates at the end of each day and every week. This makes it simple for me to understand the scope of work being done and stay aligned.",
+      author: "Elad Badash",
       title: "CEO",
-      company: "TechVantage Solutions",
+      company: "PineTech",
       industry: "Technology",
       avatar: "MC",
       verified: true,
@@ -47,8 +47,8 @@ export default function WhyOnSpotReviews() {
     },
     {
       rating: 5,
-      text: "The OnSpot team doesn't just work for us - they work WITH us. They took the time to understand our business, our culture, and our goals. The integration was so smooth that our customers couldn't tell we had expanded our team offshore.",
-      author: "David Park",
+      text: "I’m extremely happy with the service provided by Onspot Global. Their team is professional, responsive, and reliable—always going above and beyond to make sure everything runs smoothly. The efficiency and consistency they deliver gives me complete confidence, and I truly value the partnership we’ve built.",
+      author: "Fernando Calderon",
       title: "Operations Director",
       company: "LogiFlow International",
       industry: "Logistics",
@@ -60,8 +60,8 @@ export default function WhyOnSpotReviews() {
     },
     {
       rating: 5,
-      text: "We've tried other outsourcing companies before, but OnSpot is in a league of their own. Their 4-stage system actually works. They deliver on every promise and go above and beyond. Our ROI has been incredible - 8X in the first year alone.",
-      author: "Jennifer Kim",
+      text: "I am pleased to choose Onspot services staff. They make doing business with them simple. Their adaptability and ability to respond to new and changing demands make them an exceptionally valuable and dependable partner for us.",
+      author: "William Lopez",
       title: "COO",
       company: "DataStream Analytics",
       industry: "Data & Analytics",
@@ -86,7 +86,7 @@ export default function WhyOnSpotReviews() {
     },
     {
       rating: 5,
-      text: "The expertise OnSpot brought to our project was game-changing. Not only did they handle our immediate needs, but they also identified process improvements we hadn't considered. They're strategic partners, not just service providers.",
+      text: "If you're looking for a place to grow and be challenged, this startup is it. You'll wear many hats and learn quickly, but the supportive and collaborative team makes all the difference. It's been an amazing experience honing my skills in such a dynamic environment!",
       author: "Maria Santos",
       title: "VP of Operations",
       company: "RetailMax Global",
