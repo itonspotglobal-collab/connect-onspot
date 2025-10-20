@@ -134,8 +134,8 @@ export default function OperationsPlaybook() {
   return (
     <>
       <HeadSEO
-        title="Operations Playbook | OnSpot Global"
-        description="OnSpot Global's complete Delivery Playbook — our 4P Operating System, delivery models, client journey, and performance excellence framework."
+        title="Operations Playbook | OnSpot"
+        description="OnSpot's complete Delivery Playbook — our 4P Operating System, delivery models, client journey, and performance excellence framework."
       />
 
       <div className="min-h-screen bg-gradient-to-b from-white via-gray-50/30 to-white dark:from-gray-950 dark:via-gray-900/30 dark:to-gray-950 overflow-x-hidden">
@@ -236,7 +236,7 @@ export default function OperationsPlaybook() {
                 4P Operating System
               </motion.h2>
               <motion.p className="text-base sm:text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto px-4" variants={fadeUp}>
-                At OnSpot Global, our promise is simple: <span className="font-semibold text-violet-600 dark:text-violet-400">Outsourcing Made Easy</span>. 
+                At OnSpot, our promise is simple: <span className="font-semibold text-violet-600 dark:text-violet-400">Outsourcing Made Easy</span>. 
                 We achieve this through our unique 4P Operating System.
               </motion.p>
             </div>
