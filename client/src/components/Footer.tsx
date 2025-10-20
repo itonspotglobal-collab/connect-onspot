@@ -174,7 +174,7 @@ export function Footer() {
               </ul>
             </div>
 
-            {/* Company */}
+            {/* Company Section */}
             <div className="space-y-3">
               <h3 className="font-semibold text-white text-base sm:text-lg tracking-wide border-b border-white/20 pb-2">
                 Company
