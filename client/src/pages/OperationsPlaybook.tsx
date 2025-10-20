@@ -83,6 +83,10 @@ const scrollReveal = {
 
 export default function OperationsPlaybook() {
   const [activeSection, setActiveSection] = useState("top");
+  const [showNav, setShowNav] = useState(false);
+  const [scrollDirection, setScrollDirection] = useState<"up" | "down">("up");
+  const [lastScrollY, setLastScrollY] = useState(0);
+  
   const { scrollY } = useScroll();
   const opacity = useTransform(scrollY, [0, 100], [1, 0.9]);
   const scale = useTransform(scrollY, [0, 100], [1, 0.98]);
@@ -106,10 +110,21 @@ export default function OperationsPlaybook() {
     }
   };
 
-  // Detect scroll position for sticky nav
+  // Detect scroll position, direction, and active section
   useEffect(() => {
     const handleScroll = () => {
       const scrollPosition = window.scrollY;
+      
+      // Detect scroll direction
+      if (scrollPosition > lastScrollY) {
+        setScrollDirection("down");
+      } else {
+        setScrollDirection("up");
+      }
+      setLastScrollY(scrollPosition);
+      
+      // Show nav after scrolling past hero (around 400px)
+      setShowNav(scrollPosition > 400);
       
       // Check which section is in view
       sections.forEach(section => {
@@ -127,9 +142,9 @@ export default function OperationsPlaybook() {
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [sections]);
+  }, [lastScrollY, sections]);
 
   return (
     <>
@@ -140,28 +155,98 @@ export default function OperationsPlaybook() {
 
       <div className="min-h-screen bg-gradient-to-b from-white via-gray-50/30 to-white dark:from-gray-950 dark:via-gray-900/30 dark:to-gray-950 overflow-x-hidden">
         
-        {/* Sticky Navigation */}
+        {/* Floating Intuitive Sub-Nav - Glass Morphism */}
         <motion.nav 
-          className="sticky top-16 z-40 bg-white/80 dark:bg-gray-950/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50 transition-all duration-300"
-          initial={{ y: -100 }}
-          animate={{ y: 0 }}
-          transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
+          className={`
+            z-50
+            hidden md:block
+            sticky top-[calc(4rem+0.5rem)]
+            mx-auto max-w-fit
+            px-1 py-1
+          `}
+          initial={{ opacity: 0, y: -20, scale: 0.95 }}
+          animate={{ 
+            opacity: showNav ? 1 : 0,
+            y: showNav ? 0 : -20,
+            scale: showNav ? 1 : 0.95,
+            pointerEvents: showNav ? "auto" : "none"
+          }}
+          transition={{ 
+            duration: 0.4, 
+            ease: [0.25, 0.1, 0.25, 1],
+            opacity: { duration: 0.3 },
+            scale: { duration: 0.3 }
+          }}
         >
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
-            <div className="flex items-center gap-2 sm:gap-4 py-3 overflow-x-auto scrollbar-hide">
+          <div className="
+            bg-white/70 dark:bg-zinc-900/70
+            supports-[backdrop-filter]:backdrop-blur-md
+            border border-gray-200/50 dark:border-gray-700/50
+            rounded-2xl shadow-lg shadow-black/5 dark:shadow-black/20
+            px-3 py-2
+          ">
+            <div className="flex items-center gap-2">
               {sections.map((section) => (
                 <button
                   key={section.id}
                   onClick={() => scrollToSection(section.id)}
                   className={`
-                    flex-shrink-0 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium
+                    flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium
                     transition-all duration-300 ease-out whitespace-nowrap
                     ${activeSection === section.id 
-                      ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/25' 
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800'
+                      ? 'bg-violet-600 text-white shadow-md shadow-violet-600/25 scale-105' 
+                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/10'
                     }
                   `}
                   data-testid={`nav-${section.id}`}
+                >
+                  {section.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </motion.nav>
+
+        {/* Mobile Floating Action Bar - Bottom Anchored */}
+        <motion.nav
+          className={`
+            md:hidden
+            fixed bottom-4 inset-x-4
+            z-50
+            rounded-2xl shadow-xl shadow-black/10 dark:shadow-black/40
+            bg-white/80 dark:bg-zinc-900/80
+            supports-[backdrop-filter]:backdrop-blur-md
+            border border-gray-200/50 dark:border-gray-700/50
+            overflow-hidden
+          `}
+          initial={{ opacity: 0, y: 100, scale: 0.9 }}
+          animate={{
+            opacity: showNav ? 1 : 0,
+            y: showNav && scrollDirection === "up" ? 0 : 100,
+            scale: showNav && scrollDirection === "up" ? 1 : 0.9,
+            pointerEvents: showNav && scrollDirection === "up" ? "auto" : "none"
+          }}
+          transition={{
+            duration: 0.4,
+            ease: [0.25, 0.1, 0.25, 1],
+            opacity: { duration: 0.3 }
+          }}
+        >
+          <div className="px-3 py-3 overflow-x-auto scrollbar-hide">
+            <div className="flex items-center gap-2 min-w-max">
+              {sections.map((section) => (
+                <button
+                  key={section.id}
+                  onClick={() => scrollToSection(section.id)}
+                  className={`
+                    flex-shrink-0 px-4 py-2 rounded-xl text-xs font-medium
+                    transition-all duration-300 ease-out whitespace-nowrap
+                    ${activeSection === section.id 
+                      ? 'bg-violet-600 text-white shadow-md shadow-violet-600/25' 
+                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/10'
+                    }
+                  `}
+                  data-testid={`nav-mobile-${section.id}`}
                 >
                   {section.label}
                 </button>
