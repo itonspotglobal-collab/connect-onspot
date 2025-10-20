@@ -543,19 +543,7 @@ export function TopNavigation() {
   const handleMouseLeave = () => {
     dropdownTimeoutRef.current = setTimeout(() => {
       setActiveDropdown(null);
-    }, 300);
-  };
-
-  const handleDropdownMouseEnter = () => {
-    if (dropdownTimeoutRef.current) {
-      clearTimeout(dropdownTimeoutRef.current);
-    }
-  };
-
-  const handleDropdownMouseLeave = () => {
-    dropdownTimeoutRef.current = setTimeout(() => {
-      setActiveDropdown(null);
-    }, 200);
+    }, 100);
   };
 
   return (
@@ -629,6 +617,7 @@ export function TopNavigation() {
                 >
                   {hasMegaMenu ? (
                     <div 
+                      className="relative"
                       onMouseEnter={() => handleMouseEnter(item.title)}
                       onMouseLeave={handleMouseLeave}
                     >
@@ -655,20 +644,16 @@ export function TopNavigation() {
                               zIndex: 99,
                               animation: "fadeIn 160ms ease-out",
                             }}
-                            onMouseEnter={handleDropdownMouseLeave}
                           />
                           
-                          {/* Mega Menu Panel */}
+                          {/* Mega Menu Panel - Extends from button to dropdown with no gap */}
                           <div
-                            className="absolute left-0 right-0 overflow-visible"
+                            className="absolute left-0 right-0"
                             style={{
-                              top: "100%",
-                              paddingTop: "8px",
-                              marginTop: "-8px",
+                              top: 0,
+                              paddingTop: "calc(100% + 12px)",
                               zIndex: 100,
                             }}
-                            onMouseEnter={handleDropdownMouseEnter}
-                            onMouseLeave={handleDropdownMouseLeave}
                           >
                             <div
                               style={{
