@@ -383,6 +383,7 @@ export function TopNavigation() {
   const lastScrollY = useRef(0);
   const ticking = useRef(false);
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const intentDelayRef = useRef<NodeJS.Timeout | null>(null);
   const navRef = useRef<HTMLElement>(null);
   const navLinksRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -532,19 +533,51 @@ export function TopNavigation() {
     };
   }, []);
 
-  // Dropdown handlers
+  // Apple-style mega menu handlers with intent delays
   const handleMouseEnter = (title: string) => {
+    // Clear any pending close timeout
     if (dropdownTimeoutRef.current) {
       clearTimeout(dropdownTimeoutRef.current);
+      dropdownTimeoutRef.current = null;
     }
-    setActiveDropdown(title);
+
+    // If switching between mega menus, add 100ms intent delay to prevent flicker
+    if (activeDropdown && activeDropdown !== title) {
+      if (intentDelayRef.current) {
+        clearTimeout(intentDelayRef.current);
+      }
+      intentDelayRef.current = setTimeout(() => {
+        setActiveDropdown(title);
+      }, 100);
+    } else {
+      // First open or re-entering same menu - instant
+      if (intentDelayRef.current) {
+        clearTimeout(intentDelayRef.current);
+      }
+      setActiveDropdown(title);
+    }
   };
 
   const handleMouseLeave = () => {
+    // Clear any pending intent delay
+    if (intentDelayRef.current) {
+      clearTimeout(intentDelayRef.current);
+      intentDelayRef.current = null;
+    }
+    
+    // Add 150ms delay before closing to allow user to move between nav and mega menu
     dropdownTimeoutRef.current = setTimeout(() => {
       setActiveDropdown(null);
-    }, 100);
+    }, 150);
   };
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (dropdownTimeoutRef.current) clearTimeout(dropdownTimeoutRef.current);
+      if (intentDelayRef.current) clearTimeout(intentDelayRef.current);
+    };
+  }, []);
 
   return (
     <>
@@ -619,7 +652,7 @@ export function TopNavigation() {
                   {hasMegaMenu ? (
                     <div className="relative">
                       <button
-                        className={`py-2 text-sm font-medium transition-all duration-300 rounded-lg hover-elevate flex items-center gap-1 whitespace-nowrap ${
+                        className={`relative py-2 text-sm font-medium transition-all duration-300 rounded-lg hover-elevate flex items-center gap-1 whitespace-nowrap ${
                           isActive || activeDropdown === item.title
                             ? "text-white bg-white/10 border border-white/40"
                             : "text-white/90"
@@ -627,6 +660,7 @@ export function TopNavigation() {
                         style={{ 
                           paddingLeft: 'clamp(10px, 1.2vw, 16px)', 
                           paddingRight: 'clamp(10px, 1.2vw, 16px)',
+                          zIndex: 102,
                         }}
                         data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
                         onMouseEnter={() => handleMouseEnter(item.title)}
@@ -649,16 +683,17 @@ export function TopNavigation() {
                           
                           {/* Mega Menu Panel with hover bridge */}
                           <div
-                            className="fixed left-0 right-0"
+                            className="absolute left-0 right-0"
                             style={{
-                              top: "var(--nav-h)",
+                              top: "100%",
+                              marginTop: "-2px",
+                              paddingTop: "2px",
                               zIndex: 100,
                             }}
                             onMouseEnter={() => handleMouseEnter(item.title)}
                             onMouseLeave={handleMouseLeave}
                           >
                             <div
-                              className="mx-auto"
                               style={{
                                 background: "rgba(44, 48, 114, 0.86)",
                                 backdropFilter: "blur(24px)",
@@ -666,7 +701,7 @@ export function TopNavigation() {
                                 boxShadow: "0 24px 64px rgba(0, 0, 0, 0.24), 0 0 0 1px rgba(255, 255, 255, 0.08)",
                                 borderRadius: "20px",
                                 animation: "megaMenuIn 160ms ease-out",
-                                maxWidth: "min(1200px, 92vw)",
+                                marginTop: "2px",
                               }}
                             >
                             <div className="mx-auto max-w-7xl" style={{ padding: "32px" }}>
