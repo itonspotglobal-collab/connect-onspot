@@ -1443,6 +1443,9 @@ export default function Home() {
                 <Link href="/about" className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-about">
                   About Us
                 </Link>
+                <Link href="/operations-playbook" className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-playbook">
+                  Delivery Playbook
+                </Link>
               </div>
             </div>
 
