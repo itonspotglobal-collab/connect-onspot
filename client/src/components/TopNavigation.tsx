@@ -842,7 +842,7 @@ export function TopNavigation() {
                     const activeItem = navigationItems.find(item => item.title === activeDropdown);
                     if (!activeItem) return null;
 
-                    const columns = [];
+                    const columns: JSX.Element[] = [];
                     
                     // Services dropdown
                     if ('services' in activeItem && activeItem.services) {
