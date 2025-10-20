@@ -123,8 +123,8 @@ export default function OperationsPlaybook() {
       }
       setLastScrollY(scrollPosition);
       
-      // Show nav after scrolling past hero (around 400px)
-      setShowNav(scrollPosition > 400);
+      // Show nav after scrolling past hero (around 200px)
+      setShowNav(scrollPosition > 200);
       
       // Check which section is in view
       sections.forEach(section => {
@@ -155,61 +155,54 @@ export default function OperationsPlaybook() {
 
       <div className="min-h-screen bg-gradient-to-b from-white via-gray-50/30 to-white dark:from-gray-950 dark:via-gray-900/30 dark:to-gray-950 overflow-x-hidden">
         
-        {/* Floating Intuitive Sub-Nav - Glass Morphism */}
-        <motion.nav 
-          className={`
-            z-50
-            hidden md:block
-            sticky top-[calc(4rem+0.5rem)]
-            mx-auto max-w-fit
-            px-1 py-1
-          `}
-          initial={{ opacity: 0, y: -20, scale: 0.95 }}
+        {/* Floating Intuitive Sub-Nav - Desktop (Fixed positioning, no layout space) */}
+        <motion.div
+          className="hidden md:block fixed top-[calc(4rem+0.5rem)] left-0 right-0 z-50 pointer-events-none"
+          initial={{ opacity: 0, y: -20 }}
           animate={{ 
             opacity: showNav ? 1 : 0,
-            y: showNav ? 0 : -20,
-            scale: showNav ? 1 : 0.95,
-            pointerEvents: showNav ? "auto" : "none"
+            y: showNav ? 0 : -20
           }}
           transition={{ 
             duration: 0.4, 
-            ease: [0.25, 0.1, 0.25, 1],
-            opacity: { duration: 0.3 },
-            scale: { duration: 0.3 }
+            ease: [0.25, 0.1, 0.25, 1]
           }}
         >
-          <div className="
-            bg-white/70 dark:bg-zinc-900/70
-            supports-[backdrop-filter]:backdrop-blur-md
-            border border-gray-200/50 dark:border-gray-700/50
-            rounded-2xl shadow-lg shadow-black/5 dark:shadow-black/20
-            px-3 py-2
-          ">
-            <div className="flex items-center gap-2">
-              {sections.map((section) => (
-                <button
-                  key={section.id}
-                  onClick={() => scrollToSection(section.id)}
-                  className={`
-                    flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium
-                    transition-all duration-300 ease-out whitespace-nowrap
-                    ${activeSection === section.id 
-                      ? 'bg-violet-600 text-white shadow-md shadow-violet-600/25 scale-105' 
-                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/10'
-                    }
-                  `}
-                  data-testid={`nav-${section.id}`}
-                >
-                  {section.label}
-                </button>
-              ))}
-            </div>
+          <div className="flex justify-center px-4">
+            <nav className="
+              pointer-events-auto
+              bg-white/70 dark:bg-zinc-900/70
+              supports-[backdrop-filter]:backdrop-blur-md
+              border border-gray-200/50 dark:border-gray-700/50
+              rounded-2xl shadow-lg shadow-black/5 dark:shadow-black/20
+              px-3 py-2
+            ">
+              <div className="flex items-center gap-2">
+                {sections.map((section) => (
+                  <button
+                    key={section.id}
+                    onClick={() => scrollToSection(section.id)}
+                    className={`
+                      flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium
+                      transition-all duration-300 ease-out whitespace-nowrap
+                      ${activeSection === section.id 
+                        ? 'bg-violet-600 text-white shadow-md shadow-violet-600/25 scale-105' 
+                        : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/10'
+                      }
+                    `}
+                    data-testid={`nav-${section.id}`}
+                  >
+                    {section.label}
+                  </button>
+                ))}
+              </div>
+            </nav>
           </div>
-        </motion.nav>
+        </motion.div>
 
         {/* Mobile Floating Action Bar - Bottom Anchored */}
         <motion.nav
-          className={`
+          className="
             md:hidden
             fixed bottom-4 inset-x-4
             z-50
@@ -218,7 +211,7 @@ export default function OperationsPlaybook() {
             supports-[backdrop-filter]:backdrop-blur-md
             border border-gray-200/50 dark:border-gray-700/50
             overflow-hidden
-          `}
+          "
           initial={{ opacity: 0, y: 100, scale: 0.9 }}
           animate={{
             opacity: showNav ? 1 : 0,
