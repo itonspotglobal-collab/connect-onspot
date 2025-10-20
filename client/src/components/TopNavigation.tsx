@@ -1754,7 +1754,6 @@ export function TopNavigation() {
           </DialogPortal>
         )}
       </Dialog>
-    </nav>
     </>
   );
 }
