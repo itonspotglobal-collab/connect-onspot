@@ -668,199 +668,6 @@ export function TopNavigation() {
                         {item.title}
                         <ChevronDown className="h-3 w-3" />
                       </button>
-
-                      {/* Desktop Mega Menu Dropdown */}
-                      {activeDropdown === item.title && (
-                        <>
-                          {/* Page Scrim - dims background content */}
-                          <div
-                            className="fixed inset-0 bg-black/30 dark:bg-black/50"
-                            style={{
-                              zIndex: 99,
-                              animation: "fadeIn 160ms ease-out",
-                            }}
-                          />
-                          
-                          {/* Mega Menu Panel with hover bridge */}
-                          <div
-                            className="absolute left-0 right-0"
-                            style={{
-                              top: "100%",
-                              marginTop: "-2px",
-                              paddingTop: "2px",
-                              zIndex: 100,
-                            }}
-                            onMouseEnter={() => handleMouseEnter(item.title)}
-                            onMouseLeave={handleMouseLeave}
-                          >
-                            <div
-                              style={{
-                                background: "rgba(44, 48, 114, 0.86)",
-                                backdropFilter: "blur(24px)",
-                                WebkitBackdropFilter: "blur(24px)",
-                                boxShadow: "0 24px 64px rgba(0, 0, 0, 0.24), 0 0 0 1px rgba(255, 255, 255, 0.08)",
-                                borderRadius: "20px",
-                                animation: "megaMenuIn 160ms ease-out",
-                                marginTop: "2px",
-                              }}
-                            >
-                            <div className="mx-auto max-w-7xl" style={{ padding: "32px" }}>
-                              <div className="grid grid-cols-3 gap-8">
-                                {/* Services dropdown */}
-                                {item.services && Object.entries(item.services).map(([key, service]) => (
-                                  <Link
-                                    key={key}
-                                    href={service.path}
-                                    className="group block relative"
-                                    style={{
-                                      padding: "28px",
-                                      borderRadius: "20px",
-                                      background: "rgba(44, 48, 114, 0.72)",
-                                      border: "1px solid rgba(255, 255, 255, 0.12)",
-                                      boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
-                                      transition: "all 160ms ease-out",
-                                    }}
-                                    data-testid={`dropdown-link-${key}`}
-                                    onMouseEnter={(e) => {
-                                      e.currentTarget.style.transform = "translateY(-4px)";
-                                      e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.18)";
-                                    }}
-                                    onMouseLeave={(e) => {
-                                      e.currentTarget.style.transform = "translateY(0)";
-                                      e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.12)";
-                                    }}
-                                  >
-                                    <h3 className="text-white font-bold text-base leading-tight mb-2 relative inline-block">
-                                      {service.title}
-                                      <span 
-                                        className="absolute bottom-0 left-0 h-0.5 bg-white/80 transition-all duration-160"
-                                        style={{
-                                          width: "0",
-                                        }}
-                                        ref={(el) => {
-                                          if (el) {
-                                            const parent = el.parentElement?.parentElement;
-                                            parent?.addEventListener('mouseenter', () => {
-                                              el.style.width = '100%';
-                                            });
-                                            parent?.addEventListener('mouseleave', () => {
-                                              el.style.width = '0';
-                                            });
-                                          }
-                                        }}
-                                      />
-                                    </h3>
-                                    <p className="text-white/75 text-sm leading-relaxed">
-                                      {service.subtitle}
-                                    </p>
-                                  </Link>
-                                ))}
-                                
-                                {/* Work categories dropdown */}
-                                {item.categories && Object.entries(item.categories).map(([key, category]) => (
-                                  <Link
-                                    key={key}
-                                    href={category.path}
-                                    className="group block relative"
-                                    style={{
-                                      padding: "28px",
-                                      borderRadius: "20px",
-                                      background: "rgba(44, 48, 114, 0.72)",
-                                      border: "1px solid rgba(255, 255, 255, 0.12)",
-                                      boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
-                                      transition: "all 160ms ease-out",
-                                    }}
-                                    data-testid={`dropdown-link-${key}`}
-                                    onMouseEnter={(e) => {
-                                      e.currentTarget.style.transform = "translateY(-4px)";
-                                      e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.18)";
-                                    }}
-                                    onMouseLeave={(e) => {
-                                      e.currentTarget.style.transform = "translateY(0)";
-                                      e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.12)";
-                                    }}
-                                  >
-                                    <h3 className="text-white font-bold text-base leading-tight mb-2 relative inline-block">
-                                      {category.title}
-                                      <span 
-                                        className="absolute bottom-0 left-0 h-0.5 bg-white/80 transition-all duration-160"
-                                        style={{
-                                          width: "0",
-                                        }}
-                                        ref={(el) => {
-                                          if (el) {
-                                            const parent = el.parentElement?.parentElement;
-                                            parent?.addEventListener('mouseenter', () => {
-                                              el.style.width = '100%';
-                                            });
-                                            parent?.addEventListener('mouseleave', () => {
-                                              el.style.width = '0';
-                                            });
-                                          }
-                                        }}
-                                      />
-                                    </h3>
-                                    <p className="text-white/75 text-sm leading-relaxed">
-                                      {category.subtitle}
-                                    </p>
-                                  </Link>
-                                ))}
-                                
-                                {/* Why OnSpot dropdown */}
-                                {item.whyOnSpot && Object.entries(item.whyOnSpot).map(([key, section]) => (
-                                  <Link
-                                    key={key}
-                                    href={section.path}
-                                    className="group block relative"
-                                    style={{
-                                      padding: "28px",
-                                      borderRadius: "20px",
-                                      background: "rgba(44, 48, 114, 0.72)",
-                                      border: "1px solid rgba(255, 255, 255, 0.12)",
-                                      boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
-                                      transition: "all 160ms ease-out",
-                                    }}
-                                    data-testid={`dropdown-link-${key}`}
-                                    onMouseEnter={(e) => {
-                                      e.currentTarget.style.transform = "translateY(-4px)";
-                                      e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.18)";
-                                    }}
-                                    onMouseLeave={(e) => {
-                                      e.currentTarget.style.transform = "translateY(0)";
-                                      e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.12)";
-                                    }}
-                                  >
-                                    <h3 className="text-white font-bold text-base leading-tight mb-2 relative inline-block">
-                                      {section.title}
-                                      <span 
-                                        className="absolute bottom-0 left-0 h-0.5 bg-white/80 transition-all duration-160"
-                                        style={{
-                                          width: "0",
-                                        }}
-                                        ref={(el) => {
-                                          if (el) {
-                                            const parent = el.parentElement?.parentElement;
-                                            parent?.addEventListener('mouseenter', () => {
-                                              el.style.width = '100%';
-                                            });
-                                            parent?.addEventListener('mouseleave', () => {
-                                              el.style.width = '0';
-                                            });
-                                          }
-                                        }}
-                                      />
-                                    </h3>
-                                    <p className="text-white/75 text-sm leading-relaxed">
-                                      {section.subtitle}
-                                    </p>
-                                  </Link>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        </>
-                      )}
                     </div>
                   ) : (
                     <Link
@@ -988,6 +795,214 @@ export function TopNavigation() {
             </button>
           </div>
         </div>
+      </nav>
+
+      {/* Global Desktop Mega Menu - positioned outside nav for seamless Apple-style transitions */}
+      {activeDropdown && (
+        <>
+          {/* Page Scrim - dims background content */}
+          <div
+            className="fixed inset-0 bg-black/30 dark:bg-black/50"
+            style={{
+              zIndex: 99,
+              animation: "fadeIn 160ms ease-out",
+            }}
+            onMouseEnter={handleMouseLeave}
+          />
+          
+          {/* Mega Menu Panel */}
+          <div
+            className="fixed left-0 right-0"
+            style={{
+              top: "var(--nav-h)",
+              zIndex: 100,
+            }}
+            onMouseEnter={() => {
+              if (dropdownTimeoutRef.current) {
+                clearTimeout(dropdownTimeoutRef.current);
+                dropdownTimeoutRef.current = null;
+              }
+            }}
+            onMouseLeave={handleMouseLeave}
+          >
+            <div
+              style={{
+                background: "rgba(44, 48, 114, 0.86)",
+                backdropFilter: "blur(24px)",
+                WebkitBackdropFilter: "blur(24px)",
+                boxShadow: "0 24px 64px rgba(0, 0, 0, 0.24), 0 0 0 1px rgba(255, 255, 255, 0.08)",
+                borderRadius: "20px",
+                animation: "megaMenuIn 160ms ease-out",
+                margin: "0 auto",
+                maxWidth: "min(1200px, 92vw)",
+              }}
+            >
+              <div className="mx-auto max-w-7xl" style={{ padding: "32px" }}>
+                <div className="grid grid-cols-3 gap-8">
+                  {(() => {
+                    const activeItem = navigationItems.find(item => item.title === activeDropdown);
+                    if (!activeItem) return null;
+
+                    const links = [];
+                    
+                    // Services dropdown
+                    if ('services' in activeItem && activeItem.services) {
+                      links.push(...Object.entries(activeItem.services).map(([key, service]) => (
+                        <Link
+                          key={key}
+                          href={service.path}
+                          className="group block relative"
+                          style={{
+                            padding: "28px",
+                            borderRadius: "20px",
+                            background: "rgba(44, 48, 114, 0.72)",
+                            border: "1px solid rgba(255, 255, 255, 0.12)",
+                            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
+                            transition: "all 160ms ease-out",
+                          }}
+                          data-testid={`dropdown-link-${key}`}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = "translateY(-4px)";
+                            e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.18)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = "translateY(0)";
+                            e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.12)";
+                          }}
+                        >
+                          <h3 className="text-white font-bold text-base leading-tight mb-2 relative inline-block">
+                            {service.title}
+                            <span 
+                              className="absolute bottom-0 left-0 h-0.5 bg-white/80 transition-all duration-160"
+                              style={{ width: "0" }}
+                              ref={(el) => {
+                                if (el) {
+                                  const parent = el.parentElement?.parentElement;
+                                  parent?.addEventListener('mouseenter', () => {
+                                    el.style.width = '100%';
+                                  });
+                                  parent?.addEventListener('mouseleave', () => {
+                                    el.style.width = '0';
+                                  });
+                                }
+                              }}
+                            />
+                          </h3>
+                          <p className="text-white/75 text-sm leading-relaxed">
+                            {service.subtitle}
+                          </p>
+                        </Link>
+                      )));
+                    }
+                    
+                    // Work categories dropdown
+                    if ('categories' in activeItem && activeItem.categories) {
+                      links.push(...Object.entries(activeItem.categories).map(([key, category]) => (
+                        <Link
+                          key={key}
+                          href={category.path}
+                          className="group block relative"
+                          style={{
+                            padding: "28px",
+                            borderRadius: "20px",
+                            background: "rgba(44, 48, 114, 0.72)",
+                            border: "1px solid rgba(255, 255, 255, 0.12)",
+                            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
+                            transition: "all 160ms ease-out",
+                          }}
+                          data-testid={`dropdown-link-${key}`}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = "translateY(-4px)";
+                            e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.18)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = "translateY(0)";
+                            e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.12)";
+                          }}
+                        >
+                          <h3 className="text-white font-bold text-base leading-tight mb-2 relative inline-block">
+                            {category.title}
+                            <span 
+                              className="absolute bottom-0 left-0 h-0.5 bg-white/80 transition-all duration-160"
+                              style={{ width: "0" }}
+                              ref={(el) => {
+                                if (el) {
+                                  const parent = el.parentElement?.parentElement;
+                                  parent?.addEventListener('mouseenter', () => {
+                                    el.style.width = '100%';
+                                  });
+                                  parent?.addEventListener('mouseleave', () => {
+                                    el.style.width = '0';
+                                  });
+                                }
+                              }}
+                            />
+                          </h3>
+                          <p className="text-white/75 text-sm leading-relaxed">
+                            {category.subtitle}
+                          </p>
+                        </Link>
+                      )));
+                    }
+                    
+                    // Why OnSpot dropdown
+                    if ('whyOnSpot' in activeItem && activeItem.whyOnSpot) {
+                      links.push(...Object.entries(activeItem.whyOnSpot).map(([key, section]) => (
+                        <Link
+                          key={key}
+                          href={section.path}
+                          className="group block relative"
+                          style={{
+                            padding: "28px",
+                            borderRadius: "20px",
+                            background: "rgba(44, 48, 114, 0.72)",
+                            border: "1px solid rgba(255, 255, 255, 0.12)",
+                            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
+                            transition: "all 160ms ease-out",
+                          }}
+                          data-testid={`dropdown-link-${key}`}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = "translateY(-4px)";
+                            e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.18)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = "translateY(0)";
+                            e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.12)";
+                          }}
+                        >
+                          <h3 className="text-white font-bold text-base leading-tight mb-2 relative inline-block">
+                            {section.title}
+                            <span 
+                              className="absolute bottom-0 left-0 h-0.5 bg-white/80 transition-all duration-160"
+                              style={{ width: "0" }}
+                              ref={(el) => {
+                                if (el) {
+                                  const parent = el.parentElement?.parentElement;
+                                  parent?.addEventListener('mouseenter', () => {
+                                    el.style.width = '100%';
+                                  });
+                                  parent?.addEventListener('mouseleave', () => {
+                                    el.style.width = '0';
+                                  });
+                                }
+                              }}
+                            />
+                          </h3>
+                          <p className="text-white/75 text-sm leading-relaxed">
+                            {section.subtitle}
+                          </p>
+                        </Link>
+                      )));
+                    }
+
+                    return links;
+                  })()}
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Mobile Menu Panel - slide down with transform/opacity */}
       <div
