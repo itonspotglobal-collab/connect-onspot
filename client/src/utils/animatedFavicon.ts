@@ -113,11 +113,12 @@ class AnimatedFavicon {
   private async loadImage(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.img = new Image();
-      this.img.crossOrigin = 'anonymous';
+      // Don't set crossOrigin for same-origin images
       
       this.img.onload = () => resolve();
       this.img.onerror = () => reject(new Error('Failed to load favicon image'));
       
+      // Use absolute path from public directory
       this.img.src = this.config.faviconPath;
     });
   }
