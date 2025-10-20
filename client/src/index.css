@@ -2,6 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  html {
+    scroll-padding-top: 80px; /* Account for fixed nav height */
+  }
+  
+  @media (min-width: 768px) {
+    html {
+      scroll-padding-top: 100px;
+    }
+  }
+}
+
 /* LIGHT MODE */
 :root {
   --button-outline: rgba(0,0,0, .10);

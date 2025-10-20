@@ -48,7 +48,10 @@ export function Footer() {
               <div className="absolute inset-0 bg-white/20 blur-lg rounded-lg opacity-30"></div>
             </div>
             <p className="text-white/95 max-w-lg leading-relaxed text-sm sm:text-base font-light">
-              The growth engine of modern business. Built by entrepreneurs, for entrepreneurs—our Superhuman Outsourcing System fuses AI-first infrastructure with human excellence to scale businesses and empower people to perform beyond limits.
+              The growth engine of modern business. Built by entrepreneurs, for
+              entrepreneurs—our Superhuman Outsourcing System fuses AI-first
+              infrastructure with human excellence to scale businesses and
+              empower people to perform beyond limits.
             </p>
             <div className="flex flex-wrap gap-2">
               <Button
@@ -267,14 +270,14 @@ export function Footer() {
                 </li>
                 <li className="flex items-center space-x-3 hover:text-white transition-colors duration-200">
                   <Phone className="h-4 w-4 text-white/70" />
-                  <span>1 718 540 5053</span>
+                  <span>1-718 540 5053</span>
                 </li>
                 <li className="flex items-start space-x-3 hover:text-white transition-colors duration-200">
                   <MapPin className="h-4 w-4 mt-0.5 text-white/70" />
                   <span>
-                    New York, NY
+                    US - 2248 Broadway, New York, 10024
                     <br />
-                    Manila, Philippines
+                    PH - 610 Nepo Center, Angeles City, 2009
                   </span>
                 </li>
               </ul>
@@ -359,7 +362,9 @@ export function Footer() {
                   <SiApple className="h-5 w-5 sm:h-4 sm:w-4 mr-2" />
                   <div className="text-left">
                     <div className="text-xs opacity-90">Download on the</div>
-                    <div className="font-semibold text-sm sm:text-xs">App Store</div>
+                    <div className="font-semibold text-sm sm:text-xs">
+                      App Store
+                    </div>
                   </div>
                 </Link>
               </Button>
@@ -375,7 +380,9 @@ export function Footer() {
                   <SiGoogleplay className="h-5 w-5 sm:h-4 sm:w-4 mr-2" />
                   <div className="text-left">
                     <div className="text-xs opacity-90">Get it on</div>
-                    <div className="font-semibold text-sm sm:text-xs">Google Play</div>
+                    <div className="font-semibold text-sm sm:text-xs">
+                      Google Play
+                    </div>
                   </div>
                 </Link>
               </Button>

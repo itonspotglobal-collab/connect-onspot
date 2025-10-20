@@ -169,7 +169,7 @@ export default function OperationsPlaybook() {
         {/* Hero Section with Premium Gradient */}
         <motion.section 
           ref={heroRef}
-          className="relative overflow-hidden"
+          className="relative overflow-visible pb-20"
           initial="initial"
           animate="animate"
           variants={staggerContainer}
@@ -214,74 +214,116 @@ export default function OperationsPlaybook() {
               </motion.p>
             </div>
           </div>
+
+          {/* Docked Sub-Nav at Hero Bottom */}
+          <motion.div
+            className={`
+              absolute bottom-0 left-0 right-0
+              transition-all duration-700 ease-out
+              ${isNavFixed 
+                ? 'opacity-0 pointer-events-none' 
+                : 'opacity-100'
+              }
+            `}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+          >
+            <div className="relative">
+              {/* Gradient hairline matching hero */}
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-violet-400/30 to-transparent"></div>
+              
+              <div className="bg-white/60 dark:bg-zinc-900/60 supports-[backdrop-filter]:backdrop-blur-xl shadow-lg shadow-black/5 dark:shadow-black/20">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl py-4">
+                  <div className="flex justify-center">
+                    <nav className="flex items-center gap-2 overflow-x-auto scrollbar-hide snap-x snap-mandatory overscroll-x-contain max-w-full" style={{ WebkitOverflowScrolling: 'touch' }}>
+                      {sections.map((section) => (
+                        <button
+                          key={section.id}
+                          onClick={() => scrollToSection(section.id)}
+                          className={`
+                            relative flex-shrink-0 snap-start
+                            min-h-[44px] px-4 md:px-6 py-2.5
+                            text-xs md:text-sm font-medium whitespace-nowrap
+                            transition-all duration-300 ease-out
+                            touch-manipulation
+                            ${activeSection === section.id 
+                              ? 'text-violet-600 dark:text-violet-400' 
+                              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:-translate-y-0.5'
+                            }
+                          `}
+                          style={{ fontSize: 'clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem)' }}
+                          data-testid={`nav-docked-${section.id}`}
+                        >
+                          {section.label}
+                          {/* Active gradient underline */}
+                          {activeSection === section.id && (
+                            <motion.div
+                              className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-violet-600 via-blue-600 to-purple-600 rounded-full"
+                              layoutId="activeTab"
+                              transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+                            />
+                          )}
+                        </button>
+                      ))}
+                    </nav>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
         </motion.section>
 
-        {/* Intelligent Sub-Nav - Floats to top when hero disappears */}
+        {/* Morphed Fixed Nav - Replaces header when hero clears */}
         <motion.div
           className={`
-            z-50
-            transition-all duration-500 ease-out
+            fixed top-0 left-0 right-0 z-50
+            transition-all duration-700 ease-out
             ${isNavFixed 
-              ? 'fixed top-0 left-0 right-0 shadow-xl shadow-black/10 dark:shadow-black/30' 
-              : 'sticky top-16 md:top-[calc(4rem+0.5rem)]'
+              ? 'translate-y-0 opacity-100' 
+              : '-translate-y-full opacity-0 pointer-events-none'
             }
           `}
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ 
-            opacity: 1,
-            y: 0
-          }}
-          transition={{ 
-            duration: 0.5, 
-            ease: [0.25, 0.1, 0.25, 1]
-          }}
+          initial={{ opacity: 0, y: -100 }}
         >
-          <div className={`
-            transition-all duration-500 ease-out
-            ${isNavFixed 
-              ? 'bg-white/80 dark:bg-zinc-950/80 py-3 md:py-4' 
-              : 'bg-transparent py-2 md:py-3'
-            }
-            supports-[backdrop-filter]:backdrop-blur-xl
-            border-b border-gray-200/50 dark:border-gray-700/50
-          `}>
-            <div className="flex justify-center px-3 md:px-6">
-              <nav className={`
-                transition-all duration-500 ease-out
-                ${isNavFixed
-                  ? 'bg-white/90 dark:bg-zinc-900/90 shadow-2xl shadow-violet-600/10'
-                  : 'bg-white/70 dark:bg-zinc-900/70 shadow-lg shadow-black/5 dark:shadow-black/20'
-                }
-                supports-[backdrop-filter]:backdrop-blur-md
-                border border-gray-200/50 dark:border-gray-700/50
-                rounded-2xl
-                px-2 py-2 md:px-3 md:py-2.5
-                max-w-full
-              `}>
-                {/* Mobile: 44px tap targets with momentum scroll */}
-                <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide snap-x snap-mandatory overscroll-x-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+          {/* Gradient hairline matching hero */}
+          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-violet-400/20 to-transparent"></div>
+          
+          <div className="w-full bg-white/80 dark:bg-zinc-950/80 supports-[backdrop-filter]:backdrop-blur-xl shadow-xl shadow-black/10 dark:shadow-black/30 border-b border-gray-200/50 dark:border-gray-700/50">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl py-3.5">
+              <div className="flex justify-center">
+                <nav className="flex items-center gap-2 overflow-x-auto scrollbar-hide snap-x snap-mandatory overscroll-x-contain max-w-full" style={{ WebkitOverflowScrolling: 'touch' }}>
                   {sections.map((section) => (
                     <button
                       key={section.id}
                       onClick={() => scrollToSection(section.id)}
                       className={`
-                        flex-shrink-0 snap-start
-                        min-h-[44px] px-4 py-2.5 md:px-5 md:py-2.5
-                        rounded-xl text-xs md:text-sm font-medium
-                        transition-all duration-300 ease-out whitespace-nowrap
+                        relative flex-shrink-0 snap-start
+                        min-h-[44px] px-4 md:px-6 py-2.5
+                        font-medium whitespace-nowrap
+                        transition-all duration-300 ease-out
                         touch-manipulation
                         ${activeSection === section.id 
-                          ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30 scale-[1.02] md:scale-105' 
-                          : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-white/10 active:scale-95'
+                          ? 'text-violet-600 dark:text-violet-400' 
+                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:-translate-y-0.5'
                         }
                       `}
-                      data-testid={`nav-${section.id}`}
+                      style={{ fontSize: 'clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem)' }}
+                      data-testid={`nav-fixed-${section.id}`}
                     >
                       {section.label}
+                      {/* Active gradient underline */}
+                      {activeSection === section.id && (
+                        <motion.div
+                          className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-violet-600 via-blue-600 to-purple-600 rounded-full"
+                          layoutId="activeTabFixed"
+                          transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+                        />
+                      )}
                     </button>
                   ))}
-                </div>
-              </nav>
+                </nav>
+              </div>
             </div>
           </div>
         </motion.div>
