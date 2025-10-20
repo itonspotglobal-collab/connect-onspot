@@ -246,7 +246,7 @@ export function Footer() {
                 <li>
                   <Link
                     href="/operations-playbook"
-                    className="hover:text-white transition-all duration-200 hover:translate-x-1"
+                    className="hover:text-white transition-all duration-200 hover:translate-x-1 inline-block py-1"
                     data-testid="footer-operations-playbook"
                   >
                     Delivery Playbook
