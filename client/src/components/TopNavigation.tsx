@@ -652,10 +652,8 @@ export function TopNavigation() {
                   {hasMegaMenu ? (
                     <div className="relative">
                       <button
-                        className={`py-2 text-sm font-medium transition-all duration-300 rounded-lg hover-elevate active-elevate-2 flex items-center gap-1 whitespace-nowrap ${
-                          isActive || activeDropdown === item.title
-                            ? "text-white bg-white/10 border border-white/40"
-                            : "text-white/90"
+                        className={`nav-glow-item py-2 text-sm font-medium transition-all duration-300 rounded-lg flex items-center gap-1 whitespace-nowrap text-white ${
+                          activeDropdown === item.title ? "nav-glow-active" : ""
                         }`}
                         style={{ 
                           paddingLeft: 'clamp(10px, 1.2vw, 16px)', 
@@ -672,13 +670,14 @@ export function TopNavigation() {
                   ) : (
                     <Link
                       href={item.path}
-                      className={`py-2 text-sm font-medium transition-all duration-300 rounded-lg hover-elevate active-elevate-2 whitespace-nowrap ${
-                        location === item.path
-                          ? "text-white bg-white/10 border border-white/40"
-                          : "text-white/90"
-                      }`}
+                      className="nav-glow-item py-2 text-sm font-medium transition-all duration-300 rounded-lg whitespace-nowrap text-white"
                       style={{ paddingLeft: 'clamp(10px, 1.2vw, 16px)', paddingRight: 'clamp(10px, 1.2vw, 16px)' }}
                       data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
+                      onMouseEnter={() => {
+                        if (activeDropdown) {
+                          handleMouseLeave();
+                        }
+                      }}
                     >
                       {item.title}
                     </Link>
@@ -851,42 +850,12 @@ export function TopNavigation() {
                         <Link
                           key={key}
                           href={service.path}
-                          className="group block relative"
-                          style={{
-                            padding: "28px",
-                            borderRadius: "20px",
-                            background: "rgba(44, 48, 114, 0.72)",
-                            border: "1px solid rgba(255, 255, 255, 0.12)",
-                            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
-                            transition: "all 160ms ease-out",
-                          }}
+                          className="mega-menu-tile block"
                           data-testid={`dropdown-link-${key}`}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = "translateY(-4px)";
-                            e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.18)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = "translateY(0)";
-                            e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.12)";
-                          }}
                         >
-                          <h3 className="text-white font-bold text-base leading-tight mb-2 relative inline-block">
+                          <h3 className="text-white font-bold text-base leading-tight mb-2">
                             {service.title}
-                            <span 
-                              className="absolute bottom-0 left-0 h-0.5 bg-white/80 transition-all duration-160"
-                              style={{ width: "0" }}
-                              ref={(el) => {
-                                if (el) {
-                                  const parent = el.parentElement?.parentElement;
-                                  parent?.addEventListener('mouseenter', () => {
-                                    el.style.width = '100%';
-                                  });
-                                  parent?.addEventListener('mouseleave', () => {
-                                    el.style.width = '0';
-                                  });
-                                }
-                              }}
-                            />
+                            <span className="mega-menu-tile-underline" />
                           </h3>
                           <p className="text-white/75 text-sm leading-relaxed">
                             {service.subtitle}
@@ -901,42 +870,12 @@ export function TopNavigation() {
                         <Link
                           key={key}
                           href={category.path}
-                          className="group block relative"
-                          style={{
-                            padding: "28px",
-                            borderRadius: "20px",
-                            background: "rgba(44, 48, 114, 0.72)",
-                            border: "1px solid rgba(255, 255, 255, 0.12)",
-                            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
-                            transition: "all 160ms ease-out",
-                          }}
+                          className="mega-menu-tile block"
                           data-testid={`dropdown-link-${key}`}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = "translateY(-4px)";
-                            e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.18)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = "translateY(0)";
-                            e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.12)";
-                          }}
                         >
-                          <h3 className="text-white font-bold text-base leading-tight mb-2 relative inline-block">
+                          <h3 className="text-white font-bold text-base leading-tight mb-2">
                             {category.title}
-                            <span 
-                              className="absolute bottom-0 left-0 h-0.5 bg-white/80 transition-all duration-160"
-                              style={{ width: "0" }}
-                              ref={(el) => {
-                                if (el) {
-                                  const parent = el.parentElement?.parentElement;
-                                  parent?.addEventListener('mouseenter', () => {
-                                    el.style.width = '100%';
-                                  });
-                                  parent?.addEventListener('mouseleave', () => {
-                                    el.style.width = '0';
-                                  });
-                                }
-                              }}
-                            />
+                            <span className="mega-menu-tile-underline" />
                           </h3>
                           <p className="text-white/75 text-sm leading-relaxed">
                             {category.subtitle}
@@ -951,42 +890,12 @@ export function TopNavigation() {
                         <Link
                           key={key}
                           href={section.path}
-                          className="group block relative"
-                          style={{
-                            padding: "28px",
-                            borderRadius: "20px",
-                            background: "rgba(44, 48, 114, 0.72)",
-                            border: "1px solid rgba(255, 255, 255, 0.12)",
-                            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
-                            transition: "all 160ms ease-out",
-                          }}
+                          className="mega-menu-tile block"
                           data-testid={`dropdown-link-${key}`}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = "translateY(-4px)";
-                            e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.18)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = "translateY(0)";
-                            e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.12)";
-                          }}
                         >
-                          <h3 className="text-white font-bold text-base leading-tight mb-2 relative inline-block">
+                          <h3 className="text-white font-bold text-base leading-tight mb-2">
                             {section.title}
-                            <span 
-                              className="absolute bottom-0 left-0 h-0.5 bg-white/80 transition-all duration-160"
-                              style={{ width: "0" }}
-                              ref={(el) => {
-                                if (el) {
-                                  const parent = el.parentElement?.parentElement;
-                                  parent?.addEventListener('mouseenter', () => {
-                                    el.style.width = '100%';
-                                  });
-                                  parent?.addEventListener('mouseleave', () => {
-                                    el.style.width = '0';
-                                  });
-                                }
-                              }}
-                            />
+                            <span className="mega-menu-tile-underline" />
                           </h3>
                           <p className="text-white/75 text-sm leading-relaxed">
                             {section.subtitle}
