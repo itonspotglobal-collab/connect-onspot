@@ -647,92 +647,187 @@ export function TopNavigation() {
 
                       {/* Desktop Mega Menu Dropdown */}
                       {activeDropdown === item.title && (
-                        <div
-                          className="absolute left-0 right-0 top-full mt-3 rounded-2xl overflow-hidden"
-                          style={{
-                            background: "rgba(15, 15, 25, 0.85)",
-                            backdropFilter: "blur(20px)",
-                            WebkitBackdropFilter: "blur(20px)",
-                            boxShadow: "0 20px 60px rgba(0, 0, 0, 0.4), 0 0 1px rgba(255, 255, 255, 0.1)",
-                            border: "1px solid rgba(255, 255, 255, 0.1)",
-                            zIndex: 100,
-                          }}
-                          onMouseEnter={handleDropdownMouseEnter}
-                          onMouseLeave={handleDropdownMouseLeave}
-                        >
-                          <div className="mx-auto max-w-7xl px-8 py-10">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                              {/* Services dropdown */}
-                              {item.services && Object.entries(item.services).map(([key, service]) => (
-                                <Link
-                                  key={key}
-                                  href={service.path}
-                                  className="block p-5 rounded-xl border border-white/5 bg-white/5 backdrop-blur-sm transition-all duration-300 group hover:-translate-y-1"
-                                  style={{
-                                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)"
-                                  }}
-                                  data-testid={`dropdown-link-${key}`}
-                                >
-                                  <div className="flex items-start justify-between mb-3">
-                                    <h3 className="text-white font-bold text-base leading-tight">
+                        <>
+                          {/* Page Scrim - dims background content */}
+                          <div
+                            className="fixed inset-0 bg-black/30 dark:bg-black/50"
+                            style={{
+                              zIndex: 99,
+                              animation: "fadeIn 160ms ease-out",
+                            }}
+                            onMouseEnter={handleDropdownMouseLeave}
+                          />
+                          
+                          {/* Mega Menu Panel */}
+                          <div
+                            className="absolute left-0 right-0 top-full overflow-visible"
+                            style={{
+                              background: "rgba(44, 48, 114, 0.86)",
+                              backdropFilter: "blur(24px)",
+                              WebkitBackdropFilter: "blur(24px)",
+                              boxShadow: "0 24px 64px rgba(0, 0, 0, 0.24), 0 0 0 1px rgba(255, 255, 255, 0.08)",
+                              borderRadius: "20px",
+                              zIndex: 100,
+                              animation: "megaMenuIn 160ms ease-out",
+                            }}
+                            onMouseEnter={handleDropdownMouseEnter}
+                            onMouseLeave={handleDropdownMouseLeave}
+                          >
+                            <div className="mx-auto max-w-7xl" style={{ padding: "32px" }}>
+                              <div className="grid grid-cols-3 gap-8">
+                                {/* Services dropdown */}
+                                {item.services && Object.entries(item.services).map(([key, service]) => (
+                                  <Link
+                                    key={key}
+                                    href={service.path}
+                                    className="group block relative"
+                                    style={{
+                                      padding: "28px",
+                                      borderRadius: "20px",
+                                      background: "rgba(44, 48, 114, 0.72)",
+                                      border: "1px solid rgba(255, 255, 255, 0.12)",
+                                      boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
+                                      transition: "all 160ms ease-out",
+                                    }}
+                                    data-testid={`dropdown-link-${key}`}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.transform = "translateY(-4px)";
+                                      e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.18)";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.transform = "translateY(0)";
+                                      e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.12)";
+                                    }}
+                                  >
+                                    <h3 className="text-white font-bold text-base leading-tight mb-2 relative inline-block">
                                       {service.title}
+                                      <span 
+                                        className="absolute bottom-0 left-0 h-0.5 bg-white/80 transition-all duration-160"
+                                        style={{
+                                          width: "0",
+                                        }}
+                                        ref={(el) => {
+                                          if (el) {
+                                            const parent = el.parentElement?.parentElement;
+                                            parent?.addEventListener('mouseenter', () => {
+                                              el.style.width = '100%';
+                                            });
+                                            parent?.addEventListener('mouseleave', () => {
+                                              el.style.width = '0';
+                                            });
+                                          }
+                                        }}
+                                      />
                                     </h3>
-                                    <ArrowRight className="h-4 w-4 text-white/40 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0 ml-2" />
-                                  </div>
-                                  <p className="text-white/60 text-sm leading-relaxed">
-                                    {service.subtitle}
-                                  </p>
-                                </Link>
-                              ))}
-                              
-                              {/* Work categories dropdown */}
-                              {item.categories && Object.entries(item.categories).map(([key, category]) => (
-                                <Link
-                                  key={key}
-                                  href={category.path}
-                                  className="block p-5 rounded-xl border border-white/5 bg-white/5 backdrop-blur-sm transition-all duration-300 group hover:-translate-y-1"
-                                  style={{
-                                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)"
-                                  }}
-                                  data-testid={`dropdown-link-${key}`}
-                                >
-                                  <div className="flex items-start justify-between mb-3">
-                                    <h3 className="text-white font-bold text-base leading-tight">
+                                    <p className="text-white/75 text-sm leading-relaxed">
+                                      {service.subtitle}
+                                    </p>
+                                  </Link>
+                                ))}
+                                
+                                {/* Work categories dropdown */}
+                                {item.categories && Object.entries(item.categories).map(([key, category]) => (
+                                  <Link
+                                    key={key}
+                                    href={category.path}
+                                    className="group block relative"
+                                    style={{
+                                      padding: "28px",
+                                      borderRadius: "20px",
+                                      background: "rgba(44, 48, 114, 0.72)",
+                                      border: "1px solid rgba(255, 255, 255, 0.12)",
+                                      boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
+                                      transition: "all 160ms ease-out",
+                                    }}
+                                    data-testid={`dropdown-link-${key}`}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.transform = "translateY(-4px)";
+                                      e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.18)";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.transform = "translateY(0)";
+                                      e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.12)";
+                                    }}
+                                  >
+                                    <h3 className="text-white font-bold text-base leading-tight mb-2 relative inline-block">
                                       {category.title}
+                                      <span 
+                                        className="absolute bottom-0 left-0 h-0.5 bg-white/80 transition-all duration-160"
+                                        style={{
+                                          width: "0",
+                                        }}
+                                        ref={(el) => {
+                                          if (el) {
+                                            const parent = el.parentElement?.parentElement;
+                                            parent?.addEventListener('mouseenter', () => {
+                                              el.style.width = '100%';
+                                            });
+                                            parent?.addEventListener('mouseleave', () => {
+                                              el.style.width = '0';
+                                            });
+                                          }
+                                        }}
+                                      />
                                     </h3>
-                                    <ArrowRight className="h-4 w-4 text-white/40 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0 ml-2" />
-                                  </div>
-                                  <p className="text-white/60 text-sm leading-relaxed">
-                                    {category.subtitle}
-                                  </p>
-                                </Link>
-                              ))}
-                              
-                              {/* Why OnSpot dropdown */}
-                              {item.whyOnSpot && Object.entries(item.whyOnSpot).map(([key, section]) => (
-                                <Link
-                                  key={key}
-                                  href={section.path}
-                                  className="block p-5 rounded-xl border border-white/5 bg-white/5 backdrop-blur-sm transition-all duration-300 group hover:-translate-y-1"
-                                  style={{
-                                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)"
-                                  }}
-                                  data-testid={`dropdown-link-${key}`}
-                                >
-                                  <div className="flex items-start justify-between mb-3">
-                                    <h3 className="text-white font-bold text-base leading-tight">
+                                    <p className="text-white/75 text-sm leading-relaxed">
+                                      {category.subtitle}
+                                    </p>
+                                  </Link>
+                                ))}
+                                
+                                {/* Why OnSpot dropdown */}
+                                {item.whyOnSpot && Object.entries(item.whyOnSpot).map(([key, section]) => (
+                                  <Link
+                                    key={key}
+                                    href={section.path}
+                                    className="group block relative"
+                                    style={{
+                                      padding: "28px",
+                                      borderRadius: "20px",
+                                      background: "rgba(44, 48, 114, 0.72)",
+                                      border: "1px solid rgba(255, 255, 255, 0.12)",
+                                      boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
+                                      transition: "all 160ms ease-out",
+                                    }}
+                                    data-testid={`dropdown-link-${key}`}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.transform = "translateY(-4px)";
+                                      e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.18)";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.transform = "translateY(0)";
+                                      e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.12)";
+                                    }}
+                                  >
+                                    <h3 className="text-white font-bold text-base leading-tight mb-2 relative inline-block">
                                       {section.title}
+                                      <span 
+                                        className="absolute bottom-0 left-0 h-0.5 bg-white/80 transition-all duration-160"
+                                        style={{
+                                          width: "0",
+                                        }}
+                                        ref={(el) => {
+                                          if (el) {
+                                            const parent = el.parentElement?.parentElement;
+                                            parent?.addEventListener('mouseenter', () => {
+                                              el.style.width = '100%';
+                                            });
+                                            parent?.addEventListener('mouseleave', () => {
+                                              el.style.width = '0';
+                                            });
+                                          }
+                                        }}
+                                      />
                                     </h3>
-                                    <ArrowRight className="h-4 w-4 text-white/40 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0 ml-2" />
-                                  </div>
-                                  <p className="text-white/60 text-sm leading-relaxed">
-                                    {section.subtitle}
-                                  </p>
-                                </Link>
-                              ))}
+                                    <p className="text-white/75 text-sm leading-relaxed">
+                                      {section.subtitle}
+                                    </p>
+                                  </Link>
+                                ))}
+                              </div>
                             </div>
                           </div>
-                        </div>
+                        </>
                       )}
                     </div>
                   ) : (
@@ -774,14 +869,15 @@ export function TopNavigation() {
                 {/* More dropdown menu */}
                 {moreMenuOpen && (
                   <div
-                    className="absolute top-full left-0 mt-3 w-64 rounded-xl overflow-hidden"
+                    className="absolute top-full left-0 mt-3 w-64 overflow-hidden"
                     style={{
-                      background: "rgba(15, 15, 25, 0.85)",
-                      backdropFilter: "blur(20px)",
-                      WebkitBackdropFilter: "blur(20px)",
-                      boxShadow: "0 20px 60px rgba(0, 0, 0, 0.4), 0 0 1px rgba(255, 255, 255, 0.1)",
-                      border: "1px solid rgba(255, 255, 255, 0.1)",
+                      background: "rgba(44, 48, 114, 0.86)",
+                      backdropFilter: "blur(24px)",
+                      WebkitBackdropFilter: "blur(24px)",
+                      boxShadow: "0 24px 64px rgba(0, 0, 0, 0.24), 0 0 0 1px rgba(255, 255, 255, 0.08)",
+                      borderRadius: "20px",
                       zIndex: 100,
+                      animation: "megaMenuIn 160ms ease-out",
                     }}
                     role="menu"
                   >
@@ -790,7 +886,7 @@ export function TopNavigation() {
                         <Link
                           key={item.path}
                           href={item.path}
-                          className="block px-5 py-3 text-sm font-semibold text-white/90 hover:bg-white/10 hover:text-white transition-all duration-200"
+                          className="block px-5 py-3 text-sm font-semibold text-white/90 hover:bg-white/10 hover:text-white transition-all duration-160"
                           role="menuitem"
                           data-testid={`more-menu-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
                         >
