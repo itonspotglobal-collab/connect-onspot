@@ -543,7 +543,7 @@ export function TopNavigation() {
   const handleMouseLeave = () => {
     dropdownTimeoutRef.current = setTimeout(() => {
       setActiveDropdown(null);
-    }, 150);
+    }, 300);
   };
 
   const handleDropdownMouseEnter = () => {
@@ -555,7 +555,7 @@ export function TopNavigation() {
   const handleDropdownMouseLeave = () => {
     dropdownTimeoutRef.current = setTimeout(() => {
       setActiveDropdown(null);
-    }, 150);
+    }, 200);
   };
 
   return (
@@ -660,19 +660,26 @@ export function TopNavigation() {
                           
                           {/* Mega Menu Panel */}
                           <div
-                            className="absolute left-0 right-0 top-full overflow-visible"
+                            className="absolute left-0 right-0 overflow-visible"
                             style={{
-                              background: "rgba(44, 48, 114, 0.86)",
-                              backdropFilter: "blur(24px)",
-                              WebkitBackdropFilter: "blur(24px)",
-                              boxShadow: "0 24px 64px rgba(0, 0, 0, 0.24), 0 0 0 1px rgba(255, 255, 255, 0.08)",
-                              borderRadius: "20px",
+                              top: "100%",
+                              paddingTop: "8px",
+                              marginTop: "-8px",
                               zIndex: 100,
-                              animation: "megaMenuIn 160ms ease-out",
                             }}
                             onMouseEnter={handleDropdownMouseEnter}
                             onMouseLeave={handleDropdownMouseLeave}
                           >
+                            <div
+                              style={{
+                                background: "rgba(44, 48, 114, 0.86)",
+                                backdropFilter: "blur(24px)",
+                                WebkitBackdropFilter: "blur(24px)",
+                                boxShadow: "0 24px 64px rgba(0, 0, 0, 0.24), 0 0 0 1px rgba(255, 255, 255, 0.08)",
+                                borderRadius: "20px",
+                                animation: "megaMenuIn 160ms ease-out",
+                              }}
+                            >
                             <div className="mx-auto max-w-7xl" style={{ padding: "32px" }}>
                               <div className="grid grid-cols-3 gap-8">
                                 {/* Services dropdown */}
@@ -826,6 +833,7 @@ export function TopNavigation() {
                                 ))}
                               </div>
                             </div>
+                          </div>
                           </div>
                         </>
                       )}
