@@ -585,11 +585,34 @@ export function TopNavigation() {
       if (activeDropdown) {
         setActiveDropdown(null);
       }
+      if (isMobileMenuOpen) {
+        setIsMobileMenuOpen(false);
+      }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [activeDropdown]);
+  }, [activeDropdown, isMobileMenuOpen]);
+
+  // Close menus on Esc key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (activeDropdown) {
+          setActiveDropdown(null);
+        }
+        if (isMobileMenuOpen) {
+          setIsMobileMenuOpen(false);
+        }
+        if (moreMenuOpen) {
+          setMoreMenuOpen(false);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [activeDropdown, isMobileMenuOpen, moreMenuOpen]);
 
   return (
     <>
@@ -719,6 +742,17 @@ export function TopNavigation() {
                   />
                 </button>
 
+                {/* More Menu Scrim */}
+                {moreMenuOpen && (
+                  <div
+                    className="menu-scrim"
+                    style={{
+                      zIndex: 98,
+                    }}
+                    onClick={() => setMoreMenuOpen(false)}
+                  />
+                )}
+
                 {/* More dropdown menu - Translucent Glass Surface */}
                 {moreMenuOpen && (
                   <div
@@ -818,12 +852,13 @@ export function TopNavigation() {
       {/* Global Desktop Mega Menu - positioned outside nav for seamless Apple-style transitions */}
       {activeDropdown && (
         <>
-          {/* Page Scrim - dims background content */}
+          {/* Cinematic Scrim - Soft Blur & Dim */}
           <div
-            className="mega-menu-scrim fixed inset-0 bg-black/30 dark:bg-black/50"
+            className="menu-scrim"
             style={{
               zIndex: 99,
             }}
+            onClick={() => setActiveDropdown(null)}
             onMouseEnter={handleMouseLeave}
           />
           
@@ -952,6 +987,17 @@ export function TopNavigation() {
         </>
       )}
 
+      {/* Mobile Menu Scrim - Cinematic Blur & Dim */}
+      {isMobileMenuOpen && (
+        <div
+          className="menu-scrim md:hidden"
+          style={{
+            zIndex: 39,
+          }}
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Mobile Menu Panel - One Seamless Glass Surface */}
       <div
         className={`mobile-menu-panel md:hidden fixed left-0 right-0 overflow-hidden transition-all ${
@@ -968,6 +1014,7 @@ export function TopNavigation() {
           boxShadow: '0 24px 48px rgba(0, 0, 0, 0.2)',
           transitionDuration: isMobileMenuOpen ? '160ms' : '150ms',
           transitionTimingFunction: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+          animation: isMobileMenuOpen ? 'menuBreathe 4s ease-in-out 1s infinite' : 'none',
         }}
       >
         <div className="max-h-[calc(100vh-var(--nav-h))] overflow-y-auto px-4 py-6">
