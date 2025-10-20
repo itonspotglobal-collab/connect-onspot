@@ -205,50 +205,51 @@ export default function OperationsPlaybook() {
         </motion.section>
 
         {/* Sticky Sub-Nav - All Screen Sizes (Always visible at top when scrolled) */}
-        <motion.div
-          className="sticky top-16 md:top-[calc(4rem+0.5rem)] z-50 py-2 md:py-3"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ 
-            opacity: showNav ? 1 : 0,
-            y: showNav ? 0 : -20,
-            pointerEvents: showNav ? "auto" : "none"
-          }}
-          transition={{ 
-            duration: 0.4, 
-            ease: [0.25, 0.1, 0.25, 1]
-          }}
-        >
-          <div className="flex justify-center px-3 md:px-4">
-            <nav className="
-              bg-white/70 dark:bg-zinc-900/70
-              supports-[backdrop-filter]:backdrop-blur-md
-              border border-gray-200/50 dark:border-gray-700/50
-              rounded-2xl shadow-lg shadow-black/5 dark:shadow-black/20
-              px-2 py-2 md:px-3 md:py-2
-              max-w-full
-            ">
-              <div className="flex items-center gap-1.5 md:gap-2 overflow-x-auto scrollbar-hide">
-                {sections.map((section) => (
-                  <button
-                    key={section.id}
-                    onClick={() => scrollToSection(section.id)}
-                    className={`
-                      flex-shrink-0 px-3 py-1.5 md:px-4 md:py-2 rounded-xl text-xs md:text-sm font-medium
-                      transition-all duration-300 ease-out whitespace-nowrap
-                      ${activeSection === section.id 
-                        ? 'bg-violet-600 text-white shadow-md shadow-violet-600/25 scale-105' 
-                        : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/10'
-                      }
-                    `}
-                    data-testid={`nav-${section.id}`}
-                  >
-                    {section.label}
-                  </button>
-                ))}
-              </div>
-            </nav>
-          </div>
-        </motion.div>
+        {showNav && (
+          <motion.div
+            className="sticky top-16 md:top-[calc(4rem+0.5rem)] z-50 py-2 md:py-3"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ 
+              opacity: 1,
+              y: 0
+            }}
+            transition={{ 
+              duration: 0.4, 
+              ease: [0.25, 0.1, 0.25, 1]
+            }}
+          >
+            <div className="flex justify-center px-3 md:px-4">
+              <nav className="
+                bg-white/70 dark:bg-zinc-900/70
+                supports-[backdrop-filter]:backdrop-blur-md
+                border border-gray-200/50 dark:border-gray-700/50
+                rounded-2xl shadow-lg shadow-black/5 dark:shadow-black/20
+                px-2 py-2 md:px-3 md:py-2
+                max-w-full
+              ">
+                <div className="flex items-center gap-1.5 md:gap-2 overflow-x-auto scrollbar-hide">
+                  {sections.map((section) => (
+                    <button
+                      key={section.id}
+                      onClick={() => scrollToSection(section.id)}
+                      className={`
+                        flex-shrink-0 px-3 py-1.5 md:px-4 md:py-2 rounded-xl text-xs md:text-sm font-medium
+                        transition-all duration-300 ease-out whitespace-nowrap
+                        ${activeSection === section.id 
+                          ? 'bg-violet-600 text-white shadow-md shadow-violet-600/25 scale-105' 
+                          : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/10'
+                        }
+                      `}
+                      data-testid={`nav-${section.id}`}
+                    >
+                      {section.label}
+                    </button>
+                  ))}
+                </div>
+              </nav>
+            </div>
+          </motion.div>
+        )}
 
         {/* Main Content */}
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl py-12 sm:py-16 lg:py-20 space-y-16 sm:space-y-20 lg:space-y-28">
