@@ -1,5 +1,5 @@
 import { motion, useScroll, useTransform } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Accordion,
   AccordionContent,
@@ -83,9 +83,8 @@ const scrollReveal = {
 
 export default function OperationsPlaybook() {
   const [activeSection, setActiveSection] = useState("top");
-  const [showNav, setShowNav] = useState(false);
-  const [scrollDirection, setScrollDirection] = useState<"up" | "down">("up");
-  const [lastScrollY, setLastScrollY] = useState(0);
+  const [isNavFixed, setIsNavFixed] = useState(false);
+  const heroRef = useRef<HTMLElement>(null);
   
   const { scrollY } = useScroll();
   const opacity = useTransform(scrollY, [0, 100], [1, 0.9]);
@@ -110,21 +109,33 @@ export default function OperationsPlaybook() {
     }
   };
 
-  // Detect scroll position, direction, and active section
+  // IntersectionObserver to detect when hero disappears
+  useEffect(() => {
+    const hero = heroRef.current;
+    if (!hero) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // When hero is NOT intersecting (out of view), fix the nav to top
+        setIsNavFixed(!entry.isIntersecting);
+      },
+      {
+        threshold: 0,
+        rootMargin: '-64px 0px 0px 0px' // Account for header height
+      }
+    );
+
+    observer.observe(hero);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  // Track active section
   useEffect(() => {
     const handleScroll = () => {
       const scrollPosition = window.scrollY;
-      
-      // Detect scroll direction
-      if (scrollPosition > lastScrollY) {
-        setScrollDirection("down");
-      } else {
-        setScrollDirection("up");
-      }
-      setLastScrollY(scrollPosition);
-      
-      // Show nav after scrolling past hero (around 200px)
-      setShowNav(scrollPosition > 200);
       
       // Check which section is in view
       sections.forEach(section => {
@@ -144,7 +155,7 @@ export default function OperationsPlaybook() {
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY, sections]);
+  }, [sections]);
 
   return (
     <>
@@ -157,6 +168,7 @@ export default function OperationsPlaybook() {
         
         {/* Hero Section with Premium Gradient */}
         <motion.section 
+          ref={heroRef}
           className="relative overflow-hidden"
           initial="initial"
           animate="animate"
@@ -204,40 +216,63 @@ export default function OperationsPlaybook() {
           </div>
         </motion.section>
 
-        {/* Sticky Sub-Nav - All Screen Sizes (Always visible at top when scrolled) */}
-        {showNav && (
-          <motion.div
-            className="sticky top-16 md:top-[calc(4rem+0.5rem)] z-50 py-2 md:py-3"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ 
-              opacity: 1,
-              y: 0
-            }}
-            transition={{ 
-              duration: 0.4, 
-              ease: [0.25, 0.1, 0.25, 1]
-            }}
-          >
-            <div className="flex justify-center px-3 md:px-4">
-              <nav className="
-                bg-white/70 dark:bg-zinc-900/70
+        {/* Intelligent Sub-Nav - Floats to top when hero disappears */}
+        <motion.div
+          className={`
+            z-50
+            transition-all duration-500 ease-out
+            ${isNavFixed 
+              ? 'fixed top-0 left-0 right-0 shadow-xl shadow-black/10 dark:shadow-black/30' 
+              : 'sticky top-16 md:top-[calc(4rem+0.5rem)]'
+            }
+          `}
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ 
+            opacity: 1,
+            y: 0
+          }}
+          transition={{ 
+            duration: 0.5, 
+            ease: [0.25, 0.1, 0.25, 1]
+          }}
+        >
+          <div className={`
+            transition-all duration-500 ease-out
+            ${isNavFixed 
+              ? 'bg-white/80 dark:bg-zinc-950/80 py-3 md:py-4' 
+              : 'bg-transparent py-2 md:py-3'
+            }
+            supports-[backdrop-filter]:backdrop-blur-xl
+            border-b border-gray-200/50 dark:border-gray-700/50
+          `}>
+            <div className="flex justify-center px-3 md:px-6">
+              <nav className={`
+                transition-all duration-500 ease-out
+                ${isNavFixed
+                  ? 'bg-white/90 dark:bg-zinc-900/90 shadow-2xl shadow-violet-600/10'
+                  : 'bg-white/70 dark:bg-zinc-900/70 shadow-lg shadow-black/5 dark:shadow-black/20'
+                }
                 supports-[backdrop-filter]:backdrop-blur-md
                 border border-gray-200/50 dark:border-gray-700/50
-                rounded-2xl shadow-lg shadow-black/5 dark:shadow-black/20
-                px-2 py-2 md:px-3 md:py-2
+                rounded-2xl
+                px-2 py-2 md:px-3 md:py-2.5
                 max-w-full
-              ">
-                <div className="flex items-center gap-1.5 md:gap-2 overflow-x-auto scrollbar-hide">
+              `}>
+                {/* Mobile: 44px tap targets with momentum scroll */}
+                <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide snap-x snap-mandatory overscroll-x-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
                   {sections.map((section) => (
                     <button
                       key={section.id}
                       onClick={() => scrollToSection(section.id)}
                       className={`
-                        flex-shrink-0 px-3 py-1.5 md:px-4 md:py-2 rounded-xl text-xs md:text-sm font-medium
+                        flex-shrink-0 snap-start
+                        min-h-[44px] px-4 py-2.5 md:px-5 md:py-2.5
+                        rounded-xl text-xs md:text-sm font-medium
                         transition-all duration-300 ease-out whitespace-nowrap
+                        touch-manipulation
                         ${activeSection === section.id 
-                          ? 'bg-violet-600 text-white shadow-md shadow-violet-600/25 scale-105' 
-                          : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/10'
+                          ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30 scale-[1.02] md:scale-105' 
+                          : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-white/10 active:scale-95'
                         }
                       `}
                       data-testid={`nav-${section.id}`}
@@ -248,8 +283,8 @@ export default function OperationsPlaybook() {
                 </div>
               </nav>
             </div>
-          </motion.div>
-        )}
+          </div>
+        </motion.div>
 
         {/* Main Content */}
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl py-12 sm:py-16 lg:py-20 space-y-16 sm:space-y-20 lg:space-y-28">
