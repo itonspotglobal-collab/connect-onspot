@@ -155,9 +155,58 @@ export default function OperationsPlaybook() {
 
       <div className="min-h-screen bg-gradient-to-b from-white via-gray-50/30 to-white dark:from-gray-950 dark:via-gray-900/30 dark:to-gray-950 overflow-x-hidden">
         
-        {/* Floating Intuitive Sub-Nav - Desktop (Fixed positioning, no layout space) */}
+        {/* Hero Section with Premium Gradient */}
+        <motion.section 
+          className="relative overflow-hidden"
+          initial="initial"
+          animate="animate"
+          variants={staggerContainer}
+          style={{ opacity, scale }}
+        >
+          {/* Gradient Background - responsive */}
+          <div className="absolute inset-0 bg-gradient-to-br from-violet-600/10 via-blue-600/5 to-purple-600/10 dark:from-violet-600/20 dark:via-blue-600/10 dark:to-purple-600/20"></div>
+          
+          {/* Animated Orbs - hide on mobile for performance */}
+          <div className="hidden md:block absolute top-10 lg:top-20 right-1/4 w-48 h-48 lg:w-72 lg:h-72 bg-violet-500/20 rounded-full blur-3xl animate-pulse"></div>
+          <div className="hidden md:block absolute bottom-10 lg:bottom-20 left-1/4 w-64 h-64 lg:w-96 lg:h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse delay-700"></div>
+          
+          <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl py-16 sm:py-20 md:py-28 lg:py-36">
+            <div className="text-center space-y-6 sm:space-y-8">
+              <motion.div 
+                variants={fadeUp} 
+                className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-violet-100 dark:bg-violet-900/30 border border-violet-200 dark:border-violet-700"
+              >
+                <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-violet-600 dark:text-violet-400" />
+                <span className="text-xs sm:text-sm font-medium text-violet-700 dark:text-violet-300">Excellence in Delivery</span>
+              </motion.div>
+              
+              <motion.h1 
+                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold bg-gradient-to-r from-gray-900 via-violet-800 to-blue-900 dark:from-white dark:via-violet-200 dark:to-blue-200 bg-clip-text text-transparent leading-tight px-4"
+                variants={fadeUp}
+              >
+                Operations Playbook
+              </motion.h1>
+              
+              <motion.p 
+                className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-gray-600 dark:text-gray-300 font-light max-w-3xl mx-auto px-4"
+                variants={fadeUp}
+              >
+                Our Engine for Execution
+              </motion.p>
+
+              <motion.p
+                className="text-sm sm:text-base lg:text-lg text-gray-500 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed px-4"
+                variants={fadeUp}
+              >
+                A comprehensive framework that transforms outsourcing complexity into operational excellence through proven systems and methodologies.
+              </motion.p>
+            </div>
+          </div>
+        </motion.section>
+
+        {/* Sticky Sub-Nav - Desktop (Takes layout space) */}
         <motion.div
-          className="hidden md:block fixed top-[calc(4rem+0.5rem)] left-0 right-0 z-50 pointer-events-none"
+          className="hidden md:block sticky top-[calc(4rem+0.5rem)] z-50 py-3"
           initial={{ opacity: 0, y: -20 }}
           animate={{ 
             opacity: showNav ? 1 : 0,
@@ -170,7 +219,6 @@ export default function OperationsPlaybook() {
         >
           <div className="flex justify-center px-4">
             <nav className="
-              pointer-events-auto
               bg-white/70 dark:bg-zinc-900/70
               supports-[backdrop-filter]:backdrop-blur-md
               border border-gray-200/50 dark:border-gray-700/50
@@ -247,55 +295,6 @@ export default function OperationsPlaybook() {
             </div>
           </div>
         </motion.nav>
-
-        {/* Hero Section with Premium Gradient */}
-        <motion.section 
-          className="relative overflow-hidden"
-          initial="initial"
-          animate="animate"
-          variants={staggerContainer}
-          style={{ opacity, scale }}
-        >
-          {/* Gradient Background - responsive */}
-          <div className="absolute inset-0 bg-gradient-to-br from-violet-600/10 via-blue-600/5 to-purple-600/10 dark:from-violet-600/20 dark:via-blue-600/10 dark:to-purple-600/20"></div>
-          
-          {/* Animated Orbs - hide on mobile for performance */}
-          <div className="hidden md:block absolute top-10 lg:top-20 right-1/4 w-48 h-48 lg:w-72 lg:h-72 bg-violet-500/20 rounded-full blur-3xl animate-pulse"></div>
-          <div className="hidden md:block absolute bottom-10 lg:bottom-20 left-1/4 w-64 h-64 lg:w-96 lg:h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse delay-700"></div>
-          
-          <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl py-16 sm:py-20 md:py-28 lg:py-36">
-            <div className="text-center space-y-6 sm:space-y-8">
-              <motion.div 
-                variants={fadeUp} 
-                className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-violet-100 dark:bg-violet-900/30 border border-violet-200 dark:border-violet-700"
-              >
-                <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-violet-600 dark:text-violet-400" />
-                <span className="text-xs sm:text-sm font-medium text-violet-700 dark:text-violet-300">Excellence in Delivery</span>
-              </motion.div>
-              
-              <motion.h1 
-                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold bg-gradient-to-r from-gray-900 via-violet-800 to-blue-900 dark:from-white dark:via-violet-200 dark:to-blue-200 bg-clip-text text-transparent leading-tight px-4"
-                variants={fadeUp}
-              >
-                Operations Playbook
-              </motion.h1>
-              
-              <motion.p 
-                className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-gray-600 dark:text-gray-300 font-light max-w-3xl mx-auto px-4"
-                variants={fadeUp}
-              >
-                Our Engine for Execution
-              </motion.p>
-
-              <motion.p
-                className="text-sm sm:text-base lg:text-lg text-gray-500 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed px-4"
-                variants={fadeUp}
-              >
-                A comprehensive framework that transforms outsourcing complexity into operational excellence through proven systems and methodologies.
-              </motion.p>
-            </div>
-          </div>
-        </motion.section>
 
         {/* Main Content */}
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl py-12 sm:py-16 lg:py-20 space-y-16 sm:space-y-20 lg:space-y-28">
