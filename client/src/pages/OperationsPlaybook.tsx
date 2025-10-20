@@ -776,6 +776,526 @@ export default function OperationsPlaybook() {
             </motion.div>
           </motion.section>
 
+          {/* Talent Acquisition & Hiring Excellence */}
+          <motion.section 
+            className="space-y-12"
+            initial="initial"
+            whileInView="animate"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={staggerContainer}
+          >
+            <div className="text-center space-y-4">
+              <motion.h2 
+                className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white"
+                variants={fadeUp}
+              >
+                Talent Acquisition & Hiring Excellence
+              </motion.h2>
+              <motion.p className="text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto" variants={fadeUp}>
+                Our systematic approach to identifying, evaluating, and selecting A Players through the Job Success Framework and Top Grading methodology.
+              </motion.p>
+            </div>
+
+            {/* Job Success Framework Overview */}
+            <motion.div variants={fadeUp}>
+              <Card className="p-10 bg-gradient-to-br from-violet-50 to-blue-50 dark:from-violet-950/30 dark:to-blue-950/30 border-2 border-violet-200 dark:border-violet-800">
+                <div className="space-y-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-600 to-blue-600 flex items-center justify-center">
+                      <Target className="w-7 h-7 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Job Success Framework</h3>
+                      <p className="text-violet-600 dark:text-violet-400 font-medium">Data-Driven Hiring Excellence</p>
+                    </div>
+                  </div>
+                  
+                  <p className="text-base text-gray-700 dark:text-gray-300 leading-relaxed">
+                    We consistently deliver A Players who excel in performance and align with client values. Our non-negotiable principle: 
+                    <span className="font-bold text-violet-700 dark:text-violet-300"> Values and behavior alignment is mandatory</span> — skills gaps can be trained, values misalignment cannot be overlooked.
+                  </p>
+
+                  <div className="grid sm:grid-cols-3 gap-4">
+                    <div className="p-4 rounded-xl bg-white dark:bg-gray-900 border border-violet-200 dark:border-violet-800">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Award className="w-5 h-5 text-violet-600" />
+                        <p className="font-bold text-gray-900 dark:text-white">Job Success Profile</p>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Defines success factors, KPIs, and behavioral traits</p>
+                    </div>
+                    <div className="p-4 rounded-xl bg-white dark:bg-gray-900 border border-blue-200 dark:border-blue-800">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Target className="w-5 h-5 text-blue-600" />
+                        <p className="font-bold text-gray-900 dark:text-white">Top Grading Method</p>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Chronological interviews revealing success patterns</p>
+                    </div>
+                    <div className="p-4 rounded-xl bg-white dark:bg-gray-900 border border-emerald-200 dark:border-emerald-800">
+                      <div className="flex items-center gap-2 mb-2">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                        <p className="font-bold text-gray-900 dark:text-white">GWC Principle</p>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Get It, Want It, Capacity to Do It</p>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
+
+            {/* The 4 Rules of Hiring */}
+            <motion.div className="space-y-8" variants={fadeUp}>
+              <div className="text-center">
+                <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-3">The 4 Rules of Hiring</h3>
+                <p className="text-gray-600 dark:text-gray-400">Our core principles for identifying exceptional talent</p>
+              </div>
+
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <Card className="p-6 hover-elevate group bg-gradient-to-br from-rose-50 to-white dark:from-rose-950/30 dark:to-gray-900 border-rose-200 dark:border-rose-800">
+                  <div className="space-y-4">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Zap className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-rose-600 dark:text-rose-400">RULE #1</span>
+                      <h4 className="text-lg font-bold text-gray-900 dark:text-white mt-1">Hire for Will</h4>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                      Seek candidates with ownership mindset, initiative, and growth mentality. Non-negotiable requirement.
+                    </p>
+                  </div>
+                </Card>
+
+                <Card className="p-6 hover-elevate group bg-gradient-to-br from-violet-50 to-white dark:from-violet-950/30 dark:to-gray-900 border-violet-200 dark:border-violet-800">
+                  <div className="space-y-4">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Users className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-violet-600 dark:text-violet-400">RULE #2</span>
+                      <h4 className="text-lg font-bold text-gray-900 dark:text-white mt-1">Match Core Values</h4>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                      Strong cultural alignment is mandatory. Values misalignment = automatic disqualification.
+                    </p>
+                  </div>
+                </Card>
+
+                <Card className="p-6 hover-elevate group bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/30 dark:to-gray-900 border-blue-200 dark:border-blue-800">
+                  <div className="space-y-4">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <TrendingUp className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-blue-600 dark:text-blue-400">RULE #3</span>
+                      <h4 className="text-lg font-bold text-gray-900 dark:text-white mt-1">Hire for Results</h4>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                      Validate track record of measurable performance and proven impact across roles.
+                    </p>
+                  </div>
+                </Card>
+
+                <Card className="p-6 hover-elevate group bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/30 dark:to-gray-900 border-emerald-200 dark:border-emerald-800">
+                  <div className="space-y-4">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <CheckCircle2 className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">RULE #4</span>
+                      <h4 className="text-lg font-bold text-gray-900 dark:text-white mt-1">Hire for Skill</h4>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                      Confirm technical and functional competencies. Skills can be trained with right foundation.
+                    </p>
+                  </div>
+                </Card>
+              </div>
+            </motion.div>
+
+            {/* A Player vs Potential A Player */}
+            <motion.div className="grid lg:grid-cols-2 gap-8" variants={fadeUp}>
+              {/* A Player */}
+              <Card className="p-8 bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/30 dark:to-gray-900 border-2 border-amber-200 dark:border-amber-800">
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+                      <Award className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-bold text-gray-900 dark:text-white">A Player</h4>
+                      <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">Ready to Excel Immediately</p>
+                    </div>
+                  </div>
+
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    Consistently performs at top level, meets or exceeds expectations across all dimensions.
+                  </p>
+
+                  <div className="space-y-2">
+                    {[
+                      { label: "Get It", desc: "Fully understands role and business impact" },
+                      { label: "Want It", desc: "Highly motivated, long-term commitment" },
+                      { label: "Capacity", desc: "Independent high-level performance" },
+                      { label: "Will & Values", desc: "Proactive, accountable, culture-aligned" },
+                      { label: "Results", desc: "Proven track record of exceeding KPIs" },
+                      { label: "Skills", desc: "Ready to contribute immediately" }
+                    ].map((item, i) => (
+                      <div key={i} className="flex items-start gap-2 text-sm">
+                        <CheckCircle2 className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <span className="font-semibold text-gray-900 dark:text-white">{item.label}:</span>
+                          <span className="text-gray-600 dark:text-gray-400 ml-1">{item.desc}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="pt-3 border-t border-amber-200 dark:border-amber-800">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      <span className="font-bold text-amber-700 dark:text-amber-300">Scorecard:</span> Typically scores 4–5 across all dimensions
+                    </p>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Potential A Player */}
+              <Card className="p-8 bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/30 dark:to-gray-900 border-2 border-blue-200 dark:border-blue-800">
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center">
+                      <Sparkles className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-bold text-gray-900 dark:text-white">Potential A Player</h4>
+                      <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">High Growth Trajectory</p>
+                    </div>
+                  </div>
+
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    Shows strong potential with development and coaching. Values alignment is mandatory.
+                  </p>
+
+                  <div className="space-y-2">
+                    {[
+                      { label: "Get It", desc: "Understands role, may need minor guidance" },
+                      { label: "Want It", desc: "Motivated and willing to grow" },
+                      { label: "Capacity", desc: "Foundational skills, learns quickly" },
+                      { label: "Will & Values", desc: "MUST score 4-5 (non-negotiable)" },
+                      { label: "Results", desc: "Demonstrates growth trajectory" },
+                      { label: "Skills", desc: "Some gaps acceptable, trainable" }
+                    ].map((item, i) => (
+                      <div key={i} className="flex items-start gap-2 text-sm">
+                        <CheckCircle2 className={`w-4 h-4 mt-0.5 flex-shrink-0 ${item.label === 'Will & Values' ? 'text-rose-600' : 'text-blue-600'}`} />
+                        <div>
+                          <span className={`font-semibold ${item.label === 'Will & Values' ? 'text-rose-700 dark:text-rose-300' : 'text-gray-900 dark:text-white'}`}>{item.label}:</span>
+                          <span className="text-gray-600 dark:text-gray-400 ml-1">{item.desc}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="pt-3 border-t border-blue-200 dark:border-blue-800">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      <span className="font-bold text-blue-700 dark:text-blue-300">Scorecard:</span> Scores 3–5 in most areas, but 4–5 in Will & Core Values
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
+
+            {/* 8-Step Hiring Process */}
+            <motion.div className="space-y-8" variants={fadeUp}>
+              <div className="text-center">
+                <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-3">8-Step Hiring Process</h3>
+                <p className="text-gray-600 dark:text-gray-400">Systematic approach ensuring quality and consistency</p>
+              </div>
+
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                  { 
+                    step: "1", 
+                    title: "Define the Role",
+                    subtitle: "Job Success Profile",
+                    desc: "Purpose, KPIs, responsibilities, values, and competencies",
+                    color: "violet",
+                    icon: FileCheck
+                  },
+                  { 
+                    step: "2", 
+                    title: "Sourcing & Screening",
+                    subtitle: "Initial Evaluation",
+                    desc: "Job posts, DISC assessments, and GWC validation",
+                    color: "blue",
+                    icon: Users
+                  },
+                  { 
+                    step: "3", 
+                    title: "Top Grading Interview",
+                    subtitle: "Career Deep Dive",
+                    desc: "Chronological review revealing performance patterns",
+                    color: "emerald",
+                    icon: MessageSquare
+                  },
+                  { 
+                    step: "4", 
+                    title: "Skills Assessment",
+                    subtitle: "Capacity Validation",
+                    desc: "Job simulations, case studies, technical tests",
+                    color: "amber",
+                    icon: CheckCircle2
+                  },
+                  { 
+                    step: "5", 
+                    title: "Culture Fit",
+                    subtitle: "Values Alignment",
+                    desc: "Behavioral interviews against core values (non-negotiable)",
+                    color: "rose",
+                    icon: Shield
+                  },
+                  { 
+                    step: "6", 
+                    title: "GWC + 4 Rules Scoring",
+                    subtitle: "Data-Driven Decision",
+                    desc: "Comprehensive evaluation across all dimensions",
+                    color: "indigo",
+                    icon: BarChart3
+                  },
+                  { 
+                    step: "7", 
+                    title: "Reference Check",
+                    subtitle: "Validation",
+                    desc: "Verify track record and values consistency",
+                    color: "teal",
+                    icon: UserCheck
+                  },
+                  { 
+                    step: "8", 
+                    title: "Panel Debrief",
+                    subtitle: "Final Decision",
+                    desc: "Data-based consensus using standardized toolkit",
+                    color: "purple",
+                    icon: Award
+                  }
+                ].map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Card key={item.step} className="p-6 hover-elevate group">
+                      <div className="space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div className={`w-10 h-10 rounded-lg bg-gradient-to-br from-${item.color}-500 to-${item.color}-600 flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                            <Icon className="w-5 h-5 text-white" />
+                          </div>
+                          <span className={`text-2xl font-bold text-${item.color}-200 dark:text-${item.color}-900/20`}>{item.step}</span>
+                        </div>
+                        <div>
+                          <h5 className="font-bold text-gray-900 dark:text-white text-sm">{item.title}</h5>
+                          <p className={`text-xs font-medium text-${item.color}-600 dark:text-${item.color}-400`}>{item.subtitle}</p>
+                        </div>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">{item.desc}</p>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            </motion.div>
+
+            {/* Scoring System & Decision Guidelines */}
+            <motion.div className="space-y-8" variants={fadeUp}>
+              <div className="text-center">
+                <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-3">Candidate Scoring System</h3>
+                <p className="text-gray-600 dark:text-gray-400">Evidence-based evaluation framework (1-5 scale)</p>
+              </div>
+
+              <Card className="p-8 bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/50">
+                <div className="space-y-6">
+                  {/* Rating Scale */}
+                  <div className="grid sm:grid-cols-5 gap-3">
+                    {[
+                      { score: "5", label: "Exceeds", color: "emerald", desc: "Advanced skills, ready to lead" },
+                      { score: "4", label: "Meets", color: "blue", desc: "Strong performer, minimal support" },
+                      { score: "3", label: "Potential", color: "amber", desc: "Shows promise, needs training" },
+                      { score: "2", label: "Gaps", color: "orange", desc: "Partial knowledge, limited readiness" },
+                      { score: "1", label: "Not Aligned", color: "red", desc: "Insufficient fit for role" }
+                    ].map((item) => (
+                      <div key={item.score} className={`p-4 rounded-xl bg-${item.color}-50 dark:bg-${item.color}-950/30 border border-${item.color}-200 dark:border-${item.color}-800 text-center`}>
+                        <div className={`text-2xl font-bold text-${item.color}-600 dark:text-${item.color}-400 mb-1`}>{item.score}</div>
+                        <div className={`text-sm font-semibold text-${item.color}-700 dark:text-${item.color}-300 mb-1`}>{item.label}</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">{item.desc}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Decision Rules */}
+                  <div className="grid sm:grid-cols-3 gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-sm">A</div>
+                        <p className="font-bold text-gray-900 dark:text-white">A Player</p>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Scores 4–5 across all dimensions</p>
+                      <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-2 font-medium">32-40 points → Highly Recommended</p>
+                    </div>
+                    
+                    <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-950/30">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-sm">PA</div>
+                        <p className="font-bold text-gray-900 dark:text-white">Potential A Player</p>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Scores 3–5 most areas, 4–5 in Will & Values</p>
+                      <p className="text-xs text-blue-700 dark:text-blue-300 mt-2 font-medium">22-31 points → Recommended with Training</p>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/30">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-8 h-8 rounded-lg bg-red-600 text-white flex items-center justify-center font-bold text-sm">✕</div>
+                        <p className="font-bold text-gray-900 dark:text-white">Reject</p>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Below 4 on Will or Core Values</p>
+                      <p className="text-xs text-red-700 dark:text-red-300 mt-2 font-medium">&lt;18 points → Not Recommended</p>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
+
+            {/* Hiring Timeline */}
+            <motion.div className="space-y-8" variants={fadeUp}>
+              <div className="text-center">
+                <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-3">Accelerated Hiring Timeline</h3>
+                <p className="text-gray-600 dark:text-gray-400">Industry-leading speed without compromising quality</p>
+              </div>
+
+              <div className="grid lg:grid-cols-2 gap-6">
+                {/* Common Roles Timeline */}
+                <Card className="p-8 bg-gradient-to-br from-violet-50 to-white dark:from-violet-950/30 dark:to-gray-900 border-2 border-violet-200 dark:border-violet-800">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-xl bg-violet-600 flex items-center justify-center">
+                        <Zap className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-900 dark:text-white">Common Roles</h4>
+                        <p className="text-sm text-violet-600 dark:text-violet-400">CSRs, Virtual Assistants</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="text-center">
+                        <div className="text-3xl font-bold text-violet-600 dark:text-violet-400">14</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Days</div>
+                      </div>
+                      <div className="flex-1 text-sm text-gray-600 dark:text-gray-400">
+                        With pre-existing talent pool & DISC results
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 text-sm">
+                      {[
+                        "Day 1: JD & JSP Creation",
+                        "Day 2-3: Candidate Matching",
+                        "Day 4-5: Initial Interviews",
+                        "Day 6-7: Client Interviews",
+                        "Day 8: Selection Decision",
+                        "Day 9: Offer Extension",
+                        "Day 10-11: Background Check",
+                        "Day 12-14: Onboarding"
+                      ].map((item, i) => (
+                        <div key={i} className="flex items-start gap-2">
+                          <Clock className="w-4 h-4 text-violet-600 mt-0.5 flex-shrink-0" />
+                          <span className="text-gray-600 dark:text-gray-400">{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Specialized Roles Timeline */}
+                <Card className="p-8 bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/30 dark:to-gray-900 border-2 border-blue-200 dark:border-blue-800">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center">
+                        <Target className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-900 dark:text-white">Specialized Roles</h4>
+                        <p className="text-sm text-blue-600 dark:text-blue-400">New Talent Pool Required</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="text-center">
+                        <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">30</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Days</div>
+                      </div>
+                      <div className="flex-1 text-sm text-gray-600 dark:text-gray-400">
+                        Fresh sourcing with comprehensive evaluation
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 text-sm">
+                      {[
+                        "Day 1: JD & JSP Creation",
+                        "Day 2-4: Candidate Sourcing",
+                        "Day 5-7: Initial Interviews",
+                        "Day 8-10: Client Interviews",
+                        "Day 11: Selection Finalization",
+                        "Day 12-13: Offer & Negotiation",
+                        "Day 14-20: Background Check",
+                        "Day 21-30: Onboarding Process"
+                      ].map((item, i) => (
+                        <div key={i} className="flex items-start gap-2">
+                          <Clock className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                          <span className="text-gray-600 dark:text-gray-400">{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            </motion.div>
+
+            {/* Quality Assurance */}
+            <motion.div variants={fadeUp}>
+              <Card className="p-10 bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/30 dark:to-gray-900 border-2 border-emerald-200 dark:border-emerald-800">
+                <div className="space-y-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                      <Shield className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="text-2xl font-bold text-gray-900 dark:text-white">Quality Assurance & Continuous Improvement</h4>
+                      <p className="text-emerald-600 dark:text-emerald-400 font-medium">Post-Hire Performance Tracking</p>
+                    </div>
+                  </div>
+
+                  <div className="grid sm:grid-cols-3 gap-4">
+                    <div className="p-4 rounded-xl bg-white dark:bg-gray-900 border border-emerald-200 dark:border-emerald-800">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Calendar className="w-5 h-5 text-emerald-600" />
+                        <p className="font-bold text-gray-900 dark:text-white">90-Day Review</p>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Performance assessment against JSP criteria</p>
+                    </div>
+                    <div className="p-4 rounded-xl bg-white dark:bg-gray-900 border border-emerald-200 dark:border-emerald-800">
+                      <div className="flex items-center gap-2 mb-2">
+                        <BarChart3 className="w-5 h-5 text-emerald-600" />
+                        <p className="font-bold text-gray-900 dark:text-white">6-Month Analysis</p>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Long-term success and retention tracking</p>
+                    </div>
+                    <div className="p-4 rounded-xl bg-white dark:bg-gray-900 border border-emerald-200 dark:border-emerald-800">
+                      <div className="flex items-center gap-2 mb-2">
+                        <TrendingUp className="w-5 h-5 text-emerald-600" />
+                        <p className="font-bold text-gray-900 dark:text-white">Process Refinement</p>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Continuous optimization of scorecards and assessments</p>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
+          </motion.section>
+
           {/* Risk Management - Final Section */}
           <motion.section 
             className="space-y-12 pb-20"
