@@ -1459,4 +1459,40 @@
       opacity: 1;
     }
   }
+
+  /* Mobile Menu Links - Borderless with Soft Glow */
+  .mobile-menu-link {
+    position: relative;
+    opacity: 0.9;
+    transition: all 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .mobile-menu-link:active,
+  .mobile-menu-link:focus-visible {
+    opacity: 1;
+    transform: translateX(-4px);
+    text-shadow: 0 0 16px rgba(255, 255, 255, 0.5),
+                 0 0 24px rgba(139, 92, 246, 0.4);
+    background: 
+      radial-gradient(ellipse at center, rgba(139, 92, 246, 0.12) 0%, transparent 60%),
+      linear-gradient(135deg, rgba(91, 124, 255, 0.1) 0%, rgba(127, 61, 244, 0.1) 100%);
+    outline: none;
+  }
+
+  /* iPad More Menu Links - Soft Leftward Motion */
+  .more-menu-link {
+    position: relative;
+    opacity: 0.9;
+    transition: all 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .more-menu-link:hover,
+  .more-menu-link:focus-visible {
+    opacity: 1;
+    transform: translateX(-2px);
+    text-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
+    background: 
+      radial-gradient(ellipse at center, rgba(139, 92, 246, 0.1) 0%, transparent 60%);
+    outline: none;
+  }
 }

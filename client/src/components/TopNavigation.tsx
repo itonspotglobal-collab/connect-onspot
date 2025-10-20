@@ -719,27 +719,31 @@ export function TopNavigation() {
                   />
                 </button>
 
-                {/* More dropdown menu */}
+                {/* More dropdown menu - Translucent Glass Surface */}
                 {moreMenuOpen && (
                   <div
-                    className="absolute top-full left-0 mt-3 w-64 overflow-hidden"
+                    className="absolute top-full left-0 mt-3 w-64 overflow-hidden mega-menu-panel"
                     style={{
                       background: "rgba(44, 48, 114, 0.86)",
-                      backdropFilter: "blur(24px)",
-                      WebkitBackdropFilter: "blur(24px)",
-                      boxShadow: "0 24px 64px rgba(0, 0, 0, 0.24), 0 0 0 1px rgba(255, 255, 255, 0.08)",
+                      backdropFilter: "blur(10px) saturate(110%)",
+                      WebkitBackdropFilter: "blur(10px) saturate(110%)",
+                      border: "1px solid rgba(255, 255, 255, 0.08)",
                       borderRadius: "20px",
+                      boxShadow: "0 24px 48px rgba(0, 0, 0, 0.2)",
                       zIndex: 100,
-                      animation: "megaMenuIn 160ms ease-out",
                     }}
                     role="menu"
                   >
-                    <div className="py-3">
+                    <div className="py-3 px-2">
                       {navigationItems.slice(visibleItems).map((item) => (
                         <Link
                           key={item.path}
                           href={item.path}
-                          className="block px-5 py-3 text-sm font-semibold text-white/90 hover:bg-white/10 hover:text-white transition-all duration-160"
+                          onClick={() => setMoreMenuOpen(false)}
+                          className="more-menu-link block px-4 py-3 text-sm font-semibold text-white rounded-lg"
+                          style={{
+                            transition: 'all 180ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+                          }}
                           role="menuitem"
                           data-testid={`more-menu-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
                         >
@@ -948,15 +952,22 @@ export function TopNavigation() {
         </>
       )}
 
-      {/* Mobile Menu Panel - slide down with transform/opacity */}
+      {/* Mobile Menu Panel - One Seamless Glass Surface */}
       <div
-        className={`mobile-menu-panel md:hidden fixed left-0 right-0 bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] backdrop-blur-md border-t border-white/10 shadow-2xl overflow-hidden transition-all duration-300 ease-out ${
+        className={`mobile-menu-panel md:hidden fixed left-0 right-0 overflow-hidden transition-all ${
           isMobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         style={{
           top: 'var(--nav-h)',
-          transform: isMobileMenuOpen ? 'translateY(0)' : 'translateY(-100%)',
+          transform: isMobileMenuOpen ? 'translateY(0) scale(1)' : 'translateY(6px) scale(0.98)',
           zIndex: 40,
+          background: 'rgba(44, 48, 114, 0.86)',
+          backdropFilter: 'blur(10px) saturate(110%)',
+          WebkitBackdropFilter: 'blur(10px) saturate(110%)',
+          borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+          boxShadow: '0 24px 48px rgba(0, 0, 0, 0.2)',
+          transitionDuration: isMobileMenuOpen ? '160ms' : '150ms',
+          transitionTimingFunction: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
         }}
       >
         <div className="max-h-[calc(100vh-var(--nav-h))] overflow-y-auto px-4 py-6">
@@ -967,26 +978,34 @@ export function TopNavigation() {
 
               if (hasMegaMenu) {
                 return (
-                  <div key={item.title} className="border-b border-white/10 pb-2">
+                  <div key={item.title}>
                     <button
                       onClick={() => setMobileAccordionOpen(isExpanded ? null : item.title)}
-                      className="w-full py-3 px-4 text-left text-white font-medium flex items-center justify-between hover:bg-white/10 rounded-lg transition-colors"
+                      className={`w-full py-4 px-0 text-left text-white font-semibold flex items-center justify-between rounded-lg transition-all ${
+                        isExpanded ? 'nav-glow-active' : ''
+                      }`}
+                      style={{
+                        transition: 'all 180ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+                      }}
                       data-testid={`mobile-nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
                     >
                       <span>{item.title}</span>
                       <ChevronDown
-                        className={`h-4 w-4 transition-transform duration-200 ${
+                        className={`h-4 w-4 transition-transform ${
                           isExpanded ? "rotate-180" : ""
                         }`}
+                        style={{
+                          transition: 'transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+                        }}
                       />
                     </button>
                     
-                    {/* Accordion Content */}
+                    {/* Accordion Content - Borderless Floating Links */}
                     {isExpanded && (
                       <div 
-                        className="mt-2 space-y-2 rounded-xl p-4 border border-white/20 shadow-lg backdrop-blur-sm"
+                        className="mt-2 space-y-1 pl-4"
                         style={{
-                          background: 'linear-gradient(135deg, #4338ca 0%, #6366f1 100%)'
+                          animation: 'fadeIn 160ms ease-out',
                         }}
                       >
                         {/* Services dropdown */}
@@ -995,7 +1014,10 @@ export function TopNavigation() {
                             key={key}
                             href={service.path}
                             onClick={() => setIsMobileMenuOpen(false)}
-                            className="block py-3 px-4 bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 rounded-lg text-base transition-all duration-200 font-semibold shadow-md border border-white/10"
+                            className="mobile-menu-link block py-3 text-white font-medium"
+                            style={{
+                              transition: 'all 180ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+                            }}
                             data-testid={`mobile-link-${key}`}
                           >
                             {service.title}
@@ -1008,7 +1030,10 @@ export function TopNavigation() {
                             key={key}
                             href={category.path}
                             onClick={() => setIsMobileMenuOpen(false)}
-                            className="block py-3 px-4 bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 rounded-lg text-base transition-all duration-200 font-semibold shadow-md border border-white/10"
+                            className="mobile-menu-link block py-3 text-white font-medium"
+                            style={{
+                              transition: 'all 180ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+                            }}
                             data-testid={`mobile-link-${key}`}
                           >
                             {category.title}
@@ -1021,7 +1046,10 @@ export function TopNavigation() {
                             key={key}
                             href={section.path}
                             onClick={() => setIsMobileMenuOpen(false)}
-                            className="block py-3 px-4 bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 rounded-lg text-base transition-all duration-200 font-semibold shadow-md border border-white/10"
+                            className="mobile-menu-link block py-3 text-white font-medium"
+                            style={{
+                              transition: 'all 180ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+                            }}
                             data-testid={`mobile-link-${key}`}
                           >
                             {section.title}
@@ -1038,9 +1066,12 @@ export function TopNavigation() {
                   key={item.path}
                   href={item.path}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className={`block py-3 px-4 text-white font-medium hover:bg-white/10 rounded-lg transition-colors ${
-                    location === item.path ? "bg-white/10" : ""
+                  className={`mobile-menu-link block py-4 text-white font-semibold ${
+                    location === item.path ? "nav-glow-active" : ""
                   }`}
+                  style={{
+                    transition: 'all 180ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+                  }}
                   data-testid={`mobile-nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
                 >
                   {item.title}
