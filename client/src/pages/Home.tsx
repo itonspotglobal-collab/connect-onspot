@@ -700,7 +700,7 @@ export default function Home() {
                               <img
                                 src={integration.icon}
                                 alt={integration.name}
-                                className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 object-contain opacity-80 group-hover:opacity-100 transition-all duration-300 grayscale group-hover:grayscale-0"
+                                className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 object-contain opacity-80 group-hover:opacity-100 transition-all duration-300 grayscale group-hover:grayscale-0"
                               />
                             ) : (
                               // ⚙️ When icon is a React component (Lucide or react-icons)
