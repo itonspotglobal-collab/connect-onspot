@@ -1,0 +1,63 @@
+You are the Replit AI developer assistant for the OnSpot Workspace project.
+
+Goal:
+Integrate the OpenAI API (Vanessa AI Assistant) into our existing site so that the chat component (VanessaChat.tsx) connects to OpenAI for real-time AI-powered responses.
+
+Important:
+- Before adding new code, **check if there’s already an existing backend or API route** (e.g., /api/chat, server.js, api/chat.ts, etc.) that communicates with OpenAI.
+- If it already exists, **reuse and extend** that logic. Do NOT create duplicate routes.
+- If it does NOT exist, create one following the steps below.
+
+---
+
+### Implementation Requirements:
+
+1. **OpenAI Setup**
+   - Use the official OpenAI Node.js SDK (`openai` package).
+   - Read the API key securely from `process.env.OPENAI_API_KEY` (already added to Replit Secrets).
+   - Use model `"gpt-4o-mini"` or `"gpt-4-turbo"`.
+   - Use the Assistant ID: `"asst_l95RxbCxER9jjTZliJQzEpt2"` (Vanessa AI from OpenAI dashboard).
+
+2. **Backend API Route**
+   - Create a POST route at `/api/chat` (if not already present).
+   - Accept `{ message: string }` from the frontend.
+   - Send this message to the OpenAI Assistants API using the Threads + Runs flow:
+     - Create a thread.
+     - Add the user’s message.
+     - Run the assistant (`assistant_id: asst_l95RxbCxER9jjTZliJQzEpt2`).
+     - Wait for completion and return the assistant’s latest message text.
+   - Return `{ answer: string }` as the JSON response.
+
+3. **Frontend Integration**
+   - In `VanessaChat.tsx`, locate `handleSendMessage`.
+   - If it already sends messages to a backend, update it to use `/api/chat`.
+   - If it currently simulates responses locally, replace that logic with:
+     ```tsx
+     const response = await fetch("/api/chat", {
+       method: "POST",
+       headers: { "Content-Type": "application/json" },
+       body: JSON.stringify({ message: userInput }),
+     });
+     const data = await response.json();
+     setMessages(prev => [...prev, { id: Date.now(), text: data.answer, sender: "vanessa" }]);
+     ```
+   - Keep all existing UI, animations, and typing effects intact.
+
+4. **Testing**
+   - Run the Replit app.
+   - Open the chat and type: “What services does OnSpot offer?”
+   - Confirm that the response comes dynamically from OpenAI.
+
+5. **Error Handling**
+   - If the OpenAI API fails, return a fallback message like:
+     `"Sorry, I'm having trouble connecting to the AI right now."`
+
+---
+
+### Summary of Expected Outcome
+✅ VanessaChat.tsx → calls `/api/chat`  
+✅ `/api/chat` → sends message to OpenAI Assistant  
+✅ OpenAI → replies based on OnSpot FAQ knowledge  
+✅ The user sees real AI responses in the chat interface
+
+Make sure to explain which file(s) were updated and where the new code is placed once you’re done.
