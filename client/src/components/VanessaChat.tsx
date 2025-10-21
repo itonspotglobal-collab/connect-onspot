@@ -508,40 +508,100 @@ export function VanessaChat({
       },
     ]);
 
-    // Start streaming response from OpenAI
-    setIsStreaming(true);
+    // Detect FAQ topic
+    const detectedTopic = detectFAQTopic(userMessage);
 
-    const assistantMessageId = Date.now() + 1;
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: assistantMessageId,
-        text: "",
-        sender: "vanessa",
-        isTyping: true,
-      },
-    ]);
+    if (detectedTopic) {
+      // User asked about a FAQ topic - provide those responses
+      setSelectedTopic(detectedTopic);
 
-    try {
-      // Call OpenAI API
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMessage }),
-      });
+      const responses = faqResponses[detectedTopic];
+      let responseIndex = 0;
 
-      const data = await response.json();
+      const showNextResponse = async () => {
+        if (responseIndex < responses.length) {
+          setIsStreaming(true);
 
-      if (!response.ok || !data.answer) {
-        throw new Error(data.error || "Failed to get response");
-      }
+          // Show typing
+          const typingMessageId = Date.now() + responseIndex;
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: typingMessageId,
+              text: "",
+              sender: "vanessa",
+              isTyping: true,
+            },
+          ]);
 
-      // Simulate streaming the response word by word
-      const words = data.answer.split(" ");
+          // Simulate streaming the response
+          const response = responses[responseIndex];
+          const words = response.split(" ");
+
+          for (let i = 0; i < words.length; i++) {
+            await new Promise((resolve) =>
+              setTimeout(resolve, 40 + Math.random() * 40),
+            );
+
+            setMessages((prev) => {
+              const updated = [...prev];
+              const lastMessage = updated[updated.length - 1];
+              if (lastMessage.id === typingMessageId) {
+                lastMessage.text = words.slice(0, i + 1).join(" ");
+                lastMessage.isTyping = i < words.length - 1;
+              }
+              return updated;
+            });
+          }
+
+          setIsStreaming(false);
+          responseIndex++;
+
+          if (responseIndex < responses.length) {
+            setTimeout(showNextResponse, 1200);
+          } else {
+            // Show options after last response
+            setTimeout(() => {
+              if (detectedTopic === "talk-human") {
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    id: Date.now() + 1000,
+                    text: "Would you like me to connect you with an OnSpot Manager to discuss your setup?",
+                    sender: "vanessa",
+                  },
+                ]);
+              }
+              setTimeout(() => setShowOptions(true), 800);
+            }, 1000);
+          }
+        }
+      };
+
+      setTimeout(showNextResponse, 800);
+    } else {
+      // No FAQ topic detected - provide general response
+      setIsStreaming(true);
+
+      const assistantMessageId = Date.now() + 1;
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: assistantMessageId,
+          text: "",
+          sender: "vanessa",
+          isTyping: true,
+        },
+      ]);
+
+      // Simulate streaming tokens
+      const response =
+        "I can help you learn about OnSpot! Try asking about our pricing, how it works, our AI-human advantage, or tap one of the quick options below to get started.";
+      const words = response.split(" ");
 
       for (let i = 0; i < words.length; i++) {
         await new Promise((resolve) =>
-          setTimeout(resolve, 40 + Math.random() * 40),
+          setTimeout(resolve, 50 + Math.random() * 50),
         );
 
         setMessages((prev) => {
@@ -558,24 +618,6 @@ export function VanessaChat({
       setIsStreaming(false);
 
       // Show options after response completes
-      setTimeout(() => setShowOptions(true), 500);
-    } catch (error) {
-      console.error("Error calling chat API:", error);
-      
-      // Show error message
-      setMessages((prev) => {
-        const updated = [...prev];
-        const lastMessage = updated[updated.length - 1];
-        if (lastMessage.id === assistantMessageId) {
-          lastMessage.text = "Sorry, I'm having trouble connecting to the AI right now. Please try again later.";
-          lastMessage.isTyping = false;
-        }
-        return updated;
-      });
-
-      setIsStreaming(false);
-
-      // Show options after error
       setTimeout(() => setShowOptions(true), 500);
     }
   };

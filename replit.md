@@ -78,40 +78,12 @@ Preferred communication style: Simple, everyday language.
   - **Features**: Lead intake forms automatically create GHL contacts; when fully configured, also creates opportunities with monetary values mapped from budget ranges
   - **Error Handling**: Graceful degradation - contact creation succeeds even if opportunity creation fails
 
-### AI Assistants
-- **OpenAI Integration**: Vanessa AI Assistant powered by OpenAI Assistants API
-  - **Assistant ID**: `asst_l95RxbCxER9jjTZliJQzEpt2` (Vanessa AI from OpenAI dashboard)
-  - **Model**: GPT-4o-mini or GPT-4-turbo for intelligent, context-aware responses
-  - **API Endpoint**: `/api/chat` handles message processing using Threads + Runs workflow
-  - **Frontend**: `VanessaChat.tsx` component with streaming response simulation for smooth UX
-  - **Error Handling**: Graceful fallback messages when API is unavailable
-  - **Environment Variable**: `OPENAI_API_KEY` (configured in Replit Secrets)
-
 ### Chatbot Integration
 - **Lindy.ai**: Embedded AI chatbot for customer support and lead qualification
   - **Configuration**: Requires domain whitelisting in Lindy.ai dashboard
   - **Current Status**: Embed script installed, pending domain configuration on Lindy.ai side
 
 ## Recent Changes
-
-### OpenAI Vanessa AI Integration (October 21, 2025)
-- **Purpose**: Transform Vanessa from FAQ-based responses to dynamic AI-powered conversations using OpenAI Assistants API
-- **Backend Implementation** (`server/routes.ts`):
-  - Created `/api/chat` endpoint using OpenAI Node.js SDK
-  - Implements Assistants API Threads + Runs pattern for conversation management
-  - Uses `createAndPoll()` for automatic polling and completion handling
-  - Robust error handling with user-friendly fallback messages
-  - Assistant ID: `asst_l95RxbCxER9jjTZliJQzEpt2` configured with OnSpot knowledge base
-- **Frontend Integration** (`client/src/components/VanessaChat.tsx`):
-  - Replaced local FAQ detection with direct API calls to `/api/chat`
-  - Maintains word-by-word streaming simulation for natural typing effect
-  - Added comprehensive error handling with graceful degradation
-  - Preserves all existing UI animations and user experience
-- **Key Features**:
-  - Real-time AI responses based on OnSpot's services and offerings
-  - Maintains existing luminous glass aesthetic and premium interactions
-  - Error recovery with helpful fallback messages
-  - Seamless integration with existing chat context and message management
 
 ### Dual SEO + GEO Setup (US + Philippines) - October 19, 2025
 - **Purpose**: Comprehensive dual geo-targeting SEO implementation for US (clients) and Philippines (talent) audiences

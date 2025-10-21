@@ -32,16 +32,7 @@ import {
   Instagram,
   ChevronDown,
 } from "lucide-react";
-import {
-  SiAmazon,
-  SiQuickbooks,
-  SiReplit,
-  SiStripe,
-  SiX,
-  SiThreads,
-  SiTiktok,
-  SiYoutube,
-} from "react-icons/si";
+import { SiAmazon, SiQuickbooks, SiReplit, SiStripe, SiX, SiThreads, SiTiktok, SiYoutube } from "react-icons/si";
 import { Link } from "wouter";
 import { VanessaChat } from "@/components/VanessaChat";
 import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
@@ -106,8 +97,7 @@ const hiringModes = [
     icon: Bot,
     title: "AI Assistant",
     subtitle: "Vanessa at your service",
-    description:
-      "Instant, intelligent automation that never sleeps. Perfect for routine tasks, scheduling, and coordination.",
+    description: "Instant, intelligent automation that never sleeps. Perfect for routine tasks, scheduling, and coordination.",
     features: ["24/7 Availability", "Instant Responses", "Smart Automation"],
     gradient: "from-violet-500/20 to-blue-500/20",
     link: "#",
@@ -117,8 +107,7 @@ const hiringModes = [
     icon: Zap,
     title: "Managed Services",
     subtitle: "Full team, zero hassle",
-    description:
-      "We build, train, and manage your offshore team. You focus on growth, we handle operations.",
+    description: "We build, train, and manage your offshore team. You focus on growth, we handle operations.",
     features: ["Dedicated Team", "Full Management", "Quality Assurance"],
     gradient: "from-blue-500/20 to-cyan-500/20",
     link: "/lead-intake",
@@ -128,8 +117,7 @@ const hiringModes = [
     icon: Users,
     title: "Resourced Services",
     subtitle: "Elite talent, on-demand",
-    description:
-      "Handpicked professionals integrated into your workflow. Expert skills when you need them.",
+    description: "Handpicked professionals integrated into your workflow. Expert skills when you need them.",
     features: ["Top 5% Talent", "Flexible Scaling", "Direct Integration"],
     gradient: "from-cyan-500/20 to-violet-500/20",
     link: "/hire-talent",
@@ -142,32 +130,28 @@ const brandPillars = [
     icon: Sparkles,
     title: "AI-First Infrastructure",
     subtitle: "Intelligent by design",
-    description:
-      "Every system, every workflow, enhanced by artificial intelligence. Not automation for its own sake — intelligence that amplifies human potential.",
+    description: "Every system, every workflow, enhanced by artificial intelligence. Not automation for its own sake — intelligence that amplifies human potential.",
     gradient: "from-violet-500/20 to-purple-500/20",
   },
   {
     icon: Users,
     title: "Human-Centered Culture",
     subtitle: "People, not resources",
-    description:
-      "Elite Filipino talent treated as partners, not headcount. We invest in their growth because your success depends on theirs.",
+    description: "Elite Filipino talent treated as partners, not headcount. We invest in their growth because your success depends on theirs.",
     gradient: "from-blue-500/20 to-cyan-500/20",
   },
   {
     icon: Zap,
     title: "Connected Ecosystem",
     subtitle: "Seamless integration",
-    description:
-      "Your tools, your workflow, your systems — all working in harmony. We don't disrupt, we elevate what you've already built.",
+    description: "Your tools, your workflow, your systems — all working in harmony. We don't disrupt, we elevate what you've already built.",
     gradient: "from-cyan-500/20 to-teal-500/20",
   },
   {
     icon: TrendingUp,
     title: "Scalable Excellence",
     subtitle: "Grow without compromise",
-    description:
-      "Scale from 1 to 100 without losing quality, culture, or control. The same excellence at every stage of your journey.",
+    description: "Scale from 1 to 100 without losing quality, culture, or control. The same excellence at every stage of your journey.",
     gradient: "from-purple-500/20 to-violet-500/20",
   },
 ];
@@ -303,12 +287,8 @@ const talentProfiles = [
 export default function Home() {
   const [showVanessaChat, setShowVanessaChat] = useState(false);
   const [isScrolledPastHero, setIsScrolledPastHero] = useState(false);
-  const [expandedFooterSection, setExpandedFooterSection] = useState<
-    string | null
-  >(null);
-  const [isDesktop, setIsDesktop] = useState(
-    typeof window !== "undefined" && window.innerWidth >= 1024,
-  );
+  const [expandedFooterSection, setExpandedFooterSection] = useState<string | null>(null);
+  const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' && window.innerWidth >= 1024);
 
   // Track scroll position to determine if past hero section
   useEffect(() => {
@@ -336,9 +316,7 @@ export default function Home() {
 
   // Toggle footer accordion sections
   const toggleFooterSection = (section: string) => {
-    setExpandedFooterSection(
-      expandedFooterSection === section ? null : section,
-    );
+    setExpandedFooterSection(expandedFooterSection === section ? null : section);
   };
 
   return (
@@ -409,10 +387,7 @@ export default function Home() {
       </div>
 
       {/* Trusted By Section - Premium Apple-Style Design */}
-      <div
-        className="relative overflow-hidden bg-[#f7f9ff] dark:bg-background"
-        style={{ padding: "clamp(4rem, 8vw, 8rem) 0" }}
-      >
+      <div className="relative overflow-hidden bg-[#f7f9ff] dark:bg-background" style={{ padding: 'clamp(4rem, 8vw, 8rem) 0' }}>
         {/* Centered 1px highlight line with soft contact shadow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[85%] pointer-events-none">
           {/* Soft contact shadow for depth */}
@@ -428,27 +403,26 @@ export default function Home() {
               <p className="text-xs sm:text-sm font-medium uppercase tracking-[0.2em] bg-gradient-to-r from-violet-600/80 to-blue-600/80 bg-clip-text text-transparent">
                 Trusted by
               </p>
-              <h2
+              <h2 
                 className="font-light tracking-tight leading-tight mx-auto"
                 style={{
-                  fontSize: "clamp(1.75rem, 4vw, 3rem)",
-                  textWrap: "balance",
-                  maxWidth: "62ch",
+                  fontSize: 'clamp(1.75rem, 4vw, 3rem)',
+                  textWrap: 'balance',
+                  maxWidth: '62ch'
                 }}
               >
-                Trusted by global brands, hundreds of entrepreneurs, and
-                thousands of professionals worldwide.
+                Trusted by global brands, hundreds of entrepreneurs, and thousands of professionals worldwide.
               </h2>
             </div>
 
             {/* Auto-fit Logo Grid */}
             <div className="relative py-8 sm:py-12">
-              <div
+              <div 
                 className="mx-auto items-center justify-items-center"
                 style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-                  gap: "clamp(2rem, 4vw, 3rem)",
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                  gap: 'clamp(2rem, 4vw, 3rem)'
                 }}
               >
                 {trustedBrands.map((brand, index) => (
@@ -465,7 +439,7 @@ export default function Home() {
                     <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                       <div className="absolute inset-0 bg-gradient-to-r from-violet-500/20 to-blue-500/20 blur-xl rounded-full scale-150"></div>
                     </div>
-
+                    
                     <img
                       src={brand.logo}
                       alt={brand.name}
@@ -483,7 +457,7 @@ export default function Home() {
       <div className="relative py-24 sm:py-32 overflow-hidden">
         {/* Subtle background gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-background via-background/95 to-background pointer-events-none"></div>
-
+        
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
           {/* Section Title */}
           <div className="text-center mb-16 sm:mb-20 space-y-4">
@@ -504,33 +478,27 @@ export default function Home() {
                 data-testid={`superhuman-card-${index}`}
               >
                 {/* Floating glow effect */}
-                <div
-                  className={`absolute inset-0 bg-gradient-to-br ${item.gradient} opacity-0 group-hover:opacity-100 blur-2xl transition-opacity duration-700 rounded-3xl scale-105`}
-                ></div>
-
+                <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient} opacity-0 group-hover:opacity-100 blur-2xl transition-opacity duration-700 rounded-3xl scale-105`}></div>
+                
                 {/* Glass card */}
                 <div className="relative bg-background/40 backdrop-blur-xl border border-white/10 rounded-3xl p-8 sm:p-10 transition-all duration-500 group-hover:border-white/20 group-hover:bg-background/50 h-full flex flex-col">
                   {/* Icon with gradient background */}
-                  <div
-                    className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br ${item.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500`}
-                  >
+                  <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br ${item.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500`}>
                     <item.icon className="w-7 h-7 sm:w-8 sm:h-8 text-foreground" />
                   </div>
-
+                  
                   {/* Title */}
                   <h3 className="text-xl sm:text-2xl font-semibold mb-3 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
                     {item.title}
                   </h3>
-
+                  
                   {/* Subtitle */}
                   <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
                     {item.subtitle}
                   </p>
-
+                  
                   {/* Subtle bottom glow line */}
-                  <div
-                    className={`absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r ${item.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
-                  ></div>
+                  <div className={`absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r ${item.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
                 </div>
               </div>
             ))}
@@ -545,7 +513,7 @@ export default function Home() {
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-violet-500/20 via-blue-500/10 to-transparent rounded-full blur-3xl opacity-60"></div>
         </div>
-
+        
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
           <div className="max-w-5xl mx-auto">
             <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
@@ -559,7 +527,7 @@ export default function Home() {
                     Advantage
                   </span>
                 </h2>
-
+                
                 <div className="space-y-4">
                   <p className="text-lg sm:text-xl lg:text-2xl font-light text-foreground/90 leading-relaxed">
                     The perfect symbiosis of automation and empathy.
@@ -578,7 +546,7 @@ export default function Home() {
                   {/* Luminous swirl effect */}
                   <div className="absolute inset-0 bg-gradient-to-tr from-violet-500/30 via-blue-500/30 to-cyan-500/30 rounded-full blur-3xl opacity-80 animate-gentle-float"></div>
                   <div className="absolute inset-0 bg-gradient-to-bl from-blue-500/40 via-violet-500/40 to-purple-500/40 rounded-full blur-2xl opacity-70 animate-slow-spin"></div>
-
+                  
                   {/* Center glow */}
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="w-32 h-32 sm:w-40 sm:h-40 bg-gradient-to-r from-violet-400 to-blue-400 rounded-full blur-xl opacity-60"></div>
@@ -594,7 +562,7 @@ export default function Home() {
       <div className="relative py-24 sm:py-32 overflow-hidden">
         {/* Background gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-background via-violet-500/5 to-background"></div>
-
+        
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
           {/* Section Title */}
           <div className="text-center mb-16 sm:mb-20 space-y-3">
@@ -613,7 +581,7 @@ export default function Home() {
               <div className="relative group">
                 {/* Pulsing glow effect */}
                 <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-blue-600 rounded-full blur-2xl opacity-60 group-hover:opacity-80 transition-opacity duration-500 animate-gentle-pulse"></div>
-
+                
                 {/* Core circle */}
                 <div className="relative w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 rounded-full bg-gradient-to-br from-violet-600 to-blue-600 flex items-center justify-center border-2 border-white/20">
                   <Sparkles className="w-10 h-10 sm:w-12 sm:h-12 text-white" />
@@ -629,10 +597,10 @@ export default function Home() {
                 const radius = 180; // Base radius for mobile
                 const smRadius = 220; // Tablet
                 const lgRadius = 280; // Desktop
-
+                
                 // Calculate positions for different screen sizes
-                const x = Math.cos(((angle - 90) * Math.PI) / 180);
-                const y = Math.sin(((angle - 90) * Math.PI) / 180);
+                const x = Math.cos((angle - 90) * Math.PI / 180);
+                const y = Math.sin((angle - 90) * Math.PI / 180);
 
                 return (
                   <div
@@ -649,7 +617,7 @@ export default function Home() {
                       width={radius * 2.5}
                       height={radius * 2.5}
                       style={{
-                        transform: "translate(-50%, -50%)",
+                        transform: 'translate(-50%, -50%)',
                       }}
                     >
                       <line
@@ -662,23 +630,9 @@ export default function Home() {
                         className="animate-pulse"
                       />
                       <defs>
-                        <linearGradient
-                          id="lineGradient"
-                          x1="0%"
-                          y1="0%"
-                          x2="100%"
-                          y2="0%"
-                        >
-                          <stop
-                            offset="0%"
-                            stopColor="rgb(139, 92, 246)"
-                            stopOpacity="0.8"
-                          />
-                          <stop
-                            offset="100%"
-                            stopColor="rgb(59, 130, 246)"
-                            stopOpacity="0.8"
-                          />
+                        <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                          <stop offset="0%" stopColor="rgb(139, 92, 246)" stopOpacity="0.8" />
+                          <stop offset="100%" stopColor="rgb(59, 130, 246)" stopOpacity="0.8" />
                         </linearGradient>
                       </defs>
                     </svg>
@@ -687,7 +641,7 @@ export default function Home() {
                     <div className="relative">
                       {/* Hover glow */}
                       <div className="absolute inset-0 bg-gradient-to-r from-violet-500/30 to-blue-500/30 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 scale-150"></div>
-
+                      
                       {/* Glass card */}
                       <div className="relative bg-background/40 backdrop-blur-xl border border-white/10 rounded-2xl p-3 sm:p-4 transition-all duration-500 group-hover:border-white/30 group-hover:bg-background/60 min-w-[80px] sm:min-w-[100px] lg:min-w-[120px]">
                         <div className="flex flex-col items-center justify-center gap-2">
@@ -710,10 +664,7 @@ export default function Home() {
             {/* Decorative elements */}
             <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
               <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-violet-500/10 rounded-full blur-3xl animate-gentle-float"></div>
-              <div
-                className="absolute bottom-1/4 right-1/4 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl animate-gentle-float"
-                style={{ animationDelay: "2s" }}
-              ></div>
+              <div className="absolute bottom-1/4 right-1/4 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl animate-gentle-float" style={{ animationDelay: '2s' }}></div>
             </div>
           </div>
 
@@ -764,7 +715,7 @@ export default function Home() {
                 >
                   {/* Breathing glow effect */}
                   <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 to-blue-500/20 rounded-3xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 scale-110 animate-gentle-pulse"></div>
-
+                  
                   {/* Glass Story Card */}
                   <div className="relative bg-background/30 backdrop-blur-xl border border-white/10 rounded-3xl p-8 lg:p-10 transition-all duration-700 group-hover:border-white/20 group-hover:bg-background/40 h-full flex flex-col">
                     {/* Profile */}
@@ -779,12 +730,8 @@ export default function Home() {
                         <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 to-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
                       </div>
                       <div className="flex-1">
-                        <p className="font-semibold text-sm lg:text-base">
-                          {story.name}
-                        </p>
-                        <p className="text-xs lg:text-sm text-muted-foreground">
-                          {story.role}
-                        </p>
+                        <p className="font-semibold text-sm lg:text-base">{story.name}</p>
+                        <p className="text-xs lg:text-sm text-muted-foreground">{story.role}</p>
                       </div>
                     </div>
 
@@ -821,20 +768,17 @@ export default function Home() {
 
             {/* Mobile Horizontal Scroll */}
             <div className="md:hidden overflow-x-auto scrollbar-hide -mx-4 px-4">
-              <div
-                className="flex gap-6 pb-4"
-                style={{ scrollSnapType: "x mandatory" }}
-              >
+              <div className="flex gap-6 pb-4" style={{ scrollSnapType: 'x mandatory' }}>
                 {transformationStories.map((story, index) => (
                   <div
                     key={index}
                     className="group relative flex-shrink-0 w-[85vw] max-w-[400px]"
-                    style={{ scrollSnapAlign: "center" }}
+                    style={{ scrollSnapAlign: 'center' }}
                     data-testid={`story-card-mobile-${index}`}
                   >
                     {/* Breathing glow effect */}
                     <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 to-blue-500/20 rounded-3xl blur-2xl opacity-50 animate-gentle-pulse"></div>
-
+                    
                     {/* Glass Story Card */}
                     <div className="relative bg-background/30 backdrop-blur-xl border border-white/10 rounded-3xl p-6 h-full flex flex-col">
                       {/* Profile */}
@@ -848,9 +792,7 @@ export default function Home() {
                         </div>
                         <div className="flex-1">
                           <p className="font-semibold text-sm">{story.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {story.role}
-                          </p>
+                          <p className="text-xs text-muted-foreground">{story.role}</p>
                         </div>
                       </div>
 
@@ -905,44 +847,12 @@ export default function Home() {
       <div className="relative py-24 sm:py-32 lg:py-40 overflow-hidden">
         {/* Network lines background */}
         <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-background">
-          <svg
-            className="absolute inset-0 w-full h-full opacity-20"
-            xmlns="http://www.w3.org/2000/svg"
-          >
+          <svg className="absolute inset-0 w-full h-full opacity-20" xmlns="http://www.w3.org/2000/svg">
             <defs>
-              <pattern
-                id="network-pattern"
-                x="0"
-                y="0"
-                width="100"
-                height="100"
-                patternUnits="userSpaceOnUse"
-              >
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="1"
-                  fill="currentColor"
-                  className="text-violet-500/40"
-                />
-                <line
-                  x1="50"
-                  y1="50"
-                  x2="100"
-                  y2="50"
-                  stroke="currentColor"
-                  strokeWidth="0.5"
-                  className="text-violet-500/20"
-                />
-                <line
-                  x1="50"
-                  y1="50"
-                  x2="50"
-                  y2="100"
-                  stroke="currentColor"
-                  strokeWidth="0.5"
-                  className="text-blue-500/20"
-                />
+              <pattern id="network-pattern" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
+                <circle cx="50" cy="50" r="1" fill="currentColor" className="text-violet-500/40" />
+                <line x1="50" y1="50" x2="100" y2="50" stroke="currentColor" strokeWidth="0.5" className="text-violet-500/20" />
+                <line x1="50" y1="50" x2="50" y2="100" stroke="currentColor" strokeWidth="0.5" className="text-blue-500/20" />
               </pattern>
             </defs>
             <rect width="100%" height="100%" fill="url(#network-pattern)" />
@@ -952,10 +862,7 @@ export default function Home() {
         {/* Gradient motion overlay */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-1/4 -left-1/4 w-[800px] h-[800px] bg-gradient-radial from-violet-500/10 to-transparent rounded-full blur-3xl animate-slow-spin"></div>
-          <div
-            className="absolute bottom-1/4 -right-1/4 w-[800px] h-[800px] bg-gradient-radial from-blue-500/10 to-transparent rounded-full blur-3xl animate-slow-spin"
-            style={{ animationDelay: "5s" }}
-          ></div>
+          <div className="absolute bottom-1/4 -right-1/4 w-[800px] h-[800px] bg-gradient-radial from-blue-500/10 to-transparent rounded-full blur-3xl animate-slow-spin" style={{ animationDelay: '5s' }}></div>
         </div>
 
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
@@ -984,16 +891,12 @@ export default function Home() {
                 data-testid={`hiring-mode-${index}`}
               >
                 {/* Floating glow effect */}
-                <div
-                  className={`absolute inset-0 bg-gradient-to-br ${mode.gradient} opacity-0 group-hover:opacity-100 blur-2xl transition-opacity duration-700 rounded-3xl scale-110 animate-gentle-pulse`}
-                ></div>
-
+                <div className={`absolute inset-0 bg-gradient-to-br ${mode.gradient} opacity-0 group-hover:opacity-100 blur-2xl transition-opacity duration-700 rounded-3xl scale-110 animate-gentle-pulse`}></div>
+                
                 {/* Glass Card */}
                 <div className="relative bg-background/30 backdrop-blur-xl border border-white/10 rounded-3xl p-8 lg:p-10 transition-all duration-700 group-hover:border-white/20 group-hover:bg-background/40 h-full flex flex-col group-hover:transform group-hover:scale-[1.02]">
                   {/* Icon */}
-                  <div
-                    className={`w-16 h-16 lg:w-20 lg:h-20 rounded-2xl bg-gradient-to-br ${mode.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500`}
-                  >
+                  <div className={`w-16 h-16 lg:w-20 lg:h-20 rounded-2xl bg-gradient-to-br ${mode.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500`}>
                     <mode.icon className="w-8 h-8 lg:w-10 lg:h-10 text-foreground" />
                   </div>
 
@@ -1019,9 +922,7 @@ export default function Home() {
                     {mode.features.map((feature, idx) => (
                       <div key={idx} className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-violet-500 flex-shrink-0" />
-                        <span className="text-sm text-muted-foreground">
-                          {feature}
-                        </span>
+                        <span className="text-sm text-muted-foreground">{feature}</span>
                       </div>
                     ))}
                   </div>
@@ -1030,12 +931,8 @@ export default function Home() {
                   <div className="mt-auto pt-6 border-t border-white/10">
                     <Button
                       variant={index === 0 ? "default" : "outline"}
-                      className={`w-full min-h-[48px] ${index === 0 ? "bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700" : ""}`}
-                      onClick={
-                        mode.link === "#"
-                          ? () => setShowVanessaChat(true)
-                          : undefined
-                      }
+                      className={`w-full min-h-[48px] ${index === 0 ? 'bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700' : ''}`}
+                      onClick={mode.link === "#" ? () => setShowVanessaChat(true) : undefined}
                       asChild={mode.link !== "#"}
                     >
                       {mode.link === "#" ? (
@@ -1053,9 +950,7 @@ export default function Home() {
                   </div>
 
                   {/* Bottom glow line */}
-                  <div
-                    className={`absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r ${mode.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-700`}
-                  ></div>
+                  <div className={`absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r ${mode.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-700`}></div>
                 </div>
               </div>
             ))}
@@ -1067,14 +962,11 @@ export default function Home() {
       <div className="relative py-24 sm:py-32 lg:py-40 overflow-hidden">
         {/* Subtle gradient background */}
         <div className="absolute inset-0 bg-gradient-to-b from-background via-violet-500/5 to-background"></div>
-
+        
         {/* Ambient glow orbs */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-1/3 left-1/4 w-[600px] h-[600px] bg-gradient-radial from-violet-500/10 to-transparent rounded-full blur-3xl animate-gentle-pulse"></div>
-          <div
-            className="absolute bottom-1/3 right-1/4 w-[600px] h-[600px] bg-gradient-radial from-blue-500/10 to-transparent rounded-full blur-3xl animate-gentle-pulse"
-            style={{ animationDelay: "3s" }}
-          ></div>
+          <div className="absolute bottom-1/3 right-1/4 w-[600px] h-[600px] bg-gradient-radial from-blue-500/10 to-transparent rounded-full blur-3xl animate-gentle-pulse" style={{ animationDelay: '3s' }}></div>
         </div>
 
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
@@ -1090,8 +982,7 @@ export default function Home() {
               </span>
             </h2>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              We're not just a service provider. We're architects of a future
-              where AI and human brilliance work as one.
+              We're not just a service provider. We're architects of a future where AI and human brilliance work as one.
             </p>
           </div>
 
@@ -1107,16 +998,12 @@ export default function Home() {
                 data-testid={`brand-pillar-${index}`}
               >
                 {/* Hover glow effect */}
-                <div
-                  className={`absolute inset-0 bg-gradient-to-br ${pillar.gradient} opacity-0 group-hover:opacity-100 blur-3xl transition-opacity duration-700 rounded-3xl`}
-                ></div>
-
+                <div className={`absolute inset-0 bg-gradient-to-br ${pillar.gradient} opacity-0 group-hover:opacity-100 blur-3xl transition-opacity duration-700 rounded-3xl`}></div>
+                
                 {/* Glass card */}
                 <div className="relative bg-background/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-8 sm:p-10 lg:p-12 transition-all duration-700 group-hover:border-white/30 group-hover:bg-background/50 h-full flex flex-col">
                   {/* Icon */}
-                  <div
-                    className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br ${pillar.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500`}
-                  >
+                  <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br ${pillar.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500`}>
                     <pillar.icon className="w-7 h-7 sm:w-8 sm:h-8 text-foreground" />
                   </div>
 
@@ -1124,7 +1011,7 @@ export default function Home() {
                   <h3 className="text-xl sm:text-2xl lg:text-3xl font-semibold mb-2 transition-all duration-500 group-hover:bg-gradient-to-r group-hover:from-violet-600 group-hover:to-blue-600 group-hover:bg-clip-text group-hover:text-transparent">
                     {pillar.title}
                   </h3>
-
+                  
                   {/* Subtitle */}
                   <p className="text-sm sm:text-base text-muted-foreground mb-6">
                     {pillar.subtitle}
@@ -1136,9 +1023,7 @@ export default function Home() {
                   </p>
 
                   {/* Bottom accent line */}
-                  <div
-                    className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r ${pillar.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-700`}
-                  ></div>
+                  <div className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r ${pillar.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-700`}></div>
                 </div>
               </div>
             ))}
@@ -1190,21 +1075,15 @@ export default function Home() {
                     <div className="w-10 h-10 rounded-full bg-gradient-to-r from-violet-600 to-blue-600 flex items-center justify-center">
                       <Bot className="w-5 h-5 text-white" />
                     </div>
-                    <span className="text-lg font-semibold">
-                      Vanessa AI Assistant
-                    </span>
+                    <span className="text-lg font-semibold">Vanessa AI Assistant</span>
                   </div>
                   <div className="space-y-3">
                     {/* Chat bubbles */}
                     <div className="bg-violet-500/20 border border-violet-500/30 rounded-2xl rounded-tl-sm p-4">
-                      <p className="text-sm text-foreground/90">
-                        How can I help you scale today?
-                      </p>
+                      <p className="text-sm text-foreground/90">How can I help you scale today?</p>
                     </div>
                     <div className="bg-blue-500/20 border border-blue-500/30 rounded-2xl rounded-tr-sm p-4 ml-8">
-                      <p className="text-sm text-foreground/90">
-                        Find me 3 data analysts
-                      </p>
+                      <p className="text-sm text-foreground/90">Find me 3 data analysts</p>
                     </div>
                   </div>
                 </div>
@@ -1225,20 +1104,14 @@ export default function Home() {
 
                   {/* Managed Team */}
                   <div className="bg-background/40 border border-white/10 rounded-2xl p-5">
-                    <span className="text-sm font-semibold mb-3 block">
-                      Managed Team
-                    </span>
+                    <span className="text-sm font-semibold mb-3 block">Managed Team</span>
                     <div className="flex -space-x-2">
                       {talentProfiles.slice(0, 4).map((profile, i) => (
                         <div
                           key={i}
                           className="w-8 h-8 rounded-full border-2 border-background overflow-hidden"
                         >
-                          <img
-                            src={profile.photo}
-                            alt={profile.name}
-                            className="w-full h-full object-cover"
-                          />
+                          <img src={profile.photo} alt={profile.name} className="w-full h-full object-cover" />
                         </div>
                       ))}
                     </div>
@@ -1246,9 +1119,7 @@ export default function Home() {
 
                   {/* KPI Dashboard */}
                   <div className="bg-background/40 border border-white/10 rounded-2xl p-5">
-                    <span className="text-sm font-semibold mb-3 block">
-                      Live KPIs
-                    </span>
+                    <span className="text-sm font-semibold mb-3 block">Live KPIs</span>
                     <div className="grid grid-cols-3 gap-3">
                       <div className="text-center">
                         <p className="text-2xl font-bold text-green-500">98%</p>
@@ -1256,14 +1127,10 @@ export default function Home() {
                       </div>
                       <div className="text-center">
                         <p className="text-2xl font-bold text-blue-500">24h</p>
-                        <p className="text-xs text-muted-foreground">
-                          Response
-                        </p>
+                        <p className="text-xs text-muted-foreground">Response</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-violet-500">
-                          5.0
-                        </p>
+                        <p className="text-2xl font-bold text-violet-500">5.0</p>
                         <p className="text-xs text-muted-foreground">Rating</p>
                       </div>
                     </div>
@@ -1273,10 +1140,7 @@ export default function Home() {
 
               {/* Decorative glow elements */}
               <div className="absolute -top-10 -left-10 w-40 h-40 bg-violet-500/20 rounded-full blur-3xl animate-gentle-float"></div>
-              <div
-                className="absolute -bottom-10 -right-10 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl animate-gentle-float"
-                style={{ animationDelay: "1s" }}
-              ></div>
+              <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl animate-gentle-float" style={{ animationDelay: "1s" }}></div>
             </div>
           </div>
         </div>
@@ -1313,16 +1177,12 @@ export default function Home() {
                     alt={profile.name}
                     className="w-full h-full object-cover blur-sm group-hover:blur-none opacity-60 group-hover:opacity-100 transition-all duration-500"
                   />
-
+                  
                   {/* Semi-transparent gradient overlay with name/title - reveals on hover */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end p-4">
                     <div className="text-white transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
-                      <p className="font-semibold text-sm sm:text-base leading-tight">
-                        {profile.name}
-                      </p>
-                      <p className="text-xs sm:text-sm text-white/90 mt-1">
-                        {profile.role}
-                      </p>
+                      <p className="font-semibold text-sm sm:text-base leading-tight">{profile.name}</p>
+                      <p className="text-xs sm:text-sm text-white/90 mt-1">{profile.role}</p>
                     </div>
                   </div>
 
@@ -1355,7 +1215,7 @@ export default function Home() {
                   Superhuman?
                 </span>
               </h2>
-
+              
               <div className="space-y-4 max-w-2xl mx-auto">
                 <p className="text-lg sm:text-xl lg:text-2xl font-light text-foreground/90">
                   AI first. Humans when it matters.
@@ -1406,20 +1266,20 @@ export default function Home() {
 
         <div className="container mx-auto px-4 sm:px-6 py-16 sm:py-20 lg:py-24">
           {/* Footer Grid - Fluid responsive layout */}
-          <div
+          <div 
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 max-w-7xl mx-auto transition-all duration-500 ease-in-out"
             style={{
-              rowGap: "clamp(4px, 0.6vh, 8px)",
-              columnGap: "clamp(24px, 3vw, 48px)",
+              rowGap: 'clamp(4px, 0.6vh, 8px)',
+              columnGap: 'clamp(24px, 3vw, 48px)'
             }}
           >
             {/* Brand Section - Spans 2 columns on tablet/desktop */}
-            <div
+            <div 
               className="md:col-span-2 lg:col-span-2 md:pb-0 md:border-b-0"
               style={{
-                paddingBottom: "clamp(16px, 2.5vh, 24px)",
-                borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
-                transition: "all 0.3s ease-in-out",
+                paddingBottom: 'clamp(16px, 2.5vh, 24px)',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+                transition: 'all 0.3s ease-in-out'
               }}
             >
               <div className="space-y-6 sm:space-y-8 relative flex flex-col items-center md:items-start transition-all duration-300">
@@ -1432,124 +1292,80 @@ export default function Home() {
                   />
                   <div className="absolute -inset-2 bg-gradient-to-r from-violet-500/20 to-blue-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
                 </div>
-
+                
                 <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-md text-center md:text-left transition-all duration-300">
-                  The growth engine of the modern era. Built by entrepreneurs,
-                  for entrepreneurs—our Superhuman System fuses AI-first
-                  infrastructure with human excellence to scale businesses and
-                  empower people to perform beyond limits.
+                  The growth engine of the modern era. Built by entrepreneurs, for entrepreneurs—our Superhuman System fuses AI-first infrastructure with human excellence to scale businesses and empower people to perform beyond limits.
                 </p>
               </div>
-
+              
               {/* Social Icons - Single horizontal row, never wrapping */}
-              <div
-                className="flex gap-2 sm:gap-3 justify-center md:justify-start overflow-x-auto scrollbar-hide transition-all duration-300"
-                style={{
-                  flexWrap: "nowrap",
-                  marginTop: "clamp(20px, 3vh, 32px)",
+              <div 
+                className="flex gap-2 sm:gap-3 justify-center md:justify-start overflow-x-auto scrollbar-hide transition-all duration-300" 
+                style={{ 
+                  flexWrap: 'nowrap',
+                  marginTop: 'clamp(20px, 3vh, 32px)'
                 }}
               >
-                <a
-                  href="#"
-                  className="relative w-11 h-11 rounded-full bg-white/[0.03] backdrop-blur-sm border border-slate-300 dark:border-white/10 hover:bg-gradient-to-br hover:from-violet-500/30 hover:to-blue-500/30 hover:border-violet-400/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group"
-                  data-testid="social-linkedin"
-                >
+                <a href="#" className="relative w-11 h-11 rounded-full bg-white/[0.03] backdrop-blur-sm border border-slate-300 dark:border-white/10 hover:bg-gradient-to-br hover:from-violet-500/30 hover:to-blue-500/30 hover:border-violet-400/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group" data-testid="social-linkedin">
                   <Linkedin className="w-5 h-5 text-slate-600 dark:text-slate-300 group-hover:text-violet-600 dark:group-hover:text-violet-400 group-hover:scale-110 transition-all duration-300" />
                 </a>
-                <a
-                  href="#"
-                  className="relative w-11 h-11 rounded-full bg-white/[0.03] backdrop-blur-sm border border-slate-300 dark:border-white/10 hover:bg-gradient-to-br hover:from-violet-500/30 hover:to-blue-500/30 hover:border-violet-400/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group"
-                  data-testid="social-facebook"
-                >
+                <a href="#" className="relative w-11 h-11 rounded-full bg-white/[0.03] backdrop-blur-sm border border-slate-300 dark:border-white/10 hover:bg-gradient-to-br hover:from-violet-500/30 hover:to-blue-500/30 hover:border-violet-400/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group" data-testid="social-facebook">
                   <Facebook className="w-5 h-5 text-slate-600 dark:text-slate-300 group-hover:text-violet-600 dark:group-hover:text-violet-400 group-hover:scale-110 transition-all duration-300" />
                 </a>
-                <a
-                  href="#"
-                  className="relative w-11 h-11 rounded-full bg-white/[0.03] backdrop-blur-sm border border-slate-300 dark:border-white/10 hover:bg-gradient-to-br hover:from-violet-500/30 hover:to-blue-500/30 hover:border-violet-400/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group"
-                  data-testid="social-x"
-                >
+                <a href="#" className="relative w-11 h-11 rounded-full bg-white/[0.03] backdrop-blur-sm border border-slate-300 dark:border-white/10 hover:bg-gradient-to-br hover:from-violet-500/30 hover:to-blue-500/30 hover:border-violet-400/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group" data-testid="social-x">
                   <SiX className="w-4 h-4 text-slate-600 dark:text-slate-300 group-hover:text-violet-600 dark:group-hover:text-violet-400 group-hover:scale-110 transition-all duration-300" />
                 </a>
-                <a
-                  href="#"
-                  className="relative w-11 h-11 rounded-full bg-white/[0.03] backdrop-blur-sm border border-slate-300 dark:border-white/10 hover:bg-gradient-to-br hover:from-violet-500/30 hover:to-blue-500/30 hover:border-violet-400/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group"
-                  data-testid="social-threads"
-                >
+                <a href="#" className="relative w-11 h-11 rounded-full bg-white/[0.03] backdrop-blur-sm border border-slate-300 dark:border-white/10 hover:bg-gradient-to-br hover:from-violet-500/30 hover:to-blue-500/30 hover:border-violet-400/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group" data-testid="social-threads">
                   <SiThreads className="w-4 h-4 text-slate-600 dark:text-slate-300 group-hover:text-violet-600 dark:group-hover:text-violet-400 group-hover:scale-110 transition-all duration-300" />
                 </a>
-                <a
-                  href="#"
-                  className="relative w-11 h-11 rounded-full bg-white/[0.03] backdrop-blur-sm border border-slate-300 dark:border-white/10 hover:bg-gradient-to-br hover:from-violet-500/30 hover:to-blue-500/30 hover:border-violet-400/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group"
-                  data-testid="social-instagram"
-                >
+                <a href="#" className="relative w-11 h-11 rounded-full bg-white/[0.03] backdrop-blur-sm border border-slate-300 dark:border-white/10 hover:bg-gradient-to-br hover:from-violet-500/30 hover:to-blue-500/30 hover:border-violet-400/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group" data-testid="social-instagram">
                   <Instagram className="w-5 h-5 text-slate-600 dark:text-slate-300 group-hover:text-violet-600 dark:group-hover:text-violet-400 group-hover:scale-110 transition-all duration-300" />
                 </a>
-                <a
-                  href="#"
-                  className="relative w-11 h-11 rounded-full bg-white/[0.03] backdrop-blur-sm border border-slate-300 dark:border-white/10 hover:bg-gradient-to-br hover:from-violet-500/30 hover:to-blue-500/30 hover:border-violet-400/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group"
-                  data-testid="social-tiktok"
-                >
+                <a href="#" className="relative w-11 h-11 rounded-full bg-white/[0.03] backdrop-blur-sm border border-slate-300 dark:border-white/10 hover:bg-gradient-to-br hover:from-violet-500/30 hover:to-blue-500/30 hover:border-violet-400/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group" data-testid="social-tiktok">
                   <SiTiktok className="w-4 h-4 text-slate-600 dark:text-slate-300 group-hover:text-violet-600 dark:group-hover:text-violet-400 group-hover:scale-110 transition-all duration-300" />
                 </a>
-                <a
-                  href="#"
-                  className="relative w-11 h-11 rounded-full bg-white/[0.03] backdrop-blur-sm border border-slate-300 dark:border-white/10 hover:bg-gradient-to-br hover:from-violet-500/30 hover:to-blue-500/30 hover:border-violet-400/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group"
-                  data-testid="social-youtube"
-                >
+                <a href="#" className="relative w-11 h-11 rounded-full bg-white/[0.03] backdrop-blur-sm border border-slate-300 dark:border-white/10 hover:bg-gradient-to-br hover:from-violet-500/30 hover:to-blue-500/30 hover:border-violet-400/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group" data-testid="social-youtube">
                   <SiYoutube className="w-5 h-5 text-slate-600 dark:text-slate-300 group-hover:text-violet-600 dark:group-hover:text-violet-400 group-hover:scale-110 transition-all duration-300" />
                 </a>
               </div>
             </div>
 
             {/* Navigation Section */}
-            <div
+            <div 
               className="md:space-y-6 md:border-b-0 transition-all duration-300"
               style={{
-                paddingBottom: "clamp(4px, 0.6vh, 8px)",
-                borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
+                paddingBottom: 'clamp(4px, 0.6vh, 8px)',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.06)'
               }}
             >
               <button
-                onClick={() => toggleFooterSection("navigation")}
+                onClick={() => toggleFooterSection('navigation')}
                 className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left"
                 style={{
-                  padding: "clamp(4px, 0.6vh, 8px) 0",
+                  padding: 'clamp(4px, 0.6vh, 8px) 0'
                 }}
                 data-testid="footer-accordion-navigation"
               >
                 <h3 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-white tracking-wide text-left">
                   Navigation
                 </h3>
-                <ChevronDown
-                  className={`w-5 h-5 text-slate-600 dark:text-slate-400 transition-transform duration-300 md:hidden ${expandedFooterSection === "navigation" ? "rotate-180" : ""}`}
-                />
+                <ChevronDown className={`w-5 h-5 text-slate-600 dark:text-slate-400 transition-transform duration-300 md:hidden ${expandedFooterSection === 'navigation' ? 'rotate-180' : ''}`} />
               </button>
-
-              <div
+              
+              <div 
                 className={`space-y-3 transition-all duration-300 md:!opacity-100 md:!max-h-none md:!block ${
-                  expandedFooterSection === "navigation"
-                    ? "opacity-100 max-h-96"
-                    : "opacity-0 max-h-0 overflow-hidden"
+                  expandedFooterSection === 'navigation' 
+                    ? 'opacity-100 max-h-96' 
+                    : 'opacity-0 max-h-0 overflow-hidden'
                 }`}
                 style={{
-                  marginTop:
-                    expandedFooterSection === "navigation"
-                      ? "clamp(4px, 0.5vh, 6px)"
-                      : "0",
+                  marginTop: expandedFooterSection === 'navigation' ? 'clamp(4px, 0.5vh, 6px)' : '0'
                 }}
               >
-                <Link
-                  href="/hire-talent"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
-                  data-testid="footer-link-hire"
-                >
+                <Link href="/hire-talent" className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-hire">
                   Hire Talent
                 </Link>
-                <Link
-                  href="/lead-intake"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
-                  data-testid="footer-link-managed"
-                >
+                <Link href="/lead-intake" className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-managed">
                   Managed Services
                 </Link>
                 <Link
@@ -1559,206 +1375,127 @@ export default function Home() {
                 >
                   AI Assistant
                 </Link>
-                <Link
-                  href="/waitlist"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
-                  data-testid="footer-link-waitlist"
-                >
+                <Link href="/waitlist" className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-waitlist">
                   Join Waitlist
                 </Link>
-                <Link
-                  href="/careers"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
-                  data-testid="footer-link-careers"
-                >
+                <Link href="/careers" className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-careers">
                   Careers
                 </Link>
-                <Link
-                  href="/powerapp"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
-                  data-testid="footer-link-powerapp"
-                >
+                <Link href="/powerapp" className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-powerapp">
                   Powerapp
                 </Link>
-                <Link
-                  href="/pricing"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
-                  data-testid="footer-link-pricing"
-                >
+                <Link href="/pricing" className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-pricing">
                   Pricing
                 </Link>
               </div>
             </div>
 
             {/* Company Section */}
-            <div
+            <div 
               className="md:space-y-6 md:border-b-0 transition-all duration-300"
               style={{
-                paddingBottom: "clamp(4px, 0.6vh, 8px)",
-                borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
+                paddingBottom: 'clamp(4px, 0.6vh, 8px)',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.06)'
               }}
             >
               <button
-                onClick={() => toggleFooterSection("company")}
+                onClick={() => toggleFooterSection('company')}
                 className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left"
                 style={{
-                  padding: "clamp(4px, 0.6vh, 8px) 0",
+                  padding: 'clamp(4px, 0.6vh, 8px) 0'
                 }}
                 data-testid="footer-accordion-company"
               >
                 <h3 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-white tracking-wide text-left">
                   Company
                 </h3>
-                <ChevronDown
-                  className={`w-5 h-5 text-slate-600 dark:text-slate-400 transition-transform duration-300 md:hidden ${expandedFooterSection === "company" ? "rotate-180" : ""}`}
-                />
+                <ChevronDown className={`w-5 h-5 text-slate-600 dark:text-slate-400 transition-transform duration-300 md:hidden ${expandedFooterSection === 'company' ? 'rotate-180' : ''}`} />
               </button>
-
-              <div
+              
+              <div 
                 className={`space-y-3 transition-all duration-300 md:!opacity-100 md:!max-h-none md:!block ${
-                  expandedFooterSection === "company"
-                    ? "opacity-100 max-h-96"
-                    : "opacity-0 max-h-0 overflow-hidden"
+                  expandedFooterSection === 'company' 
+                    ? 'opacity-100 max-h-96' 
+                    : 'opacity-0 max-h-0 overflow-hidden'
                 }`}
                 style={{
-                  marginTop:
-                    expandedFooterSection === "company"
-                      ? "clamp(4px, 0.5vh, 6px)"
-                      : "0",
+                  marginTop: expandedFooterSection === 'company' ? 'clamp(4px, 0.5vh, 6px)' : '0'
                 }}
               >
-                <Link
-                  href="/why-onspot"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
-                  data-testid="footer-link-why"
-                >
+                <Link href="/why-onspot" className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-why">
                   Why OnSpot
                 </Link>
-                <Link
-                  href="/stories"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
-                  data-testid="footer-link-stories"
-                >
+                <Link href="/stories" className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-stories">
                   Amazing Stories
                 </Link>
-                <Link
-                  href="/insights"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
-                  data-testid="footer-link-insights"
-                >
+                <Link href="/insights" className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-insights">
                   Insights
                 </Link>
-                <Link
-                  href="/affiliate"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
-                  data-testid="footer-link-affiliate"
-                >
+                <Link href="/affiliate" className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-affiliate">
                   Affiliate Marketing
                 </Link>
-                <Link
-                  href="/bpo-partner"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
-                  data-testid="footer-link-bpo"
-                >
+                <Link href="/bpo-partner" className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-bpo">
                   BPO Partner
                 </Link>
-                <Link
-                  href="/investors"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
-                  data-testid="footer-link-investors"
-                >
+                <Link href="/investors" className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-investors">
                   Investors Corner
                 </Link>
-                <Link
-                  href="/about"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
-                  data-testid="footer-link-about"
-                >
+                <Link href="/about" className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-about">
                   About Us
                 </Link>
-                <Link
-                  href="/operations-playbook"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
-                  data-testid="footer-link-playbook"
-                >
+                <Link href="/operations-playbook" className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300" data-testid="footer-link-playbook">
                   Delivery Playbook
                 </Link>
               </div>
             </div>
 
             {/* Download Section */}
-            <div
+            <div 
               className="md:space-y-6 md:border-b-0 transition-all duration-300"
               style={{
-                paddingBottom: "clamp(4px, 0.6vh, 8px)",
-                borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
+                paddingBottom: 'clamp(4px, 0.6vh, 8px)',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.06)'
               }}
             >
               <button
-                onClick={() => toggleFooterSection("download")}
+                onClick={() => toggleFooterSection('download')}
                 className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left"
                 style={{
-                  padding: "clamp(4px, 0.6vh, 8px) 0",
+                  padding: 'clamp(4px, 0.6vh, 8px) 0'
                 }}
                 data-testid="footer-accordion-download"
               >
                 <h3 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-white tracking-wide text-left">
                   Download Platform
                 </h3>
-                <ChevronDown
-                  className={`w-5 h-5 text-slate-600 dark:text-slate-400 transition-transform duration-300 md:hidden ${expandedFooterSection === "download" ? "rotate-180" : ""}`}
-                />
+                <ChevronDown className={`w-5 h-5 text-slate-600 dark:text-slate-400 transition-transform duration-300 md:hidden ${expandedFooterSection === 'download' ? 'rotate-180' : ''}`} />
               </button>
-
-              <div
+              
+              <div 
                 className={`space-y-4 transition-all duration-300 md:!opacity-100 md:!max-h-none md:!block ${
-                  expandedFooterSection === "download"
-                    ? "opacity-100 max-h-96"
-                    : "opacity-0 max-h-0 overflow-hidden"
+                  expandedFooterSection === 'download' 
+                    ? 'opacity-100 max-h-96' 
+                    : 'opacity-0 max-h-0 overflow-hidden'
                 }`}
                 style={{
-                  marginTop:
-                    expandedFooterSection === "download"
-                      ? "clamp(4px, 0.5vh, 6px)"
-                      : "0",
+                  marginTop: expandedFooterSection === 'download' ? 'clamp(4px, 0.5vh, 6px)' : '0'
                 }}
               >
                 <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                  Take OnSpot with you wherever you go. Manage projects and
-                  track progress on the move.
+                  Take OnSpot with you wherever you go. Manage projects and track progress on the move.
                 </p>
                 <div className="flex flex-col gap-3 items-center md:items-start">
-                  <Link
-                    href="/pricing"
-                    className="flex items-center justify-center md:justify-start gap-3 px-5 py-3 rounded-xl bg-slate-100/20 dark:bg-white/[0.02] backdrop-blur-md border border-slate-300 dark:border-white/[0.15] hover:bg-slate-200/30 dark:hover:bg-white/[0.06] hover:border-violet-400/50 hover:shadow-[0_0_20px_rgba(139,92,246,0.25)] hover:-translate-y-0.5 transition-all duration-400 group w-full md:w-auto"
-                    data-testid="download-ios"
-                  >
-                    <svg
-                      className="w-5 h-5 text-slate-600 dark:text-white/50 group-hover:text-violet-600 dark:group-hover:text-violet-300 group-hover:scale-110 transition-all duration-300"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                    >
-                      <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
+                  <Link href="/pricing" className="flex items-center justify-center md:justify-start gap-3 px-5 py-3 rounded-xl bg-slate-100/20 dark:bg-white/[0.02] backdrop-blur-md border border-slate-300 dark:border-white/[0.15] hover:bg-slate-200/30 dark:hover:bg-white/[0.06] hover:border-violet-400/50 hover:shadow-[0_0_20px_rgba(139,92,246,0.25)] hover:-translate-y-0.5 transition-all duration-400 group w-full md:w-auto" data-testid="download-ios">
+                    <svg className="w-5 h-5 text-slate-600 dark:text-white/50 group-hover:text-violet-600 dark:group-hover:text-violet-300 group-hover:scale-110 transition-all duration-300" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
                     </svg>
-                    <span className="text-sm font-medium text-slate-700 dark:text-white/70 group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors">
-                      App Store
-                    </span>
+                    <span className="text-sm font-medium text-slate-700 dark:text-white/70 group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors">App Store</span>
                   </Link>
-                  <Link
-                    href="/pricing"
-                    className="flex items-center justify-center md:justify-start gap-3 px-5 py-3 rounded-xl bg-slate-100/20 dark:bg-white/[0.02] backdrop-blur-md border border-slate-300 dark:border-white/[0.15] hover:bg-slate-200/30 dark:hover:bg-white/[0.06] hover:border-violet-400/50 hover:shadow-[0_0_20px_rgba(139,92,246,0.25)] hover:-translate-y-0.5 transition-all duration-400 group w-full md:w-auto"
-                    data-testid="download-android"
-                  >
-                    <svg
-                      className="w-5 h-5 text-slate-600 dark:text-white/50 group-hover:text-violet-600 dark:group-hover:text-violet-300 group-hover:scale-110 transition-all duration-300"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                    >
-                      <path d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.6 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.5,12.92 20.16,13.19L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z" />
+                  <Link href="/pricing" className="flex items-center justify-center md:justify-start gap-3 px-5 py-3 rounded-xl bg-slate-100/20 dark:bg-white/[0.02] backdrop-blur-md border border-slate-300 dark:border-white/[0.15] hover:bg-slate-200/30 dark:hover:bg-white/[0.06] hover:border-violet-400/50 hover:shadow-[0_0_20px_rgba(139,92,246,0.25)] hover:-translate-y-0.5 transition-all duration-400 group w-full md:w-auto" data-testid="download-android">
+                    <svg className="w-5 h-5 text-slate-600 dark:text-white/50 group-hover:text-violet-600 dark:group-hover:text-violet-300 group-hover:scale-110 transition-all duration-300" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.6 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.5,12.92 20.16,13.19L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z"/>
                     </svg>
-                    <span className="text-sm font-medium text-slate-700 dark:text-white/70 group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors">
-                      Google Play
-                    </span>
+                    <span className="text-sm font-medium text-slate-700 dark:text-white/70 group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors">Google Play</span>
                   </Link>
                 </div>
               </div>
@@ -1767,57 +1504,40 @@ export default function Home() {
             {/* Connect Section */}
             <div className="md:space-y-6 transition-all duration-300">
               <button
-                onClick={() => toggleFooterSection("connect")}
+                onClick={() => toggleFooterSection('connect')}
                 className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left"
                 style={{
-                  padding: "clamp(4px, 0.6vh, 8px) 0",
+                  padding: 'clamp(4px, 0.6vh, 8px) 0'
                 }}
                 data-testid="footer-accordion-connect"
               >
                 <h3 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-white tracking-wide text-left">
                   Connect
                 </h3>
-                <ChevronDown
-                  className={`w-5 h-5 text-slate-600 dark:text-slate-400 transition-transform duration-300 md:hidden ${expandedFooterSection === "connect" ? "rotate-180" : ""}`}
-                />
+                <ChevronDown className={`w-5 h-5 text-slate-600 dark:text-slate-400 transition-transform duration-300 md:hidden ${expandedFooterSection === 'connect' ? 'rotate-180' : ''}`} />
               </button>
-
-              <div
+              
+              <div 
                 className={`space-y-3 transition-all duration-300 md:!opacity-100 md:!max-h-none md:!block ${
-                  expandedFooterSection === "connect"
-                    ? "opacity-100 max-h-96"
-                    : "opacity-0 max-h-0 overflow-hidden"
+                  expandedFooterSection === 'connect' 
+                    ? 'opacity-100 max-h-96' 
+                    : 'opacity-0 max-h-0 overflow-hidden'
                 }`}
                 style={{
-                  marginTop:
-                    expandedFooterSection === "connect"
-                      ? "clamp(4px, 0.5vh, 6px)"
-                      : "0",
+                  marginTop: expandedFooterSection === 'connect' ? 'clamp(4px, 0.5vh, 6px)' : '0'
                 }}
               >
-                <a
-                  href="mailto:hello@onspotglobal.com"
-                  className="flex items-center justify-center md:justify-start gap-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-300 group"
-                  data-testid="footer-email"
-                >
+                <a href="mailto:hello@onspotglobal.com" className="flex items-center justify-center md:justify-start gap-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-300 group" data-testid="footer-email">
                   <Mail className="w-5 h-5 flex-shrink-0 group-hover:scale-110 transition-transform duration-300" />
                   <span>hello@onspotglobal.com</span>
                 </a>
-                <a
-                  href="tel:+1234567890"
-                  className="flex items-center justify-center md:justify-start gap-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-300 group"
-                  data-testid="footer-phone"
-                >
+                <a href="tel:+1234567890" className="flex items-center justify-center md:justify-start gap-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-300 group" data-testid="footer-phone">
                   <Phone className="w-5 h-5 flex-shrink-0 group-hover:scale-110 transition-transform duration-300" />
-                  <span>+1-718 540 5053</span>
+                  <span>+1 (234) 567-890</span>
                 </a>
                 <div className="flex items-start justify-center md:justify-start gap-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300">
                   <MapPinIcon className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                  <span>
-                    US - 2248 Broadway, New York, 10024
-                    <br />
-                    PH - 610 Nepo Center, Angeles City, 2009
-                  </span>
+                  <span>Global HQ<br />New York</span>
                 </div>
               </div>
             </div>
@@ -1827,29 +1547,15 @@ export default function Home() {
           <div className="mt-16 pt-8 border-t border-slate-300 dark:border-white/[0.12]">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs sm:text-sm text-slate-600 dark:text-white/70">
               <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-center sm:text-left">
-                <p className="hover:text-slate-800 dark:hover:text-white/90 transition-colors duration-300">
-                  © 2025 OnSpot. All rights reserved.
-                </p>
-                <span className="hidden sm:inline text-slate-400 dark:text-white/30">
-                  ·
-                </span>
-                <p className="text-[10px] sm:text-xs text-slate-500 dark:text-white/50">
-                  Powered by OnSpot Intelligence
-                </p>
+                <p className="hover:text-slate-800 dark:hover:text-white/90 transition-colors duration-300">© 2025 OnSpot. All rights reserved.</p>
+                <span className="hidden sm:inline text-slate-400 dark:text-white/30">·</span>
+                <p className="text-[10px] sm:text-xs text-slate-500 dark:text-white/50">Powered by OnSpot Intelligence</p>
               </div>
               <div className="flex gap-6">
-                <Link
-                  href="/privacy"
-                  className="hover:text-violet-600 dark:hover:text-violet-300 transition-all duration-300 hover:translate-y-[-1px]"
-                  data-testid="footer-privacy"
-                >
+                <Link href="/privacy" className="hover:text-violet-600 dark:hover:text-violet-300 transition-all duration-300 hover:translate-y-[-1px]" data-testid="footer-privacy">
                   Privacy Policy
                 </Link>
-                <Link
-                  href="/terms"
-                  className="hover:text-violet-600 dark:hover:text-violet-300 transition-all duration-300 hover:translate-y-[-1px]"
-                  data-testid="footer-terms"
-                >
+                <Link href="/terms" className="hover:text-violet-600 dark:hover:text-violet-300 transition-all duration-300 hover:translate-y-[-1px]" data-testid="footer-terms">
                   Terms of Service
                 </Link>
               </div>
