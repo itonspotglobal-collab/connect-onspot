@@ -1098,34 +1098,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         content: message,
       });
 
-      // Run the assistant
-      const run = await openai.beta.threads.runs.create(thread.id, {
+      // Run the assistant and poll for completion automatically
+      const run = await openai.beta.threads.runs.createAndPoll(thread.id, {
         assistant_id: assistantId,
       });
 
-      // Wait for completion
-      let runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
-      let attempts = 0;
-      const maxAttempts = 60; // 60 seconds max wait
-
-      while (runStatus.status !== "completed" && attempts < maxAttempts) {
-        if (runStatus.status === "failed" || runStatus.status === "cancelled" || runStatus.status === "expired") {
-          console.error(`❌ OpenAI run ${runStatus.status}:`, runStatus.last_error);
-          return res.status(500).json({
-            error: "AI processing failed",
-            answer: "Sorry, I'm having trouble connecting to the AI right now. Please try again later.",
-          });
-        }
-
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
-        attempts++;
-      }
-
-      if (runStatus.status !== "completed") {
-        console.error("❌ OpenAI run timeout");
+      // Check final status
+      if (run.status !== "completed") {
+        console.error(`❌ OpenAI run ${run.status}:`, run.last_error);
         return res.status(500).json({
-          error: "Request timeout",
+          error: "AI processing failed",
           answer: "Sorry, I'm having trouble connecting to the AI right now. Please try again later.",
         });
       }
