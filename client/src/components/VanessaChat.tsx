@@ -67,7 +67,118 @@ export function VanessaChat({
     },
   ]).current;
 
-  // Removed hardcoded FAQ responses - now using OpenAI Assistant API
+  // ============================================================================
+  // HARDCODED FAQ RESPONSES - For instant replies without OpenAI API calls
+  // ============================================================================
+  const faqResponses: Record<string, string> = {
+    "how-it-works": `Here's how OnSpot outsourcing works:
+
+1. **Tell Us What You Need** - Share your requirements, and we'll match you with pre-vetted talent from our network.
+
+2. **Meet Your Team** - We introduce you to handpicked professionals who fit your needs.
+
+3. **Start Working** - Your team gets to work, managed by our systems and supported by AI-powered tools.
+
+4. **Track Performance** - Monitor productivity, quality, and ROI through our real-time dashboard.
+
+We handle recruitment, management, and performance tracking—so you can focus on growing your business.`,
+
+    pricing: `Our pricing models are designed to be flexible and transparent:
+
+**Managed Services** (Full-Service)
+- We handle everything: recruitment, management, infrastructure
+- Perfect for teams who want hands-off outsourcing
+- Pricing: Contact us for custom quote
+
+**Resourced Services** (Staff Augmentation)
+- You manage, we provide vetted talent
+- Great for teams with existing processes
+- Pricing: Based on role and experience level
+
+**AI Assistant Add-On**
+- Boost productivity with AI-powered virtual assistants
+- Available with any service tier
+- Pricing: Included or add-on based on package
+
+Would you like to schedule a call to discuss pricing for your specific needs?`,
+
+    "ai-human": `The AI + Human advantage is what makes OnSpot different:
+
+**AI Powers Efficiency:**
+- Automates routine tasks and workflows
+- Provides real-time performance insights
+- Handles scheduling, tracking, and reporting
+- Learns from patterns to optimize processes
+
+**Humans Provide Intelligence:**
+- Critical thinking and problem-solving
+- Creativity and strategic decision-making
+- Relationship building and empathy
+- Adaptability to unique situations
+
+**Together, They're Unstoppable:**
+- AI handles the repetitive work, freeing humans for high-value tasks
+- Humans guide AI and handle complex edge cases
+- Result: 3-5x productivity increase with lower costs
+
+It's not AI vs. Human—it's AI empowering Humans to do their best work.`,
+
+    "talk-human": `I'd love to connect you with one of our outsourcing experts!
+
+Our team can help you:
+- Understand which service model fits your needs
+- Discuss custom pricing for your requirements
+- Answer technical questions about our process
+- Set up a trial or pilot program
+
+Click the button below to schedule a free consultation call. We typically respond within 1 business hour.`,
+  };
+
+  // Detect if user message matches a FAQ topic based on keywords
+  const detectFAQTopic = (message: string): string | null => {
+    const lowerMessage = message.toLowerCase();
+
+    // How it works
+    if (
+      lowerMessage.includes("how") &&
+      (lowerMessage.includes("work") || lowerMessage.includes("process") || lowerMessage.includes("outsourcing"))
+    ) {
+      return "how-it-works";
+    }
+
+    // Pricing
+    if (
+      lowerMessage.includes("pric") ||
+      lowerMessage.includes("cost") ||
+      lowerMessage.includes("rate") ||
+      lowerMessage.includes("fee") ||
+      lowerMessage.includes("pay")
+    ) {
+      return "pricing";
+    }
+
+    // AI + Human
+    if (
+      (lowerMessage.includes("ai") || lowerMessage.includes("artificial")) &&
+      (lowerMessage.includes("human") || lowerMessage.includes("advantage") || lowerMessage.includes("benefit"))
+    ) {
+      return "ai-human";
+    }
+
+    // Talk to human
+    if (
+      (lowerMessage.includes("talk") || lowerMessage.includes("speak") || lowerMessage.includes("call")) &&
+      (lowerMessage.includes("human") || lowerMessage.includes("expert") || lowerMessage.includes("person"))
+    ) {
+      return "talk-human";
+    }
+
+    return null;
+  };
+
+  // ============================================================================
+  // END FAQ SECTION
+  // ============================================================================
 
   // Prevent body scroll when popup is open
   useEffect(() => {
@@ -239,6 +350,9 @@ export function VanessaChat({
     return () => clearTimeout(timer);
   }, [currentMessageIndex, isOpen, showOptions]);
 
+  // ============================================================================
+  // TOPIC SELECTION HANDLER - Uses hardcoded FAQ responses for instant replies
+  // ============================================================================
   const handleTopicSelect = async (topic: string) => {
     setSelectedTopic(topic);
     setShowOptions(false);
@@ -263,7 +377,42 @@ export function VanessaChat({
       },
     ]);
 
-    // Call OpenAI Assistant API with streaming
+    // ========================================================================
+    // LOCAL FAQ RESPONSE - Instant reply without API call
+    // ========================================================================
+    if (faqResponses[topic]) {
+      const assistantMessageId = Date.now() + 1;
+      
+      // Show typing indicator
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: assistantMessageId,
+          text: "",
+          sender: "vanessa",
+          isTyping: true,
+        },
+      ]);
+
+      // Simulate typing delay for natural feel (500ms)
+      setTimeout(() => {
+        setMessages((prev) => {
+          const updated = [...prev];
+          const lastMessage = updated[updated.length - 1];
+          if (lastMessage.id === assistantMessageId) {
+            lastMessage.text = faqResponses[topic];
+            lastMessage.isTyping = false;
+          }
+          return updated;
+        });
+      }, 500);
+
+      return;
+    }
+
+    // ========================================================================
+    // AI FALLBACK - If no FAQ response exists (shouldn't happen for quick topics)
+    // ========================================================================
     try {
       setIsStreaming(true);
 
@@ -443,7 +592,9 @@ export function VanessaChat({
     scrollToBottom(true);
   };
 
-  // Handle sending user message with OpenAI Assistant API
+  // ============================================================================
+  // MESSAGE HANDLER - Detects FAQ topics for instant replies, uses OpenAI for everything else
+  // ============================================================================
   const handleSendMessage = async () => {
     if (!userInput.trim() || isStreaming) return;
 
@@ -462,7 +613,44 @@ export function VanessaChat({
       },
     ]);
 
-    // Call OpenAI Assistant API with streaming
+    // ========================================================================
+    // LOCAL FAQ DETECTION - Check if message matches FAQ topic
+    // ========================================================================
+    const detectedTopic = detectFAQTopic(userMessage);
+    
+    if (detectedTopic && faqResponses[detectedTopic]) {
+      const assistantMessageId = Date.now() + 1;
+      
+      // Show typing indicator
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: assistantMessageId,
+          text: "",
+          sender: "vanessa",
+          isTyping: true,
+        },
+      ]);
+
+      // Simulate typing delay for natural feel (500ms)
+      setTimeout(() => {
+        setMessages((prev) => {
+          const updated = [...prev];
+          const lastMessage = updated[updated.length - 1];
+          if (lastMessage.id === assistantMessageId) {
+            lastMessage.text = faqResponses[detectedTopic];
+            lastMessage.isTyping = false;
+          }
+          return updated;
+        });
+      }, 500);
+
+      return; // Exit early - FAQ handled, no OpenAI call needed
+    }
+
+    // ========================================================================
+    // AI FALLBACK - Use OpenAI Assistant API for non-FAQ queries
+    // ========================================================================
     try {
       setIsStreaming(true);
 
