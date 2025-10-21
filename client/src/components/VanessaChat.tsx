@@ -40,6 +40,7 @@ export function VanessaChat({
   const [userHasTyped, setUserHasTyped] = useState(false);
   const [isPinnedToBottom, setIsPinnedToBottom] = useState(true);
   const [showNewMessageChip, setShowNewMessageChip] = useState(false);
+  const [threadId, setThreadId] = useState<string | null>(null); // OpenAI thread ID
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const scrollAnimationFrameRef = useRef<number | null>(null);
@@ -66,28 +67,7 @@ export function VanessaChat({
     },
   ]).current;
 
-  const faqResponses: Record<string, string[]> = {
-    "how-it-works": [
-      "Great question! OnSpot connects you with pre-vetted Filipino talent through a unique AI-first approach.",
-      "Here's how it works:\n\n1. Tell us your needs\n2. Our AI matches you with top candidates\n3. Human experts verify the match\n4. Start working within 48 hours",
-      "The best part? You only pay for productive work, with built-in quality assurance and performance tracking.",
-    ],
-    pricing: [
-      "Our pricing is simple and transparent:",
-      "Hourly Rate: $8-25/hour (depending on skill level)\nMonthly Retainer: Custom packages available\nPerformance-based: Pay only for verified productive hours",
-      "All pricing includes:\n• AI-powered time tracking\n• Quality assurance\n• Dedicated account manager\n• Replacement guarantee",
-    ],
-    "ai-human": [
-      "This is where OnSpot truly shines! We combine the best of both worlds:",
-      "AI handles: Talent matching, time tracking, performance analytics, workflow optimization",
-      "Humans handle: Complex decisions, relationship building, quality oversight, strategic guidance",
-      "Result? 40% faster hiring, 30% cost savings, and 95% client satisfaction. AI does the heavy lifting, humans ensure excellence.",
-    ],
-    "talk-human": [
-      "Perfect! I'd love to connect you with one of our expert managers.",
-      "They can provide:\n• Custom solution design\n• ROI analysis for your use case\n• Live talent preview\n• Onboarding timeline",
-    ],
-  };
+  // Removed hardcoded FAQ responses - now using OpenAI Assistant API
 
   // Prevent body scroll when popup is open
   useEffect(() => {
@@ -259,81 +239,130 @@ export function VanessaChat({
     return () => clearTimeout(timer);
   }, [currentMessageIndex, isOpen, showOptions]);
 
-  const handleTopicSelect = (topic: string) => {
+  const handleTopicSelect = async (topic: string) => {
     setSelectedTopic(topic);
     setShowOptions(false);
 
-    // Add user message
+    // Map topic to user message
     const userMessages: Record<string, string> = {
-      "how-it-works": "How OnSpot Outsourcing Works",
-      pricing: "See Pricing Models",
-      "ai-human": "AI + Human Advantage",
-      "talk-human": "Talk to a Human Expert",
+      "how-it-works": "How does OnSpot outsourcing work?",
+      pricing: "What are your pricing models?",
+      "ai-human": "What's the AI + Human advantage?",
+      "talk-human": "I'd like to talk to a human expert",
     };
 
+    const userMessage = userMessages[topic];
+
+    // Add user message
     setMessages((prev) => [
       ...prev,
       {
         id: Date.now(),
-        text: userMessages[topic],
+        text: userMessage,
         sender: "user",
       },
     ]);
 
-    // Show Vanessa's responses sequentially
-    const responses = faqResponses[topic];
-    let responseIndex = 0;
+    // Call OpenAI Assistant API with streaming
+    try {
+      setIsStreaming(true);
 
-    const showNextResponse = () => {
-      if (responseIndex < responses.length) {
-        // Show typing
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now() + responseIndex,
-            text: responses[responseIndex],
-            sender: "vanessa",
-            isTyping: true,
-          },
-        ]);
+      const assistantMessageId = Date.now() + 1;
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: assistantMessageId,
+          text: "",
+          sender: "vanessa",
+          isTyping: true,
+        },
+      ]);
 
-        // Replace with actual message
-        setTimeout(() => {
-          setMessages((prev) => {
-            const updated = [...prev];
-            updated[updated.length - 1] = {
-              ...updated[updated.length - 1],
-              isTyping: false,
-            };
-            return updated;
-          });
+      const body = JSON.stringify({
+        message: userMessage,
+        threadId: threadId || undefined,
+      });
 
-          responseIndex++;
-          if (responseIndex < responses.length) {
-            setTimeout(showNextResponse, 1500);
-          } else {
-            // Show follow-up options after last response
-            setTimeout(() => {
-              if (topic === "talk-human") {
-                setMessages((prev) => [
-                  ...prev,
-                  {
-                    id: Date.now() + 1000,
-                    text: "Would you like me to connect you with an OnSpot Manager to discuss your setup?",
-                    sender: "vanessa",
-                  },
-                ]);
-                setTimeout(() => setShowOptions(true), 800);
-              } else {
-                setShowOptions(true);
-              }
-            }, 1000);
-          }
-        }, 1200);
+      const response = await fetch("/api/chat/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
       }
-    };
 
-    setTimeout(showNextResponse, 800);
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error("No response body");
+      }
+
+      let accumulatedText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6);
+            
+            if (data === "[DONE]") break;
+
+            try {
+              const parsed = JSON.parse(data);
+
+              if (parsed.type === "threadId") {
+                setThreadId(parsed.data);
+              } else if (parsed.type === "content") {
+                accumulatedText += parsed.data;
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  const lastMessage = updated[updated.length - 1];
+                  if (lastMessage.id === assistantMessageId) {
+                    lastMessage.text = accumulatedText;
+                    lastMessage.isTyping = true;
+                  }
+                  return updated;
+                });
+              } else if (parsed.type === "done") {
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  const lastMessage = updated[updated.length - 1];
+                  if (lastMessage.id === assistantMessageId) {
+                    lastMessage.isTyping = false;
+                  }
+                  return updated;
+                });
+              }
+            } catch (e) {
+              if (data !== "[DONE]") {
+                console.warn("Failed to parse SSE data:", data);
+              }
+            }
+          }
+        }
+      }
+
+      setIsStreaming(false);
+    } catch (error) {
+      console.error("Chat API error:", error);
+      setIsStreaming(false);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 2,
+          text: "I'm sorry, I encountered an error. Please try again.",
+          sender: "vanessa",
+        },
+      ]);
+    }
   };
 
   const handleBookCall = () => {
@@ -414,82 +443,7 @@ export function VanessaChat({
     scrollToBottom(true);
   };
 
-  // Detect FAQ topic from user input using keyword matching
-  const detectFAQTopic = (input: string): string | null => {
-    const lowerInput = input.toLowerCase();
-
-    // Keywords for each topic
-    const keywords = {
-      "how-it-works": [
-        "how",
-        "work",
-        "works",
-        "process",
-        "step",
-        "start",
-        "begin",
-        "onboard",
-        "setup",
-      ],
-      pricing: [
-        "price",
-        "pricing",
-        "cost",
-        "rate",
-        "hour",
-        "pay",
-        "payment",
-        "fee",
-        "charge",
-        "expensive",
-        "cheap",
-        "affordable",
-      ],
-      "ai-human": [
-        "ai",
-        "human",
-        "advantage",
-        "benefit",
-        "automation",
-        "technology",
-        "difference",
-        "why",
-        "better",
-      ],
-      "talk-human": [
-        "talk",
-        "speak",
-        "human",
-        "person",
-        "expert",
-        "manager",
-        "call",
-        "meeting",
-        "schedule",
-        "contact",
-        "help me",
-      ],
-    };
-
-    // Count keyword matches for each topic
-    let maxMatches = 0;
-    let bestTopic = null;
-
-    for (const [topic, topicKeywords] of Object.entries(keywords)) {
-      const matches = topicKeywords.filter((keyword) =>
-        lowerInput.includes(keyword),
-      ).length;
-      if (matches > maxMatches) {
-        maxMatches = matches;
-        bestTopic = topic;
-      }
-    }
-
-    // Require at least 1 match to consider it a topic
-    return maxMatches > 0 ? bestTopic : null;
-  };
-
-  // Handle sending user message
+  // Handle sending user message with OpenAI Assistant API
   const handleSendMessage = async () => {
     if (!userInput.trim() || isStreaming) return;
 
@@ -508,79 +462,8 @@ export function VanessaChat({
       },
     ]);
 
-    // Detect FAQ topic
-    const detectedTopic = detectFAQTopic(userMessage);
-
-    if (detectedTopic) {
-      // User asked about a FAQ topic - provide those responses
-      setSelectedTopic(detectedTopic);
-
-      const responses = faqResponses[detectedTopic];
-      let responseIndex = 0;
-
-      const showNextResponse = async () => {
-        if (responseIndex < responses.length) {
-          setIsStreaming(true);
-
-          // Show typing
-          const typingMessageId = Date.now() + responseIndex;
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: typingMessageId,
-              text: "",
-              sender: "vanessa",
-              isTyping: true,
-            },
-          ]);
-
-          // Simulate streaming the response
-          const response = responses[responseIndex];
-          const words = response.split(" ");
-
-          for (let i = 0; i < words.length; i++) {
-            await new Promise((resolve) =>
-              setTimeout(resolve, 40 + Math.random() * 40),
-            );
-
-            setMessages((prev) => {
-              const updated = [...prev];
-              const lastMessage = updated[updated.length - 1];
-              if (lastMessage.id === typingMessageId) {
-                lastMessage.text = words.slice(0, i + 1).join(" ");
-                lastMessage.isTyping = i < words.length - 1;
-              }
-              return updated;
-            });
-          }
-
-          setIsStreaming(false);
-          responseIndex++;
-
-          if (responseIndex < responses.length) {
-            setTimeout(showNextResponse, 1200);
-          } else {
-            // Show options after last response
-            setTimeout(() => {
-              if (detectedTopic === "talk-human") {
-                setMessages((prev) => [
-                  ...prev,
-                  {
-                    id: Date.now() + 1000,
-                    text: "Would you like me to connect you with an OnSpot Manager to discuss your setup?",
-                    sender: "vanessa",
-                  },
-                ]);
-              }
-              setTimeout(() => setShowOptions(true), 800);
-            }, 1000);
-          }
-        }
-      };
-
-      setTimeout(showNextResponse, 800);
-    } else {
-      // No FAQ topic detected - provide general response
+    // Call OpenAI Assistant API with streaming
+    try {
       setIsStreaming(true);
 
       const assistantMessageId = Date.now() + 1;
@@ -594,31 +477,106 @@ export function VanessaChat({
         },
       ]);
 
-      // Simulate streaming tokens
-      const response =
-        "I can help you learn about OnSpot! Try asking about our pricing, how it works, our AI-human advantage, or tap one of the quick options below to get started.";
-      const words = response.split(" ");
+      // Create request body
+      const body = JSON.stringify({
+        message: userMessage,
+        threadId: threadId || undefined,
+      });
 
-      for (let i = 0; i < words.length; i++) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, 50 + Math.random() * 50),
-        );
+      // Call streaming endpoint
+      const response = await fetch("/api/chat/stream", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body,
+      });
 
-        setMessages((prev) => {
-          const updated = [...prev];
-          const lastMessage = updated[updated.length - 1];
-          if (lastMessage.id === assistantMessageId) {
-            lastMessage.text = words.slice(0, i + 1).join(" ");
-            lastMessage.isTyping = i < words.length - 1;
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error("No response body");
+      }
+
+      let accumulatedText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6);
+            
+            if (data === "[DONE]") {
+              break;
+            }
+
+            try {
+              const parsed = JSON.parse(data);
+
+              if (parsed.type === "threadId") {
+                // Save thread ID for conversation continuity
+                setThreadId(parsed.data);
+              } else if (parsed.type === "content") {
+                // Accumulate content
+                accumulatedText += parsed.data;
+
+                // Update message with accumulated text
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  const lastMessage = updated[updated.length - 1];
+                  if (lastMessage.id === assistantMessageId) {
+                    lastMessage.text = accumulatedText;
+                    lastMessage.isTyping = true;
+                  }
+                  return updated;
+                });
+              } else if (parsed.type === "done") {
+                // Mark as complete
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  const lastMessage = updated[updated.length - 1];
+                  if (lastMessage.id === assistantMessageId) {
+                    lastMessage.isTyping = false;
+                  }
+                  return updated;
+                });
+              } else if (parsed.type === "error") {
+                throw new Error(parsed.data);
+              }
+            } catch (e) {
+              // Ignore JSON parse errors for incomplete chunks
+              if (data !== "[DONE]") {
+                console.warn("Failed to parse SSE data:", data);
+              }
+            }
           }
-          return updated;
-        });
+        }
       }
 
       setIsStreaming(false);
+    } catch (error) {
+      console.error("Chat API error:", error);
+      setIsStreaming(false);
 
-      // Show options after response completes
-      setTimeout(() => setShowOptions(true), 500);
+      // Show error message
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 2,
+          text: "I'm sorry, I encountered an error. Please try again.",
+          sender: "vanessa",
+        },
+      ]);
     }
   };
 

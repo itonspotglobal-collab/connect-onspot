@@ -10,6 +10,7 @@ import {
   validateEmail,
 } from "./auth-utils";
 import { ghlService } from "./services/ghlService";
+import { sendMessageToAssistant, streamMessageToAssistant } from "./services/openaiService";
 import rateLimit from "express-rate-limit";
 import multer from "multer";
 import Papa from "papaparse";
@@ -1059,6 +1060,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/health", (req, res) => {
     res.json({ ok: true });
   });
+
+  // === VANESSA CHAT (OpenAI Assistant) ===
+  
+  // Rate limiter for chat endpoint
+  const chatLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 20, // 20 requests per minute
+    message: "Too many chat requests, please try again later.",
+  });
+
+  // Non-streaming chat endpoint
+  app.post(
+    "/api/chat",
+    chatLimiter,
+    validateRequest(
+      z.object({
+        message: z.string().min(1).max(2000),
+        threadId: z.string().optional(),
+      })
+    ),
+    async (req: any, res: Response) => {
+      try {
+        const { message, threadId } = req.body;
+
+        console.log(`💬 Chat request [${req.requestId}]:`, {
+          message: message.substring(0, 50) + "...",
+          threadId: threadId || "new",
+        });
+
+        const response = await sendMessageToAssistant(message, threadId);
+
+        res.json({
+          message: response.message,
+          threadId: response.threadId,
+        });
+      } catch (error: any) {
+        console.error(`❌ Chat error [${req.requestId}]:`, error);
+        res.status(500).json({
+          error: "Failed to get response from assistant",
+          message: error.message,
+          requestId: req.requestId,
+        });
+      }
+    }
+  );
+
+  // Streaming chat endpoint
+  app.post(
+    "/api/chat/stream",
+    chatLimiter,
+    validateRequest(
+      z.object({
+        message: z.string().min(1).max(2000),
+        threadId: z.string().optional(),
+      })
+    ),
+    async (req: any, res: Response) => {
+      try {
+        const { message, threadId } = req.body;
+
+        console.log(`💬 Chat stream request [${req.requestId}]:`, {
+          message: message.substring(0, 50) + "...",
+          threadId: threadId || "new",
+        });
+
+        // Set headers for SSE (Server-Sent Events)
+        res.setHeader("Content-Type", "text/event-stream");
+        res.setHeader("Cache-Control", "no-cache");
+        res.setHeader("Connection", "keep-alive");
+
+        // Stream the response
+        for await (const chunk of streamMessageToAssistant(message, threadId)) {
+          res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+        }
+
+        res.write("data: [DONE]\n\n");
+        res.end();
+      } catch (error: any) {
+        console.error(`❌ Chat stream error [${req.requestId}]:`, error);
+        res.write(`data: ${JSON.stringify({ type: "error", data: error.message })}\n\n`);
+        res.end();
+      }
+    }
+  );
 
   // Enhanced development login endpoint with validation and monitoring
   app.post(
