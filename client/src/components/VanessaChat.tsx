@@ -73,30 +73,30 @@ export function VanessaChat({
   // ============================================================================
   const faqResponses: Record<string, string> = {
     // === COMPANY & SERVICES ===
-    "company-overview": `**OnSpot Global** is a leading BPO, Sales, and Virtual Assistance provider.
+    "company-overview": `OnSpot Global is a leading BPO, Sales, and Virtual Assistance provider.
 
-**Industry:** Business Process Outsourcing
-**Website:** https://www.onspotglobal.com/
+Industry: Business Process Outsourcing
+Website: https://www.onspotglobal.com/
 
 We specialize in outsourcing solutions for businesses, including customer support, sales, and administrative virtual assistance. Our mission is to deliver world-class talent and AI-powered solutions to help businesses scale efficiently.`,
 
     "services-offered": `OnSpot offers a comprehensive range of services:
 
-**BPO Services:**
+BPO Services:
 - Customer Support (Inbound & Outbound)
 - Technical Support
 - Data Entry & Processing
 - Order Processing
 - Back Office Support
 
-**Sales Services:**
+Sales Services:
 - Lead Generation
 - Telemarketing
 - Appointment Setting
 - Cold Calling
 - Account Management
 
-**Virtual Assistance:**
+Virtual Assistance:
 - Email & Calendar Management
 - Social Media Management
 - Research & Data Collection
@@ -107,11 +107,11 @@ How can I assist you further with any of these services?`,
 
     "industries-served": `We serve multiple industries including:
 
-- **E-commerce** - Product support, order management
-- **Real Estate** - Lead gen, appointment setting
-- **Healthcare** - Patient support, admin tasks
-- **Finance** - Data processing, client support
-- **Technology** - Technical support, customer success
+- E-commerce - Product support, order management
+- Real Estate - Lead gen, appointment setting
+- Healthcare - Patient support, admin tasks
+- Finance - Data processing, client support
+- Technology - Technical support, customer success
 
 Tell us more about your business, and we'll tailor our solutions for you!`,
 
@@ -126,21 +126,21 @@ Tell us more about your business, and we'll tailor our solutions for you!`,
 Let me know your specific requirements, and I can connect you with our team for a consultation!`,
 
     // === PRICING & CONTRACTS ===
-    "pricing": `We offer flexible pricing models to fit your needs:
+    pricing: `We offer flexible pricing models to fit your needs:
 
-**Fixed-Price Model**
+Fixed-Price Model
 - Set cost for defined scope of work
 - Best for well-defined projects
 
-**Time & Materials**
+Time & Materials
 - Pay for actual hours worked
 - Flexible for evolving requirements
 
-**Dedicated Team Model**
+Dedicated Team Model
 - Full-time or part-time dedicated resources
 - Scalable and cost-effective
 
-Pricing varies based on service type and contract duration. I can connect you with our sales team at **sales@onspotglobal.com** to discuss a custom quote!`,
+Pricing varies based on service type and contract duration. I can connect you with our sales team at sales@onspotglobal.com to discuss a custom quote!`,
 
     "quality-assurance": `We follow a rigorous quality assurance process:
 
@@ -162,41 +162,41 @@ Your data is protected at all times with enterprise-grade security measures.`,
 
     "references-case-studies": `Yes! We can provide references and case studies upon request.
 
-Please contact our sales team at **sales@onspotglobal.com**, and they'll be happy to share relevant examples of our work and client success stories.`,
+Please contact our sales team at sales@onspotglobal.com, and they'll be happy to share relevant examples of our work and client success stories.`,
 
     // === JOB OPENINGS & APPLICATION ===
     "job-openings": `We're always looking for talented individuals! Current openings include:
 
-- **Customer Service Representative** - Remote, Full-time
-- **Sales Representative** - Remote, Full-time
-- **Virtual Assistant** - Remote, Part-time
-- **Lead Generation Specialist** - Remote, Contract
+- Customer Service Representative - Remote, Full-time
+- Sales Representative - Remote, Full-time
+- Virtual Assistant - Remote, Part-time
+- Lead Generation Specialist - Remote, Contract
 
 Visit our careers page to explore all available positions. You can also sign up for job alerts so you'll never miss an opportunity!`,
 
     "how-to-apply": `Ready to take the next step in your career? Applying is simple!
 
-1. Visit our **careers page** on our website
+1. Visit our careers page on our website
 2. Browse through available roles
 3. Submit your application through our user-friendly portal
 
-You can also apply by sending your resume to **careers@onspotglobal.com**
+You can also apply by sending your resume to careers@onspotglobal.com
 
 We can't wait to hear from you!`,
 
     "application-documents": `To help us learn more about you, we ask for:
 
-- **Updated resume or CV** (required)
-- **Cover letter** (recommended for some roles)
-- **Portfolio or work samples** (for specific roles)
+- Updated resume or CV (required)
+- Cover letter (recommended for some roles)
+- Portfolio or work samples (for specific roles)
 
 Be sure to check the job description for any additional requirements!`,
 
     "submit-resume": `Submitting your resume is a breeze!
 
-Just upload it directly through our **online application portal**. Your resume will be reviewed by our team, and we'll be in touch soon to discuss next steps.
+Just upload it directly through our online application portal. Your resume will be reviewed by our team, and we'll be in touch soon to discuss next steps.
 
-If you encounter any issues, email us at **careers@onspotglobal.com**.`,
+If you encounter any issues, email us at careers@onspotglobal.com.`,
 
     "multiple-applications": `Absolutely! Feel free to explore as many opportunities as catch your eye.
 
@@ -204,16 +204,16 @@ Applying to multiple roles is a great way to increase your chances of finding th
 
     "edit-application": `While we can't edit your application once it's been submitted, don't worry!
 
-If something important changes, simply reach out to our Talent Acquisition Team at **careers@onspotglobal.com** and we'll assist you with any necessary updates.`,
+If something important changes, simply reach out to our Talent Acquisition Team at careers@onspotglobal.com and we'll assist you with any necessary updates.`,
 
-    "email-applications": `For the smoothest process, we ask that all applications be submitted through our **online portal**.
+    "email-applications": `For the smoothest process, we ask that all applications be submitted through our online portal.
 
-However, if you encounter any issues, don't hesitate to email us at **careers@onspotglobal.com** and we'll be happy to assist you!`,
+However, if you encounter any issues, don't hesitate to email us at careers@onspotglobal.com and we'll be happy to assist you!`,
 
     // === QUALIFICATIONS & EXPERIENCE ===
     "job-qualifications": `Every job has its own unique requirements listed in the job description.
 
-If you've got the experience and enthusiasm, don't let a few qualifications hold you back—**apply anyway**! We value passion, potential, and willingness to grow.`,
+If you've got the experience and enthusiasm, don't let a few qualifications hold you back—apply anyway! We value passion, potential, and willingness to grow.`,
 
     "industry-experience": `While industry experience can be helpful for certain roles, we're always excited to bring in fresh perspectives!
 
@@ -221,8 +221,8 @@ If you're passionate and eager to learn, we're open to exploring how your skills
 
     "no-experience": `Yes, we absolutely do! We offer opportunities for both:
 
-- **Seasoned professionals** with years of experience
-- **Entry-level candidates** just starting their careers
+- Seasoned professionals with years of experience
+- Entry-level candidates just starting their careers
 
 If you're looking for a chance to grow, we may have the perfect opportunity for you!`,
 
@@ -241,17 +241,17 @@ It's all about getting to know you better—and giving you the chance to get to 
 
     "interview-preparation": `Here's how to prepare:
 
-1. Review the **job description** and align your experiences
-2. Research our **company culture** and values
-3. Prepare **thoughtful questions** about the role and team
+1. Review the job description and align your experiences
+2. Research our company culture and values
+3. Prepare thoughtful questions about the role and team
 4. Be yourself—we're excited to meet you!
 
 Above all, relax and let your personality shine through!`,
 
     "interview-format": `Depending on the role and location, the interview might be:
 
-- **Virtual** (via Zoom or Teams)
-- **In-person** (at one of our offices)
+- Virtual (via Zoom or Teams)
+- In-person (at one of our offices)
 
 We'll make sure to let you know ahead of time, so you'll be fully prepared!`,
 
@@ -261,9 +261,9 @@ We'll respect your time while giving you the chance to share your experiences an
 
     "interview-questions": `We'll ask a mix of:
 
-- **Behavioral questions** - How you've handled past situations
-- **Situational questions** - How you'd approach hypothetical scenarios
-- **Role-specific questions** - Technical or skills-based
+- Behavioral questions - How you've handled past situations
+- Situational questions - How you'd approach hypothetical scenarios
+- Role-specific questions - Technical or skills-based
 
 Don't worry—we'll keep it conversational and make sure you have the chance to showcase your skills!`,
 
@@ -282,22 +282,22 @@ We'll provide guidance to make the process smooth and stress-free!`,
     // === APPLICATION STATUS & TIMELINE ===
     "application-timeline": `We aim to get back to you as quickly as possible:
 
-- **Initial response:** Within 1-2 weeks
-- **Common roles (CSR, VA):** ~2 weeks from application to offer
-- **Specialized roles:** 30-45 days
+- Initial response: Within 1-2 weeks
+- Common roles (CSR, VA): ~2 weeks from application to offer
+- Specialized roles: 30-45 days
 
 If you're selected for an interview, you'll hear from us directly. We'll keep you updated every step of the way!`,
 
     "check-application-status": `You can easily check your application status by:
 
-1. Logging into our **careers portal**
+1. Logging into our careers portal
 2. Viewing your application dashboard
 
 If you need an update, just reach out—we're happy to provide more information!`,
 
     "follow-up-application": `Absolutely! We encourage you to follow up if it's been a while since you submitted your application.
 
-A polite check-in shows your enthusiasm and keeps you on our radar. Feel free to email **careers@onspotglobal.com**!`,
+A polite check-in shows your enthusiasm and keeps you on our radar. Feel free to email careers@onspotglobal.com!`,
 
     "post-interview-status": `We know waiting can be tough! Our team is working hard to evaluate all candidates carefully.
 
@@ -306,22 +306,22 @@ If it's been longer than expected, feel free to reach out for an update—we're 
     // === COMPANY CULTURE ===
     "company-culture": `At OnSpot, we value:
 
-**🎯 Integrity** - We do what's right
-**📈 Beat Yesterday** - Continuous growth and improvement
-**💡 Intrapreneurial Mindset** - Think like an owner
-**❤️ People Centric** - Fostering collaboration and care
-**⚡ Efficiency** - Fast-fast-fast execution
-**👊 Extreme Ownership** - Take responsibility, drive results
+🎯 Integrity - We do what's right
+📈 Beat Yesterday - Continuous growth and improvement
+💡 Intrapreneurial Mindset - Think like an owner
+❤️ People Centric - Fostering collaboration and care
+⚡ Efficiency - Fast-fast-fast execution
+👊 Extreme Ownership - Take responsibility, drive results
 
 Here, we grow, innovate, and excel together!`,
 
     "employee-development": `At OnSpot, we're committed to your growth through:
 
-- **Mentorship programs** with experienced professionals
-- **Training and development** opportunities
-- **Job Success System** - Data-driven strategies
-- **Performance evaluations** and behavioral assessments
-- **Career advancement pathways**
+- Mentorship programs with experienced professionals
+- Training and development opportunities
+- Job Success System - Data-driven strategies
+- Performance evaluations and behavioral assessments
+- Career advancement pathways
 
 We help you grow both personally and professionally!`,
 
@@ -339,24 +339,24 @@ We actively foster an inclusive environment where everyone, regardless of backgr
 We believe in making a positive impact beyond the workplace!`,
 
     // === BENEFITS & COMPENSATION ===
-    "benefits": `At OnSpot, we offer a comprehensive benefits package:
+    benefits: `At OnSpot, we offer a comprehensive benefits package:
 
-**Health & Wellness:**
+Health & Wellness:
 - HMO for Principal members (option to add dependents for some roles)
 - Mental health resources and wellness programs
 
-**Time Off:**
+Time Off:
 - 7.5 days PTO upon regularization
 - 15 PTO days after completing 1 year
 - Unlimited PTO for leadership roles
 - US major holidays recognized
 
-**Work Arrangements:**
+Work Arrangements:
 - Remote work options
 - Flexible schedules (where applicable)
 - Night Differential
 
-**Plus:** Government-mandated statutory benefits and continuously tailored new benefits!`,
+Plus: Government-mandated statutory benefits and continuously tailored new benefits!`,
 
     "salary-range": `The salary for each position varies depending on experience and qualifications.
 
@@ -364,9 +364,9 @@ We're transparent about compensation and will discuss the range during the inter
 
     "bonuses-incentives": `Yes! We offer:
 
-- **Performance-based bonuses**
-- **Incentive programs** to reward hard work
-- **Recognition rewards** for achievements
+- Performance-based bonuses
+- Incentive programs to reward hard work
+- Recognition rewards for achievements
 
 We believe in recognizing the contributions of our employees!`,
 
@@ -377,9 +377,9 @@ We're open to discussions to ensure a package that works for both you and the co
     // === WORK ARRANGEMENTS ===
     "job-location": `Our job locations are diverse:
 
-- **Philippines offices** (various locations)
-- **Hybrid roles** (office + remote)
-- **Fully remote** positions
+- Philippines offices (various locations)
+- Hybrid roles (office + remote)
+- Fully remote positions
 
 Check the job listing for specific details or reach out if you have questions!`,
 
@@ -393,9 +393,9 @@ Our goal is to empower you to perform your best while balancing your personal li
 
     "work-schedule": `At OnSpot, we offer a blend of both structured and flexible schedules:
 
-- **Client-mandated schedules** for operational roles
-- **Flexible arrangements** for certain positions
-- **Autonomy** to manage your time with extreme ownership
+- Client-mandated schedules for operational roles
+- Flexible arrangements for certain positions
+- Autonomy to manage your time with extreme ownership
 
 Whether you prefer structure or flexibility, we have opportunities to fit your lifestyle!`,
 
@@ -411,33 +411,33 @@ We want you to feel energized and fulfilled both inside and outside of work!`,
 
     "mental-health": `We care deeply about the mental health of our employees:
 
-- Access to **counseling services**
-- **Wellness programs** and initiatives
-- **Mindfulness resources**
-- **Supportive work environment**
+- Access to counseling services
+- Wellness programs and initiatives
+- Mindfulness resources
+- Supportive work environment
 
 Your well-being is just as important as your productivity!`,
 
     "time-off": `At OnSpot, we believe in work-life balance:
 
-- **7.5 days PTO** upon regularization
-- **15 days PTO** after completing 1 year
-- **Unlimited PTO** for some leadership roles
-- **US major holidays** recognized
+- 7.5 days PTO upon regularization
+- 15 days PTO after completing 1 year
+- Unlimited PTO for some leadership roles
+- US major holidays recognized
 
 Your well-being is a priority here!`,
 
     // === TRAINING & CAREER GROWTH ===
     "training-programs": `We offer a robust learning and development program:
 
-- **Leadership training** for managers
-- **Technical workshops** and certifications
-- **Personal development** resources
-- **On-the-job training** and upskilling
+- Leadership training for managers
+- Technical workshops and certifications
+- Personal development resources
+- On-the-job training and upskilling
 
 Whether you want to master a new skill or grow in your career, we provide the tools!`,
 
-    "mentorship": `Yes! We believe in the power of mentorship.
+    mentorship: `Yes! We believe in the power of mentorship.
 
 At OnSpot, you'll have access to experienced professionals who can:
 - Guide you through your career path
@@ -448,20 +448,20 @@ We want to see you succeed!`,
 
     "career-advancement": `Absolutely! We're committed to your professional growth:
 
-- **Clear pathways for advancement**
-- **Internal mobility** and promotions
-- **Promote from within** culture
-- **Leadership development** programs
+- Clear pathways for advancement
+- Internal mobility and promotions
+- Promote from within culture
+- Leadership development programs
 
 Your success is our success!`,
 
     // === PERFORMANCE & RECOGNITION ===
     "performance-evaluation": `At OnSpot, performance is evaluated through:
 
-**Probationary Employees:**
+Probationary Employees:
 - Structured evaluations at 30, 60, 90, and 150 days
 
-**Regular Employees:**
+Regular Employees:
 - Quarterly performance reviews
 - Goal-setting and progress tracking
 - Focus on results AND growth
@@ -479,10 +479,10 @@ Your growth and input are key to our continuous improvement!`,
 
     "employee-recognition": `We love celebrating our team's successes!
 
-- **Recognition programs** and awards
-- **Shout-outs** in team meetings
-- **Company-wide gatherings** and celebrations
-- **Performance rewards**
+- Recognition programs and awards
+- Shout-outs in team meetings
+- Company-wide gatherings and celebrations
+- Performance rewards
 
 We make sure to highlight the hard work and accomplishments of our employees!`,
 
@@ -497,16 +497,16 @@ We make sure to highlight the hard work and accomplishments of our employees!`,
 We're committed to fostering a positive and dynamic work culture!`,
 
     // === ONBOARDING ===
-    "offer-letter": `Once you've successfully completed the hiring process, we'll extend a formal offer via **BambooHR**.
+    "offer-letter": `Once you've successfully completed the hiring process, we'll extend a formal offer via BambooHR.
 
-You can expect to receive it **the same day** we make our decision, ensuring a quick and seamless transition!`,
+You can expect to receive it the same day we make our decision, ensuring a quick and seamless transition!`,
 
     "after-offer-acceptance": `Once you accept your offer, we'll ensure a smooth onboarding process:
 
-1. **Quick setup** with all tools you need
-2. **Introduction** to your fantastic new team
-3. **BambooHR portal** for easy pre-employment requirements
-4. **Online documentation** - complete everything in a few easy steps
+1. Quick setup with all tools you need
+2. Introduction to your fantastic new team
+3. BambooHR portal for easy pre-employment requirements
+4. Online documentation - complete everything in a few easy steps
 
 We're absolutely thrilled to have you on board!`,
 
@@ -517,22 +517,22 @@ If you have any questions or would like to discuss the offer terms, we're open t
     // === GENERAL HR ===
     "employment-gap": `Of course! Life happens, and we understand that career paths aren't always linear.
 
-At OnSpot, we focus on your **skills, experiences, and potential**, so don't hesitate to apply even if you have gaps in your employment history!`,
+At OnSpot, we focus on your skills, experiences, and potential, so don't hesitate to apply even if you have gaps in your employment history!`,
 
-    "reapply": `Absolutely! We encourage candidates to reapply for future opportunities.
+    reapply: `Absolutely! We encourage candidates to reapply for future opportunities.
 
 Just because a role wasn't the right fit doesn't mean the next one won't be perfect for you. We'd love to see your application again!`,
 
     "part-time-contract": `Yes! We offer both part-time and contract positions for certain roles.
 
-If you're looking for a specific work arrangement, simply check our job listings or reach out to us at **careers@onspotglobal.com**!`,
+If you're looking for a specific work arrangement, simply check our job listings or reach out to us at careers@onspotglobal.com!`,
 
     // === CONTACT & SUPPORT ===
     "contact-support": `You can reach our team through:
 
-**Sales Inquiries:** sales@onspotglobal.com
-**Recruitment Team:** careers@onspotglobal.com
-**General Support:** support@onspotglobal.com
+Sales Inquiries: sales@onspotglobal.com
+Recruitment Team: careers@onspotglobal.com
+General Support: support@onspotglobal.com
 
 Our support team is available 24/7 to assist you!`,
 
@@ -549,31 +549,31 @@ Click the button below to schedule a free consultation call!`,
     // === ORIGINAL QUICK TOPICS (Preserved for backward compatibility) ===
     "how-it-works": `Here's how OnSpot outsourcing works:
 
-1. **Tell Us What You Need** - Share your requirements, and we'll match you with pre-vetted talent from our network.
+1. Tell Us What You Need - Share your requirements, and we'll match you with pre-vetted talent from our network.
 
-2. **Meet Your Team** - We introduce you to handpicked professionals who fit your needs.
+2. Meet Your Team - We introduce you to handpicked professionals who fit your needs.
 
-3. **Start Working** - Your team gets to work, managed by our systems and supported by AI-powered tools.
+3. Start Working - Your team gets to work, managed by our systems and supported by AI-powered tools.
 
-4. **Track Performance** - Monitor productivity, quality, and ROI through our real-time dashboard.
+4. Track Performance - Monitor productivity, quality, and ROI through our real-time dashboard.
 
 We handle recruitment, management, and performance tracking—so you can focus on growing your business.`,
 
     "ai-human": `The AI + Human advantage is what makes OnSpot different:
 
-**AI Powers Efficiency:**
+AI Powers Efficiency:
 - Automates routine tasks and workflows
 - Provides real-time performance insights
 - Handles scheduling, tracking, and reporting
 - Learns from patterns to optimize processes
 
-**Humans Provide Intelligence:**
+Humans Provide Intelligence:
 - Critical thinking and problem-solving
 - Creativity and strategic decision-making
 - Relationship building and empathy
 - Adaptability to unique situations
 
-**Together, They're Unstoppable:**
+Together, They're Unstoppable:
 - AI handles the repetitive work, freeing humans for high-value tasks
 - Humans guide AI and handle complex edge cases
 - Result: 3-5x productivity increase with lower costs
@@ -597,472 +597,117 @@ Click the button below to schedule a free consultation call. We typically respon
   };
 
   // ============================================================================
-  // FAQ TOPIC DETECTION - Maps user queries to FAQ responses
+  // FAQ KEYWORD MAPPING - Maps keywords/synonyms to FAQ topics
+  // ============================================================================
+  const faqKeywords: Record<string, string[]> = {
+    // Company & Services
+    "company-overview": ["company", "onspot", "about", "who are you", "business"],
+    "services-offered": ["service", "offer", "provide", "what do you do", "bpo", "sales", "virtual assistance"],
+    "industries-served": ["industry", "industries", "sector", "vertical", "market"],
+    "hire-virtual-assistant": ["hire va", "virtual assistant", "get assistant", "need va"],
+
+    // Pricing & Contracts
+    "pricing": ["pric", "cost", "rate", "fee", "how much", "budget", "quote"],
+    "quality-assurance": ["quality", "qa", "assurance", "testing"],
+    "data-security": ["security", "privacy", "data protection", "confidential", "secure"],
+    "references-case-studies": ["reference", "case stud", "portfolio", "previous work", "example"],
+
+    // Job Openings & Application
+    "job-openings": ["job opening", "position", "role", "vacanc", "hiring", "available job"],
+    "how-to-apply": ["how apply", "how to join", "join", "apply", "application process", "sign up", "get started"],
+    "application-documents": ["document", "requirement", "what need", "submit"],
+    "submit-resume": ["submit resume", "send cv", "upload resume", "cv"],
+    "multiple-applications": ["multiple position", "apply multiple", "several role"],
+    "edit-application": ["edit application", "update application", "change application"],
+    "email-applications": ["email application", "send email"],
+
+    // Qualifications & Experience
+    "job-qualifications": ["qualification", "requirement", "skill needed"],
+    "industry-experience": ["industry experience", "sector experience"],
+    "no-experience": ["no experience", "without experience", "entry level", "beginner"],
+    "apply-without-qualifications": ["don't meet", "dont meet", "not qualified", "missing requirement"],
+
+    // Interview Process
+    "interview-expectations": ["what expect", "interview expect", "what happen"],
+    "interview-preparation": ["prepare interview", "how prepare", "interview prep"],
+    "interview-format": ["virtual interview", "in-person", "online interview", "zoom interview"],
+    "interview-duration": ["how long interview", "interview duration", "interview time"],
+    "interview-questions": ["interview question", "what ask", "question ask"],
+    "skills-assessment": ["skill assessment", "skills test", "assessment test"],
+    "pre-interview-assessment": ["before interview", "pre-interview", "assessment before"],
+
+    // Application Status & Timeline
+    "application-timeline": ["how long", "timeline", "when hear", "process time", "response time"],
+    "check-application-status": ["check status", "application status", "track application"],
+    "follow-up-application": ["follow up", "follow-up", "check in"],
+    "post-interview-status": ["haven't heard", "havent heard", "no response", "after interview"],
+
+    // Company Culture
+    "company-culture": ["culture", "value", "work environment", "team"],
+    "employee-development": ["development", "grow", "career growth", "training"],
+    "diversity-inclusion": ["diversity", "inclusion", "dei"],
+    "community-involvement": ["community", "social cause", "give back", "charity"],
+
+    // Benefits & Compensation
+    "benefits": ["benefit", "perk", "what offer employee"],
+    "salary-range": ["salary", "compensation", "pay", "wage"],
+    "bonuses-incentives": ["bonus", "incentive", "reward"],
+    "salary-negotiation": ["negotiat", "discuss salary", "salary talk"],
+
+    // Work Arrangements
+    "job-location": ["location", "where", "office", "site"],
+    "relocation-assistance": ["relocation", "relocate", "move"],
+    "remote-work": ["remote", "work from home", "wfh", "telecommute"],
+    "work-schedule": ["schedule", "hour", "shift", "flexible time"],
+    "work-life-balance": ["work-life", "work life", "balance"],
+    "mental-health": ["mental health", "wellness", "wellbeing"],
+    "time-off": ["time off", "pto", "vacation", "leave", "holiday"],
+
+    // Training & Career Growth
+    "training-programs": ["training", "learning", "workshop", "course"],
+    "mentorship": ["mentor", "mentorship", "coach"],
+    "career-advancement": ["advancement", "promotion", "career path", "move up"],
+
+    // Performance & Recognition
+    "performance-evaluation": ["performance", "evaluation", "review", "appraisal"],
+    "employee-feedback": ["feedback", "input", "suggestion"],
+    "employee-recognition": ["recogni", "award", "achievement"],
+    "perks-rewards": ["perk", "reward", "gift"],
+
+    // Onboarding
+    "offer-letter": ["offer letter", "job offer", "offer"],
+    "after-offer-acceptance": ["after accept", "once accept", "accepted offer"],
+    "negotiate-offer": ["negotiate offer", "discuss offer"],
+
+    // General HR
+    "employment-gap": ["gap", "employment gap", "career break"],
+    "reapply": ["reapply", "apply again"],
+    "part-time-contract": ["part-time", "part time", "contract", "freelance"],
+
+    // Contact & Support
+    "contact-support": ["contact", "reach", "email", "phone", "support"],
+    "schedule-meeting": ["schedule", "book", "meeting", "call", "consultation"],
+
+    // Original Quick Topics
+    "how-it-works": ["how work", "how does", "process", "outsourc"],
+    "ai-human": ["ai human", "ai advantage", "artificial intelligence"],
+    "talk-human": ["talk human", "speak person", "real person", "someone"],
+  };
+
+  // ============================================================================
+  // FAQ TOPIC DETECTION - Fuzzy keyword matching
   // ============================================================================
   const detectFAQTopic = (message: string): string | null => {
     const lowerMessage = message.toLowerCase();
 
-    // === COMPANY & SERVICES ===
-    if (
-      (lowerMessage.includes("what") || lowerMessage.includes("tell")) &&
-      (lowerMessage.includes("company") || lowerMessage.includes("onspot") || lowerMessage.includes("about you"))
-    ) {
-      return "company-overview";
-    }
-
-    if (
-      (lowerMessage.includes("what") || lowerMessage.includes("which")) &&
-      (lowerMessage.includes("service") || lowerMessage.includes("offer") || lowerMessage.includes("provide") || lowerMessage.includes("do you do"))
-    ) {
-      return "services-offered";
-    }
-
-    if (
-      lowerMessage.includes("industry") ||
-      lowerMessage.includes("industries") ||
-      (lowerMessage.includes("what") && lowerMessage.includes("sector"))
-    ) {
-      return "industries-served";
-    }
-
-    if (
-      (lowerMessage.includes("hire") || lowerMessage.includes("get") || lowerMessage.includes("need")) &&
-      (lowerMessage.includes("virtual assistant") || lowerMessage.includes("va") || lowerMessage.includes("assistant"))
-    ) {
-      return "hire-virtual-assistant";
-    }
-
-    // === PRICING & CONTRACTS ===
-    if (
-      lowerMessage.includes("pric") ||
-      lowerMessage.includes("cost") ||
-      lowerMessage.includes("rate") ||
-      lowerMessage.includes("fee") ||
-      lowerMessage.includes("how much")
-    ) {
-      return "pricing";
-    }
-
-    if (
-      lowerMessage.includes("quality") ||
-      (lowerMessage.includes("ensure") && lowerMessage.includes("work"))
-    ) {
-      return "quality-assurance";
-    }
-
-    if (
-      lowerMessage.includes("security") ||
-      lowerMessage.includes("privacy") ||
-      lowerMessage.includes("data protection")
-    ) {
-      return "data-security";
-    }
-
-    if (
-      lowerMessage.includes("reference") ||
-      lowerMessage.includes("case stud") ||
-      lowerMessage.includes("previous work") ||
-      lowerMessage.includes("portfolio")
-    ) {
-      return "references-case-studies";
-    }
-
-    // === JOB OPENINGS & APPLICATION ===
-    if (
-      (lowerMessage.includes("job") || lowerMessage.includes("position") || lowerMessage.includes("role") || lowerMessage.includes("vacanc")) &&
-      (lowerMessage.includes("open") || lowerMessage.includes("available") || lowerMessage.includes("hiring"))
-    ) {
-      return "job-openings";
-    }
-
-    if (
-      (lowerMessage.includes("how") || lowerMessage.includes("where")) &&
-      (lowerMessage.includes("apply") || lowerMessage.includes("application"))
-    ) {
-      return "how-to-apply";
-    }
-
-    if (
-      (lowerMessage.includes("document") || lowerMessage.includes("requirement") || lowerMessage.includes("need")) &&
-      (lowerMessage.includes("apply") || lowerMessage.includes("application"))
-    ) {
-      return "application-documents";
-    }
-
-    if (
-      lowerMessage.includes("submit") &&
-      (lowerMessage.includes("resume") || lowerMessage.includes("cv") || lowerMessage.includes("application"))
-    ) {
-      return "submit-resume";
-    }
-
-    if (
-      lowerMessage.includes("multiple") &&
-      (lowerMessage.includes("position") || lowerMessage.includes("job") || lowerMessage.includes("role"))
-    ) {
-      return "multiple-applications";
-    }
-
-    if (
-      (lowerMessage.includes("edit") || lowerMessage.includes("update") || lowerMessage.includes("change")) &&
-      lowerMessage.includes("application")
-    ) {
-      return "edit-application";
-    }
-
-    if (
-      lowerMessage.includes("email") &&
-      lowerMessage.includes("application")
-    ) {
-      return "email-applications";
-    }
-
-    // === QUALIFICATIONS & EXPERIENCE ===
-    if (
-      lowerMessage.includes("qualification") ||
-      (lowerMessage.includes("requirement") && lowerMessage.includes("job"))
-    ) {
-      return "job-qualifications";
-    }
-
-    if (
-      lowerMessage.includes("industry") &&
-      lowerMessage.includes("experience")
-    ) {
-      return "industry-experience";
-    }
-
-    if (
-      (lowerMessage.includes("no") || lowerMessage.includes("without")) &&
-      lowerMessage.includes("experience")
-    ) {
-      return "no-experience";
-    }
-
-    if (
-      (lowerMessage.includes("don't meet") || lowerMessage.includes("dont meet") || lowerMessage.includes("not qualified")) &&
-      (lowerMessage.includes("qualification") || lowerMessage.includes("requirement"))
-    ) {
-      return "apply-without-qualifications";
-    }
-
-    // === INTERVIEW PROCESS ===
-    if (
-      (lowerMessage.includes("what") || lowerMessage.includes("expect")) &&
-      lowerMessage.includes("interview")
-    ) {
-      return "interview-expectations";
-    }
-
-    if (
-      lowerMessage.includes("prepare") &&
-      lowerMessage.includes("interview")
-    ) {
-      return "interview-preparation";
-    }
-
-    if (
-      (lowerMessage.includes("virtual") || lowerMessage.includes("in-person") || lowerMessage.includes("online")) &&
-      lowerMessage.includes("interview")
-    ) {
-      return "interview-format";
-    }
-
-    if (
-      (lowerMessage.includes("how long") || lowerMessage.includes("duration")) &&
-      lowerMessage.includes("interview")
-    ) {
-      return "interview-duration";
-    }
-
-    if (
-      (lowerMessage.includes("question") || lowerMessage.includes("ask")) &&
-      lowerMessage.includes("interview")
-    ) {
-      return "interview-questions";
-    }
-
-    if (
-      lowerMessage.includes("assessment") &&
-      (lowerMessage.includes("interview") || lowerMessage.includes("skill"))
-    ) {
-      if (lowerMessage.includes("before")) {
-        return "pre-interview-assessment";
+    // Loop through all FAQ topics and their keywords
+    // Returns the first matching topic using fuzzy substring matching
+    for (const [topic, keywords] of Object.entries(faqKeywords)) {
+      for (const keyword of keywords) {
+        if (lowerMessage.includes(keyword.toLowerCase())) {
+          return topic;
+        }
       }
-      return "skills-assessment";
-    }
-
-    // === APPLICATION STATUS & TIMELINE ===
-    if (
-      (lowerMessage.includes("how long") || lowerMessage.includes("timeline") || lowerMessage.includes("when")) &&
-      (lowerMessage.includes("hear") || lowerMessage.includes("response") || lowerMessage.includes("process"))
-    ) {
-      return "application-timeline";
-    }
-
-    if (
-      (lowerMessage.includes("check") || lowerMessage.includes("track")) &&
-      lowerMessage.includes("status")
-    ) {
-      return "check-application-status";
-    }
-
-    if (
-      lowerMessage.includes("follow up") ||
-      lowerMessage.includes("follow-up")
-    ) {
-      return "follow-up-application";
-    }
-
-    if (
-      (lowerMessage.includes("haven't heard") || lowerMessage.includes("havent heard") || lowerMessage.includes("no response")) &&
-      lowerMessage.includes("interview")
-    ) {
-      return "post-interview-status";
-    }
-
-    // === COMPANY CULTURE ===
-    if (
-      lowerMessage.includes("culture") ||
-      (lowerMessage.includes("value") && !lowerMessage.includes("salary"))
-    ) {
-      return "company-culture";
-    }
-
-    if (
-      lowerMessage.includes("development") ||
-      (lowerMessage.includes("grow") && lowerMessage.includes("career"))
-    ) {
-      return "employee-development";
-    }
-
-    if (
-      lowerMessage.includes("diversity") ||
-      lowerMessage.includes("inclusion") ||
-      lowerMessage.includes("dei")
-    ) {
-      return "diversity-inclusion";
-    }
-
-    if (
-      lowerMessage.includes("community") ||
-      lowerMessage.includes("social cause") ||
-      (lowerMessage.includes("give") && lowerMessage.includes("back"))
-    ) {
-      return "community-involvement";
-    }
-
-    // === BENEFITS & COMPENSATION ===
-    if (
-      lowerMessage.includes("benefit") ||
-      (lowerMessage.includes("what") && lowerMessage.includes("offer") && !lowerMessage.includes("service"))
-    ) {
-      return "benefits";
-    }
-
-    if (
-      lowerMessage.includes("salary") ||
-      lowerMessage.includes("compensation") ||
-      lowerMessage.includes("pay range")
-    ) {
-      return "salary-range";
-    }
-
-    if (
-      lowerMessage.includes("bonus") ||
-      lowerMessage.includes("incentive")
-    ) {
-      return "bonuses-incentives";
-    }
-
-    if (
-      lowerMessage.includes("negotiat") &&
-      (lowerMessage.includes("salary") || lowerMessage.includes("offer") || lowerMessage.includes("pay"))
-    ) {
-      return "salary-negotiation";
-    }
-
-    // === WORK ARRANGEMENTS ===
-    if (
-      (lowerMessage.includes("where") || lowerMessage.includes("location")) &&
-      (lowerMessage.includes("job") || lowerMessage.includes("work") || lowerMessage.includes("office"))
-    ) {
-      return "job-location";
-    }
-
-    if (
-      lowerMessage.includes("relocation") ||
-      (lowerMessage.includes("relocate") || lowerMessage.includes("move"))
-    ) {
-      return "relocation-assistance";
-    }
-
-    if (
-      (lowerMessage.includes("remote") || lowerMessage.includes("work from home") || lowerMessage.includes("wfh")) &&
-      !lowerMessage.includes("interview")
-    ) {
-      return "remote-work";
-    }
-
-    if (
-      lowerMessage.includes("schedule") ||
-      lowerMessage.includes("hours") ||
-      (lowerMessage.includes("flexible") && lowerMessage.includes("time"))
-    ) {
-      return "work-schedule";
-    }
-
-    if (
-      lowerMessage.includes("work-life") ||
-      lowerMessage.includes("work life") ||
-      (lowerMessage.includes("balance") && lowerMessage.includes("work"))
-    ) {
-      return "work-life-balance";
-    }
-
-    if (
-      lowerMessage.includes("mental health") ||
-      lowerMessage.includes("wellness")
-    ) {
-      return "mental-health";
-    }
-
-    if (
-      (lowerMessage.includes("time off") || lowerMessage.includes("pto") || lowerMessage.includes("vacation") || lowerMessage.includes("leave")) &&
-      !lowerMessage.includes("take off")
-    ) {
-      return "time-off";
-    }
-
-    // === TRAINING & CAREER GROWTH ===
-    if (
-      lowerMessage.includes("training") ||
-      (lowerMessage.includes("learn") && lowerMessage.includes("program"))
-    ) {
-      return "training-programs";
-    }
-
-    if (
-      lowerMessage.includes("mentor") ||
-      lowerMessage.includes("mentorship")
-    ) {
-      return "mentorship";
-    }
-
-    if (
-      lowerMessage.includes("advancement") ||
-      lowerMessage.includes("promotion") ||
-      (lowerMessage.includes("career") && (lowerMessage.includes("path") || lowerMessage.includes("growth")))
-    ) {
-      return "career-advancement";
-    }
-
-    // === PERFORMANCE & RECOGNITION ===
-    if (
-      lowerMessage.includes("performance") &&
-      (lowerMessage.includes("evaluat") || lowerMessage.includes("review") || lowerMessage.includes("assess"))
-    ) {
-      return "performance-evaluation";
-    }
-
-    if (
-      lowerMessage.includes("feedback")
-    ) {
-      return "employee-feedback";
-    }
-
-    if (
-      lowerMessage.includes("recogni") ||
-      (lowerMessage.includes("achiev") && lowerMessage.includes("reward"))
-    ) {
-      return "employee-recognition";
-    }
-
-    if (
-      lowerMessage.includes("perk") ||
-      (lowerMessage.includes("reward") && !lowerMessage.includes("achiev"))
-    ) {
-      return "perks-rewards";
-    }
-
-    // === ONBOARDING ===
-    if (
-      lowerMessage.includes("offer letter") ||
-      (lowerMessage.includes("when") && lowerMessage.includes("offer"))
-    ) {
-      return "offer-letter";
-    }
-
-    if (
-      (lowerMessage.includes("after") || lowerMessage.includes("once")) &&
-      lowerMessage.includes("accept")
-    ) {
-      return "after-offer-acceptance";
-    }
-
-    if (
-      lowerMessage.includes("negotiat") &&
-      lowerMessage.includes("offer")
-    ) {
-      return "negotiate-offer";
-    }
-
-    // === GENERAL HR ===
-    if (
-      lowerMessage.includes("gap") &&
-      lowerMessage.includes("employment")
-    ) {
-      return "employment-gap";
-    }
-
-    if (
-      lowerMessage.includes("reapply") ||
-      (lowerMessage.includes("apply again") && lowerMessage.includes("not selected"))
-    ) {
-      return "reapply";
-    }
-
-    if (
-      (lowerMessage.includes("part-time") || lowerMessage.includes("part time") || lowerMessage.includes("contract"))
-    ) {
-      return "part-time-contract";
-    }
-
-    // === CONTACT & SUPPORT ===
-    if (
-      (lowerMessage.includes("contact") || lowerMessage.includes("reach") || lowerMessage.includes("email")) &&
-      (lowerMessage.includes("support") || lowerMessage.includes("help") || lowerMessage.includes("team"))
-    ) {
-      return "contact-support";
-    }
-
-    if (
-      (lowerMessage.includes("schedule") || lowerMessage.includes("book") || lowerMessage.includes("meeting") || lowerMessage.includes("call")) &&
-      !lowerMessage.includes("interview")
-    ) {
-      return "schedule-meeting";
-    }
-
-    // === ORIGINAL QUICK TOPICS (Preserved for backward compatibility) ===
-    if (
-      lowerMessage.includes("how") &&
-      (lowerMessage.includes("work") || lowerMessage.includes("process") || lowerMessage.includes("outsourc"))
-    ) {
-      return "how-it-works";
-    }
-
-    if (
-      (lowerMessage.includes("ai") || lowerMessage.includes("artificial")) &&
-      (lowerMessage.includes("human") || lowerMessage.includes("advantage") || lowerMessage.includes("benefit"))
-    ) {
-      return "ai-human";
-    }
-
-    if (
-      (lowerMessage.includes("talk") || lowerMessage.includes("speak")) &&
-      (lowerMessage.includes("human") || lowerMessage.includes("expert") || lowerMessage.includes("person") || lowerMessage.includes("someone"))
-    ) {
-      return "talk-human";
     }
 
     // No match found
@@ -1275,7 +920,7 @@ Click the button below to schedule a free consultation call. We typically respon
     // ========================================================================
     if (faqResponses[topic]) {
       const assistantMessageId = Date.now() + 1;
-      
+
       // Show typing indicator
       setMessages((prev) => [
         ...prev,
@@ -1354,7 +999,7 @@ Click the button below to schedule a free consultation call. We typically respon
         for (const line of lines) {
           if (line.startsWith("data: ")) {
             const data = line.slice(6);
-            
+
             if (data === "[DONE]") break;
 
             try {
@@ -1396,14 +1041,21 @@ Click the button below to schedule a free consultation call. We typically respon
     } catch (error) {
       console.error("Chat API error:", error);
       setIsStreaming(false);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now() + 2,
-          text: "I'm sorry, I encountered an error. Please try again.",
-          sender: "vanessa",
-        },
-      ]);
+
+      // Remove typing indicator and show fallback message
+      setMessages((prev) => {
+        const updated = [...prev];
+        const lastMessage = updated[updated.length - 1];
+        
+        // Clear typing indicator if present
+        if (lastMessage && lastMessage.isTyping) {
+          lastMessage.isTyping = false;
+          lastMessage.text =
+            "I couldn't find an answer for that right now. Would you like me to connect you with an OnSpot Manager?\n\nIn the meantime, you can:\n- Browse our FAQ topics above\n- Email us at **sales@onspotglobal.com** (for business inquiries)\n- Email us at **careers@onspotglobal.com** (for job applications)";
+        }
+        
+        return updated;
+      });
     }
   };
 
@@ -1510,10 +1162,10 @@ Click the button below to schedule a free consultation call. We typically respon
     // LOCAL FAQ DETECTION - Check if message matches FAQ topic
     // ========================================================================
     const detectedTopic = detectFAQTopic(userMessage);
-    
+
     if (detectedTopic && faqResponses[detectedTopic]) {
       const assistantMessageId = Date.now() + 1;
-      
+
       // Show typing indicator
       setMessages((prev) => [
         ...prev,
@@ -1596,7 +1248,7 @@ Click the button below to schedule a free consultation call. We typically respon
         for (const line of lines) {
           if (line.startsWith("data: ")) {
             const data = line.slice(6);
-            
+
             if (data === "[DONE]") {
               break;
             }
@@ -1649,15 +1301,20 @@ Click the button below to schedule a free consultation call. We typically respon
       console.error("Chat API error:", error);
       setIsStreaming(false);
 
-      // Show error message
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now() + 2,
-          text: "I'm sorry, I encountered an error. Please try again.",
-          sender: "vanessa",
-        },
-      ]);
+      // Remove typing indicator and show fallback message
+      setMessages((prev) => {
+        const updated = [...prev];
+        const lastMessage = updated[updated.length - 1];
+        
+        // Clear typing indicator if present
+        if (lastMessage && lastMessage.isTyping) {
+          lastMessage.isTyping = false;
+          lastMessage.text =
+            "I couldn't find an answer for that right now. Would you like me to connect you with an OnSpot Manager?\n\nIn the meantime, you can:\n- Browse our FAQ topics above\n- Email us at **sales@onspotglobal.com** (for business inquiries)\n- Email us at **careers@onspotglobal.com** (for job applications)";
+        }
+        
+        return updated;
+      });
     }
   };
 
