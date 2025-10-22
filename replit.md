@@ -70,11 +70,14 @@ Preferred communication style: Simple, everyday language.
 - **GoHighLevel (GHL)**: Automated lead management with contact and optional opportunity creation. Requires `GHL_API_KEY` for basic functionality.
 
 ### Chatbot Integration
-- **VanessaChat (OpenAI Integration)**: AI-powered virtual assistant using `gpt-4o-mini` model with full conversation continuity. Features:
-  - **Streaming Responses**: Real-time streaming via `/api/chat/stream` endpoint
-  - **Conversation History**: Thread-based conversation persistence with 20-message limit per thread
-  - **Memory Management**: Automatic cleanup every 15 minutes removes conversations idle for >1 hour to prevent memory leaks
-  - **Dual API Support**: Both streaming (`streamMessageToAssistant`) and non-streaming (`sendMessageToAssistant`) endpoints
+- **VanessaChat (OpenAI Assistant API)**: AI-powered virtual assistant using OpenAI Assistant API with custom knowledge base. Features:
+  - **Assistant API**: Uses OpenAI's Assistant API with custom assistant configuration from OpenAI Dashboard
+  - **Streaming Responses**: Real-time streaming via `/api/chat/stream` endpoint with Server-Sent Events (SSE)
+  - **Thread Persistence**: OpenAI-managed thread persistence for natural conversation continuity across sessions
+  - **Knowledge Base**: Configured assistant can access uploaded knowledge base documents from OpenAI Dashboard
+  - **Dual API Support**: Both streaming (`streamWithAssistant`) and non-streaming (`sendMessageToAssistant`) endpoints
   - **Implementation**: Managed by `server/services/openaiService.ts`, displayed by `client/src/components/VanessaChat.tsx`
-  - **Requirements**: `OPENAI_API_KEY` environment variable
+  - **Requirements**: 
+    - `OPENAI_API_KEY`: OpenAI API key
+    - `ASSISTANT_ID`: OpenAI Assistant ID (starts with `asst_`) from OpenAI Dashboard
 - **Lindy.ai**: Embedded AI chatbot for customer support, pending domain whitelisting.

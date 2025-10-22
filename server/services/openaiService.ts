@@ -1,174 +1,163 @@
 import OpenAI from "openai";
-import { randomUUID } from "crypto";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Validate required environment variables at startup
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const ASSISTANT_ID = process.env.ASSISTANT_ID;
 
-export interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
+if (!OPENAI_API_KEY) {
+  console.warn("⚠️ OPENAI_API_KEY not found in environment variables. VanessaChat will not work.");
 }
+
+if (!ASSISTANT_ID) {
+  console.warn("⚠️ ASSISTANT_ID not found in environment variables. VanessaChat will not work.");
+}
+
+// Only initialize OpenAI client if API key is available
+const openai = OPENAI_API_KEY
+  ? new OpenAI({ apiKey: OPENAI_API_KEY })
+  : null;
+
+// Helper to check if services are configured
+const isConfigured = () => {
+  if (!openai) {
+    throw new Error("OpenAI API is not configured. Please set OPENAI_API_KEY in environment variables.");
+  }
+  if (!ASSISTANT_ID) {
+    throw new Error("Assistant is not configured. Please set ASSISTANT_ID in environment variables.");
+  }
+};
 
 export interface ChatResponse {
   message: string;
   threadId: string;
 }
 
-// In-memory conversation history storage with timestamps (threadId -> {messages, lastAccess})
-const conversationHistory = new Map<string, {
-  messages: ChatMessage[];
-  lastAccess: number;
-}>();
+/**
+ * Stream responses from the OpenAI Assistant with conversation continuity
+ * Uses the Assistant API with threads for natural conversation flow
+ */
+export async function* streamWithAssistant(
+  userMessage: string,
+  threadId?: string,
+): AsyncGenerator<{ type: "content" | "done" | "threadId"; data: string }> {
+  try {
+    // Check if OpenAI and Assistant are configured
+    isConfigured();
+    
+    // Type assertions - isConfigured() ensures these are not null
+    const client = openai!;
+    const assistantId = ASSISTANT_ID!;
 
-// Cleanup old conversations every 15 minutes
-const CLEANUP_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
-const MAX_CONVERSATION_AGE_MS = 60 * 60 * 1000; // 1 hour
-
-setInterval(() => {
-  const now = Date.now();
-  const keysToDelete: string[] = [];
-  
-  Array.from(conversationHistory.entries()).forEach(([threadId, data]) => {
-    if (now - data.lastAccess > MAX_CONVERSATION_AGE_MS) {
-      keysToDelete.push(threadId);
+    // Create a new thread or use the existing one
+    let currentThreadId = threadId;
+    
+    if (!currentThreadId) {
+      const thread = await client.beta.threads.create();
+      currentThreadId = thread.id;
+      console.log(`📝 Created new thread: ${currentThreadId}`);
+    } else {
+      console.log(`📝 Reusing thread: ${currentThreadId}`);
     }
-  });
-  
-  keysToDelete.forEach(key => conversationHistory.delete(key));
-  
-  if (keysToDelete.length > 0) {
-    console.log(`🧹 Cleaned up ${keysToDelete.length} expired conversation(s)`);
-  }
-}, CLEANUP_INTERVAL_MS);
 
-// System prompt for Vanessa
-const VANESSA_SYSTEM_PROMPT = `
-You are Vanessa, the friendly and professional AI assistant for OnSpot Workspace.
-You help users by answering FAQs about OnSpot's coworking spaces, staffing, outsourcing,
-and global support solutions. Always respond helpfully, conversationally, and concisely.
-`.trim();
+    // Yield the thread ID first so the client can track it
+    yield { type: "threadId", data: currentThreadId };
+
+    // Add the user's message to the thread
+    await client.beta.threads.messages.create(currentThreadId, {
+      role: "user",
+      content: userMessage,
+    });
+
+    // Start a streaming run with the assistant
+    const stream = await client.beta.threads.runs.stream(currentThreadId, {
+      assistant_id: assistantId,
+    });
+
+    // Process the streaming response
+    for await (const event of stream) {
+      // Handle text delta events (streaming tokens)
+      if (event.event === "thread.message.delta") {
+        const delta = event.data.delta;
+        if (delta.content && delta.content[0]?.type === "text") {
+          const textDelta = delta.content[0].text?.value;
+          if (textDelta) {
+            yield { type: "content", data: textDelta };
+          }
+        }
+      }
+      
+      // Handle completion
+      if (event.event === "thread.run.completed") {
+        console.log(`✅ Assistant run completed for thread: ${currentThreadId}`);
+      }
+
+      // Handle errors
+      if (event.event === "thread.run.failed") {
+        console.error(`❌ Assistant run failed for thread: ${currentThreadId}`, event.data);
+        throw new Error("Assistant run failed");
+      }
+    }
+
+    yield { type: "done", data: "" };
+  } catch (error) {
+    console.error("❌ OpenAI Assistant streaming error:", error);
+    throw error;
+  }
+}
 
 /**
- * Send a message to the OpenAI Chat API and get a response
- * Uses gpt-5 with Vanessa's system prompt (your GPT’s behavior)
+ * Non-streaming version of the Assistant API call
  */
 export async function sendMessageToAssistant(
   userMessage: string,
   threadId?: string,
 ): Promise<ChatResponse> {
   try {
-    // Generate or use existing thread ID
-    const currentThreadId = threadId || randomUUID();
+    // Check if OpenAI and Assistant are configured
+    isConfigured();
     
-    // Get or initialize conversation history for this thread
-    const conversationData = conversationHistory.get(currentThreadId) || { messages: [], lastAccess: Date.now() };
-    let history = conversationData.messages;
-    
-    // Update last access time
-    conversationData.lastAccess = Date.now();
-    
-    // Add user's message to history
-    history.push({ role: "user", content: userMessage });
-    
-    // Build messages array with system prompt and full conversation history
-    const messages: any[] = [
-      { role: "system", content: VANESSA_SYSTEM_PROMPT },
-      ...history
-    ];
+    // Type assertions - isConfigured() ensures these are not null
+    const client = openai!;
+    const assistantId = ASSISTANT_ID!;
 
-    // Get response from OpenAI
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages,
-      temperature: 0.7,
-    });
-
-    const reply = completion.choices[0].message.content || "Sorry, I couldn't generate a reply.";
+    // Create a new thread or use the existing one
+    let currentThreadId = threadId;
     
-    // Add assistant's response to history
-    history.push({ role: "assistant", content: reply });
-    
-    // Store updated history (limit to last 20 messages to prevent memory issues)
-    if (history.length > 20) {
-      history = history.slice(-20);
+    if (!currentThreadId) {
+      const thread = await client.beta.threads.create();
+      currentThreadId = thread.id;
     }
-    conversationData.messages = history;
-    conversationHistory.set(currentThreadId, conversationData);
 
-    return {
-      message: reply,
-      threadId: currentThreadId,
-    };
-  } catch (error) {
-    console.error("❌ OpenAI Chat API error:", error);
-    throw error;
-  }
-}
-
-/**
- * Stream responses from Vanessa with conversation history
- */
-export async function* streamMessageToAssistant(
-  userMessage: string,
-  threadId?: string,
-): AsyncGenerator<{ type: "content" | "done" | "threadId"; data: string }> {
-  try {
-    // Generate or use existing thread ID
-    const currentThreadId = threadId || randomUUID();
-    
-    // Get or initialize conversation history for this thread
-    const conversationData = conversationHistory.get(currentThreadId) || { messages: [], lastAccess: Date.now() };
-    let history = conversationData.messages;
-    
-    // Update last access time
-    conversationData.lastAccess = Date.now();
-    
-    // Add user's message to history
-    history.push({ role: "user", content: userMessage });
-    
-    // Build messages array with system prompt and full conversation history
-    const messages: any[] = [
-      { role: "system", content: VANESSA_SYSTEM_PROMPT },
-      ...history
-    ];
-
-    // Stream response from OpenAI
-    const stream = await openai.chat.completions.stream({
-      model: "gpt-4o-mini",
-      messages,
-      stream: true,
-      temperature: 0.7,
+    // Add the user's message to the thread
+    await client.beta.threads.messages.create(currentThreadId, {
+      role: "user",
+      content: userMessage,
     });
 
-    // Yield thread ID first
-    yield { type: "threadId", data: currentThreadId };
+    // Run the assistant (non-streaming)
+    const run = await client.beta.threads.runs.createAndPoll(currentThreadId, {
+      assistant_id: assistantId,
+    });
 
-    // Collect the full assistant response as we stream it
-    let fullResponse = "";
-
-    // Process streaming chunks
-    for await (const chunk of stream) {
-      const content = chunk.choices?.[0]?.delta?.content;
-      if (content) {
-        fullResponse += content;
-        yield { type: "content", data: content };
+    if (run.status === "completed") {
+      // Get the assistant's response
+      const messages = await client.beta.threads.messages.list(currentThreadId);
+      const lastMessage = messages.data[0];
+      
+      if (lastMessage.role === "assistant" && lastMessage.content[0]?.type === "text") {
+        return {
+          message: lastMessage.content[0].text.value,
+          threadId: currentThreadId,
+        };
       }
     }
 
-    // Add assistant's response to history
-    history.push({ role: "assistant", content: fullResponse });
-    
-    // Store updated history (limit to last 20 messages to prevent memory issues)
-    if (history.length > 20) {
-      history = history.slice(-20);
-    }
-    conversationData.messages = history;
-    conversationHistory.set(currentThreadId, conversationData);
-
-    yield { type: "done", data: "" };
+    throw new Error(`Assistant run failed with status: ${run.status}`);
   } catch (error) {
-    console.error("❌ Vanessa streaming error:", error);
+    console.error("❌ OpenAI Assistant API error:", error);
     throw error;
   }
 }
+
+// Legacy export for backward compatibility (maps to new Assistant API)
+export const streamMessageToAssistant = streamWithAssistant;

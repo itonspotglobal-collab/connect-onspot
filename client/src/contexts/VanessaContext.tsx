@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
 export interface Message {
-  id: number;
+  id: number | string;
   text: string;
   sender: "vanessa" | "user";
   isTyping?: boolean;

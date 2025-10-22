@@ -8,6 +8,12 @@ import { useVanessa } from "@/contexts/VanessaContext";
 import type { Message } from "@/contexts/VanessaContext";
 import vanessaPhoto from "@assets/Vanessa_1760674530978.png";
 
+// Generate unique message IDs
+let messageIdCounter = 0;
+const generateMessageId = () => {
+  return `${Date.now()}-${messageIdCounter++}`;
+};
+
 interface VanessaChatProps {
   isOpen: boolean;
   onClose: () => void;
@@ -258,7 +264,7 @@ export function VanessaChat({
     setMessages((prev) => [
       ...prev,
       {
-        id: Date.now(),
+        id: generateMessageId(),
         text: userMessage,
         sender: "user",
       },
@@ -270,7 +276,7 @@ export function VanessaChat({
     try {
       setIsStreaming(true);
 
-      const assistantMessageId = Date.now() + 1;
+      const assistantMessageId = generateMessageId();
       setMessages((prev) => [
         ...prev,
         {
@@ -468,7 +474,7 @@ export function VanessaChat({
     setMessages((prev) => [
       ...prev,
       {
-        id: Date.now(),
+        id: generateMessageId(),
         text: userMessage,
         sender: "user",
       },
@@ -480,7 +486,7 @@ export function VanessaChat({
     try {
       setIsStreaming(true);
 
-      const assistantMessageId = Date.now() + 1;
+      const assistantMessageId = generateMessageId();
       setMessages((prev) => [
         ...prev,
         {
