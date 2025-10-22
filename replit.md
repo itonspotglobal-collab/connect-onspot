@@ -85,6 +85,23 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### Homepage Mobile Optimization - October 22, 2025
+- **Purpose**: Optimize entire homepage for mobile devices, especially the tech stack integrations section
+- **Key Changes**:
+  - **Integrations Section Redesign**: Dual-layout approach for optimal viewing across all screen sizes
+    - **Mobile (< 768px)**: Clean 3-column grid layout with 4px gaps, properly sized icons (w-8 h-8 for images, w-7 h-7 for components), and centered labels
+    - **Tablet (≥ 768px)**: Circular neural network layout with 220px radius, maintaining visual hierarchy and proper spacing
+    - **Desktop (≥ 1024px)**: Expanded circular layout with 280px radius for comfortable spacing between integration nodes
+  - **Responsive Implementation**: Uses `block md:hidden` and `hidden md:block` to switch between layouts at appropriate breakpoints
+  - **No Layout Regressions**: All other homepage sections (hero, trusted brands, superhuman system, transformation stories, hire talent, why partner, the experience, footer) remain stable with existing responsive patterns
+- **Technical Details**:
+  - Mobile grid prevents overlaps and maintains legibility down to 320px width
+  - Circular layout uses inline styles with media query overrides for responsive radius scaling
+  - Shared data-testids remain non-conflicting as only one layout displays per breakpoint
+  - Container heights (600px/700px) provide sufficient space to prevent node clipping
+- **Design Consistency**: Maintains Apple-minimal aesthetic with glassmorphism, gradient effects, and smooth hover interactions across all screen sizes
+- **Testing Notes**: Manual responsive sweep recommended for 768-900px range to verify comfortable spacing; monitor analytics for label readability on very small devices
+
 ### Dual SEO + GEO Setup (US + Philippines) - October 19, 2025
 - **Purpose**: Comprehensive dual geo-targeting SEO implementation for US (clients) and Philippines (talent) audiences
 - **Brand Strategy**: "OnSpot" visible everywhere, "OnSpot Global" as hidden legal name in schema for ranking continuity
