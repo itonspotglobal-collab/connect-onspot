@@ -89,11 +89,13 @@ Preferred communication style: Simple, everyday language.
 - **Purpose**: Fix modal overlap with navigation bar and optimize Core Web Vitals performance metrics
 - **Modal Spacing Fix**:
   - Updated `DialogContent` component (`client/src/components/ui/dialog.tsx`) to prevent overlap with top navigation
-  - Added `max-h-[calc(100vh-6rem)]` to constrain modal height - ensures modals never exceed viewport minus 6rem total (3rem top + 3rem bottom clearance)
+  - Wrapped modal in flex container with padding: `fixed inset-0 flex items-center justify-center p-4 sm:p-12`
+  - Mobile spacing: 1rem (16px) clearance on all sides
+  - Desktop spacing: 3rem (48px) clearance on all sides - prevents overlap with navigation bar
+  - Changed modal from `fixed` to `relative` positioning with `max-h-full` for proper containment
   - Added `overflow-y-auto` to enable scrolling for tall modal content
-  - Maintains perfect centering with `top-[50%] translate-y-[-50%]` - centering automatically distributes the 6rem clearance equally (3rem top, 3rem bottom)
+  - Flexbox centering maintains perfect alignment while respecting padding constraints
   - Fixes apply to all modals: SignUpDialog, LoginDialog, JobApplicationModal, etc.
-  - No margin hacks needed - the max-height constraint plus centering provides proper spacing mathematically
 - **Core Web Vitals Optimization**:
   - **LCP (Largest Contentful Paint) Improvements**:
     - Added preload hint for critical hero logo (`/assets/OnSpot Log Full Purple Blue_1757942805752.png`) with `fetchpriority="high"`
