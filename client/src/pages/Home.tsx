@@ -1487,7 +1487,7 @@ export default function Home() {
           <div className="h-px bg-gradient-to-r from-transparent via-violet-400/30 through-blue-400/30 to-transparent"></div>
         </div>
 
-        <div className="container mx-auto px-6 sm:px-8 lg:px-12 py-8 sm:py-10 lg:py-12 max-w-[98rem] xl:max-w-[110rem] 2xl:max-w-[120rem] relative left-0 right-0">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-12 max-w-[92rem] relative left-[-1.5rem] sm:left-[-2rem]">
           {/* Footer Grid - Fluid responsive layout */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8 md:gap-10 lg:gap-12 max-w-7xl mx-auto">
             {/* Brand Section - Spans 2 columns on tablet/desktop */}
@@ -1829,11 +1829,30 @@ export default function Home() {
                   <span>1-718 540 5053</span>
                 </a>
                 <div className="flex items-start justify-center md:justify-start gap-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300">
-                  <MapPinIcon className="w-5 h-5 flex-shrink-0 mt-0.5" />
                   <span className="break-words sm:break-normal">
-                    US - 2248 Broadway, New York, 10024
+                    <a
+                      href="https://www.google.com/search?q=onspot+global+new+york..."
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-start justify-center md:justify-start gap-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300                        hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-300 group"
+                    >
+                      <MapPinIcon className="w-5 h-5 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform duration-300" />
+                      <span className="break-words sm:break-normal underline-offset-2 group-hover:underline">
+                        US - 2248 Broadway, New York, 10024
+                      </span>
+                    </a>
                     <br />
-                    PH - 610 Nepo Center, Angeles City, 2009
+                    <a
+                      href="https://www.google.com/search?q=onspot+global+philippines&sca_esv=4acce884baa46368&rlz=1C5CHFA_enPH1014PH1014&ei=Koz4aJ3FFuuqvr0Pt66r6QI&oq=onspot+global+ph"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-start justify-center md:justify-start gap-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-300 group"
+                    >
+                      <MapPinIcon className="w-5 h-5 flex-shrink-0 mt-0.5 group-hover:scale-110 group-hover:text-violet-500 transition-all duration-300" />
+                      <span className="break-words sm:break-normal underline-offset-2 group-hover:underline">
+                        PH - 610 Nepo Center, Angeles City, 2009
+                      </span>
+                    </a>
                   </span>
                 </div>
               </div>
