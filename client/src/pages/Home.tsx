@@ -641,15 +641,20 @@ export default function Home() {
                             <img
                               src={integration.icon}
                               alt={integration.name}
-                              className="w-8 h-8 object-contain opacity-90 group-hover:opacity-100 transition-all duration-300 grayscale group-hover:grayscale-0"
+                              className={`object-contain opacity-90 group-hover:opacity-100 transition-all duration-300 grayscale group-hover:grayscale-0 ${
+                                integration.name === "Microsoft" ||
+                                integration.name === "Go High Level"
+                                  ? "w-13 h-13 sm:w-20 sm:h-15 lg:w-15 lg:h-24 scale-125"
+                                  : "w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8"
+                              }`}
                             />
                           ) : (
                             // ⚙️ When icon is a React component (Lucide or react-icons)
-                            <integration.icon className="w-8 h-8 text-foreground/60 group-hover:text-foreground transition-colors duration-300 grayscale group-hover:grayscale-0" />
+                            <integration.icon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-foreground/60 group-hover:text-foreground transition-colors duration-300 grayscale group-hover:grayscale-0" />
                           )
                         ) : (
                           // Placeholder if no icon
-                          <div className="w-8 h-8 rounded bg-gradient-to-br from-violet-500/20 to-blue-500/20"></div>
+                          <div className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 rounded bg-gradient-to-br from-violet-500/20 to-blue-500/20"></div>
                         )}
                         <span className="text-[9px] font-medium text-foreground/60 group-hover:text-foreground transition-colors duration-300 text-center">
                           {integration.name}
@@ -760,13 +765,18 @@ export default function Home() {
                               <img
                                 src={integration.icon}
                                 alt={integration.name}
-                                className="w-8 h-8 object-contain opacity-80 group-hover:opacity-100 transition-all duration-300 grayscale group-hover:grayscale-0"
+                                className={`object-contain opacity-90 group-hover:opacity-100 transition-all duration-300 grayscale group-hover:grayscale-0 ${
+                                  integration.name === "Microsoft" ||
+                                  integration.name === "Go High Level"
+                                    ? "w-20 h-20 sm:w-20 sm:h-10 lg:w-38 lg:h-38 scale-130"
+                                    : "w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8"
+                                }`}
                               />
                             ) : (
-                              <integration.icon className="w-8 h-8 text-foreground/60 group-hover:text-foreground transition-colors duration-300 grayscale group-hover:grayscale-0" />
+                              <integration.icon className="w-6 h-6 lg:w-7 lg:h-7 text-foreground/60 group-hover:text-foreground transition-colors duration-300 grayscale group-hover:grayscale-0" />
                             )
                           ) : (
-                            <div className="w-8 h-8 rounded bg-gradient-to-br from-violet-500/20 to-blue-500/20"></div>
+                            <div className="w-6 h-6 lg:w-7 lg:h-7 rounded bg-gradient-to-br from-violet-500/20 to-blue-500/20"></div>
                           )}
 
                           <span className="text-[10px] lg:text-xs font-medium text-foreground/60 group-hover:text-foreground transition-colors duration-300 text-center">
