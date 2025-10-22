@@ -1787,7 +1787,7 @@ export default function Home() {
             </div>
 
             {/* Connect Section */}
-            <div className="lg:col-span-1 xl:col-span-1 w-full max-w-[18rem] sm:max-w-[20rem] md:max-w-[22rem] lg:max-w-[24rem]">
+            <div className="lg:col-span-1 xl:col-span-1 w-full max-w-[20rem] sm:max-w-[22rem] md:max-w-[24rem] lg:max-w-[26rem]">
               <button
                 onClick={() => toggleFooterSection("connect")}
                 className="flex items-center justify-between w-full py-2 md:cursor-default md:!p-0 text-left"
@@ -1797,7 +1797,9 @@ export default function Home() {
                   Connect
                 </h3>
                 <ChevronDown
-                  className={`w-5 h-5 text-slate-600 dark:text-slate-400 transition-transform duration-300 md:hidden ${expandedFooterSection === "connect" ? "rotate-180" : ""}`}
+                  className={`w-5 h-5 text-slate-600 dark:text-slate-400 transition-transform duration-300 md:hidden ${
+                    expandedFooterSection === "connect" ? "rotate-180" : ""
+                  }`}
                 />
               </button>
 
@@ -1814,7 +1816,7 @@ export default function Home() {
                   data-testid="footer-email"
                 >
                   <Mail className="w-5 h-5 flex-shrink-0 group-hover:scale-110 transition-transform duration-300" />
-                  <span className="break-all sm:break-normal">
+                  <span className="truncate sm:whitespace-nowrap md:whitespace-normal break-keep">
                     hello@onspotglobal.com
                   </span>
                 </a>
