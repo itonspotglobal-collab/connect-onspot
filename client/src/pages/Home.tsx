@@ -31,6 +31,8 @@ import {
   Twitter,
   Instagram,
   ChevronDown,
+  Settings,
+  Layers,
 } from "lucide-react";
 import {
   SiAmazon,
@@ -58,8 +60,6 @@ import AmiraPhoto from "../assets/logos/Amira.png";
 import JuliePhoto from "../assets/logos/Julie.png";
 import PaigePhoto from "../assets/logos/Paige.png";
 import favicon from "../assets/logos/favic.png";
-import MicrosoftIcon from "../assets/logos/microsoft.logo.png";
-import ghllogo from "../assets/logos/ghl.logo.jpg";
 
 const trustedBrands = [
   { name: "Flash Justice", logo: FlashLogo },
@@ -92,8 +92,8 @@ const superhumanSystem = [
 ];
 
 const integrations = [
-  { name: "Microsoft", icon: MicrosoftIcon },
-  { name: "Go High Level", icon: ghllogo },
+  { name: "Microsoft", icon: Layers },
+  { name: "Go High Level", icon: Settings },
   { name: "Lindy AI", icon: Bot },
   { name: "Replit", icon: SiReplit },
   { name: "OnSpot Intelligence", icon: Zap },
