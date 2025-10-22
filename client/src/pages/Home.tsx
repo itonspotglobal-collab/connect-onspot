@@ -1487,7 +1487,7 @@ export default function Home() {
           <div className="h-px bg-gradient-to-r from-transparent via-violet-400/30 through-blue-400/30 to-transparent"></div>
         </div>
 
-        <div className="mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-12 max-w-[92rem] relative left-[-1.5rem] sm:left-[-2rem]">
+        <div className="container mx-auto px-6 sm:px-8 lg:px-12 py-8 sm:py-10 lg:py-12 max-w-[98rem] xl:max-w-[110rem] 2xl:max-w-[120rem] relative left-0 right-0">
           {/* Footer Grid - Fluid responsive layout */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8 md:gap-10 lg:gap-12 max-w-7xl mx-auto">
             {/* Brand Section - Spans 2 columns on tablet/desktop */}
