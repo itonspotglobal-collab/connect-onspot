@@ -275,49 +275,49 @@ const talentProfiles = [
     name: "Kyle Mendez",
     role: "Recruitment Specialist",
     photo: KyleMendezPhoto,
-    focalY: "35%", // Fine-tune vertical position to include headroom
+    focalY: "15%", // Show full head with headroom - lower % = more of top visible
   },
   {
     name: "Alexandra Lopez",
     role: "Executive Assistant",
     photo: AlexandraLopezPhoto,
-    focalY: "35%",
+    focalY: "15%",
   },
   {
     name: "Andrea Pinzon",
     role: "Virtual Assistant",
     photo: AndreaPinzonPhoto,
-    focalY: "35%",
+    focalY: "15%",
   },
   {
     name: "Christopher Alba",
     role: "Technical Support Representative",
     photo: ChristopherAlbaPhoto,
-    focalY: "35%",
+    focalY: "15%",
   },
   {
     name: "Rachel Castro",
     role: "Social Media Manager",
     photo: RachelCastroPhoto,
-    focalY: "35%",
+    focalY: "15%",
   },
   {
     name: "Amir Singh",
     role: "SEO Specialist",
     photo: AmirSinghPhoto,
-    focalY: "35%",
+    focalY: "15%",
   },
   {
     name: "Jennifer Dizon",
     role: "Customer Service Representative",
     photo: JenniferDizonPhoto,
-    focalY: "35%",
+    focalY: "15%",
   },
   {
     name: "Andrei Losanto",
     role: "Full Stack Developer",
     photo: AndreiLosantoPhoto,
-    focalY: "35%",
+    focalY: "15%",
   },
 ];
 
@@ -1404,7 +1404,7 @@ export default function Home() {
                     alt={profile.name}
                     className="w-full h-full object-cover blur-sm group-hover:blur-none opacity-60 group-hover:opacity-100 transition-all duration-500"
                     style={{ 
-                      objectPosition: `center ${profile.focalY || '35%'}`,
+                      objectPosition: `center ${profile.focalY || '15%'}`,
                     }}
                   />
 
