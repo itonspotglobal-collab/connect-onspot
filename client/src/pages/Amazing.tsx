@@ -21,31 +21,30 @@ import { motion } from "framer-motion";
 import teamPhoto from "@assets/vertex team_1758457968487.png";
 
 import FrederickPhoto from "../assets/logos/Frederick.png";
-import AmiraPhoto from "../assets/logos/Amira.png";
-import JuliePhoto from "../assets/logos/Julie.png";
-import PaigePhoto from "../assets/logos/Paige.png";
 import StefanPhoto from "../assets/logos/Stefan.png";
-import AlexPhoto from "../assets/logos/Alex.png";
-import JamesPhoto from "../assets/logos/James.png";
-import MariaPhoto from "../assets/logos/Maria.png";
-import SofiaPhoto from "../assets/logos/Sofia.png";
+import JuliePhoto from "../assets/logos/Julie.png";
+import AmiraPhoto from "../assets/logos/Amira.png";
+import PaigePhoto from "../assets/logos/Paige.png";
+
+import NicolePhoto from "../assets/logos/nicole.png";
+import KrisPhoto from "../assets/logos/kris.png";
+import RinielPhoto from "../assets/logos/riniel.png";
+import MarjuriePhoto from "../assets/logos/marjurie.png";
 
 export default function Amazing() {
   const [galleryFilter, setGalleryFilter] = useState("All");
 
   const testimonials = [
     {
-      name: "Frederic Hill",
-      title: "Founder & CEO",
-      company: "TechVenture Inc.",
+      name: "Elad B.",
+      company: "Pine Tech",
       quote:
         "I just had to take a moment to express my gratitude for the outstanding service they provided. Their complete assistance and efforts were truly remarkable",
       initials: "FH",
       photo: FrederickPhoto,
     },
     {
-      name: "Julie Reyes",
-      title: "Account Executive",
+      name: "Eric M.",
       company: "Growth Solutions",
       quote:
         "Every step of the way they provided helpful advice, recommended strategies to ensure our website was optimally set up, and made sure every element was clear and concise.",
@@ -53,7 +52,7 @@ export default function Amazing() {
       photo: JuliePhoto,
     },
     {
-      name: "Amira Santos",
+      name: "Fernando C.",
       title: "Data Engineer",
       company: "Analytics Pro",
       quote:
@@ -62,7 +61,7 @@ export default function Amazing() {
       photo: AmiraPhoto,
     },
     {
-      name: "Paige Lowery",
+      name: "William L",
       title: "Head of Brand",
       company: "Creative Studios",
       quote:
@@ -83,40 +82,40 @@ export default function Amazing() {
 
   const featuredEmployees = [
     {
-      name: "Maria Santos",
+      name: "Nicole Dela Cruz",
       title: "Senior Talent Specialist",
       description:
         "Expert in matching top-tier talent with growing businesses. Specializes in technical and creative roles with 8+ years of recruitment experience.",
       skills: ["Recruitment", "Matching", "HR Tech"],
       initials: "MS",
-      photo: MariaPhoto,
+      photo: NicolePhoto,
     },
     {
-      name: "James Chen",
+      name: "Kris Romero",
       title: "Platform Architect",
       description:
         "Designs and builds scalable systems that power our matching algorithms and performance tracking. Passionate about clean, efficient code.",
       skills: ["System Design", "Cloud Infrastructure", "Security"],
       initials: "JC",
-      photo: JamesPhoto,
+      photo: KrisPhoto,
     },
     {
-      name: "Sofia Rodriguez",
+      name: "Riniel Quintino",
       title: "Client Success Manager",
       description:
         "Ensures every client achieves their outsourcing goals through strategic guidance and ongoing support. Results-driven with a personal touch.",
       skills: ["Client Relations", "Strategy", "Growth"],
       initials: "SR",
-      photo: SofiaPhoto,
+      photo: RinielPhoto,
     },
     {
-      name: "Alex Thompson",
+      name: "Marjurie Llamis",
       title: "Quality Assurance Lead",
       description:
         "Maintains the highest standards across all delivered work. Implements quality frameworks that ensure consistent excellence.",
       skills: ["Quality Control", "Process Design", "Training"],
       initials: "AT",
-      photo: AlexPhoto,
+      photo: MarjuriePhoto,
     },
   ];
 

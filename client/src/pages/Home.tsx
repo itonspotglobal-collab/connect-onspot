@@ -55,11 +55,21 @@ import PinetechLogo from "../assets/logos/Pinetech.png";
 import SafewayLogo from "../assets/logos/Safeway.png";
 import VertexLogo from "../assets/logos/Vertex.png";
 
+import Cristina from "../assets/logos/cristina.png";
+import Jonathan from "../assets/logos/jonathan.png";
+import Khristine from "../assets/logos/khristine.png";
+import Kris from "../assets/logos/kris.png";
+import Marjurie from "../assets/logos/marjurie.png";
+import Nicole from "../assets/logos/nicole.png";
+import Riniel from "../assets/logos/riniel.png";
+import Melville from "../assets/logos/melville.piado.png";
 import FrederickPhoto from "../assets/logos/Frederick.png";
-import AmiraPhoto from "../assets/logos/Amira.png";
-import JuliePhoto from "../assets/logos/Julie.png";
-import PaigePhoto from "../assets/logos/Paige.png";
+import AlexPhoto from "../assets/logos/Alex.png";
+import StefanPhoto from "../assets/logos/Stefan.png";
+
 import favicon from "../assets/logos/favic.png";
+import MicrosoftLogo from "../assets/logos/microsoft.logo.png";
+import GoHighLevelLogo from "../assets/logos/ghl.logo.jpg";
 
 const trustedBrands = [
   { name: "Flash Justice", logo: FlashLogo },
@@ -92,8 +102,8 @@ const superhumanSystem = [
 ];
 
 const integrations = [
-  { name: "Microsoft", icon: Layers },
-  { name: "Go High Level", icon: Settings },
+  { name: "Microsoft", icon: MicrosoftLogo },
+  { name: "Go High Level", icon: GoHighLevelLogo },
   { name: "Lindy AI", icon: Bot },
   { name: "Replit", icon: SiReplit },
   { name: "OnSpot Intelligence", icon: Zap },
@@ -246,7 +256,7 @@ const transformationStories = [
     transformation: "From scattered processes to seamless orchestration",
     story:
       "I’ve worked with several outsourcing companies, but none delivered like On-Spot Global. Shane and Ria helped me build my team, stayed involved, and ensured success. Communication’s great, savings exceeded expectations, and I finally feel like I’m working with a true partner.",
-    photo: JuliePhoto,
+    photo: AlexPhoto,
     metric: "85% Faster",
   },
   {
@@ -255,51 +265,51 @@ const transformationStories = [
     transformation: "From constant firefighting to proactive innovation",
     story:
       "I’m extremely happy with the service provided by Onspot Global. Their team is professional, responsive, and reliable—always going above and beyond to make sure everything runs smoothly. The efficiency and consistency they deliver gives me complete confidence, and I truly value the partnership we’ve built.",
-    photo: AmiraPhoto,
+    photo: StefanPhoto,
     metric: "99.9% Uptime",
   },
 ];
 
 const talentProfiles = [
   {
-    name: "Rachel Thompson",
+    name: "Jonathan Libut",
     role: "Social Media Manager",
-    photo: PaigePhoto,
+    photo: Jonathan,
   },
   {
-    name: "Ethan Cruz",
+    name: "Riniel Quintino",
     role: "AI Operations Specialist",
-    photo: FrederickPhoto,
+    photo: Riniel,
   },
   {
-    name: "Sophie Pendon",
+    name: "Marjurie Llamis",
     role: "Virtual Assistant",
-    photo: AmiraPhoto,
+    photo: Marjurie,
   },
   {
-    name: "Marcus Rivera",
+    name: "Maria Cristina Millendez",
     role: "Automation Engineer",
-    photo: FrederickPhoto,
+    photo: Cristina,
   },
   {
-    name: "Aisha Patel",
+    name: "Nicole Dela Cruz",
     role: "Talent Acquisition Lead",
-    photo: JuliePhoto,
+    photo: Nicole,
   },
   {
-    name: "Liam Bennett",
+    name: "Kris Romero",
     role: "Performance Analyst",
-    photo: FrederickPhoto,
+    photo: Kris,
   },
   {
-    name: "Clara Gomez",
+    name: "Melville Piado",
     role: "Customer Support Representative",
-    photo: AmiraPhoto,
+    photo: Melville,
   },
   {
-    name: "Noah Tan",
+    name: "Khristine Alba",
     role: "Technical Support Representative",
-    photo: PaigePhoto,
+    photo: Khristine,
   },
 ];
 
@@ -627,16 +637,19 @@ export default function Home() {
                       <div className="flex flex-col items-center justify-center gap-2">
                         {integration.icon ? (
                           typeof integration.icon === "string" ? (
+                            // 🖼️ When icon is an imported image file (JPG/PNG)
                             <img
                               src={integration.icon}
                               alt={integration.name}
-                              className="w-8 h-8 object-contain opacity-80 group-hover:opacity-100 transition-all duration-300 grayscale group-hover:grayscale-0"
+                              className="w-8 h-8 object-contain opacity-90 group-hover:opacity-100 transition-all duration-300 grayscale group-hover:grayscale-0"
                             />
                           ) : (
-                            <integration.icon className="w-7 h-7 text-foreground/60 group-hover:text-foreground transition-colors duration-300 grayscale group-hover:grayscale-0" />
+                            // ⚙️ When icon is a React component (Lucide or react-icons)
+                            <integration.icon className="w-8 h-8 text-foreground/60 group-hover:text-foreground transition-colors duration-300 grayscale group-hover:grayscale-0" />
                           )
                         ) : (
-                          <div className="w-7 h-7 rounded bg-gradient-to-br from-violet-500/20 to-blue-500/20"></div>
+                          // Placeholder if no icon
+                          <div className="w-8 h-8 rounded bg-gradient-to-br from-violet-500/20 to-blue-500/20"></div>
                         )}
                         <span className="text-[9px] font-medium text-foreground/60 group-hover:text-foreground transition-colors duration-300 text-center">
                           {integration.name}
@@ -747,13 +760,13 @@ export default function Home() {
                               <img
                                 src={integration.icon}
                                 alt={integration.name}
-                                className="w-6 h-6 lg:w-7 lg:h-7 object-contain opacity-80 group-hover:opacity-100 transition-all duration-300 grayscale group-hover:grayscale-0"
+                                className="w-8 h-8 object-contain opacity-80 group-hover:opacity-100 transition-all duration-300 grayscale group-hover:grayscale-0"
                               />
                             ) : (
-                              <integration.icon className="w-6 h-6 lg:w-7 lg:h-7 text-foreground/60 group-hover:text-foreground transition-colors duration-300 grayscale group-hover:grayscale-0" />
+                              <integration.icon className="w-8 h-8 text-foreground/60 group-hover:text-foreground transition-colors duration-300 grayscale group-hover:grayscale-0" />
                             )
                           ) : (
-                            <div className="w-6 h-6 lg:w-7 lg:h-7 rounded bg-gradient-to-br from-violet-500/20 to-blue-500/20"></div>
+                            <div className="w-8 h-8 rounded bg-gradient-to-br from-violet-500/20 to-blue-500/20"></div>
                           )}
 
                           <span className="text-[10px] lg:text-xs font-medium text-foreground/60 group-hover:text-foreground transition-colors duration-300 text-center">
