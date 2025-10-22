@@ -1627,8 +1627,8 @@ export default function Home() {
                 }`}
                 style={{
                   marginTop:
-                    expandedFooterSection === "navigation"
-                      ? "clamp(4px, 0.5vh, 6px)"
+                    expandedFooterSection === "navigation" || window.innerWidth >= 768
+                      ? "16px"
                       : "0",
                 }}
               >
@@ -1716,8 +1716,8 @@ export default function Home() {
                 }`}
                 style={{
                   marginTop:
-                    expandedFooterSection === "company"
-                      ? "clamp(4px, 0.5vh, 6px)"
+                    expandedFooterSection === "company" || window.innerWidth >= 768
+                      ? "16px"
                       : "0",
                 }}
               >
@@ -1812,8 +1812,8 @@ export default function Home() {
                 }`}
                 style={{
                   marginTop:
-                    expandedFooterSection === "download"
-                      ? "clamp(4px, 0.5vh, 6px)"
+                    expandedFooterSection === "download" || window.innerWidth >= 768
+                      ? "16px"
                       : "0",
                 }}
               >
@@ -1884,8 +1884,8 @@ export default function Home() {
                 }`}
                 style={{
                   marginTop:
-                    expandedFooterSection === "connect"
-                      ? "clamp(4px, 0.5vh, 6px)"
+                    expandedFooterSection === "connect" || window.innerWidth >= 768
+                      ? "16px"
                       : "0",
                 }}
               >
@@ -1895,7 +1895,7 @@ export default function Home() {
                   data-testid="footer-email"
                 >
                   <Mail className="w-5 h-5 flex-shrink-0 group-hover:scale-110 transition-transform duration-300" />
-                  <span>hello@onspotglobal.com</span>
+                  <span className="break-all sm:break-normal">hello@onspotglobal.com</span>
                 </a>
                 <a
                   href="tel:+1234567890"
