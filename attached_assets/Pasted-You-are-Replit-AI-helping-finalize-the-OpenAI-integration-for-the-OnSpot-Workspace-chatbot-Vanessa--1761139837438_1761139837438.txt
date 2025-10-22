@@ -1,0 +1,73 @@
+You are Replit AI helping finalize the OpenAI integration for the OnSpot Workspace chatbot (Vanessa).
+
+Goal:
+Set up everything needed for Vanessa to connect to OpenAI and stream real-time chat responses on the website.
+
+---
+
+### ✅ TASK OVERVIEW
+
+Please check the project and do the following:
+
+1. **Verify Secrets**
+   - Ensure Replit Secrets include:
+     - `OPENAI_API_KEY` = the API key from OpenAI Dashboard.
+   - If missing, instruct the user to add it before running.
+
+2. **Create Backend Endpoint**
+   - Create a file at `api/chat/stream.ts` (or `src/app/api/chat/stream.ts` if using Next.js App Router).
+   - This endpoint should:
+     - Accept a POST request with `{ message: string, threadId?: string }`.
+     - Use the official `openai` npm SDK.
+     - Send the prompt to the model `gpt-4o-mini` (fallback: `gpt-3.5-turbo`).
+     - Stream the response back to the frontend using Server-Sent Events (SSE).
+Verify Frontend Integration
+
+Check that VanessaChat.tsx (in your components folder) sends chat messages to /api/chat/stream using fetch().
+
+Remove or comment out any hardcoded FAQ logic.
+
+Keep this line:
+
+const response = await fetch("/api/chat/stream", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: userMessage }) });
+
+
+Ensure messages are displayed as they stream from the backend.
+
+Test the Connection
+
+Run the project in Replit.
+
+Open the live site preview.
+
+Type “Hi Vanessa, tell me about OnSpot Global.”
+
+Confirm you receive a live, streaming response.
+
+Check for any console errors like:
+
+401 Unauthorized → missing API key.
+
+TypeError: Cannot read properties of undefined (reading 'read') → backend endpoint not returning a stream.
+
+Optional Enhancements
+
+Add conversation persistence using a threadId stored in localStorage.
+
+Include a system message for branding (“Vanessa is the OnSpot AI Assistant”).
+
+Add basic error handling UI in case the API is unavailable.
+
+✅ EXPECTED RESULT
+
+After completing this prompt:
+
+The OpenAI SDK will be installed and configured.
+
+/api/chat/stream.ts will exist and handle streaming.
+
+Replit Secrets will hold the valid API key.
+
+Vanessa will stream real-time answers powered by OpenAI.
+
+The chatbot will be production-ready for testing on your site.

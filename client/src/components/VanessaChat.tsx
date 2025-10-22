@@ -265,40 +265,7 @@ export function VanessaChat({
     ]);
 
     // ========================================================================
-    // LOCAL FAQ RESPONSE - Instant reply without API call
-    // ========================================================================
-    if (faqResponses[topic]) {
-      const assistantMessageId = Date.now() + 1;
-
-      // Show typing indicator
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: assistantMessageId,
-          text: "",
-          sender: "vanessa",
-          isTyping: true,
-        },
-      ]);
-
-      // Simulate typing delay for natural feel (500ms)
-      setTimeout(() => {
-        setMessages((prev) => {
-          const updated = [...prev];
-          const lastMessage = updated[updated.length - 1];
-          if (lastMessage.id === assistantMessageId) {
-            lastMessage.text = faqResponses[topic];
-            lastMessage.isTyping = false;
-          }
-          return updated;
-        });
-      }, 500);
-
-      return;
-    }
-
-    // ========================================================================
-    // AI FALLBACK - If no FAQ response exists (shouldn't happen for quick topics)
+    // OPENAI STREAMING - All topic selections use real-time AI responses
     // ========================================================================
     try {
       setIsStreaming(true);
@@ -508,42 +475,7 @@ export function VanessaChat({
     ]);
 
     // ========================================================================
-    // LOCAL FAQ DETECTION - Check if message matches FAQ topic
-    // ========================================================================
-    const detectedTopic = detectFAQTopic(userMessage);
-
-    if (detectedTopic && faqResponses[detectedTopic]) {
-      const assistantMessageId = Date.now() + 1;
-
-      // Show typing indicator
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: assistantMessageId,
-          text: "",
-          sender: "vanessa",
-          isTyping: true,
-        },
-      ]);
-
-      // Simulate typing delay for natural feel (500ms)
-      setTimeout(() => {
-        setMessages((prev) => {
-          const updated = [...prev];
-          const lastMessage = updated[updated.length - 1];
-          if (lastMessage.id === assistantMessageId) {
-            lastMessage.text = faqResponses[detectedTopic];
-            lastMessage.isTyping = false;
-          }
-          return updated;
-        });
-      }, 500);
-
-      return; // Exit early - FAQ handled, no OpenAI call needed
-    }
-
-    // ========================================================================
-    // AI FALLBACK - Use OpenAI Assistant API for non-FAQ queries
+    // OPENAI STREAMING - All user messages get real-time AI responses
     // ========================================================================
     try {
       setIsStreaming(true);
