@@ -1,0 +1,136 @@
+You are Replit AI assisting with the OpenAI integration for OnSpot’s website chatbot (Vanessa).
+
+Goal:
+Ensure the backend uses the *exact* same Assistant (and personality) configured in the OpenAI Dashboard. 
+Enable File Search and reinforce persona instructions.
+
+---
+
+✅ TASKS:
+
+1️⃣ Confirm Replit Secrets:
+- OPENAI_API_KEY → valid OpenAI key.
+- ASSISTANT_ID → matches the one shown in the OpenAI Dashboard (starts with asst_...).
+
+---
+
+2️⃣ Update `openaiService.ts`
+Make sure the generator `streamWithAssistant()` does ALL of the following:
+
+- Imports OpenAI and initializes it with the API key.
+- Uses the ASSISTANT_ID from Replit Secrets.
+- Calls the **Assistants API** (not chat.completions).
+- Passes `additional_instructions` so Vanessa’s persona is reinforced even when the dashboard persona changes.
+- Streams output tokens via SSE so the frontend shows a typing animation.
+
+Example implementation:
+
+```ts
+import OpenAI from "openai";
+import { randomUUID } from "crypto";
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+const ASSISTANT_ID = process.env.ASSISTANT_ID!;
+
+const VANESSA_TOPUP = `
+You are Vanessa, the friendly and helpful AI assistant for OnSpot Workspace.
+Never say "as an AI assistant" or mention that you are artificial.
+You provide confident, warm, and clear information about:
+- OnSpot's pricing, outsourcing, and staffing solutions.
+- Global client services and recruitment process.
+Be concise, upbeat, and professional.
+`;
+
+export async function* streamWithAssistant(userMessage: string, threadId?: string) {
+  const thread = threadId ? { id: threadId } : await openai.beta.threads.create({});
+  if (!threadId) yield { type: "threadId", data: thread.id };
+
+  await openai.beta.threads.messages.create(thread.id, {
+    role: "user",
+    content: userMessage,
+  });
+
+  const stream = await openai.beta.threads.runs.stream(thread.id, {
+    assistant_id: ASSISTANT_ID,
+    additional_instructions: VANESSA_TOPUP,
+  });
+
+  for await (const event of stream) {
+    // Token events
+    // @ts-ignore - event typing differs per SDK version
+    if (event.type === "response.output_text.delta") {
+      const token = event.delta as string;
+      yield { type: "content", data: token };
+    }
+  }
+
+  yield { type: "done", data: "" };
+}
+3️⃣ Ensure /api/chat/stream.ts uses this generator:
+
+ts
+Copy code
+import { streamWithAssistant } from "../../openaiService";
+
+export async function POST(req: Request) {
+  const { message, threadId } = await req.json();
+  const encoder = new TextEncoder();
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      try {
+        for await (const evt of streamWithAssistant(message, threadId)) {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(evt)}\n\n`));
+        }
+      } catch (err: any) {
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify({ type: "error", data: err?.message || "Unknown error" })}\n\n`)
+        );
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    },
+  });
+}
+4️⃣ Verify Assistant setup (File Search)
+
+Check that File Search is toggled ON for the Assistant in the Dashboard.
+
+Ensure the vector store with your FAQ files is linked.
+
+If not, create one in code using openai.beta.vectorStores.create() and attach it to your Assistant ID.
+
+5️⃣ Test end-to-end
+
+Run the Replit project.
+
+Open your live site and chat with Vanessa.
+
+Ask:
+
+“Tell me about OnSpot pricing models.”
+
+Expected: Vanessa gives the branded pricing answer (warm, professional, not robotic).
+
+✅ Expected Outcome:
+
+Your website chatbot and the OpenAI Dashboard Assistant are now identical in persona, memory, and file search.
+
+Replies match what you see in the Playground.
+
+pgsql
+Copy code
+
+---
+
+Once you run this prompt in Replit, your site chatbot will use your **actual OpenAI Assistant (Vanessa)**, complete with her persona and FAQ knowledge base.  
+
+Would you like me to include a follow-up prompt that automatically **uploads new FAQ docs into Vanessa’s vector store** when you update them (so you never have to do it manually again)?

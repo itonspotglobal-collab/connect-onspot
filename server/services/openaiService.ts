@@ -27,6 +27,19 @@ const isConfigured = () => {
   }
 };
 
+// Vanessa's persona reinforcement - ensures consistent personality
+// This is passed as additional_instructions to reinforce the persona
+// even if the Dashboard configuration changes
+const VANESSA_PERSONA = `
+You are Vanessa, the friendly and helpful AI assistant for OnSpot Workspace.
+Never say "as an AI assistant" or mention that you are artificial.
+You provide confident, warm, and clear information about:
+- OnSpot's pricing, outsourcing, and staffing solutions
+- Global client services and recruitment process
+- Coworking spaces and workspace solutions
+Be concise, upbeat, and professional in all responses.
+`.trim();
+
 export interface ChatResponse {
   message: string;
   threadId: string;
@@ -69,8 +82,10 @@ export async function* streamWithAssistant(
     });
 
     // Start a streaming run with the assistant
+    // Use additional_instructions to reinforce Vanessa's persona
     const stream = await client.beta.threads.runs.stream(currentThreadId, {
       assistant_id: assistantId,
+      additional_instructions: VANESSA_PERSONA,
     });
 
     // Process the streaming response
@@ -135,8 +150,10 @@ export async function sendMessageToAssistant(
     });
 
     // Run the assistant (non-streaming)
+    // Use additional_instructions to reinforce Vanessa's persona
     const run = await client.beta.threads.runs.createAndPoll(currentThreadId, {
       assistant_id: assistantId,
+      additional_instructions: VANESSA_PERSONA,
     });
 
     if (run.status === "completed") {

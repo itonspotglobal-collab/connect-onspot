@@ -72,12 +72,14 @@ Preferred communication style: Simple, everyday language.
 ### Chatbot Integration
 - **VanessaChat (OpenAI Assistant API)**: AI-powered virtual assistant using OpenAI Assistant API with custom knowledge base. Features:
   - **Assistant API**: Uses OpenAI's Assistant API with custom assistant configuration from OpenAI Dashboard
+  - **Persona Reinforcement**: `additional_instructions` parameter ensures consistent Vanessa personality even if Dashboard config changes
   - **Streaming Responses**: Real-time streaming via `/api/chat/stream` endpoint with Server-Sent Events (SSE)
   - **Thread Persistence**: OpenAI-managed thread persistence for natural conversation continuity across sessions
-  - **Knowledge Base**: Configured assistant can access uploaded knowledge base documents from OpenAI Dashboard
+  - **Knowledge Base**: Configured assistant can access uploaded knowledge base documents via File Search from OpenAI Dashboard
   - **Dual API Support**: Both streaming (`streamWithAssistant`) and non-streaming (`sendMessageToAssistant`) endpoints
   - **Implementation**: Managed by `server/services/openaiService.ts`, displayed by `client/src/components/VanessaChat.tsx`
   - **Requirements**: 
     - `OPENAI_API_KEY`: OpenAI API key
     - `ASSISTANT_ID`: OpenAI Assistant ID (starts with `asst_`) from OpenAI Dashboard
+    - File Search enabled in Assistant Dashboard for knowledge base access
 - **Lindy.ai**: Embedded AI chatbot for customer support, pending domain whitelisting.
