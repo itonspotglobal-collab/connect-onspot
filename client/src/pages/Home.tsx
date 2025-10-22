@@ -1487,7 +1487,7 @@ export default function Home() {
           <div className="h-px bg-gradient-to-r from-transparent via-violet-400/30 through-blue-400/30 to-transparent"></div>
         </div>
 
-        <div className="container mx-auto px-4 sm:px-6 py-12 sm:py-16 lg:py-20">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-12 max-w-[92rem] relative left-[-1.5rem] sm:left-[-2rem]">
           {/* Footer Grid - Fluid responsive layout */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8 md:gap-10 lg:gap-12 max-w-7xl mx-auto">
             {/* Brand Section - Spans 2 columns on tablet/desktop */}
@@ -1512,7 +1512,8 @@ export default function Home() {
               </div>
 
               {/* Social Icons - Single horizontal row, never wrapping */}
-              <div className="flex gap-2 sm:gap-3 justify-center md:justify-start overflow-x-auto scrollbar-hide mt-8"
+              <div
+                className="flex gap-2 sm:gap-3 justify-center md:justify-start overflow-x-auto scrollbar-hide mt-8"
                 style={{ flexWrap: "nowrap" }}
               >
                 <a
@@ -1786,7 +1787,7 @@ export default function Home() {
             </div>
 
             {/* Connect Section */}
-            <div>
+            <div className="lg:col-span-1 xl:col-span-1 w-full max-w-[18rem] sm:max-w-[20rem] md:max-w-[22rem] lg:max-w-[24rem]">
               <button
                 onClick={() => toggleFooterSection("connect")}
                 className="flex items-center justify-between w-full py-2 md:cursor-default md:!p-0 text-left"
@@ -1813,7 +1814,9 @@ export default function Home() {
                   data-testid="footer-email"
                 >
                   <Mail className="w-5 h-5 flex-shrink-0 group-hover:scale-110 transition-transform duration-300" />
-                  <span>hello@onspotglobal.com</span>
+                  <span className="break-all sm:break-normal">
+                    hello@onspotglobal.com
+                  </span>
                 </a>
                 <a
                   href="tel:+1234567890"
@@ -1825,7 +1828,7 @@ export default function Home() {
                 </a>
                 <div className="flex items-start justify-center md:justify-start gap-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300">
                   <MapPinIcon className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                  <span>
+                  <span className="break-words sm:break-normal">
                     US - 2248 Broadway, New York, 10024
                     <br />
                     PH - 610 Nepo Center, Angeles City, 2009
