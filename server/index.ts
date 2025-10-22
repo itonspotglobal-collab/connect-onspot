@@ -3,6 +3,7 @@ import cors from "cors";
 import rateLimit from "express-rate-limit";
 import * as Sentry from "@sentry/node";
 import { v4 as uuidv4 } from "uuid";
+import path from "path";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { setupAuth } from "./replitAuth";
@@ -288,6 +289,12 @@ app.use((req, res, next) => {
   // Log environment info on startup
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🚀 Frontend baseURL: ${process.env.VITE_API_BASE || 'relative URLs'}`);
+
+  // Serve static files from public folder (for Open Graph images, robots.txt, etc.)
+  // This must come BEFORE Vite setup to prevent the catch-all route from intercepting static files
+  const publicPath = path.resolve(import.meta.dirname, "..", "public");
+  app.use(express.static(publicPath));
+  console.log(`📁 Serving static files from: ${publicPath}`);
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
