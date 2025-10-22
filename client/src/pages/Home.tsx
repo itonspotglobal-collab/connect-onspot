@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -45,7 +45,7 @@ import {
   SiYoutube,
 } from "react-icons/si";
 import { Link } from "wouter";
-import { VanessaChat } from "@/components/VanessaChat";
+const VanessaChat = lazy(() => import("@/components/VanessaChat").then(module => ({ default: module.VanessaChat })));
 import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
 
 import FlashLogo from "../assets/logos/Flash.png";
@@ -490,6 +490,9 @@ export default function Home() {
                     <img
                       src={brand.logo}
                       alt={brand.name}
+                      width="180"
+                      height="64"
+                      loading="lazy"
                       className="h-12 sm:h-14 lg:h-16 w-auto object-contain grayscale opacity-30 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500 relative z-10 filter group-hover:brightness-110 group-hover:drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]"
                     />
                   </div>
@@ -649,6 +652,9 @@ export default function Home() {
                             <img
                               src={integration.icon}
                               alt={integration.name}
+                              width="32"
+                              height="32"
+                              loading="lazy"
                               className="w-8 h-8 object-contain opacity-90 group-hover:opacity-100 transition-all duration-300 grayscale group-hover:grayscale-0"
                             />
                           ) : (
@@ -768,6 +774,9 @@ export default function Home() {
                               <img
                                 src={integration.icon}
                                 alt={integration.name}
+                                width="32"
+                                height="32"
+                                loading="lazy"
                                 className="w-8 h-8 object-contain opacity-90 group-hover:opacity-100 transition-all duration-300 grayscale group-hover:grayscale-0"
                               />
                             ) : (
@@ -1392,6 +1401,9 @@ export default function Home() {
                   <img
                     src={profile.photo}
                     alt={profile.name}
+                    width="400"
+                    height="400"
+                    loading="lazy"
                     className="w-full h-full object-cover blur-sm group-hover:blur-none opacity-60 group-hover:opacity-100 transition-all duration-500"
                     style={{ 
                       objectPosition: `center ${profile.focalY || '15%'}`,
