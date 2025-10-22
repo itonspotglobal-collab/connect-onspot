@@ -1975,11 +1975,13 @@ export default function Home() {
 
       {/* Vanessa AI Assistant Chat */}
       {showVanessaChat ? (
-        <VanessaChat
-          isOpen={showVanessaChat}
-          onClose={() => setShowVanessaChat(false)}
-          isSticky={isScrolledPastHero}
-        />
+        <Suspense fallback={<div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-gradient-to-r from-violet-600 to-blue-600 animate-pulse" />}>
+          <VanessaChat
+            isOpen={showVanessaChat}
+            onClose={() => setShowVanessaChat(false)}
+            isSticky={isScrolledPastHero}
+          />
+        </Suspense>
       ) : (
         // Minimized Chat Bubble Button (matches VanessaChat design)
         <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 animate-in slide-in-from-bottom-4 duration-500">
