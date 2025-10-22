@@ -58,7 +58,7 @@ import AmiraPhoto from "../assets/logos/Amira.png";
 import JuliePhoto from "../assets/logos/Julie.png";
 import PaigePhoto from "../assets/logos/Paige.png";
 import favicon from "../assets/logos/favic.png";
-import MicrosoftIcon from "../assets/logos/microsoft.logo.jpg";
+import MicrosoftIcon from "../assets/logos/microsoft.logo.png";
 import ghllogo from "../assets/logos/ghl.logo.jpg";
 
 const trustedBrands = [
@@ -232,29 +232,29 @@ const onspotExperience = [
 
 const transformationStories = [
   {
-    name: "Frederic Hill",
-    role: "Founder & CEO, Vertex Education",
+    name: "Elad Badash",
+    role: "PineTech",
     transformation: "From 12-hour workdays to automated excellence",
     story:
-      "AI handled routine tasks. Our team focused on strategy. Revenue doubled in 6 months.",
+      "The professionalism and consistency of the OnSpot team. Communication is always clear and easy, and I appreciate how they provide structured updates at the end of each day and every week. This makes it simple for me to understand the scope of work being done and stay aligned",
     photo: FrederickPhoto,
     metric: "2x Revenue",
   },
   {
-    name: "Julie Reyes",
+    name: "Eric M.",
     role: "Operations Director, Flash Justice",
     transformation: "From scattered processes to seamless orchestration",
     story:
-      "Vanessa AI coordinated our remote team. Human expertise met intelligent automation. Efficiency soared.",
+      "I’ve worked with several outsourcing companies, but none delivered like On-Spot Global. Shane and Ria helped me build my team, stayed involved, and ensured success. Communication’s great, savings exceeded expectations, and I finally feel like I’m working with a true partner.",
     photo: JuliePhoto,
     metric: "85% Faster",
   },
   {
-    name: "Amira Santos",
+    name: "Fernando C.",
     role: "CTO, Pinetech",
     transformation: "From constant firefighting to proactive innovation",
     story:
-      "AI monitors, predicts, and prevents. Our engineers build the future. Downtime became a memory.",
+      "I’m extremely happy with the service provided by Onspot Global. Their team is professional, responsive, and reliable—always going above and beyond to make sure everything runs smoothly. The efficiency and consistency they deliver gives me complete confidence, and I truly value the partnership we’ve built.",
     photo: AmiraPhoto,
     metric: "99.9% Uptime",
   },
@@ -609,8 +609,48 @@ export default function Home() {
             </h2>
           </div>
 
-          {/* Neural Grid Container */}
-          <div className="relative max-w-6xl mx-auto">
+          {/* Mobile Grid Layout (< md) */}
+          <div className="block md:hidden max-w-lg mx-auto">
+            <div className="grid grid-cols-3 gap-4 mb-8">
+              {integrations.map((integration, index) => (
+                <div
+                  key={index}
+                  className="group"
+                  data-testid={`integration-${index}`}
+                >
+                  <div className="relative">
+                    {/* Hover glow */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-violet-500/30 to-blue-500/30 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+                    {/* Glass card */}
+                    <div className="relative bg-background/40 backdrop-blur-xl border border-white/10 rounded-2xl p-4 transition-all duration-500 group-hover:border-white/30 group-hover:bg-background/60">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        {integration.icon ? (
+                          typeof integration.icon === "string" ? (
+                            <img
+                              src={integration.icon}
+                              alt={integration.name}
+                              className="w-8 h-8 object-contain opacity-80 group-hover:opacity-100 transition-all duration-300 grayscale group-hover:grayscale-0"
+                            />
+                          ) : (
+                            <integration.icon className="w-7 h-7 text-foreground/60 group-hover:text-foreground transition-colors duration-300 grayscale group-hover:grayscale-0" />
+                          )
+                        ) : (
+                          <div className="w-7 h-7 rounded bg-gradient-to-br from-violet-500/20 to-blue-500/20"></div>
+                        )}
+                        <span className="text-[9px] font-medium text-foreground/60 group-hover:text-foreground transition-colors duration-300 text-center">
+                          {integration.name}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Tablet/Desktop Circular Layout (>= md) */}
+          <div className="hidden md:block relative max-w-6xl mx-auto">
             {/* Central OnSpot Core */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
               <div className="relative group">
@@ -618,22 +658,20 @@ export default function Home() {
                 <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-blue-600 rounded-full blur-2xl opacity-60 group-hover:opacity-80 transition-opacity duration-500 animate-gentle-pulse"></div>
 
                 {/* Core circle */}
-                <div className="relative w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 rounded-full bg-gradient-to-br from-violet-600 to-blue-600 flex items-center justify-center border-2 border-white/20">
-                  <Sparkles className="w-10 h-10 sm:w-12 sm:h-12 text-white" />
+                <div className="relative w-24 h-24 lg:w-28 lg:h-28 rounded-full bg-gradient-to-br from-violet-600 to-blue-600 flex items-center justify-center border-2 border-white/20">
+                  <Sparkles className="w-12 h-12 text-white" />
                 </div>
               </div>
             </div>
 
             {/* Integration Nodes - Circular Layout */}
-            <div className="relative h-[500px] sm:h-[600px] lg:h-[700px]">
+            <div className="relative h-[600px] lg:h-[700px]">
               {integrations.map((integration, index) => {
                 const totalItems = integrations.length;
                 const angle = (index * 360) / totalItems;
-                const radius = 180; // Base radius for mobile
-                const smRadius = 220; // Tablet
+                const mdRadius = 220; // Tablet
                 const lgRadius = 280; // Desktop
 
-                // Calculate positions for different screen sizes
                 const x = Math.cos(((angle - 90) * Math.PI) / 180);
                 const y = Math.sin(((angle - 90) * Math.PI) / 180);
 
@@ -642,15 +680,25 @@ export default function Home() {
                     key={index}
                     className="absolute top-1/2 left-1/2 group"
                     style={{
-                      transform: `translate(-50%, -50%) translate(calc(${x * radius}px), calc(${y * radius}px))`,
+                      transform: `translate(-50%, -50%) translate(${x * mdRadius}px, ${y * mdRadius}px)`,
                     }}
                     data-testid={`integration-${index}`}
                   >
+                    <style>
+                      {`
+                        @media (min-width: 1024px) {
+                          [data-testid="integration-${index}"] {
+                            transform: translate(-50%, -50%) translate(${x * lgRadius}px, ${y * lgRadius}px);
+                          }
+                        }
+                      `}
+                    </style>
+
                     {/* Connection line to center */}
                     <svg
                       className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                      width={radius * 2.5}
-                      height={radius * 2.5}
+                      width={mdRadius * 2.5}
+                      height={mdRadius * 2.5}
                       style={{
                         transform: "translate(-50%, -50%)",
                       }}
@@ -658,8 +706,8 @@ export default function Home() {
                       <line
                         x1="50%"
                         y1="50%"
-                        x2={`calc(50% - ${x * radius}px)`}
-                        y2={`calc(50% - ${y * radius}px)`}
+                        x2={`calc(50% - ${x * mdRadius}px)`}
+                        y2={`calc(50% - ${y * mdRadius}px)`}
                         stroke="url(#lineGradient)"
                         strokeWidth="2"
                         className="animate-pulse"
@@ -692,26 +740,23 @@ export default function Home() {
                       <div className="absolute inset-0 bg-gradient-to-r from-violet-500/30 to-blue-500/30 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 scale-150"></div>
 
                       {/* Glass card */}
-                      <div className="relative bg-background/40 backdrop-blur-xl border border-white/10 rounded-2xl p-3 sm:p-4 transition-all duration-500 group-hover:border-white/30 group-hover:bg-background/60 min-w-[80px] sm:min-w-[100px] lg:min-w-[120px]">
+                      <div className="relative bg-background/40 backdrop-blur-xl border border-white/10 rounded-2xl p-4 transition-all duration-500 group-hover:border-white/30 group-hover:bg-background/60 min-w-[100px] lg:min-w-[120px]">
                         <div className="flex flex-col items-center justify-center gap-2">
                           {integration.icon ? (
                             typeof integration.icon === "string" ? (
-                              // 🖼️ When icon is an imported image file (JPG/PNG)
                               <img
                                 src={integration.icon}
                                 alt={integration.name}
-                                className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 object-contain opacity-80 group-hover:opacity-100 transition-all duration-300 grayscale group-hover:grayscale-0"
+                                className="w-6 h-6 lg:w-7 lg:h-7 object-contain opacity-80 group-hover:opacity-100 transition-all duration-300 grayscale group-hover:grayscale-0"
                               />
                             ) : (
-                              // ⚙️ When icon is a React component (Lucide or react-icons)
-                              <integration.icon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-foreground/60 group-hover:text-foreground transition-colors duration-300 grayscale group-hover:grayscale-0" />
+                              <integration.icon className="w-6 h-6 lg:w-7 lg:h-7 text-foreground/60 group-hover:text-foreground transition-colors duration-300 grayscale group-hover:grayscale-0" />
                             )
                           ) : (
-                            // Placeholder if no icon
-                            <div className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 rounded bg-gradient-to-br from-violet-500/20 to-blue-500/20"></div>
+                            <div className="w-6 h-6 lg:w-7 lg:h-7 rounded bg-gradient-to-br from-violet-500/20 to-blue-500/20"></div>
                           )}
 
-                          <span className="text-[9px] sm:text-[10px] lg:text-xs font-medium text-foreground/60 group-hover:text-foreground transition-colors duration-300 text-center">
+                          <span className="text-[10px] lg:text-xs font-medium text-foreground/60 group-hover:text-foreground transition-colors duration-300 text-center">
                             {integration.name}
                           </span>
                         </div>
@@ -733,7 +778,7 @@ export default function Home() {
           </div>
 
           {/* Bottom text */}
-          <div className="text-center mt-12 sm:mt-16">
+          <div className="text-center mt-8 sm:mt-12 md:mt-16">
             <p className="text-xs sm:text-sm text-muted-foreground">
               and many more...
             </p>
