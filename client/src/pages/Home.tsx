@@ -1394,7 +1394,8 @@ export default function Home() {
                   <img
                     src={profile.photo}
                     alt={profile.name}
-                    className="w-full h-full object-cover object-center blur-sm group-hover:blur-none opacity-60 group-hover:opacity-100 transition-all duration-500"
+                    className="w-full h-full object-cover blur-sm group-hover:blur-none opacity-60 group-hover:opacity-100 transition-all duration-500"
+                    style={{ objectPosition: 'center 35%' }}
                   />
 
                   {/* Semi-transparent gradient overlay with name/title - reveals on hover */}
