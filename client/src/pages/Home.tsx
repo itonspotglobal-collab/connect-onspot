@@ -55,14 +55,14 @@ import PinetechLogo from "../assets/logos/Pinetech.png";
 import SafewayLogo from "../assets/logos/Safeway.png";
 import VertexLogo from "../assets/logos/Vertex.png";
 
-import Cristina from "../assets/logos/cristina.png";
-import Jonathan from "../assets/logos/jonathan.png";
-import Khristine from "../assets/logos/khristine.png";
-import Kris from "../assets/logos/kris.png";
-import Marjurie from "../assets/logos/marjurie.png";
-import Nicole from "../assets/logos/nicole.png";
-import Riniel from "../assets/logos/riniel.png";
-import Melville from "../assets/logos/melville.piado.png";
+import KyleMendezPhoto from "@assets/Kyle Mendez - Recruitment Specialist_1761134115529.png";
+import AlexandraLopezPhoto from "@assets/Alexandra Lopez - Executive Assistant_1761134115530.png";
+import AndreaPinzonPhoto from "@assets/Andrea Pinzon - Virtual Assistant_1761134115530.png";
+import ChristopherAlbaPhoto from "@assets/Christopher Alba - Technical Support Representative_1761134115531.png";
+import RachelCastroPhoto from "@assets/Rachel Castro - Social Media Manager_1761134115531.png";
+import AmirSinghPhoto from "@assets/Amir Singh - SEO Specialist_1761134115531.png";
+import JenniferDizonPhoto from "@assets/Jennifer Dizon - Customer Service Representative_1761134115531.png";
+import AndreiLosantoPhoto from "@assets/Andrei Losanto - Full Stack Developer_1761134115531.png";
 import FrederickPhoto from "../assets/logos/Frederick.png";
 import AlexPhoto from "../assets/logos/Alex.png";
 import StefanPhoto from "../assets/logos/Stefan.png";
@@ -272,44 +272,44 @@ const transformationStories = [
 
 const talentProfiles = [
   {
-    name: "Jonathan Libut",
-    role: "Social Media Manager",
-    photo: Jonathan,
+    name: "Kyle Mendez",
+    role: "Recruitment Specialist",
+    photo: KyleMendezPhoto,
   },
   {
-    name: "Riniel Quintino",
-    role: "AI Operations Specialist",
-    photo: Riniel,
+    name: "Alexandra Lopez",
+    role: "Executive Assistant",
+    photo: AlexandraLopezPhoto,
   },
   {
-    name: "Marjurie Llamis",
+    name: "Andrea Pinzon",
     role: "Virtual Assistant",
-    photo: Marjurie,
+    photo: AndreaPinzonPhoto,
   },
   {
-    name: "Maria Cristina Millendez",
-    role: "Automation Engineer",
-    photo: Cristina,
-  },
-  {
-    name: "Nicole Dela Cruz",
-    role: "Talent Acquisition Lead",
-    photo: Nicole,
-  },
-  {
-    name: "Kris Romero",
-    role: "Performance Analyst",
-    photo: Kris,
-  },
-  {
-    name: "Melville Piado",
-    role: "Customer Support Representative",
-    photo: Melville,
-  },
-  {
-    name: "Khristine Alba",
+    name: "Christopher Alba",
     role: "Technical Support Representative",
-    photo: Khristine,
+    photo: ChristopherAlbaPhoto,
+  },
+  {
+    name: "Rachel Castro",
+    role: "Social Media Manager",
+    photo: RachelCastroPhoto,
+  },
+  {
+    name: "Amir Singh",
+    role: "SEO Specialist",
+    photo: AmirSinghPhoto,
+  },
+  {
+    name: "Jennifer Dizon",
+    role: "Customer Service Representative",
+    photo: JenniferDizonPhoto,
+  },
+  {
+    name: "Andrei Losanto",
+    role: "Full Stack Developer",
+    photo: AndreiLosantoPhoto,
   },
 ];
 
@@ -1394,7 +1394,7 @@ export default function Home() {
                   <img
                     src={profile.photo}
                     alt={profile.name}
-                    className="w-full h-full object-cover blur-sm group-hover:blur-none opacity-60 group-hover:opacity-100 transition-all duration-500"
+                    className="w-full h-full object-cover object-center blur-sm group-hover:blur-none opacity-60 group-hover:opacity-100 transition-all duration-500"
                   />
 
                   {/* Semi-transparent gradient overlay with name/title - reveals on hover */}
