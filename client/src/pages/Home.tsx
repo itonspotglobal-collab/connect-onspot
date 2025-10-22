@@ -69,7 +69,7 @@ import StefanPhoto from "../assets/logos/Stefan.png";
 
 import favicon from "../assets/logos/favic.png";
 import MicrosoftLogo from "../assets/logos/microsoft.logo.png";
-import GoHighLevelLogo from "../assets/logos/ghl.logo.jpg";
+import GoHighLevelLogo from "../assets/logos/ghl.logo.jpeg";
 
 const trustedBrands = [
   { name: "Flash Justice", logo: FlashLogo },
@@ -1487,23 +1487,36 @@ export default function Home() {
           <div className="h-px bg-gradient-to-r from-transparent via-violet-400/30 through-blue-400/30 to-transparent"></div>
         </div>
 
-        <div className="mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-12 max-w-[92rem] relative left-[-1.5rem] sm:left-[-2rem]">
+        <div className="container mx-auto px-4 sm:px-6 py-16 sm:py-20 lg:py-24">
           {/* Footer Grid - Fluid responsive layout */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8 md:gap-10 lg:gap-12 max-w-7xl mx-auto">
+          <div
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 max-w-7xl mx-auto transition-all duration-500 ease-in-out"
+            style={{
+              rowGap: "clamp(4px, 0.6vh, 8px)",
+              columnGap: "clamp(24px, 3vw, 48px)",
+            }}
+          >
             {/* Brand Section - Spans 2 columns on tablet/desktop */}
-            <div className="md:col-span-2 lg:col-span-2 pb-8 border-b border-slate-200 dark:border-white/[0.06] md:pb-0 md:border-b-0">
-              <div className="space-y-6 flex flex-col items-center md:items-start">
-                <div className="relative inline-block group">
+            <div
+              className="md:col-span-2 lg:col-span-2 md:pb-0 md:border-b-0"
+              style={{
+                paddingBottom: "clamp(16px, 2.5vh, 24px)",
+                borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
+                transition: "all 0.3s ease-in-out",
+              }}
+            >
+              <div className="space-y-6 sm:space-y-8 relative flex flex-col items-center md:items-start transition-all duration-300">
+                <div className="relative inline-block">
                   <img
                     src={onspotLogo}
                     alt="OnSpot"
-                    className="h-8 sm:h-10 w-auto"
+                    className="h-8 sm:h-9 w-auto"
                     data-testid="footer-logo"
                   />
                   <div className="absolute -inset-2 bg-gradient-to-r from-violet-500/20 to-blue-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
                 </div>
 
-                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-sm text-center md:text-left">
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-md text-center md:text-left transition-all duration-300">
                   The growth engine of the modern era. Built by entrepreneurs,
                   for entrepreneurs—our Superhuman System fuses AI-first
                   infrastructure with human excellence to scale businesses and
@@ -1513,8 +1526,11 @@ export default function Home() {
 
               {/* Social Icons - Single horizontal row, never wrapping */}
               <div
-                className="flex gap-2 sm:gap-3 justify-center md:justify-start overflow-x-auto scrollbar-hide mt-8"
-                style={{ flexWrap: "nowrap" }}
+                className="flex gap-2 sm:gap-3 justify-center md:justify-start overflow-x-auto scrollbar-hide transition-all duration-300"
+                style={{
+                  flexWrap: "nowrap",
+                  marginTop: "clamp(20px, 3vh, 32px)",
+                }}
               >
                 <a
                   href="#"
@@ -1569,13 +1585,22 @@ export default function Home() {
             </div>
 
             {/* Navigation Section */}
-            <div className="pb-8 border-b border-slate-200 dark:border-white/[0.06] md:pb-0 md:border-b-0">
+            <div
+              className="md:space-y-6 md:border-b-0 transition-all duration-300"
+              style={{
+                paddingBottom: "clamp(4px, 0.6vh, 8px)",
+                borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
+              }}
+            >
               <button
                 onClick={() => toggleFooterSection("navigation")}
-                className="flex items-center justify-between w-full py-2 md:cursor-default md:!p-0 text-left"
+                className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left"
+                style={{
+                  padding: "clamp(4px, 0.6vh, 8px) 0",
+                }}
                 data-testid="footer-accordion-navigation"
               >
-                <h3 className="text-base font-semibold text-slate-800 dark:text-white">
+                <h3 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-white tracking-wide text-left">
                   Navigation
                 </h3>
                 <ChevronDown
@@ -1586,9 +1611,15 @@ export default function Home() {
               <div
                 className={`space-y-3 transition-all duration-300 md:!opacity-100 md:!max-h-none md:!block ${
                   expandedFooterSection === "navigation"
-                    ? "opacity-100 max-h-96 mt-4"
+                    ? "opacity-100 max-h-96"
                     : "opacity-0 max-h-0 overflow-hidden"
                 }`}
+                style={{
+                  marginTop:
+                    expandedFooterSection === "navigation"
+                      ? "clamp(4px, 0.5vh, 6px)"
+                      : "0",
+                }}
               >
                 <Link
                   href="/hire-talent"
@@ -1643,13 +1674,22 @@ export default function Home() {
             </div>
 
             {/* Company Section */}
-            <div className="pb-8 border-b border-slate-200 dark:border-white/[0.06] md:pb-0 md:border-b-0">
+            <div
+              className="md:space-y-6 md:border-b-0 transition-all duration-300"
+              style={{
+                paddingBottom: "clamp(4px, 0.6vh, 8px)",
+                borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
+              }}
+            >
               <button
                 onClick={() => toggleFooterSection("company")}
-                className="flex items-center justify-between w-full py-2 md:cursor-default md:!p-0 text-left"
+                className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left"
+                style={{
+                  padding: "clamp(4px, 0.6vh, 8px) 0",
+                }}
                 data-testid="footer-accordion-company"
               >
-                <h3 className="text-base font-semibold text-slate-800 dark:text-white">
+                <h3 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-white tracking-wide text-left">
                   Company
                 </h3>
                 <ChevronDown
@@ -1660,9 +1700,15 @@ export default function Home() {
               <div
                 className={`space-y-3 transition-all duration-300 md:!opacity-100 md:!max-h-none md:!block ${
                   expandedFooterSection === "company"
-                    ? "opacity-100 max-h-96 mt-4"
+                    ? "opacity-100 max-h-96"
                     : "opacity-0 max-h-0 overflow-hidden"
                 }`}
+                style={{
+                  marginTop:
+                    expandedFooterSection === "company"
+                      ? "clamp(4px, 0.5vh, 6px)"
+                      : "0",
+                }}
               >
                 <Link
                   href="/why-onspot"
@@ -1724,13 +1770,22 @@ export default function Home() {
             </div>
 
             {/* Download Section */}
-            <div className="pb-8 border-b border-slate-200 dark:border-white/[0.06] md:pb-0 md:border-b-0">
+            <div
+              className="md:space-y-6 md:border-b-0 transition-all duration-300"
+              style={{
+                paddingBottom: "clamp(4px, 0.6vh, 8px)",
+                borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
+              }}
+            >
               <button
                 onClick={() => toggleFooterSection("download")}
-                className="flex items-center justify-between w-full py-2 md:cursor-default md:!p-0 text-left"
+                className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left"
+                style={{
+                  padding: "clamp(4px, 0.6vh, 8px) 0",
+                }}
                 data-testid="footer-accordion-download"
               >
-                <h3 className="text-base font-semibold text-slate-800 dark:text-white">
+                <h3 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-white tracking-wide text-left">
                   Download Platform
                 </h3>
                 <ChevronDown
@@ -1741,9 +1796,15 @@ export default function Home() {
               <div
                 className={`space-y-4 transition-all duration-300 md:!opacity-100 md:!max-h-none md:!block ${
                   expandedFooterSection === "download"
-                    ? "opacity-100 max-h-96 mt-4"
+                    ? "opacity-100 max-h-96"
                     : "opacity-0 max-h-0 overflow-hidden"
                 }`}
+                style={{
+                  marginTop:
+                    expandedFooterSection === "download"
+                      ? "clamp(4px, 0.5vh, 6px)"
+                      : "0",
+                }}
               >
                 <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
                   Take OnSpot with you wherever you go. Manage projects and
@@ -1787,28 +1848,35 @@ export default function Home() {
             </div>
 
             {/* Connect Section */}
-            <div className="lg:col-span-1 xl:col-span-1 w-full max-w-[20rem] sm:max-w-[22rem] md:max-w-[24rem] lg:max-w-[26rem]">
+            <div className="md:space-y-6 transition-all duration-300">
               <button
                 onClick={() => toggleFooterSection("connect")}
-                className="flex items-center justify-between w-full py-2 md:cursor-default md:!p-0 text-left"
+                className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left"
+                style={{
+                  padding: "clamp(4px, 0.6vh, 8px) 0",
+                }}
                 data-testid="footer-accordion-connect"
               >
-                <h3 className="text-base font-semibold text-slate-800 dark:text-white">
+                <h3 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-white tracking-wide text-left">
                   Connect
                 </h3>
                 <ChevronDown
-                  className={`w-5 h-5 text-slate-600 dark:text-slate-400 transition-transform duration-300 md:hidden ${
-                    expandedFooterSection === "connect" ? "rotate-180" : ""
-                  }`}
+                  className={`w-5 h-5 text-slate-600 dark:text-slate-400 transition-transform duration-300 md:hidden ${expandedFooterSection === "connect" ? "rotate-180" : ""}`}
                 />
               </button>
 
               <div
                 className={`space-y-3 transition-all duration-300 md:!opacity-100 md:!max-h-none md:!block ${
                   expandedFooterSection === "connect"
-                    ? "opacity-100 max-h-96 mt-4"
+                    ? "opacity-100 max-h-96"
                     : "opacity-0 max-h-0 overflow-hidden"
                 }`}
+                style={{
+                  marginTop:
+                    expandedFooterSection === "connect"
+                      ? "clamp(4px, 0.5vh, 6px)"
+                      : "0",
+                }}
               >
                 <a
                   href="mailto:hello@onspotglobal.com"
@@ -1816,9 +1884,7 @@ export default function Home() {
                   data-testid="footer-email"
                 >
                   <Mail className="w-5 h-5 flex-shrink-0 group-hover:scale-110 transition-transform duration-300" />
-                  <span className="truncate sm:whitespace-nowrap md:whitespace-normal break-keep">
-                    hello@onspotglobal.com
-                  </span>
+                  <span>hello@onspotglobal.com</span>
                 </a>
                 <a
                   href="tel:+1234567890"
@@ -1860,30 +1926,30 @@ export default function Home() {
           </div>
 
           {/* Bottom Bar */}
-          <div className="mt-12 pt-8 border-t border-slate-300 dark:border-white/10">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 text-sm text-slate-600 dark:text-slate-400">
+          <div className="mt-16 pt-8 border-t border-slate-300 dark:border-white/[0.12]">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs sm:text-sm text-slate-600 dark:text-white/70">
               <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-center sm:text-left">
-                <p className="hover:text-slate-800 dark:hover:text-white transition-colors duration-300">
+                <p className="hover:text-slate-800 dark:hover:text-white/90 transition-colors duration-300">
                   © 2025 OnSpot. All rights reserved.
                 </p>
-                <span className="hidden sm:inline text-slate-400 dark:text-slate-600">
+                <span className="hidden sm:inline text-slate-400 dark:text-white/30">
                   ·
                 </span>
-                <p className="text-xs text-slate-500 dark:text-slate-500">
+                <p className="text-[10px] sm:text-xs text-slate-500 dark:text-white/50">
                   Powered by OnSpot Intelligence
                 </p>
               </div>
-              <div className="flex gap-8">
+              <div className="flex gap-6">
                 <Link
                   href="/privacy"
-                  className="hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-300 hover:translate-y-[-1px]"
+                  className="hover:text-violet-600 dark:hover:text-violet-300 transition-all duration-300 hover:translate-y-[-1px]"
                   data-testid="footer-privacy"
                 >
                   Privacy Policy
                 </Link>
                 <Link
                   href="/terms"
-                  className="hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-300 hover:translate-y-[-1px]"
+                  className="hover:text-violet-600 dark:hover:text-violet-300 transition-all duration-300 hover:translate-y-[-1px]"
                   data-testid="footer-terms"
                 >
                   Terms of Service
