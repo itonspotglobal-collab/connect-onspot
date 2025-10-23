@@ -1232,16 +1232,16 @@ export default function WhyOnSpotValueCalculator() {
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 0.4, duration: 0.5 }}
-                          className="text-center p-8 rounded-2xl bg-gradient-to-br from-primary/5 to-primary/10"
+                          className="text-center p-6 rounded-2xl bg-gradient-to-br from-primary/5 to-primary/10 flex flex-col items-center justify-center min-h-[200px]"
                         >
-                          <DollarSign className="w-10 h-10 text-primary mx-auto mb-4" />
+                          <DollarSign className="w-8 h-8 text-primary mx-auto mb-3 flex-shrink-0" />
                           <div
-                            className="text-5xl font-bold text-primary mb-3"
+                            className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-primary mb-2 break-words w-full px-2"
                             data-testid="text-annual-savings"
                           >
                             {formatCurrency(calculations.annualSavings)}
                           </div>
-                          <div className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                          <div className="text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wide mt-auto">
                             Annual Savings
                           </div>
                         </motion.div>
@@ -1250,16 +1250,16 @@ export default function WhyOnSpotValueCalculator() {
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 0.5, duration: 0.5 }}
-                          className="text-center p-8 rounded-2xl bg-gradient-to-br from-[hsl(var(--gold-yellow))]/5 to-[hsl(var(--gold-yellow))]/10"
+                          className="text-center p-6 rounded-2xl bg-gradient-to-br from-[hsl(var(--gold-yellow))]/5 to-[hsl(var(--gold-yellow))]/10 flex flex-col items-center justify-center min-h-[200px]"
                         >
-                          <TrendingUp className="w-10 h-10 text-[hsl(var(--gold-yellow))] mx-auto mb-4" />
+                          <TrendingUp className="w-8 h-8 text-[hsl(var(--gold-yellow))] mx-auto mb-3 flex-shrink-0" />
                           <div
-                            className="text-5xl font-bold text-[hsl(var(--gold-yellow))] mb-3"
+                            className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-[hsl(var(--gold-yellow))] mb-2 break-words w-full px-2"
                             data-testid="text-savings-percentage"
                           >
                             {formatPercentage(calculations.savingsPercentage)}
                           </div>
-                          <div className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                          <div className="text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wide mt-auto">
                             Cost Reduction
                           </div>
                         </motion.div>
@@ -1268,16 +1268,16 @@ export default function WhyOnSpotValueCalculator() {
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 0.6, duration: 0.5 }}
-                          className="text-center p-8 rounded-2xl bg-gradient-to-br from-blue-500/5 to-blue-500/10"
+                          className="text-center p-6 rounded-2xl bg-gradient-to-br from-blue-500/5 to-blue-500/10 flex flex-col items-center justify-center min-h-[200px]"
                         >
-                          <Clock className="w-10 h-10 text-blue-600 mx-auto mb-4" />
+                          <Clock className="w-8 h-8 text-blue-600 mx-auto mb-3 flex-shrink-0" />
                           <div
-                            className="text-5xl font-bold text-blue-600 mb-3"
+                            className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-blue-600 mb-2 break-words w-full px-2"
                             data-testid="text-efficiency-hours"
                           >
                             {formatNumber(calculations.efficiencyHours)}
                           </div>
-                          <div className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                          <div className="text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wide mt-auto">
                             Efficiency Hours/Year
                           </div>
                         </motion.div>
