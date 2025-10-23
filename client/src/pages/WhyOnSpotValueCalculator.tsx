@@ -1321,6 +1321,20 @@ export default function WhyOnSpotValueCalculator() {
                       We'll load local wage baselines for your area
                     </p>
                   </div>
+
+                  <div className="relative pt-2">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground mb-2 block">
+                      Hourly Local Minimum Wage
+                    </Label>
+                    <div className="rounded-lg bg-primary/10 border border-primary/20 px-4 py-3">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-2xl font-bold text-primary">
+                          ${minWage.toFixed(2)}
+                        </span>
+                        <span className="text-sm text-muted-foreground">/hour</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
 
