@@ -1,0 +1,55 @@
+Vanessa’s Assistant integration in Replit throws “can’t add messages while a run is active” errors. 
+Please fix this by updating the code in `lib/openaiService.ts` to wait for the active run to complete before adding a new message.
+
+Steps:
+1. In `streamMessageToAssistant()`, before calling `openai.beta.threads.messages.create()`, 
+   check if there’s an active run for the same thread.
+   If there is, poll `openai.beta.threads.runs.retrieve()` until its status is “completed”, “failed”, or “cancelled”.
+
+2. Add logging for `thread.id`, `run.id`, and the assistant’s first few response tokens for debugging.
+
+3. Keep the rest of the stream logic intact — including the injected `vanessa_knowledge.txt` context and `assistant_id` from environment variables.
+
+Example implementation:
+```ts
+async function waitForRunCompletion(openai, threadId) {
+  const checkInterval = 2000;
+  let runActive = true;
+  while (runActive) {
+    const runs = await openai.beta.threads.runs.list(threadId);
+    const activeRun = runs.data.find(r => ["in_progress", "queued", "requires_action"].includes(r.status));
+    if (!activeRun) runActive = false;
+    else await new Promise(res => setTimeout(res, checkInterval));
+  }
+}
+
+export async function* streamMessageToAssistant(userMessage, threadId) {
+  const thread = threadId
+    ? await openai.beta.threads.retrieve(threadId)
+    : await openai.beta.threads.create();
+
+  // Wait for any active run to finish before adding new message
+  await waitForRunCompletion(openai, thread.id);
+
+  await openai.beta.threads.messages.create(thread.id, {
+    role: "user",
+    content: userMessage,
+  });
+
+  const runStream = await openai.beta.threads.runs.stream(thread.id, {
+    assistant_id: process.env.ASSISTANT_ID!,
+    stream: true,
+  });
+
+  console.log(`🧠 Started Vanessa run: ${thread.id}`);
+  yield { type: "threadId", data: thread.id };
+
+  for await (const event of runStream) {
+    if (event.type === "response.output_text.delta") {
+      yield { type: "content", data: event.delta };
+    } else if (event.type === "response.completed") {
+      console.log(`✅ Vanessa run completed for thread ${thread.id}`);
+      yield { type: "done", data: "" };
+    }
+  }
+}

@@ -68,6 +68,37 @@ export interface ChatResponse {
 }
 
 /**
+ * Wait for any active runs on a thread to complete before adding new messages
+ * This prevents the "can't add messages while a run is active" error
+ */
+async function waitForRunCompletion(client: OpenAI, threadId: string): Promise<void> {
+  const checkInterval = 1000; // Check every 1 second
+  const maxWaitTime = 30000; // Maximum 30 seconds wait
+  const startTime = Date.now();
+  
+  while (Date.now() - startTime < maxWaitTime) {
+    try {
+      const runs = await client.beta.threads.runs.list(threadId, { limit: 10 });
+      const activeRun = runs.data.find((r) =>
+        ["in_progress", "queued", "requires_action"].includes(r.status)
+      );
+      
+      if (!activeRun) {
+        return; // No active runs, safe to proceed
+      }
+      
+      console.log(`⏳ Waiting for active run ${activeRun.id} (status: ${activeRun.status}) to complete...`);
+      await new Promise((resolve) => setTimeout(resolve, checkInterval));
+    } catch (error) {
+      console.error("❌ Error checking run status:", error);
+      return; // Continue anyway if there's an error checking
+    }
+  }
+  
+  console.warn(`⚠️ Timeout waiting for active run to complete on thread ${threadId}`);
+}
+
+/**
  * Stream responses from the OpenAI Assistant with conversation continuity
  * Uses the Assistant API with threads for natural conversation flow
  */
@@ -92,6 +123,8 @@ export async function* streamWithAssistant(
       console.log(`📝 Created new thread: ${currentThreadId}`);
     } else {
       console.log(`📝 Reusing thread: ${currentThreadId}`);
+      // Wait for any active runs to complete before adding new message
+      await waitForRunCompletion(client, currentThreadId);
     }
 
     // Yield the thread ID first so the client can track it
@@ -109,6 +142,8 @@ export async function* streamWithAssistant(
       assistant_id: assistantId,
       additional_instructions: VANESSA_INSTRUCTIONS,
     });
+    
+    console.log(`🧠 Started Vanessa run for thread: ${currentThreadId}`);
 
     // Process the streaming response
     for await (const event of stream) {
@@ -163,6 +198,9 @@ export async function sendMessageToAssistant(
     if (!currentThreadId) {
       const thread = await client.beta.threads.create();
       currentThreadId = thread.id;
+    } else {
+      // Wait for any active runs to complete before adding new message
+      await waitForRunCompletion(client, currentThreadId);
     }
 
     // Add the user's message to the thread
