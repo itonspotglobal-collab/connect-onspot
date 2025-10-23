@@ -1216,26 +1216,26 @@ export default function WhyOnSpotValueCalculator() {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="backdrop-blur-xl bg-card/50 border border-border rounded-3xl p-8 md:p-12 shadow-2xl"
+            className="backdrop-blur-xl bg-card/50 border border-border rounded-3xl p-6 md:p-8 shadow-2xl"
           >
-            <div className="grid grid-cols-12 gap-y-6 gap-x-6">
+            <div className="grid grid-cols-12 gap-y-4 gap-x-4">
               <motion.div variants={itemVariants} className="col-span-12">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground mb-4">
+                <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">
                   Location Details
                 </p>
-                <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent mb-6" />
+                <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent mb-4" />
               </motion.div>
 
               <motion.div variants={itemVariants} className="col-span-12 md:col-span-4">
                 <div className="relative">
                   <Label
                     htmlFor="country"
-                    className="text-xs uppercase tracking-wider text-muted-foreground mb-3 block"
+                    className="text-xs uppercase tracking-wider text-muted-foreground mb-2 block"
                   >
                     Country
                   </Label>
                   {isLocationLoading ? (
-                    <ShimmerSkeleton className="h-12" />
+                    <ShimmerSkeleton className="h-10" />
                   ) : (
                     <Select
                       value={country}
@@ -1244,7 +1244,7 @@ export default function WhyOnSpotValueCalculator() {
                       <SelectTrigger 
                         id="country"
                         data-testid="select-country" 
-                        className="h-12 bg-input/50 border-border hover:border-ring focus:border-ring transition-all duration-200"
+                        className="h-10 bg-input/50 border-border hover:border-ring focus:border-ring transition-all duration-200"
                       >
                         <SelectValue />
                       </SelectTrigger>
@@ -1264,18 +1264,18 @@ export default function WhyOnSpotValueCalculator() {
                 <div className="relative">
                   <Label
                     htmlFor="state"
-                    className="text-xs uppercase tracking-wider text-muted-foreground mb-3 block"
+                    className="text-xs uppercase tracking-wider text-muted-foreground mb-2 block"
                   >
                     State/Province
                   </Label>
                   {isLocationLoading ? (
-                    <ShimmerSkeleton className="h-12" />
+                    <ShimmerSkeleton className="h-10" />
                   ) : (
                     <Select value={state} onValueChange={handleStateChange}>
                       <SelectTrigger 
                         id="state"
                         data-testid="select-state" 
-                        className="h-12 bg-input/50 border-border hover:border-ring focus:border-ring transition-all duration-200"
+                        className="h-10 bg-input/50 border-border hover:border-ring focus:border-ring transition-all duration-200"
                       >
                         <SelectValue />
                       </SelectTrigger>
@@ -1295,18 +1295,18 @@ export default function WhyOnSpotValueCalculator() {
                 <div className="relative">
                   <Label
                     htmlFor="city"
-                    className="text-xs uppercase tracking-wider text-muted-foreground mb-3 block"
+                    className="text-xs uppercase tracking-wider text-muted-foreground mb-2 block"
                   >
                     City
                   </Label>
                   {isLocationLoading ? (
-                    <ShimmerSkeleton className="h-12" />
+                    <ShimmerSkeleton className="h-10" />
                   ) : (
                     <Select value={city} onValueChange={handleCityChange}>
                       <SelectTrigger 
                         id="city"
                         data-testid="select-city" 
-                        className="h-12 bg-input/50 border-border hover:border-ring focus:border-ring transition-all duration-200"
+                        className="h-10 bg-input/50 border-border hover:border-ring focus:border-ring transition-all duration-200"
                       >
                         <SelectValue />
                       </SelectTrigger>
@@ -1325,23 +1325,18 @@ export default function WhyOnSpotValueCalculator() {
                 </div>
               </motion.div>
 
-              <motion.div variants={itemVariants} className="col-span-12 mt-6">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground mb-4">
+              <motion.div variants={itemVariants} className="col-span-12 mt-4">
+                <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">
                   Team Composition
                 </p>
-                <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent mb-6" />
+                <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent mb-4" />
               </motion.div>
 
               <div className="col-span-12">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <Label className="text-sm font-medium text-foreground">
-                      Job Roles
-                    </Label>
-                    <Badge variant="secondary" className="text-xs">
-                      {jobRoles.length}
-                    </Badge>
-                  </div>
+                <div className="flex items-center justify-between mb-3">
+                  <Label className="text-sm font-medium text-foreground">
+                    Job Roles
+                  </Label>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -1349,28 +1344,12 @@ export default function WhyOnSpotValueCalculator() {
                     data-testid="button-add-role"
                   >
                     <Plus className="w-4 h-4 mr-1" />
-                    Add Custom
+                    Add Role
                   </Button>
                 </div>
 
-                <div className="flex flex-wrap gap-2 mb-6">
-                  {ROLE_PRESETS.map((preset) => (
-                    <Button
-                      key={preset.label}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => addPresetRole(preset)}
-                      className="bg-input/30 border-border transition-all duration-150"
-                      data-testid={`button-preset-${preset.label.toLowerCase()}`}
-                    >
-                      <Plus className="w-3 h-3 mr-1" />
-                      {preset.label}
-                    </Button>
-                  ))}
-                </div>
-
                 <AnimatePresence mode="popLayout">
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {jobRoles.map((role, index) => (
                       <motion.div
                         key={role.id}
@@ -1378,61 +1357,32 @@ export default function WhyOnSpotValueCalculator() {
                         animate={{ opacity: 1, height: "auto", y: 0 }}
                         exit={{ opacity: 0, height: 0, scale: 0.95 }}
                         transition={{
-                          duration: prefersReducedMotion ? 0 : (index === jobRoles.length - 1 ? 0.16 : 0.12),
+                          duration: prefersReducedMotion ? 0 : 0.15,
                           ease: "easeOut",
                         }}
-                        className="rounded-2xl border border-border bg-card/50 p-6 backdrop-blur-sm hover:border-ring transition-all duration-200"
+                        className="rounded-xl border border-border bg-card/50 p-4 backdrop-blur-sm"
                       >
-                        <div className="space-y-4">
-                          <div className="flex items-start justify-between gap-3 mb-4">
-                            <h3 className="text-sm font-medium text-foreground">
-                              {role.title || 'New Role'}
-                            </h3>
-                            {jobRoles.length > 1 && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => removeJobRole(role.id)}
-                                className="hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/10 transition-all duration-150 -mt-2"
-                                data-testid={`button-remove-role-${role.id}`}
-                                aria-label={`Remove ${role.title} role`}
-                              >
-                                <X className="w-4 h-4" />
-                              </Button>
-                            )}
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <FloatingLabelInput
-                              id={`role-headcount-${role.id}`}
-                              label="Headcount"
-                              type="number"
-                              min={1}
-                              value={role.headcount}
-                              onChange={(e) =>
-                                updateJobRole(
-                                  role.id,
-                                  "headcount",
-                                  Math.max(1, Number(e.target.value)),
-                                )
-                              }
-                              tooltip="Number of people in this role"
-                            />
-                            <div className="relative">
-                              <Label className="text-xs uppercase tracking-wider text-muted-foreground mb-3 block">
-                                Role
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex-1">
+                              <Label className="text-xs uppercase tracking-wider text-muted-foreground mb-2 block">
+                                Role Type
                               </Label>
                               <Select
                                 value={role.department}
-                                onValueChange={(value) =>
-                                  updateJobRole(role.id, "department", value)
-                                }
+                                onValueChange={(value) => {
+                                  updateJobRole(role.id, "department", value);
+                                  // Auto-update title based on department
+                                  const roleTitle = ROLE_PRESETS.find(p => p.department === value)?.title || value.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                                  updateJobRole(role.id, "title", roleTitle);
+                                }}
                               >
                                 <SelectTrigger
-                                  className="h-12 bg-input/50 border-border hover:border-ring focus:border-ring transition-all duration-200"
-                                  data-testid={`select-role-department-${role.id}`}
-                                  aria-label={`Role type for ${role.title}`}
+                                  className="h-10 bg-input/50 border-border hover:border-ring focus:border-ring transition-all duration-200"
+                                  data-testid={`select-role-type-${role.id}`}
+                                  aria-label="Select role type"
                                 >
-                                  <SelectValue />
+                                  <SelectValue placeholder="Select a role" />
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="customer-support">
@@ -1467,18 +1417,56 @@ export default function WhyOnSpotValueCalculator() {
                                   </SelectItem>
                                 </SelectContent>
                               </Select>
-                              {departmentHasBaseline(role.department) && (
-                                <motion.div
-                                  initial={{ opacity: 0, scale: 0.9 }}
-                                  animate={{ opacity: 1, scale: 1 }}
-                                  className="flex items-center gap-1 mt-2 text-xs text-emerald-400"
-                                >
-                                  <Check className="w-3 h-3" />
-                                  Linked to baseline rate
-                                </motion.div>
-                              )}
                             </div>
+                            {jobRoles.length > 1 && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeJobRole(role.id)}
+                                className="mt-5 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/10 transition-all duration-150"
+                                data-testid={`button-remove-role-${role.id}`}
+                                aria-label={`Remove ${role.title} role`}
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            )}
                           </div>
+                          
+                          <div>
+                            <Label className="text-xs uppercase tracking-wider text-muted-foreground mb-2 block">
+                              Headcount
+                            </Label>
+                            <Input
+                              id={`role-headcount-${role.id}`}
+                              type="number"
+                              min={1}
+                              value={role.headcount}
+                              onChange={(e) =>
+                                updateJobRole(
+                                  role.id,
+                                  "headcount",
+                                  Math.max(1, Number(e.target.value)),
+                                )
+                              }
+                              className="h-10 bg-input/50 border-border hover:border-ring focus:border-ring transition-all duration-200"
+                              data-testid={`input-role-headcount-${role.id}`}
+                              aria-label="Number of people in this role"
+                            />
+                            <p className="text-muted-foreground mt-1" style={{ fontSize: '11px' }}>
+                              Number of people in this role
+                            </p>
+                          </div>
+
+                          {departmentHasBaseline(role.department) && (
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.9 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400"
+                            >
+                              <Check className="w-3 h-3" />
+                              Linked to baseline rate
+                            </motion.div>
+                          )}
                         </div>
                       </motion.div>
                     ))}
@@ -1486,9 +1474,9 @@ export default function WhyOnSpotValueCalculator() {
                 </AnimatePresence>
               </div>
 
-              <motion.div variants={itemVariants} className="col-span-12 mt-6">
+              <motion.div variants={itemVariants} className="col-span-12 mt-4">
                 <div className="relative" ref={sliderRef}>
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <Label className="text-sm font-medium text-foreground">
                         Outsource Percentage
