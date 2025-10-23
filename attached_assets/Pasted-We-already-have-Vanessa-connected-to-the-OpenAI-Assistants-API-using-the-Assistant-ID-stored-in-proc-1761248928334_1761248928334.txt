@@ -1,0 +1,61 @@
+We already have Vanessa connected to the OpenAI Assistants API using the Assistant ID stored in process.env.ASSISTANT_ID. 
+Now, I want to combine two knowledge sources for better accuracy:
+1. The Assistant’s OpenAI-hosted vector store and file search (already attached in OpenAI)
+2. A local text file named vanessa_knowledge.txt, located in the project root or a /resources folder
+
+Please do the following:
+
+1. Update `lib/openaiService.ts` to:
+   - Import fs and read the `vanessa_knowledge.txt` contents at runtime.
+   - Inject that text into every new user message as additional context.
+   - Keep the Assistants API stream logic intact (using openai.beta.threads.runs.stream).
+   - Ensure the assistant_id from process.env.ASSISTANT_ID is passed in the run request.
+   - Maintain streaming events: type "threadId", "content", "done".
+
+Example:
+```ts
+import fs from "fs";
+import path from "path";
+import OpenAI from "openai";
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+const knowledgePath = path.join(process.cwd(), "vanessa_knowledge.txt");
+const vanessaKnowledge = fs.existsSync(knowledgePath)
+  ? fs.readFileSync(knowledgePath, "utf-8")
+  : "";
+
+export async function* streamMessageToAssistant(userMessage: string, threadId?: string) {
+  const thread = threadId
+    ? await openai.beta.threads.retrieve(threadId)
+    : await openai.beta.threads.create();
+
+  // Combine the local knowledge with user input for better grounding
+  const combinedMessage = `
+${userMessage}
+
+[Company Knowledge Context]
+${vanessaKnowledge}
+`;
+
+  await openai.beta.threads.messages.create(thread.id, {
+    role: "user",
+    content: combinedMessage,
+  });
+
+  const runStream = await openai.beta.threads.runs.stream(thread.id, {
+    assistant_id: process.env.ASSISTANT_ID!,
+  });
+
+  yield { type: "threadId", data: thread.id };
+
+  for await (const event of runStream) {
+    if (event.type === "response.output_text.delta") {
+      yield { type: "content", data: event.delta };
+    } else if (event.type === "response.completed") {
+      yield { type: "done", data: "" };
+    }
+  }
+}
+Confirm /pages/api/chat/stream.ts continues to call this function and stream Server-Sent Events (SSE) back to the frontend as JSON lines.
+
+Ensure OPENAI_API_KEY and ASSISTANT_ID secrets remain set in Replit.

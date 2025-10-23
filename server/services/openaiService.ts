@@ -1,4 +1,6 @@
 import OpenAI from "openai";
+import fs from "fs";
+import path from "path";
 
 // Validate required environment variables at startup
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -27,6 +29,21 @@ const isConfigured = () => {
   }
 };
 
+// Load local knowledge base at startup
+const knowledgePath = path.join(process.cwd(), "resources", "vanessa_knowledge.txt");
+let vanessaKnowledge = "";
+
+try {
+  if (fs.existsSync(knowledgePath)) {
+    vanessaKnowledge = fs.readFileSync(knowledgePath, "utf-8");
+    console.log(`✅ Loaded Vanessa knowledge base from: ${knowledgePath}`);
+  } else {
+    console.warn(`⚠️ Vanessa knowledge base not found at: ${knowledgePath}`);
+  }
+} catch (error) {
+  console.error(`❌ Error loading Vanessa knowledge base:`, error);
+}
+
 // Vanessa's persona reinforcement - ensures consistent personality
 // This is passed as additional_instructions to reinforce the persona
 // even if the Dashboard configuration changes
@@ -39,6 +56,11 @@ You provide confident, warm, and clear information about:
 - Coworking spaces and workspace solutions
 Be concise, upbeat, and professional in all responses.
 `.trim();
+
+// Combine persona with local knowledge base for comprehensive context
+const VANESSA_INSTRUCTIONS = vanessaKnowledge
+  ? `${VANESSA_PERSONA}\n\n[Company Knowledge Base]\n${vanessaKnowledge}`
+  : VANESSA_PERSONA;
 
 export interface ChatResponse {
   message: string;
@@ -82,10 +104,10 @@ export async function* streamWithAssistant(
     });
 
     // Start a streaming run with the assistant
-    // Use additional_instructions to reinforce Vanessa's persona
+    // Use additional_instructions to reinforce Vanessa's persona and inject local knowledge
     const stream = await client.beta.threads.runs.stream(currentThreadId, {
       assistant_id: assistantId,
-      additional_instructions: VANESSA_PERSONA,
+      additional_instructions: VANESSA_INSTRUCTIONS,
     });
 
     // Process the streaming response
@@ -150,10 +172,10 @@ export async function sendMessageToAssistant(
     });
 
     // Run the assistant (non-streaming)
-    // Use additional_instructions to reinforce Vanessa's persona
+    // Use additional_instructions to reinforce Vanessa's persona and inject local knowledge
     const run = await client.beta.threads.runs.createAndPoll(currentThreadId, {
       assistant_id: assistantId,
-      additional_instructions: VANESSA_PERSONA,
+      additional_instructions: VANESSA_INSTRUCTIONS,
     });
 
     if (run.status === "completed") {
