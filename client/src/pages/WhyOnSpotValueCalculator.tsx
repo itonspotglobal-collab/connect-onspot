@@ -735,9 +735,9 @@ const FloatingLabelInput = ({
           min={min}
           className={`
             h-12 px-4 pt-6 pb-2
-            bg-white/5 backdrop-blur-sm
-            border-white/10 hover:border-white/20
-            focus:border-white/20 focus:ring-1 focus:ring-white/20
+            bg-input/50 backdrop-blur-sm
+            border-border hover:border-ring
+            focus:border-ring focus:ring-1 focus:ring-ring
             transition-all duration-200
             ${error ? "border-red-500/50 focus:border-red-500 focus:ring-red-500/30" : ""}
           `}
@@ -751,12 +751,12 @@ const FloatingLabelInput = ({
           className={`
             absolute left-4 top-1/2 -translate-y-1/2
             transition-all duration-200 pointer-events-none
-            ${isFocused || hasValue ? "text-xs top-3 translate-y-0 opacity-90" : "text-sm opacity-90"}
-            ${error ? "text-red-400" : "text-white"}
+            ${isFocused || hasValue ? "text-xs top-3 translate-y-0" : "text-sm"}
+            ${error ? "text-red-600 dark:text-red-400" : "text-muted-foreground"}
           `}
         >
           {label}
-          {required && <span className="text-red-400 ml-1">*</span>}
+          {required && <span className="text-red-600 dark:text-red-400 ml-1">*</span>}
         </Label>
         {tooltip && (
           <TooltipProvider>
@@ -764,7 +764,7 @@ const FloatingLabelInput = ({
               <TooltipTrigger asChild>
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   aria-label={`Help for ${label}`}
                 >
                   <HelpCircle className="w-4 h-4" />
@@ -792,7 +792,7 @@ const FloatingLabelInput = ({
       {helperText && !error && (
         <p
           id={`${id}-helper`}
-          className="text-white/70 mt-1"
+          className="text-muted-foreground mt-1"
           style={{ fontSize: '11px' }}
         >
           {helperText}
@@ -813,8 +813,8 @@ const ROLE_PRESETS = [
 ];
 
 const ShimmerSkeleton = ({ className }: { className?: string }) => (
-  <div className={`relative overflow-hidden bg-white/5 rounded-lg ${className || ''}`}>
-    <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+  <div className={`relative overflow-hidden bg-input/30 rounded-lg ${className || ''}`}>
+    <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-foreground/10 to-transparent" />
   </div>
 );
 
@@ -1215,21 +1215,21 @@ export default function WhyOnSpotValueCalculator() {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl p-8 md:p-12 shadow-2xl"
+            className="backdrop-blur-xl bg-card/50 border border-border rounded-3xl p-8 md:p-12 shadow-2xl"
           >
             <div className="grid grid-cols-12 gap-y-6 gap-x-6">
               <motion.div variants={itemVariants} className="col-span-12">
-                <p className="text-xs uppercase tracking-wider text-white/80 mb-4">
+                <p className="text-xs uppercase tracking-wider text-muted-foreground mb-4">
                   Location Details
                 </p>
-                <div className="h-px bg-gradient-to-r from-white/0 via-white/10 to-white/0 mb-6" />
+                <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent mb-6" />
               </motion.div>
 
               <motion.div variants={itemVariants} className="col-span-12 md:col-span-4">
                 <div className="relative">
                   <Label
                     htmlFor="country"
-                    className="text-xs uppercase tracking-wider text-white/80 mb-3 block"
+                    className="text-xs uppercase tracking-wider text-muted-foreground mb-3 block"
                   >
                     Country
                   </Label>
@@ -1243,7 +1243,7 @@ export default function WhyOnSpotValueCalculator() {
                       <SelectTrigger 
                         id="country"
                         data-testid="select-country" 
-                        className="h-12 bg-white/5 border-white/10 hover:border-white/20 focus:border-white/20 transition-all duration-200"
+                        className="h-12 bg-input/50 border-border hover:border-ring focus:border-ring transition-all duration-200"
                       >
                         <SelectValue />
                       </SelectTrigger>
@@ -1263,7 +1263,7 @@ export default function WhyOnSpotValueCalculator() {
                 <div className="relative">
                   <Label
                     htmlFor="state"
-                    className="text-xs uppercase tracking-wider text-white/80 mb-3 block"
+                    className="text-xs uppercase tracking-wider text-muted-foreground mb-3 block"
                   >
                     State/Province
                   </Label>
@@ -1274,7 +1274,7 @@ export default function WhyOnSpotValueCalculator() {
                       <SelectTrigger 
                         id="state"
                         data-testid="select-state" 
-                        className="h-12 bg-white/5 border-white/10 hover:border-white/20 focus:border-white/20 transition-all duration-200"
+                        className="h-12 bg-input/50 border-border hover:border-ring focus:border-ring transition-all duration-200"
                       >
                         <SelectValue />
                       </SelectTrigger>
@@ -1294,7 +1294,7 @@ export default function WhyOnSpotValueCalculator() {
                 <div className="relative">
                   <Label
                     htmlFor="city"
-                    className="text-xs uppercase tracking-wider text-white/80 mb-3 block"
+                    className="text-xs uppercase tracking-wider text-muted-foreground mb-3 block"
                   >
                     City
                   </Label>
@@ -1305,7 +1305,7 @@ export default function WhyOnSpotValueCalculator() {
                       <SelectTrigger 
                         id="city"
                         data-testid="select-city" 
-                        className="h-12 bg-white/5 border-white/10 hover:border-white/20 focus:border-white/30 transition-all duration-200"
+                        className="h-12 bg-input/50 border-border hover:border-ring focus:border-ring transition-all duration-200"
                       >
                         <SelectValue />
                       </SelectTrigger>
@@ -1318,23 +1318,23 @@ export default function WhyOnSpotValueCalculator() {
                       </SelectContent>
                     </Select>
                   )}
-                  <p className="text-white/70 mt-2" style={{ fontSize: '11px' }}>
+                  <p className="text-muted-foreground mt-2" style={{ fontSize: '11px' }}>
                     We'll load local wage baselines for your area
                   </p>
                 </div>
               </motion.div>
 
               <motion.div variants={itemVariants} className="col-span-12 mt-6">
-                <p className="text-xs uppercase tracking-wider text-white/80 mb-4">
+                <p className="text-xs uppercase tracking-wider text-muted-foreground mb-4">
                   Team Composition
                 </p>
-                <div className="h-px bg-gradient-to-r from-white/0 via-white/10 to-white/0 mb-6" />
+                <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent mb-6" />
               </motion.div>
 
               <div className="col-span-12">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <Label className="text-sm font-medium text-white/90">
+                    <Label className="text-sm font-medium text-foreground">
                       Job Roles
                     </Label>
                     <Badge variant="secondary" className="text-xs">
@@ -1345,7 +1345,6 @@ export default function WhyOnSpotValueCalculator() {
                     variant="ghost"
                     size="sm"
                     onClick={addJobRole}
-                    className="text-white/90 hover:text-white hover:bg-white/10 transition-all duration-200"
                     data-testid="button-add-role"
                   >
                     <Plus className="w-4 h-4 mr-1" />
@@ -1381,7 +1380,7 @@ export default function WhyOnSpotValueCalculator() {
                           duration: prefersReducedMotion ? 0 : (index === jobRoles.length - 1 ? 0.16 : 0.12),
                           ease: "easeOut",
                         }}
-                        className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm hover:border-white/20 transition-all duration-200"
+                        className="rounded-2xl border border-border bg-card/50 p-6 backdrop-blur-sm hover:border-ring transition-all duration-200"
                       >
                         <div className="space-y-4">
                           <div className="flex items-start justify-between gap-3">
@@ -1403,7 +1402,7 @@ export default function WhyOnSpotValueCalculator() {
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => removeJobRole(role.id)}
-                                className="mt-1 text-white/80 hover:text-red-400 hover:bg-red-500/10 transition-all duration-150"
+                                className="mt-1 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/10 transition-all duration-150"
                                 data-testid={`button-remove-role-${role.id}`}
                                 aria-label={`Remove ${role.title} role`}
                               >
@@ -1428,7 +1427,7 @@ export default function WhyOnSpotValueCalculator() {
                               tooltip="Number of people in this role"
                             />
                             <div className="relative">
-                              <Label className="text-xs uppercase tracking-wider text-white/80 mb-3 block">
+                              <Label className="text-xs uppercase tracking-wider text-muted-foreground mb-3 block">
                                 Department
                               </Label>
                               <Select
@@ -1438,7 +1437,7 @@ export default function WhyOnSpotValueCalculator() {
                                 }
                               >
                                 <SelectTrigger
-                                  className="h-12 bg-white/5 border-white/10 hover:border-white/20 focus:border-white/30 transition-all duration-200"
+                                  className="h-12 bg-input/50 border-border hover:border-ring focus:border-ring transition-all duration-200"
                                   data-testid={`select-role-department-${role.id}`}
                                   aria-label={`Department for ${role.title}`}
                                 >
@@ -1500,7 +1499,7 @@ export default function WhyOnSpotValueCalculator() {
                 <div className="relative" ref={sliderRef}>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
-                      <Label className="text-sm font-medium text-white/90">
+                      <Label className="text-sm font-medium text-foreground">
                         Outsource Percentage
                       </Label>
                       <TooltipProvider>
@@ -1508,7 +1507,7 @@ export default function WhyOnSpotValueCalculator() {
                           <TooltipTrigger asChild>
                             <button
                               type="button"
-                              className="text-white/70 hover:text-white transition-colors"
+                              className="text-muted-foreground hover:text-foreground transition-colors"
                               aria-label="Help for outsource percentage"
                             >
                               <HelpCircle className="w-4 h-4" />
@@ -1542,7 +1541,7 @@ export default function WhyOnSpotValueCalculator() {
                       aria-label="Outsource percentage"
                     />
                   </div>
-                  <div className="flex justify-between text-xs text-white/70 mt-2">
+                  <div className="flex justify-between text-xs text-muted-foreground mt-2">
                     <span>0%</span>
                     <span>25%</span>
                     <span>50%</span>
