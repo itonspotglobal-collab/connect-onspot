@@ -751,7 +751,7 @@ const FloatingLabelInput = ({
           className={`
             absolute left-4 top-1/2 -translate-y-1/2
             transition-all duration-200 pointer-events-none
-            ${isFocused || hasValue ? "text-xs top-3 translate-y-0 opacity-60" : "text-sm opacity-60"}
+            ${isFocused || hasValue ? "text-xs top-3 translate-y-0 opacity-90" : "text-sm opacity-90"}
             ${error ? "text-red-400" : "text-white"}
           `}
         >
@@ -764,7 +764,7 @@ const FloatingLabelInput = ({
               <TooltipTrigger asChild>
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors"
                   aria-label={`Help for ${label}`}
                 >
                   <HelpCircle className="w-4 h-4" />
@@ -792,7 +792,7 @@ const FloatingLabelInput = ({
       {helperText && !error && (
         <p
           id={`${id}-helper`}
-          className="text-white/40 mt-1"
+          className="text-white/70 mt-1"
           style={{ fontSize: '11px' }}
         >
           {helperText}
@@ -1219,7 +1219,7 @@ export default function WhyOnSpotValueCalculator() {
           >
             <div className="grid grid-cols-12 gap-y-6 gap-x-6">
               <motion.div variants={itemVariants} className="col-span-12">
-                <p className="text-xs uppercase tracking-wider text-white/60 mb-4">
+                <p className="text-xs uppercase tracking-wider text-white/80 mb-4">
                   Location Details
                 </p>
                 <div className="h-px bg-gradient-to-r from-white/0 via-white/10 to-white/0 mb-6" />
@@ -1229,7 +1229,7 @@ export default function WhyOnSpotValueCalculator() {
                 <div className="relative">
                   <Label
                     htmlFor="country"
-                    className="text-xs uppercase tracking-wider text-white/60 mb-3 block"
+                    className="text-xs uppercase tracking-wider text-white/80 mb-3 block"
                   >
                     Country
                   </Label>
@@ -1263,7 +1263,7 @@ export default function WhyOnSpotValueCalculator() {
                 <div className="relative">
                   <Label
                     htmlFor="state"
-                    className="text-xs uppercase tracking-wider text-white/60 mb-3 block"
+                    className="text-xs uppercase tracking-wider text-white/80 mb-3 block"
                   >
                     State/Province
                   </Label>
@@ -1294,7 +1294,7 @@ export default function WhyOnSpotValueCalculator() {
                 <div className="relative">
                   <Label
                     htmlFor="city"
-                    className="text-xs uppercase tracking-wider text-white/60 mb-3 block"
+                    className="text-xs uppercase tracking-wider text-white/80 mb-3 block"
                   >
                     City
                   </Label>
@@ -1318,14 +1318,14 @@ export default function WhyOnSpotValueCalculator() {
                       </SelectContent>
                     </Select>
                   )}
-                  <p className="text-white/40 mt-2" style={{ fontSize: '11px' }}>
+                  <p className="text-white/70 mt-2" style={{ fontSize: '11px' }}>
                     We'll load local wage baselines for your area
                   </p>
                 </div>
               </motion.div>
 
               <motion.div variants={itemVariants} className="col-span-12 mt-6">
-                <p className="text-xs uppercase tracking-wider text-white/60 mb-4">
+                <p className="text-xs uppercase tracking-wider text-white/80 mb-4">
                   Team Composition
                 </p>
                 <div className="h-px bg-gradient-to-r from-white/0 via-white/10 to-white/0 mb-6" />
@@ -1345,7 +1345,7 @@ export default function WhyOnSpotValueCalculator() {
                     variant="ghost"
                     size="sm"
                     onClick={addJobRole}
-                    className="text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200"
+                    className="text-white/90 hover:text-white hover:bg-white/10 transition-all duration-200"
                     data-testid="button-add-role"
                   >
                     <Plus className="w-4 h-4 mr-1" />
@@ -1403,7 +1403,7 @@ export default function WhyOnSpotValueCalculator() {
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => removeJobRole(role.id)}
-                                className="mt-1 text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-all duration-150"
+                                className="mt-1 text-white/80 hover:text-red-400 hover:bg-red-500/10 transition-all duration-150"
                                 data-testid={`button-remove-role-${role.id}`}
                                 aria-label={`Remove ${role.title} role`}
                               >
@@ -1428,7 +1428,7 @@ export default function WhyOnSpotValueCalculator() {
                               tooltip="Number of people in this role"
                             />
                             <div className="relative">
-                              <Label className="text-xs uppercase tracking-wider text-white/60 mb-3 block">
+                              <Label className="text-xs uppercase tracking-wider text-white/80 mb-3 block">
                                 Department
                               </Label>
                               <Select
@@ -1508,7 +1508,7 @@ export default function WhyOnSpotValueCalculator() {
                           <TooltipTrigger asChild>
                             <button
                               type="button"
-                              className="text-white/40 hover:text-white/70 transition-colors"
+                              className="text-white/70 hover:text-white transition-colors"
                               aria-label="Help for outsource percentage"
                             >
                               <HelpCircle className="w-4 h-4" />
@@ -1542,7 +1542,7 @@ export default function WhyOnSpotValueCalculator() {
                       aria-label="Outsource percentage"
                     />
                   </div>
-                  <div className="flex justify-between text-xs text-white/40 mt-2">
+                  <div className="flex justify-between text-xs text-white/70 mt-2">
                     <span>0%</span>
                     <span>25%</span>
                     <span>50%</span>
