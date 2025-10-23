@@ -1,0 +1,105 @@
+The site chatbot is not responding properly because it’s using the Chat Completions API instead of the OpenAI Assistants API. 
+I want to fully switch back to the Assistants API integration and make the chatbot respond correctly using the real Assistant (VanessaAI).
+
+Please do the following:
+
+1. **Check the repo structure** for:
+   - `/lib/openaiService.ts`
+   - `/pages/api/chat/stream.ts`
+   - `VanessaChat.tsx` (or equivalent frontend chat component)
+
+2. **Update or recreate the following files** to use the OpenAI Assistants API correctly:
+
+✅ `lib/openaiService.ts`
+```ts
+import OpenAI from "openai";
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+export async function* streamMessageToAssistant(userMessage: string, threadId?: string) {
+  const thread = threadId
+    ? await openai.beta.threads.retrieve(threadId)
+    : await openai.beta.threads.create();
+
+  await openai.beta.threads.messages.create(thread.id, {
+    role: "user",
+    content: userMessage,
+  });
+
+  const runStream = await openai.beta.threads.runs.stream(thread.id, {
+    assistant_id: process.env.ASSISTANT_ID!,
+    stream: true,
+  });
+
+  yield { type: "threadId", data: thread.id };
+
+  for await (const event of runStream) {
+    if (event.type === "response.output_text.delta") {
+      yield { type: "content", data: event.delta };
+    } else if (event.type === "response.completed") {
+      yield { type: "done", data: "" };
+    }
+  }
+}
+✅ pages/api/chat/stream.ts
+
+ts
+Copy code
+import { NextResponse } from "next/server";
+import { streamMessageToAssistant } from "@/lib/openaiService";
+
+export const runtime = "edge";
+
+export async function POST(req: Request) {
+  const { message, threadId } = await req.json();
+
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      try {
+        for await (const chunk of streamMessageToAssistant(message, threadId)) {
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`)
+          );
+        }
+        controller.close();
+      } catch (err) {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "error", data: err.message })}\n\n`));
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    },
+  });
+}
+Ensure the following secrets are set (already confirmed but re-verify):
+
+OPENAI_API_KEY
+
+ASSISTANT_ID
+
+Check that the frontend (VanessaChat.tsx) connects to /api/chat/stream using EventSource and appends data.type === "content" text to the chat window.
+
+After saving, restart the server and test Vanessa again by asking:
+
+“Where is OnSpot located?”
+
+“How does OnSpot outsourcing work?”
+
+The expected behavior:
+
+Vanessa responds with information drawn from her OpenAI Assistant (with File Search & Knowledge Base enabled).
+
+Conversation threads persist per user.
+
+Streaming text appears in real time.
+
+Finally, confirm that the server logs show a valid run_id and successful Assistant run (no “empty delta” or “no content” errors).
+
+Output when done:
+✅ “VanessaAI Assistant successfully restored — responses now streamed from the OpenAI Assistants API.”
