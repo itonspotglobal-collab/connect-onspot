@@ -881,17 +881,35 @@ export default function WhyOnSpotValueCalculator() {
     timeHorizon,
   ]);
 
+  const getLocaleByCountry = (country: string): string => {
+    const localeMap: Record<string, string> = {
+      "United States": "en-US",
+      "Canada": "en-CA",
+      "Australia": "en-AU",
+      "United Kingdom": "en-GB",
+    };
+    return localeMap[country] || "en-US";
+  };
+
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
+    const locale = getLocaleByCountry(country);
+    const formatted = new Intl.NumberFormat(locale, {
       style: "currency",
       currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
+    
+    // Separate currency symbol from number
+    const currencySymbol = formatted.match(/[^\d,.\s]+/)?.[0] || "$";
+    const numberPart = formatted.replace(/[^\d,.\s]+/g, "").trim();
+    
+    return { symbol: currencySymbol, value: numberPart };
   };
 
   const formatNumber = (num: number) => {
-    return new Intl.NumberFormat("en-US", {
+    const locale = getLocaleByCountry(country);
+    return new Intl.NumberFormat(locale, {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(num);
@@ -1235,13 +1253,14 @@ export default function WhyOnSpotValueCalculator() {
                           className="text-center p-6 rounded-2xl bg-gradient-to-br from-primary/5 to-primary/10 flex flex-col items-center justify-center min-h-[200px]"
                         >
                           <DollarSign className="w-8 h-8 text-primary mx-auto mb-3 flex-shrink-0" />
-                          <div className="w-full overflow-hidden flex items-baseline justify-center mb-2">
+                          <div className="w-full overflow-visible flex items-baseline justify-center mb-2">
                             <div
-                              className="font-bold text-primary whitespace-nowrap"
+                              className="font-bold text-primary flex items-baseline whitespace-nowrap"
                               style={{ fontSize: 'clamp(1.5rem, 8vw, 3rem)' }}
                               data-testid="text-annual-savings"
                             >
-                              {formatCurrency(calculations.annualSavings)}
+                              <span className="text-[0.5em] mr-1">{formatCurrency(calculations.annualSavings).symbol}</span>
+                              <span>{formatCurrency(calculations.annualSavings).value}</span>
                             </div>
                           </div>
                           <div className="text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wide mt-auto">
@@ -1256,7 +1275,7 @@ export default function WhyOnSpotValueCalculator() {
                           className="text-center p-6 rounded-2xl bg-gradient-to-br from-[hsl(var(--gold-yellow))]/5 to-[hsl(var(--gold-yellow))]/10 flex flex-col items-center justify-center min-h-[200px]"
                         >
                           <TrendingUp className="w-8 h-8 text-[hsl(var(--gold-yellow))] mx-auto mb-3 flex-shrink-0" />
-                          <div className="w-full overflow-hidden flex items-baseline justify-center mb-2">
+                          <div className="w-full overflow-visible flex items-baseline justify-center mb-2">
                             <div
                               className="font-bold text-[hsl(var(--gold-yellow))] whitespace-nowrap"
                               style={{ fontSize: 'clamp(1.5rem, 8vw, 3rem)' }}
@@ -1277,7 +1296,7 @@ export default function WhyOnSpotValueCalculator() {
                           className="text-center p-6 rounded-2xl bg-gradient-to-br from-blue-500/5 to-blue-500/10 flex flex-col items-center justify-center min-h-[200px]"
                         >
                           <Clock className="w-8 h-8 text-blue-600 mx-auto mb-3 flex-shrink-0" />
-                          <div className="w-full overflow-hidden flex items-baseline justify-center mb-2">
+                          <div className="w-full overflow-visible flex items-baseline justify-center mb-2">
                             <div
                               className="font-bold text-blue-600 whitespace-nowrap"
                               style={{ fontSize: 'clamp(1.5rem, 8vw, 3rem)' }}
@@ -1352,7 +1371,8 @@ export default function WhyOnSpotValueCalculator() {
                                 Current Annual Cost
                               </span>
                               <span className="font-bold">
-                                {formatCurrency(calculations.currentAnnualCost)}
+                                {formatCurrency(calculations.currentAnnualCost).symbol}
+                                {formatCurrency(calculations.currentAnnualCost).value}
                               </span>
                             </div>
                             <div className="flex justify-between items-center p-3 bg-muted/30 rounded-lg">
@@ -1360,7 +1380,8 @@ export default function WhyOnSpotValueCalculator() {
                                 OnSpot Annual Cost
                               </span>
                               <span className="font-bold">
-                                {formatCurrency(calculations.onspotAnnualCost)}
+                                {formatCurrency(calculations.onspotAnnualCost).symbol}
+                                {formatCurrency(calculations.onspotAnnualCost).value}
                               </span>
                             </div>
                             <div className="flex justify-between items-center p-3 bg-primary/10 rounded-lg">
@@ -1368,7 +1389,8 @@ export default function WhyOnSpotValueCalculator() {
                                 New Total Cost
                               </span>
                               <span className="font-bold text-primary">
-                                {formatCurrency(calculations.totalNewAnnualCost)}
+                                {formatCurrency(calculations.totalNewAnnualCost).symbol}
+                                {formatCurrency(calculations.totalNewAnnualCost).value}
                               </span>
                             </div>
                           </div>
@@ -1462,7 +1484,8 @@ export default function WhyOnSpotValueCalculator() {
                         <div className="p-6 bg-gradient-to-br from-primary/5 to-muted/5 rounded-lg">
                           <div className="text-center mb-4">
                             <div className="text-3xl font-bold text-primary mb-1">
-                              {formatCurrency(calculations.compoundedSavings)}
+                              {formatCurrency(calculations.compoundedSavings).symbol}
+                              {formatCurrency(calculations.compoundedSavings).value}
                             </div>
                             <div className="text-sm text-muted-foreground">
                               {timeHorizon}-month projection with {growthRate}% growth
@@ -1472,16 +1495,18 @@ export default function WhyOnSpotValueCalculator() {
                             <div className="text-center">
                               <div className="font-semibold mb-1">Base Savings</div>
                               <div className="text-muted-foreground">
-                                {formatCurrency(calculations.totalSavings)}
+                                {formatCurrency(calculations.totalSavings).symbol}
+                                {formatCurrency(calculations.totalSavings).value}
                               </div>
                             </div>
                             <div className="text-center">
                               <div className="font-semibold mb-1">Growth Value</div>
                               <div className="text-muted-foreground">
-                                {formatCurrency(
-                                  calculations.compoundedSavings -
-                                    calculations.totalSavings,
-                                )}
+                                {(() => {
+                                  const growthValue = calculations.compoundedSavings - calculations.totalSavings;
+                                  const formatted = formatCurrency(growthValue);
+                                  return `${formatted.symbol}${formatted.value}`;
+                                })()}
                               </div>
                             </div>
                           </div>
