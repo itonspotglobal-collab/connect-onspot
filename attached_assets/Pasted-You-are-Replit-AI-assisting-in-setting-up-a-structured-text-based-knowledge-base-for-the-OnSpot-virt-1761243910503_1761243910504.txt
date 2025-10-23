@@ -1,0 +1,119 @@
+You are Replit AI assisting in setting up a structured text-based knowledge base for the OnSpot virtual assistant “Vanessa”.
+### GOAL
+- Create a single knowledge file `/resources/vanessa_knowledge.txt`
+- Populate it with all important OnSpot details (company info, frameworks, and tone)
+- Create a setup script that automatically uploads it to the connected OpenAI Assistant (ASSISTANT_ID)
+- Attach the vector store to the Assistant for file search
+
+### Step 1️⃣: Create the file
+Create a new file in `/resources/` named `vanessa_knowledge.txt`
+with this structured content:
+
+OnSpot Global Virtual Assistant – Vanessa
+Persona
+You are Vanessa, the official AI Assistant of OnSpot Global.
+Speak with warmth, confidence, and professionalism — like a friendly HR specialist.
+Avoid saying “As an AI assistant.”
+Focus on people, growth, and clarity.
+Represent OnSpot’s values: People-Centric, Integrity, Beat Yesterday, Efficiency, Extreme Ownership, and Intrapreneurial.
+
+Company Info
+Name: OnSpot Global
+
+Headquarters: Angeles City, Pampanga, Philippines
+
+Website: https://onspotglobal.com
+
+Email: hr@onspotglobal.com / sales@onspotglobal.com
+
+Mission: Connecting global businesses with top-tier Filipino professionals through innovative staffing, outsourcing, and virtual assistant services.
+
+Job Success System (JSS)
+The Job Success System is OnSpot’s proprietary performance and retention model that predicts and improves employee success using data-driven insights.
+Phases:
+
+Job Success Profile (JSP)
+
+Data-Driven Hiring
+
+Performance Tracking
+
+Retention & Coaching
+
+Continuous Improvement
+
+Talent Acquisition Framework
+Job Success Profile creation (behavioral + technical + cultural fit)
+
+Candidate Screening: English, IQ, DISC, Video Interview
+
+Two-week accelerated hiring workflow
+
+Minimum endorsement score: 3.75/5
+
+Automated Paper Screening via Lindy.AI
+
+4 Rules of Hiring Talent
+Hire for Will
+
+Match with Values
+
+Hire for Results
+
+Hire for Skill
+
+GWC Principle
+Get It → Want It → Capacity to Do It.
+
+Core Values
+People-Centric | Integrity | Beat Yesterday | Efficiency | Extreme Ownership | Intrapreneurial
+
+FAQs
+What is OnSpot’s pricing model?
+Hourly ($8–25/hr) or monthly plans with QA and client support.
+
+What makes OnSpot unique?
+Data-driven talent acquisition, personality-matched hiring, and global operations.
+
+Who should I contact for hiring help?
+Email: hello@onspotglobal.com
+
+END OF KNOWLEDGE FILE
+
+### Step 2️⃣: Create upload script
+
+Now, create `scripts/uploadVanessaKnowledgeTxt.ts` with this code:
+
+```ts
+import OpenAI from "openai";
+import fs from "fs";
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+const ASSISTANT_ID = process.env.ASSISTANT_ID!;
+
+async function uploadVanessaKnowledge() {
+console.log("🚀 Uploading Vanessa knowledge base...");
+
+// 1️⃣ Create a vector store
+const vectorStore = await openai.beta.vectorStores.create({
+name: "Vanessa Knowledge Text Store",
+});
+
+// 2️⃣ Upload the TXT file
+const file = fs.createReadStream("resources/vanessa_knowledge.txt");
+await openai.beta.vectorStores.fileBatches.uploadAndPoll(vectorStore.id, {
+files: [file],
+});
+
+// 3️⃣ Attach to the Assistant
+await openai.beta.assistants.update(ASSISTANT_ID, {
+instructions:
+"Use the attached knowledge file for detailed company, HR, and framework information about OnSpot Global.",
+tools: [{ type: "file_search" }],
+tool_resources: { file_search: { vector_store_ids: [vectorStore.id] } },
+});
+
+console.log("✅ Vanessa knowledge base successfully linked!");
+}
+
+uploadVanessaKnowledge().catch(console.error);
