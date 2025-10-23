@@ -751,7 +751,8 @@ const FloatingLabelInput = ({
           className={`
             absolute left-4 top-1/2 -translate-y-1/2
             transition-all duration-200 pointer-events-none
-            ${isFocused || hasValue ? "text-xs top-3 translate-y-0" : "text-sm"}
+            z-10 px-1 -ml-1
+            ${isFocused || hasValue ? "text-xs top-2 translate-y-0 bg-background" : "text-sm bg-transparent"}
             ${error ? "text-red-600 dark:text-red-400" : "text-muted-foreground"}
           `}
         >
@@ -1359,7 +1360,7 @@ export default function WhyOnSpotValueCalculator() {
                       variant="outline"
                       size="sm"
                       onClick={() => addPresetRole(preset)}
-                      className="bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 text-white/80 transition-all duration-150"
+                      className="bg-input/30 border-border transition-all duration-150"
                       data-testid={`button-preset-${preset.label.toLowerCase()}`}
                     >
                       <Plus className="w-3 h-3 mr-1" />
@@ -1383,26 +1384,16 @@ export default function WhyOnSpotValueCalculator() {
                         className="rounded-2xl border border-border bg-card/50 p-6 backdrop-blur-sm hover:border-ring transition-all duration-200"
                       >
                         <div className="space-y-4">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1 relative">
-                              <FloatingLabelInput
-                                id={`role-title-${role.id}`}
-                                label="Role Title"
-                                value={role.title}
-                                onChange={(e) =>
-                                  updateJobRole(role.id, "title", e.target.value)
-                                }
-                                onBlur={() => handleRoleBlur(role)}
-                                error={validationErrors.find(e => e.field === `role-${role.id}-title`)?.message}
-                                required
-                              />
-                            </div>
+                          <div className="flex items-start justify-between gap-3 mb-4">
+                            <h3 className="text-sm font-medium text-foreground">
+                              {role.title || 'New Role'}
+                            </h3>
                             {jobRoles.length > 1 && (
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => removeJobRole(role.id)}
-                                className="mt-1 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/10 transition-all duration-150"
+                                className="hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/10 transition-all duration-150 -mt-2"
                                 data-testid={`button-remove-role-${role.id}`}
                                 aria-label={`Remove ${role.title} role`}
                               >
@@ -1428,7 +1419,7 @@ export default function WhyOnSpotValueCalculator() {
                             />
                             <div className="relative">
                               <Label className="text-xs uppercase tracking-wider text-muted-foreground mb-3 block">
-                                Department
+                                Role
                               </Label>
                               <Select
                                 value={role.department}
@@ -1439,7 +1430,7 @@ export default function WhyOnSpotValueCalculator() {
                                 <SelectTrigger
                                   className="h-12 bg-input/50 border-border hover:border-ring focus:border-ring transition-all duration-200"
                                   data-testid={`select-role-department-${role.id}`}
-                                  aria-label={`Department for ${role.title}`}
+                                  aria-label={`Role type for ${role.title}`}
                                 >
                                   <SelectValue />
                                 </SelectTrigger>
