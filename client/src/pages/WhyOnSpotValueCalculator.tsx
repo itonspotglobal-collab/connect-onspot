@@ -1218,262 +1218,267 @@ export default function WhyOnSpotValueCalculator() {
             animate="visible"
             className="backdrop-blur-xl bg-card/50 border border-border rounded-3xl p-6 md:p-8 shadow-2xl"
           >
-            <div className="grid grid-cols-12 gap-y-4 gap-x-4">
-              <motion.div variants={itemVariants} className="col-span-12">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">
-                  Location Details
-                </p>
-                <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent mb-4" />
-              </motion.div>
-
-              <motion.div variants={itemVariants} className="col-span-12 md:col-span-4">
-                <div className="relative">
-                  <Label
-                    htmlFor="country"
-                    className="text-xs uppercase tracking-wider text-muted-foreground mb-2 block"
-                  >
-                    Country
-                  </Label>
-                  {isLocationLoading ? (
-                    <ShimmerSkeleton className="h-10" />
-                  ) : (
-                    <Select
-                      value={country}
-                      onValueChange={handleCountryChange}
-                    >
-                      <SelectTrigger 
-                        id="country"
-                        data-testid="select-country" 
-                        className="h-10 bg-input/50 border-border hover:border-ring focus:border-ring transition-all duration-200"
-                      >
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.keys(locationData).map((c: string) => (
-                          <SelectItem key={c} value={c}>
-                            {c}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                </div>
-              </motion.div>
-
-              <motion.div variants={itemVariants} className="col-span-12 md:col-span-4">
-                <div className="relative">
-                  <Label
-                    htmlFor="state"
-                    className="text-xs uppercase tracking-wider text-muted-foreground mb-2 block"
-                  >
-                    State/Province
-                  </Label>
-                  {isLocationLoading ? (
-                    <ShimmerSkeleton className="h-10" />
-                  ) : (
-                    <Select value={state} onValueChange={handleStateChange}>
-                      <SelectTrigger 
-                        id="state"
-                        data-testid="select-state" 
-                        className="h-10 bg-input/50 border-border hover:border-ring focus:border-ring transition-all duration-200"
-                      >
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableStates.map((s) => (
-                          <SelectItem key={s} value={s}>
-                            {s}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                </div>
-              </motion.div>
-
-              <motion.div variants={itemVariants} className="col-span-12 md:col-span-4">
-                <div className="relative">
-                  <Label
-                    htmlFor="city"
-                    className="text-xs uppercase tracking-wider text-muted-foreground mb-2 block"
-                  >
-                    City
-                  </Label>
-                  {isLocationLoading ? (
-                    <ShimmerSkeleton className="h-10" />
-                  ) : (
-                    <Select value={city} onValueChange={handleCityChange}>
-                      <SelectTrigger 
-                        id="city"
-                        data-testid="select-city" 
-                        className="h-10 bg-input/50 border-border hover:border-ring focus:border-ring transition-all duration-200"
-                      >
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableCities.map((c) => (
-                          <SelectItem key={c} value={c}>
-                            {c}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                  <p className="text-muted-foreground mt-2" style={{ fontSize: '11px' }}>
-                    We'll load local wage baselines for your area
-                  </p>
-                </div>
-              </motion.div>
-
-              <motion.div variants={itemVariants} className="col-span-12 mt-4">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">
-                  Team Composition
-                </p>
-                <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent mb-4" />
-              </motion.div>
-
-              <div className="col-span-12">
-                <div className="flex items-center justify-between mb-3">
-                  <Label className="text-sm font-medium text-foreground">
-                    Job Roles
-                  </Label>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={addJobRole}
-                    data-testid="button-add-role"
-                  >
-                    <Plus className="w-4 h-4 mr-1" />
-                    Add Role
-                  </Button>
-                </div>
-
-                <AnimatePresence mode="popLayout">
-                  <div className="space-y-3">
-                    {jobRoles.map((role, index) => (
-                      <motion.div
-                        key={role.id}
-                        initial={{ opacity: 0, height: 0, y: -10 }}
-                        animate={{ opacity: 1, height: "auto", y: 0 }}
-                        exit={{ opacity: 0, height: 0, scale: 0.95 }}
-                        transition={{
-                          duration: prefersReducedMotion ? 0 : 0.15,
-                          ease: "easeOut",
-                        }}
-                        className="rounded-xl border border-border bg-card/50 p-4 backdrop-blur-sm"
-                      >
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex-1">
-                              <Label className="text-xs uppercase tracking-wider text-muted-foreground mb-2 block">
-                                Role Type
-                              </Label>
-                              <Select
-                                value={role.department}
-                                onValueChange={(value) => {
-                                  updateJobRole(role.id, "department", value);
-                                  // Auto-update title based on department
-                                  const roleTitle = ROLE_PRESETS.find(p => p.department === value)?.title || value.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-                                  updateJobRole(role.id, "title", roleTitle);
-                                }}
-                              >
-                                <SelectTrigger
-                                  className="h-10 bg-input/50 border-border hover:border-ring focus:border-ring transition-all duration-200"
-                                  data-testid={`select-role-type-${role.id}`}
-                                  aria-label="Select role type"
-                                >
-                                  <SelectValue placeholder="Select a role" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="customer-support">
-                                    Customer Support
-                                  </SelectItem>
-                                  <SelectItem value="technical-support">
-                                    Technical Support
-                                  </SelectItem>
-                                  <SelectItem value="virtual-assistant">
-                                    Virtual Assistant
-                                  </SelectItem>
-                                  <SelectItem value="data-entry">
-                                    Data Entry
-                                  </SelectItem>
-                                  <SelectItem value="sales-support">
-                                    Sales Support
-                                  </SelectItem>
-                                  <SelectItem value="back-office">
-                                    Back Office
-                                  </SelectItem>
-                                  <SelectItem value="accounting">
-                                    Accounting
-                                  </SelectItem>
-                                  <SelectItem value="marketing">
-                                    Marketing
-                                  </SelectItem>
-                                  <SelectItem value="hr">
-                                    Human Resources
-                                  </SelectItem>
-                                  <SelectItem value="development">
-                                    Development
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            {jobRoles.length > 1 && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => removeJobRole(role.id)}
-                                className="mt-5 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/10 transition-all duration-150"
-                                data-testid={`button-remove-role-${role.id}`}
-                                aria-label={`Remove ${role.title} role`}
-                              >
-                                <X className="w-4 h-4" />
-                              </Button>
-                            )}
-                          </div>
-                          
-                          <div>
-                            <Label className="text-xs uppercase tracking-wider text-muted-foreground mb-2 block">
-                              Headcount
-                            </Label>
-                            <Input
-                              id={`role-headcount-${role.id}`}
-                              type="number"
-                              min={1}
-                              value={role.headcount}
-                              onChange={(e) =>
-                                updateJobRole(
-                                  role.id,
-                                  "headcount",
-                                  Math.max(1, Number(e.target.value)),
-                                )
-                              }
-                              className="h-10 bg-input/50 border-border hover:border-ring focus:border-ring transition-all duration-200"
-                              data-testid={`input-role-headcount-${role.id}`}
-                              aria-label="Number of people in this role"
-                            />
-                            <p className="text-muted-foreground mt-1" style={{ fontSize: '11px' }}>
-                              Number of people in this role
-                            </p>
-                          </div>
-
-                          {departmentHasBaseline(role.department) && (
-                            <motion.div
-                              initial={{ opacity: 0, scale: 0.9 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400"
-                            >
-                              <Check className="w-3 h-3" />
-                              Linked to baseline rate
-                            </motion.div>
-                          )}
-                        </div>
-                      </motion.div>
-                    ))}
+            <div className="grid grid-cols-12 gap-y-4 gap-x-6">
+              {/* Location Details - Left Column */}
+              <motion.div variants={itemVariants} className="col-span-12 md:col-span-5">
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">
+                      Location Details
+                    </p>
+                    <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent mb-4" />
                   </div>
-                </AnimatePresence>
-              </div>
 
+                  <div className="relative">
+                    <Label
+                      htmlFor="country"
+                      className="text-xs uppercase tracking-wider text-muted-foreground mb-2 block"
+                    >
+                      Country
+                    </Label>
+                    {isLocationLoading ? (
+                      <ShimmerSkeleton className="h-10" />
+                    ) : (
+                      <Select
+                        value={country}
+                        onValueChange={handleCountryChange}
+                      >
+                        <SelectTrigger 
+                          id="country"
+                          data-testid="select-country" 
+                          className="h-10 bg-input/50 border-border hover:border-ring focus:border-ring transition-all duration-200"
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.keys(locationData).map((c: string) => (
+                            <SelectItem key={c} value={c}>
+                              {c}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+
+                  <div className="relative">
+                    <Label
+                      htmlFor="state"
+                      className="text-xs uppercase tracking-wider text-muted-foreground mb-2 block"
+                    >
+                      State/Province
+                    </Label>
+                    {isLocationLoading ? (
+                      <ShimmerSkeleton className="h-10" />
+                    ) : (
+                      <Select value={state} onValueChange={handleStateChange}>
+                        <SelectTrigger 
+                          id="state"
+                          data-testid="select-state" 
+                          className="h-10 bg-input/50 border-border hover:border-ring focus:border-ring transition-all duration-200"
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableStates.map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {s}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+
+                  <div className="relative">
+                    <Label
+                      htmlFor="city"
+                      className="text-xs uppercase tracking-wider text-muted-foreground mb-2 block"
+                    >
+                      City
+                    </Label>
+                    {isLocationLoading ? (
+                      <ShimmerSkeleton className="h-10" />
+                    ) : (
+                      <Select value={city} onValueChange={handleCityChange}>
+                        <SelectTrigger 
+                          id="city"
+                          data-testid="select-city" 
+                          className="h-10 bg-input/50 border-border hover:border-ring focus:border-ring transition-all duration-200"
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableCities.map((c) => (
+                            <SelectItem key={c} value={c}>
+                              {c}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    <p className="text-muted-foreground mt-2" style={{ fontSize: '11px' }}>
+                      We'll load local wage baselines for your area
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Team Composition - Right Column */}
+              <motion.div variants={itemVariants} className="col-span-12 md:col-span-7">
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">
+                      Team Composition
+                    </p>
+                    <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent mb-4" />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <Label className="text-sm font-medium text-foreground">
+                        Job Roles
+                      </Label>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={addJobRole}
+                        data-testid="button-add-role"
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Add Role
+                      </Button>
+                    </div>
+
+                    <AnimatePresence mode="popLayout">
+                      <div className="space-y-3">
+                        {jobRoles.map((role, index) => (
+                          <motion.div
+                            key={role.id}
+                            initial={{ opacity: 0, height: 0, y: -10 }}
+                            animate={{ opacity: 1, height: "auto", y: 0 }}
+                            exit={{ opacity: 0, height: 0, scale: 0.95 }}
+                            transition={{
+                              duration: prefersReducedMotion ? 0 : 0.15,
+                              ease: "easeOut",
+                            }}
+                            className="rounded-xl border border-border bg-card/50 p-4 backdrop-blur-sm"
+                          >
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="flex-1">
+                                  <Label className="text-xs uppercase tracking-wider text-muted-foreground mb-2 block">
+                                    Role Type
+                                  </Label>
+                                  <Select
+                                    value={role.department}
+                                    onValueChange={(value) => {
+                                      updateJobRole(role.id, "department", value);
+                                      // Auto-update title based on department
+                                      const roleTitle = ROLE_PRESETS.find(p => p.department === value)?.title || value.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                                      updateJobRole(role.id, "title", roleTitle);
+                                    }}
+                                  >
+                                    <SelectTrigger
+                                      className="h-10 bg-input/50 border-border hover:border-ring focus:border-ring transition-all duration-200"
+                                      data-testid={`select-role-type-${role.id}`}
+                                      aria-label="Select role type"
+                                    >
+                                      <SelectValue placeholder="Select a role" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="customer-support">
+                                        Customer Support
+                                      </SelectItem>
+                                      <SelectItem value="technical-support">
+                                        Technical Support
+                                      </SelectItem>
+                                      <SelectItem value="virtual-assistant">
+                                        Virtual Assistant
+                                      </SelectItem>
+                                      <SelectItem value="data-entry">
+                                        Data Entry
+                                      </SelectItem>
+                                      <SelectItem value="sales-support">
+                                        Sales Support
+                                      </SelectItem>
+                                      <SelectItem value="back-office">
+                                        Back Office
+                                      </SelectItem>
+                                      <SelectItem value="accounting">
+                                        Accounting
+                                      </SelectItem>
+                                      <SelectItem value="marketing">
+                                        Marketing
+                                      </SelectItem>
+                                      <SelectItem value="hr">
+                                        Human Resources
+                                      </SelectItem>
+                                      <SelectItem value="development">
+                                        Development
+                                      </SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                {jobRoles.length > 1 && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => removeJobRole(role.id)}
+                                    className="mt-5 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/10 transition-all duration-150"
+                                    data-testid={`button-remove-role-${role.id}`}
+                                    aria-label={`Remove ${role.title} role`}
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </Button>
+                                )}
+                              </div>
+                              
+                              <div>
+                                <Label className="text-xs uppercase tracking-wider text-muted-foreground mb-2 block">
+                                  Headcount
+                                </Label>
+                                <Input
+                                  id={`role-headcount-${role.id}`}
+                                  type="number"
+                                  min={1}
+                                  value={role.headcount}
+                                  onChange={(e) =>
+                                    updateJobRole(
+                                      role.id,
+                                      "headcount",
+                                      Math.max(1, Number(e.target.value)),
+                                    )
+                                  }
+                                  className="h-10 bg-input/50 border-border hover:border-ring focus:border-ring transition-all duration-200"
+                                  data-testid={`input-role-headcount-${role.id}`}
+                                  aria-label="Number of people in this role"
+                                />
+                                <p className="text-muted-foreground mt-1" style={{ fontSize: '11px' }}>
+                                  Number of people in this role
+                                </p>
+                              </div>
+
+                              {departmentHasBaseline(role.department) && (
+                                <motion.div
+                                  initial={{ opacity: 0, scale: 0.9 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400"
+                                >
+                                  <Check className="w-3 h-3" />
+                                  Linked to baseline rate
+                                </motion.div>
+                              )}
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </AnimatePresence>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Outsource Percentage - Full Width */}
               <motion.div variants={itemVariants} className="col-span-12 mt-4">
                 <div className="relative" ref={sliderRef}>
                   <div className="flex items-center justify-between mb-3">
