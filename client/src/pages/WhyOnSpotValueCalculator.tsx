@@ -16,7 +16,13 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { useState, useMemo } from "react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Calculator,
@@ -31,6 +37,8 @@ import {
   Sparkles,
   ArrowRight,
   Download,
+  HelpCircle,
+  Check,
 } from "lucide-react";
 
 type StateData = {
@@ -676,6 +684,140 @@ interface JobRole {
   department: string;
 }
 
+interface ValidationError {
+  field: string;
+  message: string;
+}
+
+interface FloatingLabelInputProps {
+  id: string;
+  label: string;
+  type?: string;
+  value: string | number;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onBlur?: () => void;
+  min?: number;
+  error?: string;
+  helperText?: string;
+  tooltip?: string;
+  required?: boolean;
+}
+
+const FloatingLabelInput = ({
+  id,
+  label,
+  type = "text",
+  value,
+  onChange,
+  onBlur,
+  min,
+  error,
+  helperText,
+  tooltip,
+  required,
+}: FloatingLabelInputProps) => {
+  const [isFocused, setIsFocused] = useState(false);
+  const hasValue = value !== "" && value !== 0;
+
+  return (
+    <div className="relative">
+      <div className="relative">
+        <Input
+          id={id}
+          type={type}
+          value={value}
+          onChange={onChange}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => {
+            setIsFocused(false);
+            onBlur?.();
+          }}
+          min={min}
+          className={`
+            h-12 px-4 pt-6 pb-2
+            bg-white/5 backdrop-blur-sm
+            border-white/10 hover:border-white/20
+            focus:border-white/20 focus:ring-1 focus:ring-white/20
+            transition-all duration-200
+            ${error ? "border-red-500/50 focus:border-red-500 focus:ring-red-500/30" : ""}
+          `}
+          data-testid={`input-${id}`}
+          aria-describedby={error ? `${id}-error` : helperText ? `${id}-helper` : undefined}
+          aria-invalid={error ? "true" : "false"}
+          aria-required={required}
+        />
+        <Label
+          htmlFor={id}
+          className={`
+            absolute left-4 top-1/2 -translate-y-1/2
+            transition-all duration-200 pointer-events-none
+            ${isFocused || hasValue ? "text-xs top-3 translate-y-0 opacity-60" : "text-sm opacity-60"}
+            ${error ? "text-red-400" : "text-white"}
+          `}
+        >
+          {label}
+          {required && <span className="text-red-400 ml-1">*</span>}
+        </Label>
+        {tooltip && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
+                  aria-label={`Help for ${label}`}
+                >
+                  <HelpCircle className="w-4 h-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-sm max-w-xs">{tooltip}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+      </div>
+      {error && (
+        <motion.p
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          id={`${id}-error`}
+          className="text-xs text-red-400 mt-1 flex items-center gap-1"
+          role="alert"
+        >
+          <X className="w-3 h-3" />
+          {error}
+        </motion.p>
+      )}
+      {helperText && !error && (
+        <p
+          id={`${id}-helper`}
+          className="text-white/40 mt-1"
+          style={{ fontSize: '11px' }}
+        >
+          {helperText}
+        </p>
+      )}
+    </div>
+  );
+};
+
+const STORAGE_KEY = "onspot-value-calculator-state";
+
+const ROLE_PRESETS = [
+  { label: "CS", title: "Customer Support", department: "customer-support" },
+  { label: "TSR", title: "Technical Support", department: "technical-support" },
+  { label: "Data", title: "Data Analyst", department: "data-entry" },
+  { label: "Sales", title: "Sales Support", department: "sales-support" },
+  { label: "VA", title: "Virtual Assistant", department: "virtual-assistant" },
+];
+
+const ShimmerSkeleton = ({ className }: { className?: string }) => (
+  <div className={`relative overflow-hidden bg-white/5 rounded-lg ${className || ''}`}>
+    <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+  </div>
+);
+
 export default function WhyOnSpotValueCalculator() {
   const [country, setCountry] = useState<string>("United States");
   const [state, setState] = useState<string>("California");
@@ -704,6 +846,12 @@ export default function WhyOnSpotValueCalculator() {
     50,
   ]);
   const [assumptionsOpen, setAssumptionsOpen] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>(
+    [],
+  );
+  const [isLocationLoading, setIsLocationLoading] = useState(false);
+  const sliderRef = useRef<HTMLDivElement>(null);
+  const [sliderPosition, setSliderPosition] = useState(50);
 
   const onspotRates = {
     "customer-support": 18000,
@@ -717,6 +865,38 @@ export default function WhyOnSpotValueCalculator() {
     hr: 26000,
     development: 35000,
   };
+
+  useEffect(() => {
+    const savedState = localStorage.getItem(STORAGE_KEY);
+    if (savedState) {
+      try {
+        const parsed = JSON.parse(savedState);
+        if (parsed.country) setCountry(parsed.country);
+        if (parsed.state) setState(parsed.state);
+        if (parsed.city) setCity(parsed.city);
+        if (parsed.minWage) setMinWage(parsed.minWage);
+        if (parsed.jobRoles) setJobRoles(parsed.jobRoles);
+        if (parsed.outsourcePercentage) setOutsourcePercentage(parsed.outsourcePercentage);
+      } catch (e) {
+        console.error("Failed to parse saved state:", e);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!prefersReducedMotion) {
+      const stateToSave = {
+        country,
+        state,
+        city,
+        minWage,
+        jobRoles,
+        outsourcePercentage,
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+    }
+  }, [country, state, city, minWage, jobRoles, outsourcePercentage]);
 
   const availableStates = useMemo(() => {
     if (!country || !locationData[country]) return [];
@@ -733,47 +913,80 @@ export default function WhyOnSpotValueCalculator() {
   }, [country, state]);
 
   const handleCountryChange = (newCountry: string) => {
-    setCountry(newCountry);
-    const states = Object.keys(locationData[newCountry] || {});
-    if (states.length > 0) {
-      const firstState = states[0];
-      setState(firstState);
-      const countryData = locationData[newCountry];
-      const stateData = countryData[firstState];
+    setIsLocationLoading(true);
+    setTimeout(() => {
+      setCountry(newCountry);
+      const states = Object.keys(locationData[newCountry] || {});
+      if (states.length > 0) {
+        const firstState = states[0];
+        setState(firstState);
+        const countryData = locationData[newCountry];
+        const stateData = countryData[firstState];
+        if (stateData && stateData.cities.length > 0) {
+          const firstCity = stateData.cities[0];
+          setCity(firstCity);
+          setMinWage(stateData.minWages[firstCity] || 15.0);
+        }
+      }
+      setIsLocationLoading(false);
+    }, 150);
+  };
+
+  const handleStateChange = (newState: string) => {
+    setIsLocationLoading(true);
+    setTimeout(() => {
+      setState(newState);
+      const countryData = locationData[country];
+      const stateData = countryData[newState];
       if (stateData && stateData.cities.length > 0) {
         const firstCity = stateData.cities[0];
         setCity(firstCity);
         setMinWage(stateData.minWages[firstCity] || 15.0);
       }
-    }
-  };
-
-  const handleStateChange = (newState: string) => {
-    setState(newState);
-    const countryData = locationData[country];
-    const stateData = countryData[newState];
-    if (stateData && stateData.cities.length > 0) {
-      const firstCity = stateData.cities[0];
-      setCity(firstCity);
-      setMinWage(stateData.minWages[firstCity] || 15.0);
-    }
+      setIsLocationLoading(false);
+    }, 150);
   };
 
   const handleCityChange = (newCity: string) => {
-    setCity(newCity);
-    const countryData = locationData[country];
-    const stateData = countryData[state];
-    if (stateData) {
-      setMinWage(stateData.minWages[newCity] || 15.0);
+    setIsLocationLoading(true);
+    setTimeout(() => {
+      setCity(newCity);
+      const countryData = locationData[country];
+      const stateData = countryData[state];
+      if (stateData) {
+        setMinWage(stateData.minWages[newCity] || 15.0);
+      }
+      setIsLocationLoading(false);
+    }, 150);
+  };
+
+  const validateRole = (role: JobRole): ValidationError[] => {
+    const errors: ValidationError[] = [];
+    if (!role.title || role.title.trim() === "") {
+      errors.push({ field: `role-${role.id}-title`, message: "Role title is required" });
     }
+    if (role.headcount < 1) {
+      errors.push({ field: `role-${role.id}-headcount`, message: "Headcount must be at least 1" });
+    }
+    return errors;
   };
 
   const addJobRole = () => {
     const newRole: JobRole = {
       id: Date.now().toString(),
-      title: "New Role",
+      title: "",
       headcount: 1,
       department: "customer-support",
+    };
+    setJobRoles([...jobRoles, newRole]);
+  };
+
+  const addPresetRole = (preset: typeof ROLE_PRESETS[0]) => {
+    const newRole: JobRole = {
+      id: Date.now().toString(),
+      title: preset.title,
+      headcount: 1,
+      department: preset.department,
     };
     setJobRoles([...jobRoles, newRole]);
   };
@@ -781,6 +994,7 @@ export default function WhyOnSpotValueCalculator() {
   const removeJobRole = (id: string) => {
     if (jobRoles.length > 1) {
       setJobRoles(jobRoles.filter((role) => role.id !== id));
+      setValidationErrors(validationErrors.filter((err) => !err.field.includes(id)));
     }
   };
 
@@ -794,6 +1008,14 @@ export default function WhyOnSpotValueCalculator() {
         role.id === id ? { ...role, [field]: value } : role,
       ),
     );
+  };
+
+  const handleRoleBlur = (role: JobRole) => {
+    const errors = validateRole(role);
+    setValidationErrors((prev) => [
+      ...prev.filter((err) => !err.field.includes(role.id)),
+      ...errors,
+    ]);
   };
 
   const calculations = useMemo(() => {
@@ -898,7 +1120,6 @@ export default function WhyOnSpotValueCalculator() {
       maximumFractionDigits: 0,
     }).format(amount);
     
-    // Separate currency symbol from number
     const currencySymbol = formatted.match(/[^\d,.\s]+/)?.[0] || "$";
     const numberPart = formatted.replace(/[^\d,.\s]+/g, "").trim();
     
@@ -924,258 +1145,412 @@ export default function WhyOnSpotValueCalculator() {
     if (num >= 1000) {
       return `${(num / 1000).toFixed(1)}k`.replace('.0k', 'k');
     }
-    return num.toFixed(0);
+    return Math.round(num).toString();
+  };
+
+  const departmentHasBaseline = (department: string): boolean => {
+    return department in onspotRates;
+  };
+
+  const prefersReducedMotion = typeof window !== 'undefined' 
+    ? window.matchMedia("(prefers-reduced-motion: reduce)").matches 
+    : false;
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        duration: prefersReducedMotion ? 0 : 0.3,
+        staggerChildren: prefersReducedMotion ? 0 : 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: prefersReducedMotion ? 0 : 10 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: prefersReducedMotion ? 0 : 0.3 },
+    },
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <section className="hero-investor text-white pt-20 pb-16 px-6 overflow-hidden relative">
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-          <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:80px_80px]" />
-        </div>
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.15),transparent_50%)] pointer-events-none" />
+      
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-overlay">
+        <svg width="100%" height="100%">
+          <filter id="noise">
+            <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" />
+          </filter>
+          <rect width="100%" height="100%" filter="url(#noise)" />
+        </svg>
+      </div>
 
-        <div className="relative z-10 max-w-6xl mx-auto">
+      <section className="relative py-16 px-6 bg-gradient-to-br from-[#625CCC]/10 via-background to-[#2D7FF9]/10">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#625CCC]/8 to-[#2D7FF9]/8 opacity-50 pointer-events-none" />
+        
+        <div className="max-w-6xl mx-auto relative">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: prefersReducedMotion ? 0 : 0.6 }}
             className="text-center mb-12"
           >
-            <div className="inline-flex items-center gap-2 px-6 py-3 bg-white/20 backdrop-blur-sm rounded-full text-white/90 text-sm font-medium mb-8">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 backdrop-blur-sm rounded-full text-primary text-sm font-medium mb-6">
               <Calculator className="w-4 h-4" />
               Value Calculator
             </div>
-
-            <h1 className="text-5xl md:text-6xl font-bold tracking-tight mb-4 text-white leading-tight">
-              Calculate Your
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[hsl(var(--gold-yellow))] to-[hsl(45_100%_55%)] mt-2">
-                Business Value
-              </span>
+            <h1 className="text-5xl md:text-6xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-foreground/90 to-foreground/80">
+              Calculate Your Savings
             </h1>
-
-            <p className="text-lg md:text-xl text-white/80 max-w-2xl mx-auto leading-relaxed font-light">
-              See how much you can save and the value you'll unlock
+            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
+              See how much you can save by outsourcing to OnSpot
             </p>
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="bg-white/10 backdrop-blur-md rounded-3xl p-8 border border-white/20"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl p-8 md:p-12 shadow-2xl"
           >
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-              <div>
-                <Label
-                  htmlFor="country"
-                  className="text-sm font-medium mb-2 block text-white/90"
-                  data-testid="label-country"
-                >
-                  Country
-                </Label>
-                <Select
-                  value={country}
-                  onValueChange={handleCountryChange}
-                >
-                  <SelectTrigger data-testid="select-country" className="bg-white/90 border-white/30">
-                    <SelectValue placeholder="Select country" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.keys(locationData).map((c: string) => (
-                      <SelectItem key={c} value={c}>
-                        {c}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="grid grid-cols-12 gap-y-6 gap-x-6">
+              <motion.div variants={itemVariants} className="col-span-12">
+                <p className="text-xs uppercase tracking-wider text-white/60 mb-4">
+                  Location Details
+                </p>
+                <div className="h-px bg-gradient-to-r from-white/0 via-white/10 to-white/0 mb-6" />
+              </motion.div>
 
-              <div>
-                <Label
-                  htmlFor="state"
-                  className="text-sm font-medium mb-2 block text-white/90"
-                  data-testid="label-state"
-                >
-                  State/Province
-                </Label>
-                <Select value={state} onValueChange={handleStateChange}>
-                  <SelectTrigger data-testid="select-state" className="bg-white/90 border-white/30">
-                    <SelectValue placeholder="Select state" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableStates.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label
-                  htmlFor="city"
-                  className="text-sm font-medium mb-2 block text-white/90"
-                  data-testid="label-city"
-                >
-                  City
-                </Label>
-                <Select value={city} onValueChange={handleCityChange}>
-                  <SelectTrigger data-testid="select-city" className="bg-white/90 border-white/30">
-                    <SelectValue placeholder="Select city" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableCities.map((c) => (
-                      <SelectItem key={c} value={c}>
-                        {c}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="border-t border-white/20 pt-6 mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <Label className="text-sm font-medium text-white/90">
-                  Job Roles ({jobRoles.length})
-                </Label>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={addJobRole}
-                  className="bg-white/20 border-white/30 text-white hover:bg-white/30"
-                  data-testid="button-add-role"
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Add
-                </Button>
-              </div>
-
-              <div className="space-y-3 mb-6">
-                {jobRoles.map((role) => (
-                  <div key={role.id} className="p-4 border border-white/20 rounded-lg bg-white/5">
-                    <div className="space-y-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <Input
-                          placeholder="Role title"
-                          value={role.title}
-                          onChange={(e) =>
-                            updateJobRole(role.id, "title", e.target.value)
-                          }
-                          className="flex-1 bg-white/90 border-white/30"
-                          data-testid={`input-role-title-${role.id}`}
-                        />
-                        {jobRoles.length > 1 && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeJobRole(role.id)}
-                            className="text-white/70 hover:text-white hover:bg-white/10"
-                            data-testid={`button-remove-role-${role.id}`}
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <Label className="text-xs text-white/70 mb-1 block">
-                            Headcount
-                          </Label>
-                          <Input
-                            type="number"
-                            min="1"
-                            value={role.headcount}
-                            onChange={(e) =>
-                              updateJobRole(
-                                role.id,
-                                "headcount",
-                                Math.max(1, Number(e.target.value)),
-                              )
-                            }
-                            className="bg-white/90 border-white/30"
-                            data-testid={`input-role-headcount-${role.id}`}
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs text-white/70 mb-1 block">
-                            Department
-                          </Label>
-                          <Select
-                            value={role.department}
-                            onValueChange={(value) =>
-                              updateJobRole(role.id, "department", value)
-                            }
-                          >
-                            <SelectTrigger
-                              className="bg-white/90 border-white/30"
-                              data-testid={`select-role-department-${role.id}`}
-                            >
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="customer-support">
-                                Customer Support
-                              </SelectItem>
-                              <SelectItem value="technical-support">
-                                Technical Support
-                              </SelectItem>
-                              <SelectItem value="virtual-assistant">
-                                Virtual Assistant
-                              </SelectItem>
-                              <SelectItem value="data-entry">
-                                Data Entry
-                              </SelectItem>
-                              <SelectItem value="sales-support">
-                                Sales Support
-                              </SelectItem>
-                              <SelectItem value="back-office">
-                                Back Office
-                              </SelectItem>
-                              <SelectItem value="accounting">
-                                Accounting
-                              </SelectItem>
-                              <SelectItem value="marketing">
-                                Marketing
-                              </SelectItem>
-                              <SelectItem value="hr">
-                                Human Resources
-                              </SelectItem>
-                              <SelectItem value="development">
-                                Development
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div>
-                <Label
-                  className="text-sm font-medium mb-3 block text-white/90"
-                  data-testid="label-outsource-percentage"
-                >
-                  Outsource: {outsourcePercentage[0]}%
-                </Label>
-                <Slider
-                  value={outsourcePercentage}
-                  onValueChange={setOutsourcePercentage}
-                  max={100}
-                  step={10}
-                  className="w-full"
-                  data-testid="slider-outsource-percentage"
-                />
-                <div className="flex justify-between text-xs text-white/60 mt-2">
-                  <span>0%</span>
-                  <span>100%</span>
+              <motion.div variants={itemVariants} className="col-span-12 md:col-span-4">
+                <div className="relative">
+                  <Label
+                    htmlFor="country"
+                    className="text-xs uppercase tracking-wider text-white/60 mb-3 block"
+                  >
+                    Country
+                  </Label>
+                  {isLocationLoading ? (
+                    <ShimmerSkeleton className="h-12" />
+                  ) : (
+                    <Select
+                      value={country}
+                      onValueChange={handleCountryChange}
+                    >
+                      <SelectTrigger 
+                        id="country"
+                        data-testid="select-country" 
+                        className="h-12 bg-white/5 border-white/10 hover:border-white/20 focus:border-white/20 transition-all duration-200"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.keys(locationData).map((c: string) => (
+                          <SelectItem key={c} value={c}>
+                            {c}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
+              </motion.div>
+
+              <motion.div variants={itemVariants} className="col-span-12 md:col-span-4">
+                <div className="relative">
+                  <Label
+                    htmlFor="state"
+                    className="text-xs uppercase tracking-wider text-white/60 mb-3 block"
+                  >
+                    State/Province
+                  </Label>
+                  {isLocationLoading ? (
+                    <ShimmerSkeleton className="h-12" />
+                  ) : (
+                    <Select value={state} onValueChange={handleStateChange}>
+                      <SelectTrigger 
+                        id="state"
+                        data-testid="select-state" 
+                        className="h-12 bg-white/5 border-white/10 hover:border-white/20 focus:border-white/20 transition-all duration-200"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableStates.map((s) => (
+                          <SelectItem key={s} value={s}>
+                            {s}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              </motion.div>
+
+              <motion.div variants={itemVariants} className="col-span-12 md:col-span-4">
+                <div className="relative">
+                  <Label
+                    htmlFor="city"
+                    className="text-xs uppercase tracking-wider text-white/60 mb-3 block"
+                  >
+                    City
+                  </Label>
+                  {isLocationLoading ? (
+                    <ShimmerSkeleton className="h-12" />
+                  ) : (
+                    <Select value={city} onValueChange={handleCityChange}>
+                      <SelectTrigger 
+                        id="city"
+                        data-testid="select-city" 
+                        className="h-12 bg-white/5 border-white/10 hover:border-white/20 focus:border-white/30 transition-all duration-200"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableCities.map((c) => (
+                          <SelectItem key={c} value={c}>
+                            {c}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  <p className="text-white/40 mt-2" style={{ fontSize: '11px' }}>
+                    We'll load local wage baselines for your area
+                  </p>
+                </div>
+              </motion.div>
+
+              <motion.div variants={itemVariants} className="col-span-12 mt-6">
+                <p className="text-xs uppercase tracking-wider text-white/60 mb-4">
+                  Team Composition
+                </p>
+                <div className="h-px bg-gradient-to-r from-white/0 via-white/10 to-white/0 mb-6" />
+              </motion.div>
+
+              <div className="col-span-12">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm font-medium text-white/90">
+                      Job Roles
+                    </Label>
+                    <Badge variant="secondary" className="text-xs">
+                      {jobRoles.length}
+                    </Badge>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={addJobRole}
+                    className="text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200"
+                    data-testid="button-add-role"
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Add Custom
+                  </Button>
+                </div>
+
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {ROLE_PRESETS.map((preset) => (
+                    <Button
+                      key={preset.label}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => addPresetRole(preset)}
+                      className="bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 text-white/80 transition-all duration-150"
+                      data-testid={`button-preset-${preset.label.toLowerCase()}`}
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      {preset.label}
+                    </Button>
+                  ))}
+                </div>
+
+                <AnimatePresence mode="popLayout">
+                  <div className="space-y-4">
+                    {jobRoles.map((role, index) => (
+                      <motion.div
+                        key={role.id}
+                        initial={{ opacity: 0, height: 0, y: -10 }}
+                        animate={{ opacity: 1, height: "auto", y: 0 }}
+                        exit={{ opacity: 0, height: 0, scale: 0.95 }}
+                        transition={{
+                          duration: prefersReducedMotion ? 0 : (index === jobRoles.length - 1 ? 0.16 : 0.12),
+                          ease: "easeOut",
+                        }}
+                        className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm hover:border-white/20 transition-all duration-200"
+                      >
+                        <div className="space-y-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 relative">
+                              <FloatingLabelInput
+                                id={`role-title-${role.id}`}
+                                label="Role Title"
+                                value={role.title}
+                                onChange={(e) =>
+                                  updateJobRole(role.id, "title", e.target.value)
+                                }
+                                onBlur={() => handleRoleBlur(role)}
+                                error={validationErrors.find(e => e.field === `role-${role.id}-title`)?.message}
+                                required
+                              />
+                            </div>
+                            {jobRoles.length > 1 && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeJobRole(role.id)}
+                                className="mt-1 text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-all duration-150"
+                                data-testid={`button-remove-role-${role.id}`}
+                                aria-label={`Remove ${role.title} role`}
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <FloatingLabelInput
+                              id={`role-headcount-${role.id}`}
+                              label="Headcount"
+                              type="number"
+                              min={1}
+                              value={role.headcount}
+                              onChange={(e) =>
+                                updateJobRole(
+                                  role.id,
+                                  "headcount",
+                                  Math.max(1, Number(e.target.value)),
+                                )
+                              }
+                              tooltip="Number of people in this role"
+                            />
+                            <div className="relative">
+                              <Label className="text-xs uppercase tracking-wider text-white/60 mb-3 block">
+                                Department
+                              </Label>
+                              <Select
+                                value={role.department}
+                                onValueChange={(value) =>
+                                  updateJobRole(role.id, "department", value)
+                                }
+                              >
+                                <SelectTrigger
+                                  className="h-12 bg-white/5 border-white/10 hover:border-white/20 focus:border-white/30 transition-all duration-200"
+                                  data-testid={`select-role-department-${role.id}`}
+                                  aria-label={`Department for ${role.title}`}
+                                >
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="customer-support">
+                                    Customer Support
+                                  </SelectItem>
+                                  <SelectItem value="technical-support">
+                                    Technical Support
+                                  </SelectItem>
+                                  <SelectItem value="virtual-assistant">
+                                    Virtual Assistant
+                                  </SelectItem>
+                                  <SelectItem value="data-entry">
+                                    Data Entry
+                                  </SelectItem>
+                                  <SelectItem value="sales-support">
+                                    Sales Support
+                                  </SelectItem>
+                                  <SelectItem value="back-office">
+                                    Back Office
+                                  </SelectItem>
+                                  <SelectItem value="accounting">
+                                    Accounting
+                                  </SelectItem>
+                                  <SelectItem value="marketing">
+                                    Marketing
+                                  </SelectItem>
+                                  <SelectItem value="hr">
+                                    Human Resources
+                                  </SelectItem>
+                                  <SelectItem value="development">
+                                    Development
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                              {departmentHasBaseline(role.department) && (
+                                <motion.div
+                                  initial={{ opacity: 0, scale: 0.9 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  className="flex items-center gap-1 mt-2 text-xs text-emerald-400"
+                                >
+                                  <Check className="w-3 h-3" />
+                                  Linked to baseline rate
+                                </motion.div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </AnimatePresence>
               </div>
+
+              <motion.div variants={itemVariants} className="col-span-12 mt-6">
+                <div className="relative" ref={sliderRef}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm font-medium text-white/90">
+                        Outsource Percentage
+                      </Label>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              className="text-white/40 hover:text-white/70 transition-colors"
+                              aria-label="Help for outsource percentage"
+                            >
+                              <HelpCircle className="w-4 h-4" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-sm max-w-xs">
+                              What percentage of your team do you want to outsource to OnSpot?
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <motion.div
+                      className="px-3 py-1 bg-primary/20 border border-primary/30 rounded-full text-sm font-semibold text-primary"
+                      animate={{ scale: [1, 1.05, 1] }}
+                      transition={{ duration: 0.2 }}
+                      key={outsourcePercentage[0]}
+                    >
+                      {outsourcePercentage[0]}%
+                    </motion.div>
+                  </div>
+                  <div className="relative py-4">
+                    <Slider
+                      value={outsourcePercentage}
+                      onValueChange={setOutsourcePercentage}
+                      max={100}
+                      step={10}
+                      className="w-full [&_[role=slider]]:shadow-lg [&_[role=slider]]:shadow-primary/30 [&_[role=slider]]:bg-primary [&_[role=slider]]:border-2 [&_[role=slider]]:border-white/20"
+                      data-testid="slider-outsource-percentage"
+                      aria-label="Outsource percentage"
+                    />
+                  </div>
+                  <div className="flex justify-between text-xs text-white/40 mt-2">
+                    <span>0%</span>
+                    <span>25%</span>
+                    <span>50%</span>
+                    <span>75%</span>
+                    <span>100%</span>
+                  </div>
+                </div>
+              </motion.div>
             </div>
           </motion.div>
         </div>
@@ -1187,7 +1562,7 @@ export default function WhyOnSpotValueCalculator() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: prefersReducedMotion ? 0 : 0.5 }}
             >
               <Card className="overflow-hidden">
                 <CardContent className="p-12">
@@ -1195,7 +1570,7 @@ export default function WhyOnSpotValueCalculator() {
                     <motion.div
                       initial={{ scale: 0.9, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      transition={{ delay: 0.2, duration: 0.5 }}
+                      transition={{ delay: prefersReducedMotion ? 0 : 0.2, duration: prefersReducedMotion ? 0 : 0.5 }}
                       className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full text-primary text-sm font-medium mb-6"
                     >
                       <Sparkles className="w-4 h-4" />
@@ -1205,7 +1580,7 @@ export default function WhyOnSpotValueCalculator() {
                     <motion.h2
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.3, duration: 0.5 }}
+                      transition={{ delay: prefersReducedMotion ? 0 : 0.3, duration: prefersReducedMotion ? 0 : 0.5 }}
                       className="text-4xl md:text-5xl font-bold mb-16"
                     >
                       Projected Results
@@ -1216,7 +1591,7 @@ export default function WhyOnSpotValueCalculator() {
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.4, duration: 0.5 }}
+                      transition={{ delay: prefersReducedMotion ? 0 : 0.4, duration: prefersReducedMotion ? 0 : 0.5 }}
                       className="text-center p-8 rounded-2xl bg-gradient-to-br from-primary/5 to-primary/10 flex flex-col items-center justify-center space-y-3 min-h-[200px]"
                     >
                       <div className="text-lg md:text-xl text-primary/60 font-medium">
@@ -1237,7 +1612,7 @@ export default function WhyOnSpotValueCalculator() {
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.5, duration: 0.5 }}
+                      transition={{ delay: prefersReducedMotion ? 0 : 0.5, duration: prefersReducedMotion ? 0 : 0.5 }}
                       className="text-center p-8 rounded-2xl bg-gradient-to-br from-[hsl(var(--gold-yellow))]/5 to-[hsl(var(--gold-yellow))]/10 flex flex-col items-center justify-center space-y-3 min-h-[200px]"
                     >
                       <TrendingUp className="w-6 h-6 md:w-7 md:h-7 text-[hsl(var(--gold-yellow))]/60" />
@@ -1256,7 +1631,7 @@ export default function WhyOnSpotValueCalculator() {
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.6, duration: 0.5 }}
+                      transition={{ delay: prefersReducedMotion ? 0 : 0.6, duration: prefersReducedMotion ? 0 : 0.5 }}
                       className="text-center p-8 rounded-2xl bg-gradient-to-br from-blue-500/5 to-blue-500/10 flex flex-col items-center justify-center space-y-3 min-h-[200px]"
                     >
                       <Clock className="w-6 h-6 md:w-7 md:h-7 text-blue-600/60" />
@@ -1276,7 +1651,7 @@ export default function WhyOnSpotValueCalculator() {
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 0.7, duration: 0.5 }}
+                    transition={{ delay: prefersReducedMotion ? 0 : 0.7, duration: prefersReducedMotion ? 0 : 0.5 }}
                     className="flex flex-col sm:flex-row gap-4 justify-center"
                   >
                     <Button
@@ -1313,7 +1688,7 @@ export default function WhyOnSpotValueCalculator() {
                     </span>
                     <motion.div
                       animate={{ rotate: assumptionsOpen ? 180 : 0 }}
-                      transition={{ duration: 0.3 }}
+                      transition={{ duration: prefersReducedMotion ? 0 : 0.3 }}
                     >
                       <ChevronDown className="w-5 h-5 text-muted-foreground" />
                     </motion.div>
@@ -1478,25 +1853,19 @@ export default function WhyOnSpotValueCalculator() {
               </CollapsibleContent>
             </Card>
           </Collapsible>
-
-          <Card className="bg-gradient-to-br from-primary/5 via-background to-background border-primary/20">
-            <CardContent className="p-10 text-center">
-              <Users className="w-12 h-12 text-primary mx-auto mb-6" />
-              <h3 className="text-3xl font-bold mb-4">
-                Ready to Get Started?
-              </h3>
-              <p className="text-muted-foreground text-lg mb-8 max-w-2xl mx-auto">
-                Join hundreds of companies saving costs and unlocking value
-                with OnSpot's talent solutions
-              </p>
-              <Button size="lg" className="text-base px-8">
-                Schedule a Consultation
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
-            </CardContent>
-          </Card>
         </div>
       </section>
+
+      <div className="fixed bottom-0 left-0 right-0 md:hidden bg-background/80 backdrop-blur-lg border-t border-border p-4 safe-area-inset-bottom z-50">
+        <Button
+          size="lg"
+          className="w-full"
+          data-testid="button-calculate-mobile"
+        >
+          Calculate Savings
+          <ArrowRight className="w-5 h-5 ml-2" />
+        </Button>
+      </div>
     </div>
   );
 }
