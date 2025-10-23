@@ -11,28 +11,28 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Calculator,
   DollarSign,
   TrendingUp,
   Clock,
   Users,
-  Target,
-  Award,
-  BarChart3,
-  Zap,
-  CheckCircle2,
-  ArrowRight,
-  Sparkles,
-  Download,
   Settings,
-  Shield,
   Plus,
   X,
+  ChevronDown,
+  Sparkles,
+  ArrowRight,
+  Download,
 } from "lucide-react";
 
-// Location data structure
 type StateData = {
   cities: string[];
   minWages: Record<string, number>;
@@ -677,17 +677,12 @@ interface JobRole {
 }
 
 export default function WhyOnSpotValueCalculator() {
-  // Location states
   const [country, setCountry] = useState<string>("United States");
   const [state, setState] = useState<string>("California");
   const [city, setCity] = useState<string>("San Francisco");
   const [minWage, setMinWage] = useState<number>(18.07);
-
-  // Work configuration
   const [avgWorkHoursPerWeek, setAvgWorkHoursPerWeek] = useState<number>(40);
   const [annualWorkWeeks, setAnnualWorkWeeks] = useState<number>(52);
-
-  // Cost configuration
   const [benefits, setBenefits] = useState<number>(30);
   const [overhead, setOverhead] = useState<number>(25);
   const [productivityGainPercentage, setProductivityGainPercentage] = useState<
@@ -695,12 +690,8 @@ export default function WhyOnSpotValueCalculator() {
   >([25]);
   const [managementFeePerSeat, setManagementFeePerSeat] = useState<number>(200);
   const [attritionRate, setAttritionRate] = useState<number>(15);
-
-  // Growth and projection
   const [growthRate, setGrowthRate] = useState<number>(20);
   const [timeHorizon, setTimeHorizon] = useState<number>(12);
-
-  // Job roles (multi-role support)
   const [jobRoles, setJobRoles] = useState<JobRole[]>([
     {
       id: "1",
@@ -709,12 +700,11 @@ export default function WhyOnSpotValueCalculator() {
       department: "customer-support",
     },
   ]);
-
   const [outsourcePercentage, setOutsourcePercentage] = useState<number[]>([
     50,
   ]);
+  const [assumptionsOpen, setAssumptionsOpen] = useState(false);
 
-  // Department-based OnSpot rates (annual)
   const onspotRates = {
     "customer-support": 18000,
     "technical-support": 25000,
@@ -728,13 +718,11 @@ export default function WhyOnSpotValueCalculator() {
     development: 35000,
   };
 
-  // Get available states for selected country
   const availableStates = useMemo(() => {
     if (!country || !locationData[country]) return [];
     return Object.keys(locationData[country]);
   }, [country]);
 
-  // Get available cities for selected state
   const availableCities = useMemo(() => {
     if (!country || !state) return [];
     const countryData = locationData[country];
@@ -744,7 +732,6 @@ export default function WhyOnSpotValueCalculator() {
     return stateData.cities;
   }, [country, state]);
 
-  // Update city and min wage when location changes
   const handleCountryChange = (newCountry: string) => {
     setCountry(newCountry);
     const states = Object.keys(locationData[newCountry] || {});
@@ -781,7 +768,6 @@ export default function WhyOnSpotValueCalculator() {
     }
   };
 
-  // Add new job role
   const addJobRole = () => {
     const newRole: JobRole = {
       id: Date.now().toString(),
@@ -792,14 +778,12 @@ export default function WhyOnSpotValueCalculator() {
     setJobRoles([...jobRoles, newRole]);
   };
 
-  // Remove job role
   const removeJobRole = (id: string) => {
     if (jobRoles.length > 1) {
       setJobRoles(jobRoles.filter((role) => role.id !== id));
     }
   };
 
-  // Update job role
   const updateJobRole = (
     id: string,
     field: keyof JobRole,
@@ -812,34 +796,25 @@ export default function WhyOnSpotValueCalculator() {
     );
   };
 
-  // Calculate comprehensive ROI and value
   const calculations = useMemo(() => {
-    // Calculate hourly rate from minimum wage
     const hourlyRate = minWage;
     const annualHours = avgWorkHoursPerWeek * annualWorkWeeks;
-
-    // Calculate total team size
     const totalTeamSize = jobRoles.reduce(
       (sum, role) => sum + role.headcount,
       0,
     );
 
-    // Calculate weighted average costs based on all roles
     let totalInHouseCost = 0;
     let totalOnSpotCost = 0;
 
     jobRoles.forEach((role) => {
-      // In-house cost per seat for this role
       const baseSalary = hourlyRate * annualHours;
       const benefitsCost = baseSalary * (benefits / 100);
       const overheadCost = baseSalary * (overhead / 100);
       const costPerSeat = baseSalary + benefitsCost + overheadCost;
-
-      // Total in-house cost for this role
       const roleInHouseCost = costPerSeat * role.headcount;
       totalInHouseCost += roleInHouseCost;
 
-      // OnSpot cost per seat for this role
       const onspotBaseRate =
         onspotRates[role.department as keyof typeof onspotRates] || 18000;
       const onspotCostPerSeat = onspotBaseRate + managementFeePerSeat * 12;
@@ -847,57 +822,34 @@ export default function WhyOnSpotValueCalculator() {
       totalOnSpotCost += roleOnSpotCost;
     });
 
-    // Calculate positions to outsource
     const positionsToOutsource = Math.round(
       totalTeamSize * (outsourcePercentage[0] / 100),
     );
     const remainingInHouse = totalTeamSize - positionsToOutsource;
-
-    // Current costs
     const currentAnnualCost = totalInHouseCost;
     const avgCostPerEmployee =
       totalTeamSize > 0 ? totalInHouseCost / totalTeamSize : 0;
-
-    // New costs with outsourcing
-    const outsourcedPositionsCost =
-      (totalInHouseCost / totalTeamSize) * positionsToOutsource;
     const remainingInHouseCost =
       (totalInHouseCost / totalTeamSize) * remainingInHouse;
     const avgOnSpotCostPerSeat =
       totalTeamSize > 0 ? totalOnSpotCost / totalTeamSize : 0;
     const onspotAnnualCost = avgOnSpotCostPerSeat * positionsToOutsource;
     const totalNewAnnualCost = remainingInHouseCost + onspotAnnualCost;
-
-    // Savings and ROI
     const annualSavings = currentAnnualCost - totalNewAnnualCost;
     const savingsPercentage =
       currentAnnualCost > 0 ? (annualSavings / currentAnnualCost) * 100 : 0;
     const roi =
       onspotAnnualCost > 0 ? (annualSavings / onspotAnnualCost) * 100 : 0;
-
-    // Time horizon projections with growth
     const totalSavings = annualSavings * (timeHorizon / 12);
     const compoundedSavings =
       annualSavings * (timeHorizon / 12) * (1 + growthRate / 100);
-
-    // Additional value metrics
-    const timeToValue = 21; // days
+    const timeToValue = 21;
     const productivityGain =
       positionsToOutsource *
       (productivityGainPercentage[0] / 100) *
       avgCostPerEmployee;
-    const qualityImprovement = 0.15; // 15% quality improvement
-    const scalabilityValue = annualSavings * 0.3; // 30% of savings from scalability
-    const riskReduction = avgCostPerEmployee * positionsToOutsource * 0.05; // 5% risk reduction value
-    const attritionCost =
-      avgCostPerEmployee * positionsToOutsource * (attritionRate / 100) * 0.5; // Half of attrition cost saved
-
-    // Total value beyond cost savings
-    const totalValueBeyondSavings =
-      productivityGain + scalabilityValue + riskReduction + attritionCost;
-    const totalAnnualValue = annualSavings + totalValueBeyondSavings;
-    const totalValueROI =
-      onspotAnnualCost > 0 ? (totalAnnualValue / onspotAnnualCost) * 100 : 0;
+    const efficiencyHours =
+      positionsToOutsource * avgWorkHoursPerWeek * 52 * 0.25;
 
     return {
       currentAnnualCost,
@@ -912,13 +864,7 @@ export default function WhyOnSpotValueCalculator() {
       totalTeamSize,
       timeToValue,
       productivityGain,
-      qualityImprovement,
-      scalabilityValue,
-      riskReduction,
-      attritionCost,
-      totalValueBeyondSavings,
-      totalAnnualValue,
-      totalValueROI,
+      efficiencyHours,
     };
   }, [
     jobRoles,
@@ -944,653 +890,613 @@ export default function WhyOnSpotValueCalculator() {
     }).format(amount);
   };
 
+  const formatNumber = (num: number) => {
+    return new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(num);
+  };
+
   const formatPercentage = (value: number) => {
     return `${value.toFixed(1)}%`;
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
-      {/* Hero Section */}
-      <section className="hero-investor text-white pt-28 pb-20 px-4 text-center overflow-hidden relative">
+    <div className="min-h-screen bg-background">
+      <section className="hero-investor text-white pt-32 pb-24 px-6 text-center overflow-hidden relative">
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
           <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
           <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:80px_80px]" />
         </div>
 
-        <div className="relative z-10 max-w-6xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-6 py-3 bg-white/20 backdrop-blur-sm rounded-full text-white/90 text-sm font-medium mb-8">
+        <div className="relative z-10 max-w-5xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-white/20 backdrop-blur-sm rounded-full text-white/90 text-sm font-medium mb-10"
+          >
             <Calculator className="w-4 h-4" />
-            ROI & Value Calculator
-          </div>
+            Value Calculator
+          </motion.div>
 
-          <h1 className="text-6xl md:text-8xl font-bold tracking-tight mb-8 text-white">
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="text-6xl md:text-7xl font-bold tracking-tight mb-6 text-white leading-tight"
+          >
             Calculate Your
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[hsl(var(--gold-yellow))] to-[hsl(45_100%_55%)]">
-              Value Return
+            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[hsl(var(--gold-yellow))] to-[hsl(45_100%_55%)] mt-2">
+              Business Value
             </span>
-          </h1>
+          </motion.h1>
 
-          <p className="text-xl md:text-2xl text-white/90 mb-16 max-w-4xl mx-auto leading-relaxed font-light">
-            Discover the comprehensive value and ROI you'll achieve by
-            outsourcing with OnSpot - beyond just cost savings
-          </p>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="text-xl md:text-2xl text-white/80 max-w-3xl mx-auto leading-relaxed font-light"
+          >
+            See how much you can save and the value you'll unlock
+          </motion.p>
         </div>
       </section>
 
-      {/* Calculator Section */}
-      <section className="py-20 px-4">
+      <section className="py-24 px-6">
         <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12">
-            {/* Input Form */}
-            <Card className="sticky top-8 h-fit">
-              <CardHeader>
-                <CardTitle className="text-2xl flex items-center gap-2">
-                  <Settings className="w-6 h-6 text-primary" />
-                  Your Current Situation
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-8">
-                {/* Location Section */}
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-lg">Location Details</h3>
-                  <div className="grid gap-4">
-                    <div>
-                      <Label htmlFor="country" data-testid="label-country">
-                        Country
-                      </Label>
-                      <Select
-                        value={country}
-                        onValueChange={handleCountryChange}
-                      >
-                        <SelectTrigger data-testid="select-country">
-                          <SelectValue placeholder="Select country" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.keys(locationData).map((c: string) => (
-                            <SelectItem key={c} value={c}>
-                              {c}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+          <div className="grid lg:grid-cols-5 gap-12">
+            <div className="lg:col-span-2">
+              <Card className="sticky top-8">
+                <CardHeader className="pb-8">
+                  <CardTitle className="text-2xl flex items-center gap-3">
+                    <Settings className="w-6 h-6 text-primary" />
+                    Your Inputs
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-10">
+                  <div className="space-y-6">
+                    <h3 className="font-semibold text-base text-muted-foreground">
+                      Location
+                    </h3>
+                    <div className="space-y-5">
+                      <div>
+                        <Label
+                          htmlFor="country"
+                          className="text-sm font-medium mb-2 block"
+                          data-testid="label-country"
+                        >
+                          Country
+                        </Label>
+                        <Select
+                          value={country}
+                          onValueChange={handleCountryChange}
+                        >
+                          <SelectTrigger data-testid="select-country">
+                            <SelectValue placeholder="Select country" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.keys(locationData).map((c: string) => (
+                              <SelectItem key={c} value={c}>
+                                {c}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                    <div>
-                      <Label htmlFor="state" data-testid="label-state">
-                        State/Province
-                      </Label>
-                      <Select value={state} onValueChange={handleStateChange}>
-                        <SelectTrigger data-testid="select-state">
-                          <SelectValue placeholder="Select state" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableStates.map((s) => (
-                            <SelectItem key={s} value={s}>
-                              {s}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                      <div>
+                        <Label
+                          htmlFor="state"
+                          className="text-sm font-medium mb-2 block"
+                          data-testid="label-state"
+                        >
+                          State/Province
+                        </Label>
+                        <Select value={state} onValueChange={handleStateChange}>
+                          <SelectTrigger data-testid="select-state">
+                            <SelectValue placeholder="Select state" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableStates.map((s) => (
+                              <SelectItem key={s} value={s}>
+                                {s}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                    <div>
-                      <Label htmlFor="city" data-testid="label-city">
-                        City
-                      </Label>
-                      <Select value={city} onValueChange={handleCityChange}>
-                        <SelectTrigger data-testid="select-city">
-                          <SelectValue placeholder="Select city" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableCities.map((c) => (
-                            <SelectItem key={c} value={c}>
-                              {c}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                      <div>
+                        <Label
+                          htmlFor="city"
+                          className="text-sm font-medium mb-2 block"
+                          data-testid="label-city"
+                        >
+                          City
+                        </Label>
+                        <Select value={city} onValueChange={handleCityChange}>
+                          <SelectTrigger data-testid="select-city">
+                            <SelectValue placeholder="Select city" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableCities.map((c) => (
+                              <SelectItem key={c} value={c}>
+                                {c}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                    <div>
-                      <Label htmlFor="min-wage" data-testid="label-min-wage">
-                        Minimum Wage ($/hour)
-                      </Label>
-                      <Input
-                        id="min-wage"
-                        type="number"
-                        step="0.01"
-                        value={minWage}
-                        onChange={(e) =>
-                          setMinWage(Math.max(0, Number(e.target.value)))
-                        }
-                        data-testid="input-min-wage"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Work Configuration */}
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-lg">Work Configuration</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label
-                        htmlFor="work-hours"
-                        data-testid="label-work-hours"
-                      >
-                        Hours/Week
-                      </Label>
-                      <Input
-                        id="work-hours"
-                        type="number"
-                        value={avgWorkHoursPerWeek}
-                        onChange={(e) =>
-                          setAvgWorkHoursPerWeek(
-                            Math.max(0, Number(e.target.value)),
-                          )
-                        }
-                        data-testid="input-work-hours"
-                      />
-                    </div>
-                    <div>
-                      <Label
-                        htmlFor="work-weeks"
-                        data-testid="label-work-weeks"
-                      >
-                        Weeks/Year
-                      </Label>
-                      <Input
-                        id="work-weeks"
-                        type="number"
-                        value={annualWorkWeeks}
-                        onChange={(e) =>
-                          setAnnualWorkWeeks(
-                            Math.max(0, Number(e.target.value)),
-                          )
-                        }
-                        data-testid="input-work-weeks"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Cost Configuration */}
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-lg">Cost Factors</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="benefits" data-testid="label-benefits">
-                        Benefits (%)
-                      </Label>
-                      <Input
-                        id="benefits"
-                        type="number"
-                        value={benefits}
-                        onChange={(e) =>
-                          setBenefits(Math.max(0, Number(e.target.value)))
-                        }
-                        data-testid="input-benefits"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="overhead" data-testid="label-overhead">
-                        Overhead (%)
-                      </Label>
-                      <Input
-                        id="overhead"
-                        type="number"
-                        value={overhead}
-                        onChange={(e) =>
-                          setOverhead(Math.max(0, Number(e.target.value)))
-                        }
-                        data-testid="input-overhead"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label
-                        htmlFor="management-fee"
-                        data-testid="label-management-fee"
-                      >
-                        Management Fee ($/month)
-                      </Label>
-                      <Input
-                        id="management-fee"
-                        type="number"
-                        value={managementFeePerSeat}
-                        onChange={(e) =>
-                          setManagementFeePerSeat(
-                            Math.max(0, Number(e.target.value)),
-                          )
-                        }
-                        data-testid="input-management-fee"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="attrition" data-testid="label-attrition">
-                        Attrition Rate (%)
-                      </Label>
-                      <Input
-                        id="attrition"
-                        type="number"
-                        value={attritionRate}
-                        onChange={(e) =>
-                          setAttritionRate(Math.max(0, Number(e.target.value)))
-                        }
-                        data-testid="input-attrition"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label data-testid="label-productivity-gain">
-                      Productivity Gain: {productivityGainPercentage[0]}%
-                    </Label>
-                    <div className="mt-2">
-                      <Slider
-                        value={productivityGainPercentage}
-                        onValueChange={setProductivityGainPercentage}
-                        max={100}
-                        step={5}
-                        className="w-full"
-                        data-testid="slider-productivity-gain"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Job Roles Section */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-lg">Job Roles</h3>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={addJobRole}
-                      data-testid="button-add-role"
-                    >
-                      <Plus className="w-4 h-4 mr-1" />
-                      Add Role
-                    </Button>
-                  </div>
-
-                  {jobRoles.map((role, index) => (
-                    <Card key={role.id} className="p-4">
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-sm font-medium">
-                            Role {index + 1}
-                          </Label>
-                          {jobRoles.length > 1 && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeJobRole(role.id)}
-                              data-testid={`button-remove-role-${role.id}`}
-                            >
-                              <X className="w-4 h-4" />
-                            </Button>
-                          )}
-                        </div>
-
+                      <div>
+                        <Label
+                          htmlFor="min-wage"
+                          className="text-sm font-medium mb-2 block"
+                          data-testid="label-min-wage"
+                        >
+                          Minimum Wage ($/hour)
+                        </Label>
                         <Input
-                          placeholder="Role Title"
-                          value={role.title}
+                          id="min-wage"
+                          type="number"
+                          step="0.01"
+                          value={minWage}
                           onChange={(e) =>
-                            updateJobRole(role.id, "title", e.target.value)
+                            setMinWage(Math.max(0, Number(e.target.value)))
                           }
-                          data-testid={`input-role-title-${role.id}`}
+                          data-testid="input-min-wage"
                         />
+                      </div>
+                    </div>
+                  </div>
 
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <Label className="text-xs">Headcount</Label>
-                            <Input
-                              type="number"
-                              value={role.headcount}
-                              onChange={(e) =>
-                                updateJobRole(
-                                  role.id,
-                                  "headcount",
-                                  Math.max(1, Number(e.target.value)),
-                                )
-                              }
-                              data-testid={`input-role-headcount-${role.id}`}
-                            />
+                  <div className="space-y-6">
+                    <h3 className="font-semibold text-base text-muted-foreground">
+                      Team & Roles
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">
+                          Job Roles ({jobRoles.length})
+                        </Label>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={addJobRole}
+                          data-testid="button-add-role"
+                        >
+                          <Plus className="w-4 h-4 mr-1" />
+                          Add
+                        </Button>
+                      </div>
+
+                      <div className="space-y-3">
+                        {jobRoles.map((role) => (
+                          <div key={role.id} className="p-4 border rounded-md bg-muted/20">
+                            <div className="space-y-3">
+                              <div className="flex items-start justify-between gap-2">
+                                <Input
+                                  placeholder="Role title"
+                                  value={role.title}
+                                  onChange={(e) =>
+                                    updateJobRole(role.id, "title", e.target.value)
+                                  }
+                                  className="flex-1"
+                                  data-testid={`input-role-title-${role.id}`}
+                                />
+                                {jobRoles.length > 1 && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => removeJobRole(role.id)}
+                                    data-testid={`button-remove-role-${role.id}`}
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </Button>
+                                )}
+                              </div>
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <Label className="text-xs text-muted-foreground mb-1 block">
+                                    Headcount
+                                  </Label>
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    value={role.headcount}
+                                    onChange={(e) =>
+                                      updateJobRole(
+                                        role.id,
+                                        "headcount",
+                                        Math.max(1, Number(e.target.value)),
+                                      )
+                                    }
+                                    data-testid={`input-role-headcount-${role.id}`}
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-muted-foreground mb-1 block">
+                                    Department
+                                  </Label>
+                                  <Select
+                                    value={role.department}
+                                    onValueChange={(value) =>
+                                      updateJobRole(role.id, "department", value)
+                                    }
+                                  >
+                                    <SelectTrigger
+                                      data-testid={`select-role-department-${role.id}`}
+                                    >
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="customer-support">
+                                        Customer Support
+                                      </SelectItem>
+                                      <SelectItem value="technical-support">
+                                        Technical Support
+                                      </SelectItem>
+                                      <SelectItem value="virtual-assistant">
+                                        Virtual Assistant
+                                      </SelectItem>
+                                      <SelectItem value="data-entry">
+                                        Data Entry
+                                      </SelectItem>
+                                      <SelectItem value="sales-support">
+                                        Sales Support
+                                      </SelectItem>
+                                      <SelectItem value="back-office">
+                                        Back Office
+                                      </SelectItem>
+                                      <SelectItem value="accounting">
+                                        Accounting
+                                      </SelectItem>
+                                      <SelectItem value="marketing">
+                                        Marketing
+                                      </SelectItem>
+                                      <SelectItem value="hr">
+                                        Human Resources
+                                      </SelectItem>
+                                      <SelectItem value="development">
+                                        Development
+                                      </SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                          <div>
-                            <Label className="text-xs">Department</Label>
-                            <Select
-                              value={role.department}
-                              onValueChange={(val) =>
-                                updateJobRole(role.id, "department", val)
-                              }
-                            >
-                              <SelectTrigger
-                                data-testid={`select-role-department-${role.id}`}
-                              >
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="customer-support">
-                                  Customer Support
-                                </SelectItem>
-                                <SelectItem value="technical-support">
-                                  Technical Support
-                                </SelectItem>
-                                <SelectItem value="virtual-assistant">
-                                  Virtual Assistant
-                                </SelectItem>
-                                <SelectItem value="data-entry">
-                                  Data Entry
-                                </SelectItem>
-                                <SelectItem value="sales-support">
-                                  Sales Support
-                                </SelectItem>
-                                <SelectItem value="back-office">
-                                  Back Office
-                                </SelectItem>
-                                <SelectItem value="accounting">
-                                  Accounting
-                                </SelectItem>
-                                <SelectItem value="marketing">
-                                  Marketing
-                                </SelectItem>
-                                <SelectItem value="hr">
-                                  Human Resources
-                                </SelectItem>
-                                <SelectItem value="development">
-                                  Development
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label
+                        className="text-sm font-medium mb-3 block"
+                        data-testid="label-outsource-percentage"
+                      >
+                        Outsource: {outsourcePercentage[0]}%
+                      </Label>
+                      <Slider
+                        value={outsourcePercentage}
+                        onValueChange={setOutsourcePercentage}
+                        max={100}
+                        step={10}
+                        className="w-full"
+                        data-testid="slider-outsource-percentage"
+                      />
+                      <div className="flex justify-between text-xs text-muted-foreground mt-2">
+                        <span>0%</span>
+                        <span>100%</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="lg:col-span-3 space-y-8">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <Card className="overflow-hidden">
+                    <CardContent className="p-12">
+                      <div className="text-center mb-12">
+                        <motion.div
+                          initial={{ scale: 0.9, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ delay: 0.2, duration: 0.5 }}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full text-primary text-sm font-medium mb-6"
+                        >
+                          <Sparkles className="w-4 h-4" />
+                          Your Value Analysis
+                        </motion.div>
+
+                        <motion.h2
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.3, duration: 0.5 }}
+                          className="text-4xl md:text-5xl font-bold mb-16"
+                        >
+                          Projected Results
+                        </motion.h2>
+                      </div>
+
+                      <div className="grid md:grid-cols-3 gap-8 mb-16">
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.4, duration: 0.5 }}
+                          className="text-center p-8 rounded-2xl bg-gradient-to-br from-primary/5 to-primary/10"
+                        >
+                          <DollarSign className="w-10 h-10 text-primary mx-auto mb-4" />
+                          <div
+                            className="text-5xl font-bold text-primary mb-3"
+                            data-testid="text-annual-savings"
+                          >
+                            {formatCurrency(calculations.annualSavings)}
+                          </div>
+                          <div className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                            Annual Savings
+                          </div>
+                        </motion.div>
+
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.5, duration: 0.5 }}
+                          className="text-center p-8 rounded-2xl bg-gradient-to-br from-[hsl(var(--gold-yellow))]/5 to-[hsl(var(--gold-yellow))]/10"
+                        >
+                          <TrendingUp className="w-10 h-10 text-[hsl(var(--gold-yellow))] mx-auto mb-4" />
+                          <div
+                            className="text-5xl font-bold text-[hsl(var(--gold-yellow))] mb-3"
+                            data-testid="text-savings-percentage"
+                          >
+                            {formatPercentage(calculations.savingsPercentage)}
+                          </div>
+                          <div className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                            Cost Reduction
+                          </div>
+                        </motion.div>
+
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.6, duration: 0.5 }}
+                          className="text-center p-8 rounded-2xl bg-gradient-to-br from-blue-500/5 to-blue-500/10"
+                        >
+                          <Clock className="w-10 h-10 text-blue-600 mx-auto mb-4" />
+                          <div
+                            className="text-5xl font-bold text-blue-600 mb-3"
+                            data-testid="text-efficiency-hours"
+                          >
+                            {formatNumber(calculations.efficiencyHours)}
+                          </div>
+                          <div className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                            Efficiency Hours/Year
+                          </div>
+                        </motion.div>
+                      </div>
+
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.7, duration: 0.5 }}
+                        className="flex flex-col sm:flex-row gap-4 justify-center"
+                      >
+                        <Button
+                          size="lg"
+                          className="text-base px-8"
+                          data-testid="button-get-started"
+                        >
+                          Get Started
+                          <ArrowRight className="w-5 h-5 ml-2" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="lg"
+                          className="text-base px-8"
+                          data-testid="button-download-report"
+                        >
+                          <Download className="w-5 h-5 mr-2" />
+                          Download Report
+                        </Button>
+                      </motion.div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </AnimatePresence>
+
+              <Collapsible open={assumptionsOpen} onOpenChange={setAssumptionsOpen}>
+                <Card>
+                  <CollapsibleTrigger className="w-full" data-testid="button-assumptions-toggle">
+                    <CardHeader className="hover-elevate active-elevate-2 cursor-pointer">
+                      <CardTitle className="text-xl flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                          <Settings className="w-5 h-5 text-muted-foreground" />
+                          Calculation Details & Assumptions
+                        </span>
+                        <motion.div
+                          animate={{ rotate: assumptionsOpen ? 180 : 0 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                        </motion.div>
+                      </CardTitle>
+                    </CardHeader>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <CardContent className="pt-0 space-y-8">
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                          <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                            Cost Breakdown
+                          </h3>
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center p-3 bg-muted/30 rounded-lg">
+                              <span className="text-sm font-medium">
+                                Current Annual Cost
+                              </span>
+                              <span className="font-bold">
+                                {formatCurrency(calculations.currentAnnualCost)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center p-3 bg-muted/30 rounded-lg">
+                              <span className="text-sm font-medium">
+                                OnSpot Annual Cost
+                              </span>
+                              <span className="font-bold">
+                                {formatCurrency(calculations.onspotAnnualCost)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center p-3 bg-primary/10 rounded-lg">
+                              <span className="text-sm font-medium text-primary">
+                                New Total Cost
+                              </span>
+                              <span className="font-bold text-primary">
+                                {formatCurrency(calculations.totalNewAnnualCost)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                            Team Details
+                          </h3>
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center p-3 bg-muted/30 rounded-lg">
+                              <span className="text-sm font-medium">
+                                Total Team Size
+                              </span>
+                              <span className="font-bold">
+                                {calculations.totalTeamSize}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center p-3 bg-muted/30 rounded-lg">
+                              <span className="text-sm font-medium">
+                                Positions Outsourced
+                              </span>
+                              <span className="font-bold">
+                                {calculations.positionsToOutsource}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                              <span className="text-sm font-medium text-blue-700 dark:text-blue-400">
+                                Time to Value
+                              </span>
+                              <span className="font-bold text-blue-700 dark:text-blue-400">
+                                {calculations.timeToValue} days
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </Card>
-                  ))}
-                </div>
 
-                <div>
-                  <Label data-testid="label-outsource-percentage">
-                    Positions to Outsource: {outsourcePercentage[0]}%
-                  </Label>
-                  <div className="mt-2">
-                    <Slider
-                      value={outsourcePercentage}
-                      onValueChange={setOutsourcePercentage}
-                      max={100}
-                      step={10}
-                      className="w-full"
-                      data-testid="slider-outsource-percentage"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label
-                      htmlFor="growth-rate"
-                      data-testid="label-growth-rate"
-                    >
-                      Growth Rate (%)
-                    </Label>
-                    <Input
-                      id="growth-rate"
-                      type="number"
-                      value={growthRate}
-                      onChange={(e) =>
-                        setGrowthRate(Math.max(0, Number(e.target.value)))
-                      }
-                      data-testid="input-growth-rate"
-                    />
-                  </div>
-                  <div>
-                    <Label
-                      htmlFor="time-horizon"
-                      data-testid="label-time-horizon"
-                    >
-                      Time Horizon (months)
-                    </Label>
-                    <Input
-                      id="time-horizon"
-                      type="number"
-                      value={timeHorizon}
-                      onChange={(e) =>
-                        setTimeHorizon(Math.max(1, Number(e.target.value)))
-                      }
-                      data-testid="input-time-horizon"
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Results */}
-            <div className="space-y-8">
-              {/* Key Metrics */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-2xl flex items-center gap-2">
-                    <BarChart3 className="w-6 h-6 text-primary" />
-                    Your OnSpot Value Analysis
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="text-center p-6 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg">
-                      <DollarSign className="w-8 h-8 text-primary mx-auto mb-2" />
-                      <div className="text-3xl font-bold text-primary mb-1">
-                        {formatCurrency(calculations.annualSavings)}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        Annual Cost Savings
-                      </div>
-                      <Badge className="mt-2 bg-green-100 text-green-800">
-                        {formatPercentage(calculations.savingsPercentage)}{" "}
-                        savings
-                      </Badge>
-                    </div>
-
-                    <div className="text-center p-6 bg-gradient-to-br from-[hsl(var(--gold-yellow))]/10 to-[hsl(var(--gold-yellow))]/5 rounded-lg">
-                      <TrendingUp className="w-8 h-8 text-[hsl(var(--gold-yellow))] mx-auto mb-2" />
-                      <div className="text-3xl font-bold text-[hsl(var(--gold-yellow))] mb-1">
-                        {formatPercentage(calculations.totalValueROI)}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        Total Value ROI
-                      </div>
-                      <Badge className="mt-2 bg-[hsl(var(--gold-yellow))]/20 text-[hsl(var(--gold-yellow))]">
-                        Beyond cost savings
-                      </Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Detailed Breakdown */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Target className="w-5 h-5 text-primary" />
-                    Cost Analysis Breakdown
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="p-4 bg-muted/30 rounded-lg">
-                      <div className="font-medium text-muted-foreground mb-1">
-                        Current Annual Cost
-                      </div>
-                      <div className="text-xl font-bold">
-                        {formatCurrency(calculations.currentAnnualCost)}
-                      </div>
-                    </div>
-                    <div className="p-4 bg-muted/30 rounded-lg">
-                      <div className="font-medium text-muted-foreground mb-1">
-                        New Annual Cost
-                      </div>
-                      <div className="text-xl font-bold">
-                        {formatCurrency(calculations.totalNewAnnualCost)}
-                      </div>
-                    </div>
-                    <div className="p-4 bg-green-50 rounded-lg">
-                      <div className="font-medium text-green-700 mb-1">
-                        Positions Outsourced
-                      </div>
-                      <div className="text-xl font-bold text-green-800">
-                        {calculations.positionsToOutsource} of{" "}
-                        {calculations.totalTeamSize}
-                      </div>
-                    </div>
-                    <div className="p-4 bg-blue-50 rounded-lg">
-                      <div className="font-medium text-blue-700 mb-1">
-                        Time to Value
-                      </div>
-                      <div className="text-xl font-bold text-blue-800">
-                        {calculations.timeToValue} days
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Value Beyond Savings */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Award className="w-5 h-5 text-primary" />
-                    Value Beyond Cost Savings
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center p-3 bg-muted/20 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Zap className="w-4 h-4 text-primary" />
-                        <span className="font-medium">
-                          Productivity Gain ({productivityGainPercentage[0]}%)
-                        </span>
-                      </div>
-                      <span className="font-bold text-primary">
-                        {formatCurrency(calculations.productivityGain)}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between items-center p-3 bg-muted/20 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <TrendingUp className="w-4 h-4 text-primary" />
-                        <span className="font-medium">Scalability Value</span>
-                      </div>
-                      <span className="font-bold text-primary">
-                        {formatCurrency(calculations.scalabilityValue)}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between items-center p-3 bg-muted/20 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Shield className="w-4 h-4 text-primary" />
-                        <span className="font-medium">Risk Reduction</span>
-                      </div>
-                      <span className="font-bold text-primary">
-                        {formatCurrency(calculations.riskReduction)}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between items-center p-3 bg-muted/20 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Users className="w-4 h-4 text-primary" />
-                        <span className="font-medium">
-                          Attrition Cost Savings
-                        </span>
-                      </div>
-                      <span className="font-bold text-primary">
-                        {formatCurrency(calculations.attritionCost)}
-                      </span>
-                    </div>
-
-                    <div className="border-t pt-3">
-                      <div className="flex justify-between items-center font-bold">
-                        <span>Total Annual Value</span>
-                        <span className="text-xl text-primary">
-                          {formatCurrency(calculations.totalAnnualValue)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Projection */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-primary" />
-                    {timeHorizon}-Month Projection
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center p-6 bg-gradient-to-br from-primary/5 to-muted/5 rounded-lg">
-                    <div className="text-4xl font-bold text-primary mb-2">
-                      {formatCurrency(calculations.compoundedSavings)}
-                    </div>
-                    <div className="text-muted-foreground mb-4">
-                      Total projected value including {growthRate}% growth
-                      factor
-                    </div>
-                    <div className="flex justify-center gap-4 text-sm">
-                      <div className="text-center">
-                        <div className="font-semibold">Base Savings</div>
-                        <div className="text-muted-foreground">
-                          {formatCurrency(calculations.totalSavings)}
+                      <div className="space-y-4">
+                        <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                          Input Parameters
+                        </h3>
+                        <div className="grid md:grid-cols-3 gap-4">
+                          <div className="p-4 bg-muted/20 rounded-lg">
+                            <div className="text-xs text-muted-foreground mb-1">
+                              Benefits
+                            </div>
+                            <div className="font-semibold">{benefits}%</div>
+                          </div>
+                          <div className="p-4 bg-muted/20 rounded-lg">
+                            <div className="text-xs text-muted-foreground mb-1">
+                              Overhead
+                            </div>
+                            <div className="font-semibold">{overhead}%</div>
+                          </div>
+                          <div className="p-4 bg-muted/20 rounded-lg">
+                            <div className="text-xs text-muted-foreground mb-1">
+                              Productivity Gain
+                            </div>
+                            <div className="font-semibold">
+                              {productivityGainPercentage[0]}%
+                            </div>
+                          </div>
+                          <div className="p-4 bg-muted/20 rounded-lg">
+                            <div className="text-xs text-muted-foreground mb-1">
+                              Management Fee
+                            </div>
+                            <div className="font-semibold">
+                              ${managementFeePerSeat}/mo
+                            </div>
+                          </div>
+                          <div className="p-4 bg-muted/20 rounded-lg">
+                            <div className="text-xs text-muted-foreground mb-1">
+                              Growth Rate
+                            </div>
+                            <div className="font-semibold">{growthRate}%</div>
+                          </div>
+                          <div className="p-4 bg-muted/20 rounded-lg">
+                            <div className="text-xs text-muted-foreground mb-1">
+                              Time Horizon
+                            </div>
+                            <div className="font-semibold">{timeHorizon} months</div>
+                          </div>
                         </div>
                       </div>
-                      <div className="text-center">
-                        <div className="font-semibold">Growth Value</div>
-                        <div className="text-muted-foreground">
-                          {formatCurrency(
-                            calculations.compoundedSavings -
-                              calculations.totalSavings,
-                          )}
+
+                      <div className="space-y-4">
+                        <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                          Projection
+                        </h3>
+                        <div className="p-6 bg-gradient-to-br from-primary/5 to-muted/5 rounded-lg">
+                          <div className="text-center mb-4">
+                            <div className="text-3xl font-bold text-primary mb-1">
+                              {formatCurrency(calculations.compoundedSavings)}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {timeHorizon}-month projection with {growthRate}% growth
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div className="text-center">
+                              <div className="font-semibold mb-1">Base Savings</div>
+                              <div className="text-muted-foreground">
+                                {formatCurrency(calculations.totalSavings)}
+                              </div>
+                            </div>
+                            <div className="text-center">
+                              <div className="font-semibold mb-1">Growth Value</div>
+                              <div className="text-muted-foreground">
+                                {formatCurrency(
+                                  calculations.compoundedSavings -
+                                    calculations.totalSavings,
+                                )}
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
 
-              {/* CTA */}
-              <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-background">
-                <CardContent className="p-8 text-center">
-                  <h3 className="text-2xl font-bold mb-4">
-                    Ready to Realize These Savings?
+              <Card className="bg-gradient-to-br from-primary/5 via-background to-background border-primary/20">
+                <CardContent className="p-10 text-center">
+                  <Users className="w-12 h-12 text-primary mx-auto mb-6" />
+                  <h3 className="text-3xl font-bold mb-4">
+                    Ready to Get Started?
                   </h3>
-                  <p className="text-muted-foreground mb-6">
-                    Start your OnSpot journey and begin seeing value in just{" "}
-                    {calculations.timeToValue} days
+                  <p className="text-muted-foreground text-lg mb-8 max-w-2xl mx-auto">
+                    Join hundreds of companies saving costs and unlocking value
+                    with OnSpot's talent solutions
                   </p>
-                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    <Button
-                      size="lg"
-                      className="text-lg px-8 py-6"
-                      data-testid="button-get-started"
-                    >
-                      Get Started Today
-                      <ArrowRight className="w-5 h-5 ml-2" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="text-lg px-8 py-6"
-                      data-testid="button-download-report"
-                    >
-                      <Download className="w-5 h-5 mr-2" />
-                      Download Report
-                    </Button>
-                  </div>
+                  <Button size="lg" className="text-base px-8">
+                    Schedule a Consultation
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Button>
                 </CardContent>
               </Card>
             </div>
