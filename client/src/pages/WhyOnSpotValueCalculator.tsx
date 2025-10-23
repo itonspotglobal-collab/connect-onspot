@@ -1235,11 +1235,14 @@ export default function WhyOnSpotValueCalculator() {
                           className="text-center p-6 rounded-2xl bg-gradient-to-br from-primary/5 to-primary/10 flex flex-col items-center justify-center min-h-[200px]"
                         >
                           <DollarSign className="w-8 h-8 text-primary mx-auto mb-3 flex-shrink-0" />
-                          <div
-                            className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-primary mb-2 break-words w-full px-2"
-                            data-testid="text-annual-savings"
-                          >
-                            {formatCurrency(calculations.annualSavings)}
+                          <div className="w-full overflow-hidden flex items-baseline justify-center mb-2">
+                            <div
+                              className="font-bold text-primary whitespace-nowrap"
+                              style={{ fontSize: 'clamp(1.5rem, 8vw, 3rem)' }}
+                              data-testid="text-annual-savings"
+                            >
+                              {formatCurrency(calculations.annualSavings)}
+                            </div>
                           </div>
                           <div className="text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wide mt-auto">
                             Annual Savings
@@ -1253,11 +1256,14 @@ export default function WhyOnSpotValueCalculator() {
                           className="text-center p-6 rounded-2xl bg-gradient-to-br from-[hsl(var(--gold-yellow))]/5 to-[hsl(var(--gold-yellow))]/10 flex flex-col items-center justify-center min-h-[200px]"
                         >
                           <TrendingUp className="w-8 h-8 text-[hsl(var(--gold-yellow))] mx-auto mb-3 flex-shrink-0" />
-                          <div
-                            className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-[hsl(var(--gold-yellow))] mb-2 break-words w-full px-2"
-                            data-testid="text-savings-percentage"
-                          >
-                            {formatPercentage(calculations.savingsPercentage)}
+                          <div className="w-full overflow-hidden flex items-baseline justify-center mb-2">
+                            <div
+                              className="font-bold text-[hsl(var(--gold-yellow))] whitespace-nowrap"
+                              style={{ fontSize: 'clamp(1.5rem, 8vw, 3rem)' }}
+                              data-testid="text-savings-percentage"
+                            >
+                              {formatPercentage(calculations.savingsPercentage)}
+                            </div>
                           </div>
                           <div className="text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wide mt-auto">
                             Cost Reduction
@@ -1271,11 +1277,14 @@ export default function WhyOnSpotValueCalculator() {
                           className="text-center p-6 rounded-2xl bg-gradient-to-br from-blue-500/5 to-blue-500/10 flex flex-col items-center justify-center min-h-[200px]"
                         >
                           <Clock className="w-8 h-8 text-blue-600 mx-auto mb-3 flex-shrink-0" />
-                          <div
-                            className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-blue-600 mb-2 break-words w-full px-2"
-                            data-testid="text-efficiency-hours"
-                          >
-                            {formatNumber(calculations.efficiencyHours)}
+                          <div className="w-full overflow-hidden flex items-baseline justify-center mb-2">
+                            <div
+                              className="font-bold text-blue-600 whitespace-nowrap"
+                              style={{ fontSize: 'clamp(1.5rem, 8vw, 3rem)' }}
+                              data-testid="text-efficiency-hours"
+                            >
+                              {formatNumber(calculations.efficiencyHours)}
+                            </div>
                           </div>
                           <div className="text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wide mt-auto">
                             Efficiency Hours/Year
