@@ -3,10 +3,9 @@ import App from "./App";
 import "./index.css";
 import { initAnimatedFavicon } from "./utils/animatedFavicon";
 
-// Initialize animated favicon with pulsing glow
+// Initialize animated favicon with pulsing bluish-purple halo
 initAnimatedFavicon({
-  faviconPath: '/favicon.png',
-  glowColor: '#5B7CFF', // Violet-blue from CTA gradient
+  glowColor: '#6366f1', // Bluish-purple halo
   pulseSpeed: 2000, // 2 second gentle pulse
   size: 64,
 });

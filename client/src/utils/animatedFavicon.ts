@@ -1,16 +1,16 @@
 /**
- * Animated Favicon with Pulsing Glow
+ * Animated Favicon with Pulsing Bluish-Purple Halo
  * 
- * Creates a subtle pulsing glow effect around the favicon that:
- * - Adapts to the favicon's dominant color (or falls back to violet-blue CTA color)
+ * Renders a white target mark with a pulsing bluish-purple halo behind it:
+ * - Draws crisp vector graphics on canvas at all sizes
  * - Respects prefers-reduced-motion
  * - Pauses when tab is hidden
  * - Falls back to static icon if canvas isn't supported
  */
 
 interface FaviconConfig {
-  faviconPath: string;
-  glowColor?: string; // Fallback glow color (default: violet-blue from CTA)
+  faviconPath?: string; // Optional fallback for static favicon
+  glowColor?: string; // Halo color (default: bluish-purple)
   pulseSpeed?: number; // Duration in ms (default: 2000)
   size?: number; // Canvas size (default: 64)
 }
@@ -18,10 +18,9 @@ interface FaviconConfig {
 class AnimatedFavicon {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
-  private img: HTMLImageElement | null = null;
   private animationFrameId: number | null = null;
   private startTime: number = 0;
-  private config: Required<FaviconConfig>;
+  private config: Required<Omit<FaviconConfig, 'faviconPath'>> & { faviconPath?: string };
   private link: HTMLLinkElement | null = null;
   private prefersReducedMotion: boolean = false;
   private isTabVisible: boolean = true;
@@ -30,13 +29,13 @@ class AnimatedFavicon {
   constructor(config: FaviconConfig) {
     this.config = {
       faviconPath: config.faviconPath,
-      glowColor: config.glowColor || '#5B7CFF', // Violet-blue from CTA
+      glowColor: config.glowColor || '#6366f1', // Bluish-purple
       pulseSpeed: config.pulseSpeed || 2000,
       size: config.size || 64,
     };
 
     this.prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    this.staticFaviconUrl = this.config.faviconPath;
+    this.staticFaviconUrl = this.config.faviconPath || '/favicon.png';
 
     // Listen for changes to prefers-reduced-motion
     const motionMediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -62,9 +61,9 @@ class AnimatedFavicon {
   }
 
   async init(): Promise<void> {
-    // If user prefers reduced motion, just set static favicon
+    // If user prefers reduced motion, draw one static frame
     if (this.prefersReducedMotion) {
-      this.setStaticFavicon();
+      this.drawStaticFrame();
       return;
     }
 
@@ -75,10 +74,14 @@ class AnimatedFavicon {
     }
 
     try {
-      // Create canvas
+      // Create canvas with high-DPI scaling
+      const dpr = window.devicePixelRatio || 1;
       this.canvas = document.createElement('canvas');
-      this.canvas.width = this.config.size;
-      this.canvas.height = this.config.size;
+      this.canvas.width = this.config.size * dpr;
+      this.canvas.height = this.config.size * dpr;
+      this.canvas.style.width = `${this.config.size}px`;
+      this.canvas.style.height = `${this.config.size}px`;
+      
       this.ctx = this.canvas.getContext('2d');
 
       if (!this.ctx) {
@@ -86,8 +89,8 @@ class AnimatedFavicon {
         return;
       }
 
-      // Load favicon image
-      await this.loadImage();
+      // Scale context for high-DPI rendering
+      this.ctx.scale(dpr, dpr);
 
       // Find or create favicon link element
       this.link = document.querySelector('link[rel="icon"]') || this.createFaviconLink();
@@ -110,19 +113,6 @@ class AnimatedFavicon {
     }
   }
 
-  private async loadImage(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.img = new Image();
-      // Don't set crossOrigin for same-origin images
-      
-      this.img.onload = () => resolve();
-      this.img.onerror = () => reject(new Error('Failed to load favicon image'));
-      
-      // Use absolute path from public directory
-      this.img.src = this.config.faviconPath;
-    });
-  }
-
   private createFaviconLink(): HTMLLinkElement {
     const link = document.createElement('link');
     link.rel = 'icon';
@@ -136,49 +126,139 @@ class AnimatedFavicon {
     link.setAttribute('href', this.staticFaviconUrl);
   }
 
+  /**
+   * Draw the target icon with bullseye and arrow
+   */
+  private drawTargetIcon(opacity: number = 0.6): void {
+    if (!this.ctx) return;
+
+    const size = this.config.size;
+    const center = size / 2;
+
+    // Draw pulsing halo (radial gradient)
+    const gradient = this.ctx.createRadialGradient(center, center, 0, center, center, center);
+    const opacityHex = Math.round(opacity * 255).toString(16).padStart(2, '0');
+    gradient.addColorStop(0, `${this.config.glowColor}${opacityHex}`);
+    gradient.addColorStop(0.5, `${this.config.glowColor}${Math.round(opacity * 0.5 * 255).toString(16).padStart(2, '0')}`);
+    gradient.addColorStop(1, `${this.config.glowColor}00`);
+    
+    this.ctx.fillStyle = gradient;
+    this.ctx.fillRect(0, 0, size, size);
+
+    // Draw target bullseye circles
+    const circleRadii = [center * 0.85, center * 0.65, center * 0.45, center * 0.25];
+    
+    circleRadii.forEach((radius, index) => {
+      this.ctx!.beginPath();
+      this.ctx!.arc(center, center, radius, 0, Math.PI * 2);
+      if (index % 2 === 0) {
+        // White fill for even indices
+        this.ctx!.fillStyle = '#FFFFFF';
+        this.ctx!.fill();
+      } else {
+        // Purple stroke for odd indices
+        this.ctx!.strokeStyle = this.config.glowColor;
+        this.ctx!.lineWidth = 2;
+        this.ctx!.stroke();
+      }
+    });
+
+    // Draw center dot
+    this.ctx.beginPath();
+    this.ctx.arc(center, center, center * 0.12, 0, Math.PI * 2);
+    this.ctx.fillStyle = this.config.glowColor;
+    this.ctx.fill();
+
+    // Draw arrow
+    const arrowStartX = center - size * 0.32;
+    const arrowStartY = center + size * 0.32;
+    const arrowEndX = center + size * 0.32;
+    const arrowEndY = center - size * 0.32;
+    
+    // Arrow shaft
+    this.ctx.beginPath();
+    this.ctx.moveTo(arrowStartX, arrowStartY);
+    this.ctx.lineTo(arrowEndX, arrowEndY);
+    this.ctx.lineWidth = 3.5;
+    this.ctx.strokeStyle = '#FFFFFF';
+    this.ctx.stroke();
+
+    // Arrow head
+    const headLength = size * 0.18;
+    const headAngle = Math.PI / 6;
+    const angle = Math.atan2(arrowEndY - arrowStartY, arrowEndX - arrowStartX);
+    
+    this.ctx.beginPath();
+    this.ctx.moveTo(arrowEndX, arrowEndY);
+    this.ctx.lineTo(
+      arrowEndX - headLength * Math.cos(angle - headAngle),
+      arrowEndY - headLength * Math.sin(angle - headAngle)
+    );
+    this.ctx.lineTo(
+      arrowEndX - headLength * Math.cos(angle + headAngle),
+      arrowEndY - headLength * Math.sin(angle + headAngle)
+    );
+    this.ctx.closePath();
+    this.ctx.fillStyle = '#FFFFFF';
+    this.ctx.fill();
+  }
+
+  /**
+   * Draw a static frame for reduced motion preference
+   */
+  private drawStaticFrame(): void {
+    if (!this.isCanvasSupported()) {
+      this.setStaticFavicon();
+      return;
+    }
+
+    // Create canvas with high-DPI scaling
+    const dpr = window.devicePixelRatio || 1;
+    this.canvas = document.createElement('canvas');
+    this.canvas.width = this.config.size * dpr;
+    this.canvas.height = this.config.size * dpr;
+    this.canvas.style.width = `${this.config.size}px`;
+    this.canvas.style.height = `${this.config.size}px`;
+    
+    this.ctx = this.canvas.getContext('2d');
+
+    if (!this.ctx) {
+      this.setStaticFavicon();
+      return;
+    }
+
+    // Scale context for high-DPI rendering
+    this.ctx.scale(dpr, dpr);
+
+    this.link = document.querySelector('link[rel="icon"]') || this.createFaviconLink();
+    
+    // Clear and draw static frame
+    this.ctx.clearRect(0, 0, this.config.size, this.config.size);
+    this.drawTargetIcon(0.6); // Max opacity for static version
+    
+    // Update favicon
+    if (this.link) {
+      this.link.setAttribute('href', this.canvas.toDataURL('image/png'));
+    }
+  }
+
   private animate = (): void => {
-    if (!this.ctx || !this.canvas || !this.img || !this.link) return;
+    if (!this.ctx || !this.canvas || !this.link) return;
     if (!this.isTabVisible) return;
 
     // Calculate pulse phase (0 to 1)
     const elapsed = Date.now() - this.startTime;
     const phase = (elapsed % this.config.pulseSpeed) / this.config.pulseSpeed;
     
-    // Ease in-out sine for smooth pulsing
+    // Ease in-out sine for smooth pulsing (min: 0.2, max: 0.6)
     const pulseIntensity = (Math.sin(phase * Math.PI * 2 - Math.PI / 2) + 1) / 2;
+    const opacity = 0.2 + (pulseIntensity * 0.4);
     
     // Clear canvas
     this.ctx.clearRect(0, 0, this.config.size, this.config.size);
 
-    // Draw glow ring
-    const centerX = this.config.size / 2;
-    const centerY = this.config.size / 2;
-    const iconSize = this.config.size * 0.7;
-    const iconRadius = iconSize / 2;
-
-    // Create radial gradient for glow
-    const glowRadius = iconRadius + 8 + (pulseIntensity * 4);
-    const gradient = this.ctx.createRadialGradient(
-      centerX, centerY, iconRadius,
-      centerX, centerY, glowRadius
-    );
-
-    // Glow color with varying opacity based on pulse
-    const baseOpacity = 0.3;
-    const pulseOpacity = baseOpacity + (pulseIntensity * 0.4);
-    
-    gradient.addColorStop(0, `${this.config.glowColor}00`); // Transparent at center
-    gradient.addColorStop(0.6, `${this.config.glowColor}${Math.floor(pulseOpacity * 255).toString(16).padStart(2, '0')}`);
-    gradient.addColorStop(1, `${this.config.glowColor}00`); // Fade to transparent
-
-    // Draw glow
-    this.ctx.fillStyle = gradient;
-    this.ctx.fillRect(0, 0, this.config.size, this.config.size);
-
-    // Draw the favicon image on top
-    const iconX = (this.config.size - iconSize) / 2;
-    const iconY = (this.config.size - iconSize) / 2;
-    this.ctx.drawImage(this.img, iconX, iconY, iconSize, iconSize);
+    // Draw target icon with current pulse opacity
+    this.drawTargetIcon(opacity);
 
     // Update favicon
     this.link.setAttribute('href', this.canvas.toDataURL('image/png'));
@@ -195,7 +275,7 @@ class AnimatedFavicon {
   }
 
   private resume(): void {
-    if (!this.prefersReducedMotion && this.canvas && this.ctx && this.img && this.link) {
+    if (!this.prefersReducedMotion && this.canvas && this.ctx && this.link) {
       this.startTime = Date.now();
       this.animate();
     }
