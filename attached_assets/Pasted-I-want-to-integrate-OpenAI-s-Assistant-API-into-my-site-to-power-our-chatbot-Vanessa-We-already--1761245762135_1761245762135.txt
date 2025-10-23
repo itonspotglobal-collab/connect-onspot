@@ -1,0 +1,53 @@
+I want to integrate OpenAI’s Assistant API into my site to power our chatbot "Vanessa".
+
+We already have:
+- OPENAI_API_KEY stored in Replit Secrets
+- ASSISTANT_ID stored in Replit Secrets
+- Frontend chat UI in VanessaChat.tsx that calls /api/chat/stream
+
+Please do the following:
+
+1. Create a new file `lib/openaiService.ts` with the following logic:
+   - Import OpenAI from "openai"
+   - Initialize the client with `process.env.OPENAI_API_KEY`
+   - Include two functions:
+     a. `sendMessageToAssistant(message: string, threadId?: string)` → sends the user message to the Assistant and returns the full response.
+     b. `streamMessageToAssistant(message: string, threadId?: string)` → streams the Assistant response using Server-Sent Events (SSE).
+   - Both functions must use the Assistant stored in `process.env.ASSISTANT_ID`.
+
+   Use the OpenAI code pattern:
+   ```ts
+   import OpenAI from "openai";
+   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+   const response = await client.responses.create({
+     model: "gpt-5",
+     input: message,
+     stream: true
+   });
+but replace it with the correct assistant API (client.beta.threads.run or equivalent).
+
+Create a new file pages/api/chat/stream.ts that:
+
+Imports streamMessageToAssistant from lib/openaiService.ts.
+
+Accepts POST requests with { message, threadId }.
+
+Streams JSON data events back to the browser (type: content | threadId | done | error).
+
+Uses Server-Sent Events (SSE) for live typing responses.
+
+Update any existing /api/chat routes to use these new helper functions if they don’t already.
+
+Confirm that VanessaChat.tsx calls /api/chat/stream (it already does).
+This ensures the frontend sends user messages and displays Vanessa’s responses in real time.
+
+Finally:
+
+Run npm install openai
+
+Verify that everything compiles and the chatbot is responding.
+
+If OpenAI responds correctly, it should now use my real Assistant “VanessaAI” (based on the ASSISTANT_ID secret).
+
+This integration must follow the OpenAI SDK pattern shown in their Developer Quickstart.
