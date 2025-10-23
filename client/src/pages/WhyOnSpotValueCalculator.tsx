@@ -916,7 +916,17 @@ export default function WhyOnSpotValueCalculator() {
   };
 
   const formatPercentage = (value: number) => {
-    return `${value.toFixed(1)}%`;
+    return `${Math.round(value)}%`;
+  };
+
+  const formatCompactNumber = (num: number): string => {
+    if (num >= 1000000) {
+      return `${(num / 1000000).toFixed(1)}m`.replace('.0m', 'm');
+    }
+    if (num >= 1000) {
+      return `${(num / 1000).toFixed(1)}k`.replace('.0k', 'k');
+    }
+    return num.toFixed(0);
   };
 
   return (
@@ -1247,65 +1257,60 @@ export default function WhyOnSpotValueCalculator() {
 
                       <div className="grid md:grid-cols-3 gap-8 mb-16">
                         <motion.div
-                          initial={{ opacity: 0, y: 20 }}
+                          initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 0.4, duration: 0.5 }}
-                          className="text-center p-6 rounded-2xl bg-gradient-to-br from-primary/5 to-primary/10 flex flex-col items-center justify-center min-h-[200px]"
+                          className="text-center p-8 rounded-2xl bg-gradient-to-br from-primary/5 to-primary/10 flex flex-col items-center justify-center space-y-3 min-h-[200px]"
                         >
-                          <DollarSign className="w-8 h-8 text-primary mx-auto mb-3 flex-shrink-0" />
-                          <div className="w-full overflow-visible flex items-baseline justify-center mb-2">
-                            <div
-                              className="font-bold text-primary flex items-baseline whitespace-nowrap"
-                              style={{ fontSize: 'clamp(1.5rem, 8vw, 3rem)' }}
-                              data-testid="text-annual-savings"
-                            >
-                              <span className="text-[0.5em] mr-1">{formatCurrency(calculations.annualSavings).symbol}</span>
-                              <span>{formatCurrency(calculations.annualSavings).value}</span>
-                            </div>
+                          <div className="text-lg md:text-xl text-primary/60 font-medium">
+                            $
                           </div>
-                          <div className="text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wide mt-auto">
+                          <div
+                            className="font-bold text-primary whitespace-nowrap"
+                            style={{ fontSize: 'clamp(2rem, 6vw, 3.5rem)' }}
+                            data-testid="text-annual-savings"
+                          >
+                            {formatCompactNumber(calculations.annualSavings)}
+                          </div>
+                          <div className="text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wide">
                             Annual Savings
                           </div>
                         </motion.div>
 
                         <motion.div
-                          initial={{ opacity: 0, y: 20 }}
+                          initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 0.5, duration: 0.5 }}
-                          className="text-center p-6 rounded-2xl bg-gradient-to-br from-[hsl(var(--gold-yellow))]/5 to-[hsl(var(--gold-yellow))]/10 flex flex-col items-center justify-center min-h-[200px]"
+                          className="text-center p-8 rounded-2xl bg-gradient-to-br from-[hsl(var(--gold-yellow))]/5 to-[hsl(var(--gold-yellow))]/10 flex flex-col items-center justify-center space-y-3 min-h-[200px]"
                         >
-                          <TrendingUp className="w-8 h-8 text-[hsl(var(--gold-yellow))] mx-auto mb-3 flex-shrink-0" />
-                          <div className="w-full overflow-visible flex items-baseline justify-center mb-2">
-                            <div
-                              className="font-bold text-[hsl(var(--gold-yellow))] whitespace-nowrap"
-                              style={{ fontSize: 'clamp(1.5rem, 8vw, 3rem)' }}
-                              data-testid="text-savings-percentage"
-                            >
-                              {formatPercentage(calculations.savingsPercentage)}
-                            </div>
+                          <TrendingUp className="w-6 h-6 md:w-7 md:h-7 text-[hsl(var(--gold-yellow))]/60" />
+                          <div
+                            className="font-bold text-[hsl(var(--gold-yellow))] whitespace-nowrap"
+                            style={{ fontSize: 'clamp(2rem, 6vw, 3.5rem)' }}
+                            data-testid="text-savings-percentage"
+                          >
+                            {formatPercentage(calculations.savingsPercentage)}
                           </div>
-                          <div className="text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wide mt-auto">
+                          <div className="text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wide">
                             Cost Reduction
                           </div>
                         </motion.div>
 
                         <motion.div
-                          initial={{ opacity: 0, y: 20 }}
+                          initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 0.6, duration: 0.5 }}
-                          className="text-center p-6 rounded-2xl bg-gradient-to-br from-blue-500/5 to-blue-500/10 flex flex-col items-center justify-center min-h-[200px]"
+                          className="text-center p-8 rounded-2xl bg-gradient-to-br from-blue-500/5 to-blue-500/10 flex flex-col items-center justify-center space-y-3 min-h-[200px]"
                         >
-                          <Clock className="w-8 h-8 text-blue-600 mx-auto mb-3 flex-shrink-0" />
-                          <div className="w-full overflow-visible flex items-baseline justify-center mb-2">
-                            <div
-                              className="font-bold text-blue-600 whitespace-nowrap"
-                              style={{ fontSize: 'clamp(1.5rem, 8vw, 3rem)' }}
-                              data-testid="text-efficiency-hours"
-                            >
-                              {formatNumber(calculations.efficiencyHours)}
-                            </div>
+                          <Clock className="w-6 h-6 md:w-7 md:h-7 text-blue-600/60" />
+                          <div
+                            className="font-bold text-blue-600 whitespace-nowrap"
+                            style={{ fontSize: 'clamp(2rem, 6vw, 3.5rem)' }}
+                            data-testid="text-efficiency-hours"
+                          >
+                            {formatCompactNumber(calculations.efficiencyHours)}
                           </div>
-                          <div className="text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wide mt-auto">
+                          <div className="text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wide">
                             Efficiency Hours/Year
                           </div>
                         </motion.div>
