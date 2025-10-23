@@ -127,7 +127,7 @@ class AnimatedFavicon {
   }
 
   /**
-   * Draw the target icon with bullseye and arrow
+   * Draw the target icon with bullseye and arrow on pulsing background
    */
   private drawTargetIcon(opacity: number = 0.6): void {
     if (!this.ctx) return;
@@ -135,41 +135,36 @@ class AnimatedFavicon {
     const size = this.config.size;
     const center = size / 2;
 
-    // Draw pulsing halo (radial gradient)
-    const gradient = this.ctx.createRadialGradient(center, center, 0, center, center, center);
+    // Fill entire square with pulsing bluish-purple background
     const opacityHex = Math.round(opacity * 255).toString(16).padStart(2, '0');
-    gradient.addColorStop(0, `${this.config.glowColor}${opacityHex}`);
-    gradient.addColorStop(0.5, `${this.config.glowColor}${Math.round(opacity * 0.5 * 255).toString(16).padStart(2, '0')}`);
-    gradient.addColorStop(1, `${this.config.glowColor}00`);
-    
-    this.ctx.fillStyle = gradient;
+    this.ctx.fillStyle = `${this.config.glowColor}${opacityHex}`;
     this.ctx.fillRect(0, 0, size, size);
 
-    // Draw target bullseye circles
+    // Draw target bullseye circles in white
     const circleRadii = [center * 0.85, center * 0.65, center * 0.45, center * 0.25];
     
     circleRadii.forEach((radius, index) => {
       this.ctx!.beginPath();
       this.ctx!.arc(center, center, radius, 0, Math.PI * 2);
       if (index % 2 === 0) {
-        // White fill for even indices
+        // White fill for even indices (outer and inner rings)
         this.ctx!.fillStyle = '#FFFFFF';
         this.ctx!.fill();
       } else {
-        // Purple stroke for odd indices
-        this.ctx!.strokeStyle = this.config.glowColor;
-        this.ctx!.lineWidth = 2;
-        this.ctx!.stroke();
+        // Transparent (shows background) for odd indices
+        this.ctx!.globalCompositeOperation = 'destination-out';
+        this.ctx!.fill();
+        this.ctx!.globalCompositeOperation = 'source-over';
       }
     });
 
-    // Draw center dot
+    // Draw center dot in white
     this.ctx.beginPath();
     this.ctx.arc(center, center, center * 0.12, 0, Math.PI * 2);
-    this.ctx.fillStyle = this.config.glowColor;
+    this.ctx.fillStyle = '#FFFFFF';
     this.ctx.fill();
 
-    // Draw arrow
+    // Draw arrow in white
     const arrowStartX = center - size * 0.32;
     const arrowStartY = center + size * 0.32;
     const arrowEndX = center + size * 0.32;
@@ -234,7 +229,7 @@ class AnimatedFavicon {
     
     // Clear and draw static frame
     this.ctx.clearRect(0, 0, this.config.size, this.config.size);
-    this.drawTargetIcon(0.6); // Max opacity for static version
+    this.drawTargetIcon(0.85); // Mid-range opacity for static version
     
     // Update favicon
     if (this.link) {
@@ -250,9 +245,9 @@ class AnimatedFavicon {
     const elapsed = Date.now() - this.startTime;
     const phase = (elapsed % this.config.pulseSpeed) / this.config.pulseSpeed;
     
-    // Ease in-out sine for smooth pulsing (min: 0.2, max: 0.6)
+    // Ease in-out sine for smooth pulsing (min: 0.7, max: 1.0 for more visible pulsing)
     const pulseIntensity = (Math.sin(phase * Math.PI * 2 - Math.PI / 2) + 1) / 2;
-    const opacity = 0.2 + (pulseIntensity * 0.4);
+    const opacity = 0.7 + (pulseIntensity * 0.3);
     
     // Clear canvas
     this.ctx.clearRect(0, 0, this.config.size, this.config.size);
