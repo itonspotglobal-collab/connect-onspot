@@ -140,11 +140,7 @@ function ClientRouter() {
               <AdminDashboard />
             </AdminProtectedRoute>
           )} />
-          <Route path="/admin/vanessa-responses" component={() => (
-            <AdminProtectedRoute>
-              <VanessaResponses />
-            </AdminProtectedRoute>
-          )} />
+          <Route path="/admin/vanessa-responses" component={VanessaResponses} />
           <Route path="/settings" component={ProfileSettings} />
           {/* Public routes accessible from client dashboard */}
           <Route path="/hire-talent" component={TalentSearch} />
