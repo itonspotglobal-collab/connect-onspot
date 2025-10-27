@@ -41,6 +41,7 @@ import TrustSafety from "@/pages/TrustSafety";
 import LeadIntake from "@/pages/LeadIntake";
 import AdminCSVImport from "@/pages/AdminCSVImport";
 import AdminDashboard from "@/pages/AdminDashboard";
+import VanessaResponses from "@/pages/VanessaResponses";
 import InvestorsCorner from "@/pages/InvestorsCorner";
 import ProfileSettings from "@/pages/ProfileSettings";
 import Powerapp from "@/pages/Powerapp";
@@ -137,6 +138,11 @@ function ClientRouter() {
           <Route path="/admin/dashboard" component={() => (
             <AdminProtectedRoute>
               <AdminDashboard />
+            </AdminProtectedRoute>
+          )} />
+          <Route path="/admin/vanessa-responses" component={() => (
+            <AdminProtectedRoute>
+              <VanessaResponses />
             </AdminProtectedRoute>
           )} />
           <Route path="/settings" component={ProfileSettings} />
