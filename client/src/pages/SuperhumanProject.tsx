@@ -1467,7 +1467,7 @@ export default function SuperhumanProject() {
       {/* Footer */}
       <footer className="relative py-16 bg-white border-t border-slate-200 text-center">
         <p className="text-sm text-slate-500 font-light">
-          Designed by OnSpot. Built by You.
+          Built by Onspot. Powered by You.
         </p>
       </footer>
     </div>
