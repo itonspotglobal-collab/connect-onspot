@@ -1145,6 +1145,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
+  // ===== Vanessa AI Conversation Logs API Routes =====
+  
+  // GET /api/vanessa/responses - Get all conversation threads
+  app.get("/api/vanessa/responses", async (req: any, res) => {
+    try {
+      const threads = await storage.getAllVanessaThreads();
+      res.json({ success: true, threads });
+    } catch (error: any) {
+      console.error(`❌ Error fetching Vanessa threads [${req.requestId}]:`, error);
+      res.status(500).json({ 
+        success: false, 
+        error: "Failed to fetch conversation threads",
+        requestId: req.requestId 
+      });
+    }
+  });
+
+  // GET /api/vanessa/responses/:threadId - Get messages for a specific thread
+  app.get("/api/vanessa/responses/:threadId", async (req: any, res) => {
+    try {
+      const { threadId } = req.params;
+      const messages = await storage.getVanessaLogsByThread(threadId);
+      res.json({ success: true, messages });
+    } catch (error: any) {
+      console.error(`❌ Error fetching thread messages [${req.requestId}]:`, error);
+      res.status(500).json({ 
+        success: false, 
+        error: "Failed to fetch thread messages",
+        requestId: req.requestId 
+      });
+    }
+  });
+
+  // GET /api/vanessa/search - Search conversation logs
+  app.get("/api/vanessa/search", async (req: any, res) => {
+    try {
+      const query = req.query.q as string;
+      
+      if (!query || query.trim().length === 0) {
+        return res.status(400).json({ 
+          success: false, 
+          error: "Search query is required" 
+        });
+      }
+
+      const results = await storage.searchVanessaLogs(query);
+      res.json({ success: true, results });
+    } catch (error: any) {
+      console.error(`❌ Error searching Vanessa logs [${req.requestId}]:`, error);
+      res.status(500).json({ 
+        success: false, 
+        error: "Failed to search conversation logs",
+        requestId: req.requestId 
+      });
+    }
+  });
+
   // Enhanced development login endpoint with validation and monitoring
   app.post(
     "/api/dev/login",
