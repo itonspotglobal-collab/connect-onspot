@@ -105,6 +105,7 @@ function PublicRouter() {
           <Route path="/investors" component={InvestorsCorner} />
           <Route path="/powerapp" component={Powerapp} />
           <Route path="/operations-playbook" component={OperationsPlaybook} />
+          <Route path="/admin/vanessa-responses" component={VanessaResponses} />
           {/* Legacy routes for backward compatibility */}
           <Route path="/talent" component={TalentSearch} />
           <Route component={NotFound} />
@@ -140,7 +141,6 @@ function ClientRouter() {
               <AdminDashboard />
             </AdminProtectedRoute>
           )} />
-          <Route path="/admin/vanessa-responses" component={VanessaResponses} />
           <Route path="/settings" component={ProfileSettings} />
           {/* Public routes accessible from client dashboard */}
           <Route path="/hire-talent" component={TalentSearch} />
@@ -211,6 +211,7 @@ function AppContent() {
       <Route path="/talent" component={PublicRouter} />
       <Route path="/operations-playbook" component={PublicRouter} />
       <Route path="/powerapp" component={PublicRouter} />
+      <Route path="/admin/vanessa-responses" component={PublicRouter} />
       
       {/* Client Protected Routes */}
       <Route path="/dashboard" component={ClientRouter} />
