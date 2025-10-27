@@ -22,8 +22,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLocation } from "wouter";
 import {
   Calculator,
   DollarSign,
@@ -811,6 +812,7 @@ const ROLE_PRESETS = [
   { label: "Data", title: "Data Analyst", department: "data-entry" },
   { label: "Sales", title: "Sales Support", department: "sales-support" },
   { label: "VA", title: "Virtual Assistant", department: "virtual-assistant" },
+  { label: "Manager", title: "Team Manager", department: "team-manager" },
 ];
 
 const ShimmerSkeleton = ({ className }: { className?: string }) => (
@@ -820,6 +822,7 @@ const ShimmerSkeleton = ({ className }: { className?: string }) => (
 );
 
 export default function WhyOnSpotValueCalculator() {
+  const [, setLocation] = useLocation();
   const [country, setCountry] = useState<string>("United States");
   const [state, setState] = useState<string>("California");
   const [city, setCity] = useState<string>("San Francisco");
@@ -853,6 +856,7 @@ export default function WhyOnSpotValueCalculator() {
   const [isLocationLoading, setIsLocationLoading] = useState(false);
   const sliderRef = useRef<HTMLDivElement>(null);
   const [sliderPosition, setSliderPosition] = useState(50);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   const onspotRates = {
     "customer-support": 18000,
@@ -865,39 +869,10 @@ export default function WhyOnSpotValueCalculator() {
     marketing: 24000,
     hr: 26000,
     development: 35000,
+    "team-manager": 30000,
   };
 
-  useEffect(() => {
-    const savedState = localStorage.getItem(STORAGE_KEY);
-    if (savedState) {
-      try {
-        const parsed = JSON.parse(savedState);
-        if (parsed.country) setCountry(parsed.country);
-        if (parsed.state) setState(parsed.state);
-        if (parsed.city) setCity(parsed.city);
-        if (parsed.minWage) setMinWage(parsed.minWage);
-        if (parsed.jobRoles) setJobRoles(parsed.jobRoles);
-        if (parsed.outsourcePercentage) setOutsourcePercentage(parsed.outsourcePercentage);
-      } catch (e) {
-        console.error("Failed to parse saved state:", e);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (!prefersReducedMotion) {
-      const stateToSave = {
-        country,
-        state,
-        city,
-        minWage,
-        jobRoles,
-        outsourcePercentage,
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
-    }
-  }, [country, state, city, minWage, jobRoles, outsourcePercentage]);
+  // localStorage persistence removed - state resets on page reload
 
   const availableStates = useMemo(() => {
     if (!country || !locationData[country]) return [];
@@ -1017,6 +992,24 @@ export default function WhyOnSpotValueCalculator() {
       ...prev.filter((err) => !err.field.includes(role.id)),
       ...errors,
     ]);
+  };
+
+  const handleCalculate = () => {
+    // Validate all roles
+    const allErrors: ValidationError[] = [];
+    jobRoles.forEach((role) => {
+      const errors = validateRole(role);
+      allErrors.push(...errors);
+    });
+    setValidationErrors(allErrors);
+
+    // If no errors, scroll to results
+    if (allErrors.length === 0 && resultsRef.current) {
+      resultsRef.current.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start' 
+      });
+    }
   };
 
   const calculations = useMemo(() => {
@@ -1416,6 +1409,9 @@ export default function WhyOnSpotValueCalculator() {
                                       <SelectItem value="sales-support">
                                         Sales Support
                                       </SelectItem>
+                                      <SelectItem value="team-manager">
+                                        Team Manager
+                                      </SelectItem>
                                       <SelectItem value="back-office">
                                         Back Office
                                       </SelectItem>
@@ -1548,12 +1544,28 @@ export default function WhyOnSpotValueCalculator() {
                   </div>
                 </div>
               </motion.div>
+
+              {/* Calculate Button */}
+              <motion.div variants={itemVariants} className="col-span-12 mt-8">
+                <div className="flex justify-center">
+                  <Button
+                    size="lg"
+                    onClick={handleCalculate}
+                    className="text-base px-12 py-6 bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700 text-white shadow-lg"
+                    data-testid="button-calculate"
+                  >
+                    <Calculator className="w-5 h-5 mr-2" />
+                    Calculate My Savings
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Button>
+                </div>
+              </motion.div>
             </div>
           </motion.div>
         </div>
       </section>
 
-      <section className="py-16 px-6">
+      <section className="py-16 px-6" ref={resultsRef}>
         <div className="max-w-6xl mx-auto space-y-8">
           <AnimatePresence mode="wait">
             <motion.div
@@ -1645,15 +1657,28 @@ export default function WhyOnSpotValueCalculator() {
                     </motion.div>
                   </div>
 
+                  {/* CTA Text */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: prefersReducedMotion ? 0 : 0.7, duration: prefersReducedMotion ? 0 : 0.5 }}
+                    className="text-center mb-8"
+                  >
+                    <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                      Ready to transform your operations? Click Get Started to connect with an OnSpot expert.
+                    </p>
+                  </motion.div>
+
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: prefersReducedMotion ? 0 : 0.7, duration: prefersReducedMotion ? 0 : 0.5 }}
+                    transition={{ delay: prefersReducedMotion ? 0 : 0.8, duration: prefersReducedMotion ? 0 : 0.5 }}
                     className="flex flex-col sm:flex-row gap-4 justify-center"
                   >
                     <Button
                       size="lg"
                       className="text-base px-8"
+                      onClick={() => setLocation('/contact')}
                       data-testid="button-get-started"
                     >
                       Get Started
@@ -1663,6 +1688,10 @@ export default function WhyOnSpotValueCalculator() {
                       variant="outline"
                       size="lg"
                       className="text-base px-8"
+                      onClick={() => {
+                        // Placeholder for PDF export functionality
+                        alert('Download Report feature coming soon! For now, please take a screenshot of your results or contact us to receive a detailed report.');
+                      }}
                       data-testid="button-download-report"
                     >
                       <Download className="w-5 h-5 mr-2" />

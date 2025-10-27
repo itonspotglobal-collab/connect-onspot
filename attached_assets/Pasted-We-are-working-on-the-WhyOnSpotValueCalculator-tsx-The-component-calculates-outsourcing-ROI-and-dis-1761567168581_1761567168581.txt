@@ -1,0 +1,64 @@
+We are working on the WhyOnSpotValueCalculator.tsx. The component calculates outsourcing ROI and displays projected results. It currently has issues with state persistence, role management, and missing user interactions.
+
+Objective
+Fix functional bugs and enhance UX flow of the Value Calculator page.
+
+Current Problems
+1. State Persistence (Major)
+    * The page remembers user input (country, state, role data, etc.) even after refresh or returning to the page.
+    * Expected behavior: all fields reset to their default state (United States, empty fields, etc.) when the page reloads or the user revisits.
+2. Role Type Management
+    * Missing “Team Manager” option under Role Type dropdown.
+    * The “Role Type” field cannot be changed or updated, even after a refresh.
+3. Missing Call to Action
+    * The “Get Started” and “Download Report” buttons do not perform any actions.
+    * There’s no clear call to action (CTA) to push users further down the funnel after calculation.
+4. UX Suggestion
+    * Add a “Calculate” button that:
+        * Validates input fields.
+        * Scrolls smoothly down to the “Projected Results” section.
+        * Runs all necessary calculations (ROI, cost savings, etc.).
+
+Required Fixes
+1. Reset State Logic
+* Remove or disable localStorage persistence in the component.
+* Add the following behavior:
+    * When the page loads or refreshes, all input fields reset to their default state.  Example:
+    * const [country, setCountry] = useState("United States");
+    * const [state, setState] = useState("California");
+    * const [city, setCity] = useState("Los Angeles");
+    * // all other inputs reset to empty or defaults
+    * If persistence is needed elsewhere, only apply it conditionally (not on page reload).
+2. Role Type Dropdown
+* Add a new Team Manager option under Role Type: { label: "Manager", title: "Team Manager", department: "team-manager" }
+* Fix state binding so that users can change “Role Type” dynamically and it updates the corresponding job role state.
+3. Add a “Calculate” Button
+* Add a button labeled “Calculate” at the bottom of the form section.
+* On click:
+    * Trigger a recalculation of values.
+    * Smoothly scroll (scrollIntoView) to the “Projected Results” card using a ref.
+    * Optional: disable until all required inputs are valid.
+4. Fix “Get Started” and “Download Report” Buttons
+* Ensure these buttons perform meaningful actions:
+    * “Get Started” → Redirect to /contact or lead capture form.
+    * “Download Report” → Export the current results as a PDF (optional).
+    * Add clear click handlers and visual feedback (loading state, success message).
+5. UX Enhancements
+* Add CTA text below Projected Results, e.g.: “Ready to transform your operations? Click Get Started to connect with an OnSpot expert.” 
+* Ensure all animations and transitions remain smooth and consistent with the Framer Motion setup.
+
+Technical Notes
+* File: client/src/pages/WhyOnSpotValueCalculator.tsx
+* Framework: React (with TypeScript)
+* Uses Framer Motion, ShadCN UI components, and Lucide icons.
+* Follow existing TailwindCSS structure and styling conventions.
+* Ensure useEffect hooks are not saving or restoring state from localStorage unless explicitly required.
+
+Expected Outcome
+After implementation:
+* Refreshing or revisiting the page resets all fields to defaults.
+* “Team Manager” appears and is selectable.
+* “Role Type” can be changed dynamically.
+* “Calculate” scrolls to results and updates ROI instantly.
+* “Get Started” and “Download Report” buttons have working CTAs.
+* The overall flow feels polished, intuitive, and conversion-oriented.
