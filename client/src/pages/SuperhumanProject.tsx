@@ -321,26 +321,10 @@ function PulsingButton({ children, ...props }: React.ComponentProps<typeof Butto
 }
 
 export default function SuperhumanProject() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start start", "end end"],
-  });
-
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
-  const questionY = useTransform(scrollYProgress, [0.15, 0.35], [120, 0]);
-  const questionOpacity = useTransform(scrollYProgress, [0.15, 0.35], [0, 1]);
-  const visionY = useTransform(scrollYProgress, [0.35, 0.55], [120, 0]);
-  const visionOpacity = useTransform(scrollYProgress, [0.35, 0.55], [0, 1]);
-
   return (
-    <div
-      ref={containerRef}
-      className="relative min-h-screen overflow-x-hidden"
-    >
+    <div className="relative min-h-screen overflow-x-hidden">
       {/* SECTION 1: Hero - Dark with brand colors */}
       <motion.section
-        style={{ opacity: heroOpacity }}
         className="relative min-h-screen flex flex-col items-center justify-center px-6 text-center hero-investor"
       >
         {/* Brand-aligned gradient overlay */}
@@ -437,6 +421,9 @@ export default function SuperhumanProject() {
         <ScrollCue />
       </motion.section>
 
+      {/* Subtle transition gradient between Hero and Superhuman */}
+      <div className="h-32 bg-gradient-to-b from-transparent via-blue-950/20 to-transparent" />
+
       {/* TWO-COLUMN TRANSFORMATION SECTION */}
       <motion.section
         initial={{ opacity: 0 }}
@@ -482,7 +469,7 @@ export default function SuperhumanProject() {
         <div className="max-w-7xl mx-auto px-8 md:px-12 lg:px-16 py-24 md:py-32 lg:py-40">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center min-h-[70vh]">
             
-            {/* LEFT COLUMN - Integrated Headline */}
+            {/* LEFT COLUMN - Headline */}
             <motion.div
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -491,13 +478,10 @@ export default function SuperhumanProject() {
               className="flex items-center justify-center lg:justify-end order-1"
             >
               <h2
-                className="text-left lg:text-right text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1]"
+                className="text-center lg:text-right text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1] bg-gradient-to-r from-blue-300 via-violet-300 to-blue-300 bg-clip-text text-transparent"
                 style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif" }}
               >
-                <span className="block text-xl sm:text-2xl md:text-3xl font-light text-white/50 mb-1">This is</span>
-                <span className="block bg-gradient-to-r from-blue-300 via-violet-300 to-blue-300 bg-clip-text text-transparent">
-                  The Superhuman Project
-                </span>
+                The Superhuman Project
               </h2>
             </motion.div>
 
@@ -686,6 +670,31 @@ export default function SuperhumanProject() {
                     ease: "easeInOut",
                   }}
                 />
+
+                {/* Moving text - sliding up */}
+                <motion.div
+                  className="absolute bottom-[10%] left-1/2 -translate-x-1/2 w-full text-center overflow-hidden"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 1, duration: 1 }}
+                >
+                  <motion.p
+                    className="text-sm md:text-base font-light text-white/60"
+                    style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif" }}
+                    animate={{
+                      y: [20, 0, -20],
+                      opacity: [0, 1, 1, 0],
+                    }}
+                    transition={{
+                      duration: 8,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      times: [0, 0.2, 0.8, 1],
+                    }}
+                  >
+                    Yourself, your team that never sleeps
+                  </motion.p>
+                </motion.div>
               </div>
             </motion.div>
 
@@ -695,7 +704,10 @@ export default function SuperhumanProject() {
 
       {/* SECTION 2: Light Lavender/Baby Blue Section */}
       <motion.section
-        style={{ y: questionY, opacity: questionOpacity }}
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true, amount: 0.2 }}
+        transition={{ duration: 0.8 }}
         className="relative min-h-screen flex flex-col items-center justify-center px-6 py-32 bg-gradient-to-b from-indigo-50 via-blue-50/50 to-violet-50"
       >
         <div className="max-w-5xl mx-auto space-y-12 text-center">
@@ -718,7 +730,10 @@ export default function SuperhumanProject() {
 
       {/* SECTION 3: Vision with Holographic Sphere */}
       <motion.section
-        style={{ y: visionY, opacity: visionOpacity }}
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true, amount: 0.2 }}
+        transition={{ duration: 0.8 }}
         className="relative min-h-screen flex flex-col items-center justify-center px-6 py-32 bg-gradient-to-b from-violet-50 via-blue-50/30 to-slate-50"
       >
         <div className="max-w-4xl mx-auto space-y-8">
