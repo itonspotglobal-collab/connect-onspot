@@ -1320,14 +1320,27 @@ export default function SuperhumanProject() {
         />
 
         <div className="max-w-5xl mx-auto space-y-16 text-center relative z-10">
-          <div className="space-y-4">
-            <h2 className="text-4xl md:text-6xl font-light tracking-tight text-slate-800">
+          <div className="space-y-6">
+            <motion.h2 
+              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1] bg-gradient-to-r from-violet-600 via-blue-600 to-violet-600 bg-clip-text text-transparent"
+              style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif" }}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
               The Council of Greatness
-            </h2>
-            <p className="text-lg md:text-xl font-light text-slate-600 max-w-2xl mx-auto leading-relaxed">
+            </motion.h2>
+            <motion.p 
+              className="text-lg md:text-xl lg:text-2xl font-light text-slate-600 max-w-2xl mx-auto leading-relaxed"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
               No one becomes Superhuman alone.<br />
-              Your personal boardroom of legends guides your AI's mindset.
-            </p>
+              <span className="text-slate-700 font-medium">Your personal boardroom of legends guides your AI's mindset.</span>
+            </motion.p>
           </div>
           
           <OrbitingCouncil />
