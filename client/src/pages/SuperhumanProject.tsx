@@ -445,18 +445,31 @@ export default function SuperhumanProject() {
         transition={{ duration: 1.2 }}
         className="relative min-h-screen overflow-hidden hero-investor"
       >
-        {/* Seamless gradient overlay from hero */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/10 to-slate-50/80 pointer-events-none" />
-
-        {/* Background pulse linking both sides - matching hero's blue tone */}
+        {/* Radial light gradient blooming upward - neutral to blue */}
         <motion.div
           className="absolute inset-0 pointer-events-none"
           style={{
-            background: "radial-gradient(ellipse at center, rgba(96, 165, 250, 0.08) 0%, transparent 70%)",
+            background: "radial-gradient(ellipse 120% 100% at 50% 100%, rgba(59, 130, 246, 0.12) 0%, rgba(30, 58, 138, 0.08) 35%, transparent 70%)",
           }}
           animate={{
-            opacity: [0.3, 0.5, 0.3],
-            scale: [1, 1.05, 1],
+            opacity: [0.6, 0.8, 0.6],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+
+        {/* Subtle breathing ambient light */}
+        <motion.div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: "radial-gradient(circle at center, rgba(96, 165, 250, 0.05) 0%, transparent 60%)",
+          }}
+          animate={{
+            scale: [1, 1.08, 1],
+            opacity: [0.4, 0.6, 0.4],
           }}
           transition={{
             duration: 6,
@@ -469,23 +482,26 @@ export default function SuperhumanProject() {
         <div className="max-w-7xl mx-auto px-8 md:px-12 lg:px-16 py-24 md:py-32 lg:py-40">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center min-h-[70vh]">
             
-            {/* LEFT COLUMN - Headline */}
+            {/* LEFT COLUMN - Integrated Headline */}
             <motion.div
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true, amount: 0.5 }}
               transition={{ duration: 1, ease: [0.25, 0.4, 0.25, 1] }}
-              className="flex items-center justify-center lg:justify-end text-center lg:text-right order-1"
+              className="flex items-center justify-center lg:justify-end order-1"
             >
-              <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif" }}>
-                <div className="text-sm sm:text-base md:text-lg font-light text-white/40 mb-2">This is</div>
-                <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1] bg-gradient-to-r from-blue-300 via-violet-300 to-blue-300 bg-clip-text text-transparent">
+              <h2
+                className="text-left lg:text-right text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1]"
+                style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif" }}
+              >
+                <span className="block text-xl sm:text-2xl md:text-3xl font-light text-white/50 mb-1">This is</span>
+                <span className="block bg-gradient-to-r from-blue-300 via-violet-300 to-blue-300 bg-clip-text text-transparent">
                   The Superhuman Project
-                </h2>
-              </div>
+                </span>
+              </h2>
             </motion.div>
 
-            {/* RIGHT COLUMN - Digital Human Figure */}
+            {/* RIGHT COLUMN - Refined Human Silhouette */}
             <motion.div
               initial={{ opacity: 0, x: 30 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -495,231 +511,181 @@ export default function SuperhumanProject() {
             >
               <div className="relative w-full max-w-md aspect-[3/4]">
                 
-                {/* Semi-transparent human silhouette - clearer form */}
+                {/* Core light form - breathing */}
                 <motion.div
                   className="absolute inset-0 flex items-center justify-center"
                   animate={{
-                    opacity: [0.7, 0.9, 0.7],
+                    opacity: [0.5, 0.7, 0.5],
                   }}
                   transition={{
-                    duration: 5,
+                    duration: 6,
                     repeat: Infinity,
                     ease: "easeInOut",
                   }}
                 >
-                  {/* Head with glow */}
-                  <div className="absolute top-[15%] left-1/2 -translate-x-1/2 w-20 h-20 rounded-full border-2 border-white/40 bg-white/8 shadow-lg shadow-blue-400/20" />
+                  {/* Human silhouette - light contours */}
                   
-                  {/* Neck */}
-                  <div className="absolute top-[25%] left-1/2 -translate-x-1/2 w-6 h-6 border-l-2 border-r-2 border-white/30 bg-white/5" />
-                  
-                  {/* Shoulders */}
-                  <div className="absolute top-[30%] left-1/2 -translate-x-1/2 w-32 h-3 rounded-full border border-white/30 bg-white/5" />
-                  
-                  {/* Body core - torso */}
-                  <div className="absolute top-[32%] left-1/2 -translate-x-1/2 w-28 h-36 rounded-lg border-2 border-white/40 bg-white/8" />
-                  
-                  {/* Left Arm - typing motion (more pronounced) */}
-                  <motion.div className="absolute top-[35%] left-[25%] origin-top-left">
-                    {/* Upper arm */}
-                    <motion.div
-                      className="w-16 h-2.5 rounded-full border border-white/40 bg-white/8"
-                      animate={{
-                        rotateZ: [-15, -5, -15],
-                      }}
-                      transition={{
-                        duration: 1.5,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                      }}
-                    />
-                    {/* Forearm */}
-                    <motion.div
-                      className="absolute top-0 left-14 w-16 h-2.5 rounded-full border border-white/40 bg-white/8"
-                      style={{ transformOrigin: "left center" }}
-                      animate={{
-                        rotateZ: [10, 25, 10],
-                      }}
-                      transition={{
-                        duration: 1.5,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                      }}
-                    />
-                    {/* Hand/fingers */}
-                    <motion.div
-                      className="absolute top-0 left-28 w-3 h-3 rounded-sm border border-white/50 bg-white/10"
-                      animate={{
-                        scale: [1, 1.1, 1],
-                      }}
-                      transition={{
-                        duration: 0.5,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                      }}
-                    />
-                  </motion.div>
-                  
-                  {/* Right Arm - typing motion */}
-                  <motion.div className="absolute top-[35%] right-[25%] origin-top-right">
-                    {/* Upper arm */}
-                    <motion.div
-                      className="w-16 h-2.5 rounded-full border border-white/40 bg-white/8"
-                      animate={{
-                        rotateZ: [15, 5, 15],
-                      }}
-                      transition={{
-                        duration: 1.5,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                        delay: 0.15,
-                      }}
-                    />
-                    {/* Forearm */}
-                    <motion.div
-                      className="absolute top-0 right-14 w-16 h-2.5 rounded-full border border-white/40 bg-white/8"
-                      style={{ transformOrigin: "right center" }}
-                      animate={{
-                        rotateZ: [-10, -25, -10],
-                      }}
-                      transition={{
-                        duration: 1.5,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                        delay: 0.15,
-                      }}
-                    />
-                    {/* Hand/fingers */}
-                    <motion.div
-                      className="absolute top-0 right-28 w-3 h-3 rounded-sm border border-white/50 bg-white/10"
-                      animate={{
-                        scale: [1, 1.1, 1],
-                      }}
-                      transition={{
-                        duration: 0.5,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                        delay: 0.25,
-                      }}
-                    />
-                  </motion.div>
-                  
-                  {/* Keyboard/workspace indication */}
+                  {/* Head contour */}
                   <motion.div
-                    className="absolute top-[55%] left-1/2 -translate-x-1/2 w-40 h-2 rounded-full border border-white/30 bg-gradient-to-r from-blue-300/20 via-violet-300/20 to-blue-300/20"
+                    className="absolute top-[15%] left-1/2 -translate-x-1/2 w-16 h-20 rounded-full"
+                    style={{
+                      border: "1px solid rgba(147, 197, 253, 0.4)",
+                      background: "radial-gradient(circle at 30% 30%, rgba(147, 197, 253, 0.05), transparent 70%)",
+                    }}
                     animate={{
-                      opacity: [0.4, 0.7, 0.4],
+                      boxShadow: [
+                        "0 0 10px rgba(147, 197, 253, 0.2)",
+                        "0 0 20px rgba(147, 197, 253, 0.4)",
+                        "0 0 10px rgba(147, 197, 253, 0.2)",
+                      ],
                     }}
                     transition={{
-                      duration: 2,
+                      duration: 4,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  />
+                  
+                  {/* Torso contour - subtle outline */}
+                  <motion.div
+                    className="absolute top-[32%] left-1/2 -translate-x-1/2 w-24 h-40 rounded-2xl"
+                    style={{
+                      border: "1px solid rgba(147, 197, 253, 0.3)",
+                      background: "linear-gradient(to bottom, rgba(147, 197, 253, 0.03), rgba(196, 181, 253, 0.02))",
+                    }}
+                    animate={{
+                      borderColor: [
+                        "rgba(147, 197, 253, 0.3)",
+                        "rgba(196, 181, 253, 0.35)",
+                        "rgba(147, 197, 253, 0.3)",
+                      ],
+                    }}
+                    transition={{
+                      duration: 6,
                       repeat: Infinity,
                       ease: "easeInOut",
                     }}
                   />
                 </motion.div>
 
-                {/* Motion lines - data flow */}
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <motion.div
-                    key={`line-${i}`}
-                    className="absolute w-0.5 rounded-full"
-                    style={{
-                      left: `${20 + i * 10}%`,
-                      top: "20%",
-                      height: "60%",
-                      background: `linear-gradient(to bottom, transparent, rgba(163, 180, 216, 0.4), transparent)`,
-                    }}
-                    animate={{
-                      opacity: [0.2, 0.6, 0.2],
-                      scaleY: [0.8, 1, 0.8],
-                    }}
-                    transition={{
-                      duration: 3 + (i % 3),
-                      repeat: Infinity,
-                      delay: i * 0.3,
-                      ease: "easeInOut",
-                    }}
-                  />
-                ))}
-
-                {/* Data particles - calm drift */}
-                {Array.from({ length: 30 }).map((_, i) => {
-                  const startY = seededRandom(i * 7) * 100;
-                  const startX = seededRandom(i * 11) * 100;
-                  
+                {/* Energy flow lines through silhouette */}
+                {Array.from({ length: 6 }).map((_, i) => {
+                  const xPos = 35 + i * 6;
                   return (
                     <motion.div
-                      key={`particle-${i}`}
-                      className="absolute w-1 h-1 rounded-full"
+                      key={`energy-${i}`}
+                      className="absolute w-px"
                       style={{
-                        left: `${startX}%`,
-                        top: `${startY}%`,
-                        background: "rgba(163, 180, 216, 0.6)",
-                        boxShadow: "0 0 4px rgba(163, 180, 216, 0.8)",
+                        left: `${xPos}%`,
+                        top: "35%",
+                        height: "35%",
+                        background: `linear-gradient(to bottom, 
+                          transparent 0%, 
+                          rgba(147, 197, 253, 0.3) 20%, 
+                          rgba(196, 181, 253, 0.3) 50%,
+                          rgba(147, 197, 253, 0.3) 80%, 
+                          transparent 100%)`,
                       }}
                       animate={{
-                        y: [0, -20 - seededRandom(i * 13) * 30, 0],
-                        x: [0, (i % 2 ? 10 : -10), 0],
-                        opacity: [0.3, 0.8, 0.3],
+                        opacity: [0.2, 0.5, 0.2],
+                        scaleY: [0.9, 1, 0.9],
                       }}
                       transition={{
-                        duration: 4 + seededRandom(i * 5) * 3,
+                        duration: 4 + i * 0.5,
                         repeat: Infinity,
-                        delay: seededRandom(i * 17) * 2,
+                        delay: i * 0.6,
                         ease: "easeInOut",
                       }}
                     />
                   );
                 })}
 
-                {/* Light flowing through figure */}
-                <motion.div
-                  className="absolute inset-0"
-                  style={{
-                    background: `radial-gradient(ellipse at center, 
-                      rgba(163, 180, 216, 0.2) 0%, 
-                      rgba(163, 180, 216, 0.1) 40%, 
-                      transparent 70%)`,
-                    filter: "blur(20px)",
-                  }}
-                  animate={{
-                    scale: [1, 1.1, 1],
-                    opacity: [0.4, 0.7, 0.4],
-                  }}
-                  transition={{
-                    duration: 5,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                />
+                {/* Particle lines - flowing thought and focus */}
+                {Array.from({ length: 20 }).map((_, i) => {
+                  const angle = (i / 20) * Math.PI * 2;
+                  const radius = 35;
+                  const xStart = 50 + Math.cos(angle) * radius;
+                  const yStart = 50 + Math.sin(angle) * radius;
+                  
+                  return (
+                    <motion.div
+                      key={`particle-line-${i}`}
+                      className="absolute w-px h-6"
+                      style={{
+                        left: `${xStart}%`,
+                        top: `${yStart}%`,
+                        background: `linear-gradient(to bottom, rgba(147, 197, 253, 0.4), transparent)`,
+                        transformOrigin: "center",
+                        rotate: `${angle}rad`,
+                      }}
+                      animate={{
+                        opacity: [0, 0.6, 0],
+                        scaleY: [0.5, 1, 0.5],
+                      }}
+                      transition={{
+                        duration: 3,
+                        repeat: Infinity,
+                        delay: i * 0.15,
+                        ease: "easeInOut",
+                      }}
+                    />
+                  );
+                })}
 
-                {/* Thinking/connecting nodes */}
+                {/* Slow pulsing nodes - thought centers */}
                 {[
-                  { x: 50, y: 20 },
-                  { x: 30, y: 45 },
-                  { x: 70, y: 45 },
-                  { x: 50, y: 65 },
+                  { x: 50, y: 22 }, // Head
+                  { x: 50, y: 48 }, // Heart
+                  { x: 35, y: 50 }, // Left
+                  { x: 65, y: 50 }, // Right
                 ].map((pos, i) => (
                   <motion.div
                     key={`node-${i}`}
-                    className="absolute w-2 h-2 rounded-full bg-white/60"
+                    className="absolute w-1.5 h-1.5 rounded-full"
                     style={{
                       left: `${pos.x}%`,
                       top: `${pos.y}%`,
-                      boxShadow: "0 0 8px rgba(255, 255, 255, 0.6)",
+                      background: "rgba(147, 197, 253, 0.6)",
+                      boxShadow: "0 0 8px rgba(147, 197, 253, 0.6)",
                     }}
                     animate={{
-                      scale: [1, 1.3, 1],
-                      opacity: [0.6, 1, 0.6],
+                      scale: [1, 1.4, 1],
+                      opacity: [0.5, 0.9, 0.5],
+                      boxShadow: [
+                        "0 0 8px rgba(147, 197, 253, 0.6)",
+                        "0 0 16px rgba(147, 197, 253, 0.8)",
+                        "0 0 8px rgba(147, 197, 253, 0.6)",
+                      ],
                     }}
                     transition={{
-                      duration: 2,
+                      duration: 4,
                       repeat: Infinity,
-                      delay: i * 0.5,
+                      delay: i * 0.8,
                       ease: "easeInOut",
                     }}
                   />
                 ))}
+
+                {/* Ambient glow breathing with silhouette */}
+                <motion.div
+                  className="absolute inset-0"
+                  style={{
+                    background: `radial-gradient(ellipse at center, 
+                      rgba(147, 197, 253, 0.08) 0%, 
+                      rgba(196, 181, 253, 0.05) 40%, 
+                      transparent 70%)`,
+                    filter: "blur(30px)",
+                  }}
+                  animate={{
+                    scale: [1, 1.12, 1],
+                    opacity: [0.3, 0.6, 0.3],
+                  }}
+                  transition={{
+                    duration: 6,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                />
               </div>
             </motion.div>
 
