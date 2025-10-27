@@ -2064,39 +2064,61 @@ export class DbStorage extends MemStorage {
   }
 
   async getAllVanessaThreads(): Promise<{ threadId: string; firstMessage: string; lastMessage: string; messageCount: number; createdAt: Date; updatedAt: Date }[]> {
-    // Get all logs grouped by threadId
-    const logs = await db
-      .select()
-      .from(vanessaLogs)
-      .orderBy(asc(vanessaLogs.createdAt));
+    // Use window functions to get thread summaries with first/last messages in a single query
+    // This avoids N+1 query problem by using DISTINCT ON in PostgreSQL
+    const results = await db.execute<{
+      thread_id: string;
+      first_message: string;
+      last_message: string;
+      message_count: string;
+      created_at: Date;
+      updated_at: Date;
+    }>(sqlOp`
+      WITH thread_stats AS (
+        SELECT 
+          thread_id,
+          COUNT(*) as message_count,
+          MIN(created_at) as created_at,
+          MAX(created_at) as updated_at
+        FROM vanessa_logs
+        GROUP BY thread_id
+      ),
+      first_messages AS (
+        SELECT DISTINCT ON (thread_id)
+          thread_id,
+          user_message as first_message
+        FROM vanessa_logs
+        ORDER BY thread_id, created_at ASC
+      ),
+      last_messages AS (
+        SELECT DISTINCT ON (thread_id)
+          thread_id,
+          assistant_response as last_message
+        FROM vanessa_logs
+        ORDER BY thread_id, created_at DESC
+      )
+      SELECT 
+        ts.thread_id,
+        fm.first_message,
+        lm.last_message,
+        ts.message_count,
+        ts.created_at,
+        ts.updated_at
+      FROM thread_stats ts
+      JOIN first_messages fm ON ts.thread_id = fm.thread_id
+      JOIN last_messages lm ON ts.thread_id = lm.thread_id
+      ORDER BY ts.updated_at DESC
+      LIMIT 500
+    `);
 
-    // Group by thread
-    const threadMap = new Map<string, VanessaLog[]>();
-    for (const log of logs) {
-      if (!threadMap.has(log.threadId)) {
-        threadMap.set(log.threadId, []);
-      }
-      threadMap.get(log.threadId)!.push(log);
-    }
-
-    // Convert to thread summaries
-    const threads = Array.from(threadMap.entries()).map(([threadId, threadLogs]) => {
-      const sortedLogs = threadLogs.sort((a, b) => a.createdAt!.getTime() - b.createdAt!.getTime());
-      const firstLog = sortedLogs[0];
-      const lastLog = sortedLogs[sortedLogs.length - 1];
-
-      return {
-        threadId,
-        firstMessage: firstLog.userMessage,
-        lastMessage: lastLog.assistantResponse,
-        messageCount: threadLogs.length,
-        createdAt: firstLog.createdAt!,
-        updatedAt: lastLog.createdAt!,
-      };
-    });
-
-    // Sort by most recent activity
-    return threads.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+    return results.rows.map(row => ({
+      threadId: row.thread_id,
+      firstMessage: row.first_message,
+      lastMessage: row.last_message,
+      messageCount: parseInt(row.message_count),
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    }));
   }
 
   async searchVanessaLogs(query: string): Promise<VanessaLog[]> {
@@ -2106,7 +2128,8 @@ export class DbStorage extends MemStorage {
       .where(
         sqlOp`${vanessaLogs.userMessage} ILIKE ${'%' + query + '%'} OR ${vanessaLogs.assistantResponse} ILIKE ${'%' + query + '%'}`
       )
-      .orderBy(desc(vanessaLogs.createdAt));
+      .orderBy(desc(vanessaLogs.createdAt))
+      .limit(100); // Limit to 100 most recent matching results
   }
 }
 
