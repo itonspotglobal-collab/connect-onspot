@@ -20,6 +20,7 @@ import {
   type LeadIntake, type InsertLeadIntake,
   type CsvTalentRow, type CsvBulkImport, type CsvImportResult, type CsvTemplate, type BulkTalentData,
   type Document, type InsertDocument,
+  type VanessaLog, type InsertVanessaLog,
   leadIntakes
 } from "@shared/schema";
 import { randomUUID } from "crypto";
@@ -240,6 +241,12 @@ export interface IStorage {
   createDocument(document: InsertDocument): Promise<Document>;
   updateDocument(id: string, updates: Partial<InsertDocument>): Promise<Document | undefined>;
   deleteDocument(id: string): Promise<boolean>;
+
+  // Vanessa AI Conversation Logs
+  createVanessaLog(log: InsertVanessaLog): Promise<VanessaLog>;
+  getVanessaLogsByThread(threadId: string): Promise<VanessaLog[]>;
+  getAllVanessaThreads(): Promise<{ threadId: string; firstMessage: string; lastMessage: string; messageCount: number; createdAt: Date; updatedAt: Date }[]>;
+  searchVanessaLogs(query: string): Promise<VanessaLog[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -264,10 +271,12 @@ export class MemStorage implements IStorage {
   private linkedinProfiles: Map<string, any>;
   private leadIntakes: Map<string, LeadIntake>;
   private documents: Map<string, Document>;
+  private vanessaLogs: Map<number, VanessaLog>;
 
   // Counter for auto-incrementing IDs
   private skillIdCounter: number = 1;
   private userSkillIdCounter: number = 1;
+  private vanessaLogIdCounter: number = 1;
   private jobSkillIdCounter: number = 1;
 
   constructor() {
@@ -292,6 +301,7 @@ export class MemStorage implements IStorage {
     this.linkedinProfiles = new Map();
     this.leadIntakes = new Map();
     this.documents = new Map();
+    this.vanessaLogs = new Map();
 
     // Seed default skills for OnSpot marketplace
     this.seedDefaultSkills();
@@ -1971,6 +1981,67 @@ export class MemStorage implements IStorage {
 
   async deleteDocument(id: string): Promise<boolean> {
     return this.documents.delete(id);
+  }
+
+  // Vanessa AI Conversation Logs
+  async createVanessaLog(log: InsertVanessaLog): Promise<VanessaLog> {
+    const id = this.vanessaLogIdCounter++;
+    const newLog: VanessaLog = {
+      id,
+      threadId: log.threadId,
+      userMessage: log.userMessage,
+      assistantResponse: log.assistantResponse,
+      createdAt: new Date(),
+    };
+    this.vanessaLogs.set(id, newLog);
+    return newLog;
+  }
+
+  async getVanessaLogsByThread(threadId: string): Promise<VanessaLog[]> {
+    return Array.from(this.vanessaLogs.values())
+      .filter((log) => log.threadId === threadId)
+      .sort((a, b) => a.createdAt!.getTime() - b.createdAt!.getTime());
+  }
+
+  async getAllVanessaThreads(): Promise<{ threadId: string; firstMessage: string; lastMessage: string; messageCount: number; createdAt: Date; updatedAt: Date }[]> {
+    const threadMap = new Map<string, VanessaLog[]>();
+    
+    // Group logs by thread
+    for (const log of this.vanessaLogs.values()) {
+      if (!threadMap.has(log.threadId)) {
+        threadMap.set(log.threadId, []);
+      }
+      threadMap.get(log.threadId)!.push(log);
+    }
+
+    // Convert to thread summaries
+    const threads = Array.from(threadMap.entries()).map(([threadId, logs]) => {
+      const sortedLogs = logs.sort((a, b) => a.createdAt!.getTime() - b.createdAt!.getTime());
+      const firstLog = sortedLogs[0];
+      const lastLog = sortedLogs[sortedLogs.length - 1];
+      
+      return {
+        threadId,
+        firstMessage: firstLog.userMessage,
+        lastMessage: lastLog.assistantResponse,
+        messageCount: logs.length,
+        createdAt: firstLog.createdAt!,
+        updatedAt: lastLog.createdAt!,
+      };
+    });
+
+    // Sort by most recent activity
+    return threads.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+  }
+
+  async searchVanessaLogs(query: string): Promise<VanessaLog[]> {
+    const lowerQuery = query.toLowerCase();
+    return Array.from(this.vanessaLogs.values())
+      .filter((log) =>
+        log.userMessage.toLowerCase().includes(lowerQuery) ||
+        log.assistantResponse.toLowerCase().includes(lowerQuery)
+      )
+      .sort((a, b) => b.createdAt!.getTime() - a.createdAt!.getTime());
   }
 }
 

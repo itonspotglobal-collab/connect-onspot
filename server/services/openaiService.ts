@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import fs from "fs";
 import path from "path";
+import { storage } from "../storage";
 
 // Validate required environment variables at startup
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -145,6 +146,9 @@ export async function* streamWithAssistant(
     
     console.log(`🧠 Started Vanessa run for thread: ${currentThreadId}`);
 
+    // Accumulate the assistant's response for logging
+    let assistantResponse = "";
+
     // Process the streaming response
     for await (const event of stream) {
       // Handle text delta events (streaming tokens)
@@ -153,6 +157,7 @@ export async function* streamWithAssistant(
         if (delta.content && delta.content[0]?.type === "text") {
           const textDelta = delta.content[0].text?.value;
           if (textDelta) {
+            assistantResponse += textDelta;
             yield { type: "content", data: textDelta };
           }
         }
@@ -168,6 +173,18 @@ export async function* streamWithAssistant(
         console.error(`❌ Assistant run failed for thread: ${currentThreadId}`, event.data);
         throw new Error("Assistant run failed");
       }
+    }
+
+    // Log the conversation to storage
+    try {
+      await storage.createVanessaLog({
+        threadId: currentThreadId,
+        userMessage,
+        assistantResponse,
+      });
+      console.log(`💾 Logged conversation to thread: ${currentThreadId}`);
+    } catch (logError) {
+      console.error("❌ Error logging conversation:", logError);
     }
 
     yield { type: "done", data: "" };
