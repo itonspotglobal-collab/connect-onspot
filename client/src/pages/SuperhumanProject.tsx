@@ -443,16 +443,16 @@ export default function SuperhumanProject() {
         whileInView={{ opacity: 1 }}
         viewport={{ once: true, amount: 0.2 }}
         transition={{ duration: 1.2 }}
-        className="relative min-h-screen overflow-hidden"
-        style={{
-          background: `linear-gradient(to bottom, #13246C 0%, #2B4A8C 30%, #6B8DC7 60%, #F4F7FB 100%)`,
-        }}
+        className="relative min-h-screen overflow-hidden hero-investor"
       >
-        {/* Background pulse linking both sides */}
+        {/* Seamless gradient overlay from hero */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/10 to-slate-50/80 pointer-events-none" />
+
+        {/* Background pulse linking both sides - matching hero's blue tone */}
         <motion.div
           className="absolute inset-0 pointer-events-none"
           style={{
-            background: "radial-gradient(ellipse at center, rgba(163, 180, 216, 0.1) 0%, transparent 70%)",
+            background: "radial-gradient(ellipse at center, rgba(96, 165, 250, 0.08) 0%, transparent 70%)",
           }}
           animate={{
             opacity: [0.3, 0.5, 0.3],
@@ -478,31 +478,13 @@ export default function SuperhumanProject() {
               className="flex items-center justify-center lg:justify-end text-center lg:text-right order-1"
             >
               <h2
-                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light tracking-tight leading-[1.15]"
+                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1]"
                 style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif" }}
               >
-                <div style={{ color: "#A3B4D8" }}>This is</div>
-                <motion.div
-                  className="mt-2"
-                  style={{
-                    color: "#FFFFFF",
-                    textShadow: "0 0 30px rgba(163, 180, 216, 0.4), 0 0 60px rgba(163, 180, 216, 0.2)",
-                  }}
-                  animate={{
-                    textShadow: [
-                      "0 0 30px rgba(163, 180, 216, 0.4), 0 0 60px rgba(163, 180, 216, 0.2)",
-                      "0 0 40px rgba(163, 180, 216, 0.6), 0 0 80px rgba(163, 180, 216, 0.3)",
-                      "0 0 30px rgba(163, 180, 216, 0.4), 0 0 60px rgba(163, 180, 216, 0.2)",
-                    ],
-                  }}
-                  transition={{
-                    duration: 4,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                >
+                <div className="text-white/70">This is</div>
+                <div className="mt-2 bg-gradient-to-r from-blue-300 via-violet-300 to-blue-300 bg-clip-text text-transparent">
                   The Superhuman Project
-                </motion.div>
+                </div>
               </h2>
             </motion.div>
 
