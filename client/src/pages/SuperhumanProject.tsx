@@ -213,17 +213,101 @@ const councilMembers: CouncilMember[] = [
   { id: 6, name: "Leonardo da Vinci", role: "Creativity & Science", initials: "LV", angle: 300 },
 ];
 
+// Human silhouette component for council members
+function HumanSilhouette({ size = 60, glowIntensity = 0.5 }: { size?: number; glowIntensity?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 100 100"
+      className="relative"
+    >
+      <defs>
+        <radialGradient id={`halo-${size}`} cx="50%" cy="50%">
+          <stop offset="0%" stopColor="rgba(147, 197, 253, 0.6)" />
+          <stop offset="50%" stopColor="rgba(96, 165, 250, 0.3)" />
+          <stop offset="100%" stopColor="transparent" />
+        </radialGradient>
+        <filter id={`silhouette-glow-${size}`}>
+          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+
+      {/* Halo */}
+      <circle
+        cx="50"
+        cy="50"
+        r="45"
+        fill={`url(#halo-${size})`}
+        opacity={glowIntensity}
+      />
+
+      {/* Head */}
+      <ellipse
+        cx="50"
+        cy="30"
+        rx="12"
+        ry="14"
+        fill="rgba(147, 197, 253, 0.7)"
+        stroke="rgba(147, 197, 253, 0.9)"
+        strokeWidth="1.5"
+        filter={`url(#silhouette-glow-${size})`}
+      />
+
+      {/* Neck */}
+      <path
+        d="M 50 44 L 50 52"
+        stroke="rgba(147, 197, 253, 0.6)"
+        strokeWidth="4"
+        strokeLinecap="round"
+        fill="none"
+      />
+
+      {/* Shoulders and torso */}
+      <path
+        d="M 35 55 Q 42 52, 50 52 Q 58 52, 65 55 L 62 75 Q 56 78, 50 78 Q 44 78, 38 75 Z"
+        fill="rgba(147, 197, 253, 0.6)"
+        stroke="rgba(147, 197, 253, 0.8)"
+        strokeWidth="1.5"
+        filter={`url(#silhouette-glow-${size})`}
+      />
+    </svg>
+  );
+}
+
 function OrbitingCouncil() {
   const [hoveredMember, setHoveredMember] = useState<number | null>(null);
   const rotation = useMotionValue(0);
-  const orbitRadius = 200;
+  const orbitRadius = 220;
 
   return (
-    <div className="relative w-full h-[500px] flex items-center justify-center">
+    <div className="relative w-full h-[600px] flex items-center justify-center">
+      {/* Subtle radial lighting background */}
       <motion.div
-        className="absolute w-[400px] h-[400px] rounded-full border border-blue-400/10"
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: "radial-gradient(ellipse 80% 80% at 50% 50%, rgba(147, 197, 253, 0.08) 0%, transparent 70%)",
+        }}
+        animate={{
+          opacity: [0.5, 0.8, 0.5],
+          scale: [1, 1.05, 1],
+        }}
+        transition={{
+          duration: 8,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+      />
+
+      {/* Orbiting path visualization - very subtle */}
+      <motion.div
+        className="absolute w-[440px] h-[440px] rounded-full border border-blue-200/10"
         animate={{ rotate: 360 }}
-        transition={{ duration: 120, repeat: Infinity, ease: "linear" }}
+        transition={{ duration: 180, repeat: Infinity, ease: "linear" }}
         onUpdate={(latest) => {
           if (typeof latest.rotate === "number") {
             rotation.set(latest.rotate);
@@ -231,6 +315,8 @@ function OrbitingCouncil() {
         }}
       >
         {councilMembers.map((member) => {
+          const isHovered = hoveredMember === member.id;
+          
           return (
             <motion.div
               key={member.id}
@@ -244,27 +330,34 @@ function OrbitingCouncil() {
               onHoverEnd={() => setHoveredMember(null)}
             >
               <motion.div
-                className="relative w-20 h-20 -ml-10 -mt-10 rounded-full bg-gradient-to-br from-blue-400/30 to-violet-500/20 border border-blue-300/40 flex items-center justify-center text-lg font-semibold cursor-pointer backdrop-blur-sm"
+                className="relative -ml-8 -mt-8 cursor-pointer"
+                initial={{ scale: 1 }}
                 whileHover={{ scale: 1.15 }}
-                animate={{
-                  boxShadow:
-                    hoveredMember === member.id
-                      ? "0 0 30px rgba(96, 165, 250, 0.7), 0 0 60px rgba(96, 165, 250, 0.3)"
-                      : "0 0 12px rgba(96, 165, 250, 0.25)",
-                }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
               >
-                <span className="text-white font-bold">{member.initials}</span>
-                
-                {hoveredMember === member.id && (
+                {/* Silhouette with enhanced glow on hover */}
+                <motion.div
+                  animate={{
+                    filter: isHovered
+                      ? "drop-shadow(0 0 20px rgba(147, 197, 253, 0.8)) drop-shadow(0 0 40px rgba(96, 165, 250, 0.5))"
+                      : "drop-shadow(0 0 10px rgba(147, 197, 253, 0.4))",
+                  }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <HumanSilhouette size={64} glowIntensity={isHovered ? 0.8 : 0.5} />
+                </motion.div>
+
+                {/* Name and specialty on hover */}
+                {isHovered && (
                   <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className="absolute -bottom-20 left-1/2 -translate-x-1/2 whitespace-nowrap bg-white/95 backdrop-blur-md border border-blue-200/60 rounded-xl px-4 py-3 shadow-xl z-10"
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    className="absolute -bottom-24 left-1/2 -translate-x-1/2 whitespace-nowrap bg-white/95 backdrop-blur-md border border-blue-200/60 rounded-2xl px-5 py-3 shadow-xl z-10"
                   >
                     <p className="text-sm font-semibold text-slate-800">{member.name}</p>
-                    <p className="text-xs text-blue-600 mt-1">{member.role}</p>
+                    <p className="text-xs text-blue-600 mt-1 font-medium">{member.role}</p>
                   </motion.div>
                 )}
               </motion.div>
@@ -273,21 +366,73 @@ function OrbitingCouncil() {
         })}
       </motion.div>
 
+      {/* Central glowing figure (the user) - larger and more prominent */}
       <motion.div
-        className="absolute w-24 h-24 rounded-full bg-gradient-to-br from-blue-400/25 to-violet-500/15 blur-2xl"
+        className="absolute flex items-center justify-center"
         animate={{
-          scale: [1, 1.2, 1],
-          opacity: [0.3, 0.5, 0.3],
+          scale: [1, 1.05, 1],
         }}
         transition={{
-          duration: 4,
+          duration: 5,
           repeat: Infinity,
           ease: "easeInOut",
         }}
-      />
-      <div className="absolute w-16 h-16 rounded-full bg-white/90 border-2 border-blue-300/50 flex items-center justify-center backdrop-blur-sm">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400/40 to-violet-500/30" />
-      </div>
+      >
+        {/* Pulsing glow background */}
+        <motion.div
+          className="absolute w-36 h-36 rounded-full"
+          style={{
+            background: "radial-gradient(circle, rgba(96, 165, 250, 0.25) 0%, rgba(147, 197, 253, 0.15) 40%, transparent 70%)",
+            filter: "blur(20px)",
+          }}
+          animate={{
+            scale: [1, 1.3, 1],
+            opacity: [0.4, 0.7, 0.4],
+          }}
+          transition={{
+            duration: 4,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+
+        {/* User's central silhouette - larger */}
+        <motion.div
+          className="relative z-10"
+          style={{
+            filter: "drop-shadow(0 0 25px rgba(147, 197, 253, 0.7)) drop-shadow(0 0 50px rgba(96, 165, 250, 0.4))",
+          }}
+          animate={{
+            filter: [
+              "drop-shadow(0 0 25px rgba(147, 197, 253, 0.7)) drop-shadow(0 0 50px rgba(96, 165, 250, 0.4))",
+              "drop-shadow(0 0 35px rgba(147, 197, 253, 0.9)) drop-shadow(0 0 70px rgba(96, 165, 250, 0.6))",
+              "drop-shadow(0 0 25px rgba(147, 197, 253, 0.7)) drop-shadow(0 0 50px rgba(96, 165, 250, 0.4))",
+            ],
+          }}
+          transition={{
+            duration: 4,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        >
+          <HumanSilhouette size={90} glowIntensity={0.9} />
+        </motion.div>
+
+        {/* Subtle energy ring around user */}
+        <motion.div
+          className="absolute w-28 h-28 rounded-full border-2 border-blue-300/20"
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.6, 0.3],
+            rotate: [0, 180, 360],
+          }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+        />
+      </motion.div>
     </div>
   );
 }
@@ -1058,9 +1203,46 @@ export default function SuperhumanProject() {
         whileInView={{ opacity: 1 }}
         viewport={{ once: true, amount: 0.2 }}
         transition={{ duration: 1 }}
-        className="relative min-h-screen flex flex-col items-center justify-center px-6 py-32 bg-gradient-to-b from-slate-50 via-blue-50/20 to-white"
+        className="relative min-h-screen flex flex-col items-center justify-center px-6 py-32 overflow-hidden"
+        style={{
+          background: "linear-gradient(to bottom, rgb(248, 250, 252), rgb(241, 245, 249), rgb(255, 255, 255))",
+        }}
       >
-        <div className="max-w-5xl mx-auto space-y-16 text-center">
+        {/* Subtle radial lighting overlay - ties to previous section */}
+        <motion.div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: "radial-gradient(ellipse 70% 60% at 50% 40%, rgba(147, 197, 253, 0.12) 0%, transparent 70%)",
+          }}
+          animate={{
+            opacity: [0.4, 0.7, 0.4],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+
+        {/* Additional luminous accent */}
+        <motion.div
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full pointer-events-none"
+          style={{
+            background: "radial-gradient(circle, rgba(96, 165, 250, 0.06) 0%, transparent 60%)",
+            filter: "blur(60px)",
+          }}
+          animate={{
+            scale: [1, 1.15, 1],
+            opacity: [0.3, 0.5, 0.3],
+          }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+
+        <div className="max-w-5xl mx-auto space-y-16 text-center relative z-10">
           <div className="space-y-4">
             <h2 className="text-4xl md:text-6xl font-light tracking-tight text-slate-800">
               The Council of Greatness
