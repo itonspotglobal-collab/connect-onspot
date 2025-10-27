@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -44,31 +44,23 @@ export default function VanessaResponses() {
     enabled: !!selectedThreadId,
   });
 
-  // Search conversations
-  const { data: searchData, isLoading: searchLoading } = useQuery<{
-    success: boolean;
-    results: VanessaLog[];
-  }>({
-    queryKey: ["/api/vanessa/search", searchQuery],
-    enabled: searchQuery.length > 2,
-  });
-
   const threads = threadsData?.threads || [];
   const messages = messagesData?.messages || [];
-  const searchResults = searchData?.results || [];
 
-  // Filter threads by search query
-  const filteredThreads = searchQuery.length > 2
+  // Client-side search filtering
+  const filteredThreads = searchQuery.length > 0
     ? threads.filter(thread =>
         thread.firstMessage.toLowerCase().includes(searchQuery.toLowerCase()) ||
         thread.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : threads;
 
-  // Auto-select first thread if none selected
-  if (!selectedThreadId && threads.length > 0) {
-    setSelectedThreadId(threads[0].threadId);
-  }
+  // Auto-select first thread when threads load
+  useEffect(() => {
+    if (!selectedThreadId && threads.length > 0) {
+      setSelectedThreadId(threads[0].threadId);
+    }
+  }, [threads, selectedThreadId]);
 
   return (
     <div className="flex h-screen bg-background">
