@@ -421,16 +421,13 @@ export default function SuperhumanProject() {
         <ScrollCue />
       </motion.section>
 
-      {/* Subtle transition gradient between Hero and Superhuman */}
-      <div className="h-32 bg-gradient-to-b from-transparent via-blue-950/20 to-transparent" />
-
       {/* TWO-COLUMN TRANSFORMATION SECTION */}
       <motion.section
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         viewport={{ once: true, amount: 0.2 }}
         transition={{ duration: 1.2 }}
-        className="relative min-h-screen overflow-hidden hero-investor"
+        className="relative min-h-screen overflow-hidden hero-investor -mt-1"
       >
         {/* Radial light gradient blooming upward - neutral to blue */}
         <motion.div
