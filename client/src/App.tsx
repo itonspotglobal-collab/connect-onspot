@@ -46,10 +46,16 @@ import InvestorsCorner from "@/pages/InvestorsCorner";
 import ProfileSettings from "@/pages/ProfileSettings";
 import Powerapp from "@/pages/Powerapp";
 import OperationsPlaybook from "@/pages/OperationsPlaybook";
+import SuperhumanProject from "@/pages/SuperhumanProject";
 
 // Immersive Page Wrapper - Full screen without navigation (for campaigns and reveals)
 function ImmersivePage() {
   return <ComingSoon />;
+}
+
+// Superhuman Immersive Wrapper - Full screen cinematic experience
+function SuperhumanImmersive() {
+  return <SuperhumanProject />;
 }
 
 // Public Routes - Always available regardless of authentication
@@ -192,6 +198,9 @@ function AppContent() {
       <Route path="/services/resourced" component={ImmersivePage} />
       <Route path="/services/enterprise" component={ImmersivePage} />
       <Route path="/services/human-va" component={ImmersivePage} />
+      
+      {/* Superhuman Project - Immersive cinematic experience */}
+      <Route path="/superhuman" component={SuperhumanImmersive} />
       
       {/* Public Routes - Always available */}
       <Route path="/" component={PublicRouter} />
