@@ -370,7 +370,7 @@ export default function SuperhumanProject() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.1 }}
-            className="inline-flex items-center gap-2 text-[10px] font-medium text-blue-300/90 tracking-wide bg-blue-500/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-blue-400/20"
+            className="inline-flex items-center gap-2 text-[10px] font-medium text-white/70 tracking-wide bg-blue-500/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-blue-400/20"
           >
             <div className="w-1 h-1 bg-blue-400 rounded-full animate-pulse"></div>
             Built by OnSpot. Powered by YOU
