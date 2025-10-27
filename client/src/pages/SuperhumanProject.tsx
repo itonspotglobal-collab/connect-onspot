@@ -477,15 +477,12 @@ export default function SuperhumanProject() {
               transition={{ duration: 1, ease: [0.25, 0.4, 0.25, 1] }}
               className="flex items-center justify-center lg:justify-end text-center lg:text-right order-1"
             >
-              <h2
-                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1]"
-                style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif" }}
-              >
-                <div className="text-white/70">This is</div>
-                <div className="mt-2 bg-gradient-to-r from-blue-300 via-violet-300 to-blue-300 bg-clip-text text-transparent">
+              <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif" }}>
+                <div className="text-sm sm:text-base md:text-lg font-light text-white/40 mb-2">This is</div>
+                <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1] bg-gradient-to-r from-blue-300 via-violet-300 to-blue-300 bg-clip-text text-transparent">
                   The Superhuman Project
-                </div>
-              </h2>
+                </h2>
+              </div>
             </motion.div>
 
             {/* RIGHT COLUMN - Digital Human Figure */}
@@ -498,11 +495,11 @@ export default function SuperhumanProject() {
             >
               <div className="relative w-full max-w-md aspect-[3/4]">
                 
-                {/* Semi-transparent human silhouette */}
+                {/* Semi-transparent human silhouette - clearer form */}
                 <motion.div
                   className="absolute inset-0 flex items-center justify-center"
                   animate={{
-                    opacity: [0.6, 0.8, 0.6],
+                    opacity: [0.7, 0.9, 0.7],
                   }}
                   transition={{
                     duration: 5,
@@ -510,36 +507,113 @@ export default function SuperhumanProject() {
                     ease: "easeInOut",
                   }}
                 >
-                  {/* Head */}
-                  <div className="absolute top-[15%] left-1/2 -translate-x-1/2 w-16 h-16 rounded-full border-2 border-white/30 bg-white/5" />
+                  {/* Head with glow */}
+                  <div className="absolute top-[15%] left-1/2 -translate-x-1/2 w-20 h-20 rounded-full border-2 border-white/40 bg-white/8 shadow-lg shadow-blue-400/20" />
                   
-                  {/* Body core */}
-                  <div className="absolute top-[30%] left-1/2 -translate-x-1/2 w-24 h-32 rounded-lg border-2 border-white/30 bg-white/5" />
+                  {/* Neck */}
+                  <div className="absolute top-[25%] left-1/2 -translate-x-1/2 w-6 h-6 border-l-2 border-r-2 border-white/30 bg-white/5" />
                   
-                  {/* Arms - typing gesture */}
+                  {/* Shoulders */}
+                  <div className="absolute top-[30%] left-1/2 -translate-x-1/2 w-32 h-3 rounded-full border border-white/30 bg-white/5" />
+                  
+                  {/* Body core - torso */}
+                  <div className="absolute top-[32%] left-1/2 -translate-x-1/2 w-28 h-36 rounded-lg border-2 border-white/40 bg-white/8" />
+                  
+                  {/* Left Arm - typing motion (more pronounced) */}
+                  <motion.div className="absolute top-[35%] left-[25%] origin-top-left">
+                    {/* Upper arm */}
+                    <motion.div
+                      className="w-16 h-2.5 rounded-full border border-white/40 bg-white/8"
+                      animate={{
+                        rotateZ: [-15, -5, -15],
+                      }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                    />
+                    {/* Forearm */}
+                    <motion.div
+                      className="absolute top-0 left-14 w-16 h-2.5 rounded-full border border-white/40 bg-white/8"
+                      style={{ transformOrigin: "left center" }}
+                      animate={{
+                        rotateZ: [10, 25, 10],
+                      }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                    />
+                    {/* Hand/fingers */}
+                    <motion.div
+                      className="absolute top-0 left-28 w-3 h-3 rounded-sm border border-white/50 bg-white/10"
+                      animate={{
+                        scale: [1, 1.1, 1],
+                      }}
+                      transition={{
+                        duration: 0.5,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                    />
+                  </motion.div>
+                  
+                  {/* Right Arm - typing motion */}
+                  <motion.div className="absolute top-[35%] right-[25%] origin-top-right">
+                    {/* Upper arm */}
+                    <motion.div
+                      className="w-16 h-2.5 rounded-full border border-white/40 bg-white/8"
+                      animate={{
+                        rotateZ: [15, 5, 15],
+                      }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                        delay: 0.15,
+                      }}
+                    />
+                    {/* Forearm */}
+                    <motion.div
+                      className="absolute top-0 right-14 w-16 h-2.5 rounded-full border border-white/40 bg-white/8"
+                      style={{ transformOrigin: "right center" }}
+                      animate={{
+                        rotateZ: [-10, -25, -10],
+                      }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                        delay: 0.15,
+                      }}
+                    />
+                    {/* Hand/fingers */}
+                    <motion.div
+                      className="absolute top-0 right-28 w-3 h-3 rounded-sm border border-white/50 bg-white/10"
+                      animate={{
+                        scale: [1, 1.1, 1],
+                      }}
+                      transition={{
+                        duration: 0.5,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                        delay: 0.25,
+                      }}
+                    />
+                  </motion.div>
+                  
+                  {/* Keyboard/workspace indication */}
                   <motion.div
-                    className="absolute top-[40%] left-[30%] w-20 h-2 rounded-full border border-white/30 bg-white/5"
-                    style={{ transformOrigin: "left center" }}
+                    className="absolute top-[55%] left-1/2 -translate-x-1/2 w-40 h-2 rounded-full border border-white/30 bg-gradient-to-r from-blue-300/20 via-violet-300/20 to-blue-300/20"
                     animate={{
-                      rotateZ: [-5, 0, -5],
+                      opacity: [0.4, 0.7, 0.4],
                     }}
                     transition={{
                       duration: 2,
                       repeat: Infinity,
                       ease: "easeInOut",
-                    }}
-                  />
-                  <motion.div
-                    className="absolute top-[40%] right-[30%] w-20 h-2 rounded-full border border-white/30 bg-white/5"
-                    style={{ transformOrigin: "right center" }}
-                    animate={{
-                      rotateZ: [5, 0, 5],
-                    }}
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                      delay: 0.1,
                     }}
                   />
                 </motion.div>
