@@ -213,80 +213,147 @@ const councilMembers: CouncilMember[] = [
   { id: 6, name: "Leonardo da Vinci", role: "Creativity & Science", initials: "LV", angle: 300 },
 ];
 
-// Human silhouette component for council members
+// Living, breathing human silhouette - electric blue aesthetic
 function HumanSilhouette({ size = 60, glowIntensity = 0.5, isCenter = false }: { size?: number; glowIntensity?: number; isCenter?: boolean }) {
+  const breathingDuration = isCenter ? 4 : 5;
+  const breathingDelay = isCenter ? 0 : Math.random() * 2;
+
   return (
-    <svg
+    <motion.svg
       width={size}
       height={size}
       viewBox="0 0 100 100"
       className="relative"
+      animate={{
+        scale: [1, 1.03, 1],
+      }}
+      transition={{
+        duration: breathingDuration,
+        repeat: Infinity,
+        ease: "easeInOut",
+        delay: breathingDelay,
+      }}
     >
       <defs>
+        {/* Cinematic blue-white halo gradient */}
         <radialGradient id={`halo-${size}-${isCenter}`} cx="50%" cy="50%">
           {isCenter ? (
             <>
-              <stop offset="0%" stopColor="rgba(59, 130, 246, 0.8)" />
-              <stop offset="30%" stopColor="rgba(96, 165, 250, 0.6)" />
-              <stop offset="60%" stopColor="rgba(147, 197, 253, 0.4)" />
+              <stop offset="0%" stopColor="rgba(255, 255, 255, 0.9)" />
+              <stop offset="20%" stopColor="rgba(147, 197, 253, 0.8)" />
+              <stop offset="40%" stopColor="rgba(96, 165, 250, 0.6)" />
+              <stop offset="60%" stopColor="rgba(59, 130, 246, 0.4)" />
               <stop offset="100%" stopColor="transparent" />
             </>
           ) : (
             <>
-              <stop offset="0%" stopColor="rgba(167, 139, 250, 0.7)" />
-              <stop offset="50%" stopColor="rgba(139, 92, 246, 0.4)" />
+              <stop offset="0%" stopColor="rgba(165, 243, 252, 0.7)" />
+              <stop offset="30%" stopColor="rgba(96, 165, 250, 0.5)" />
+              <stop offset="60%" stopColor="rgba(59, 130, 246, 0.3)" />
               <stop offset="100%" stopColor="transparent" />
             </>
           )}
         </radialGradient>
+        
+        {/* Soft body gradient - light sculpted */}
+        <linearGradient id={`body-gradient-${size}-${isCenter}`} x1="0%" y1="0%" x2="0%" y2="100%">
+          {isCenter ? (
+            <>
+              <stop offset="0%" stopColor="rgba(147, 197, 253, 0.95)" />
+              <stop offset="50%" stopColor="rgba(96, 165, 250, 0.9)" />
+              <stop offset="100%" stopColor="rgba(59, 130, 246, 0.85)" />
+            </>
+          ) : (
+            <>
+              <stop offset="0%" stopColor="rgba(165, 243, 252, 0.9)" />
+              <stop offset="50%" stopColor="rgba(96, 165, 250, 0.85)" />
+              <stop offset="100%" stopColor="rgba(59, 130, 246, 0.8)" />
+            </>
+          )}
+        </linearGradient>
+
+        {/* Enhanced glow filter */}
         <filter id={`silhouette-glow-${size}-${isCenter}`}>
-          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+          <feGaussianBlur stdDeviation={isCenter ? "4" : "3"} result="coloredBlur"/>
           <feMerge>
+            <feMergeNode in="coloredBlur"/>
             <feMergeNode in="coloredBlur"/>
             <feMergeNode in="SourceGraphic"/>
           </feMerge>
         </filter>
       </defs>
 
-      {/* Halo */}
-      <circle
+      {/* Animated pulsing halo */}
+      <motion.circle
         cx="50"
         cy="50"
-        r="45"
+        r="48"
         fill={`url(#halo-${size}-${isCenter})`}
-        opacity={glowIntensity}
+        animate={{
+          opacity: [glowIntensity * 0.6, glowIntensity, glowIntensity * 0.6],
+          scale: [0.95, 1, 0.95],
+        }}
+        transition={{
+          duration: breathingDuration,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: breathingDelay,
+        }}
       />
 
-      {/* Head */}
-      <ellipse
+      {/* Head with breathing motion */}
+      <motion.ellipse
         cx="50"
         cy="30"
         rx="12"
         ry="14"
-        fill={isCenter ? "rgba(59, 130, 246, 0.85)" : "rgba(167, 139, 250, 0.85)"}
-        stroke={isCenter ? "rgba(96, 165, 250, 1)" : "rgba(139, 92, 246, 1)"}
+        fill={`url(#body-gradient-${size}-${isCenter})`}
+        stroke={isCenter ? "rgba(255, 255, 255, 0.8)" : "rgba(165, 243, 252, 0.9)"}
         strokeWidth="2"
         filter={`url(#silhouette-glow-${size}-${isCenter})`}
+        animate={{
+          ry: [14, 14.5, 14],
+        }}
+        transition={{
+          duration: breathingDuration,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: breathingDelay,
+        }}
       />
 
-      {/* Neck */}
-      <path
+      {/* Neck - glowing connection */}
+      <motion.path
         d="M 50 44 L 50 52"
-        stroke={isCenter ? "rgba(59, 130, 246, 0.75)" : "rgba(167, 139, 250, 0.75)"}
-        strokeWidth="5"
+        stroke={`url(#body-gradient-${size}-${isCenter})`}
+        strokeWidth="6"
         strokeLinecap="round"
         fill="none"
-      />
-
-      {/* Shoulders and torso */}
-      <path
-        d="M 35 55 Q 42 52, 50 52 Q 58 52, 65 55 L 62 75 Q 56 78, 50 78 Q 44 78, 38 75 Z"
-        fill={isCenter ? "rgba(59, 130, 246, 0.75)" : "rgba(167, 139, 250, 0.75)"}
-        stroke={isCenter ? "rgba(96, 165, 250, 1)" : "rgba(139, 92, 246, 1)"}
-        strokeWidth="2"
         filter={`url(#silhouette-glow-${size}-${isCenter})`}
       />
-    </svg>
+
+      {/* Shoulders and torso - breathing chest expansion */}
+      <motion.path
+        d="M 35 55 Q 42 52, 50 52 Q 58 52, 65 55 L 62 75 Q 56 78, 50 78 Q 44 78, 38 75 Z"
+        fill={`url(#body-gradient-${size}-${isCenter})`}
+        stroke={isCenter ? "rgba(255, 255, 255, 0.7)" : "rgba(165, 243, 252, 0.8)"}
+        strokeWidth="2"
+        filter={`url(#silhouette-glow-${size}-${isCenter})`}
+        animate={{
+          d: [
+            "M 35 55 Q 42 52, 50 52 Q 58 52, 65 55 L 62 75 Q 56 78, 50 78 Q 44 78, 38 75 Z",
+            "M 34 55 Q 42 51, 50 51 Q 58 51, 66 55 L 63 76 Q 56 79, 50 79 Q 44 79, 37 76 Z",
+            "M 35 55 Q 42 52, 50 52 Q 58 52, 65 55 L 62 75 Q 56 78, 50 78 Q 44 78, 38 75 Z",
+          ]
+        }}
+        transition={{
+          duration: breathingDuration,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: breathingDelay,
+        }}
+      />
+    </motion.svg>
   );
 }
 
@@ -315,43 +382,71 @@ function OrbitingCouncil() {
         }}
       />
 
-      {/* Energy connection lines from council to center */}
+      {/* Energy connection lines - electric blue pulses from center to council */}
       {councilMembers.map((member) => (
         <motion.div
           key={`energy-line-${member.id}`}
           className="absolute left-1/2 top-1/2 pointer-events-none"
           style={{
             width: `${orbitRadius}px`,
-            height: '1px',
+            height: '2px',
             transformOrigin: "0% 50%",
             rotate: useTransform(rotation, (r) => (member.angle + r)),
           }}
         >
           <motion.div
-            className="w-full h-px"
+            className="w-full h-full relative overflow-hidden"
             style={{
               background: `linear-gradient(to right, 
-                rgba(59, 130, 246, 0.5) 0%, 
-                rgba(96, 165, 250, 0.3) 50%, 
-                rgba(139, 92, 246, 0.4) 100%)`,
+                rgba(147, 197, 253, 0.6) 0%, 
+                rgba(96, 165, 250, 0.4) 50%, 
+                rgba(59, 130, 246, 0.5) 100%)`,
+              boxShadow: '0 0 8px rgba(96, 165, 250, 0.4)',
             }}
             animate={{
-              opacity: hoveredMember === member.id || centerHovered ? [0.3, 0.7, 0.3] : [0.1, 0.2, 0.1],
+              opacity: hoveredMember === member.id || centerHovered ? [0.4, 0.9, 0.4] : [0.15, 0.3, 0.15],
             }}
             transition={{
-              duration: 2,
+              duration: 2.5,
               repeat: Infinity,
               ease: "easeInOut",
             }}
-          />
+          >
+            {/* Pulsing energy wave along the line */}
+            <motion.div
+              className="absolute h-full w-1/4"
+              style={{
+                background: 'linear-gradient(to right, transparent, rgba(165, 243, 252, 0.8), transparent)',
+                filter: 'blur(2px)',
+              }}
+              animate={{
+                x: ['0%', '400%'],
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: "linear",
+              }}
+            />
+          </motion.div>
         </motion.div>
       ))}
 
-      {/* Orbiting path visualization - very subtle */}
+      {/* Orbiting path - elegant electric blue circle */}
       <motion.div
-        className="absolute w-[440px] h-[440px] rounded-full border border-violet-300/15"
-        animate={{ rotate: 360 }}
-        transition={{ duration: 180, repeat: Infinity, ease: "linear" }}
+        className="absolute w-[440px] h-[440px] rounded-full"
+        style={{
+          border: '1px solid rgba(96, 165, 250, 0.2)',
+          boxShadow: '0 0 20px rgba(96, 165, 250, 0.15), inset 0 0 20px rgba(96, 165, 250, 0.1)',
+        }}
+        animate={{ 
+          rotate: 360,
+          borderColor: ['rgba(96, 165, 250, 0.2)', 'rgba(147, 197, 253, 0.25)', 'rgba(96, 165, 250, 0.2)'],
+        }}
+        transition={{ 
+          rotate: { duration: 180, repeat: Infinity, ease: "linear" },
+          borderColor: { duration: 6, repeat: Infinity, ease: "easeInOut" }
+        }}
         onUpdate={(latest) => {
           if (typeof latest.rotate === "number") {
             rotation.set(latest.rotate);
@@ -369,6 +464,7 @@ function OrbitingCouncil() {
                 x: useTransform(rotation, (r) => Math.cos(((member.angle + r) * Math.PI) / 180) * orbitRadius),
                 y: useTransform(rotation, (r) => Math.sin(((member.angle + r) * Math.PI) / 180) * orbitRadius),
                 rotate: useTransform(rotation, (r) => -r),
+                z: useTransform(rotation, (r) => Math.sin(((member.angle + r) * Math.PI) / 180) * 30),
               }}
               onHoverStart={() => setHoveredMember(member.id)}
               onHoverEnd={() => setHoveredMember(null)}
@@ -376,32 +472,41 @@ function OrbitingCouncil() {
               <motion.div
                 className="relative -ml-8 -mt-8 cursor-pointer"
                 initial={{ scale: 1 }}
-                whileHover={{ scale: 1.15 }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
+                whileHover={{ scale: 1.2 }}
+                animate={{
+                  y: [0, -5, 0],
+                }}
+                transition={{ 
+                  y: { duration: 4 + member.id * 0.3, repeat: Infinity, ease: "easeInOut" },
+                  scale: { duration: 0.5, ease: "easeOut" }
+                }}
               >
-                {/* Silhouette with enhanced glow on hover */}
+                {/* Silhouette with enhanced electric blue glow on hover */}
                 <motion.div
                   animate={{
                     filter: isHovered
-                      ? "drop-shadow(0 0 25px rgba(139, 92, 246, 1)) drop-shadow(0 0 45px rgba(167, 139, 250, 0.7))"
-                      : "drop-shadow(0 0 12px rgba(139, 92, 246, 0.6)) drop-shadow(0 0 25px rgba(167, 139, 250, 0.4))",
+                      ? "drop-shadow(0 0 30px rgba(96, 165, 250, 1)) drop-shadow(0 0 50px rgba(147, 197, 253, 0.8)) drop-shadow(0 0 70px rgba(165, 243, 252, 0.6))"
+                      : "drop-shadow(0 0 15px rgba(96, 165, 250, 0.6)) drop-shadow(0 0 30px rgba(59, 130, 246, 0.4))",
                   }}
-                  transition={{ duration: 0.3 }}
+                  transition={{ duration: 0.4 }}
                 >
-                  <HumanSilhouette size={64} glowIntensity={isHovered ? 0.9 : 0.6} />
+                  <HumanSilhouette size={68} glowIntensity={isHovered ? 1 : 0.65} />
                 </motion.div>
 
-                {/* Name and specialty on hover */}
+                {/* Name and specialty on hover - electric blue themed */}
                 {isHovered && (
                   <motion.div
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     transition={{ duration: 0.25, ease: "easeOut" }}
-                    className="absolute -bottom-24 left-1/2 -translate-x-1/2 whitespace-nowrap bg-white/95 backdrop-blur-md border border-violet-300/60 rounded-2xl px-5 py-3 shadow-xl z-10"
+                    className="absolute -bottom-24 left-1/2 -translate-x-1/2 whitespace-nowrap bg-white/95 backdrop-blur-md border border-blue-300/60 rounded-2xl px-5 py-3 z-10"
+                    style={{
+                      boxShadow: '0 0 20px rgba(96, 165, 250, 0.3), 0 10px 40px rgba(59, 130, 246, 0.2)',
+                    }}
                   >
                     <p className="text-sm font-semibold text-slate-800">{member.name}</p>
-                    <p className="text-xs bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent mt-1 font-semibold">{member.role}</p>
+                    <p className="text-xs bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent mt-1 font-semibold">{member.role}</p>
                   </motion.div>
                 )}
               </motion.div>
@@ -476,8 +581,11 @@ function OrbitingCouncil() {
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.25, ease: "easeOut" }}
             className="absolute -top-24 left-1/2 -translate-x-1/2 whitespace-nowrap bg-white/95 backdrop-blur-md border-2 border-blue-400/80 rounded-2xl px-6 py-3 shadow-2xl z-10"
+            style={{
+              boxShadow: '0 0 30px rgba(96, 165, 250, 0.4), 0 15px 50px rgba(59, 130, 246, 0.3)',
+            }}
           >
-            <p className="text-lg font-bold bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent">You</p>
+            <p className="text-lg font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">You</p>
             <p className="text-xs text-slate-600 mt-0.5 font-medium">Surrounded by Greatness</p>
           </motion.div>
         )}
@@ -497,7 +605,7 @@ function OrbitingCouncil() {
           }}
         />
         <motion.div
-          className="absolute w-40 h-40 rounded-full border border-violet-400/20"
+          className="absolute w-40 h-40 rounded-full border border-cyan-400/20"
           animate={{
             scale: [1, 1.2, 1],
             opacity: centerHovered ? [0.4, 0.7, 0.4] : [0.2, 0.5, 0.2],
