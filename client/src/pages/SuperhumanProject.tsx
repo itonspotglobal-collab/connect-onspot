@@ -499,7 +499,7 @@ export default function SuperhumanProject() {
               </motion.p>
             </motion.div>
 
-            {/* RIGHT COLUMN - Refined Human Silhouette */}
+            {/* RIGHT COLUMN - Shadow-Style Human Silhouette */}
             <motion.div
               initial={{ opacity: 0, x: 30 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -509,34 +509,54 @@ export default function SuperhumanProject() {
             >
               <div className="relative w-full max-w-md aspect-[3/4]">
                 
-                {/* Core light form - breathing */}
-                <motion.div
-                  className="absolute inset-0 flex items-center justify-center"
-                  animate={{
-                    opacity: [0.5, 0.7, 0.5],
-                  }}
-                  transition={{
-                    duration: 6,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
+                {/* Shadow-style human figure - organic silhouette */}
+                <svg
+                  viewBox="0 0 300 400"
+                  className="w-full h-full"
+                  style={{ filter: "drop-shadow(0 0 40px rgba(147, 197, 253, 0.3))" }}
                 >
-                  {/* Human silhouette - MUCH MORE OBVIOUS */}
-                  
-                  {/* Head contour - made very visible */}
-                  <motion.div
-                    className="absolute top-[15%] left-1/2 -translate-x-1/2 w-20 h-24 rounded-full"
-                    style={{
-                      border: "3px solid rgba(147, 197, 253, 0.9)",
-                      background: "radial-gradient(circle at 30% 30%, rgba(147, 197, 253, 0.25), rgba(96, 165, 250, 0.15) 50%, transparent 80%)",
-                      boxShadow: "0 0 30px rgba(147, 197, 253, 0.6), inset 0 0 20px rgba(147, 197, 253, 0.3)",
-                    }}
+                  <defs>
+                    {/* Gradient fills for organic look */}
+                    <linearGradient id="bodyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="rgba(147, 197, 253, 0.3)" />
+                      <stop offset="50%" stopColor="rgba(96, 165, 250, 0.25)" />
+                      <stop offset="100%" stopColor="rgba(59, 130, 246, 0.2)" />
+                    </linearGradient>
+                    
+                    <radialGradient id="headGlow" cx="50%" cy="40%">
+                      <stop offset="0%" stopColor="rgba(147, 197, 253, 0.6)" />
+                      <stop offset="50%" stopColor="rgba(96, 165, 250, 0.3)" />
+                      <stop offset="100%" stopColor="transparent" />
+                    </radialGradient>
+
+                    <linearGradient id="armGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="rgba(147, 197, 253, 0.25)" />
+                      <stop offset="100%" stopColor="rgba(96, 165, 250, 0.35)" />
+                    </linearGradient>
+
+                    {/* Animated light ripple filter */}
+                    <filter id="glow">
+                      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                      <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                      </feMerge>
+                    </filter>
+                  </defs>
+
+                  {/* Head - slightly leaned forward */}
+                  <motion.ellipse
+                    cx="150"
+                    cy="70"
+                    rx="28"
+                    ry="32"
+                    fill="url(#headGlow)"
+                    stroke="rgba(147, 197, 253, 0.7)"
+                    strokeWidth="2"
+                    filter="url(#glow)"
                     animate={{
-                      boxShadow: [
-                        "0 0 30px rgba(147, 197, 253, 0.6), inset 0 0 20px rgba(147, 197, 253, 0.3)",
-                        "0 0 50px rgba(147, 197, 253, 0.8), inset 0 0 30px rgba(147, 197, 253, 0.5)",
-                        "0 0 30px rgba(147, 197, 253, 0.6), inset 0 0 20px rgba(147, 197, 253, 0.3)",
-                      ],
+                      strokeWidth: [2, 3, 2],
+                      opacity: [0.8, 1, 0.8],
                     }}
                     transition={{
                       duration: 4,
@@ -544,26 +564,16 @@ export default function SuperhumanProject() {
                       ease: "easeInOut",
                     }}
                   />
-                  
-                  {/* Torso contour - MUCH MORE VISIBLE */}
-                  <motion.div
-                    className="absolute top-[32%] left-1/2 -translate-x-1/2 w-28 h-48 rounded-2xl"
-                    style={{
-                      border: "3px solid rgba(147, 197, 253, 0.8)",
-                      background: "linear-gradient(to bottom, rgba(147, 197, 253, 0.2), rgba(196, 181, 253, 0.15))",
-                      boxShadow: "0 0 25px rgba(147, 197, 253, 0.5), inset 0 0 15px rgba(147, 197, 253, 0.2)",
-                    }}
+
+                  {/* Neck */}
+                  <motion.path
+                    d="M 150 102 Q 148 110, 150 120"
+                    fill="none"
+                    stroke="rgba(147, 197, 253, 0.5)"
+                    strokeWidth="8"
+                    strokeLinecap="round"
                     animate={{
-                      borderColor: [
-                        "rgba(147, 197, 253, 0.8)",
-                        "rgba(196, 181, 253, 0.9)",
-                        "rgba(147, 197, 253, 0.8)",
-                      ],
-                      boxShadow: [
-                        "0 0 25px rgba(147, 197, 253, 0.5), inset 0 0 15px rgba(147, 197, 253, 0.2)",
-                        "0 0 40px rgba(196, 181, 253, 0.7), inset 0 0 25px rgba(196, 181, 253, 0.3)",
-                        "0 0 25px rgba(147, 197, 253, 0.5), inset 0 0 15px rgba(147, 197, 253, 0.2)",
-                      ],
+                      opacity: [0.5, 0.7, 0.5],
                     }}
                     transition={{
                       duration: 6,
@@ -572,15 +582,54 @@ export default function SuperhumanProject() {
                     }}
                   />
 
-                  {/* Arms - showing human working */}
-                  <motion.div
-                    className="absolute top-[40%] left-[30%] w-14 h-3 rounded-full"
-                    style={{
-                      border: "2px solid rgba(147, 197, 253, 0.7)",
-                      background: "rgba(147, 197, 253, 0.15)",
-                      transform: "rotate(-45deg)",
-                      boxShadow: "0 0 15px rgba(147, 197, 253, 0.4)",
+                  {/* Upper torso - leaning forward slightly */}
+                  <motion.path
+                    d="M 120 130 Q 115 150, 118 180 Q 120 220, 125 260 L 175 260 Q 180 220, 182 180 Q 185 150, 180 130 Z"
+                    fill="url(#bodyGradient)"
+                    stroke="rgba(147, 197, 253, 0.6)"
+                    strokeWidth="2"
+                    filter="url(#glow)"
+                    animate={{
+                      opacity: [0.7, 0.9, 0.7],
                     }}
+                    transition={{
+                      duration: 6,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  />
+
+                  {/* Left shoulder/arm - extended forward (working pose) */}
+                  <motion.path
+                    d="M 120 145 Q 90 150, 70 165 Q 55 175, 50 190"
+                    fill="none"
+                    stroke="url(#armGradient)"
+                    strokeWidth="10"
+                    strokeLinecap="round"
+                    filter="url(#glow)"
+                    animate={{
+                      opacity: [0.6, 0.85, 0.6],
+                      d: [
+                        "M 120 145 Q 90 150, 70 165 Q 55 175, 50 190",
+                        "M 120 145 Q 88 152, 68 167 Q 53 177, 48 192",
+                        "M 120 145 Q 90 150, 70 165 Q 55 175, 50 190",
+                      ],
+                    }}
+                    transition={{
+                      duration: 5,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  />
+
+                  {/* Left forearm/hand */}
+                  <motion.path
+                    d="M 50 190 Q 40 210, 45 230"
+                    fill="none"
+                    stroke="url(#armGradient)"
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                    filter="url(#glow)"
                     animate={{
                       opacity: [0.7, 1, 0.7],
                     }}
@@ -590,120 +639,267 @@ export default function SuperhumanProject() {
                       ease: "easeInOut",
                     }}
                   />
-                  <motion.div
-                    className="absolute top-[40%] right-[30%] w-14 h-3 rounded-full"
-                    style={{
-                      border: "2px solid rgba(147, 197, 253, 0.7)",
-                      background: "rgba(147, 197, 253, 0.15)",
-                      transform: "rotate(45deg)",
-                      boxShadow: "0 0 15px rgba(147, 197, 253, 0.4)",
+
+                  {/* Right shoulder/arm - extended forward (typing pose) */}
+                  <motion.path
+                    d="M 180 145 Q 210 150, 230 165 Q 245 175, 250 190"
+                    fill="none"
+                    stroke="url(#armGradient)"
+                    strokeWidth="10"
+                    strokeLinecap="round"
+                    filter="url(#glow)"
+                    animate={{
+                      opacity: [0.6, 0.85, 0.6],
+                      d: [
+                        "M 180 145 Q 210 150, 230 165 Q 245 175, 250 190",
+                        "M 180 145 Q 212 152, 232 167 Q 247 177, 252 192",
+                        "M 180 145 Q 210 150, 230 165 Q 245 175, 250 190",
+                      ],
                     }}
+                    transition={{
+                      duration: 5,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: 0.3,
+                    }}
+                  />
+
+                  {/* Right forearm/hand */}
+                  <motion.path
+                    d="M 250 190 Q 260 210, 255 230"
+                    fill="none"
+                    stroke="url(#armGradient)"
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                    filter="url(#glow)"
                     animate={{
                       opacity: [0.7, 1, 0.7],
                     }}
                     transition={{
                       duration: 5,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: 0.3,
+                    }}
+                  />
+
+                  {/* Lower body suggestion */}
+                  <motion.path
+                    d="M 125 260 Q 130 300, 135 340 M 175 260 Q 170 300, 165 340"
+                    fill="none"
+                    stroke="rgba(147, 197, 253, 0.4)"
+                    strokeWidth="12"
+                    strokeLinecap="round"
+                    animate={{
+                      opacity: [0.4, 0.6, 0.4],
+                    }}
+                    transition={{
+                      duration: 7,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  />
+
+                  {/* Energy points - head (thinking) */}
+                  <motion.circle
+                    cx="150"
+                    cy="60"
+                    r="3"
+                    fill="rgba(96, 213, 244, 0.9)"
+                    filter="url(#glow)"
+                    animate={{
+                      r: [3, 6, 3],
+                      opacity: [0.6, 1, 0.6],
+                    }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  />
+
+                  {/* Energy points - hands (creating) */}
+                  <motion.circle
+                    cx="45"
+                    cy="230"
+                    r="4"
+                    fill="rgba(96, 213, 244, 0.8)"
+                    filter="url(#glow)"
+                    animate={{
+                      r: [4, 7, 4],
+                      opacity: [0.5, 1, 0.5],
+                    }}
+                    transition={{
+                      duration: 3,
                       repeat: Infinity,
                       ease: "easeInOut",
                       delay: 0.5,
                     }}
                   />
-                </motion.div>
-
-                {/* Energy flow lines through silhouette */}
-                {Array.from({ length: 6 }).map((_, i) => {
-                  const xPos = 35 + i * 6;
-                  return (
-                    <motion.div
-                      key={`energy-${i}`}
-                      className="absolute w-px"
-                      style={{
-                        left: `${xPos}%`,
-                        top: "35%",
-                        height: "35%",
-                        background: `linear-gradient(to bottom, 
-                          transparent 0%, 
-                          rgba(147, 197, 253, 0.3) 20%, 
-                          rgba(196, 181, 253, 0.3) 50%,
-                          rgba(147, 197, 253, 0.3) 80%, 
-                          transparent 100%)`,
-                      }}
-                      animate={{
-                        opacity: [0.2, 0.5, 0.2],
-                        scaleY: [0.9, 1, 0.9],
-                      }}
-                      transition={{
-                        duration: 4 + i * 0.5,
-                        repeat: Infinity,
-                        delay: i * 0.6,
-                        ease: "easeInOut",
-                      }}
-                    />
-                  );
-                })}
-
-                {/* Particle lines - flowing thought and focus */}
-                {Array.from({ length: 20 }).map((_, i) => {
-                  const angle = (i / 20) * Math.PI * 2;
-                  const radius = 35;
-                  const xStart = 50 + Math.cos(angle) * radius;
-                  const yStart = 50 + Math.sin(angle) * radius;
-                  
-                  return (
-                    <motion.div
-                      key={`particle-line-${i}`}
-                      className="absolute w-px h-6"
-                      style={{
-                        left: `${xStart}%`,
-                        top: `${yStart}%`,
-                        background: `linear-gradient(to bottom, rgba(147, 197, 253, 0.4), transparent)`,
-                        transformOrigin: "center",
-                        rotate: `${angle}rad`,
-                      }}
-                      animate={{
-                        opacity: [0, 0.6, 0],
-                        scaleY: [0.5, 1, 0.5],
-                      }}
-                      transition={{
-                        duration: 3,
-                        repeat: Infinity,
-                        delay: i * 0.15,
-                        ease: "easeInOut",
-                      }}
-                    />
-                  );
-                })}
-
-                {/* Slow pulsing nodes - thought centers */}
-                {[
-                  { x: 50, y: 22 }, // Head
-                  { x: 50, y: 48 }, // Heart
-                  { x: 35, y: 50 }, // Left
-                  { x: 65, y: 50 }, // Right
-                ].map((pos, i) => (
-                  <motion.div
-                    key={`node-${i}`}
-                    className="absolute w-1.5 h-1.5 rounded-full"
-                    style={{
-                      left: `${pos.x}%`,
-                      top: `${pos.y}%`,
-                      background: "rgba(147, 197, 253, 0.6)",
-                      boxShadow: "0 0 8px rgba(147, 197, 253, 0.6)",
-                    }}
+                  <motion.circle
+                    cx="255"
+                    cy="230"
+                    r="4"
+                    fill="rgba(96, 213, 244, 0.8)"
+                    filter="url(#glow)"
                     animate={{
-                      scale: [1, 1.4, 1],
-                      opacity: [0.5, 0.9, 0.5],
-                      boxShadow: [
-                        "0 0 8px rgba(147, 197, 253, 0.6)",
-                        "0 0 16px rgba(147, 197, 253, 0.8)",
-                        "0 0 8px rgba(147, 197, 253, 0.6)",
-                      ],
+                      r: [4, 7, 4],
+                      opacity: [0.5, 1, 0.5],
+                    }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: 1,
+                    }}
+                  />
+
+                  {/* Heart/chest energy center */}
+                  <motion.circle
+                    cx="150"
+                    cy="180"
+                    r="5"
+                    fill="rgba(167, 139, 250, 0.6)"
+                    filter="url(#glow)"
+                    animate={{
+                      r: [5, 8, 5],
+                      opacity: [0.4, 0.8, 0.4],
                     }}
                     transition={{
                       duration: 4,
                       repeat: Infinity,
-                      delay: i * 0.8,
                       ease: "easeInOut",
+                      delay: 0.2,
+                    }}
+                  />
+                </svg>
+
+                {/* Animated light ripples emanating from head */}
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <motion.div
+                    key={`head-ripple-${i}`}
+                    className="absolute top-[15%] left-1/2 -translate-x-1/2 w-20 h-20 rounded-full border border-cyan-300/30"
+                    animate={{
+                      scale: [1, 2.5, 2.5],
+                      opacity: [0.6, 0.2, 0],
+                    }}
+                    transition={{
+                      duration: 6,
+                      repeat: Infinity,
+                      ease: "easeOut",
+                      delay: i * 2,
+                    }}
+                  />
+                ))}
+
+                {/* Animated light ripples from hands */}
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <motion.div
+                    key={`hand-ripple-left-${i}`}
+                    className="absolute top-[50%] left-[8%] w-12 h-12 rounded-full border border-cyan-300/30"
+                    animate={{
+                      scale: [1, 2, 2],
+                      opacity: [0.5, 0.1, 0],
+                    }}
+                    transition={{
+                      duration: 5,
+                      repeat: Infinity,
+                      ease: "easeOut",
+                      delay: i * 2.5,
+                    }}
+                  />
+                ))}
+
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <motion.div
+                    key={`hand-ripple-right-${i}`}
+                    className="absolute top-[50%] right-[8%] w-12 h-12 rounded-full border border-cyan-300/30"
+                    animate={{
+                      scale: [1, 2, 2],
+                      opacity: [0.5, 0.1, 0],
+                    }}
+                    transition={{
+                      duration: 5,
+                      repeat: Infinity,
+                      ease: "easeOut",
+                      delay: i * 2.5 + 0.8,
+                    }}
+                  />
+                ))}
+
+                {/* Holographic interface elements - floating shapes */}
+                {/* Data streams - left side */}
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <motion.div
+                    key={`data-stream-left-${i}`}
+                    className="absolute left-[5%] w-16 h-px"
+                    style={{
+                      top: `${35 + i * 12}%`,
+                      background: "linear-gradient(to right, transparent, rgba(147, 197, 253, 0.5), transparent)",
+                    }}
+                    animate={{
+                      opacity: [0.3, 0.7, 0.3],
+                      scaleX: [0.8, 1.2, 0.8],
+                    }}
+                    transition={{
+                      duration: 4,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: i * 1.2,
+                    }}
+                  />
+                ))}
+
+                {/* Data streams - right side */}
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <motion.div
+                    key={`data-stream-right-${i}`}
+                    className="absolute right-[5%] w-16 h-px"
+                    style={{
+                      top: `${35 + i * 12}%`,
+                      background: "linear-gradient(to left, transparent, rgba(147, 197, 253, 0.5), transparent)",
+                    }}
+                    animate={{
+                      opacity: [0.3, 0.7, 0.3],
+                      scaleX: [0.8, 1.2, 0.8],
+                    }}
+                    transition={{
+                      duration: 4,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: i * 1.2 + 0.5,
+                    }}
+                  />
+                ))}
+
+                {/* Floating holographic rectangles */}
+                {[
+                  { x: 10, y: 25, w: 12, h: 8 },
+                  { x: 78, y: 30, w: 10, h: 6 },
+                  { x: 8, y: 55, w: 14, h: 10 },
+                  { x: 80, y: 62, w: 12, h: 8 },
+                ].map((rect, i) => (
+                  <motion.div
+                    key={`holo-rect-${i}`}
+                    className="absolute border border-cyan-400/30 rounded-sm"
+                    style={{
+                      left: `${rect.x}%`,
+                      top: `${rect.y}%`,
+                      width: `${rect.w}%`,
+                      height: `${rect.h}%`,
+                      background: "linear-gradient(135deg, rgba(147, 197, 253, 0.05), rgba(96, 165, 250, 0.1))",
+                      backdropFilter: "blur(2px)",
+                    }}
+                    animate={{
+                      opacity: [0.2, 0.5, 0.2],
+                      y: [0, -5, 0],
+                      rotateY: [0, 5, 0],
+                    }}
+                    transition={{
+                      duration: 6,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: i * 1.5,
                     }}
                   />
                 ))}
