@@ -472,7 +472,7 @@ export default function SuperhumanProject() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true, amount: 0.5 }}
               transition={{ duration: 1, ease: [0.25, 0.4, 0.25, 1] }}
-              className="flex items-center justify-center lg:justify-end order-1"
+              className="flex flex-col items-center lg:items-end justify-center order-1 space-y-6"
             >
               <h2
                 className="text-center lg:text-right text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1] bg-gradient-to-r from-blue-300 via-violet-300 to-blue-300 bg-clip-text text-transparent"
@@ -480,6 +480,23 @@ export default function SuperhumanProject() {
               >
                 The Superhuman Project
               </h2>
+              
+              {/* Animated subtitle */}
+              <motion.p
+                className="text-center lg:text-right text-lg md:text-xl font-light text-white/70"
+                style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif" }}
+                animate={{
+                  opacity: [0, 1, 1, 0],
+                }}
+                transition={{
+                  duration: 8,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  times: [0, 0.2, 0.8, 1],
+                }}
+              >
+                Yourself, your team that never sleeps
+              </motion.p>
             </motion.div>
 
             {/* RIGHT COLUMN - Refined Human Silhouette */}
@@ -504,20 +521,21 @@ export default function SuperhumanProject() {
                     ease: "easeInOut",
                   }}
                 >
-                  {/* Human silhouette - light contours */}
+                  {/* Human silhouette - MUCH MORE OBVIOUS */}
                   
-                  {/* Head contour */}
+                  {/* Head contour - made very visible */}
                   <motion.div
-                    className="absolute top-[15%] left-1/2 -translate-x-1/2 w-16 h-20 rounded-full"
+                    className="absolute top-[15%] left-1/2 -translate-x-1/2 w-20 h-24 rounded-full"
                     style={{
-                      border: "1px solid rgba(147, 197, 253, 0.4)",
-                      background: "radial-gradient(circle at 30% 30%, rgba(147, 197, 253, 0.05), transparent 70%)",
+                      border: "3px solid rgba(147, 197, 253, 0.9)",
+                      background: "radial-gradient(circle at 30% 30%, rgba(147, 197, 253, 0.25), rgba(96, 165, 250, 0.15) 50%, transparent 80%)",
+                      boxShadow: "0 0 30px rgba(147, 197, 253, 0.6), inset 0 0 20px rgba(147, 197, 253, 0.3)",
                     }}
                     animate={{
                       boxShadow: [
-                        "0 0 10px rgba(147, 197, 253, 0.2)",
-                        "0 0 20px rgba(147, 197, 253, 0.4)",
-                        "0 0 10px rgba(147, 197, 253, 0.2)",
+                        "0 0 30px rgba(147, 197, 253, 0.6), inset 0 0 20px rgba(147, 197, 253, 0.3)",
+                        "0 0 50px rgba(147, 197, 253, 0.8), inset 0 0 30px rgba(147, 197, 253, 0.5)",
+                        "0 0 30px rgba(147, 197, 253, 0.6), inset 0 0 20px rgba(147, 197, 253, 0.3)",
                       ],
                     }}
                     transition={{
@@ -527,24 +545,67 @@ export default function SuperhumanProject() {
                     }}
                   />
                   
-                  {/* Torso contour - subtle outline */}
+                  {/* Torso contour - MUCH MORE VISIBLE */}
                   <motion.div
-                    className="absolute top-[32%] left-1/2 -translate-x-1/2 w-24 h-40 rounded-2xl"
+                    className="absolute top-[32%] left-1/2 -translate-x-1/2 w-28 h-48 rounded-2xl"
                     style={{
-                      border: "1px solid rgba(147, 197, 253, 0.3)",
-                      background: "linear-gradient(to bottom, rgba(147, 197, 253, 0.03), rgba(196, 181, 253, 0.02))",
+                      border: "3px solid rgba(147, 197, 253, 0.8)",
+                      background: "linear-gradient(to bottom, rgba(147, 197, 253, 0.2), rgba(196, 181, 253, 0.15))",
+                      boxShadow: "0 0 25px rgba(147, 197, 253, 0.5), inset 0 0 15px rgba(147, 197, 253, 0.2)",
                     }}
                     animate={{
                       borderColor: [
-                        "rgba(147, 197, 253, 0.3)",
-                        "rgba(196, 181, 253, 0.35)",
-                        "rgba(147, 197, 253, 0.3)",
+                        "rgba(147, 197, 253, 0.8)",
+                        "rgba(196, 181, 253, 0.9)",
+                        "rgba(147, 197, 253, 0.8)",
+                      ],
+                      boxShadow: [
+                        "0 0 25px rgba(147, 197, 253, 0.5), inset 0 0 15px rgba(147, 197, 253, 0.2)",
+                        "0 0 40px rgba(196, 181, 253, 0.7), inset 0 0 25px rgba(196, 181, 253, 0.3)",
+                        "0 0 25px rgba(147, 197, 253, 0.5), inset 0 0 15px rgba(147, 197, 253, 0.2)",
                       ],
                     }}
                     transition={{
                       duration: 6,
                       repeat: Infinity,
                       ease: "easeInOut",
+                    }}
+                  />
+
+                  {/* Arms - showing human working */}
+                  <motion.div
+                    className="absolute top-[40%] left-[30%] w-14 h-3 rounded-full"
+                    style={{
+                      border: "2px solid rgba(147, 197, 253, 0.7)",
+                      background: "rgba(147, 197, 253, 0.15)",
+                      transform: "rotate(-45deg)",
+                      boxShadow: "0 0 15px rgba(147, 197, 253, 0.4)",
+                    }}
+                    animate={{
+                      opacity: [0.7, 1, 0.7],
+                    }}
+                    transition={{
+                      duration: 5,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  />
+                  <motion.div
+                    className="absolute top-[40%] right-[30%] w-14 h-3 rounded-full"
+                    style={{
+                      border: "2px solid rgba(147, 197, 253, 0.7)",
+                      background: "rgba(147, 197, 253, 0.15)",
+                      transform: "rotate(45deg)",
+                      boxShadow: "0 0 15px rgba(147, 197, 253, 0.4)",
+                    }}
+                    animate={{
+                      opacity: [0.7, 1, 0.7],
+                    }}
+                    transition={{
+                      duration: 5,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: 0.5,
                     }}
                   />
                 </motion.div>
@@ -667,31 +728,6 @@ export default function SuperhumanProject() {
                     ease: "easeInOut",
                   }}
                 />
-
-                {/* Moving text - sliding up */}
-                <motion.div
-                  className="absolute bottom-[10%] left-1/2 -translate-x-1/2 w-full text-center overflow-hidden"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 1, duration: 1 }}
-                >
-                  <motion.p
-                    className="text-sm md:text-base font-light text-white/60"
-                    style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif" }}
-                    animate={{
-                      y: [20, 0, -20],
-                      opacity: [0, 1, 1, 0],
-                    }}
-                    transition={{
-                      duration: 8,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                      times: [0, 0.2, 0.8, 1],
-                    }}
-                  >
-                    Yourself, your team that never sleeps
-                  </motion.p>
-                </motion.div>
               </div>
             </motion.div>
 
