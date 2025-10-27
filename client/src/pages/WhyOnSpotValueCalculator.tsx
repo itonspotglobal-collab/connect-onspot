@@ -950,7 +950,7 @@ export default function WhyOnSpotValueCalculator() {
   const addJobRole = () => {
     const newRole: JobRole = {
       id: Date.now().toString(),
-      title: "",
+      title: "Customer Support",
       headcount: 1,
       department: "customer-support",
     };
@@ -1378,12 +1378,18 @@ export default function WhyOnSpotValueCalculator() {
                                     Role Type
                                   </Label>
                                   <Select
-                                    value={role.department}
+                                    value={role.department || ""}
                                     onValueChange={(value) => {
-                                      updateJobRole(role.id, "department", value);
-                                      // Auto-update title based on department
-                                      const roleTitle = ROLE_PRESETS.find(p => p.department === value)?.title || value.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-                                      updateJobRole(role.id, "title", roleTitle);
+                                      const roleTitle = 
+                                        ROLE_PRESETS.find(p => p.department === value)?.title || 
+                                        value.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                                      
+                                      // Single atomic update — no batching issue
+                                      setJobRoles((prevRoles) =>
+                                        prevRoles.map((r) =>
+                                          r.id === role.id ? { ...r, department: value, title: roleTitle } : r
+                                        )
+                                      );
                                     }}
                                   >
                                     <SelectTrigger

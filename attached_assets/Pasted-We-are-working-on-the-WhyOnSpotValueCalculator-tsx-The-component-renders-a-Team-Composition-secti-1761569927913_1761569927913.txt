@@ -1,0 +1,68 @@
+We are working on the WhyOnSpotValueCalculator.tsx. The component renders a “Team Composition” section with job roles, each having a “Role Type” dropdown.
+Currently, when a user selects a new role (like “Team Manager”), the dropdown UI resets back to the default “Customer Support.” The state doesn’t persist visually even though onValueChange is triggered.
+
+Goal
+Fix the “Role Type” dropdown so that:
+* The selected value updates immediately in the UI.
+* The job role’s department and title fields update correctly.
+* The dropdown retains the selected option (does not revert to default).
+
+Issue Summary
+* The <Select> component uses value={role.department}, but the update logic for updateJobRole() is asynchronous and triggers two rapid state updates — one for department and one for title.
+* This causes React’s state batching to revert to the previous value (Customer Support), because the second update references stale state.
+
+Required Fix
+1. Combine the update logic into one atomic state change:
+Replace the existing onValueChange handler inside the Role Type <Select> with this:
+
+<Select
+  value={role.department}
+  onValueChange={(value) => {
+    const roleTitle =
+      ROLE_PRESETS.find((p) => p.department === value)?.title ||
+      value
+        .split("-")
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
+    
+    //Single atomic update — no batching issue
+    setJobRoles((prevRoles) =>
+      prevRoles.map((r) =>
+        r.id === role.id ? { ...r, department: value, title: roleTitle } : r
+      )
+    );
+  }}
+>
+This ensures React processes one state update that includes both changes (department and title), so the dropdown reflects the new value instantly.
+
+2. Ensure Select is a fully controlled input:
+Check that the value prop always has a valid value (never undefined):
+
+<Select value={role.department || ""} onValueChange={...}>
+
+3. Verify role initialization:
+Make sure that when a new role is added, it has both valid title and department fields initialized — otherwise, React may treat the dropdown as uncontrolled.
+Example:
+
+const addJobRole = () => {
+  const newRole: JobRole = {
+    id: Date.now().toString(),
+    title: "Customer Support",
+    headcount: 1,
+    department: "customer-support",
+  };
+  setJobRoles([...jobRoles, newRole]);
+};
+
+Technical Notes
+* File: client/src/pages/WhyOnSpotValueCalculator.tsx
+* Framework: React + TypeScript
+* Libraries: ShadCN UI Select, Framer Motion
+* Components affected: Role Type <Select>, updateJobRole, and role management logic.
+
+Expected Outcome
+After applying the fix:
+* Selecting a new role (e.g., “Team Manager”) updates instantly.
+* The selected value stays visible after clicking outside the dropdown.
+* The “Role Type” updates correctly in calculations and UI.
+* No more flicker or reversion to “Customer Support.”
