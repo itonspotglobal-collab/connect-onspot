@@ -55,7 +55,7 @@ function OrbitingCouncil() {
               onHoverEnd={() => setHoveredMember(null)}
             >
               <motion.div
-                className="relative w-20 h-20 -ml-10 -mt-10 rounded-full bg-gradient-to-br from-primary/30 to-purple-500/20 border border-primary/40 flex items-center justify-center text-lg font-semibold cursor-pointer backdrop-blur-sm"
+                className="relative w-20 h-20 -ml-10 -mt-10 rounded-full bg-gradient-to-br from-violet-500/40 to-purple-600/30 border border-violet-400/60 flex items-center justify-center text-lg font-semibold cursor-pointer backdrop-blur-sm"
                 whileHover={{ scale: 1.15 }}
                 animate={{
                   boxShadow:
@@ -65,17 +65,17 @@ function OrbitingCouncil() {
                 }}
                 transition={{ duration: 0.3 }}
               >
-                <span className="text-primary">{member.initials}</span>
+                <span className="text-white font-bold">{member.initials}</span>
                 
                 {hoveredMember === member.id && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
-                    className="absolute -bottom-20 left-1/2 -translate-x-1/2 whitespace-nowrap bg-background/95 backdrop-blur-md border border-primary/30 rounded-lg px-4 py-3 shadow-2xl z-10"
+                    className="absolute -bottom-20 left-1/2 -translate-x-1/2 whitespace-nowrap bg-violet-950/95 backdrop-blur-md border border-violet-500/40 rounded-lg px-4 py-3 shadow-2xl z-10"
                   >
-                    <p className="text-sm font-semibold text-foreground">{member.name}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{member.role}</p>
+                    <p className="text-sm font-semibold text-white">{member.name}</p>
+                    <p className="text-xs text-violet-200 mt-1">{member.role}</p>
                   </motion.div>
                 )}
               </motion.div>
@@ -147,18 +147,18 @@ export default function SuperhumanProject() {
   return (
     <div
       ref={containerRef}
-      className="min-h-screen bg-background text-foreground overflow-x-hidden"
+      className="min-h-screen overflow-x-hidden"
       style={{
-        background: "radial-gradient(ellipse at top, rgba(139, 92, 246, 0.15) 0%, rgba(0, 0, 0, 0.95) 50%)",
+        background: "linear-gradient(to bottom, #0f0a1f 0%, #1a0d2e 30%, #240b3a 60%, #1a0d2e 100%)",
       }}
     >
       <motion.div
         className="absolute inset-0 pointer-events-none"
         animate={{
           background: [
-            "radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.1) 0%, transparent 50%)",
-            "radial-gradient(circle at 80% 50%, rgba(168, 85, 247, 0.1) 0%, transparent 50%)",
-            "radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.1) 0%, transparent 50%)",
+            "radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.15) 0%, transparent 50%)",
+            "radial-gradient(circle at 80% 50%, rgba(168, 85, 247, 0.15) 0%, transparent 50%)",
+            "radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.15) 0%, transparent 50%)",
           ],
         }}
         transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
@@ -172,7 +172,7 @@ export default function SuperhumanProject() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.2 }}
-          className="text-6xl md:text-8xl font-light tracking-tight mb-6"
+          className="text-6xl md:text-8xl font-light tracking-tight mb-6 text-white"
           style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif" }}
         >
           The Superhuman Project
@@ -182,7 +182,7 @@ export default function SuperhumanProject() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.4 }}
-          className="text-xl md:text-3xl text-muted-foreground font-light mb-12 max-w-3xl"
+          className="text-xl md:text-3xl text-slate-300 font-light mb-12 max-w-3xl"
         >
           Build an AI version of yourself—100x better.
         </motion.p>
@@ -200,12 +200,12 @@ export default function SuperhumanProject() {
         style={{ y: questionY, opacity: questionOpacity }}
         className="relative min-h-screen flex flex-col items-center justify-center px-6 text-center"
       >
-        <h2 className="text-4xl md:text-6xl font-light tracking-tight mb-8 max-w-4xl leading-tight">
+        <h2 className="text-4xl md:text-6xl font-light tracking-tight mb-8 max-w-4xl leading-tight text-white">
           What if you could design a version of yourself—100x better?
         </h2>
-        <div className="space-y-4 text-xl md:text-2xl text-muted-foreground font-light max-w-2xl">
-          <p>Your intelligence. Your habits. Your emotions.</p>
-          <p className="text-primary">Enhanced. Accelerated. Multiplied.</p>
+        <div className="space-y-4 text-xl md:text-2xl font-light max-w-2xl">
+          <p className="text-slate-300">Your intelligence. Your habits. Your emotions.</p>
+          <p className="text-violet-300 font-normal">Enhanced. Accelerated. Multiplied.</p>
         </div>
       </motion.section>
 
@@ -213,13 +213,13 @@ export default function SuperhumanProject() {
         style={{ y: visionY, opacity: visionOpacity }}
         className="relative min-h-screen flex flex-col items-center justify-center px-6 text-center"
       >
-        <h2 className="text-4xl md:text-5xl font-light tracking-tight mb-6">
+        <h2 className="text-4xl md:text-5xl font-light tracking-tight mb-6 text-white">
           Meet Your Superhuman AI.
         </h2>
-        <div className="space-y-6 text-lg md:text-xl text-muted-foreground font-light max-w-3xl leading-relaxed">
-          <p>It learns from you—your tone, your reflections, your decisions.</p>
-          <p>It evolves daily, sharpening your thinking and expanding your capacity.</p>
-          <p className="text-foreground font-normal">
+        <div className="space-y-6 text-lg md:text-xl font-light max-w-3xl leading-relaxed">
+          <p className="text-slate-300">It learns from you—your tone, your reflections, your decisions.</p>
+          <p className="text-slate-300">It evolves daily, sharpening your thinking and expanding your capacity.</p>
+          <p className="text-white font-normal">
             It becomes your ultimate companion—<br />
             the you that never stops improving.
           </p>
@@ -233,10 +233,10 @@ export default function SuperhumanProject() {
         transition={{ duration: 1 }}
         className="relative min-h-screen flex flex-col items-center justify-center px-6 py-20"
       >
-        <h2 className="text-4xl md:text-5xl font-light tracking-tight mb-4 text-center">
+        <h2 className="text-4xl md:text-5xl font-light tracking-tight mb-4 text-center text-white">
           The Council of Greatness
         </h2>
-        <p className="text-lg md:text-xl text-muted-foreground font-light mb-16 text-center max-w-2xl">
+        <p className="text-lg md:text-xl font-light mb-16 text-center max-w-2xl text-slate-300">
           No one becomes Superhuman alone.<br />
           Your personal boardroom of legends guides your AI's mindset.
         </p>
@@ -255,7 +255,7 @@ export default function SuperhumanProject() {
       </motion.section>
 
       <footer className="relative py-12 border-t border-primary/10 text-center">
-        <p className="text-sm text-muted-foreground font-light">
+        <p className="text-sm text-slate-400 font-light">
           Designed by OnSpot. Built by You.
         </p>
       </footer>
