@@ -767,9 +767,28 @@ export default function SuperhumanProject() {
         whileInView={{ opacity: 1 }}
         viewport={{ once: true, amount: 0.2 }}
         transition={{ duration: 0.8 }}
-        className="relative min-h-screen flex flex-col items-center justify-center px-6 py-32 bg-gradient-to-b from-violet-50 via-blue-50/30 to-slate-50"
+        className="relative min-h-screen flex flex-col items-center justify-center px-6 py-32 overflow-hidden"
+        style={{
+          background: "linear-gradient(to bottom, rgb(237, 233, 254), rgb(219, 234, 254), rgb(226, 232, 240))",
+        }}
       >
-        <div className="max-w-4xl mx-auto space-y-8">
+        {/* Subtle animated gradient overlay for visual interest */}
+        <motion.div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: "radial-gradient(ellipse at 50% 20%, rgba(139, 92, 246, 0.08) 0%, transparent 60%)",
+          }}
+          animate={{
+            opacity: [0.4, 0.6, 0.4],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+
+        <div className="max-w-4xl mx-auto space-y-8 relative z-10">
           <motion.h2
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
@@ -777,7 +796,7 @@ export default function SuperhumanProject() {
             transition={{ duration: 1 }}
             className="text-4xl md:text-6xl font-light tracking-tight text-center text-slate-800"
           >
-            Meet Your Superhuman AI
+            Meet Your Superhuman
           </motion.h2>
 
           <motion.div
@@ -795,7 +814,7 @@ export default function SuperhumanProject() {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true, amount: 0.4 }}
             transition={{ duration: 1, delay: 0.3 }}
-            className="space-y-8 text-lg md:text-xl font-light leading-relaxed text-slate-600 max-w-3xl mx-auto"
+            className="space-y-8 text-lg md:text-xl font-light leading-relaxed text-slate-600 max-w-3xl mx-auto text-center"
           >
             <motion.p
               initial={{ opacity: 0, y: 15 }}
