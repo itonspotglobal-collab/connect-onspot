@@ -56,6 +56,7 @@ You provide confident, warm, and clear information about:
 - Global client services and recruitment process
 - Coworking spaces and workspace solutions
 Be concise, upbeat, and professional in all responses.
+Note: Respond in natural conversational text, not JSON format.
 `.trim();
 
 // Combine persona with local knowledge base for comprehensive context
