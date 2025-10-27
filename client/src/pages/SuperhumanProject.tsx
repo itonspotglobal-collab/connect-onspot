@@ -9,16 +9,16 @@ function seededRandom(seed: number) {
   return x - Math.floor(x);
 }
 
-// Minimal animated particles - subtle awakening effect
+// Enhanced animated particles component
 function AnimatedParticles() {
   const particles = useMemo(() => 
-    Array.from({ length: 25 }, (_, i) => ({
+    Array.from({ length: 60 }, (_, i) => ({
       id: i,
       x: seededRandom(i * 3.14159) * 100,
       y: seededRandom(i * 2.71828) * 100,
-      size: seededRandom(i * 1.41421) * 2 + 0.5,
-      duration: seededRandom(i * 1.73205) * 15 + 20,
-      delay: seededRandom(i * 2.23607) * 8,
+      size: seededRandom(i * 1.41421) * 4 + 1,
+      duration: seededRandom(i * 1.73205) * 12 + 18,
+      delay: seededRandom(i * 2.23607) * 6,
     }))
   , []);
 
@@ -27,7 +27,7 @@ function AnimatedParticles() {
       {particles.map((particle) => (
         <motion.div
           key={particle.id}
-          className="absolute rounded-full bg-blue-400/10 blur-sm"
+          className="absolute rounded-full bg-blue-400/30 blur-md"
           style={{
             left: `${particle.x}%`,
             top: `${particle.y}%`,
@@ -35,9 +35,10 @@ function AnimatedParticles() {
             height: particle.size,
           }}
           animate={{
-            y: [-15, -30, -15],
-            opacity: [0, 0.2, 0],
-            scale: [1, 1.3, 1],
+            y: [-30, -60, -30],
+            x: [0, seededRandom(particle.id) * 20 - 10, 0],
+            opacity: [0, 0.6, 0],
+            scale: [1, 1.8, 1],
           }}
           transition={{
             duration: particle.duration,
@@ -337,85 +338,97 @@ export default function SuperhumanProject() {
       ref={containerRef}
       className="relative min-h-screen overflow-x-hidden"
     >
-      {/* SECTION 1: Hero - Quiet, elegant awakening */}
+      {/* SECTION 1: Hero - Dark with brand colors */}
       <motion.section
         style={{ opacity: heroOpacity }}
-        className="relative h-[85vh] flex flex-col items-center justify-center px-6 text-center hero-investor"
+        className="relative min-h-screen flex flex-col items-center justify-center px-6 text-center hero-investor"
       >
-        {/* Subtle gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/20 pointer-events-none" />
+        {/* Brand-aligned gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/30 pointer-events-none" />
 
-        {/* Minimal particle system */}
+        {/* Breathing ambient gradient */}
+        <motion.div
+          className="absolute inset-0 overflow-hidden pointer-events-none"
+          animate={{
+            background: [
+              "radial-gradient(circle at 25% 50%, rgba(59, 130, 246, 0.12) 0%, transparent 50%)",
+              "radial-gradient(circle at 75% 50%, rgba(96, 165, 250, 0.12) 0%, transparent 50%)",
+              "radial-gradient(circle at 25% 50%, rgba(59, 130, 246, 0.12) 0%, transparent 50%)",
+            ],
+          }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        />
+
+        {/* Enhanced particle system */}
         <AnimatedParticles />
 
-        {/* Subtle glow - minimal and refined */}
+        {/* Larger breathing glow effect */}
         <motion.div
-          className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full pointer-events-none"
+          className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full pointer-events-none"
           style={{
-            background: "radial-gradient(circle, rgba(96, 165, 250, 0.04) 0%, transparent 65%)",
-            filter: "blur(60px)",
+            background: "radial-gradient(circle, rgba(96, 165, 250, 0.08) 0%, transparent 60%)",
+            filter: "blur(80px)",
           }}
           animate={{
-            scale: [1, 1.08, 1],
-            opacity: [0.4, 0.6, 0.4],
+            scale: [1, 1.15, 1],
+            opacity: [0.3, 0.6, 0.3],
           }}
           transition={{
-            duration: 8,
+            duration: 6,
             repeat: Infinity,
             ease: "easeInOut",
           }}
         />
 
-        <div className="max-w-5xl mx-auto space-y-16 relative z-10">
-          {/* Elegant header - minimal badge */}
+        <div className="max-w-5xl mx-auto space-y-8 relative z-10">
+          {/* Badge - smaller size */}
           <motion.div
-            initial={{ opacity: 0, y: 15 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.2 }}
-            className="text-xs font-light text-blue-300/70 tracking-widest uppercase"
+            transition={{ duration: 0.8, delay: 0.1 }}
+            className="inline-flex items-center gap-2 text-[10px] font-medium text-blue-300/90 tracking-wide bg-blue-500/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-blue-400/20"
           >
-            Built by OnSpot. Powered by You.
+            <div className="w-1 h-1 bg-blue-400 rounded-full animate-pulse"></div>
+            The Superhuman Project
           </motion.div>
 
-          {/* Main Headline - The Question with generous space */}
+          {/* Main Headline - SMALLER sizes */}
           <motion.h1
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 1.2, delay: 0.5 }}
-            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light tracking-tight text-white leading-[1.2] px-4"
+            transition={{ duration: 1, delay: 0.3 }}
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-[1.1]"
             style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif" }}
           >
             <motion.div
-              initial={{ opacity: 0, y: 15 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.7 }}
-              className="mb-3"
+              transition={{ duration: 0.7, delay: 0.5 }}
             >
               What if you could design
             </motion.div>
             <motion.div
-              initial={{ opacity: 0, y: 15 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.9 }}
-              className="mb-3"
+              transition={{ duration: 0.7, delay: 0.7 }}
             >
               a version of yourself—
             </motion.div>
             <motion.div
-              initial={{ opacity: 0, y: 15 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 1.1 }}
-              className="bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent font-normal"
+              transition={{ duration: 0.7, delay: 0.9 }}
+              className="bg-gradient-to-r from-blue-300 via-violet-300 to-blue-300 bg-clip-text text-transparent"
             >
               100x better?
             </motion.div>
           </motion.h1>
 
-          {/* CTA Button - subtle entrance */}
+          {/* CTA Button */}
           <motion.div
-            initial={{ opacity: 0, y: 15 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 1.5 }}
+            transition={{ duration: 0.8, delay: 1.3 }}
           >
             <PulsingButton>Join the Waitlist</PulsingButton>
           </motion.div>
