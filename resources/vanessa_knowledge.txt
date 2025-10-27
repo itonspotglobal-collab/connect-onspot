@@ -14,6 +14,8 @@ Name: OnSpot Global
 
 Headquarters: Angeles City, Pampanga, Philippines
 
+International Headquarter: Broadway, New York
+
 Website: https://onspotglobal.com
 
 Email: hr@onspotglobal.com / sales@onspotglobal.com
@@ -71,7 +73,7 @@ A: Data-driven talent acquisition, personality-matched hiring, and global operat
 Q: Who should I contact for hiring help?
 A: Email: hello@onspotglobal.com
 
-=== Services Offered ===
+=== Services/Roles Offered ===
 
 - Virtual Assistant Services
 - Business Process Outsourcing (BPO)

@@ -805,3 +805,24 @@ export type BulkTalentData = {
   profile: Omit<InsertProfile, 'userId'>;
   skills: string[];
 };
+
+// Vanessa AI Conversation Logs
+export const vanessaLogs = pgTable("vanessa_logs", {
+  id: serial("id").primaryKey(),
+  threadId: text("thread_id").notNull(),
+  userMessage: text("user_message").notNull(),
+  assistantResponse: text("assistant_response").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => {
+  return {
+    threadIdIndex: index("vanessa_logs_thread_id_idx").on(table.threadId),
+    createdAtIndex: index("vanessa_logs_created_at_idx").on(table.createdAt),
+  };
+});
+
+export const insertVanessaLogSchema = createInsertSchema(vanessaLogs).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertVanessaLog = z.infer<typeof insertVanessaLogSchema>;
+export type VanessaLog = typeof vanessaLogs.$inferSelect;
