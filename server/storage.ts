@@ -21,11 +21,12 @@ import {
   type CsvTalentRow, type CsvBulkImport, type CsvImportResult, type CsvTemplate, type BulkTalentData,
   type Document, type InsertDocument,
   type VanessaLog, type InsertVanessaLog,
-  leadIntakes
+  leadIntakes,
+  vanessaLogs
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
-import { eq, and, gte } from "drizzle-orm";
+import { eq, and, gte, ilike, desc, asc, sql as sqlOp } from "drizzle-orm";
 
 // Type for creating user with password
 export interface CreateUserData {
@@ -2045,4 +2046,68 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// DbStorage class: Extends MemStorage but uses PostgreSQL for Vanessa logs
+export class DbStorage extends MemStorage {
+  // Override Vanessa log methods to use database instead of memory
+
+  async createVanessaLog(log: InsertVanessaLog): Promise<VanessaLog> {
+    const [newLog] = await db.insert(vanessaLogs).values(log).returning();
+    return newLog;
+  }
+
+  async getVanessaLogsByThread(threadId: string): Promise<VanessaLog[]> {
+    return await db
+      .select()
+      .from(vanessaLogs)
+      .where(eq(vanessaLogs.threadId, threadId))
+      .orderBy(asc(vanessaLogs.createdAt));
+  }
+
+  async getAllVanessaThreads(): Promise<{ threadId: string; firstMessage: string; lastMessage: string; messageCount: number; createdAt: Date; updatedAt: Date }[]> {
+    // Get all logs grouped by threadId
+    const logs = await db
+      .select()
+      .from(vanessaLogs)
+      .orderBy(asc(vanessaLogs.createdAt));
+
+    // Group by thread
+    const threadMap = new Map<string, VanessaLog[]>();
+    for (const log of logs) {
+      if (!threadMap.has(log.threadId)) {
+        threadMap.set(log.threadId, []);
+      }
+      threadMap.get(log.threadId)!.push(log);
+    }
+
+    // Convert to thread summaries
+    const threads = Array.from(threadMap.entries()).map(([threadId, threadLogs]) => {
+      const sortedLogs = threadLogs.sort((a, b) => a.createdAt!.getTime() - b.createdAt!.getTime());
+      const firstLog = sortedLogs[0];
+      const lastLog = sortedLogs[sortedLogs.length - 1];
+
+      return {
+        threadId,
+        firstMessage: firstLog.userMessage,
+        lastMessage: lastLog.assistantResponse,
+        messageCount: threadLogs.length,
+        createdAt: firstLog.createdAt!,
+        updatedAt: lastLog.createdAt!,
+      };
+    });
+
+    // Sort by most recent activity
+    return threads.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+  }
+
+  async searchVanessaLogs(query: string): Promise<VanessaLog[]> {
+    return await db
+      .select()
+      .from(vanessaLogs)
+      .where(
+        sqlOp`${vanessaLogs.userMessage} ILIKE ${'%' + query + '%'} OR ${vanessaLogs.assistantResponse} ILIKE ${'%' + query + '%'}`
+      )
+      .orderBy(desc(vanessaLogs.createdAt));
+  }
+}
+
+export const storage = new DbStorage();
