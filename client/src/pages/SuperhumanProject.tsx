@@ -214,7 +214,7 @@ const councilMembers: CouncilMember[] = [
 ];
 
 // Human silhouette component for council members
-function HumanSilhouette({ size = 60, glowIntensity = 0.5 }: { size?: number; glowIntensity?: number }) {
+function HumanSilhouette({ size = 60, glowIntensity = 0.5, isCenter = false }: { size?: number; glowIntensity?: number; isCenter?: boolean }) {
   return (
     <svg
       width={size}
@@ -223,12 +223,23 @@ function HumanSilhouette({ size = 60, glowIntensity = 0.5 }: { size?: number; gl
       className="relative"
     >
       <defs>
-        <radialGradient id={`halo-${size}`} cx="50%" cy="50%">
-          <stop offset="0%" stopColor="rgba(147, 197, 253, 0.6)" />
-          <stop offset="50%" stopColor="rgba(96, 165, 250, 0.3)" />
-          <stop offset="100%" stopColor="transparent" />
+        <radialGradient id={`halo-${size}-${isCenter}`} cx="50%" cy="50%">
+          {isCenter ? (
+            <>
+              <stop offset="0%" stopColor="rgba(59, 130, 246, 0.8)" />
+              <stop offset="30%" stopColor="rgba(96, 165, 250, 0.6)" />
+              <stop offset="60%" stopColor="rgba(147, 197, 253, 0.4)" />
+              <stop offset="100%" stopColor="transparent" />
+            </>
+          ) : (
+            <>
+              <stop offset="0%" stopColor="rgba(167, 139, 250, 0.7)" />
+              <stop offset="50%" stopColor="rgba(139, 92, 246, 0.4)" />
+              <stop offset="100%" stopColor="transparent" />
+            </>
+          )}
         </radialGradient>
-        <filter id={`silhouette-glow-${size}`}>
+        <filter id={`silhouette-glow-${size}-${isCenter}`}>
           <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
           <feMerge>
             <feMergeNode in="coloredBlur"/>
@@ -242,7 +253,7 @@ function HumanSilhouette({ size = 60, glowIntensity = 0.5 }: { size?: number; gl
         cx="50"
         cy="50"
         r="45"
-        fill={`url(#halo-${size})`}
+        fill={`url(#halo-${size}-${isCenter})`}
         opacity={glowIntensity}
       />
 
@@ -252,17 +263,17 @@ function HumanSilhouette({ size = 60, glowIntensity = 0.5 }: { size?: number; gl
         cy="30"
         rx="12"
         ry="14"
-        fill="rgba(147, 197, 253, 0.7)"
-        stroke="rgba(147, 197, 253, 0.9)"
-        strokeWidth="1.5"
-        filter={`url(#silhouette-glow-${size})`}
+        fill={isCenter ? "rgba(59, 130, 246, 0.85)" : "rgba(167, 139, 250, 0.85)"}
+        stroke={isCenter ? "rgba(96, 165, 250, 1)" : "rgba(139, 92, 246, 1)"}
+        strokeWidth="2"
+        filter={`url(#silhouette-glow-${size}-${isCenter})`}
       />
 
       {/* Neck */}
       <path
         d="M 50 44 L 50 52"
-        stroke="rgba(147, 197, 253, 0.6)"
-        strokeWidth="4"
+        stroke={isCenter ? "rgba(59, 130, 246, 0.75)" : "rgba(167, 139, 250, 0.75)"}
+        strokeWidth="5"
         strokeLinecap="round"
         fill="none"
       />
@@ -270,10 +281,10 @@ function HumanSilhouette({ size = 60, glowIntensity = 0.5 }: { size?: number; gl
       {/* Shoulders and torso */}
       <path
         d="M 35 55 Q 42 52, 50 52 Q 58 52, 65 55 L 62 75 Q 56 78, 50 78 Q 44 78, 38 75 Z"
-        fill="rgba(147, 197, 253, 0.6)"
-        stroke="rgba(147, 197, 253, 0.8)"
-        strokeWidth="1.5"
-        filter={`url(#silhouette-glow-${size})`}
+        fill={isCenter ? "rgba(59, 130, 246, 0.75)" : "rgba(167, 139, 250, 0.75)"}
+        stroke={isCenter ? "rgba(96, 165, 250, 1)" : "rgba(139, 92, 246, 1)"}
+        strokeWidth="2"
+        filter={`url(#silhouette-glow-${size}-${isCenter})`}
       />
     </svg>
   );
@@ -281,6 +292,7 @@ function HumanSilhouette({ size = 60, glowIntensity = 0.5 }: { size?: number; gl
 
 function OrbitingCouncil() {
   const [hoveredMember, setHoveredMember] = useState<number | null>(null);
+  const [centerHovered, setCenterHovered] = useState(false);
   const rotation = useMotionValue(0);
   const orbitRadius = 220;
 
@@ -290,7 +302,7 @@ function OrbitingCouncil() {
       <motion.div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: "radial-gradient(ellipse 80% 80% at 50% 50%, rgba(147, 197, 253, 0.08) 0%, transparent 70%)",
+          background: "radial-gradient(ellipse 80% 80% at 50% 50%, rgba(59, 130, 246, 0.12) 0%, transparent 70%)",
         }}
         animate={{
           opacity: [0.5, 0.8, 0.5],
@@ -303,9 +315,41 @@ function OrbitingCouncil() {
         }}
       />
 
+      {/* Energy connection lines from council to center */}
+      {councilMembers.map((member) => (
+        <motion.div
+          key={`energy-line-${member.id}`}
+          className="absolute left-1/2 top-1/2 pointer-events-none"
+          style={{
+            width: `${orbitRadius}px`,
+            height: '1px',
+            transformOrigin: "0% 50%",
+            rotate: useTransform(rotation, (r) => (member.angle + r)),
+          }}
+        >
+          <motion.div
+            className="w-full h-px"
+            style={{
+              background: `linear-gradient(to right, 
+                rgba(59, 130, 246, 0.5) 0%, 
+                rgba(96, 165, 250, 0.3) 50%, 
+                rgba(139, 92, 246, 0.4) 100%)`,
+            }}
+            animate={{
+              opacity: hoveredMember === member.id || centerHovered ? [0.3, 0.7, 0.3] : [0.1, 0.2, 0.1],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+        </motion.div>
+      ))}
+
       {/* Orbiting path visualization - very subtle */}
       <motion.div
-        className="absolute w-[440px] h-[440px] rounded-full border border-blue-200/10"
+        className="absolute w-[440px] h-[440px] rounded-full border border-violet-300/15"
         animate={{ rotate: 360 }}
         transition={{ duration: 180, repeat: Infinity, ease: "linear" }}
         onUpdate={(latest) => {
@@ -339,12 +383,12 @@ function OrbitingCouncil() {
                 <motion.div
                   animate={{
                     filter: isHovered
-                      ? "drop-shadow(0 0 20px rgba(147, 197, 253, 0.8)) drop-shadow(0 0 40px rgba(96, 165, 250, 0.5))"
-                      : "drop-shadow(0 0 10px rgba(147, 197, 253, 0.4))",
+                      ? "drop-shadow(0 0 25px rgba(139, 92, 246, 1)) drop-shadow(0 0 45px rgba(167, 139, 250, 0.7))"
+                      : "drop-shadow(0 0 12px rgba(139, 92, 246, 0.6)) drop-shadow(0 0 25px rgba(167, 139, 250, 0.4))",
                   }}
                   transition={{ duration: 0.3 }}
                 >
-                  <HumanSilhouette size={64} glowIntensity={isHovered ? 0.8 : 0.5} />
+                  <HumanSilhouette size={64} glowIntensity={isHovered ? 0.9 : 0.6} />
                 </motion.div>
 
                 {/* Name and specialty on hover */}
@@ -354,10 +398,10 @@ function OrbitingCouncil() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     transition={{ duration: 0.25, ease: "easeOut" }}
-                    className="absolute -bottom-24 left-1/2 -translate-x-1/2 whitespace-nowrap bg-white/95 backdrop-blur-md border border-blue-200/60 rounded-2xl px-5 py-3 shadow-xl z-10"
+                    className="absolute -bottom-24 left-1/2 -translate-x-1/2 whitespace-nowrap bg-white/95 backdrop-blur-md border border-violet-300/60 rounded-2xl px-5 py-3 shadow-xl z-10"
                   >
                     <p className="text-sm font-semibold text-slate-800">{member.name}</p>
-                    <p className="text-xs text-blue-600 mt-1 font-medium">{member.role}</p>
+                    <p className="text-xs bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent mt-1 font-semibold">{member.role}</p>
                   </motion.div>
                 )}
               </motion.div>
@@ -368,7 +412,7 @@ function OrbitingCouncil() {
 
       {/* Central glowing figure (the user) - larger and more prominent */}
       <motion.div
-        className="absolute flex items-center justify-center"
+        className="absolute flex items-center justify-center cursor-pointer"
         animate={{
           scale: [1, 1.05, 1],
         }}
@@ -377,17 +421,19 @@ function OrbitingCouncil() {
           repeat: Infinity,
           ease: "easeInOut",
         }}
+        onHoverStart={() => setCenterHovered(true)}
+        onHoverEnd={() => setCenterHovered(false)}
       >
         {/* Pulsing glow background */}
         <motion.div
-          className="absolute w-36 h-36 rounded-full"
+          className="absolute w-44 h-44 rounded-full"
           style={{
-            background: "radial-gradient(circle, rgba(96, 165, 250, 0.25) 0%, rgba(147, 197, 253, 0.15) 40%, transparent 70%)",
-            filter: "blur(20px)",
+            background: "radial-gradient(circle, rgba(59, 130, 246, 0.4) 0%, rgba(96, 165, 250, 0.25) 40%, transparent 70%)",
+            filter: "blur(25px)",
           }}
           animate={{
-            scale: [1, 1.3, 1],
-            opacity: [0.4, 0.7, 0.4],
+            scale: centerHovered ? [1.3, 1.5, 1.3] : [1, 1.3, 1],
+            opacity: centerHovered ? [0.6, 0.9, 0.6] : [0.4, 0.7, 0.4],
           }}
           transition={{
             duration: 4,
@@ -399,15 +445,19 @@ function OrbitingCouncil() {
         {/* User's central silhouette - larger */}
         <motion.div
           className="relative z-10"
-          style={{
-            filter: "drop-shadow(0 0 25px rgba(147, 197, 253, 0.7)) drop-shadow(0 0 50px rgba(96, 165, 250, 0.4))",
-          }}
           animate={{
-            filter: [
-              "drop-shadow(0 0 25px rgba(147, 197, 253, 0.7)) drop-shadow(0 0 50px rgba(96, 165, 250, 0.4))",
-              "drop-shadow(0 0 35px rgba(147, 197, 253, 0.9)) drop-shadow(0 0 70px rgba(96, 165, 250, 0.6))",
-              "drop-shadow(0 0 25px rgba(147, 197, 253, 0.7)) drop-shadow(0 0 50px rgba(96, 165, 250, 0.4))",
-            ],
+            filter: centerHovered
+              ? [
+                  "drop-shadow(0 0 35px rgba(59, 130, 246, 1)) drop-shadow(0 0 70px rgba(96, 165, 250, 0.8))",
+                  "drop-shadow(0 0 45px rgba(59, 130, 246, 1)) drop-shadow(0 0 90px rgba(96, 165, 250, 1))",
+                  "drop-shadow(0 0 35px rgba(59, 130, 246, 1)) drop-shadow(0 0 70px rgba(96, 165, 250, 0.8))",
+                ]
+              : [
+                  "drop-shadow(0 0 30px rgba(59, 130, 246, 0.9)) drop-shadow(0 0 60px rgba(96, 165, 250, 0.6))",
+                  "drop-shadow(0 0 40px rgba(59, 130, 246, 1)) drop-shadow(0 0 80px rgba(96, 165, 250, 0.8))",
+                  "drop-shadow(0 0 30px rgba(59, 130, 246, 0.9)) drop-shadow(0 0 60px rgba(96, 165, 250, 0.6))",
+                ],
+            scale: centerHovered ? 1.1 : 1,
           }}
           transition={{
             duration: 4,
@@ -415,19 +465,46 @@ function OrbitingCouncil() {
             ease: "easeInOut",
           }}
         >
-          <HumanSilhouette size={90} glowIntensity={0.9} />
+          <HumanSilhouette size={95} glowIntensity={1} isCenter={true} />
         </motion.div>
 
-        {/* Subtle energy ring around user */}
+        {/* "You" label on hover */}
+        {centerHovered && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="absolute -top-24 left-1/2 -translate-x-1/2 whitespace-nowrap bg-white/95 backdrop-blur-md border-2 border-blue-400/80 rounded-2xl px-6 py-3 shadow-2xl z-10"
+          >
+            <p className="text-lg font-bold bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent">You</p>
+            <p className="text-xs text-slate-600 mt-0.5 font-medium">Surrounded by Greatness</p>
+          </motion.div>
+        )}
+
+        {/* Multiple energy rings around user */}
         <motion.div
-          className="absolute w-28 h-28 rounded-full border-2 border-blue-300/20"
+          className="absolute w-32 h-32 rounded-full border-2 border-blue-400/30"
           animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.6, 0.3],
+            scale: [1, 1.25, 1],
+            opacity: centerHovered ? [0.5, 0.8, 0.5] : [0.3, 0.6, 0.3],
             rotate: [0, 180, 360],
           }}
           transition={{
             duration: 10,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+        />
+        <motion.div
+          className="absolute w-40 h-40 rounded-full border border-violet-400/20"
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: centerHovered ? [0.4, 0.7, 0.4] : [0.2, 0.5, 0.2],
+            rotate: [360, 180, 0],
+          }}
+          transition={{
+            duration: 15,
             repeat: Infinity,
             ease: "linear",
           }}
