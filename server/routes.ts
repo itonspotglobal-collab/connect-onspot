@@ -1206,16 +1206,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ===== Learning System API Routes =====
 
-  // POST /api/feedback - Submit user feedback for a message (protected)
+  // POST /api/feedback - Submit user feedback for a message (public for development)
   app.post(
     "/api/feedback",
-    authenticateJWT,
     validateRequest(
       z.object({
         messageId: z.string().min(1),
         threadId: z.string().min(1),
         rating: z.enum(["up", "down"]),
-        comment: z.string().optional(),
+        comment: z.string().max(500).optional(),
       })
     ),
     async (req: any, res) => {

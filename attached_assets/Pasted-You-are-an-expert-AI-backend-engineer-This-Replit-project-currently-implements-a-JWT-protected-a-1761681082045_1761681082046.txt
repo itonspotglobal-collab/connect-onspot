@@ -1,0 +1,85 @@
+You are an expert AI backend engineer.
+
+This Replit project currently implements a JWT-protected `/api/feedback` endpoint.
+Right now, the chat feedback form fails with a `401 Authentication required` error because no token is provided from the frontend.
+
+We are in the **development phase**, so we want to remove authentication requirements temporarily to allow public feedback submission.
+
+---
+
+### ✅ Your Task
+Modify the backend to make `/api/feedback` publicly accessible while keeping basic validation and safety.
+
+---
+
+### 🧩 Requirements
+
+1. **Update `/api/feedback` route**
+   - Remove the `authenticateJWT` middleware from this route only.
+   - The route should still validate incoming data and reject malformed payloads.
+   - Keep all other admin routes (`/api/learn`, `/api/learn/summary`, etc.) protected by JWT as they are.
+
+2. **Add Input Validation**
+   - Use Zod or a lightweight schema check to ensure:
+     ```ts
+     {
+       messageId: string,
+       rating: "up" | "down",
+       comment?: string
+     }
+     ```
+   - Reject requests missing `messageId` or `rating`.
+   - Limit `comment` length to 500 characters.
+
+3. **Save Feedback in Replit DB**
+   - Store under key format: `feedback:<timestamp>`.
+   - Example structure:
+     ```js
+     {
+       messageId,
+       rating,
+       comment,
+       timestamp: new Date().toISOString()
+     }
+     ```
+
+4. **Return a Clean Response**
+   - On success: `{ success: true }`
+   - On validation failure: `{ error: "Invalid feedback payload" }`
+
+5. **Keep Frontend Unchanged**
+   - The existing feedback modal in `VanessaResponses.tsx` should now work without authentication.
+   - The user clicks “Submit Feedback”, and the feedback posts directly to `/api/feedback`.
+
+---
+
+### 🧰 Example Implementation (Express + TypeScript)
+```ts
+// server/routes.ts or similar
+import { Router } from "express";
+import { z } from "zod";
+import db from "./services/db_manager";
+
+const router = Router();
+
+router.post("/api/feedback", async (req, res) => {
+  try {
+    const schema = z.object({
+      messageId: z.string().min(1),
+      rating: z.enum(["up", "down"]),
+      comment: z.string().max(500).optional(),
+    });
+
+    const feedback = schema.parse(req.body);
+    await db.set(`feedback:${Date.now()}`, {
+      ...feedback,
+      timestamp: new Date().toISOString(),
+    });
+
+    res.status(200).json({ success: true });
+  } catch (err) {
+    res.status(400).json({ error: "Invalid feedback payload", details: err.message });
+  }
+});
+
+export default router;
