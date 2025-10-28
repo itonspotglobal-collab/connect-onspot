@@ -7,8 +7,11 @@ import {
   getAllThreadIds,
   storeLearningSummary,
   storeKnowledgeSummary,
+  storeLearningStatus,
+  calculateLearningHealth,
   type LearningSummary,
   type KnowledgeSummary,
+  type LearningStatus,
 } from "./db_manager";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -117,7 +120,17 @@ async function summarizeText(text: string): Promise<string> {
  * Analyze feedback and conversation logs to generate learning insights
  */
 export async function runLearningLoop(): Promise<LearningSummary> {
+  const statusTimestamp = Date.now();
+  const startedAt = new Date().toISOString();
   console.log("🔄 Running learning loop analysis...");
+
+  // Create initial status entry
+  const statusEntry: LearningStatus = {
+    status: "running",
+    feedbackCount: 0,
+    startedAt,
+  };
+  await storeLearningStatus(statusEntry, statusTimestamp);
 
   try {
     // Gather data
@@ -160,6 +173,8 @@ export async function runLearningLoop(): Promise<LearningSummary> {
     );
 
     // Create learning summary
+    const summaryTimestamp = Date.now();
+    const summaryKey = `learning_summary:${summaryTimestamp}`;
     const summary: LearningSummary = {
       date: new Date().toISOString(),
       insights: analysis.insights,
@@ -174,10 +189,41 @@ export async function runLearningLoop(): Promise<LearningSummary> {
     // Store the summary
     await storeLearningSummary(summary);
 
-    console.log(`✅ Learning loop completed. Insights: ${analysis.insights.length}`);
+    // Update status entry to success
+    const completedAt = new Date().toISOString();
+    await storeLearningStatus({
+      status: "success",
+      feedbackCount: feedback.length,
+      summaryKey,
+      startedAt,
+      completedAt,
+    }, statusTimestamp);
+
+    // Update health metrics
+    await calculateLearningHealth();
+
+    console.log(`✅ Vanessa Learning Summary Updated (${new Date().toISOString()})`);
+    console.log(`   📊 Analyzed ${feedback.length} feedback entries`);
+    console.log(`   💡 Generated ${analysis.insights.length} insights`);
+    
     return summary;
-  } catch (error) {
-    console.error("❌ Error running learning loop:", error);
+  } catch (error: any) {
+    const completedAt = new Date().toISOString();
+    const errorMessage = error.message || "Unknown error";
+    
+    console.error(`❌ Learning Failed: ${errorMessage}`);
+    
+    // Update status entry to failed
+    await storeLearningStatus({
+      status: "failed",
+      feedbackCount: 0,
+      startedAt,
+      completedAt,
+      error: errorMessage,
+    }, statusTimestamp);
+
+    // Update health metrics
+    await calculateLearningHealth();
     
     // Return empty summary on error
     return {

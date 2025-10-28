@@ -1345,6 +1345,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/learn/status - Get recent learning run statuses (admin only)
+  app.get("/api/learn/status", authenticateJWT, requireAdmin, async (req: any, res) => {
+    try {
+      const statuses = await dbManager.getRecentLearningStatuses(5);
+      res.json({ success: true, statuses });
+    } catch (error: any) {
+      console.error(`❌ Error fetching learning statuses [${req.requestId}]:`, error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to fetch learning statuses",
+        requestId: req.requestId,
+      });
+    }
+  });
+
+  // GET /api/learn/health - Get learning health metrics (admin only)
+  app.get("/api/learn/health", authenticateJWT, requireAdmin, async (req: any, res) => {
+    try {
+      // Try to get cached health metrics first
+      let health = await dbManager.getLearningHealth();
+      
+      // If no cached metrics, calculate them
+      if (!health) {
+        health = await dbManager.calculateLearningHealth();
+      }
+      
+      res.json({ success: true, health });
+    } catch (error: any) {
+      console.error(`❌ Error fetching learning health [${req.requestId}]:`, error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to fetch learning health",
+        requestId: req.requestId,
+      });
+    }
+  });
+
+  // GET /api/learn/summary/latest - Get latest learning summary with metadata (admin only)
+  app.get("/api/learn/summary/latest", authenticateJWT, requireAdmin, async (req: any, res) => {
+    try {
+      const summary = await dbManager.getLatestLearningSummary();
+      
+      if (!summary) {
+        return res.status(404).json({
+          success: false,
+          error: "No learning summary found",
+          requestId: req.requestId,
+        });
+      }
+
+      // Format response with metadata
+      const response = {
+        summaryKey: "learning_summary:latest",
+        generatedAt: summary.date,
+        feedbackCount: summary.totalFeedback,
+        summaryText: summary.insights.join(" ").substring(0, 200),
+        insights: summary.insights,
+        improvementAreas: summary.improvementAreas,
+        topPositiveTopics: summary.topPositiveTopics,
+        commonIssues: summary.commonIssues,
+        positiveCount: summary.positiveCount,
+        negativeCount: summary.negativeCount,
+      };
+      
+      res.json({ success: true, summary: response });
+    } catch (error: any) {
+      console.error(`❌ Error fetching latest summary [${req.requestId}]:`, error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to fetch latest summary",
+        requestId: req.requestId,
+      });
+    }
+  });
+
   // Enhanced development login endpoint with validation and monitoring
   app.post(
     "/api/dev/login",

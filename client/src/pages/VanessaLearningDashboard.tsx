@@ -40,6 +40,31 @@ interface DatabaseStats {
   totalLearningSummaries: number;
 }
 
+interface LearningStatus {
+  status: "running" | "success" | "failed";
+  feedbackCount: number;
+  summaryKey?: string;
+  startedAt: string;
+  completedAt?: string;
+  error?: string;
+}
+
+interface LearningHealth {
+  totalRuns: number;
+  successRuns: number;
+  failedRuns: number;
+  successRate: number;
+}
+
+interface LatestSummary {
+  summaryKey: string;
+  generatedAt: string;
+  feedbackCount: number;
+  summaryText: string;
+  insights: string[];
+  improvementAreas: string[];
+}
+
 export default function VanessaLearningDashboard() {
   const { toast } = useToast();
 
@@ -65,6 +90,30 @@ export default function VanessaLearningDashboard() {
     feedback: any[];
   }>({
     queryKey: ["/api/feedback"],
+  });
+
+  // Fetch learning status (recent runs)
+  const { data: statusData, isLoading: statusLoading } = useQuery<{
+    success: boolean;
+    statuses: LearningStatus[];
+  }>({
+    queryKey: ["/api/learn/status"],
+  });
+
+  // Fetch learning health
+  const { data: healthData, isLoading: healthLoading } = useQuery<{
+    success: boolean;
+    health: LearningHealth;
+  }>({
+    queryKey: ["/api/learn/health"],
+  });
+
+  // Fetch latest summary with metadata
+  const { data: latestSummaryData, isLoading: latestSummaryLoading } = useQuery<{
+    success: boolean;
+    summary: LatestSummary;
+  }>({
+    queryKey: ["/api/learn/summary/latest"],
   });
 
   // Knowledge ingestion mutation
@@ -96,6 +145,9 @@ export default function VanessaLearningDashboard() {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/learn/summary"] });
       queryClient.invalidateQueries({ queryKey: ["/api/learn/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/learn/status"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/learn/health"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/learn/summary/latest"] });
     },
     onError: (error: any) => {
       toast({
@@ -109,10 +161,26 @@ export default function VanessaLearningDashboard() {
   const summary = summaryData?.summary;
   const stats = statsData?.stats;
   const feedback = feedbackData?.feedback || [];
+  const learningStatuses = statusData?.statuses || [];
+  const learningHealth = healthData?.health;
+  const latestSummary = latestSummaryData?.summary;
 
   const satisfactionRate = stats && stats.totalFeedback > 0
     ? Math.round((summary?.positiveCount || 0) / stats.totalFeedback * 100)
     : 0;
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "success":
+        return <Badge className="bg-green-500">🟢 Success</Badge>;
+      case "running":
+        return <Badge className="bg-yellow-500">🟡 Running</Badge>;
+      case "failed":
+        return <Badge variant="destructive">🔴 Failed</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
@@ -242,12 +310,181 @@ export default function VanessaLearningDashboard() {
       </div>
 
       {/* Learning Insights Tabs */}
-      <Tabs defaultValue="insights" className="space-y-4">
+      <Tabs defaultValue="visibility" className="space-y-4">
         <TabsList>
+          <TabsTrigger value="visibility">Learning Visibility</TabsTrigger>
           <TabsTrigger value="insights">Insights</TabsTrigger>
           <TabsTrigger value="feedback">Recent Feedback</TabsTrigger>
           <TabsTrigger value="performance">Performance</TabsTrigger>
         </TabsList>
+
+        {/* Learning Visibility Tab */}
+        <TabsContent value="visibility" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            {/* Learning Health Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Learning Health
+                </CardTitle>
+                <CardDescription>Overall learning system performance</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {healthLoading ? (
+                  <p className="text-center text-muted-foreground">Loading...</p>
+                ) : !learningHealth ? (
+                  <p className="text-center text-muted-foreground">No learning runs yet</p>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Success Rate</span>
+                      <span className="text-2xl font-bold">{learningHealth.successRate}%</span>
+                    </div>
+                    <Progress value={learningHealth.successRate} className="h-2" />
+                    <div className="grid grid-cols-3 gap-2 text-center pt-2">
+                      <div>
+                        <div className="text-2xl font-bold text-muted-foreground">{learningHealth.totalRuns}</div>
+                        <div className="text-xs text-muted-foreground">Total Runs</div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-bold text-green-600">{learningHealth.successRuns}</div>
+                        <div className="text-xs text-muted-foreground">Success</div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-bold text-red-600">{learningHealth.failedRuns}</div>
+                        <div className="text-xs text-muted-foreground">Failed</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Latest Summary Preview Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5" />
+                  Latest Summary
+                </CardTitle>
+                <CardDescription>Most recent learning insights</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {latestSummaryLoading ? (
+                  <p className="text-center text-muted-foreground">Loading...</p>
+                ) : !latestSummary ? (
+                  <div className="text-center space-y-2">
+                    <p className="text-sm text-muted-foreground">No summary available yet</p>
+                    <Button
+                      onClick={() => learningLoopMutation.mutate()}
+                      disabled={learningLoopMutation.isPending}
+                      size="sm"
+                      data-testid="button-generate-summary"
+                    >
+                      <RefreshCw className={`h-4 w-4 mr-2 ${learningLoopMutation.isPending ? 'animate-spin' : ''}`} />
+                      Generate Summary
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>Generated: {format(new Date(latestSummary.generatedAt), "MMM d, h:mm a")}</span>
+                      <span>{latestSummary.feedbackCount} feedback</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground line-clamp-3">
+                      {latestSummary.summaryText || latestSummary.insights.join(" ").substring(0, 200)}...
+                    </p>
+                    <div className="flex gap-2 pt-2">
+                      <Badge variant="outline">{latestSummary.insights.length} insights</Badge>
+                      <Badge variant="outline">{latestSummary.improvementAreas.length} improvements</Badge>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Recent Learning Runs Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Brain className="h-5 w-5" />
+                Recent Learning Runs
+              </CardTitle>
+              <CardDescription>Last 5 learning loop executions</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {statusLoading ? (
+                <p className="text-center text-muted-foreground">Loading...</p>
+              ) : learningStatuses.length === 0 ? (
+                <div className="text-center space-y-3">
+                  <p className="text-sm text-muted-foreground">No learning runs yet</p>
+                  <Button
+                    onClick={() => learningLoopMutation.mutate()}
+                    disabled={learningLoopMutation.isPending}
+                    data-testid="button-run-first-learning"
+                  >
+                    <TrendingUp className="h-4 w-4 mr-2" />
+                    Run First Learning Loop
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {learningStatuses.map((status, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 rounded-lg border">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          {getStatusBadge(status.status)}
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(status.startedAt), "MMM d, h:mm a")}
+                          </span>
+                        </div>
+                        {status.status === "success" && (
+                          <p className="text-sm text-muted-foreground">
+                            Analyzed {status.feedbackCount} feedback entries
+                          </p>
+                        )}
+                        {status.status === "failed" && status.error && (
+                          <p className="text-sm text-red-600">{status.error}</p>
+                        )}
+                        {status.completedAt && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Duration: {Math.round((new Date(status.completedAt).getTime() - new Date(status.startedAt).getTime()) / 1000)}s
+                          </p>
+                        )}
+                      </div>
+                      {status.summaryKey && (
+                        <Badge variant="secondary" className="ml-2">
+                          Summary Available
+                        </Badge>
+                      )}
+                    </div>
+                  ))}
+                  <Button
+                    onClick={() => learningLoopMutation.mutate()}
+                    disabled={learningLoopMutation.isPending}
+                    className="w-full mt-4"
+                    variant="outline"
+                    data-testid="button-rerun-learning"
+                  >
+                    {learningLoopMutation.isPending ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Running...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Re-run Learning Loop
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* Insights Tab */}
         <TabsContent value="insights" className="space-y-4">

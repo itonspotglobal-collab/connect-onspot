@@ -1,0 +1,130 @@
+You are an expert AI systems engineer.
+
+The current Replit project implements a self-learning AI system (Vanessa) with:
+- Feedback submission via `/api/feedback`
+- Knowledge ingestion via `/api/learn`
+- Learning summarization via `/api/learn/summarize`
+- Admin dashboard `/admin/learning`
+
+Now, I want to add **full visibility into the learning process** so I can see if Vanessa is actually learning or failing silently.
+
+---
+
+### 🎯 Objectives
+
+1. **Add Learning Status Logging**
+   - In `server/services/learningLoop.ts`, wrap the summarization process in a status-tracking mechanism.
+   - Each learning run should store a new entry in Replit DB using this format:
+     ```json
+     {
+       "status": "running" | "success" | "failed",
+       "feedbackCount": <number>,
+       "summaryKey": "learning_summary:<timestamp>",
+       "startedAt": "<ISO timestamp>",
+       "completedAt": "<ISO timestamp>",
+       "error": "<optional error message>"
+     }
+     ```
+   - Use key format: `learning_status:<timestamp>`.
+
+2. **Add API Endpoint: `/api/learn/status`**
+   - Returns the 5 most recent learning status entries.
+   - Include summary of:
+     - `status`
+     - `feedbackCount`
+     - `startedAt` / `completedAt`
+     - `summaryKey`
+   - Example response:
+     ```json
+     [
+       {
+         "status": "success",
+         "feedbackCount": 7,
+         "summaryKey": "learning_summary:2025-10-29T05:32Z",
+         "completedAt": "2025-10-29T05:33Z"
+       },
+       {
+         "status": "failed",
+         "error": "OpenAI API timeout"
+       }
+     ]
+     ```
+
+3. **Add Learning Health Metric**
+   - Create a new helper in `learningLoop.ts` or a new file `learningHealth.ts`.
+   - Calculate:
+     - Total learning runs
+     - Successful runs
+     - Failed runs
+     - Success rate percentage
+   - Store this as a cached value in Replit DB (e.g., `learning_health:latest`).
+
+4. **Add API Endpoint: `/api/learn/health`**
+   - Returns:
+     ```json
+     {
+       "totalRuns": 20,
+       "successRuns": 18,
+       "failedRuns": 2,
+       "successRate": 90
+     }
+     ```
+
+5. **Enhance Admin Dashboard (`/admin/learning`)**
+   - Add a new section **“Learning Visibility”** showing:
+     - The most recent 5 learning runs (status + timestamps)
+     - Current “Learning Health” (success rate)
+     - Last learning summary preview (first 200 chars)
+     - A manual “Re-run Learning” button that triggers `/api/learn/summarize`
+   - Use colored badges:
+     - 🟢 success
+     - 🟡 running
+     - 🔴 failed
+
+6. **Add API Endpoint: `/api/learn/summary/latest`**
+   - Returns the latest learning summary text and metadata:
+     ```json
+     {
+       "summaryKey": "learning_summary:2025-10-29T05:32Z",
+       "generatedAt": "2025-10-29T05:32Z",
+       "feedbackCount": 7,
+       "summaryText": "Vanessa learned to clarify how the Delivery Operations 4P OS framework works..."
+     }
+     ```
+
+7. **Console + Optional Notifications**
+   - Log success/failure in the Replit console.
+   - Optionally print a clear message when a new learning summary is generated:
+     ```
+     ✅ Vanessa Learning Summary Updated (2025-10-29T05:32Z)
+     ❌ Learning Failed: OpenAI timeout
+     ```
+
+---
+
+### 🧩 Deliverables
+
+- Updated `server/services/learningLoop.ts` with status logging and success tracking.
+- New routes in `server/routes.ts`:
+  - `GET /api/learn/status`
+  - `GET /api/learn/health`
+  - `GET /api/learn/summary/latest`
+- Updated `/admin/learning` page:
+  - Adds “Learning Visibility” section
+  - Shows learning health stats and latest summary
+  - Manual “Re-run Learning” button
+- Console output for each learning cycle result.
+
+---
+
+### ✅ Validation
+- Every learning run creates a new `learning_status:<timestamp>` entry.
+- Admin dashboard displays the latest 5 runs and success rate.
+- API endpoints respond with up-to-date data.
+- Re-running learning updates `learning_summary:latest`.
+- Console logs show ✅ or ❌ outcomes for each learning loop.
+
+---
+
+Start by generating or modifying these backend routes and dashboard components.
+Make sure all new routes are **admin-only**, but can be tested in dev mode without JWT authentication.

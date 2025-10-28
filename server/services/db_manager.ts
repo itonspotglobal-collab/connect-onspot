@@ -260,6 +260,134 @@ export async function getAllKnowledge(): Promise<KnowledgeSummary[]> {
 }
 
 // ========================================
+// Learning Status Management
+// ========================================
+
+export interface LearningStatus {
+  status: "running" | "success" | "failed";
+  feedbackCount: number;
+  summaryKey?: string;
+  startedAt: string;
+  completedAt?: string;
+  error?: string;
+}
+
+/**
+ * Store a learning status entry
+ * Key format: `learning_status:<timestamp>`
+ */
+export async function storeLearningStatus(status: LearningStatus, timestamp?: number): Promise<string> {
+  try {
+    const ts = timestamp || Date.now();
+    const key = `learning_status:${ts}`;
+    await db.set(key, status);
+    console.log(`✅ Stored learning status: ${status.status}`);
+    return key;
+  } catch (error) {
+    console.error("❌ Error storing learning status:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get the N most recent learning status entries
+ */
+export async function getRecentLearningStatuses(limit: number = 5): Promise<LearningStatus[]> {
+  try {
+    const result = await db.list("learning_status:");
+    const keys = result.ok ? result.value : [];
+    
+    // Sort keys by timestamp (descending)
+    const sortedKeys = keys.sort((a: string, b: string) => {
+      const timestampA = parseInt(a.split(":")[1] || "0");
+      const timestampB = parseInt(b.split(":")[1] || "0");
+      return timestampB - timestampA;
+    });
+    
+    // Get the most recent N entries
+    const recentKeys = sortedKeys.slice(0, limit);
+    const statusPromises = recentKeys.map((key: string) => db.get(key));
+    const statusResults = await Promise.all(statusPromises);
+    
+    const statuses = statusResults
+      .filter((r: any) => r.ok && r.value && typeof r.value === 'object')
+      .map((r: any) => r.value as LearningStatus);
+    
+    return statuses;
+  } catch (error) {
+    console.error("❌ Error getting recent learning statuses:", error);
+    return [];
+  }
+}
+
+/**
+ * Calculate learning health metrics (only counts finalized runs, excludes "running" status)
+ */
+export async function calculateLearningHealth(): Promise<{
+  totalRuns: number;
+  successRuns: number;
+  failedRuns: number;
+  successRate: number;
+}> {
+  try {
+    const result = await db.list("learning_status:");
+    const keys = result.ok ? result.value : [];
+    
+    const statusPromises = keys.map((key: string) => db.get(key));
+    const statusResults = await Promise.all(statusPromises);
+    
+    // Only count finalized runs (success or failed, exclude running)
+    const statuses = statusResults
+      .filter((r: any) => r.ok && r.value && typeof r.value === 'object')
+      .map((r: any) => r.value as LearningStatus)
+      .filter(s => s.status !== "running");
+    
+    const totalRuns = statuses.length;
+    const successRuns = statuses.filter(s => s.status === "success").length;
+    const failedRuns = statuses.filter(s => s.status === "failed").length;
+    const successRate = totalRuns > 0 ? Math.round((successRuns / totalRuns) * 100) : 0;
+    
+    const health = {
+      totalRuns,
+      successRuns,
+      failedRuns,
+      successRate,
+    };
+    
+    // Cache the health metrics
+    await db.set("learning_health:latest", health);
+    
+    return health;
+  } catch (error) {
+    console.error("❌ Error calculating learning health:", error);
+    return {
+      totalRuns: 0,
+      successRuns: 0,
+      failedRuns: 0,
+      successRate: 0,
+    };
+  }
+}
+
+/**
+ * Get cached learning health metrics
+ */
+export async function getLearningHealth(): Promise<{
+  totalRuns: number;
+  successRuns: number;
+  failedRuns: number;
+  successRate: number;
+} | null> {
+  try {
+    const result = await db.get("learning_health:latest");
+    return (result.ok && result.value) ? result.value as any : null;
+  } catch (error) {
+    console.error("❌ Error getting learning health:", error);
+    return null;
+  }
+}
+
+// ========================================
 // Learning Summary Management
 // ========================================
 
