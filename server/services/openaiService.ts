@@ -2,6 +2,8 @@ import OpenAI from "openai";
 import fs from "fs";
 import path from "path";
 import { storage } from "../storage";
+import { storeConversation, getLatestLearningSummary } from "./db_manager";
+import { v4 as uuidv4 } from "uuid";
 
 // Validate required environment variables at startup
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -59,10 +61,31 @@ Be concise, upbeat, and professional in all responses.
 Note: Respond in natural conversational text, not JSON format.
 `.trim();
 
-// Combine persona with local knowledge base for comprehensive context
-const VANESSA_INSTRUCTIONS = vanessaKnowledge
-  ? `${VANESSA_PERSONA}\n\n[Company Knowledge Base]\n${vanessaKnowledge}`
-  : VANESSA_PERSONA;
+// Build enhanced instructions with knowledge and learning insights
+async function buildEnhancedInstructions(): Promise<string> {
+  let instructions = vanessaKnowledge
+    ? `${VANESSA_PERSONA}\n\n[Company Knowledge Base]\n${vanessaKnowledge}`
+    : VANESSA_PERSONA;
+
+  // Add latest learning insights if available
+  try {
+    const learningSummary = await getLatestLearningSummary();
+    if (learningSummary && learningSummary.insights.length > 0) {
+      instructions += `\n\n[Recent Learning Insights]\n`;
+      instructions += `Based on user feedback and interactions, focus on:\n`;
+      instructions += learningSummary.insights.map((i, idx) => `${idx + 1}. ${i}`).join("\n");
+      
+      if (learningSummary.improvementAreas.length > 0) {
+        instructions += `\n\nAreas to improve:\n`;
+        instructions += learningSummary.improvementAreas.map((a, idx) => `${idx + 1}. ${a}`).join("\n");
+      }
+    }
+  } catch (error) {
+    console.error("❌ Error loading learning summary:", error);
+  }
+
+  return instructions;
+}
 
 export interface ChatResponse {
   message: string;
@@ -138,11 +161,14 @@ export async function* streamWithAssistant(
       content: userMessage,
     });
 
+    // Build enhanced instructions with learning insights
+    const enhancedInstructions = await buildEnhancedInstructions();
+
     // Start a streaming run with the assistant
-    // Use additional_instructions to reinforce Vanessa's persona and inject local knowledge
+    // Use additional_instructions to reinforce Vanessa's persona and inject local knowledge + learning
     const stream = await client.beta.threads.runs.stream(currentThreadId, {
       assistant_id: assistantId,
-      additional_instructions: VANESSA_INSTRUCTIONS,
+      additional_instructions: enhancedInstructions,
     });
     
     console.log(`🧠 Started Vanessa run for thread: ${currentThreadId}`);
@@ -176,14 +202,25 @@ export async function* streamWithAssistant(
       }
     }
 
-    // Log the conversation to storage
+    // Log the conversation to both PostgreSQL and Replit DB
     try {
+      // PostgreSQL logging (existing)
       await storage.createVanessaLog({
         threadId: currentThreadId,
         userMessage,
         assistantResponse,
       });
-      console.log(`💾 Logged conversation to thread: ${currentThreadId}`);
+      console.log(`💾 Logged conversation to PostgreSQL: ${currentThreadId}`);
+
+      // Replit DB logging (for learning system)
+      await storeConversation({
+        threadId: currentThreadId,
+        userMessage,
+        assistantResponse,
+        timestamp: Date.now(),
+        messageId: uuidv4(),
+      });
+      console.log(`💾 Logged conversation to Replit DB: ${currentThreadId}`);
     } catch (logError) {
       console.error("❌ Error logging conversation:", logError);
     }
@@ -221,6 +258,9 @@ export async function sendMessageToAssistant(
       await waitForRunCompletion(client, currentThreadId);
     }
 
+    // Build enhanced instructions with learning insights
+    const enhancedInstructions = await buildEnhancedInstructions();
+
     // Add the user's message to the thread
     await client.beta.threads.messages.create(currentThreadId, {
       role: "user",
@@ -228,10 +268,10 @@ export async function sendMessageToAssistant(
     });
 
     // Run the assistant (non-streaming)
-    // Use additional_instructions to reinforce Vanessa's persona and inject local knowledge
+    // Use additional_instructions to reinforce Vanessa's persona and inject local knowledge + learning
     const run = await client.beta.threads.runs.createAndPoll(currentThreadId, {
       assistant_id: assistantId,
-      additional_instructions: VANESSA_INSTRUCTIONS,
+      additional_instructions: enhancedInstructions,
     });
 
     if (run.status === "completed") {

@@ -42,6 +42,7 @@ import LeadIntake from "@/pages/LeadIntake";
 import AdminCSVImport from "@/pages/AdminCSVImport";
 import AdminDashboard from "@/pages/AdminDashboard";
 import VanessaResponses from "@/pages/VanessaResponses";
+import VanessaLearningDashboard from "@/pages/VanessaLearningDashboard";
 import InvestorsCorner from "@/pages/InvestorsCorner";
 import ProfileSettings from "@/pages/ProfileSettings";
 import Powerapp from "@/pages/Powerapp";
@@ -112,6 +113,7 @@ function PublicRouter() {
           <Route path="/powerapp" component={Powerapp} />
           <Route path="/operations-playbook" component={OperationsPlaybook} />
           <Route path="/admin/vanessa-responses" component={VanessaResponses} />
+          <Route path="/admin/vanessa-learning" component={VanessaLearningDashboard} />
           {/* Legacy routes for backward compatibility */}
           <Route path="/talent" component={TalentSearch} />
           <Route component={NotFound} />
@@ -221,6 +223,7 @@ function AppContent() {
       <Route path="/operations-playbook" component={PublicRouter} />
       <Route path="/powerapp" component={PublicRouter} />
       <Route path="/admin/vanessa-responses" component={PublicRouter} />
+      <Route path="/admin/vanessa-learning" component={PublicRouter} />
       
       {/* Client Protected Routes */}
       <Route path="/dashboard" component={ClientRouter} />

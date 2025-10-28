@@ -1,10 +1,15 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Search, MessageCircle, User, Bot } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Search, MessageCircle, User, Bot, ThumbsUp, ThumbsDown } from "lucide-react";
 import { format } from "date-fns";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface VanessaLog {
   id: number;
@@ -26,6 +31,14 @@ interface ThreadSummary {
 export default function VanessaResponses() {
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [feedbackDialog, setFeedbackDialog] = useState<{
+    open: boolean;
+    messageId: number;
+    threadId: string;
+    rating: "up" | "down";
+  } | null>(null);
+  const [feedbackComment, setFeedbackComment] = useState("");
+  const { toast } = useToast();
 
   // Fetch all conversation threads
   const { data: threadsData, isLoading: threadsLoading } = useQuery<{
@@ -54,6 +67,59 @@ export default function VanessaResponses() {
         thread.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : threads;
+
+  // Feedback submission mutation
+  const feedbackMutation = useMutation({
+    mutationFn: async (data: { messageId: string; threadId: string; rating: "up" | "down"; comment?: string }) =>
+      apiRequest("POST", "/api/feedback", data),
+    onSuccess: () => {
+      toast({
+        title: "Feedback submitted",
+        description: "Thank you for helping Vanessa improve!",
+      });
+      setFeedbackDialog(null);
+      setFeedbackComment("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to submit feedback",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handle feedback button click
+  const handleFeedback = (messageId: number, threadId: string, rating: "up" | "down") => {
+    // For positive feedback, submit immediately
+    if (rating === "up") {
+      feedbackMutation.mutate({
+        messageId: String(messageId),
+        threadId,
+        rating,
+      });
+    } else {
+      // For negative feedback, open dialog for optional comment
+      setFeedbackDialog({
+        open: true,
+        messageId,
+        threadId,
+        rating,
+      });
+    }
+  };
+
+  // Submit feedback with comment
+  const submitFeedbackWithComment = () => {
+    if (feedbackDialog) {
+      feedbackMutation.mutate({
+        messageId: String(feedbackDialog.messageId),
+        threadId: feedbackDialog.threadId,
+        rating: feedbackDialog.rating,
+        comment: feedbackComment.trim() || undefined,
+      });
+    }
+  };
 
   // Auto-select first thread when threads load
   useEffect(() => {
@@ -204,7 +270,34 @@ export default function VanessaResponses() {
                           </span>
                         </div>
                         <Card className="p-4 bg-card">
-                          <p className="text-sm whitespace-pre-wrap">{message.assistantResponse}</p>
+                          <p className="text-sm whitespace-pre-wrap mb-3">{message.assistantResponse}</p>
+                          
+                          {/* Feedback Buttons */}
+                          <div className="flex items-center gap-2 pt-2 border-t border-border">
+                            <span className="text-xs text-muted-foreground mr-2">Was this helpful?</span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleFeedback(message.id, message.threadId, "up")}
+                              disabled={feedbackMutation.isPending}
+                              className="h-7"
+                              data-testid={`button-feedback-up-${message.id}`}
+                            >
+                              <ThumbsUp className="h-3 w-3 mr-1" />
+                              <span className="text-xs">Yes</span>
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleFeedback(message.id, message.threadId, "down")}
+                              disabled={feedbackMutation.isPending}
+                              className="h-7"
+                              data-testid={`button-feedback-down-${message.id}`}
+                            >
+                              <ThumbsDown className="h-3 w-3 mr-1" />
+                              <span className="text-xs">No</span>
+                            </Button>
+                          </div>
                         </Card>
                       </div>
                     </div>
@@ -223,6 +316,51 @@ export default function VanessaResponses() {
           </div>
         )}
       </div>
+
+      {/* Feedback Comment Dialog */}
+      <Dialog open={feedbackDialog?.open || false} onOpenChange={(open) => {
+        if (!open) {
+          setFeedbackDialog(null);
+          setFeedbackComment("");
+        }
+      }}>
+        <DialogContent data-testid="dialog-feedback-comment">
+          <DialogHeader>
+            <DialogTitle>Help Us Improve</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground mb-3">
+              What could Vanessa do better? Your feedback helps improve future responses.
+            </p>
+            <Textarea
+              placeholder="Optional: Share your thoughts..."
+              value={feedbackComment}
+              onChange={(e) => setFeedbackComment(e.target.value)}
+              className="min-h-24"
+              data-testid="textarea-feedback-comment"
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setFeedbackDialog(null);
+                setFeedbackComment("");
+              }}
+              data-testid="button-cancel-feedback"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={submitFeedbackWithComment}
+              disabled={feedbackMutation.isPending}
+              data-testid="button-submit-feedback"
+            >
+              {feedbackMutation.isPending ? "Submitting..." : "Submit Feedback"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

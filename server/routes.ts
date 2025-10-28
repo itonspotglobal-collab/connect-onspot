@@ -11,6 +11,8 @@ import {
 } from "./auth-utils";
 import { ghlService } from "./services/ghlService";
 import { sendMessageToAssistant, streamMessageToAssistant } from "./services/openaiService";
+import { ingestKnowledgeFiles, runLearningLoop } from "./services/learningLoop";
+import * as dbManager from "./services/db_manager";
 import rateLimit from "express-rate-limit";
 import multer from "multer";
 import Papa from "papaparse";
@@ -1198,6 +1200,148 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: false, 
         error: "Failed to search conversation logs",
         requestId: req.requestId 
+      });
+    }
+  });
+
+  // ===== Learning System API Routes =====
+
+  // POST /api/feedback - Submit user feedback for a message (protected)
+  app.post(
+    "/api/feedback",
+    authenticateJWT,
+    validateRequest(
+      z.object({
+        messageId: z.string().min(1),
+        threadId: z.string().min(1),
+        rating: z.enum(["up", "down"]),
+        comment: z.string().optional(),
+      })
+    ),
+    async (req: any, res) => {
+      try {
+        const { messageId, threadId, rating, comment } = req.body;
+
+        await dbManager.storeFeedback({
+          messageId,
+          threadId,
+          rating,
+          comment,
+          timestamp: Date.now(),
+        });
+
+        console.log(`✅ Feedback stored [${req.requestId}]:`, { messageId, rating });
+        res.json({ success: true, message: "Feedback received" });
+      } catch (error: any) {
+        console.error(`❌ Error storing feedback [${req.requestId}]:`, error);
+        res.status(500).json({
+          success: false,
+          error: "Failed to store feedback",
+          requestId: req.requestId,
+        });
+      }
+    }
+  );
+
+  // GET /api/feedback - Get all feedback (admin only)
+  app.get("/api/feedback", authenticateJWT, requireAdmin, async (req: any, res) => {
+    try {
+      const feedback = await dbManager.getAllFeedback();
+      res.json({ success: true, feedback });
+    } catch (error: any) {
+      console.error(`❌ Error fetching feedback [${req.requestId}]:`, error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to fetch feedback",
+        requestId: req.requestId,
+      });
+    }
+  });
+
+  // POST /api/learn - Ingest knowledge files from /resources/knowledge/ (admin only)
+  app.post("/api/learn", authenticateJWT, requireAdmin, async (req: any, res) => {
+    try {
+      console.log(`📚 Knowledge ingestion started [${req.requestId}]`);
+      const result = await ingestKnowledgeFiles();
+
+      res.json({
+        success: result.success,
+        summaries: result.summaries,
+        errors: result.errors,
+        message: `Processed ${result.summaries} knowledge files`,
+      });
+    } catch (error: any) {
+      console.error(`❌ Error ingesting knowledge [${req.requestId}]:`, error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to ingest knowledge",
+        requestId: req.requestId,
+      });
+    }
+  });
+
+  // GET /api/learn/knowledge - Get all knowledge summaries (admin only)
+  app.get("/api/learn/knowledge", authenticateJWT, requireAdmin, async (req: any, res) => {
+    try {
+      const knowledge = await dbManager.getAllKnowledge();
+      res.json({ success: true, knowledge });
+    } catch (error: any) {
+      console.error(`❌ Error fetching knowledge [${req.requestId}]:`, error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to fetch knowledge",
+        requestId: req.requestId,
+      });
+    }
+  });
+
+  // POST /api/learn/summarize - Run learning loop analysis (admin only)
+  app.post("/api/learn/summarize", authenticateJWT, requireAdmin, async (req: any, res) => {
+    try {
+      console.log(`🔄 Learning loop triggered [${req.requestId}]`);
+      const summary = await runLearningLoop();
+
+      res.json({
+        success: true,
+        summary,
+        message: "Learning loop completed successfully",
+      });
+    } catch (error: any) {
+      console.error(`❌ Error running learning loop [${req.requestId}]:`, error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to run learning loop",
+        requestId: req.requestId,
+      });
+    }
+  });
+
+  // GET /api/learn/summary - Get latest learning summary (admin only)
+  app.get("/api/learn/summary", authenticateJWT, requireAdmin, async (req: any, res) => {
+    try {
+      const summary = await dbManager.getLatestLearningSummary();
+      res.json({ success: true, summary });
+    } catch (error: any) {
+      console.error(`❌ Error fetching learning summary [${req.requestId}]:`, error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to fetch learning summary",
+        requestId: req.requestId,
+      });
+    }
+  });
+
+  // GET /api/learn/stats - Get database statistics (admin only)
+  app.get("/api/learn/stats", authenticateJWT, requireAdmin, async (req: any, res) => {
+    try {
+      const stats = await dbManager.getDatabaseStats();
+      res.json({ success: true, stats });
+    } catch (error: any) {
+      console.error(`❌ Error fetching stats [${req.requestId}]:`, error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to fetch statistics",
+        requestId: req.requestId,
       });
     }
   });
