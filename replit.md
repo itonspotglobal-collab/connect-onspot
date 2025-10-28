@@ -70,7 +70,7 @@ Preferred communication style: Simple, everyday language.
 - **GoHighLevel (GHL)**: Automated lead management with contact and optional opportunity creation. Requires `GHL_API_KEY` for basic functionality.
 
 ### Chatbot Integration
-- **VanessaChat (OpenAI Assistant API)**: AI-powered virtual assistant using OpenAI Assistant API with custom knowledge base. Features:
+- **VanessaChat (OpenAI Assistant API)**: AI-powered virtual assistant using OpenAI Assistant API with custom knowledge base and self-learning capabilities. Features:
   - **Assistant API**: Uses OpenAI's Assistant API with custom assistant configuration from OpenAI Dashboard
   - **Persona Reinforcement**: `additional_instructions` parameter ensures consistent Vanessa personality even if Dashboard config changes
   - **Streaming Responses**: Real-time streaming via `/api/chat/stream` endpoint with Server-Sent Events (SSE)
@@ -86,8 +86,30 @@ Preferred communication style: Simple, everyday language.
     - Run: `npx tsx scripts/uploadVanessaKnowledgeTxt.ts`
     - Creates vector store with File Search enabled
     - Automatically links to Assistant via OpenAI API
+  - **Self-Learning System** (NEW): AI continuously improves through user feedback and automated analysis
+    - **User Feedback**: Thumbs up/down buttons with optional comments on every AI response
+    - **Conversation Storage**: All chats stored in both PostgreSQL and Replit DB for analysis
+    - **Knowledge Ingestion**: Admin can trigger AI-powered summarization of files in `/resources/knowledge/`
+    - **Learning Loop**: Admin can trigger AI analysis of feedback patterns to generate actionable insights
+    - **Context Enrichment**: Learning insights automatically included in future chat responses
+    - **Admin Dashboard**: `/admin/learning` shows analytics, insights, and controls for learning system
+    - **Data Persistence**: Replit DB stores conversation history, feedback, knowledge summaries, and learning insights
+    - **Security**: All admin/learning endpoints protected with JWT + role-based authentication
+    - **API Endpoints**: 
+      - `POST /api/feedback` - Submit user feedback (authenticated users)
+      - `GET /api/feedback` - View all feedback (admin only)
+      - `POST /api/learn` - Ingest knowledge files (admin only)
+      - `GET /api/learn/knowledge` - View knowledge summaries (admin only)
+      - `POST /api/learn/summarize` - Run learning loop analysis (admin only)
+      - `GET /api/learn/summary` - Get latest learning insights (admin only)
+      - `GET /api/learn/stats` - View database statistics (admin only)
+    - **Implementation**: 
+      - `server/services/db_manager.ts` - Replit DB operations
+      - `server/services/learningLoop.ts` - Knowledge ingestion and learning analysis
+      - `server/services/openaiService.ts` - Chat integration with learning context
+      - `client/src/pages/VanessaResponses.tsx` - Feedback UI
+      - `client/src/pages/VanessaLearningDashboard.tsx` - Admin dashboard
   - **Dual API Support**: Both streaming (`streamWithAssistant`) and non-streaming (`sendMessageToAssistant`) endpoints
-  - **Implementation**: Managed by `server/services/openaiService.ts`, displayed by `client/src/components/VanessaChat.tsx`
   - **Requirements**: 
     - `OPENAI_API_KEY`: OpenAI API key
     - `ASSISTANT_ID`: OpenAI Assistant ID (starts with `asst_`) from OpenAI Dashboard
