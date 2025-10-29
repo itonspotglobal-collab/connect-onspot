@@ -108,6 +108,24 @@ async function buildEnhancedInstructions(): Promise<string> {
     console.error("❌ Error loading learning summary:", error);
   }
 
+  // Add website navigation context from site index
+  try {
+    const { loadSiteIndex } = await import("./siteCrawler");
+    const siteIndex = await loadSiteIndex();
+    
+    if (siteIndex && siteIndex.pages.length > 0) {
+      instructions += `\n\n[OnSpotGlobal.com Website Pages]\n`;
+      instructions += `When users ask for navigation or page information, reference these pages:\n`;
+      instructions += siteIndex.pages
+        .slice(0, 20) // Limit to top 20 pages to avoid context overflow
+        .map((page, idx) => `${idx + 1}. ${page.title} - ${page.url}\n   ${page.summary}`)
+        .join("\n");
+      instructions += `\n\nWhen users ask to "go to" or "show" a page, provide the URL with a brief description.`;
+    }
+  } catch (error) {
+    console.error("❌ Error loading site index:", error);
+  }
+
   return instructions;
 }
 

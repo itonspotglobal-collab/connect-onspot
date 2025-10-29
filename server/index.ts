@@ -230,6 +230,10 @@ app.use((req, res, next) => {
   const { ghlSyncService } = await import('./services/ghlSyncService');
   ghlSyncService.startCronJob();
   
+  // Start site crawler service (automatic crawl daily at 3:00 AM)
+  const { siteCrawlerService } = await import('./services/siteCrawlerService');
+  siteCrawlerService.startCronJob();
+  
   const server = await registerRoutes(app);
 
   // Enhanced global error handler with Sentry integration
