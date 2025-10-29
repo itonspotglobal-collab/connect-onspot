@@ -9,6 +9,8 @@ import {
   storeKnowledgeSummary,
   storeLearningStatus,
   calculateLearningHealth,
+  getAllMemories,
+  clearAllMemories,
   type LearningSummary,
   type KnowledgeSummary,
   type LearningStatus,
@@ -193,8 +195,11 @@ export async function runLearningLoop(): Promise<LearningSummary> {
     // Store the summary
     await storeLearningSummary(summary);
 
-    // Auto-update knowledge base file
+    // Auto-update knowledge base file with feedback insights AND memory consolidation
     await updateKnowledgeBase(summary);
+    
+    // Consolidate memories into long-term knowledge base
+    await consolidateMemories();
 
     // Update status entry to success
     const completedAt = new Date().toISOString();
@@ -387,6 +392,102 @@ function sanitizeText(text: string): string {
 /**
  * Update knowledge base file with new learning insights
  */
+/**
+ * Consolidate short-term memories into the long-term knowledge base
+ * Reads all memories from Replit DB and writes them to vanessa_knowledge.txt
+ */
+async function consolidateMemories(): Promise<void> {
+  try {
+    const memories = await getAllMemories();
+    
+    if (memories.length === 0) {
+      console.log("⚠️ No memories to consolidate into knowledge base");
+      return;
+    }
+
+    console.log(`🧠 Consolidating ${memories.length} memory correction(s) into knowledge base...`);
+
+    // Read existing knowledge file
+    let existingContent = "";
+    if (fs.existsSync(KNOWLEDGE_FILE_PATH)) {
+      existingContent = fs.readFileSync(KNOWLEDGE_FILE_PATH, "utf-8");
+    }
+
+    // Check file size limit
+    if (existingContent.length >= MAX_FILE_SIZE) {
+      console.error("⚠️ Knowledge file exceeds 1MB limit — skipping memory consolidation");
+      return;
+    }
+
+    // Build memory sections grouped by topic
+    const timestamp = new Date().toISOString().split('T')[0];
+    const memoryByTopic = new Map<string, string[]>();
+
+    // Group memories by topic
+    for (const memory of memories) {
+      const topic = sanitizeText(memory.topic);
+      if (!memoryByTopic.has(topic)) {
+        memoryByTopic.set(topic, []);
+      }
+      memoryByTopic.get(topic)!.push(sanitizeText(memory.content));
+    }
+
+    let updatedContent = existingContent;
+    let updatedCount = 0;
+    let appendedCount = 0;
+
+    // Process each topic
+    for (const [topic, contents] of Array.from(memoryByTopic.entries())) {
+      const sectionHeader = `=== ${topic} (Memory Update ${timestamp}) ===`;
+      const sectionContent = contents.map(c => `- ${c}`).join("\n");
+      const fullSection = `\n${sectionHeader}\n${sectionContent}\n`;
+
+      // Check if section exists
+      const headerRegex = new RegExp(
+        `^===\\s*${topic.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^=]*===`,
+        'im'
+      );
+
+      if (headerRegex.test(updatedContent)) {
+        // Section exists - replace it
+        const sectionRegex = new RegExp(
+          `(^===\\s*${topic.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^=]*===)([^]*?)(?=^===|$)`,
+          'im'
+        );
+        updatedContent = updatedContent.replace(sectionRegex, fullSection.trim());
+        updatedCount++;
+        console.log(`✅ Updated existing memory section: ${topic}`);
+      } else {
+        // Append new section
+        updatedContent += fullSection;
+        appendedCount++;
+        console.log(`✅ Appended new memory section: ${topic}`);
+      }
+    }
+
+    // Check final size
+    if (updatedContent.length > MAX_FILE_SIZE) {
+      console.error("⚠️ Updated content exceeds 1MB limit — skipping write");
+      return;
+    }
+
+    // Write back to file
+    fs.writeFileSync(KNOWLEDGE_FILE_PATH, updatedContent, "utf-8");
+
+    console.log(`\n✅ Memory consolidation completed!`);
+    console.log(`   📝 Updated memory sections: ${updatedCount}`);
+    console.log(`   ➕ New memory sections: ${appendedCount}`);
+    console.log(`   📁 Total memories consolidated: ${memories.length}`);
+
+    // Clear memories after successful consolidation
+    const clearedCount = await clearAllMemories();
+    console.log(`   🗑️ Cleared ${clearedCount} short-term memories`);
+
+  } catch (error: any) {
+    console.error(`❌ Error consolidating memories: ${error.message}`);
+  }
+}
+
 async function updateKnowledgeBase(summary: LearningSummary): Promise<void> {
   try {
     // Skip if no meaningful insights
