@@ -1,0 +1,135 @@
+You are an expert AI systems engineer.
+
+This Replit project powers Vanessa, the AI assistant for OnSpot Workspace.
+
+Extend Vanessa’s abilities so she can **crawl and understand the OnSpotGlobal.com website**, while **excluding private/admin areas** like `vanessa-responses`, `admin`, `dashboard`, or anything behind login pages.
+
+---
+
+### 🎯 Objectives
+
+1. **Website Crawler Setup**
+   - Create a crawler module `server/services/siteCrawler.ts`
+   - Crawl the website starting from:
+     ```
+     https://onspotglobal.com/
+     ```
+   - Follow **only internal links** within the same domain.
+   - Use libraries such as `axios`, `cheerio`, or `node-fetch`.
+
+2. **Crawl Filtering Rules**
+   - ✅ Include only URLs that:
+     - Start with `https://onspotglobal.com/`
+   - 🚫 Exclude URLs that contain any of the following:
+     - `/vanessa-responses`
+     - `/admin`
+     - `/dashboard`
+     - `/login`
+     - `/api/`
+     - Query strings (`?`, `#`)
+   - Example of included/excluded behavior:
+     | URL | Crawl? |
+     |------|--------|
+     | https://onspotglobal.com/about | ✅ Yes |
+     | https://onspotglobal.com/services | ✅ Yes |
+     | https://onspotglobal.com/vanessa-responses | ❌ No |
+     | https://onspotglobal.com/admin/settings | ❌ No |
+     | https://onspotglobal.com/contact#form | ❌ No |
+
+3. **Extract and Store Site Data**
+   - From each crawled page, extract:
+     - Page URL
+     - `<title>` tag
+     - Headings (`<h1>`, `<h2>`, `<h3>`)
+     - Visible paragraph text (trimmed)
+   - Summarize the content using OpenAI (GPT-4) for clean descriptions:
+     ```json
+     {
+       "url": "https://onspotglobal.com/about",
+       "title": "About OnSpot",
+       "summary": "OnSpot Global provides workspace and outsourcing solutions to businesses around the world."
+     }
+     ```
+   - Save results to `/resources/site_index.json`
+
+4. **Automatic Updating**
+   - Re-crawl once every 24 hours via a scheduled job (use `node-cron`).
+   - Replace or update existing entries.
+   - Log in console:
+     ```
+     🌐 Site crawl completed at 2025-10-30T03:00Z — 18 pages indexed
+     ```
+
+5. **Navigation & Context Awareness**
+   - When a user mentions navigation or site pages:
+     - Search the local site index (`site_index.json`) for matches.
+     - Reply with the correct URL and summary.
+   - Examples:
+     ```
+     User: Take me to the pricing page.
+     Vanessa: You can find our pricing details here:
+     🔗 https://onspotglobal.com/pricing
+     On this page, you’ll see our workspace package options and rates.
+     ```
+
+6. **Admin Controls**
+   - Add `/api/site/reindex` endpoint:
+     - Admin-only.
+     - Triggers manual re-crawling.
+     - Logs:
+       ```
+       🔁 Admin triggered manual site reindex.
+       ```
+
+7. **Security & Efficiency**
+   - Respect `robots.txt` (if present).
+   - Limit concurrent requests (1 per second max).
+   - Do not crawl images, PDFs, or other binary assets.
+   - Cap crawl depth to 3 levels.
+   - Max total pages: 200.
+
+---
+
+### ✅ Deliverables
+
+- **New File:** `server/services/siteCrawler.ts`
+  - Implements safe crawling and content extraction.
+- **New File:** `/resources/site_index.json`
+  - Stores summarized site content.
+- **New Route:** `/api/site/reindex`
+  - Allows manual re-crawling (admin-only).
+- **Updated `openaiService.ts`:**
+  - Adds website summaries into Vanessa’s context for navigation-related queries.
+- **Automatic Scheduler:**
+  - Crawls the website every 24 hours.
+
+---
+
+### ⚙️ Validation
+
+1. Run `/api/site/reindex` (admin only).
+2. Confirm the console output:
+🌐 Crawling OnSpotGlobal.com ...
+✅ Indexed 15 public pages.
+
+markdown
+Copy code
+3. Check `/resources/site_index.json` — should list all public pages (no admin or response pages).
+4. Ask Vanessa:
+- “Take me to the contact page.”
+- “Show me the careers section.”
+- “What does OnSpot Global do?”
+5. Vanessa should respond with links and page summaries.
+
+---
+
+### 🚀 Summary of Safe Crawl Features
+
+| Feature | Description |
+|----------|--------------|
+| Safe domain-only crawling | Crawls only `https://onspotglobal.com/` |
+| Private route exclusion | Ignores `/admin`, `/vanessa-responses`, `/dashboard`, `/api` |
+| Smart summaries | OpenAI summarizes each page for concise context |
+| Auto-update | Nightly crawl keeps Vanessa’s site knowledge fresh |
+| Navigation context | Vanessa can guide users to pages naturally |
+| Admin control | Manual re-crawl via `/api/site/reindex` |
