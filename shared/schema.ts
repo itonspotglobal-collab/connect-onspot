@@ -852,3 +852,26 @@ export const insertFeedbackSchema = createInsertSchema(feedbacks).omit({
 });
 export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
 export type Feedback = typeof feedbacks.$inferSelect;
+
+// Admin Corrections - Admin-only training data for Vanessa
+export const corrections = pgTable("corrections", {
+  id: serial("id").primaryKey(),
+  logId: integer("log_id").references(() => vanessaLogs.id),
+  topic: text("topic"),
+  correctedText: text("corrected_text").notNull(),
+  adminId: text("admin_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => {
+  return {
+    logIdIndex: index("corrections_log_id_idx").on(table.logId),
+    topicIndex: index("corrections_topic_idx").on(table.topic),
+    createdAtIndex: index("corrections_created_at_idx").on(table.createdAt),
+  };
+});
+
+export const insertCorrectionSchema = createInsertSchema(corrections).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertCorrection = z.infer<typeof insertCorrectionSchema>;
+export type Correction = typeof corrections.$inferSelect;

@@ -1,0 +1,93 @@
+You are an expert AI systems engineer.
+
+Modify the Replit project so that Vanessa can be trained safely **only from the Vanessa Responses page**, not through the chat.
+
+---
+
+### 🎯 Objectives
+
+1. **Create Admin-Only Training Route**
+   - New endpoint: `/api/train/correct`
+   - Accepts JSON:
+     ```json
+     {
+       "logId": <number>,
+       "correctedText": "<string>"
+     }
+     ```
+   - Logic:
+     1. Validate admin access (via JWT role or `isAdmin` flag).
+     2. Retrieve the corresponding conversation log from `vanessa_logs`.
+     3. Extract the *topic* (e.g., “CEO”, “Delivery Framework”) from `correctedText`.
+     4. Save correction to a new `corrections` table in PostgreSQL.
+     5. Update both:
+        - Replit DB memory → `memory:<topic> = <corrected_text>`
+        - `/resources/vanessa_knowledge.txt` (append section below):
+          ```
+          === Correction (${timestamp}) ===
+          Topic: <topic>
+          Vanessa should say: "<corrected_text>"
+          === End Correction ===
+          ```
+     6. Log result:
+        ```
+        ✅ Vanessa trained on admin correction (topic: CEO)
+        ```
+
+2. **Create PostgreSQL Table: `corrections`**
+   ```sql
+   CREATE TABLE IF NOT EXISTS corrections (
+     id SERIAL PRIMARY KEY,
+     log_id INTEGER REFERENCES vanessa_logs(id),
+     topic TEXT,
+     corrected_text TEXT,
+     admin_id TEXT,
+     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+   );
+Modify VanessaResponses.tsx
+
+For each AI message log, add a button: “Correct Vanessa’s Response”
+
+When clicked, open a textarea modal.
+
+On submit → POST to /api/train/correct with:
+
+js
+Copy code
+{ logId, correctedText }
+Display a toast notification on success:
+
+✅ Correction submitted! Vanessa will remember this for next time.
+
+Integrate with Existing Memory
+
+The correction immediately updates:
+
+memory: in Replit DB (so Vanessa remembers in next chat)
+
+vanessa_knowledge.txt (long-term)
+
+Ensure all new knowledge is included in every chat context.
+
+Console Feedback
+
+When correction is applied:
+
+yaml
+Copy code
+🧠 Admin correction received → topic: CEO
+✅ Vanessa knowledge updated successfully.
+
+Deliverables
+
+New route: /api/train/correct
+
+New table: corrections
+
+Updated VanessaResponses.tsx with “Correct Response” feature
+
+Updated learningLoop.ts to save admin corrections
+
+Console logs showing training activity
+
+Chatbot automatically recalls corrected information

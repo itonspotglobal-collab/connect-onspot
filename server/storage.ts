@@ -22,9 +22,11 @@ import {
   type Document, type InsertDocument,
   type VanessaLog, type InsertVanessaLog,
   type Feedback, type InsertFeedback,
+  type Correction, type InsertCorrection,
   leadIntakes,
   vanessaLogs,
-  feedbacks
+  feedbacks,
+  corrections
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
@@ -262,6 +264,12 @@ export interface IStorage {
     negativeCount: number;
     recentFeedback: Feedback[];
   }>;
+
+  // Admin Corrections for Vanessa Training
+  createCorrection(correction: InsertCorrection): Promise<Correction>;
+  getVanessaLog(logId: number): Promise<VanessaLog | undefined>;
+  getAllCorrections(): Promise<Correction[]>;
+  getCorrectionsByTopic(topic: string): Promise<Correction[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -2109,6 +2117,39 @@ export class MemStorage implements IStorage {
       recentFeedback: allFeedbacks.slice(0, 10),
     };
   }
+
+  // Admin Corrections (in-memory implementation)
+  private correctionsMap: Map<number, Correction> = new Map();
+  private correctionIdCounter: number = 1;
+
+  async createCorrection(correction: InsertCorrection): Promise<Correction> {
+    const id = this.correctionIdCounter++;
+    const newCorrection: Correction = {
+      id,
+      logId: correction.logId || null,
+      topic: correction.topic || null,
+      correctedText: correction.correctedText,
+      adminId: correction.adminId,
+      createdAt: new Date(),
+    };
+    this.correctionsMap.set(id, newCorrection);
+    return newCorrection;
+  }
+
+  async getVanessaLog(logId: number): Promise<VanessaLog | undefined> {
+    return this.vanessaLogs.get(logId);
+  }
+
+  async getAllCorrections(): Promise<Correction[]> {
+    return Array.from(this.correctionsMap.values())
+      .sort((a, b) => b.createdAt!.getTime() - a.createdAt!.getTime());
+  }
+
+  async getCorrectionsByTopic(topic: string): Promise<Correction[]> {
+    return Array.from(this.correctionsMap.values())
+      .filter((c) => c.topic === topic)
+      .sort((a, b) => b.createdAt!.getTime() - a.createdAt!.getTime());
+  }
 }
 
 // DbStorage class: Extends MemStorage but uses PostgreSQL for Vanessa logs
@@ -2240,6 +2281,37 @@ export class DbStorage extends MemStorage {
       negativeCount: allFeedbacks.filter((f) => f.rating === "down").length,
       recentFeedback: allFeedbacks.slice(0, 10),
     };
+  }
+
+  // Override Correction methods to use PostgreSQL database
+  async createCorrection(correction: InsertCorrection): Promise<Correction> {
+    const [newCorrection] = await db.insert(corrections).values(correction).returning();
+    return newCorrection;
+  }
+
+  async getVanessaLog(logId: number): Promise<VanessaLog | undefined> {
+    const result = await db
+      .select()
+      .from(vanessaLogs)
+      .where(eq(vanessaLogs.id, logId))
+      .limit(1);
+    return result[0];
+  }
+
+  async getAllCorrections(): Promise<Correction[]> {
+    return await db
+      .select()
+      .from(corrections)
+      .orderBy(desc(corrections.createdAt))
+      .limit(1000);
+  }
+
+  async getCorrectionsByTopic(topic: string): Promise<Correction[]> {
+    return await db
+      .select()
+      .from(corrections)
+      .where(eq(corrections.topic, topic))
+      .orderBy(desc(corrections.createdAt));
   }
 }
 
