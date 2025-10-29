@@ -21,8 +21,10 @@ import {
   type CsvTalentRow, type CsvBulkImport, type CsvImportResult, type CsvTemplate, type BulkTalentData,
   type Document, type InsertDocument,
   type VanessaLog, type InsertVanessaLog,
+  type Feedback, type InsertFeedback,
   leadIntakes,
-  vanessaLogs
+  vanessaLogs,
+  feedbacks
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
@@ -248,6 +250,18 @@ export interface IStorage {
   getVanessaLogsByThread(threadId: string): Promise<VanessaLog[]>;
   getAllVanessaThreads(): Promise<{ threadId: string; firstMessage: string; lastMessage: string; messageCount: number; createdAt: Date; updatedAt: Date }[]>;
   searchVanessaLogs(query: string): Promise<VanessaLog[]>;
+
+  // Vanessa Feedbacks
+  createFeedback(feedback: InsertFeedback): Promise<Feedback>;
+  getFeedbacksByTopic(topic: string): Promise<Feedback[]>;
+  getFeedbackCountByTopic(topic: string): Promise<number>;
+  getAllFeedbacks(): Promise<Feedback[]>;
+  getFeedbackStats(): Promise<{
+    totalCount: number;
+    positiveCount: number;
+    negativeCount: number;
+    recentFeedback: Feedback[];
+  }>;
 }
 
 export class MemStorage implements IStorage {
@@ -2044,6 +2058,51 @@ export class MemStorage implements IStorage {
       )
       .sort((a, b) => b.createdAt!.getTime() - a.createdAt!.getTime());
   }
+
+  // Vanessa Feedbacks (in-memory implementation)
+  private feedbacks: Map<number, Feedback> = new Map();
+  private feedbackIdCounter: number = 1;
+
+  async createFeedback(feedback: InsertFeedback): Promise<Feedback> {
+    const id = this.feedbackIdCounter++;
+    const newFeedback: Feedback = {
+      id,
+      ...feedback,
+      createdAt: new Date(),
+    };
+    this.feedbacks.set(id, newFeedback);
+    return newFeedback;
+  }
+
+  async getFeedbacksByTopic(topic: string): Promise<Feedback[]> {
+    return Array.from(this.feedbacks.values())
+      .filter((f) => f.topic === topic)
+      .sort((a, b) => b.createdAt!.getTime() - a.createdAt!.getTime());
+  }
+
+  async getFeedbackCountByTopic(topic: string): Promise<number> {
+    return Array.from(this.feedbacks.values()).filter((f) => f.topic === topic).length;
+  }
+
+  async getAllFeedbacks(): Promise<Feedback[]> {
+    return Array.from(this.feedbacks.values())
+      .sort((a, b) => b.createdAt!.getTime() - a.createdAt!.getTime());
+  }
+
+  async getFeedbackStats(): Promise<{
+    totalCount: number;
+    positiveCount: number;
+    negativeCount: number;
+    recentFeedback: Feedback[];
+  }> {
+    const allFeedbacks = await this.getAllFeedbacks();
+    return {
+      totalCount: allFeedbacks.length,
+      positiveCount: allFeedbacks.filter((f) => f.rating === "up").length,
+      negativeCount: allFeedbacks.filter((f) => f.rating === "down").length,
+      recentFeedback: allFeedbacks.slice(0, 10),
+    };
+  }
 }
 
 // DbStorage class: Extends MemStorage but uses PostgreSQL for Vanessa logs
@@ -2130,6 +2189,51 @@ export class DbStorage extends MemStorage {
       )
       .orderBy(desc(vanessaLogs.createdAt))
       .limit(100); // Limit to 100 most recent matching results
+  }
+
+  // Override Feedback methods to use PostgreSQL database
+  async createFeedback(feedback: InsertFeedback): Promise<Feedback> {
+    const [newFeedback] = await db.insert(feedbacks).values(feedback).returning();
+    return newFeedback;
+  }
+
+  async getFeedbacksByTopic(topic: string): Promise<Feedback[]> {
+    return await db
+      .select()
+      .from(feedbacks)
+      .where(eq(feedbacks.topic, topic))
+      .orderBy(desc(feedbacks.createdAt));
+  }
+
+  async getFeedbackCountByTopic(topic: string): Promise<number> {
+    const result = await db
+      .select({ count: sqlOp<number>`count(*)::int` })
+      .from(feedbacks)
+      .where(eq(feedbacks.topic, topic));
+    return result[0]?.count || 0;
+  }
+
+  async getAllFeedbacks(): Promise<Feedback[]> {
+    return await db
+      .select()
+      .from(feedbacks)
+      .orderBy(desc(feedbacks.createdAt))
+      .limit(1000);
+  }
+
+  async getFeedbackStats(): Promise<{
+    totalCount: number;
+    positiveCount: number;
+    negativeCount: number;
+    recentFeedback: Feedback[];
+  }> {
+    const allFeedbacks = await this.getAllFeedbacks();
+    return {
+      totalCount: allFeedbacks.length,
+      positiveCount: allFeedbacks.filter((f) => f.rating === "up").length,
+      negativeCount: allFeedbacks.filter((f) => f.rating === "down").length,
+      recentFeedback: allFeedbacks.slice(0, 10),
+    };
   }
 }
 

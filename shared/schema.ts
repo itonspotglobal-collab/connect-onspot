@@ -826,3 +826,29 @@ export const insertVanessaLogSchema = createInsertSchema(vanessaLogs).omit({
 });
 export type InsertVanessaLog = z.infer<typeof insertVanessaLogSchema>;
 export type VanessaLog = typeof vanessaLogs.$inferSelect;
+
+// Vanessa Feedbacks - User feedback on chat responses
+export const feedbacks = pgTable("feedbacks", {
+  id: serial("id").primaryKey(),
+  threadId: text("thread_id").notNull(),
+  messageId: text("message_id").notNull(),
+  userMessage: text("user_message"),
+  assistantResponse: text("assistant_response"),
+  rating: varchar("rating", { length: 10 }).notNull(), // 'up' or 'down'
+  comment: text("comment"),
+  topic: text("topic"), // Extracted keyword/topic for similarity detection
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => {
+  return {
+    threadIdIndex: index("feedbacks_thread_id_idx").on(table.threadId),
+    topicIndex: index("feedbacks_topic_idx").on(table.topic),
+    createdAtIndex: index("feedbacks_created_at_idx").on(table.createdAt),
+  };
+});
+
+export const insertFeedbackSchema = createInsertSchema(feedbacks).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
+export type Feedback = typeof feedbacks.$inferSelect;
