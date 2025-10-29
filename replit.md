@@ -162,6 +162,24 @@ Preferred communication style: Simple, everyday language.
       - `client/src/pages/VanessaResponses.tsx` - Feedback UI
       - `client/src/pages/VanessaLearningDashboard.tsx` - Admin dashboard
   - **Dual API Support**: Both streaming (`streamWithAssistant`) and non-streaming (`sendMessageToAssistant`) endpoints
+  - **Website Crawler & Navigation Context**: Vanessa can understand and navigate the OnSpotGlobal.com website
+    - **Automated Crawling**: Daily cron job (3:00 AM) crawls public pages from `https://onspotglobal.com/`
+    - **Safe Crawling Rules**:
+      - ✅ Includes only internal links from same domain
+      - 🚫 Excludes private/admin areas: `/vanessa-responses`, `/admin`, `/dashboard`, `/login`, `/api/`
+      - 🚫 Excludes query strings and fragments (`?`, `#`)
+      - Rate-limited to 1 request/second, max depth 3, max 200 pages
+    - **Content Extraction**: Uses Cheerio to parse HTML and extract titles, headings, paragraphs
+    - **AI Summarization**: OpenAI GPT-4o-mini generates concise 1-2 sentence summaries for each page
+    - **Storage**: Results saved to `/resources/site_index.json` with URL, title, summary, timestamp
+    - **Context Integration**: Site index automatically loaded into Vanessa's chat context (top 20 pages)
+    - **Navigation Assistance**: Vanessa can guide users to specific pages with URLs and descriptions
+    - **Manual Control**: Admin endpoint `POST /api/site/reindex` triggers immediate re-crawl
+    - **Implementation**:
+      - `server/services/siteCrawler.ts` - Core crawling logic with filtering and summarization
+      - `server/services/siteCrawlerService.ts` - Cron job scheduler and service orchestration
+      - `server/services/openaiService.ts` - Site index context injection into chat
+      - `/resources/site_index.json` - Persistent storage for crawled pages
   - **Requirements**: 
     - `OPENAI_API_KEY`: OpenAI API key
     - `ASSISTANT_ID`: OpenAI Assistant ID (starts with `asst_`) from OpenAI Dashboard
