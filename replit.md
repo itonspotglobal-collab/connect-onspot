@@ -86,22 +86,37 @@ Preferred communication style: Simple, everyday language.
     - Run: `npx tsx scripts/uploadVanessaKnowledgeTxt.ts`
     - Creates vector store with File Search enabled
     - Automatically links to Assistant via OpenAI API
-  - **Self-Learning System** (NEW): AI continuously improves through user feedback and automated analysis
+  - **Self-Learning System**: AI continuously improves through user feedback and automated analysis
     - **User Feedback**: Thumbs up/down buttons with optional comments on every AI response
     - **Conversation Storage**: All chats stored in both PostgreSQL and Replit DB for analysis
     - **Knowledge Ingestion**: Admin can trigger AI-powered summarization of files in `/resources/knowledge/`
     - **Learning Loop**: Admin can trigger AI analysis of feedback patterns to generate actionable insights
+    - **Auto-Update Knowledge Base**: Vanessa automatically updates `/resources/vanessa_knowledge.txt` after each successful learning loop
+      - Uses OpenAI to extract 1-3 main topics from learning insights
+      - Finds and replaces existing sections OR appends new ones
+      - Section format: `=== Topic (Learned YYYY-MM-DD) ===`
+      - Security: Text sanitization, 1MB file size limit
+      - Map-based topic-section pairing prevents duplicate/missing updates
+      - Comprehensive console logging for visibility
+    - **Learning Visibility Dashboard**: `/admin/learning` tab shows:
+      - Learning Health: Success rate, total/success/failed run statistics
+      - Latest Summary Preview: Recent insights with generation timestamp
+      - Recent Learning Runs: Last 5 executions with colored status badges, durations, errors
+      - Manual re-run button for triggering new analysis
     - **Context Enrichment**: Learning insights automatically included in future chat responses
     - **Admin Dashboard**: `/admin/learning` shows analytics, insights, and controls for learning system
     - **Data Persistence**: Replit DB stores conversation history, feedback, knowledge summaries, and learning insights
     - **Security**: All admin/learning endpoints protected with JWT + role-based authentication
     - **API Endpoints**: 
-      - `POST /api/feedback` - Submit user feedback (authenticated users)
+      - `POST /api/feedback` - Submit user feedback (publicly accessible for development)
       - `GET /api/feedback` - View all feedback (admin only)
       - `POST /api/learn` - Ingest knowledge files (admin only)
       - `GET /api/learn/knowledge` - View knowledge summaries (admin only)
-      - `POST /api/learn/summarize` - Run learning loop analysis (admin only)
+      - `POST /api/learn/summarize` - Run learning loop analysis + auto-update knowledge base (admin only)
       - `GET /api/learn/summary` - Get latest learning insights (admin only)
+      - `GET /api/learn/summary/latest` - Get latest summary with metadata (admin only)
+      - `GET /api/learn/status` - Get recent learning run statuses (admin only)
+      - `GET /api/learn/health` - Get learning system health metrics (admin only)
       - `GET /api/learn/stats` - View database statistics (admin only)
     - **Implementation**: 
       - `server/services/db_manager.ts` - Replit DB operations

@@ -418,9 +418,9 @@ async function updateKnowledgeBase(summary: LearningSummary): Promise<void> {
       return;
     }
 
-    // Build new knowledge section
+    // Build new knowledge sections as a Map (topic → section content)
     const timestamp = new Date().toISOString().split('T')[0];
-    const newSections: string[] = [];
+    const topicSections = new Map<string, string>();
 
     for (const topic of topics) {
       const sanitizedTopic = sanitizeText(topic);
@@ -450,12 +450,14 @@ async function updateKnowledgeBase(summary: LearningSummary): Promise<void> {
         });
       }
 
+      // Only add if there's content for this topic
       if (content.length > 0) {
-        newSections.push(`\n${sectionHeader}\n${content.join("\n")}\n`);
+        const sectionContent = `\n${sectionHeader}\n${content.join("\n")}\n`;
+        topicSections.set(sanitizedTopic.toLowerCase(), sectionContent);
       }
     }
 
-    if (newSections.length === 0) {
+    if (topicSections.size === 0) {
       console.log("⚠️ No relevant content to add to knowledge base");
       return;
     }
@@ -464,35 +466,41 @@ async function updateKnowledgeBase(summary: LearningSummary): Promise<void> {
     let updatedContent = existingContent;
     let updatedCount = 0;
     let appendedCount = 0;
+    const processedTopics = new Set<string>();
 
-    for (const topic of topics) {
+    // Process each topic with its corresponding section
+    for (const [topicKey, sectionContent] of Array.from(topicSections.entries())) {
+      // Get the original topic name (not lowercased) for display
+      const topic = topics.find(t => sanitizeText(t).toLowerCase() === topicKey);
+      if (!topic) continue;
+      
       const sanitizedTopic = sanitizeText(topic);
       
-      // Try to find and replace existing section
-      const sectionRegex = new RegExp(
-        `===\\s*${sanitizedTopic}[^=]*===([^=]*)(?====|$)`,
-        'i'
+      // Check if a section header exists for this topic
+      const headerRegex = new RegExp(
+        `^===\\s*${sanitizedTopic.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^=]*===`,
+        'im'
       );
       
-      const match = updatedContent.match(sectionRegex);
-      if (match) {
-        // Section exists - replace it
-        const newSection = newSections.find(s => s.includes(sanitizedTopic));
-        if (newSection) {
-          updatedContent = updatedContent.replace(sectionRegex, newSection.trim());
-          updatedCount++;
-          console.log(`✅ Updated existing section: ${sanitizedTopic}`);
-        }
-      }
-    }
-
-    // Append new sections that weren't replaced
-    for (const section of newSections) {
-      const topic = section.match(/===\s*([^(]+)/)?.[1]?.trim();
-      if (topic && !updatedContent.toLowerCase().includes(topic.toLowerCase())) {
-        updatedContent += section;
+      const hasHeader = headerRegex.test(updatedContent);
+      
+      if (hasHeader) {
+        // Section exists - replace the entire section
+        const sectionRegex = new RegExp(
+          `(^===\\s*${sanitizedTopic.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^=]*===)([^]*?)(?=^===|$)`,
+          'im'
+        );
+        
+        updatedContent = updatedContent.replace(sectionRegex, sectionContent.trim());
+        updatedCount++;
+        processedTopics.add(topicKey);
+        console.log(`✅ Updated existing section: ${sanitizedTopic}`);
+      } else {
+        // Section doesn't exist - append it
+        updatedContent += sectionContent;
         appendedCount++;
-        console.log(`✅ Appended new section: ${topic}`);
+        processedTopics.add(topicKey);
+        console.log(`✅ Appended new section: ${sanitizedTopic}`);
       }
     }
 
