@@ -89,8 +89,19 @@ Preferred communication style: Simple, everyday language.
   - **Self-Learning System**: AI continuously improves through user feedback and automated analysis
     - **User Feedback**: Thumbs up/down buttons with optional comments on every AI response
     - **Conversation Storage**: All chats stored in both PostgreSQL and Replit DB for analysis
+    - **Feedback Tracking**: 
+      - Total feedback counter (`feedback_count`) tracks all submissions
+      - Feedback history maintains last 1000 entries for quick access
+      - Topic extraction identifies keywords from comments using stopword filtering
+      - Feedback grouped by topic for similarity detection
+    - **Auto-Trigger Learning**: System automatically runs learning loop when 2+ similar feedbacks detected
+      - Extracts topics from feedback comments (e.g., "CEO", "Delivery", "Pricing")
+      - Tracks feedback count per topic
+      - Triggers learning automatically when threshold met (2 similar feedbacks)
+      - Runs in background without blocking response
+      - Enhanced console logging for all events
     - **Knowledge Ingestion**: Admin can trigger AI-powered summarization of files in `/resources/knowledge/`
-    - **Learning Loop**: Admin can trigger AI analysis of feedback patterns to generate actionable insights
+    - **Learning Loop**: Admin can trigger AI analysis of feedback patterns to generate actionable insights (also auto-triggered)
     - **Auto-Update Knowledge Base**: Vanessa automatically updates `/resources/vanessa_knowledge.txt` after each successful learning loop
       - Uses OpenAI to extract 1-3 main topics from learning insights
       - Finds and replaces existing sections OR appends new ones
@@ -108,8 +119,12 @@ Preferred communication style: Simple, everyday language.
     - **Data Persistence**: Replit DB stores conversation history, feedback, knowledge summaries, and learning insights
     - **Security**: All admin/learning endpoints protected with JWT + role-based authentication
     - **API Endpoints**: 
-      - `POST /api/feedback` - Submit user feedback (publicly accessible for development)
+      - `POST /api/feedback` - Submit user feedback with auto-trigger learning (publicly accessible for development)
+        - Returns: success, totalCount, topics, autoLearningTriggered
+        - Auto-triggers learning loop when 2+ similar feedbacks detected
       - `GET /api/feedback` - View all feedback (admin only)
+      - `GET /api/feedback/all` - View feedback history with statistics (admin only)
+      - `GET /api/feedback/stats` - Get feedback statistics (total, positive, negative counts) (admin only)
       - `POST /api/learn` - Ingest knowledge files (admin only)
       - `GET /api/learn/knowledge` - View knowledge summaries (admin only)
       - `POST /api/learn/summarize` - Run learning loop analysis + auto-update knowledge base (admin only)
