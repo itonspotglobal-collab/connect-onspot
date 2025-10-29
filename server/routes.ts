@@ -1601,6 +1601,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
+  // POST /api/site/reindex - Trigger manual site crawl (admin only)
+  app.post("/api/site/reindex", authenticateJWT, requireAdmin, async (req: any, res) => {
+    try {
+      console.log(`🔁 Admin triggered manual site reindex [${req.requestId}]`);
+
+      // Import crawler dynamically
+      const { crawlWebsite } = await import("./services/siteCrawler");
+
+      // Run crawl in background
+      crawlWebsite()
+        .then((siteIndex) => {
+          console.log(
+            `🌐 Site crawl completed at ${siteIndex.lastUpdated} — ${siteIndex.totalPages} pages indexed`
+          );
+        })
+        .catch((error) => {
+          console.error(`❌ Site crawl failed [${req.requestId}]:`, error);
+        });
+
+      res.json({
+        success: true,
+        message: "Site reindexing started in background",
+        requestId: req.requestId,
+      });
+    } catch (error: any) {
+      console.error(`❌ Error starting reindex [${req.requestId}]:`, error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to start reindexing",
+        requestId: req.requestId,
+      });
+    }
+  });
+
   // Enhanced development login endpoint with validation and monitoring
   app.post(
     "/api/dev/login",
