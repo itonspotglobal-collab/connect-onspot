@@ -1221,7 +1221,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const { messageId, threadId, rating, comment } = req.body;
 
-        await dbManager.storeFeedback({
+        const result = await dbManager.storeFeedback({
           messageId,
           threadId,
           rating,
@@ -1230,7 +1230,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
         console.log(`✅ Feedback stored [${req.requestId}]:`, { messageId, rating });
-        res.json({ success: true, message: "Feedback received" });
+
+        // Auto-trigger learning loop if similar feedback detected
+        if (result.shouldTriggerLearning) {
+          console.log(`🔁 Running learning loop automatically... [${req.requestId}]`);
+          
+          // Run learning loop in background (don't wait for it)
+          runLearningLoop()
+            .then(() => {
+              console.log(`✅ Vanessa updated knowledge base (auto-triggered) [${req.requestId}]`);
+              if (result.topics.length > 0) {
+                console.log(`📚 Topics learned: ${result.topics.join(", ")}`);
+              }
+            })
+            .catch((error) => {
+              console.error(`❌ Auto-learning failed [${req.requestId}]:`, error);
+            });
+        }
+
+        res.json({ 
+          success: true, 
+          message: "Feedback received",
+          totalCount: result.totalCount,
+          topics: result.topics,
+          autoLearningTriggered: result.shouldTriggerLearning,
+        });
       } catch (error: any) {
         console.error(`❌ Error storing feedback [${req.requestId}]:`, error);
         res.status(500).json({
@@ -1252,6 +1276,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({
         success: false,
         error: "Failed to fetch feedback",
+        requestId: req.requestId,
+      });
+    }
+  });
+
+  // GET /api/feedback/all - Get all feedback from history (admin only)
+  app.get("/api/feedback/all", authenticateJWT, requireAdmin, async (req: any, res) => {
+    try {
+      const history = await dbManager.getFeedbackHistory();
+      const stats = await dbManager.getFeedbackStats();
+      
+      res.json({ 
+        success: true, 
+        feedback: history,
+        stats,
+      });
+    } catch (error: any) {
+      console.error(`❌ Error fetching feedback history [${req.requestId}]:`, error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to fetch feedback history",
+        requestId: req.requestId,
+      });
+    }
+  });
+
+  // GET /api/feedback/stats - Get feedback statistics (admin only)
+  app.get("/api/feedback/stats", authenticateJWT, requireAdmin, async (req: any, res) => {
+    try {
+      const stats = await dbManager.getFeedbackStats();
+      res.json({ success: true, stats });
+    } catch (error: any) {
+      console.error(`❌ Error fetching feedback stats [${req.requestId}]:`, error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to fetch feedback stats",
         requestId: req.requestId,
       });
     }

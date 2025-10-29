@@ -1,0 +1,147 @@
+You are an expert AI systems engineer.
+
+This Replit project already includes:
+- A self-learning loop (`learningLoop.ts`) that summarizes feedback.
+- Feedback submissions via `/api/feedback`.
+- Replit DB as the data store.
+
+Now, enhance the system to:
+✅ Track and display feedbacks clearly in the database  
+✅ Detect duplicate or similar feedbacks  
+✅ Trigger the learning loop automatically after **2 similar feedback submissions**
+
+---
+
+### 🎯 Objectives
+
+1. **Store Feedbacks in Replit DB**
+   - Each submitted feedback should be stored in Replit DB with:
+     ```json
+     {
+       "id": "<unique_id>",
+       "messageId": "<chat_message_id>",
+       "rating": "up" | "down",
+       "comment": "<user_feedback>",
+       "timestamp": "<ISO date>"
+     }
+     ```
+   - Use a key format like:  
+     `feedback:<timestamp>` or `feedback:<uuid>`.
+
+2. **Add Feedback Summary Counter**
+   - Each time feedback is submitted:
+     - Increment a counter stored in Replit DB under key `feedback_count`.
+     - Maintain a list of all feedback texts (for admin visibility):
+       ```json
+       {
+         "feedback_history": [
+            "CEO is Nur Naderev Laminero",
+            "Delivery operations should include 4P OS"
+         ]
+       }
+       ```
+   - Log this in the console after every feedback:
+     ```
+     📝 New feedback saved (total: X)
+     ```
+
+3. **Detect Similar Feedbacks**
+   - After storing feedback, check if a **similar comment** already exists.
+   - Use a simple similarity check (string comparison, keywords, or cosine similarity if available).
+   - Example (basic):
+     ```ts
+     const allFeedback = Object.values(await db.list("feedback:"));
+     const similar = allFeedback.filter(f => f.comment.includes(mainKeyword));
+     if (similar.length >= 2) triggerLearning();
+     ```
+
+   - Extract a keyword from the new feedback (like “CEO” or “Delivery”) to group related feedback.
+
+4. **Trigger Learning Loop After 2 Similar Feedbacks**
+   - If two feedbacks mention the same topic (e.g., both about “CEO” or “Delivery Framework”):
+     - Automatically call `runLearningLoop()`.
+     - Log to console:
+       ```
+       ⚙️ Detected 2 similar feedbacks (topic: Delivery Framework)
+       🔁 Running learning loop automatically...
+       ```
+   - After learning completes:
+       ```
+       ✅ Vanessa updated vanessa_knowledge.txt with new information about: Delivery Framework
+       ```
+
+5. **Feedback Retrieval Endpoint**
+   - Create a new endpoint `/api/feedback/all`:
+     - Returns a list of all stored feedback entries (for visibility in testing).
+     - Example:
+       ```json
+       [
+         {
+           "rating": "down",
+           "comment": "The CEO is Nur Naderev Laminero",
+           "timestamp": "2025-10-29T06:33Z"
+         },
+         {
+           "rating": "up",
+           "comment": "Delivery should mention 4P OS",
+           "timestamp": "2025-10-29T06:35Z"
+         }
+       ]
+       ```
+
+6. **Logging and Console Visibility**
+   - When new feedback is added:
+     ```
+     🧠 Feedback stored: "CEO is Nur Naderev Laminero"
+     Current total: 5 feedbacks
+     ```
+   - When learning triggers automatically:
+     ```
+     ⚙️ Similar feedback detected — auto-learning initiated
+     ✅ Vanessa updated knowledge about: CEO Information
+     ```
+
+---
+
+### ✅ Deliverables
+
+- Updated `/api/feedback` route:
+  - Saves feedback in Replit DB
+  - Counts total submissions
+  - Detects duplicate/similar topics
+  - Triggers learning automatically when 2 similar ones exist
+- New `/api/feedback/all` endpoint for viewing all feedback
+- Updated `learningLoop.ts`:
+  - Accepts automatic triggers from feedback route
+  - Updates `vanessa_knowledge.txt` as before
+- Console messages for every save, detection, and learning event
+
+---
+
+### 🔍 Validation Steps
+
+1. Submit feedback “The CEO is Nur Naderev Laminero”.
+   - Console: `🧠 Feedback stored: "CEO is Nur Naderev Laminero"`
+2. Submit same or similar feedback again.
+   - Console:
+     ```
+     ⚙️ Detected 2 similar feedbacks (topic: CEO)
+     🔁 Running learning loop automatically...
+     ✅ Vanessa updated vanessa_knowledge.txt with new information about: CEO
+     ```
+3. Open `/resources/vanessa_knowledge.txt` — CEO section should now reflect your correction.
+4. Call `GET /api/feedback/all` — both feedbacks should appear.
+
+---
+
+### ⚙️ Implementation Notes
+
+- For topic detection:
+  - Use simple keyword extraction (split on spaces, remove stopwords).
+  - Compare using `.includes()` or fuzzy string match.
+- Use `await db.set("feedback_count", currentCount + 1)` for tracking.
+- Store feedback list separately to simplify search.
+
+---
+
+This prompt ensures that after **two similar feedbacks**, the **learning loop runs automatically** and Vanessa’s knowledge base updates in real time — while you can also **view all feedbacks** directly from the database.

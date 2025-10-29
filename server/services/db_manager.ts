@@ -128,10 +128,88 @@ export async function getAllThreadIds(): Promise<string[]> {
 // ========================================
 
 /**
+ * Extract main topics/keywords from feedback comment
+ * Returns array of keywords (lowercased, filtered)
+ */
+function extractTopicsFromFeedback(comment: string | undefined): string[] {
+  if (!comment || comment.trim().length === 0) {
+    return [];
+  }
+
+  // Common stopwords to filter out
+  const stopwords = new Set([
+    "the", "is", "at", "which", "on", "a", "an", "and", "or", "but",
+    "in", "with", "to", "for", "of", "as", "by", "from", "about",
+    "should", "would", "could", "can", "will", "be", "are", "was",
+    "were", "been", "have", "has", "had", "do", "does", "did",
+    "this", "that", "these", "those", "it", "its", "they", "them",
+    "their", "i", "you", "we", "he", "she", "my", "your", "our"
+  ]);
+
+  // Split into words, filter, and normalize
+  const words = comment
+    .toLowerCase()
+    .replace(/[^\w\s]/g, " ") // Remove punctuation
+    .split(/\s+/)
+    .filter((word) => word.length > 2 && !stopwords.has(word));
+
+  // Get unique words
+  return Array.from(new Set(words)).slice(0, 5); // Limit to top 5 keywords
+}
+
+/**
+ * Get feedback count for a specific topic
+ * Key format: `feedback_topic:<topic>`
+ */
+async function getFeedbackCountForTopic(topic: string): Promise<number> {
+  try {
+    const key = `feedback_topic:${topic}`;
+    const result = await db.get(key);
+    if (result.ok && result.value && Array.isArray(result.value)) {
+      return result.value.length;
+    }
+    return 0;
+  } catch (error) {
+    console.error(`❌ Error getting feedback count for topic ${topic}:`, error);
+    return 0;
+  }
+}
+
+/**
+ * Track feedback by topic
+ * Key format: `feedback_topic:<topic>`
+ */
+async function trackFeedbackByTopic(topic: string, feedback: FeedbackEntry): Promise<void> {
+  try {
+    const key = `feedback_topic:${topic}`;
+    const result = await db.get(key);
+    const existing = result.ok && result.value ? result.value : [];
+    const feedbackList = Array.isArray(existing) ? existing : [];
+
+    feedbackList.push({
+      messageId: feedback.messageId,
+      comment: feedback.comment,
+      rating: feedback.rating,
+      timestamp: feedback.timestamp,
+    });
+
+    await db.set(key, feedbackList);
+  } catch (error) {
+    console.error(`❌ Error tracking feedback by topic ${topic}:`, error);
+  }
+}
+
+/**
  * Store user feedback for a message
  * Key format: `feedback:<messageId>`
+ * Also tracks total count, history, and checks for similar feedback
  */
-export async function storeFeedback(feedback: FeedbackEntry): Promise<void> {
+export async function storeFeedback(feedback: FeedbackEntry): Promise<{
+  stored: boolean;
+  shouldTriggerLearning: boolean;
+  topics: string[];
+  totalCount: number;
+}> {
   try {
     const key = `feedback:${feedback.messageId}`;
     
@@ -142,6 +220,34 @@ export async function storeFeedback(feedback: FeedbackEntry): Promise<void> {
     };
     
     await db.set(key, sanitizedFeedback);
+    
+    // Increment feedback counter
+    const countResult = await db.get("feedback_count");
+    const currentCount = (countResult.ok && typeof countResult.value === "number") 
+      ? countResult.value 
+      : 0;
+    const newCount = currentCount + 1;
+    await db.set("feedback_count", newCount);
+    
+    // Add to feedback history
+    const historyResult = await db.get("feedback_history");
+    const history = (historyResult.ok && Array.isArray(historyResult.value))
+      ? historyResult.value
+      : [];
+    
+    history.push({
+      messageId: feedback.messageId,
+      rating: feedback.rating,
+      comment: sanitizedFeedback.comment,
+      timestamp: feedback.timestamp,
+    });
+    
+    // Keep last 1000 feedback entries in history
+    if (history.length > 1000) {
+      history.shift();
+    }
+    
+    await db.set("feedback_history", history);
     
     // Also maintain a feedback index for the thread
     const threadFeedbackKey = `thread:${feedback.threadId}:feedback`;
@@ -157,7 +263,39 @@ export async function storeFeedback(feedback: FeedbackEntry): Promise<void> {
     
     await db.set(threadFeedbackKey, feedbackList);
     
-    console.log(`✅ Stored feedback for message: ${feedback.messageId}`);
+    // Extract topics from feedback comment
+    const topics = extractTopicsFromFeedback(sanitizedFeedback.comment);
+    
+    // Track feedback by topic and check for similar feedback
+    let shouldTriggerLearning = false;
+    
+    if (topics.length > 0) {
+      // Track by each topic
+      for (const topic of topics) {
+        await trackFeedbackByTopic(topic, sanitizedFeedback);
+        const topicCount = await getFeedbackCountForTopic(topic);
+        
+        // If we have 2 or more similar feedbacks on this topic, trigger learning
+        if (topicCount >= 2) {
+          shouldTriggerLearning = true;
+          console.log(`⚙️ Detected ${topicCount} similar feedbacks (topic: ${topic})`);
+        }
+      }
+    }
+    
+    console.log(`🧠 Feedback stored: "${sanitizedFeedback.comment || '(no comment)'}"`);
+    console.log(`📝 Current total: ${newCount} feedbacks`);
+    
+    if (topics.length > 0) {
+      console.log(`🏷️ Topics extracted: ${topics.join(", ")}`);
+    }
+    
+    return {
+      stored: true,
+      shouldTriggerLearning,
+      topics,
+      totalCount: newCount,
+    };
   } catch (error) {
     console.error("❌ Error storing feedback:", error);
     throw error;
@@ -198,6 +336,66 @@ export async function getThreadFeedback(threadId: string): Promise<any[]> {
   } catch (error) {
     console.error(`❌ Error getting feedback for thread ${threadId}:`, error);
     return [];
+  }
+}
+
+/**
+ * Get total feedback count
+ */
+export async function getFeedbackCount(): Promise<number> {
+  try {
+    const result = await db.get("feedback_count");
+    return (result.ok && typeof result.value === "number") ? result.value : 0;
+  } catch (error) {
+    console.error("❌ Error getting feedback count:", error);
+    return 0;
+  }
+}
+
+/**
+ * Get feedback history
+ */
+export async function getFeedbackHistory(): Promise<any[]> {
+  try {
+    const result = await db.get("feedback_history");
+    return (result.ok && Array.isArray(result.value)) ? result.value : [];
+  } catch (error) {
+    console.error("❌ Error getting feedback history:", error);
+    return [];
+  }
+}
+
+/**
+ * Get feedback statistics
+ */
+export async function getFeedbackStats(): Promise<{
+  totalCount: number;
+  positiveCount: number;
+  negativeCount: number;
+  recentFeedback: any[];
+}> {
+  try {
+    const history = await getFeedbackHistory();
+    const totalCount = await getFeedbackCount();
+    
+    const positiveCount = history.filter((f) => f.rating === "up").length;
+    const negativeCount = history.filter((f) => f.rating === "down").length;
+    const recentFeedback = history.slice(-10).reverse();
+    
+    return {
+      totalCount,
+      positiveCount,
+      negativeCount,
+      recentFeedback,
+    };
+  } catch (error) {
+    console.error("❌ Error getting feedback stats:", error);
+    return {
+      totalCount: 0,
+      positiveCount: 0,
+      negativeCount: 0,
+      recentFeedback: [],
+    };
   }
 }
 
