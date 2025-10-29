@@ -16,6 +16,10 @@ import {
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// Constants
+const KNOWLEDGE_FILE_PATH = path.join(process.cwd(), "resources", "vanessa_knowledge.txt");
+const MAX_FILE_SIZE = 1024 * 1024; // 1MB limit
+
 // ========================================
 // Knowledge Ingestion
 // ========================================
@@ -189,6 +193,9 @@ export async function runLearningLoop(): Promise<LearningSummary> {
     // Store the summary
     await storeLearningSummary(summary);
 
+    // Auto-update knowledge base file
+    await updateKnowledgeBase(summary);
+
     // Update status entry to success
     const completedAt = new Date().toISOString();
     await storeLearningStatus({
@@ -202,7 +209,7 @@ export async function runLearningLoop(): Promise<LearningSummary> {
     // Update health metrics
     await calculateLearningHealth();
 
-    console.log(`✅ Vanessa Learning Summary Updated (${new Date().toISOString()})`);
+    console.log(`\n✅ Vanessa Learning Summary Updated (${new Date().toISOString()})`);
     console.log(`   📊 Analyzed ${feedback.length} feedback entries`);
     console.log(`   💡 Generated ${analysis.insights.length} insights`);
     
@@ -314,5 +321,197 @@ Focus on:
       topPositiveTopics: [],
       commonIssues: [],
     };
+  }
+}
+
+// ========================================
+// Auto-Update Knowledge Base
+// ========================================
+
+/**
+ * Extract main topics from learning summary using OpenAI
+ */
+async function extractTopicsFromSummary(summary: LearningSummary): Promise<string[]> {
+  try {
+    const summaryText = [
+      ...summary.insights,
+      ...summary.improvementAreas,
+      ...summary.commonIssues
+    ].join(" ");
+
+    if (!summaryText.trim()) {
+      return [];
+    }
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: "You are a topic extraction expert. Extract 1-3 main topics from the learning summary. Return JSON only.",
+        },
+        {
+          role: "user",
+          content: `Extract the main topics from this learning summary. Focus on concrete topics like "CEO Information", "Pricing Model", "Services", "Hiring Process", etc.
+
+Summary:
+${summaryText.substring(0, 2000)}
+
+Return JSON: { "topics": ["Topic 1", "Topic 2", ...] }`,
+        },
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.3,
+      max_tokens: 150,
+    });
+
+    const content = response.choices[0].message.content || "{}";
+    const result = JSON.parse(content);
+    return Array.isArray(result.topics) ? result.topics : [];
+  } catch (error) {
+    console.error("❌ Error extracting topics:", error);
+    return [];
+  }
+}
+
+/**
+ * Sanitize text to prevent injection attacks and clean special characters
+ */
+function sanitizeText(text: string): string {
+  return text
+    .replace(/[<>]/g, '') // Remove angle brackets
+    .replace(/[\x00-\x1F\x7F]/g, '') // Remove control characters
+    .trim();
+}
+
+/**
+ * Update knowledge base file with new learning insights
+ */
+async function updateKnowledgeBase(summary: LearningSummary): Promise<void> {
+  try {
+    // Skip if no meaningful insights
+    const hasInsights = summary.insights.length > 0 || 
+                       summary.improvementAreas.length > 0 || 
+                       summary.commonIssues.length > 0;
+    
+    if (!hasInsights) {
+      console.log("⚠️ No new insights to add to knowledge base — skipping update");
+      return;
+    }
+
+    // Extract topics
+    const topics = await extractTopicsFromSummary(summary);
+    if (topics.length === 0) {
+      console.log("⚠️ No topics extracted from summary — skipping knowledge update");
+      return;
+    }
+
+    // Read existing knowledge file
+    let existingContent = "";
+    if (fs.existsSync(KNOWLEDGE_FILE_PATH)) {
+      existingContent = fs.readFileSync(KNOWLEDGE_FILE_PATH, "utf-8");
+    }
+
+    // Check file size limit
+    if (existingContent.length >= MAX_FILE_SIZE) {
+      console.error("⚠️ Knowledge file exceeds 1MB limit — skipping update");
+      return;
+    }
+
+    // Build new knowledge section
+    const timestamp = new Date().toISOString().split('T')[0];
+    const newSections: string[] = [];
+
+    for (const topic of topics) {
+      const sanitizedTopic = sanitizeText(topic);
+      const sectionHeader = `=== ${sanitizedTopic} (Learned ${timestamp}) ===`;
+      
+      const content: string[] = [];
+      
+      // Add relevant insights
+      const relevantInsights = summary.insights.filter(i => 
+        i.toLowerCase().includes(topic.toLowerCase().split(' ')[0])
+      );
+      if (relevantInsights.length > 0) {
+        content.push("Insights:");
+        relevantInsights.forEach(insight => {
+          content.push(`- ${sanitizeText(insight)}`);
+        });
+      }
+      
+      // Add relevant improvement areas
+      const relevantImprovements = summary.improvementAreas.filter(i => 
+        i.toLowerCase().includes(topic.toLowerCase().split(' ')[0])
+      );
+      if (relevantImprovements.length > 0) {
+        content.push("\nImprovement Areas:");
+        relevantImprovements.forEach(area => {
+          content.push(`- ${sanitizeText(area)}`);
+        });
+      }
+
+      if (content.length > 0) {
+        newSections.push(`\n${sectionHeader}\n${content.join("\n")}\n`);
+      }
+    }
+
+    if (newSections.length === 0) {
+      console.log("⚠️ No relevant content to add to knowledge base");
+      return;
+    }
+
+    // Check if we should replace existing sections or append
+    let updatedContent = existingContent;
+    let updatedCount = 0;
+    let appendedCount = 0;
+
+    for (const topic of topics) {
+      const sanitizedTopic = sanitizeText(topic);
+      
+      // Try to find and replace existing section
+      const sectionRegex = new RegExp(
+        `===\\s*${sanitizedTopic}[^=]*===([^=]*)(?====|$)`,
+        'i'
+      );
+      
+      const match = updatedContent.match(sectionRegex);
+      if (match) {
+        // Section exists - replace it
+        const newSection = newSections.find(s => s.includes(sanitizedTopic));
+        if (newSection) {
+          updatedContent = updatedContent.replace(sectionRegex, newSection.trim());
+          updatedCount++;
+          console.log(`✅ Updated existing section: ${sanitizedTopic}`);
+        }
+      }
+    }
+
+    // Append new sections that weren't replaced
+    for (const section of newSections) {
+      const topic = section.match(/===\s*([^(]+)/)?.[1]?.trim();
+      if (topic && !updatedContent.toLowerCase().includes(topic.toLowerCase())) {
+        updatedContent += section;
+        appendedCount++;
+        console.log(`✅ Appended new section: ${topic}`);
+      }
+    }
+
+    // Check final size
+    if (updatedContent.length > MAX_FILE_SIZE) {
+      console.error("⚠️ Updated content exceeds 1MB limit — skipping write");
+      return;
+    }
+
+    // Write back to file
+    fs.writeFileSync(KNOWLEDGE_FILE_PATH, updatedContent, "utf-8");
+    
+    console.log(`\n✅ Knowledge base updated successfully!`);
+    console.log(`   📝 Updated sections: ${updatedCount}`);
+    console.log(`   ➕ New sections: ${appendedCount}`);
+    console.log(`   📁 Topics: ${topics.join(", ")}`);
+    console.log(`   📊 File size: ${(updatedContent.length / 1024).toFixed(2)} KB`);
+    
+  } catch (error: any) {
+    console.error(`❌ Error updating knowledge base: ${error.message}`);
   }
 }
