@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, MessageCircle, User, Bot, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Search, MessageCircle, User, Bot, ThumbsUp, ThumbsDown, Edit } from "lucide-react";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -38,6 +38,11 @@ export default function VanessaResponses() {
     rating: "up" | "down";
   } | null>(null);
   const [feedbackComment, setFeedbackComment] = useState("");
+  const [correctionDialog, setCorrectionDialog] = useState<{
+    open: boolean;
+    logId: number;
+  } | null>(null);
+  const [correctionText, setCorrectionText] = useState("");
   const { toast } = useToast();
 
   // Fetch all conversation threads
@@ -80,10 +85,31 @@ export default function VanessaResponses() {
       setFeedbackDialog(null);
       setFeedbackComment("");
     },
-    onError: (error: any) => {
+    onError: (error) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to submit feedback",
+        description: (error as Error).message || "Failed to submit feedback",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Correction submission mutation
+  const correctionMutation = useMutation({
+    mutationFn: async (data: { logId: number; correctedText: string }) =>
+      apiRequest("POST", "/api/train/correct", data),
+    onSuccess: () => {
+      toast({
+        title: "Correction submitted!",
+        description: "Vanessa will remember this for next time.",
+      });
+      setCorrectionDialog(null);
+      setCorrectionText("");
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: (error as Error).message || "Failed to submit correction",
         variant: "destructive",
       });
     },
@@ -117,6 +143,24 @@ export default function VanessaResponses() {
         threadId: feedbackDialog.threadId,
         rating: feedbackDialog.rating,
         comment: feedbackComment.trim() || undefined,
+      });
+    }
+  };
+
+  // Handle correction button click
+  const handleCorrection = (logId: number) => {
+    setCorrectionDialog({
+      open: true,
+      logId,
+    });
+  };
+
+  // Submit correction
+  const submitCorrection = () => {
+    if (correctionDialog && correctionText.trim()) {
+      correctionMutation.mutate({
+        logId: correctionDialog.logId,
+        correctedText: correctionText.trim(),
       });
     }
   };
@@ -272,30 +316,45 @@ export default function VanessaResponses() {
                         <Card className="p-4 bg-card">
                           <p className="text-sm whitespace-pre-wrap mb-3">{message.assistantResponse}</p>
                           
-                          {/* Feedback Buttons */}
-                          <div className="flex items-center gap-2 pt-2 border-t border-border">
-                            <span className="text-xs text-muted-foreground mr-2">Was this helpful?</span>
+                          {/* Feedback and Correction Buttons */}
+                          <div className="flex items-center justify-between gap-2 pt-2 border-t border-border">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground mr-2">Was this helpful?</span>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleFeedback(message.id, message.threadId, "up")}
+                                disabled={feedbackMutation.isPending}
+                                className="h-7"
+                                data-testid={`button-feedback-up-${message.id}`}
+                              >
+                                <ThumbsUp className="h-3 w-3 mr-1" />
+                                <span className="text-xs">Yes</span>
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleFeedback(message.id, message.threadId, "down")}
+                                disabled={feedbackMutation.isPending}
+                                className="h-7"
+                                data-testid={`button-feedback-down-${message.id}`}
+                              >
+                                <ThumbsDown className="h-3 w-3 mr-1" />
+                                <span className="text-xs">No</span>
+                              </Button>
+                            </div>
+                            
+                            {/* Admin Correction Button */}
                             <Button
                               size="sm"
-                              variant="ghost"
-                              onClick={() => handleFeedback(message.id, message.threadId, "up")}
-                              disabled={feedbackMutation.isPending}
+                              variant="outline"
+                              onClick={() => handleCorrection(message.id)}
+                              disabled={correctionMutation.isPending}
                               className="h-7"
-                              data-testid={`button-feedback-up-${message.id}`}
+                              data-testid={`button-correct-${message.id}`}
                             >
-                              <ThumbsUp className="h-3 w-3 mr-1" />
-                              <span className="text-xs">Yes</span>
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleFeedback(message.id, message.threadId, "down")}
-                              disabled={feedbackMutation.isPending}
-                              className="h-7"
-                              data-testid={`button-feedback-down-${message.id}`}
-                            >
-                              <ThumbsDown className="h-3 w-3 mr-1" />
-                              <span className="text-xs">No</span>
+                              <Edit className="h-3 w-3 mr-1" />
+                              <span className="text-xs">Correct Response</span>
                             </Button>
                           </div>
                         </Card>
@@ -357,6 +416,51 @@ export default function VanessaResponses() {
               data-testid="button-submit-feedback"
             >
               {feedbackMutation.isPending ? "Submitting..." : "Submit Feedback"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Correction Dialog */}
+      <Dialog open={correctionDialog?.open || false} onOpenChange={(open) => {
+        if (!open) {
+          setCorrectionDialog(null);
+          setCorrectionText("");
+        }
+      }}>
+        <DialogContent data-testid="dialog-correction">
+          <DialogHeader>
+            <DialogTitle>Correct Vanessa's Response</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground mb-3">
+              Provide the correct response. Vanessa will learn from this and remember it for future interactions.
+            </p>
+            <Textarea
+              placeholder="Enter the correct response..."
+              value={correctionText}
+              onChange={(e) => setCorrectionText(e.target.value)}
+              className="min-h-32"
+              data-testid="textarea-correction"
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCorrectionDialog(null);
+                setCorrectionText("");
+              }}
+              data-testid="button-cancel-correction"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={submitCorrection}
+              disabled={correctionMutation.isPending || !correctionText.trim()}
+              data-testid="button-submit-correction"
+            >
+              {correctionMutation.isPending ? "Submitting..." : "Submit Correction"}
             </Button>
           </DialogFooter>
         </DialogContent>
