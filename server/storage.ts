@@ -2067,7 +2067,13 @@ export class MemStorage implements IStorage {
     const id = this.feedbackIdCounter++;
     const newFeedback: Feedback = {
       id,
-      ...feedback,
+      threadId: feedback.threadId,
+      messageId: feedback.messageId,
+      userMessage: feedback.userMessage || null,
+      assistantResponse: feedback.assistantResponse || null,
+      rating: feedback.rating,
+      comment: feedback.comment || null,
+      topic: feedback.topic || null,
       createdAt: new Date(),
     };
     this.feedbacks.set(id, newFeedback);

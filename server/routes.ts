@@ -1206,6 +1206,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ===== Learning System API Routes =====
 
+  // Helper function to extract topic/keyword from text
+  function extractTopic(userMessage: string, comment?: string): string | null {
+    // Combine user message and comment for topic extraction
+    const text = `${userMessage} ${comment || ""}`.toLowerCase();
+    
+    // Common stopwords to filter out
+    const stopwords = new Set([
+      "the", "is", "at", "which", "on", "a", "an", "and", "or", "but",
+      "in", "with", "to", "for", "of", "as", "by", "from", "about",
+      "should", "would", "could", "can", "will", "be", "are", "was",
+      "were", "been", "have", "has", "had", "do", "does", "did",
+      "this", "that", "these", "those", "it", "its", "they", "them",
+      "their", "i", "you", "we", "he", "she", "my", "your", "our"
+    ]);
+    
+    // Extract meaningful words
+    const words = text
+      .replace(/[^\w\s]/g, " ") // Remove punctuation
+      .split(/\s+/)
+      .filter((word) => word.length > 3 && !stopwords.has(word));
+    
+    // Return first meaningful word as topic
+    return words.length > 0 ? words[0] : null;
+  }
+
   // POST /api/feedback - Submit user feedback for a message (public for development)
   app.post(
     "/api/feedback",
@@ -1221,39 +1246,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const { messageId, threadId, rating, comment } = req.body;
 
-        const result = await dbManager.storeFeedback({
-          messageId,
+        // Get conversation context from database
+        const conversationLogs = await storage.getVanessaLogsByThread(threadId);
+        const recentLog = conversationLogs[conversationLogs.length - 1];
+        
+        const userMessage = recentLog?.userMessage || "";
+        const assistantResponse = recentLog?.assistantResponse || "";
+
+        // Extract topic from user message or comment
+        const topic = extractTopic(userMessage, comment);
+
+        // Save feedback to PostgreSQL
+        const feedback = await storage.createFeedback({
           threadId,
+          messageId,
+          userMessage,
+          assistantResponse,
           rating,
-          comment,
-          timestamp: Date.now(),
+          comment: comment || null,
+          topic: topic || null,
         });
 
-        console.log(`✅ Feedback stored [${req.requestId}]:`, { messageId, rating });
+        console.log(`🧠 Feedback saved to database for topic: ${topic || "(no topic)"}`);
 
-        // Auto-trigger learning loop if similar feedback detected
-        if (result.shouldTriggerLearning) {
-          console.log(`🔁 Running learning loop automatically... [${req.requestId}]`);
-          
-          // Run learning loop in background (don't wait for it)
-          runLearningLoop()
-            .then(() => {
-              console.log(`✅ Vanessa updated knowledge base (auto-triggered) [${req.requestId}]`);
-              if (result.topics.length > 0) {
-                console.log(`📚 Topics learned: ${result.topics.join(", ")}`);
-              }
-            })
-            .catch((error) => {
-              console.error(`❌ Auto-learning failed [${req.requestId}]:`, error);
-            });
+        // Count feedbacks for this topic
+        let shouldTriggerLearning = false;
+        let topicCount = 0;
+
+        if (topic) {
+          topicCount = await storage.getFeedbackCountByTopic(topic);
+          console.log(`📊 Topic "${topic}" has ${topicCount} feedback(s)`);
+
+          // Auto-trigger learning loop if we have 2 or more feedbacks for this topic
+          if (topicCount >= 2) {
+            shouldTriggerLearning = true;
+            console.log(`⚙️ Detected ${topicCount} similar feedbacks (topic: ${topic})`);
+            console.log(`🔁 Running learning loop automatically... [${req.requestId}]`);
+            
+            // Run learning loop in background (don't wait for it)
+            runLearningLoop()
+              .then(() => {
+                console.log(`✅ Vanessa updated vanessa_knowledge.txt with new information about: ${topic}`);
+              })
+              .catch((error) => {
+                console.error(`❌ Auto-learning failed [${req.requestId}]:`, error);
+              });
+          }
         }
 
         res.json({ 
           success: true, 
           message: "Feedback received",
-          totalCount: result.totalCount,
-          topics: result.topics,
-          autoLearningTriggered: result.shouldTriggerLearning,
+          topic: topic || null,
+          topicCount,
+          autoLearningTriggered: shouldTriggerLearning,
         });
       } catch (error: any) {
         console.error(`❌ Error storing feedback [${req.requestId}]:`, error);
@@ -1269,7 +1315,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // GET /api/feedback - Get all feedback (admin only)
   app.get("/api/feedback", authenticateJWT, requireAdmin, async (req: any, res) => {
     try {
-      const feedback = await dbManager.getAllFeedback();
+      const feedback = await storage.getAllFeedbacks();
       res.json({ success: true, feedback });
     } catch (error: any) {
       console.error(`❌ Error fetching feedback [${req.requestId}]:`, error);
@@ -1281,15 +1327,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET /api/feedback/all - Get all feedback from history (admin only)
+  // GET /api/feedback/all - Get all feedback from database (admin only)
   app.get("/api/feedback/all", authenticateJWT, requireAdmin, async (req: any, res) => {
     try {
-      const history = await dbManager.getFeedbackHistory();
-      const stats = await dbManager.getFeedbackStats();
+      const feedback = await storage.getAllFeedbacks();
+      const stats = await storage.getFeedbackStats();
       
       res.json({ 
         success: true, 
-        feedback: history,
+        feedback,
         stats,
       });
     } catch (error: any) {
@@ -1305,7 +1351,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // GET /api/feedback/stats - Get feedback statistics (admin only)
   app.get("/api/feedback/stats", authenticateJWT, requireAdmin, async (req: any, res) => {
     try {
-      const stats = await dbManager.getFeedbackStats();
+      const stats = await storage.getFeedbackStats();
       res.json({ success: true, stats });
     } catch (error: any) {
       console.error(`❌ Error fetching feedback stats [${req.requestId}]:`, error);
