@@ -124,6 +124,136 @@ export async function getAllThreadIds(): Promise<string[]> {
 }
 
 // ========================================
+// Memory Management (Short-Term Learning)
+// ========================================
+
+/**
+ * Extract topic from a user correction message
+ * Returns the main subject of the correction
+ */
+export function extractTopicFromCorrection(text: string): string {
+  // Common stopwords to filter out
+  const stopwords = new Set([
+    "the", "is", "at", "which", "on", "a", "an", "and", "or", "but",
+    "in", "with", "to", "for", "of", "as", "by", "from", "about",
+    "should", "would", "could", "can", "will", "be", "are", "was",
+    "were", "been", "have", "has", "had", "do", "does", "did",
+    "this", "that", "these", "those", "it", "its", "they", "them",
+    "their", "i", "you", "we", "he", "she", "my", "your", "our",
+    "actually", "remember", "correct", "wrong", "answer", "know"
+  ]);
+
+  // Extract meaningful words
+  const words = text
+    .toLowerCase()
+    .replace(/[^\w\s]/g, " ")
+    .split(/\s+/)
+    .filter((word) => word.length > 3 && !stopwords.has(word));
+
+  // Return first meaningful word as topic
+  return words.length > 0 ? words[0] : "general";
+}
+
+/**
+ * Check if a message contains a correction pattern
+ */
+export function isCorrection(message: string): boolean {
+  const correctionPatterns = [
+    /you should/i,
+    /that'?s wrong/i,
+    /actually/i,
+    /the correct answer is/i,
+    /remember that/i,
+    /let me correct/i,
+    /correction:/i,
+    /fix that/i,
+    /not quite/i,
+  ];
+
+  return correctionPatterns.some((pattern) => pattern.test(message));
+}
+
+/**
+ * Store a memory/correction in Replit DB
+ * Key format: `memory:<topic>`
+ */
+export async function storeMemory(topic: string, content: string): Promise<void> {
+  try {
+    const key = `memory:${topic}`;
+    const memory = {
+      topic,
+      content: truncateText(content, 1000),
+      timestamp: Date.now(),
+    };
+    
+    await db.set(key, memory);
+    console.log(`🧠 Memory saved for topic: ${topic}`);
+  } catch (error) {
+    console.error(`❌ Error storing memory for topic ${topic}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Retrieve all stored memories
+ * Returns array of memory objects
+ */
+export async function getAllMemories(): Promise<Array<{ topic: string; content: string; timestamp: number }>> {
+  try {
+    const result = await db.list("memory:");
+    const keys = result.ok ? result.value : [];
+    
+    const memories = await Promise.all(
+      keys.map(async (key: string) => {
+        const data = await db.get(key);
+        return data.ok ? data.value : null;
+      })
+    );
+    
+    return memories.filter((m) => m !== null) as Array<{ topic: string; content: string; timestamp: number }>;
+  } catch (error) {
+    console.error("❌ Error retrieving all memories:", error);
+    return [];
+  }
+}
+
+/**
+ * Delete a specific memory by topic
+ * Key format: `memory:<topic>`
+ */
+export async function deleteMemory(topic: string): Promise<boolean> {
+  try {
+    const key = `memory:${topic}`;
+    await db.delete(key);
+    console.log(`🗑️ Memory deleted for topic: ${topic}`);
+    return true;
+  } catch (error) {
+    console.error(`❌ Error deleting memory for topic ${topic}:`, error);
+    return false;
+  }
+}
+
+/**
+ * Clear all memories (for admin use)
+ */
+export async function clearAllMemories(): Promise<number> {
+  try {
+    const result = await db.list("memory:");
+    const keys = result.ok ? result.value : [];
+    
+    for (const key of keys) {
+      await db.delete(key);
+    }
+    
+    console.log(`🗑️ Cleared ${keys.length} memories`);
+    return keys.length;
+  } catch (error) {
+    console.error("❌ Error clearing all memories:", error);
+    return 0;
+  }
+}
+
+// ========================================
 // Feedback Management
 // ========================================
 

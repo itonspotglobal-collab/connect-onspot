@@ -1,0 +1,156 @@
+You are an expert AI systems engineer.
+
+The Replit project implements a self-learning AI assistant named Vanessa.
+It already has:
+- A feedback system (`/api/feedback`)
+- A learning loop (`learningLoop.ts`)
+- A main knowledge file `/resources/vanessa_knowledge.txt`
+
+Now make Vanessa capable of *two types of memory*:
+✅ Short-term conversational memory — remembers user corrections instantly  
+✅ Long-term knowledge updates — consolidates corrections automatically into `vanessa_knowledge.txt` through the learning loop
+
+---
+
+### 🎯 Objectives
+
+#### 1. **Instant Conversational Memory (Short-Term Memory)**
+Add this logic to `openaiService.ts` (or equivalent backend chat handler):
+
+- Detect user correction messages in real-time:
+  - Look for phrases like:
+    - “you should”
+    - “that’s wrong”
+    - “actually”
+    - “the correct answer is”
+    - “remember that”
+  - When detected:
+    1. Extract the topic and corrected statement.
+    2. Save the correction in Replit DB under key format:
+       ```
+       memory:<topic> = <corrected_statement>
+       ```
+    3. Return a polite acknowledgment message:
+       ```
+       "Understood, I’ve updated my memory with that information."
+       ```
+
+Example code snippet:
+```ts
+import db from "../services/db_manager";
+
+if (userMessage.match(/you should|actually|the correct answer is|remember that/i)) {
+  const topic = extractTopicFromText(userMessage); // e.g., “CEO”, “Delivery Framework”
+  await db.set(`memory:${topic}`, userMessage);
+  return "Understood, I’ve updated my memory with that information.";
+}
+2. Inject Memory into Every Chat (Recall Phase)
+Before sending a request to OpenAI, retrieve all stored memories:
+
+ts
+Copy code
+const memoryKeys = await db.list("memory:");
+const memories = await Promise.all(memoryKeys.map(k => db.get(k)));
+const memoryContext = memories.map((m, i) => `Memory ${i + 1}: ${m}`).join("\n");
+
+messages.unshift({
+  role: "system",
+  content: `Here are Vanessa’s remembered facts:\n${memoryContext}`
+});
+✅ This ensures that Vanessa automatically recalls every learned correction in future conversations.
+
+3. Consolidate into Long-Term Knowledge (Learning Loop)
+Update learningLoop.ts:
+
+Every time the learning loop runs (after two similar feedbacks or on schedule):
+
+Read all stored memories from Replit DB (memory: keys).
+
+Summarize or merge them into vanessa_knowledge.txt.
+
+Save them under the relevant section header.
+
+Example logic:
+
+ts
+Copy code
+import fs from "fs";
+import db from "./db_manager";
+
+const file = "/resources/vanessa_knowledge.txt";
+const memories = await db.list("memory:");
+const memoryData = await Promise.all(memories.map(k => db.get(k)));
+
+const newContent = memoryData.map(m => `- ${m}`).join("\n");
+fs.appendFileSync(file, `\n=== Memory Update (${new Date().toISOString()}) ===\n${newContent}\n`);
+console.log("✅ Vanessa consolidated new memories into vanessa_knowledge.txt");
+4. Feedback-Driven Auto Trigger (Long-Term Learning)
+In /api/feedback:
+
+After each feedback submission:
+
+Count total similar feedbacks by topic.
+
+When count ≥ 2:
+
+Trigger runLearningLoop()
+
+The loop now includes both feedback summaries and in-memory corrections.
+
+Example console log:
+
+rust
+Copy code
+⚙️ 2 feedbacks detected for topic: CEO
+🔁 Running learning loop with memory + feedback data...
+✅ Vanessa updated vanessa_knowledge.txt (topic: CEO)
+5. Optional Forget Command
+Let users clear a specific memory via chat:
+
+ts
+Copy code
+if (userMessage.toLowerCase().includes("forget")) {
+  const topic = extractTopicFromText(userMessage);
+  await db.delete(`memory:${topic}`);
+  return `I’ve forgotten everything about ${topic}.`;
+}
+✅ Deliverables
+openaiService.ts
+
+Detects corrections and stores instant memory
+
+Injects all memories into context
+
+learningLoop.ts
+
+Reads memories + feedback summaries
+
+Writes updates to /resources/vanessa_knowledge.txt
+
+/api/feedback
+
+Auto-triggers the learning loop after 2 similar feedbacks
+
+Console logs for every phase:
+
+java
+Copy code
+🧠 Memory saved for topic: CEO
+⚙️ Running learning loop (2 feedbacks)
+✅ Vanessa updated vanessa_knowledge.txt
+🔍 Validation Steps
+Ask Vanessa: “Who is the CEO of OnSpot?”
+
+Correct her: “The CEO of OnSpot is Nur Naderev Laminero, you should use the full name.”
+
+Vanessa replies: “Understood, I’ve updated my memory.”
+
+Ask again: “Who is the CEO of OnSpot?”
+→ Vanessa now replies with the corrected name.
+
+After two similar feedbacks, check /resources/vanessa_knowledge.txt:
+
+csharp
+Copy code
+=== Memory Update (2025-10-29) ===
+OnSpot’s CEO is Nur Naderev Laminero.

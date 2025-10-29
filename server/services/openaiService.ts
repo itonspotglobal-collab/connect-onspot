@@ -2,7 +2,15 @@ import OpenAI from "openai";
 import fs from "fs";
 import path from "path";
 import { storage } from "../storage";
-import { storeConversation, getLatestLearningSummary } from "./db_manager";
+import { 
+  storeConversation, 
+  getLatestLearningSummary,
+  isCorrection,
+  storeMemory,
+  getAllMemories,
+  deleteMemory,
+  extractTopicFromCorrection,
+} from "./db_manager";
 import { v4 as uuidv4 } from "uuid";
 
 // Validate required environment variables at startup
@@ -61,11 +69,27 @@ Be concise, upbeat, and professional in all responses.
 Note: Respond in natural conversational text, not JSON format.
 `.trim();
 
-// Build enhanced instructions with knowledge and learning insights
+// Build enhanced instructions with knowledge, learning insights, and memories
 async function buildEnhancedInstructions(): Promise<string> {
   let instructions = vanessaKnowledge
     ? `${VANESSA_PERSONA}\n\n[Company Knowledge Base]\n${vanessaKnowledge}`
     : VANESSA_PERSONA;
+
+  // Add stored memories (short-term corrections)
+  try {
+    const memories = await getAllMemories();
+    if (memories.length > 0) {
+      instructions += `\n\n[Remembered Corrections]\n`;
+      instructions += `Here are user corrections I should remember:\n`;
+      instructions += memories
+        .sort((a, b) => b.timestamp - a.timestamp) // Most recent first
+        .map((m, idx) => `${idx + 1}. [${m.topic}] ${m.content}`)
+        .join("\n");
+      console.log(`💡 Injected ${memories.length} memory correction(s) into context`);
+    }
+  } catch (error) {
+    console.error("❌ Error loading memories:", error);
+  }
 
   // Add latest learning insights if available
   try {
@@ -126,11 +150,12 @@ async function waitForRunCompletion(client: OpenAI, threadId: string): Promise<v
 /**
  * Stream responses from the OpenAI Assistant with conversation continuity
  * Uses the Assistant API with threads for natural conversation flow
+ * Also handles instant memory corrections and forget commands
  */
 export async function* streamWithAssistant(
   userMessage: string,
   threadId?: string,
-): AsyncGenerator<{ type: "content" | "done" | "threadId"; data: string }> {
+): AsyncGenerator<{ type: "content" | "done" | "threadId" | "memory"; data: string }> {
   try {
     // Check if OpenAI and Assistant are configured
     isConfigured();
@@ -154,6 +179,48 @@ export async function* streamWithAssistant(
 
     // Yield the thread ID first so the client can track it
     yield { type: "threadId", data: currentThreadId };
+
+    // Check for forget command
+    if (/forget/i.test(userMessage)) {
+      const topic = extractTopicFromCorrection(userMessage);
+      const deleted = await deleteMemory(topic);
+      
+      if (deleted) {
+        const response = `I've forgotten everything about ${topic}.`;
+        yield { type: "memory", data: response };
+        yield { type: "content", data: response };
+        yield { type: "done", data: "" };
+        
+        // Log the interaction
+        await storage.createVanessaLog({
+          threadId: currentThreadId,
+          userMessage,
+          assistantResponse: response,
+        });
+        
+        return;
+      }
+    }
+
+    // Check for correction pattern and store as instant memory
+    if (isCorrection(userMessage)) {
+      const topic = extractTopicFromCorrection(userMessage);
+      await storeMemory(topic, userMessage);
+      
+      const acknowledgment = "Understood, I've updated my memory with that information.";
+      yield { type: "memory", data: acknowledgment };
+      yield { type: "content", data: acknowledgment };
+      yield { type: "done", data: "" };
+      
+      // Log the correction
+      await storage.createVanessaLog({
+        threadId: currentThreadId,
+        userMessage,
+        assistantResponse: acknowledgment,
+      });
+      
+      return;
+    }
 
     // Add the user's message to the thread
     await client.beta.threads.messages.create(currentThreadId, {
