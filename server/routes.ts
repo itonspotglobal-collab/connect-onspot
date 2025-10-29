@@ -1526,6 +1526,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/train/correct - Submit admin correction for Vanessa training (admin only)
+  app.post(
+    "/api/train/correct",
+    authenticateJWT,
+    requireAdmin,
+    validateRequest(
+      z.object({
+        logId: z.number().int().positive(),
+        correctedText: z.string().min(1, "Corrected text is required"),
+      }),
+    ),
+    async (req: any, res) => {
+      try {
+        const { logId, correctedText } = req.body;
+        const adminId = req.user.id;
+
+        // Retrieve the conversation log
+        const conversationLog = await storage.getVanessaLog(logId);
+        
+        if (!conversationLog) {
+          return res.status(404).json({
+            success: false,
+            error: "Conversation log not found",
+            requestId: req.requestId,
+          });
+        }
+
+        // Extract topic from correctedText
+        const topic = dbManager.extractTopicFromCorrection(correctedText);
+
+        // Save correction to database
+        const correction = await storage.createCorrection({
+          logId,
+          topic,
+          correctedText,
+          adminId,
+        });
+
+        // Update Replit DB memory for instant recall
+        await dbManager.storeMemory(topic, correctedText);
+        console.log(`🧠 Admin correction received → topic: ${topic}`);
+
+        // Update vanessa_knowledge.txt
+        const fs = await import("fs/promises");
+        const path = await import("path");
+        const knowledgeFilePath = path.join(process.cwd(), "resources", "vanessa_knowledge.txt");
+        
+        try {
+          const timestamp = new Date().toISOString().split('T')[0];
+          const correctionSection = `\n\n=== Correction (${timestamp}) ===\nTopic: ${topic}\nVanessa should say: "${correctedText}"\n=== End Correction ===\n`;
+          
+          await fs.appendFile(knowledgeFilePath, correctionSection);
+          console.log(`✅ Vanessa knowledge updated successfully.`);
+        } catch (fileError: any) {
+          console.error(`⚠️ Failed to update knowledge file:`, fileError);
+          // Continue even if file update fails - memory is already updated
+        }
+
+        res.json({
+          success: true,
+          correction,
+          message: "Correction submitted successfully. Vanessa will remember this.",
+          requestId: req.requestId,
+        });
+      } catch (error: any) {
+        console.error(`❌ Error submitting correction [${req.requestId}]:`, error);
+        res.status(500).json({
+          success: false,
+          error: "Failed to submit correction",
+          requestId: req.requestId,
+        });
+      }
+    },
+  );
+
   // Enhanced development login endpoint with validation and monitoring
   app.post(
     "/api/dev/login",
