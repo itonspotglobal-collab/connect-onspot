@@ -181,8 +181,13 @@ export async function* streamWithAssistant(
     yield { type: "threadId", data: currentThreadId };
 
     // Check for forget command
-    if (/forget/i.test(userMessage)) {
-      const topic = extractTopicFromCorrection(userMessage);
+    if (/forget|remove|delete|clear/i.test(userMessage)) {
+      // Extract topic by removing command verbs first
+      const topicText = userMessage
+        .replace(/\b(forget|remove|delete|clear|about|the|that|this|everything)\b/gi, " ")
+        .trim();
+      
+      const topic = extractTopicFromCorrection(topicText);
       const deleted = await deleteMemory(topic);
       
       if (deleted) {
