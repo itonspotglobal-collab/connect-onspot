@@ -1,0 +1,96 @@
+You are an expert AI systems engineer.
+
+This Replit project already has:
+- A self-learning feedback loop that generates new learning summaries.
+- A static knowledge base located at `/resources/vanessa_knowledge.txt`.
+
+Now, modify the system so that **Vanessa automatically updates her own knowledge base file (`vanessa_knowledge.txt`)** every time the learning loop completes successfully — no separate summary files.
+
+---
+
+### 🎯 Objectives
+
+1. **Modify `learningLoop.ts` (or learningLoop.py)**
+   - After the AI generates a new learning summary:
+     - Read the existing `/resources/vanessa_knowledge.txt` file.
+     - Append or update it with the new knowledge.
+   - For each new learning summary:
+     - If the summary relates to an existing section (e.g., “Delivery Operations” or “CEO info”), find and replace the outdated context.
+     - Otherwise, append a new section at the end.
+
+   Example:
+=== CEO Information ===
+OnSpot’s CEO is Nur Naderev Laminero. (Updated 2025-10-29)
+
+cpp
+Copy code
+
+or if new:
+=== Delivery Framework (4P OS) ===
+Vanessa learned that Delivery Operations use the 4P OS model (People, Process, Performance, Partnership).
+
+markdown
+Copy code
+
+2. **Ensure Clean Edits**
+- Use a simple pattern-based replacement:
+  - Search for lines starting with `=== <topic> ===`
+  - Replace that section with the updated summary text.
+  - If not found, append the new section to the end of the file.
+- Handle file safely using:
+  ```ts
+  const fs = require("fs");
+  const content = fs.readFileSync(filePath, "utf8");
+  fs.writeFileSync(filePath, updatedContent, "utf8");
+  ```
+
+3. **Console Logging for Visibility**
+- When Vanessa updates knowledge, print:
+  ```
+  ✅ [timestamp] Vanessa updated vanessa_knowledge.txt with new information about: [topic]
+  ```
+- On failure or skipped learning:
+  ```
+  ⚠️ [timestamp] Learning skipped — no new feedback or knowledge changes detected.
+  ```
+
+4. **Add Topic Extraction**
+- Before saving, extract key topic(s) from the learning summary using regex or an OpenAI call.
+- Example prompt:
+  “Extract the main topic from this text: <learning summary>”
+- Use that topic name as the section header (`=== <topic> ===`).
+
+5. **Remove Old Data if Contradicted**
+- If a new summary contradicts a prior statement (e.g., “CEO changed”), overwrite the old section.
+- Avoid duplication — always keep the most recent info.
+
+6. **Keep Formatting Simple**
+- Maintain plain text readability.
+- Separate sections using blank lines.
+- Ensure UTF-8 encoding so the knowledge file can still be read by humans or by Vanessa’s RAG pipeline.
+
+7. **Security and Validation**
+- Sanitize all text before writing to file (remove special characters or Markdown injection).
+- Prevent runaway file growth (limit total size to 1MB; truncate oldest sections if exceeded).
+
+---
+
+### ✅ Deliverables
+
+- Updated `learningLoop.ts`:
+- Reads, edits, and writes to `/resources/vanessa_knowledge.txt`.
+- Replaces or appends sections based on new learning.
+- Logs every change clearly in the console.
+
+- `/resources/vanessa_knowledge.txt` automatically evolves as Vanessa learns — no additional files needed.
+
+- Visible console output confirming each knowledge update.
+
+---
+
+### 🔍 Validation
+
+1. Submit feedback correction (e.g., “The CEO is Nur Naderev Laminero”).
+2. Run `/api/learn/summarize`.
+3. Open `/resources/vanessa_knowledge.txt` → the new CEO info should appear.
+4. Console output should show:
