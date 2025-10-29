@@ -88,12 +88,12 @@ Preferred communication style: Simple, everyday language.
     - Automatically links to Assistant via OpenAI API
   - **Self-Learning System**: AI continuously improves through user feedback and automated analysis
     - **User Feedback**: Thumbs up/down buttons with optional comments on every AI response
-    - **Conversation Storage**: All chats stored in both PostgreSQL and Replit DB for analysis
+    - **Conversation Storage**: All chats and feedbacks stored in PostgreSQL `vanessa_logs` and `feedbacks` tables
     - **Feedback Tracking**: 
-      - Total feedback counter (`feedback_count`) tracks all submissions
-      - Feedback history maintains last 1000 entries for quick access
-      - Topic extraction identifies keywords from comments using stopword filtering
+      - Feedbacks stored in PostgreSQL `feedbacks` table with thread_id, message_id, rating, comment, topic, timestamps
+      - Topic extraction identifies keywords from user messages/comments using stopword filtering
       - Feedback grouped by topic for similarity detection
+      - Auto-count feedbacks by topic using PostgreSQL queries
     - **Auto-Trigger Learning**: System automatically runs learning loop when 2+ similar feedbacks detected
       - Extracts topics from feedback comments (e.g., "CEO", "Delivery", "Pricing")
       - Tracks feedback count per topic
