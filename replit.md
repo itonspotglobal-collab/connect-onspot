@@ -86,6 +86,28 @@ Preferred communication style: Simple, everyday language.
     - Run: `npx tsx scripts/uploadVanessaKnowledgeTxt.ts`
     - Creates vector store with File Search enabled
     - Automatically links to Assistant via OpenAI API
+  - **Two-Tier Memory System**: Vanessa uses both short-term and long-term memory to learn from user corrections
+    - **Short-Term Conversational Memory** (Instant Recall):
+      - Detects correction patterns in real-time ("you should", "actually", "the correct answer is", "remember that")
+      - Stores corrections instantly in Replit DB with key format `memory:<topic>`
+      - Acknowledges corrections: "Understood, I've updated my memory with that information."
+      - Injects all stored memories into every chat context for immediate recall
+      - Memories appear in chat instructions under `[Remembered Corrections]` section
+      - Console log: `🧠 Memory saved for topic: {topic}` and `💡 Injected {N} memory correction(s) into context`
+    - **Long-Term Knowledge Consolidation**:
+      - Learning loop automatically consolidates memories into `/resources/vanessa_knowledge.txt`
+      - Groups memories by topic and writes as sections: `=== {topic} (Memory Update YYYY-MM-DD) ===`
+      - Clears short-term memories after successful consolidation to prevent duplication
+      - Runs as part of auto-triggered learning loop (2+ similar feedbacks)
+      - Console logs: `🧠 Consolidating {N} memory correction(s)...` and `✅ Memory consolidation completed!`
+    - **Forget Command**: Users can clear specific memories with "forget {topic}"
+      - Strips command verbs (forget/remove/delete/clear) to extract target topic
+      - Responds: "I've forgotten everything about {topic}."
+      - Console log: `🗑️ Memory deleted for topic: {topic}`
+    - **Implementation**:
+      - `server/services/db_manager.ts`: Memory storage functions (storeMemory, getAllMemories, deleteMemory, clearAllMemories)
+      - `server/services/openaiService.ts`: Correction detection, memory injection, forget command
+      - `server/services/learningLoop.ts`: consolidateMemories() function
   - **Self-Learning System**: AI continuously improves through user feedback and automated analysis
     - **User Feedback**: Thumbs up/down buttons with optional comments on every AI response
     - **Conversation Storage**: All chats and feedbacks stored in PostgreSQL `vanessa_logs` and `feedbacks` tables
