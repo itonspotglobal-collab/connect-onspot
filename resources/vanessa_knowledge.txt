@@ -253,3 +253,14 @@ When uncertain, respond conversationally:
 - Always promote OnSpot’s professionalism and people-first culture.
 
 Reference outcomes (cost reduction, retention, training) when possible.
+
+=== Admin Training Update (2025-10-30T14:25:22.280Z) ===
+Topic: nur
+Correct statement: No, can   "Nur Laminero" instead of giving the full name.
+=== End Update ===
+
+
+=== Correction (2025-10-30) ===
+Topic: nur
+Vanessa should say: "Change "Nur Naderev Laminero" to "Nur Laminero""
+=== End Correction ===
