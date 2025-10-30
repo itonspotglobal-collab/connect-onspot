@@ -140,7 +140,8 @@ export function extractTopicFromCorrection(text: string): string {
     "were", "been", "have", "has", "had", "do", "does", "did",
     "this", "that", "these", "those", "it", "its", "they", "them",
     "their", "i", "you", "we", "he", "she", "my", "your", "our",
-    "actually", "remember", "correct", "wrong", "answer", "know"
+    "actually", "remember", "correct", "wrong", "answer", "know",
+    "change", "only", "just", "say"
   ]);
 
   // Extract meaningful words
@@ -148,10 +149,37 @@ export function extractTopicFromCorrection(text: string): string {
     .toLowerCase()
     .replace(/[^\w\s]/g, " ")
     .split(/\s+/)
-    .filter((word) => word.length > 3 && !stopwords.has(word));
+    .filter((word) => word.length > 2 && !stopwords.has(word));
 
   // Return first meaningful word as topic
   return words.length > 0 ? words[0] : "general";
+}
+
+/**
+ * Clean a correction message to extract the actual fact
+ * Removes correction patterns and keeps only the corrected statement
+ */
+export function cleanCorrectionText(text: string): string {
+  // Remove correction pattern prefixes
+  let cleaned = text
+    .replace(/you should say/gi, "")
+    .replace(/you should/gi, "")
+    .replace(/that'?s wrong,?/gi, "")
+    .replace(/actually,?/gi, "")
+    .replace(/the correct answer is/gi, "")
+    .replace(/remember that/gi, "")
+    .replace(/let me correct you,?/gi, "")
+    .replace(/correction:/gi, "")
+    .replace(/fix that,?/gi, "")
+    .replace(/not quite,?/gi, "")
+    .replace(/change it to/gi, "")
+    .replace(/change that to/gi, "")
+    .replace(/it should be/gi, "")
+    .replace(/only$/gi, "") // Remove trailing "only"
+    .replace(/^["']|["']$/g, "") // Remove quotes at start/end
+    .trim();
+  
+  return cleaned;
 }
 
 /**
@@ -168,6 +196,9 @@ export function isCorrection(message: string): boolean {
     /correction:/i,
     /fix that/i,
     /not quite/i,
+    /change it to/i,
+    /change that to/i,
+    /it should be/i,
   ];
 
   return correctionPatterns.some((pattern) => pattern.test(message));

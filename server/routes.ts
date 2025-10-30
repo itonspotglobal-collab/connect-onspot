@@ -1651,7 +1651,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           res.write("data: [DONE]\n\n");
           res.end();
 
-          // Detect if this was a correction
+          // Detect if this was a correction (for logging purposes only)
+          // Note: streamWithAssistant already handles correction storage and knowledge base updates
           const isCorrectionDetected = dbManager.isCorrection(message);
           const topic = isCorrectionDetected ? dbManager.extractTopicFromCorrection(message) : null;
 
@@ -1664,27 +1665,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             topic,
           });
 
-          // If correction detected, update memory and knowledge base
           if (isCorrectionDetected && topic) {
-            console.log(`🔧 Correction detected in training: ${topic}`);
-            
-            // Update Replit DB memory for instant recall
-            await dbManager.storeMemory(topic, message);
-            
-            // Update vanessa_knowledge.txt
-            const fs = await import("fs/promises");
-            const path = await import("path");
-            const knowledgeFilePath = path.join(process.cwd(), "resources", "vanessa_knowledge.txt");
-            
-            try {
-              const timestamp = new Date().toISOString().split('T')[0];
-              const correctionSection = `\n\n=== Training Correction (${timestamp}) ===\nTopic: ${topic}\nCorrection: "${message}"\n=== End Training Correction ===\n`;
-              
-              await fs.appendFile(knowledgeFilePath, correctionSection);
-              console.log(`✅ Training correction saved to knowledge base.`);
-            } catch (fileError: any) {
-              console.error(`⚠️ Failed to update knowledge file:`, fileError);
-            }
+            console.log(`🔧 Correction logged in training_logs: ${topic}`);
           }
 
           console.log(`✅ Training chat completed successfully`);

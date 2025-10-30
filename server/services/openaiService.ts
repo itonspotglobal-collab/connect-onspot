@@ -228,7 +228,27 @@ export async function* streamWithAssistant(
     // Check for correction pattern and store as instant memory
     if (isCorrection(userMessage)) {
       const topic = extractTopicFromCorrection(userMessage);
-      await storeMemory(topic, userMessage);
+      const { cleanCorrectionText } = await import("./db_manager");
+      const cleanedCorrection = cleanCorrectionText(userMessage);
+      
+      // Store in memory with cleaned text
+      await storeMemory(topic, cleanedCorrection);
+      
+      // Update knowledge base file
+      try {
+        const fs = await import("fs/promises");
+        const path = await import("path");
+        const knowledgeFilePath = path.join(process.cwd(), "resources", "vanessa_knowledge.txt");
+        
+        const timestamp = new Date().toISOString();
+        const correctionSection = `\n\n=== Admin Training Update (${timestamp}) ===\nTopic: ${topic}\nCorrect statement: ${cleanedCorrection}\n=== End Update ===\n`;
+        
+        await fs.appendFile(knowledgeFilePath, correctionSection);
+        console.log(`✅ Vanessa knowledge file updated with correction for topic: ${topic}`);
+      } catch (fileError: any) {
+        console.error(`⚠️ Failed to update knowledge file:`, fileError);
+        // Continue even if file update fails - memory is already updated
+      }
       
       const acknowledgment = "Understood, I've updated my memory with that information.";
       yield { type: "memory", data: acknowledgment };
