@@ -1601,6 +1601,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
+  // POST /api/train/chat/stream - Stream conversational training with Vanessa (admin only)
+  app.post(
+    "/api/train/chat/stream",
+    authenticateJWT,
+    requireAdmin,
+    validateRequest(
+      z.object({
+        message: z.string().min(1, "Message is required"),
+      }),
+    ),
+    async (req: any, res) => {
+      try {
+        const { message } = req.body;
+        const adminId = req.user.id;
+
+        console.log(`🎓 Admin training chat from ${adminId}: "${message.substring(0, 50)}..."`);
+
+        // Set up SSE headers
+        res.setHeader("Content-Type", "text/event-stream");
+        res.setHeader("Cache-Control", "no-cache");
+        res.setHeader("Connection", "keep-alive");
+
+        let fullResponse = "";
+
+        try {
+          // Stream response from OpenAI with training context
+          await openaiService.streamWithAssistant(
+            message,
+            null, // No threadId for training mode - each is independent
+            (chunk: string) => {
+              fullResponse += chunk;
+              res.write(`data: ${JSON.stringify({ text: chunk })}\n\n`);
+            },
+            true // Training mode flag
+          );
+
+          // Send done signal
+          res.write("data: [DONE]\n\n");
+          res.end();
+
+          // Detect if this was a correction
+          const isCorrection = dbManager.detectCorrectionPattern(message);
+          const topic = isCorrection ? dbManager.extractTopicFromCorrection(message) : null;
+
+          // Save training log to database
+          await storage.createTrainingLog({
+            adminId,
+            userMessage: message,
+            aiResponse: fullResponse,
+            isCorrection,
+            topic,
+          });
+
+          // If correction detected, update memory and knowledge base
+          if (isCorrection && topic) {
+            console.log(`🔧 Correction detected in training: ${topic}`);
+            
+            // Update Replit DB memory for instant recall
+            await dbManager.storeMemory(topic, message);
+            
+            // Update vanessa_knowledge.txt
+            const fs = await import("fs/promises");
+            const path = await import("path");
+            const knowledgeFilePath = path.join(process.cwd(), "resources", "vanessa_knowledge.txt");
+            
+            try {
+              const timestamp = new Date().toISOString().split('T')[0];
+              const correctionSection = `\n\n=== Training Correction (${timestamp}) ===\nTopic: ${topic}\nCorrection: "${message}"\n=== End Training Correction ===\n`;
+              
+              await fs.appendFile(knowledgeFilePath, correctionSection);
+              console.log(`✅ Training correction saved to knowledge base.`);
+            } catch (fileError: any) {
+              console.error(`⚠️ Failed to update knowledge file:`, fileError);
+            }
+          }
+
+          console.log(`✅ Training chat completed successfully`);
+        } catch (error: any) {
+          console.error(`❌ Error in training stream [${req.requestId}]:`, error);
+          res.write(`data: ${JSON.stringify({ error: "Failed to generate response" })}\n\n`);
+          res.end();
+        }
+      } catch (error: any) {
+        console.error(`❌ Error in training chat [${req.requestId}]:`, error);
+        if (!res.headersSent) {
+          res.status(500).json({
+            success: false,
+            error: "Failed to process training chat",
+            requestId: req.requestId,
+          });
+        }
+      }
+    },
+  );
+
   // POST /api/site/reindex - Trigger manual site crawl (admin only)
   app.post("/api/site/reindex", authenticateJWT, requireAdmin, async (req: any, res) => {
     try {
