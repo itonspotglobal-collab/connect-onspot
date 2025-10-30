@@ -42,6 +42,10 @@ Preferred communication style: Simple, everyday language.
 - **Dual SEO + GEO Setup**: Dynamic `HeadSEO` component for US (clients) and Philippines (talent) geo-targeting.
 - **VanessaChat (OpenAI Integration)**: AI-powered virtual assistant using `gpt-4o-mini` with streaming support, knowledge base, two-tier memory system, and self-learning capabilities.
 - **Conversational Admin Training**: Interactive interface for administrators to train Vanessa, including automatic correction detection and knowledge base updates.
+  - **Development Mode**: Authentication bypassed for training routes in development (NODE_ENV !== "production")
+  - **Protected Routes (Dev Bypass)**: `/api/train/chat/stream`, `/api/train/correct`, `/api/site/reindex`
+  - **UI Indicator**: Shows "🔧 Training Mode Active (No Auth Required)" banner in development
+  - **Production Security**: Full JWT authentication required in production environment
 - **Website Crawler & Navigation Context**: Automated daily crawling of `onspotglobal.com` to provide Vanessa with up-to-date website information and navigation assistance.
 
 ### External Dependencies
