@@ -21,6 +21,7 @@ export default function TrainingChat() {
   const [isStreaming, setIsStreaming] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const isDevelopment = import.meta.env.MODE === "development";
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -45,18 +46,26 @@ export default function TrainingChat() {
         setIsStreaming(true);
         setStreamedResponse("");
 
-        // Get JWT token from localStorage for admin authentication
-        const token = localStorage.getItem("token");
-        if (!token) {
+        // In development mode, skip authentication checks
+        const isDevelopment = import.meta.env.MODE === "development";
+        const token = isDevelopment ? null : localStorage.getItem("token");
+        
+        if (!isDevelopment && !token) {
           throw new Error("Authentication required. Please log in as an admin.");
+        }
+
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+        };
+        
+        // Only add Authorization header in production
+        if (!isDevelopment && token) {
+          headers["Authorization"] = `Bearer ${token}`;
         }
 
         const response = await fetch("/api/train/chat/stream", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
+          headers,
           credentials: "include",
           body: JSON.stringify({ message: userMessage }),
           signal: abortController.signal,
@@ -163,8 +172,20 @@ export default function TrainingChat() {
       <Alert className="mx-4 mt-4">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          Training mode: Your corrections will be automatically detected and saved to Vanessa's memory.
-          Use phrases like "actually", "the correct answer is", or "you should" to correct Vanessa.
+          {isDevelopment ? (
+            <>
+              <strong>🔧 Training Mode Active (No Auth Required)</strong>
+              <br />
+              Development mode: All training features enabled without authentication.
+            </>
+          ) : (
+            <>
+              <strong>Admin Training Mode</strong>
+              <br />
+              Your corrections will be automatically detected and saved to Vanessa's memory.
+              Use phrases like "actually", "the correct answer is", or "you should" to correct Vanessa.
+            </>
+          )}
         </AlertDescription>
       </Alert>
 
