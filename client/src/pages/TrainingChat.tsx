@@ -4,7 +4,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { Send, Sparkles, AlertCircle } from "lucide-react";
+import { Send, Sparkles, AlertCircle, Bot } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 type Message = {
@@ -230,6 +230,17 @@ export default function TrainingChat() {
             </Card>
           </div>
         ))}
+
+        {isStreaming && !streamedResponse && (
+          <div className="flex justify-start">
+            <Card className="max-w-[80%] p-4 bg-card">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Bot className="w-4 h-4 animate-pulse" data-testid="icon-typing" />
+                <span className="text-sm animate-pulse">Vanessa is thinking...</span>
+              </div>
+            </Card>
+          </div>
+        )}
 
         {streamedResponse && (
           <div className="flex justify-start">

@@ -40,19 +40,32 @@ const isConfigured = () => {
   }
 };
 
-// Load local knowledge base at startup
-const knowledgePath = path.join(process.cwd(), "resources", "vanessa_knowledge.txt");
-let vanessaKnowledge = "";
+// Dynamic knowledge loader - reads file on every request for instant updates
+function loadVanessaKnowledge(): string {
+  const knowledgePath = path.join(process.cwd(), "resources", "vanessa_knowledge.txt");
+  
+  try {
+    if (fs.existsSync(knowledgePath)) {
+      return fs.readFileSync(knowledgePath, "utf-8");
+    } else {
+      console.warn(`⚠️ Vanessa knowledge base not found at: ${knowledgePath}`);
+      return "";
+    }
+  } catch (error) {
+    console.error(`❌ Error loading Vanessa knowledge base:`, error);
+    return "";
+  }
+}
 
+// Load knowledge base at startup for verification
+const knowledgePath = path.join(process.cwd(), "resources", "vanessa_knowledge.txt");
 try {
-  if (fs.existsSync(knowledgePath)) {
-    vanessaKnowledge = fs.readFileSync(knowledgePath, "utf-8");
+  const initialKnowledge = loadVanessaKnowledge();
+  if (initialKnowledge) {
     console.log(`✅ Loaded Vanessa knowledge base from: ${knowledgePath}`);
-  } else {
-    console.warn(`⚠️ Vanessa knowledge base not found at: ${knowledgePath}`);
   }
 } catch (error) {
-  console.error(`❌ Error loading Vanessa knowledge base:`, error);
+  console.error(`❌ Error verifying Vanessa knowledge base:`, error);
 }
 
 // Vanessa's persona reinforcement - ensures consistent personality
@@ -71,8 +84,11 @@ Note: Respond in natural conversational text, not JSON format.
 
 // Build enhanced instructions with knowledge, learning insights, and memories
 async function buildEnhancedInstructions(): Promise<string> {
-  let instructions = vanessaKnowledge
-    ? `${VANESSA_PERSONA}\n\n[Company Knowledge Base]\n${vanessaKnowledge}`
+  // Dynamically reload knowledge base for instant updates
+  const currentKnowledge = loadVanessaKnowledge();
+  
+  let instructions = currentKnowledge
+    ? `${VANESSA_PERSONA}\n\n[Company Knowledge Base]\n${currentKnowledge}`
     : VANESSA_PERSONA;
 
   // Add stored memories (short-term corrections)
