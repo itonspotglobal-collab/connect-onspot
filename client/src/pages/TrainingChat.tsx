@@ -45,10 +45,17 @@ export default function TrainingChat() {
         setIsStreaming(true);
         setStreamedResponse("");
 
+        // Get JWT token from localStorage for admin authentication
+        const token = localStorage.getItem("token");
+        if (!token) {
+          throw new Error("Authentication required. Please log in as an admin.");
+        }
+
         const response = await fetch("/api/train/chat/stream", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
           },
           credentials: "include",
           body: JSON.stringify({ message: userMessage }),
@@ -56,6 +63,12 @@ export default function TrainingChat() {
         });
 
         if (!response.ok) {
+          if (response.status === 401) {
+            throw new Error("Authentication failed. Please log in as an admin to access training mode.");
+          }
+          if (response.status === 403) {
+            throw new Error("Access denied. Only administrators can train Vanessa.");
+          }
           const errorText = await response.text();
           throw new Error(errorText || `HTTP error! status: ${response.status}`);
         }
@@ -104,11 +117,13 @@ export default function TrainingChat() {
           console.log("Request aborted");
         } else {
           console.error("Error streaming response:", error);
+          // Display the specific error message to the user
+          const errorMessage = error.message || "Sorry, I encountered an error. Please try again.";
           setMessages((prev) => [
             ...prev,
             {
               role: "assistant",
-              content: "Sorry, I encountered an error. Please try again.",
+              content: `⚠️ Error: ${errorMessage}`,
             },
           ]);
         }

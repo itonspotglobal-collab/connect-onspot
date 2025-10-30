@@ -1629,11 +1629,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Stream response from OpenAI with training context
           for await (const chunk of streamWithAssistant(
             message,
-            null, // No threadId for training mode - each is independent
-            true // Training mode flag
+            undefined // No threadId for training mode - each is independent
           )) {
-            fullResponse += chunk;
-            res.write(`data: ${JSON.stringify({ text: chunk })}\n\n`);
+            // Only process content chunks (ignore threadId, done, memory chunks)
+            if (chunk.type === "content") {
+              fullResponse += chunk.data;
+              res.write(`data: ${JSON.stringify({ text: chunk.data })}\n\n`);
+            }
           }
 
           // Send done signal
