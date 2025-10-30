@@ -10,7 +10,7 @@ import {
   validateEmail,
 } from "./auth-utils";
 import { ghlService } from "./services/ghlService";
-import { sendMessageToAssistant, streamMessageToAssistant } from "./services/openaiService";
+import { sendMessageToAssistant, streamMessageToAssistant, streamWithAssistant } from "./services/openaiService";
 import { ingestKnowledgeFiles, runLearningLoop } from "./services/learningLoop";
 import * as dbManager from "./services/db_manager";
 import rateLimit from "express-rate-limit";
@@ -1627,35 +1627,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         try {
           // Stream response from OpenAI with training context
-          await openaiService.streamWithAssistant(
+          for await (const chunk of streamWithAssistant(
             message,
             null, // No threadId for training mode - each is independent
-            (chunk: string) => {
-              fullResponse += chunk;
-              res.write(`data: ${JSON.stringify({ text: chunk })}\n\n`);
-            },
             true // Training mode flag
-          );
+          )) {
+            fullResponse += chunk;
+            res.write(`data: ${JSON.stringify({ text: chunk })}\n\n`);
+          }
 
           // Send done signal
           res.write("data: [DONE]\n\n");
           res.end();
 
           // Detect if this was a correction
-          const isCorrection = dbManager.detectCorrectionPattern(message);
-          const topic = isCorrection ? dbManager.extractTopicFromCorrection(message) : null;
+          const isCorrectionDetected = dbManager.isCorrection(message);
+          const topic = isCorrectionDetected ? dbManager.extractTopicFromCorrection(message) : null;
 
           // Save training log to database
           await storage.createTrainingLog({
             adminId,
             userMessage: message,
             aiResponse: fullResponse,
-            isCorrection,
+            isCorrection: isCorrectionDetected,
             topic,
           });
 
           // If correction detected, update memory and knowledge base
-          if (isCorrection && topic) {
+          if (isCorrectionDetected && topic) {
             console.log(`🔧 Correction detected in training: ${topic}`);
             
             // Update Replit DB memory for instant recall
