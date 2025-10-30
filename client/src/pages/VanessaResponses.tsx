@@ -485,6 +485,9 @@ export default function VanessaResponses() {
           className="max-w-4xl h-[80vh] p-0 gap-0" 
           data-testid="dialog-training"
         >
+          <DialogHeader className="sr-only">
+            <DialogTitle>Train Vanessa</DialogTitle>
+          </DialogHeader>
           <TrainingChat />
         </DialogContent>
       </Dialog>
