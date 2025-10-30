@@ -1204,6 +1204,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // DELETE /api/vanessa/responses/:threadId - Delete a conversation thread
+  app.delete("/api/vanessa/responses/:threadId", async (req: any, res) => {
+    try {
+      const { threadId } = req.params;
+      const deleted = await storage.deleteVanessaThread(threadId);
+      
+      if (!deleted) {
+        return res.status(404).json({ 
+          success: false, 
+          error: "Thread not found" 
+        });
+      }
+
+      console.log(`🗑️ Deleted Vanessa thread [${req.requestId}]: ${threadId}`);
+      res.json({ 
+        success: true, 
+        message: `Deleted thread ${threadId}` 
+      });
+    } catch (error: any) {
+      console.error(`❌ Error deleting thread [${req.requestId}]:`, error);
+      res.status(500).json({ 
+        success: false, 
+        error: "Failed to delete thread",
+        requestId: req.requestId 
+      });
+    }
+  });
+
   // ===== Learning System API Routes =====
 
   // Helper function to extract topic/keyword from text

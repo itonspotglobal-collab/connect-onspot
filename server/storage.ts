@@ -254,6 +254,7 @@ export interface IStorage {
   getVanessaLogsByThread(threadId: string): Promise<VanessaLog[]>;
   getAllVanessaThreads(): Promise<{ threadId: string; firstMessage: string; lastMessage: string; messageCount: number; createdAt: Date; updatedAt: Date }[]>;
   searchVanessaLogs(query: string): Promise<VanessaLog[]>;
+  deleteVanessaThread(threadId: string): Promise<boolean>;
 
   // Vanessa Feedbacks
   createFeedback(feedback: InsertFeedback): Promise<Feedback>;
@@ -2074,6 +2075,20 @@ export class MemStorage implements IStorage {
       .sort((a, b) => b.createdAt!.getTime() - a.createdAt!.getTime());
   }
 
+  async deleteVanessaThread(threadId: string): Promise<boolean> {
+    const logsToDelete = Array.from(this.vanessaLogs.entries())
+      .filter(([_, log]) => log.threadId === threadId)
+      .map(([id, _]) => id);
+    
+    if (logsToDelete.length === 0) {
+      return false; // Thread not found
+    }
+    
+    // Delete all logs in this thread
+    logsToDelete.forEach(id => this.vanessaLogs.delete(id));
+    return true;
+  }
+
   // Vanessa Feedbacks (in-memory implementation)
   private feedbacks: Map<number, Feedback> = new Map();
   private feedbackIdCounter: number = 1;
@@ -2273,6 +2288,15 @@ export class DbStorage extends MemStorage {
       )
       .orderBy(desc(vanessaLogs.createdAt))
       .limit(100); // Limit to 100 most recent matching results
+  }
+
+  async deleteVanessaThread(threadId: string): Promise<boolean> {
+    const result = await db
+      .delete(vanessaLogs)
+      .where(eq(vanessaLogs.threadId, threadId))
+      .returning({ id: vanessaLogs.id });
+    
+    return result.length > 0; // Returns true if any logs were deleted
   }
 
   // Override Feedback methods to use PostgreSQL database

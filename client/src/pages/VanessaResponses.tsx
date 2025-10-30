@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, MessageCircle, User, Bot, ThumbsUp, ThumbsDown, Edit, Sparkles } from "lucide-react";
+import { Search, MessageCircle, User, Bot, ThumbsUp, ThumbsDown, Edit, Sparkles, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -116,6 +116,34 @@ export default function VanessaResponses() {
       });
     },
   });
+
+  // Delete thread mutation
+  const deleteThreadMutation = useMutation({
+    mutationFn: async (threadId: string) =>
+      apiRequest("DELETE", `/api/vanessa/responses/${threadId}`),
+    onSuccess: () => {
+      toast({
+        title: "Conversation deleted",
+        description: "The conversation has been permanently removed.",
+      });
+      setSelectedThreadId(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/vanessa/responses"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: (error as Error).message || "Failed to delete conversation",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handle delete thread
+  const handleDeleteThread = (threadId: string) => {
+    if (confirm("Are you sure you want to delete this conversation? This action cannot be undone.")) {
+      deleteThreadMutation.mutate(threadId);
+    }
+  };
 
   // Handle feedback button click
   const handleFeedback = (messageId: number, threadId: string, rating: "up" | "down") => {
@@ -271,11 +299,24 @@ export default function VanessaResponses() {
           <>
             {/* Chat Header */}
             <div className="p-4 border-b border-border bg-card">
-              <div className="flex items-center gap-2">
-                <MessageCircle className="h-5 w-5 text-primary" />
-                <h2 className="font-semibold" data-testid="text-thread-title">
-                  Thread: {selectedThreadId.substring(0, 20)}...
-                </h2>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <MessageCircle className="h-5 w-5 text-primary" />
+                  <h2 className="font-semibold" data-testid="text-thread-title">
+                    Thread: {selectedThreadId.substring(0, 20)}...
+                  </h2>
+                </div>
+                <Button
+                  onClick={() => handleDeleteThread(selectedThreadId)}
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  disabled={deleteThreadMutation.isPending}
+                  data-testid="button-delete-thread"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  {deleteThreadMutation.isPending ? "Deleting..." : "Delete"}
+                </Button>
               </div>
             </div>
 
