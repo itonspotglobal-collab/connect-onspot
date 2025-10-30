@@ -23,10 +23,12 @@ import {
   type VanessaLog, type InsertVanessaLog,
   type Feedback, type InsertFeedback,
   type Correction, type InsertCorrection,
+  type TrainingLog, type InsertTrainingLog,
   leadIntakes,
   vanessaLogs,
   feedbacks,
-  corrections
+  corrections,
+  trainingLogs
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
@@ -270,6 +272,11 @@ export interface IStorage {
   getVanessaLog(logId: number): Promise<VanessaLog | undefined>;
   getAllCorrections(): Promise<Correction[]>;
   getCorrectionsByTopic(topic: string): Promise<Correction[]>;
+
+  // Training Logs - Admin conversational training with Vanessa
+  createTrainingLog(trainingLog: InsertTrainingLog): Promise<TrainingLog>;
+  getTrainingLogsByAdmin(adminId: string): Promise<TrainingLog[]>;
+  getAllTrainingLogs(): Promise<TrainingLog[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -2150,6 +2157,36 @@ export class MemStorage implements IStorage {
       .filter((c) => c.topic === topic)
       .sort((a, b) => b.createdAt!.getTime() - a.createdAt!.getTime());
   }
+
+  // Training Logs (in-memory implementation)
+  private trainingLogsMap: Map<number, TrainingLog> = new Map();
+  private trainingLogIdCounter: number = 1;
+
+  async createTrainingLog(trainingLog: InsertTrainingLog): Promise<TrainingLog> {
+    const id = this.trainingLogIdCounter++;
+    const newTrainingLog: TrainingLog = {
+      id,
+      adminId: trainingLog.adminId,
+      userMessage: trainingLog.userMessage,
+      aiResponse: trainingLog.aiResponse,
+      isCorrection: trainingLog.isCorrection || false,
+      topic: trainingLog.topic || null,
+      createdAt: new Date(),
+    };
+    this.trainingLogsMap.set(id, newTrainingLog);
+    return newTrainingLog;
+  }
+
+  async getTrainingLogsByAdmin(adminId: string): Promise<TrainingLog[]> {
+    return Array.from(this.trainingLogsMap.values())
+      .filter((log) => log.adminId === adminId)
+      .sort((a, b) => b.createdAt!.getTime() - a.createdAt!.getTime());
+  }
+
+  async getAllTrainingLogs(): Promise<TrainingLog[]> {
+    return Array.from(this.trainingLogsMap.values())
+      .sort((a, b) => b.createdAt!.getTime() - a.createdAt!.getTime());
+  }
 }
 
 // DbStorage class: Extends MemStorage but uses PostgreSQL for Vanessa logs
@@ -2312,6 +2349,29 @@ export class DbStorage extends MemStorage {
       .from(corrections)
       .where(eq(corrections.topic, topic))
       .orderBy(desc(corrections.createdAt));
+  }
+
+  // Override Training Log methods to use PostgreSQL database
+  async createTrainingLog(trainingLog: InsertTrainingLog): Promise<TrainingLog> {
+    const [newTrainingLog] = await db.insert(trainingLogs).values(trainingLog).returning();
+    return newTrainingLog;
+  }
+
+  async getTrainingLogsByAdmin(adminId: string): Promise<TrainingLog[]> {
+    return await db
+      .select()
+      .from(trainingLogs)
+      .where(eq(trainingLogs.adminId, adminId))
+      .orderBy(desc(trainingLogs.createdAt))
+      .limit(1000);
+  }
+
+  async getAllTrainingLogs(): Promise<TrainingLog[]> {
+    return await db
+      .select()
+      .from(trainingLogs)
+      .orderBy(desc(trainingLogs.createdAt))
+      .limit(1000);
   }
 }
 

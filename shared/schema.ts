@@ -875,3 +875,27 @@ export const insertCorrectionSchema = createInsertSchema(corrections).omit({
 });
 export type InsertCorrection = z.infer<typeof insertCorrectionSchema>;
 export type Correction = typeof corrections.$inferSelect;
+
+// Training Logs - Admin-only conversational training sessions with Vanessa
+export const trainingLogs = pgTable("training_logs", {
+  id: serial("id").primaryKey(),
+  adminId: text("admin_id").notNull(),
+  userMessage: text("user_message").notNull(),
+  aiResponse: text("ai_response").notNull(),
+  isCorrection: boolean("is_correction").default(false), // True if message was detected as a correction
+  topic: text("topic"), // Extracted topic if it's a correction
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => {
+  return {
+    adminIdIndex: index("training_logs_admin_id_idx").on(table.adminId),
+    topicIndex: index("training_logs_topic_idx").on(table.topic),
+    createdAtIndex: index("training_logs_created_at_idx").on(table.createdAt),
+  };
+});
+
+export const insertTrainingLogSchema = createInsertSchema(trainingLogs).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertTrainingLog = z.infer<typeof insertTrainingLogSchema>;
+export type TrainingLog = typeof trainingLogs.$inferSelect;
