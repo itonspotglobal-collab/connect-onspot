@@ -6,10 +6,11 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, MessageCircle, User, Bot, ThumbsUp, ThumbsDown, Edit } from "lucide-react";
+import { Search, MessageCircle, User, Bot, ThumbsUp, ThumbsDown, Edit, Sparkles } from "lucide-react";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import TrainingChat from "./TrainingChat";
 
 interface VanessaLog {
   id: number;
@@ -31,6 +32,7 @@ interface ThreadSummary {
 export default function VanessaResponses() {
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [trainingDialogOpen, setTrainingDialogOpen] = useState(false);
   const [feedbackDialog, setFeedbackDialog] = useState<{
     open: boolean;
     messageId: number;
@@ -178,9 +180,20 @@ export default function VanessaResponses() {
       <div className="w-80 border-r border-border flex flex-col bg-card">
         {/* Header */}
         <div className="p-4 border-b border-border">
-          <h1 className="text-lg font-semibold mb-3" data-testid="text-page-title">
-            Vanessa Conversations
-          </h1>
+          <div className="flex items-center justify-between mb-3">
+            <h1 className="text-lg font-semibold" data-testid="text-page-title">
+              Vanessa Conversations
+            </h1>
+            <Button
+              onClick={() => setTrainingDialogOpen(true)}
+              size="sm"
+              className="gap-2"
+              data-testid="button-train-vanessa"
+            >
+              <Sparkles className="w-4 h-4" />
+              Train Vanessa
+            </Button>
+          </div>
           
           {/* Search Input */}
           <div className="relative">
@@ -463,6 +476,16 @@ export default function VanessaResponses() {
               {correctionMutation.isPending ? "Submitting..." : "Submit Correction"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Training Dialog - Full Screen */}
+      <Dialog open={trainingDialogOpen} onOpenChange={setTrainingDialogOpen}>
+        <DialogContent 
+          className="max-w-4xl h-[80vh] p-0 gap-0" 
+          data-testid="dialog-training"
+        >
+          <TrainingChat />
         </DialogContent>
       </Dialog>
     </div>
