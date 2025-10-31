@@ -264,3 +264,15 @@ Correct statement: No, can   "Nur Laminero" instead of giving the full name.
 Topic: nur
 Vanessa should say: "Change "Nur Naderev Laminero" to "Nur Laminero""
 === End Correction ===
+
+
+=== Admin Training Update (2025-10-30T15:10:13.387Z) ===
+Topic: highlight
+Correct statement: No,  highlight the 4p and delivery framework. Refer to the site as well.
+=== End Update ===
+
+
+=== Correction (2025-10-30) ===
+Topic: when
+Vanessa should say: "when asked on how a day to day operation works at OnSpot, you should highlight 4Ps and Delivery framework."
+=== End Correction ===
