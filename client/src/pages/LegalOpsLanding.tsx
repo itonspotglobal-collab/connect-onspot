@@ -797,6 +797,59 @@ export default function LegalOpsLanding() {
           </div>
         </section>
 
+        {/* The Dream Outcome */}
+        <section className="py-16 sm:py-24 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white relative overflow-hidden">
+          {/* Background decoration */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl h-96 bg-gradient-to-r from-violet-600/20 via-blue-600/20 to-indigo-600/20 rounded-full blur-3xl"></div>
+          
+          <div className="container mx-auto px-4 sm:px-6 relative z-10">
+            <div className="max-w-4xl mx-auto text-center space-y-8">
+              {/* Section Header */}
+              <div className="space-y-3">
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white" data-testid="text-dream-outcome-title">
+                  The Dream Outcome
+                </h2>
+                <p className="text-lg sm:text-xl text-[#C8D1F0] font-light">
+                  What every law firm wants — and what OnSpot delivers.
+                </p>
+              </div>
+
+              {/* Vision Statement */}
+              <div className="space-y-6 py-8">
+                <p className="text-xl sm:text-2xl text-white font-light italic leading-relaxed">
+                  Imagine a back office that runs itself —
+                </p>
+                
+                <div className="space-y-3 text-base sm:text-lg text-white/90 max-w-2xl mx-auto">
+                  <p className="leading-relaxed">Every rent demand filed on time.</p>
+                  <p className="leading-relaxed">Every petition error-free.</p>
+                  <p className="leading-relaxed">Every client update delivered before they ask.</p>
+                </div>
+
+                <div className="space-y-3 text-base sm:text-lg text-[#C8D1F0] max-w-2xl mx-auto pt-4">
+                  <p className="leading-relaxed font-medium">No late nights. No turnover. No escalations.</p>
+                  <p className="leading-relaxed">
+                    Just a stable, high-performing LegalOps system running behind your firm —
+                  </p>
+                  <p className="leading-relaxed">
+                    saving up to <span className="text-emerald-400 font-semibold">70% in costs</span> while delivering <span className="text-violet-400 font-semibold">100% peace of mind</span>.
+                  </p>
+                </div>
+              </div>
+
+              {/* Closing Tagline */}
+              <div className="pt-4">
+                <div className="inline-flex items-center gap-2 px-6 py-4 bg-gradient-to-r from-violet-600/20 to-blue-600/20 backdrop-blur-xl rounded-2xl border border-white/20 shadow-2xl">
+                  <Sparkles className="w-6 h-6 text-[#4353FF]" />
+                  <p className="text-lg sm:text-xl font-semibold text-white">
+                    OnSpot LegalOps<sup className="text-xs">™</sup> turns your legal operations into a system that never sleeps.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* How OnSpot LegalOps Works - Process Timeline */}
         <section className="py-16 sm:py-24 bg-gradient-to-br from-[#0A143C] to-[#15245A] text-white relative overflow-hidden">
           {/* Background decoration */}
