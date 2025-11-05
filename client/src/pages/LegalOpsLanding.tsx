@@ -799,68 +799,115 @@ export default function LegalOpsLanding() {
           </div>
         </section>
 
-        {/* The Dream Outcome */}
-        <section className="py-16 sm:py-24 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white relative overflow-hidden">
-          {/* Background decoration */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl h-96 bg-gradient-to-r from-violet-600/20 via-blue-600/20 to-indigo-600/20 rounded-full blur-3xl"></div>
+        {/* The Dream Outcome - Aspirational & Ethereal */}
+        <section className="py-20 sm:py-32 bg-gradient-to-br from-purple-900 via-violet-900 to-indigo-900 text-white relative overflow-hidden">
+          {/* Ethereal background effects */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(167,139,250,0.15),transparent_50%)]"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(139,92,246,0.15),transparent_50%)]"></div>
+          <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-violet-400/50 to-transparent"></div>
           
           <div className="container mx-auto px-4 sm:px-6 relative z-10">
-            <div className="max-w-4xl mx-auto text-center space-y-8">
-              {/* Section Header */}
-              <div className="space-y-3">
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white" data-testid="text-dream-outcome-title">
-                  The Dream Outcome
-                </h2>
-                <p className="text-lg sm:text-xl text-[#C8D1F0] font-light">
+            <div className="max-w-4xl mx-auto text-center space-y-12">
+              {/* Section Header with glow */}
+              <div className="space-y-4">
+                <div className="inline-block">
+                  <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white via-violet-100 to-white drop-shadow-[0_0_30px_rgba(167,139,250,0.5)]" data-testid="text-dream-outcome-title">
+                    The Dream Outcome
+                  </h2>
+                </div>
+                <p className="text-xl sm:text-2xl text-violet-200 font-light tracking-wide">
                   What every law firm wants — and what OnSpot delivers.
                 </p>
               </div>
 
-              {/* Vision Statement */}
-              <div className="space-y-6 py-8">
-                <p className="text-xl sm:text-2xl text-white font-light italic leading-relaxed">
-                  Imagine a back office that runs itself —
-                </p>
+              {/* Vision Statement - Poetic Layout */}
+              <div className="space-y-10 py-12">
+                <div className="relative">
+                  <p className="text-2xl sm:text-3xl lg:text-4xl text-white font-light italic leading-relaxed tracking-wide">
+                    Imagine a back office that runs itself —
+                  </p>
+                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-transparent via-violet-400 to-transparent rounded-full"></div>
+                </div>
                 
-                <div className="space-y-3 text-base sm:text-lg text-white/90 max-w-2xl mx-auto">
-                  <p className="leading-relaxed">Every rent demand filed on time.</p>
-                  <p className="leading-relaxed">Every petition error-free.</p>
-                  <p className="leading-relaxed">Every client update delivered before they ask.</p>
+                {/* Three promises in elegant cards */}
+                <div className="grid sm:grid-cols-3 gap-6 max-w-3xl mx-auto pt-8">
+                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-all duration-300">
+                    <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-3" />
+                    <p className="text-base text-white/90 leading-relaxed">Every rent demand filed on time.</p>
+                  </div>
+                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-all duration-300">
+                    <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-3" />
+                    <p className="text-base text-white/90 leading-relaxed">Every petition error-free.</p>
+                  </div>
+                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-all duration-300">
+                    <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-3" />
+                    <p className="text-base text-white/90 leading-relaxed">Every client update delivered before they ask.</p>
+                  </div>
                 </div>
 
-                <div className="space-y-3 text-base sm:text-lg text-[#C8D1F0] max-w-2xl mx-auto pt-4">
-                  <p className="leading-relaxed font-medium">No late nights. No turnover. No escalations.</p>
-                  <p className="leading-relaxed">
+                {/* The Promise */}
+                <div className="space-y-6 max-w-3xl mx-auto pt-6">
+                  <p className="text-xl sm:text-2xl text-violet-200 font-medium leading-relaxed">
+                    No late nights. No turnover. No escalations.
+                  </p>
+                  <p className="text-lg sm:text-xl text-white/80 leading-relaxed">
                     Just a stable, high-performing LegalOps system running behind your firm —
                   </p>
-                  <p className="leading-relaxed">
-                    saving up to <span className="text-emerald-400 font-semibold">70% in costs</span> while delivering <span className="text-violet-400 font-semibold">100% peace of mind</span>.
-                  </p>
+                  <div className="flex items-center justify-center gap-4 flex-wrap text-lg sm:text-xl">
+                    <div className="inline-flex items-center gap-2 px-5 py-3 bg-emerald-500/20 border border-emerald-400/30 rounded-xl">
+                      <TrendingDown className="w-5 h-5 text-emerald-400" />
+                      <span className="text-emerald-300 font-bold">70% cost savings</span>
+                    </div>
+                    <span className="text-violet-300">+</span>
+                    <div className="inline-flex items-center gap-2 px-5 py-3 bg-violet-500/20 border border-violet-400/30 rounded-xl">
+                      <Shield className="w-5 h-5 text-violet-400" />
+                      <span className="text-violet-300 font-bold">100% peace of mind</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Closing Tagline */}
-              <div className="pt-4">
-                <div className="inline-flex items-center gap-2 px-6 py-4 bg-gradient-to-r from-violet-600/20 to-blue-600/20 backdrop-blur-xl rounded-2xl border border-white/20 shadow-2xl">
-                  <Sparkles className="w-6 h-6 text-[#4353FF]" />
-                  <p className="text-lg sm:text-xl font-semibold text-white">
-                    OnSpot LegalOps<sup className="text-xs">™</sup> turns your legal operations into a system that never sleeps.
-                  </p>
+              {/* Closing Tagline with elegant border */}
+              <div className="pt-8 pb-4">
+                <div className="relative inline-block">
+                  <div className="absolute inset-0 bg-gradient-to-r from-violet-600/30 via-purple-600/30 to-indigo-600/30 blur-2xl rounded-3xl"></div>
+                  <div className="relative px-8 py-6 bg-gradient-to-r from-violet-950/80 via-purple-950/80 to-indigo-950/80 backdrop-blur-2xl rounded-3xl border border-violet-400/30 shadow-2xl">
+                    <div className="flex items-center gap-3">
+                      <Sparkles className="w-7 h-7 text-violet-400" />
+                      <p className="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-violet-200">
+                        OnSpot LegalOps<sup className="text-xs">™</sup>
+                      </p>
+                    </div>
+                    <p className="text-base sm:text-lg text-violet-200 mt-2">
+                      turns your legal operations into a system that never sleeps.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+          
+          {/* Bottom gradient separator */}
+          <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-violet-400/50 to-transparent"></div>
         </section>
 
-        {/* How OnSpot LegalOps Works - Process Timeline */}
+        {/* How OnSpot LegalOps Works - Technical Process Timeline */}
         <section className="py-16 sm:py-24 bg-gradient-to-br from-[#0A143C] to-[#15245A] text-white relative overflow-hidden">
-          {/* Background decoration */}
-          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl"></div>
+          {/* Grid pattern overlay for technical feel */}
+          <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)', backgroundSize: '50px 50px' }}></div>
+          
+          {/* Accent lights */}
+          <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-400/30 to-transparent"></div>
+          <div className="absolute top-20 right-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-20 left-10 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl"></div>
           
           <div className="container mx-auto px-4 sm:px-6 relative z-10">
             {/* Section Header */}
             <div className="text-center mb-16 max-w-3xl mx-auto">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#4353FF]/20 border border-[#4353FF]/30 rounded-full mb-6">
+                <Settings className="w-4 h-4 text-[#4353FF]" />
+                <span className="text-sm font-semibold text-[#4353FF] uppercase tracking-wider">The Process</span>
+              </div>
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 text-white" data-testid="text-process-title">
                 How OnSpot LegalOps Works
               </h2>
@@ -869,8 +916,12 @@ export default function LegalOpsLanding() {
               </p>
             </div>
 
-            {/* Timeline Steps */}
-            <div className="max-w-5xl mx-auto space-y-12">
+            {/* Timeline Steps with Vertical Connector */}
+            <div className="max-w-5xl mx-auto relative">
+              {/* Vertical timeline line */}
+              <div className="absolute left-8 top-8 bottom-8 w-0.5 bg-gradient-to-b from-blue-500/50 via-cyan-500/50 to-emerald-500/50 hidden md:block"></div>
+              
+              <div className="space-y-8">
               {/* Step 1: Assess */}
               <div className="flex flex-col md:flex-row items-start gap-6 group">
                 <div className="flex-shrink-0">
@@ -1031,6 +1082,7 @@ export default function LegalOpsLanding() {
                     </p>
                   </div>
                 </div>
+              </div>
               </div>
             </div>
 
