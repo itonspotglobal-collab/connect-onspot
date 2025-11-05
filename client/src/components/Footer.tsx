@@ -122,8 +122,53 @@ export function Footer() {
           </div>
 
           {/* Compact Navigation Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10">
-            {/* Services */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 lg:gap-10">
+            {/* Navigation */}
+            <div className="space-y-3">
+              <h3 className="font-semibold text-white text-base sm:text-lg tracking-wide border-b border-white/20 pb-2">
+                Navigation
+              </h3>
+              <ul className="space-y-2.5 sm:space-y-2 text-white/85 text-sm sm:text-base mt-0 md:mt-[0.7rem]">
+                <li>
+                  <Link
+                    href="/legal-ops"
+                    className="hover:text-white transition-all duration-200 hover:translate-x-1 inline-block py-1"
+                    data-testid="footer-nav-legal-ops"
+                  >
+                    LegalOps NY
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/powerapp"
+                    className="hover:text-white transition-all duration-200 hover:translate-x-1"
+                    data-testid="footer-nav-powerapp"
+                  >
+                    Powerapp
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/ai-assistant"
+                    className="hover:text-white transition-all duration-200 hover:translate-x-1"
+                    data-testid="footer-nav-ai-assistant"
+                  >
+                    AI Assistant
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/operations-playbook"
+                    className="hover:text-white transition-all duration-200 hover:translate-x-1 inline-block py-1"
+                    data-testid="footer-nav-operations-playbook"
+                  >
+                    Delivery Playbook
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Solutions */}
             <div className="space-y-3">
               <h3 className="font-semibold text-white text-base sm:text-lg tracking-wide border-b border-white/20 pb-2">
                 Solutions
