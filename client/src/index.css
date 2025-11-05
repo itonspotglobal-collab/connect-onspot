@@ -1585,4 +1585,78 @@
       transform: scale(1.05);
     }
   }
+
+  /* Dream Outcome Section Animations */
+  @keyframes auroraSweep {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  @keyframes dreamFloat {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-5px);
+    }
+  }
+
+  @keyframes dreamShimmer {
+    0% {
+      background-position: -200% center;
+    }
+    100% {
+      background-position: 200% center;
+    }
+  }
+
+  @keyframes checkDraw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  /* Utility classes for Dream Outcome */
+  .aurora-sweep {
+    animation: auroraSweep 14s ease-in-out infinite;
+  }
+
+  .dream-float-1 {
+    animation: dreamFloat 7s ease-in-out infinite;
+  }
+
+  .dream-float-2 {
+    animation: dreamFloat 7.2s ease-in-out infinite 200ms;
+  }
+
+  .dream-float-3 {
+    animation: dreamFloat 7.4s ease-in-out infinite 400ms;
+  }
+
+  .dream-shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.3) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    animation: dreamShimmer 3s linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .aurora-sweep,
+    .dream-float-1,
+    .dream-float-2,
+    .dream-float-3,
+    .dream-shimmer {
+      animation: none;
+    }
+  }
 }

@@ -799,96 +799,95 @@ export default function LegalOpsLanding() {
           </div>
         </section>
 
-        {/* The Dream Outcome - Aspirational & Ethereal */}
-        <section className="py-20 sm:py-32 bg-gradient-to-br from-purple-900 via-violet-900 to-indigo-900 text-white relative overflow-hidden">
-          {/* Ethereal background effects */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(167,139,250,0.15),transparent_50%)]"></div>
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(139,92,246,0.15),transparent_50%)]"></div>
-          <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-violet-400/50 to-transparent"></div>
+        {/* The Dream Outcome - Light & Dreamy */}
+        <section className="py-20 sm:py-32 relative overflow-hidden" style={{ background: 'linear-gradient(to bottom, #F6F3FF 0%, #ECE7FF 100%)' }}>
+          {/* Aurora sweep animation */}
+          <div className="absolute inset-0 opacity-[0.07] aurora-sweep" style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(67, 83, 255, 0.3) 50%, transparent 100%)', width: '200%' }}></div>
           
           <div className="container mx-auto px-4 sm:px-6 relative z-10">
             <div className="max-w-4xl mx-auto text-center space-y-12">
-              {/* Section Header with glow */}
+              {/* Section Header with soft glow */}
               <div className="space-y-4">
-                <div className="inline-block">
-                  <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white via-violet-100 to-white drop-shadow-[0_0_30px_rgba(167,139,250,0.5)]" data-testid="text-dream-outcome-title">
-                    The Dream Outcome
-                  </h2>
-                </div>
-                <p className="text-xl sm:text-2xl text-violet-200 font-light tracking-wide">
+                <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white" style={{ textShadow: '0 0 40px rgba(255, 255, 255, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)' }} data-testid="text-dream-outcome-title">
+                  The Dream Outcome
+                </h2>
+                <p className="text-xl sm:text-2xl font-light tracking-wide" style={{ color: '#6C6FA8' }}>
                   What every law firm wants — and what OnSpot delivers.
                 </p>
               </div>
 
-              {/* Vision Statement - Poetic Layout */}
+              {/* Vision Statement with shimmer */}
               <div className="space-y-10 py-12">
                 <div className="relative">
-                  <p className="text-2xl sm:text-3xl lg:text-4xl text-white font-light italic leading-relaxed tracking-wide">
+                  <p className="text-2xl sm:text-3xl lg:text-4xl font-light italic leading-relaxed tracking-wide dream-shimmer" style={{ color: '#6C6FA8' }}>
                     Imagine a back office that runs itself —
                   </p>
-                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-transparent via-violet-400 to-transparent rounded-full"></div>
+                  <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-16 h-0.5 rounded-full" style={{ background: '#4353FF' }}></div>
                 </div>
                 
-                {/* Three promises in elegant cards */}
-                <div className="grid sm:grid-cols-3 gap-6 max-w-3xl mx-auto pt-8">
-                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-all duration-300">
-                    <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-3" />
-                    <p className="text-base text-white/90 leading-relaxed">Every rent demand filed on time.</p>
+                {/* Three glass chips */}
+                <div className="grid sm:grid-cols-3 gap-4 max-w-3xl mx-auto pt-8">
+                  <div className="dream-float-1 rounded-2xl p-6 backdrop-blur-md" style={{ background: 'rgba(255, 255, 255, 0.35)', boxShadow: '0 6px 24px rgba(34, 35, 89, 0.08)' }}>
+                    <svg className="w-8 h-8 mx-auto mb-3" viewBox="0 0 24 24" fill="none" stroke="#4353FF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" strokeDasharray="60" strokeDashoffset="60" style={{ animation: 'checkDraw 0.6s ease-out 0.3s forwards' }} />
+                      <polyline points="22 4 12 14.01 9 11.01" strokeDasharray="20" strokeDashoffset="20" style={{ animation: 'checkDraw 0.4s ease-out 0.7s forwards' }} />
+                    </svg>
+                    <p className="text-sm leading-relaxed" style={{ color: '#4A4A6A' }}>Every rent demand filed on time.</p>
                   </div>
-                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-all duration-300">
-                    <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-3" />
-                    <p className="text-base text-white/90 leading-relaxed">Every petition error-free.</p>
+                  <div className="dream-float-2 rounded-2xl p-6 backdrop-blur-md" style={{ background: 'rgba(255, 255, 255, 0.35)', boxShadow: '0 6px 24px rgba(34, 35, 89, 0.08)' }}>
+                    <svg className="w-8 h-8 mx-auto mb-3" viewBox="0 0 24 24" fill="none" stroke="#4353FF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" strokeDasharray="60" strokeDashoffset="60" style={{ animation: 'checkDraw 0.6s ease-out 0.5s forwards' }} />
+                      <polyline points="22 4 12 14.01 9 11.01" strokeDasharray="20" strokeDashoffset="20" style={{ animation: 'checkDraw 0.4s ease-out 0.9s forwards' }} />
+                    </svg>
+                    <p className="text-sm leading-relaxed" style={{ color: '#4A4A6A' }}>Every petition error-free.</p>
                   </div>
-                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-all duration-300">
-                    <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-3" />
-                    <p className="text-base text-white/90 leading-relaxed">Every client update delivered before they ask.</p>
+                  <div className="dream-float-3 rounded-2xl p-6 backdrop-blur-md" style={{ background: 'rgba(255, 255, 255, 0.35)', boxShadow: '0 6px 24px rgba(34, 35, 89, 0.08)' }}>
+                    <svg className="w-8 h-8 mx-auto mb-3" viewBox="0 0 24 24" fill="none" stroke="#4353FF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" strokeDasharray="60" strokeDashoffset="60" style={{ animation: 'checkDraw 0.6s ease-out 0.7s forwards' }} />
+                      <polyline points="22 4 12 14.01 9 11.01" strokeDasharray="20" strokeDashoffset="20" style={{ animation: 'checkDraw 0.4s ease-out 1.1s forwards' }} />
+                    </svg>
+                    <p className="text-sm leading-relaxed" style={{ color: '#4A4A6A' }}>Every client update delivered before they ask.</p>
                   </div>
                 </div>
 
                 {/* The Promise */}
                 <div className="space-y-6 max-w-3xl mx-auto pt-6">
-                  <p className="text-xl sm:text-2xl text-violet-200 font-medium leading-relaxed">
+                  <p className="text-xl sm:text-2xl font-medium leading-relaxed" style={{ color: '#6C6FA8' }}>
                     No late nights. No turnover. No escalations.
                   </p>
-                  <p className="text-lg sm:text-xl text-white/80 leading-relaxed">
+                  <p className="text-lg sm:text-xl leading-relaxed" style={{ color: '#8B8BA8' }}>
                     Just a stable, high-performing LegalOps system running behind your firm —
                   </p>
-                  <div className="flex items-center justify-center gap-4 flex-wrap text-lg sm:text-xl">
-                    <div className="inline-flex items-center gap-2 px-5 py-3 bg-emerald-500/20 border border-emerald-400/30 rounded-xl">
-                      <TrendingDown className="w-5 h-5 text-emerald-400" />
-                      <span className="text-emerald-300 font-bold">70% cost savings</span>
+                  <div className="flex items-center justify-center gap-3 flex-wrap text-base sm:text-lg">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl backdrop-blur-md" style={{ background: 'rgba(255, 255, 255, 0.35)', boxShadow: '0 4px 16px rgba(34, 35, 89, 0.06)' }}>
+                      <span style={{ color: '#4A4A6A' }}>saving up to</span>
+                      <span className="font-bold" style={{ color: '#4353FF' }}>70% in costs</span>
                     </div>
-                    <span className="text-violet-300">+</span>
-                    <div className="inline-flex items-center gap-2 px-5 py-3 bg-violet-500/20 border border-violet-400/30 rounded-xl">
-                      <Shield className="w-5 h-5 text-violet-400" />
-                      <span className="text-violet-300 font-bold">100% peace of mind</span>
+                    <span style={{ color: '#6C6FA8' }}>+</span>
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl backdrop-blur-md" style={{ background: 'rgba(255, 255, 255, 0.35)', boxShadow: '0 4px 16px rgba(34, 35, 89, 0.06)' }}>
+                      <span style={{ color: '#4A4A6A' }}>delivering</span>
+                      <span className="font-bold" style={{ color: '#4353FF' }}>100% peace of mind</span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Closing Tagline with elegant border */}
+              {/* Closing Tagline */}
               <div className="pt-8 pb-4">
-                <div className="relative inline-block">
-                  <div className="absolute inset-0 bg-gradient-to-r from-violet-600/30 via-purple-600/30 to-indigo-600/30 blur-2xl rounded-3xl"></div>
-                  <div className="relative px-8 py-6 bg-gradient-to-r from-violet-950/80 via-purple-950/80 to-indigo-950/80 backdrop-blur-2xl rounded-3xl border border-violet-400/30 shadow-2xl">
-                    <div className="flex items-center gap-3">
-                      <Sparkles className="w-7 h-7 text-violet-400" />
-                      <p className="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-violet-200">
-                        OnSpot LegalOps<sup className="text-xs">™</sup>
-                      </p>
-                    </div>
-                    <p className="text-base sm:text-lg text-violet-200 mt-2">
-                      turns your legal operations into a system that never sleeps.
+                <div className="inline-block px-8 py-6 rounded-3xl backdrop-blur-md" style={{ background: 'rgba(255, 255, 255, 0.4)', boxShadow: '0 8px 32px rgba(34, 35, 89, 0.12)' }}>
+                  <div className="flex items-center gap-3 mb-2">
+                    <Sparkles className="w-6 h-6" style={{ color: '#4353FF' }} />
+                    <p className="text-xl sm:text-2xl font-bold" style={{ color: '#4A4A6A' }}>
+                      OnSpot LegalOps<sup className="text-xs">™</sup>
                     </p>
                   </div>
+                  <p className="text-base sm:text-lg" style={{ color: '#6C6FA8' }}>
+                    turns your legal operations into a system that never sleeps.
+                  </p>
                 </div>
               </div>
             </div>
           </div>
-          
-          {/* Bottom gradient separator */}
-          <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-violet-400/50 to-transparent"></div>
         </section>
 
         {/* How OnSpot LegalOps Works - Technical Process Timeline */}
