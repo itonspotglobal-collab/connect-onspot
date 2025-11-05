@@ -24,11 +24,13 @@ import {
   type Feedback, type InsertFeedback,
   type Correction, type InsertCorrection,
   type TrainingLog, type InsertTrainingLog,
+  type LegalOpsTrial, type InsertLegalOpsTrial,
   leadIntakes,
   vanessaLogs,
   feedbacks,
   corrections,
-  trainingLogs
+  trainingLogs,
+  legalOpsTrials
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
@@ -278,6 +280,11 @@ export interface IStorage {
   createTrainingLog(trainingLog: InsertTrainingLog): Promise<TrainingLog>;
   getTrainingLogsByAdmin(adminId: string): Promise<TrainingLog[]>;
   getAllTrainingLogs(): Promise<TrainingLog[]>;
+
+  // LegalOps Trial Signups
+  createLegalOpsTrial(trial: InsertLegalOpsTrial): Promise<LegalOpsTrial>;
+  getLegalOpsTrialByEmail(email: string): Promise<LegalOpsTrial | undefined>;
+  getAllLegalOpsTrials(): Promise<LegalOpsTrial[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -2202,6 +2209,39 @@ export class MemStorage implements IStorage {
     return Array.from(this.trainingLogsMap.values())
       .sort((a, b) => b.createdAt!.getTime() - a.createdAt!.getTime());
   }
+
+  // LegalOps Trial Signups (in-memory implementation)
+  private legalOpsTrialsMap: Map<string, LegalOpsTrial> = new Map();
+
+  async createLegalOpsTrial(trial: InsertLegalOpsTrial): Promise<LegalOpsTrial> {
+    const id = randomUUID();
+    const newTrial: LegalOpsTrial = {
+      id,
+      fullName: trial.fullName,
+      firmName: trial.firmName,
+      email: trial.email,
+      phone: trial.phone || null,
+      tier: trial.tier,
+      fteCount: trial.fteCount || 1,
+      stripePaymentIntentId: trial.stripePaymentIntentId || null,
+      stripeCustomerId: trial.stripeCustomerId || null,
+      status: trial.status || "pending",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.legalOpsTrialsMap.set(id, newTrial);
+    return newTrial;
+  }
+
+  async getLegalOpsTrialByEmail(email: string): Promise<LegalOpsTrial | undefined> {
+    return Array.from(this.legalOpsTrialsMap.values())
+      .find((trial) => trial.email === email);
+  }
+
+  async getAllLegalOpsTrials(): Promise<LegalOpsTrial[]> {
+    return Array.from(this.legalOpsTrialsMap.values())
+      .sort((a, b) => b.createdAt!.getTime() - a.createdAt!.getTime());
+  }
 }
 
 // DbStorage class: Extends MemStorage but uses PostgreSQL for Vanessa logs
@@ -2395,6 +2435,29 @@ export class DbStorage extends MemStorage {
       .select()
       .from(trainingLogs)
       .orderBy(desc(trainingLogs.createdAt))
+      .limit(1000);
+  }
+
+  // Override LegalOps Trial methods to use PostgreSQL database
+  async createLegalOpsTrial(trial: InsertLegalOpsTrial): Promise<LegalOpsTrial> {
+    const [newTrial] = await db.insert(legalOpsTrials).values(trial).returning();
+    return newTrial;
+  }
+
+  async getLegalOpsTrialByEmail(email: string): Promise<LegalOpsTrial | undefined> {
+    const results = await db
+      .select()
+      .from(legalOpsTrials)
+      .where(eq(legalOpsTrials.email, email))
+      .limit(1);
+    return results[0];
+  }
+
+  async getAllLegalOpsTrials(): Promise<LegalOpsTrial[]> {
+    return await db
+      .select()
+      .from(legalOpsTrials)
+      .orderBy(desc(legalOpsTrials.createdAt))
       .limit(1000);
   }
 }

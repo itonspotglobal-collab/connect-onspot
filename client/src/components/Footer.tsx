@@ -174,6 +174,15 @@ export function Footer() {
                     Enterprise Solutions
                   </Link>
                 </li>
+                <li>
+                  <Link
+                    href="/legal-ops"
+                    className="hover:text-white transition-all duration-200 hover:translate-x-1"
+                    data-testid="footer-legal-ops"
+                  >
+                    LegalOps NY
+                  </Link>
+                </li>
               </ul>
             </div>
 

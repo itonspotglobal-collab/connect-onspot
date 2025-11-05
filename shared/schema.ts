@@ -899,3 +899,33 @@ export const insertTrainingLogSchema = createInsertSchema(trainingLogs).omit({
 });
 export type InsertTrainingLog = z.infer<typeof insertTrainingLogSchema>;
 export type TrainingLog = typeof trainingLogs.$inferSelect;
+
+// LegalOps Trial Signups - High-converting LegalOps landing page trials
+export const legalOpsTrials = pgTable("legal_ops_trials", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fullName: text("full_name").notNull(),
+  firmName: text("firm_name").notNull(),
+  email: varchar("email").notNull(),
+  phone: text("phone"),
+  tier: text("tier").notNull(), // 'launch' or 'executive'
+  fteCount: integer("fte_count").notNull().default(1),
+  stripePaymentIntentId: text("stripe_payment_intent_id"),
+  stripeCustomerId: text("stripe_customer_id"),
+  status: text("status").notNull().default("pending"), // pending, card_captured, active, cancelled
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => {
+  return {
+    emailIndex: index("legal_ops_trials_email_idx").on(table.email),
+    statusIndex: index("legal_ops_trials_status_idx").on(table.status),
+    createdAtIndex: index("legal_ops_trials_created_at_idx").on(table.createdAt),
+  };
+});
+
+export const insertLegalOpsTrialSchema = createInsertSchema(legalOpsTrials).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertLegalOpsTrial = z.infer<typeof insertLegalOpsTrialSchema>;
+export type LegalOpsTrial = typeof legalOpsTrials.$inferSelect;

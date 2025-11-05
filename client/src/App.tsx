@@ -48,6 +48,7 @@ import ProfileSettings from "@/pages/ProfileSettings";
 import Powerapp from "@/pages/Powerapp";
 import OperationsPlaybook from "@/pages/OperationsPlaybook";
 import SuperhumanProject from "@/pages/SuperhumanProject";
+import LegalOpsLanding from "@/pages/LegalOpsLanding";
 
 // Immersive Page Wrapper - Full screen without navigation (for campaigns and reveals)
 function ImmersivePage() {
@@ -112,6 +113,7 @@ function PublicRouter() {
           <Route path="/investors" component={InvestorsCorner} />
           <Route path="/powerapp" component={Powerapp} />
           <Route path="/operations-playbook" component={OperationsPlaybook} />
+          <Route path="/legal-ops" component={LegalOpsLanding} />
           <Route path="/admin/vanessa-responses" component={VanessaResponses} />
           <Route path="/admin/vanessa-learning" component={VanessaLearningDashboard} />
           {/* Legacy routes for backward compatibility */}
@@ -222,6 +224,7 @@ function AppContent() {
       <Route path="/talent" component={PublicRouter} />
       <Route path="/operations-playbook" component={PublicRouter} />
       <Route path="/powerapp" component={PublicRouter} />
+      <Route path="/legal-ops" component={PublicRouter} />
       <Route path="/admin/vanessa-responses" component={PublicRouter} />
       <Route path="/admin/vanessa-learning" component={PublicRouter} />
       

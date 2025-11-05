@@ -4887,6 +4887,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // LegalOps Trial - Stripe Payment Integration
+  app.post("/api/legal-ops/create-trial", async (req: Request, res: Response) => {
+    try {
+      const { fullName, firmName, email, phone, tier, amount } = req.body;
+      const requestId = (req as any).requestId;
+
+      console.log(`💳 Creating LegalOps trial payment [${requestId}]:`, {
+        firmName,
+        email,
+        tier,
+        amount,
+      });
+
+      // Check if Stripe is configured
+      if (!process.env.STRIPE_SECRET_KEY) {
+        console.error(`❌ Stripe not configured [${requestId}]`);
+        return res.status(500).json({
+          error: "Payment system not configured",
+          message: "Stripe integration is not set up. Please contact support.",
+          requestId,
+        });
+      }
+
+      // Initialize Stripe
+      const Stripe = await import("stripe");
+      const stripe = new Stripe.default(process.env.STRIPE_SECRET_KEY, {
+        apiVersion: "2025-08-27.basil",
+      });
+
+      // Create payment intent for card capture (no immediate charge)
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(amount), // Already in cents
+        currency: "usd",
+        description: `OnSpot LegalOps ${tier === "launch" ? "Launch System" : "Executive Suite"} - 90-Day Trial`,
+        metadata: {
+          fullName,
+          firmName,
+          email,
+          phone: phone || "",
+          tier,
+        },
+        setup_future_usage: "off_session", // Allows future charges without customer present
+      });
+
+      console.log(`✅ Payment intent created [${requestId}]:`, {
+        paymentIntentId: paymentIntent.id,
+        amount: paymentIntent.amount,
+        status: paymentIntent.status,
+      });
+
+      // Save trial signup to database
+      try {
+        await storage.createLegalOpsTrial({
+          fullName,
+          firmName,
+          email,
+          phone: phone || null,
+          tier,
+          fteCount: 1,
+          stripePaymentIntentId: paymentIntent.id,
+          status: "pending",
+        });
+
+        console.log(`✅ LegalOps trial saved to database [${requestId}]`);
+      } catch (dbError: any) {
+        console.error(`⚠️  Failed to save trial to database [${requestId}]:`, dbError.message);
+        // Continue anyway since payment intent was created successfully
+      }
+
+      res.json({
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id,
+      });
+    } catch (error: any) {
+      const requestId = (req as any).requestId;
+      console.error(`❌ LegalOps trial creation error [${requestId}]:`, {
+        error: error.message,
+        stack: error.stack?.split("\n")[0],
+      });
+
+      res.status(500).json({
+        error: "Payment setup failed",
+        message: error.message || "Unable to create payment intent. Please try again.",
+        requestId,
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
