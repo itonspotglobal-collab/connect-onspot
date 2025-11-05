@@ -262,9 +262,9 @@ export default function LegalOpsLanding() {
             <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.7) 100%)' }}></div>
           </div>
 
-          <div className="container mx-auto px-4 sm:px-6 relative z-20 pt-20 pb-16 sm:pt-32 sm:pb-24">
+          <div className="container mx-auto px-4 sm:px-6 relative z-20 pt-20 pb-16 sm:pt-24 sm:pb-24">
             {/* OnSpot Logo - Enhanced Contrast */}
-            <div className="mb-12 hero-fade-up">
+            <div className="mb-10 hero-fade-up">
               <div className="inline-flex items-center gap-2.5 backdrop-blur-2xl bg-white/15 px-5 py-2.5 rounded-full border border-white/40 shadow-2xl">
                 <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-blue-500 rounded-full flex items-center justify-center shadow-lg">
                   <Building2 className="h-4 w-4 text-white" />
@@ -280,55 +280,56 @@ export default function LegalOpsLanding() {
 
             <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
               {/* Left: Headline & Value Prop */}
-              <div className="space-y-10 hero-fade-up">
-                <div className="space-y-6">
+              <div className="hero-fade-up">
+                <div className="space-y-3.5 mb-5">
                   {/* Ultra-minimal Badge */}
                   <div className="inline-flex items-center gap-2.5 text-sm font-medium text-white backdrop-blur-2xl bg-white/10 px-5 py-2.5 rounded-full border border-white/30 shadow-xl">
                     <div className="w-2 h-2 bg-violet-400 rounded-full animate-pulse"></div>
                     Tri-State NY Landlord-Tenant Law Firms
                   </div>
                   
-                  {/* Main Headline - Bright White */}
-                  <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold leading-[1.1] text-white tracking-tight drop-shadow-[0_4px_20px_rgba(0,0,0,0.8)]" data-testid="text-hero-headline">
+                  {/* Main Headline - Pure White */}
+                  <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold leading-[1.1] text-[#FFFFFF] tracking-tight drop-shadow-[0_4px_20px_rgba(0,0,0,0.8)]" data-testid="text-hero-headline">
                     Cut Legal Admin Costs by 70%
                   </h1>
                   
-                  {/* Subheadline - Electric Lavender */}
-                  <p className="text-xl sm:text-2xl lg:text-3xl text-[#C4B5FD] font-light tracking-wide drop-shadow-[0_4px_16px_rgba(0,0,0,0.8)]" data-testid="text-hero-subhead">
+                  {/* Subheadline - Soft Blue-Gray */}
+                  <p className="text-xl sm:text-2xl lg:text-3xl text-[#C8D1F0] font-light tracking-wide drop-shadow-[0_4px_16px_rgba(0,0,0,0.8)]" data-testid="text-hero-subhead">
                     Zero Escalations. Full Control.
                   </p>
                   
-                  <p className="text-base sm:text-lg text-white leading-relaxed max-w-2xl font-light drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]">
+                  {/* Body - Muted Silver */}
+                  <p className="text-base sm:text-lg text-[#D0D4E6] leading-relaxed max-w-2xl font-light drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)] pt-2">
                     New York landlord–tenant firms: Our specialized LegalOps team manages your Rent Demands, Petitions, and Section 8 compliance with precision — delivering 70% cost savings and zero escalations within 90 days.
                   </p>
                 </div>
 
-                {/* Trust Badges - Bold Neon Gradients */}
-                <div className="flex flex-wrap gap-4 hero-fade-up-delay">
-                  <div className="flex items-center gap-3 backdrop-blur-2xl bg-gradient-to-br from-emerald-500/20 to-green-500/20 px-5 py-4 rounded-2xl border border-emerald-400/40 shadow-2xl group hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all duration-300">
+                {/* Metric Boxes - Equal Width, Horizontal Row */}
+                <div className="grid grid-cols-3 gap-6 hero-fade-up-delay">
+                  <div className="flex flex-col items-center gap-3 backdrop-blur-2xl bg-[#1D2E66] px-4 py-5 rounded-2xl border border-white/30 shadow-2xl group hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all duration-300">
                     <div className="w-11 h-11 bg-gradient-to-br from-emerald-400 to-green-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                       <TrendingDown className="h-6 w-6 text-white" />
                     </div>
-                    <div>
-                      <div className="text-xs text-emerald-200 font-semibold uppercase tracking-wider">Cost Reduction</div>
+                    <div className="text-center">
+                      <div className="text-xs text-[#B9C3E0] font-semibold uppercase tracking-wider">Cost Reduction</div>
                       <div className="text-lg font-extrabold bg-gradient-to-r from-emerald-300 to-green-300 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(16,185,129,0.6)]">70% Savings</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 backdrop-blur-2xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 px-5 py-4 rounded-2xl border border-violet-400/40 shadow-2xl group hover:shadow-[0_0_30px_rgba(139,92,246,0.4)] transition-all duration-300">
+                  <div className="flex flex-col items-center gap-3 backdrop-blur-2xl bg-[#1D2E66] px-4 py-5 rounded-2xl border border-white/30 shadow-2xl group hover:shadow-[0_0_30px_rgba(139,92,246,0.4)] transition-all duration-300">
                     <div className="w-11 h-11 bg-gradient-to-br from-violet-400 to-purple-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                       <CheckCircle2 className="h-6 w-6 text-white" />
                     </div>
-                    <div>
-                      <div className="text-xs text-violet-200 font-semibold uppercase tracking-wider">Escalations</div>
+                    <div className="text-center">
+                      <div className="text-xs text-[#B9C3E0] font-semibold uppercase tracking-wider">Escalations</div>
                       <div className="text-lg font-extrabold bg-gradient-to-r from-violet-300 to-purple-300 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(139,92,246,0.6)]">Zero</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 backdrop-blur-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 px-5 py-4 rounded-2xl border border-cyan-400/40 shadow-2xl group hover:shadow-[0_0_30px_rgba(34,211,238,0.4)] transition-all duration-300">
+                  <div className="flex flex-col items-center gap-3 backdrop-blur-2xl bg-[#1D2E66] px-4 py-5 rounded-2xl border border-white/30 shadow-2xl group hover:shadow-[0_0_30px_rgba(34,211,238,0.4)] transition-all duration-300">
                     <div className="w-11 h-11 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                       <Clock className="h-6 w-6 text-white" />
                     </div>
-                    <div>
-                      <div className="text-xs text-cyan-200 font-semibold uppercase tracking-wider">Stabilization</div>
+                    <div className="text-center">
+                      <div className="text-xs text-[#B9C3E0] font-semibold uppercase tracking-wider">Stabilization</div>
                       <div className="text-lg font-extrabold bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(34,211,238,0.6)]">&lt;90 Days</div>
                     </div>
                   </div>
