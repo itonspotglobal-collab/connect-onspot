@@ -24,7 +24,11 @@ import {
   Phone,
   Mail,
   Sparkles,
-  DollarSign
+  DollarSign,
+  Compass,
+  Settings,
+  Target,
+  Rocket
 } from "lucide-react";
 import { HeadSEO } from "@/components/HeadSEO";
 import nycSkylineImage from "@assets/40431e5288cb44250d8204c03e0ba76129ba76dfd36e01e7c40f546ab05de806_1762346626354.jpeg";
@@ -789,6 +793,200 @@ export default function LegalOpsLanding() {
                   </p>
                 </CardContent>
               </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* How OnSpot LegalOps Works - Process Timeline */}
+        <section className="py-16 sm:py-24 bg-gradient-to-br from-[#0A143C] to-[#15245A] text-white relative overflow-hidden">
+          {/* Background decoration */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl"></div>
+          
+          <div className="container mx-auto px-4 sm:px-6 relative z-10">
+            {/* Section Header */}
+            <div className="text-center mb-16 max-w-3xl mx-auto">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 text-white" data-testid="text-process-title">
+                How OnSpot LegalOps Works
+              </h2>
+              <p className="text-lg sm:text-xl text-[#C8D1F0] font-light">
+                Your law firm's back office — rebuilt for precision, speed, and trust.
+              </p>
+            </div>
+
+            {/* Timeline Steps */}
+            <div className="max-w-5xl mx-auto space-y-12">
+              {/* Step 1: Assess */}
+              <div className="flex flex-col md:flex-row items-start gap-6 group">
+                <div className="flex-shrink-0">
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <Compass className="w-8 h-8 text-white" />
+                  </div>
+                </div>
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="text-sm font-bold text-[#C8D1F0] opacity-60">STEP 1</div>
+                    <div className="h-px flex-1 bg-gradient-to-r from-white/20 to-transparent"></div>
+                  </div>
+                  <h3 className="text-2xl font-bold" style={{ color: '#4353FF' }}>Assess</h3>
+                  <p className="text-base text-white/90 leading-relaxed">
+                    We start with a LegalOps Diagnostic to map your workflows, uncover bottlenecks, and identify up to 70% in potential savings.
+                  </p>
+                  <div className="flex items-start gap-2 pt-2">
+                    <div className="w-5 h-5 bg-emerald-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                    </div>
+                    <p className="text-sm text-[#C8D1F0]">
+                      <span className="font-semibold">Outcome:</span> Clear plan and measurable goals before deployment.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 2: Build */}
+              <div className="flex flex-col md:flex-row items-start gap-6 group">
+                <div className="flex-shrink-0">
+                  <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-violet-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <Settings className="w-8 h-8 text-white" />
+                  </div>
+                </div>
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="text-sm font-bold text-[#C8D1F0] opacity-60">STEP 2</div>
+                    <div className="h-px flex-1 bg-gradient-to-r from-white/20 to-transparent"></div>
+                  </div>
+                  <h3 className="text-2xl font-bold" style={{ color: '#4353FF' }}>Build</h3>
+                  <p className="text-base text-white/90 leading-relaxed">
+                    We assemble a dedicated full-time legal ops team trained in Rent Demands, Petitions, and Section 8 cases — powered by our proven SOP framework.
+                  </p>
+                  <div className="flex items-start gap-2 pt-2">
+                    <div className="w-5 h-5 bg-emerald-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                    </div>
+                    <p className="text-sm text-[#C8D1F0]">
+                      <span className="font-semibold">Outcome:</span> A ready-to-run back office built for your firm.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 3: Train */}
+              <div className="flex flex-col md:flex-row items-start gap-6 group">
+                <div className="flex-shrink-0">
+                  <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <Target className="w-8 h-8 text-white" />
+                  </div>
+                </div>
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="text-sm font-bold text-[#C8D1F0] opacity-60">STEP 3</div>
+                    <div className="h-px flex-1 bg-gradient-to-r from-white/20 to-transparent"></div>
+                  </div>
+                  <h3 className="text-2xl font-bold" style={{ color: '#4353FF' }}>Train</h3>
+                  <p className="text-base text-white/90 leading-relaxed">
+                    Your OnSpot team is trained on your tools and case templates, ensuring error-free execution from day one.
+                  </p>
+                  <div className="flex items-start gap-2 pt-2">
+                    <div className="w-5 h-5 bg-emerald-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                    </div>
+                    <p className="text-sm text-[#C8D1F0]">
+                      <span className="font-semibold">Outcome:</span> Seamless handoff — zero disruption.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 4: Manage */}
+              <div className="flex flex-col md:flex-row items-start gap-6 group">
+                <div className="flex-shrink-0">
+                  <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <BarChart3 className="w-8 h-8 text-white" />
+                  </div>
+                </div>
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="text-sm font-bold text-[#C8D1F0] opacity-60">STEP 4</div>
+                    <div className="h-px flex-1 bg-gradient-to-r from-white/20 to-transparent"></div>
+                  </div>
+                  <h3 className="text-2xl font-bold" style={{ color: '#4353FF' }}>Manage</h3>
+                  <p className="text-base text-white/90 leading-relaxed">
+                    A Delivery Manager oversees performance daily, supported by the LegalOps Dashboard for transparent reporting and QA.
+                  </p>
+                  <div className="flex items-start gap-2 pt-2">
+                    <div className="w-5 h-5 bg-emerald-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                    </div>
+                    <p className="text-sm text-[#C8D1F0]">
+                      <span className="font-semibold">Outcome:</span> Real-time visibility and complete control.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 5: Stabilize */}
+              <div className="flex flex-col md:flex-row items-start gap-6 group">
+                <div className="flex-shrink-0">
+                  <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <Shield className="w-8 h-8 text-white" />
+                  </div>
+                </div>
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="text-sm font-bold text-[#C8D1F0] opacity-60">STEP 5</div>
+                    <div className="h-px flex-1 bg-gradient-to-r from-white/20 to-transparent"></div>
+                  </div>
+                  <h3 className="text-2xl font-bold" style={{ color: '#4353FF' }}>Stabilize</h3>
+                  <p className="text-base text-white/90 leading-relaxed">
+                    Our Zero Escalation Guarantee ensures issues are resolved fast and accuracy stays consistent across every case.
+                  </p>
+                  <div className="flex items-start gap-2 pt-2">
+                    <div className="w-5 h-5 bg-emerald-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                    </div>
+                    <p className="text-sm text-[#C8D1F0]">
+                      <span className="font-semibold">Outcome:</span> Reliable delivery, regained client confidence.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 6: Grow */}
+              <div className="flex flex-col md:flex-row items-start gap-6 group">
+                <div className="flex-shrink-0">
+                  <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <Rocket className="w-8 h-8 text-white" />
+                  </div>
+                </div>
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="text-sm font-bold text-[#C8D1F0] opacity-60">STEP 6</div>
+                    <div className="h-px flex-1 bg-gradient-to-r from-white/20 to-transparent"></div>
+                  </div>
+                  <h3 className="text-2xl font-bold" style={{ color: '#4353FF' }}>Grow</h3>
+                  <p className="text-base text-white/90 leading-relaxed">
+                    As your firm scales, your LegalOps team scales with you — adding FTEs or integrating automation tools.
+                  </p>
+                  <div className="flex items-start gap-2 pt-2">
+                    <div className="w-5 h-5 bg-emerald-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                    </div>
+                    <p className="text-sm text-[#C8D1F0]">
+                      <span className="font-semibold">Outcome:</span> A long-term partner that grows with your practice.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Tagline */}
+            <div className="text-center mt-16">
+              <div className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-xl rounded-full border border-white/20">
+                <Sparkles className="w-5 h-5 text-[#4353FF]" />
+                <p className="text-base sm:text-lg font-light text-white">
+                  From Assessment to Stability — One Seamless LegalOps System.
+                </p>
+              </div>
             </div>
           </div>
         </section>
