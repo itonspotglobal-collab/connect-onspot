@@ -27,7 +27,7 @@ import {
   DollarSign
 } from "lucide-react";
 import { HeadSEO } from "@/components/HeadSEO";
-import nycSkylineImage from "@assets/stock_images/nyc_skyline_10pm_mid_2369976f.jpg";
+import nycSkylineImage from "@assets/40431e5288cb44250d8204c03e0ba76129ba76dfd36e01e7c40f546ab05de806_1762346626354.jpeg";
 
 if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
   console.warn("Missing VITE_STRIPE_PUBLIC_KEY - Stripe checkout will not work");
