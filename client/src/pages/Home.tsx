@@ -1677,6 +1677,13 @@ export default function Home() {
                   Powerapp
                 </Link>
                 <Link
+                  href="/legal-ops"
+                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
+                  data-testid="footer-link-legal-ops"
+                >
+                  LegalOps NY
+                </Link>
+                <Link
                   href="/pricing"
                   className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
                   data-testid="footer-link-pricing"
