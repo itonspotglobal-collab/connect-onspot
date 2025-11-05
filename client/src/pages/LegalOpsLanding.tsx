@@ -23,7 +23,8 @@ import {
   Zap,
   Phone,
   Mail,
-  Sparkles
+  Sparkles,
+  DollarSign
 } from "lucide-react";
 import { HeadSEO } from "@/components/HeadSEO";
 import nycSkylineImage from "@assets/stock_images/new_york_city_skylin_7e596624.jpg";
@@ -338,71 +339,6 @@ export default function LegalOpsLanding() {
                     </div>
                   </div>
                 </div>
-
-                {/* Guarantee Ribbon - Glassmorphic */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-amber-500/10 via-yellow-500/10 to-amber-600/10 backdrop-blur-xl border border-amber-400/30 rounded-2xl p-6 shadow-2xl group hover:border-amber-400/50 transition-all duration-300">
-                  <div className="absolute top-0 right-0 w-40 h-40 bg-amber-400/10 rounded-full blur-3xl"></div>
-                  <div className="relative flex items-start gap-4">
-                    <div className="w-14 h-14 bg-gradient-to-br from-amber-500/30 to-yellow-500/30 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
-                      <Shield className="h-7 w-7 text-amber-300" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-bold text-xl text-white mb-2">
-                        Zero Escalation Guarantee
-                      </p>
-                      <p className="text-sm text-white/70 leading-relaxed">
-                        Achieve operational stability within 90 days or we continue working at no charge until you reach zero escalations.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Social Proof - Glassmorphic Card */}
-                <div className="relative overflow-hidden bg-white/5 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-2xl group hover:bg-white/10 transition-all duration-300">
-                  {/* Glow effect */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 blur-2xl transition-opacity duration-700 rounded-2xl"></div>
-                  
-                  <div className="relative space-y-5">
-                    <div className="flex items-start gap-4">
-                      <div className="w-14 h-14 bg-gradient-to-br from-violet-500/30 to-blue-500/30 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
-                        <Building2 className="h-7 w-7 text-violet-300" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-bold text-white mb-1" data-testid="text-proof-title">
-                          New York Law Firm Success
-                        </h3>
-                        <p className="text-sm text-white/60">Manhattan landlord-tenant practice</p>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <div className="flex items-start gap-3 text-sm">
-                        <div className="w-6 h-6 bg-green-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <CheckCircle2 className="h-4 w-4 text-green-300" />
-                        </div>
-                        <span className="text-white/80">Rebuilt entire legal ops infrastructure under crisis conditions</span>
-                      </div>
-                      <div className="flex items-start gap-3 text-sm">
-                        <div className="w-6 h-6 bg-green-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <CheckCircle2 className="h-4 w-4 text-green-300" />
-                        </div>
-                        <span className="text-white/80">Achieved full stability in 118 days (under 4 months)</span>
-                      </div>
-                      <div className="flex items-start gap-3 text-sm">
-                        <div className="w-6 h-6 bg-green-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <CheckCircle2 className="h-4 w-4 text-green-300" />
-                        </div>
-                        <span className="text-white/80">Maintained zero escalations for 12+ consecutive months</span>
-                      </div>
-                      <div className="flex items-start gap-3 text-sm">
-                        <div className="w-6 h-6 bg-green-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <CheckCircle2 className="h-4 w-4 text-green-300" />
-                        </div>
-                        <span className="text-white/80">Sustained 72% reduction in operational costs</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </div>
 
               {/* Right: Checkout Form - Glassmorphic */}
@@ -504,8 +440,157 @@ export default function LegalOpsLanding() {
           </div>
         </section>
 
+        {/* Zero Escalation Guarantee Section */}
+        <section className="py-16 sm:py-20 bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 relative overflow-hidden">
+          {/* Background decoration */}
+          <div className="absolute top-0 left-0 w-full h-full">
+            <div className="absolute top-20 left-10 w-72 h-72 bg-amber-200/20 dark:bg-amber-500/5 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-20 right-10 w-96 h-96 bg-yellow-200/20 dark:bg-yellow-500/5 rounded-full blur-3xl"></div>
+          </div>
+
+          <div className="container mx-auto px-4 sm:px-6 relative z-10">
+            <div className="max-w-5xl mx-auto">
+              <div className="text-center mb-12">
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-3xl mb-6 shadow-2xl">
+                  <Shield className="w-10 h-10 text-white" />
+                </div>
+                <h2 className="text-3xl sm:text-5xl font-bold mb-4" data-testid="text-guarantee-title">
+                  Zero Escalation Guarantee
+                </h2>
+                <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+                  We're so confident in our system that if you don't achieve operational stability within 90 days, we'll continue working at no additional charge until you reach zero escalations.
+                </p>
+              </div>
+
+              <Card className="shadow-2xl border-2 border-amber-200 dark:border-amber-800">
+                <CardContent className="p-8 sm:p-12">
+                  <div className="grid sm:grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 bg-amber-500/20 rounded-xl flex items-center justify-center flex-shrink-0 mt-1">
+                          <CheckCircle2 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-lg mb-1">90-Day Stability Target</h3>
+                          <p className="text-sm text-muted-foreground">We aim to achieve zero escalations within your first 90 days</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 bg-amber-500/20 rounded-xl flex items-center justify-center flex-shrink-0 mt-1">
+                          <CheckCircle2 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-lg mb-1">No Extra Charges</h3>
+                          <p className="text-sm text-muted-foreground">If it takes longer, we work for free until you're stable</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 bg-amber-500/20 rounded-xl flex items-center justify-center flex-shrink-0 mt-1">
+                          <CheckCircle2 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-lg mb-1">Performance Tracking</h3>
+                          <p className="text-sm text-muted-foreground">Daily metrics and weekly reviews ensure we stay on target</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 bg-amber-500/20 rounded-xl flex items-center justify-center flex-shrink-0 mt-1">
+                          <CheckCircle2 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-lg mb-1">Full Transparency</h3>
+                          <p className="text-sm text-muted-foreground">Complete visibility into our progress every step of the way</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* New York Law Firm Success Section */}
+        <section className="py-16 sm:py-20 bg-white dark:bg-slate-900">
+          <div className="container mx-auto px-4 sm:px-6">
+            <div className="max-w-5xl mx-auto">
+              <div className="text-center mb-12">
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-violet-600 to-blue-600 rounded-3xl mb-6 shadow-2xl">
+                  <Building2 className="w-10 h-10 text-white" />
+                </div>
+                <h2 className="text-3xl sm:text-5xl font-bold mb-4" data-testid="text-success-title">
+                  New York Law Firm Success Story
+                </h2>
+                <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+                  Manhattan landlord-tenant practice rebuilds entire legal ops infrastructure under crisis conditions
+                </p>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-6">
+                <Card className="shadow-lg hover-elevate">
+                  <CardContent className="p-8">
+                    <div className="flex items-start gap-4 mb-4">
+                      <div className="w-12 h-12 bg-green-500/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+                        <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-lg mb-1">Infrastructure Rebuild</h3>
+                        <p className="text-sm text-muted-foreground">Complete rebuild of legal ops infrastructure under crisis conditions</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="shadow-lg hover-elevate">
+                  <CardContent className="p-8">
+                    <div className="flex items-start gap-4 mb-4">
+                      <div className="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+                        <Clock className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-lg mb-1">118-Day Stabilization</h3>
+                        <p className="text-sm text-muted-foreground">Achieved full operational stability in under 4 months</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="shadow-lg hover-elevate">
+                  <CardContent className="p-8">
+                    <div className="flex items-start gap-4 mb-4">
+                      <div className="w-12 h-12 bg-violet-500/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+                        <TrendingDown className="h-6 w-6 text-violet-600 dark:text-violet-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-lg mb-1">Zero Escalations</h3>
+                        <p className="text-sm text-muted-foreground">Maintained for 12+ consecutive months after stabilization</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="shadow-lg hover-elevate">
+                  <CardContent className="p-8">
+                    <div className="flex items-start gap-4 mb-4">
+                      <div className="w-12 h-12 bg-amber-500/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+                        <DollarSign className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-lg mb-1">72% Cost Reduction</h3>
+                        <p className="text-sm text-muted-foreground">Sustained reduction in operational costs year over year</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Pricing Section - Two-Tier Hormozi Stack */}
-        <section className="py-16 sm:py-24 bg-white dark:bg-slate-900">
+        <section className="py-16 sm:py-24 bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
           <div className="container mx-auto px-4 sm:px-6">
             <div className="text-center mb-12">
               <h2 className="text-3xl sm:text-4xl font-bold mb-4" data-testid="text-pricing-title">
