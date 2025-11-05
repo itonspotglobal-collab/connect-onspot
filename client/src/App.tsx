@@ -60,6 +60,11 @@ function SuperhumanImmersive() {
   return <SuperhumanProject />;
 }
 
+// LegalOps Landing Wrapper - Clean landing page without navigation
+function LegalOpsImmersive() {
+  return <LegalOpsLanding />;
+}
+
 // Public Routes - Always available regardless of authentication
 function PublicRouter() {
   const { isAuthenticated, user } = useAuth();
@@ -113,7 +118,6 @@ function PublicRouter() {
           <Route path="/investors" component={InvestorsCorner} />
           <Route path="/powerapp" component={Powerapp} />
           <Route path="/operations-playbook" component={OperationsPlaybook} />
-          <Route path="/legal-ops" component={LegalOpsLanding} />
           <Route path="/admin/vanessa-responses" component={VanessaResponses} />
           <Route path="/admin/vanessa-learning" component={VanessaLearningDashboard} />
           {/* Legacy routes for backward compatibility */}
@@ -206,6 +210,9 @@ function AppContent() {
       {/* Superhuman Project - Immersive cinematic experience */}
       <Route path="/superhuman" component={SuperhumanImmersive} />
       
+      {/* LegalOps Landing - Clean landing page without navigation */}
+      <Route path="/legal-ops" component={LegalOpsImmersive} />
+      
       {/* Public Routes - Always available */}
       <Route path="/" component={PublicRouter} />
       <Route path="/hire-talent" component={PublicRouter} />
@@ -224,7 +231,6 @@ function AppContent() {
       <Route path="/talent" component={PublicRouter} />
       <Route path="/operations-playbook" component={PublicRouter} />
       <Route path="/powerapp" component={PublicRouter} />
-      <Route path="/legal-ops" component={PublicRouter} />
       <Route path="/admin/vanessa-responses" component={PublicRouter} />
       <Route path="/admin/vanessa-learning" component={PublicRouter} />
       
