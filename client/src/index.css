@@ -1564,4 +1564,25 @@
                 0 0 40px rgba(91, 124, 255, 0.15);
     outline: none;
   }
+
+  /* LegalOps Night Skyline Animations */
+  @keyframes subtleShimmer {
+    0%, 100% {
+      filter: brightness(105%) contrast(100%);
+    }
+    50% {
+      filter: brightness(108%) contrast(102%);
+    }
+  }
+
+  @keyframes lightReflection {
+    0%, 100% {
+      opacity: 0.8;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.05);
+    }
+  }
 }

@@ -27,7 +27,7 @@ import {
   DollarSign
 } from "lucide-react";
 import { HeadSEO } from "@/components/HeadSEO";
-import nycSkylineImage from "@assets/stock_images/new_york_city_skylin_7e596624.jpg";
+import nycSkylineImage from "@assets/stock_images/nighttime_new_york_c_4f85c607.jpg";
 
 if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
   console.warn("Missing VITE_STRIPE_PUBLIC_KEY - Stripe checkout will not work");
@@ -249,17 +249,18 @@ export default function LegalOpsLanding() {
           </div>
         </div>
 
-        {/* Hero Section - Stunning NYC Design with Full Skyline Clarity */}
-        <section className="relative min-h-screen overflow-hidden bg-slate-900">
-          {/* NYC Skyline Image - Full Clarity & Vibrance */}
+        {/* Hero Section - Legal Command Center at Night */}
+        <section className="relative min-h-screen overflow-hidden bg-[#0E083C]">
+          {/* Nighttime NYC Skyline - Shimmering Lights */}
           <div className="absolute inset-0">
             <img 
               src={nycSkylineImage} 
-              alt="New York City Skyline" 
-              className="w-full h-full object-cover brightness-110 contrast-110"
+              alt="New York City Skyline at Night" 
+              className="w-full h-full object-cover brightness-105"
+              style={{ animation: 'subtleShimmer 8s ease-in-out infinite' }}
             />
-            {/* Subtle bottom fade only for text readability */}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent"></div>
+            {/* Thin gradient overlay - transparent to #0E083C at bottom 20% */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0E083C] via-[#0E083C]/40 to-transparent" style={{ backgroundSize: '100% 100%', backgroundPosition: 'bottom', backgroundImage: 'linear-gradient(to top, #0E083C 0%, #0E083C 10%, rgba(14, 8, 60, 0.6) 20%, transparent 40%)' }}></div>
           </div>
 
           <div className="container mx-auto px-4 sm:px-6 relative z-20 pt-20 pb-16 sm:pt-32 sm:pb-24">
@@ -335,11 +336,13 @@ export default function LegalOpsLanding() {
                 </div>
               </div>
 
-              {/* Right: Checkout Form - Enhanced Glassmorphic */}
+              {/* Right: Checkout Form - Command Center Panel with Skyline Light Reflections */}
               <div id="checkout-section" className="lg:sticky lg:top-8 hero-fade-up-delay">
                 <div className="relative overflow-hidden bg-white/15 backdrop-blur-3xl border border-white/40 rounded-3xl shadow-2xl">
-                  {/* Vibrant glow effect */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 to-blue-500/20 blur-3xl rounded-3xl"></div>
+                  {/* Skyline light reflections */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-violet-500/15 to-blue-500/10 blur-2xl rounded-3xl" style={{ animation: 'lightReflection 6s ease-in-out infinite' }}></div>
+                  <div className="absolute top-0 left-0 w-full h-1/3 bg-gradient-to-b from-cyan-400/10 to-transparent blur-xl"></div>
+                  <div className="absolute bottom-0 right-0 w-2/3 h-1/2 bg-gradient-to-tl from-amber-400/10 to-transparent blur-xl"></div>
                   
                   <div className="relative">
                     <div className="border-b border-white/30 p-6 sm:p-8">
