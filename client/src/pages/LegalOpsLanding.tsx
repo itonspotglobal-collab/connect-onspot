@@ -27,7 +27,7 @@ import {
   DollarSign
 } from "lucide-react";
 import { HeadSEO } from "@/components/HeadSEO";
-import nycSkylineImage from "@assets/stock_images/manhattan_skyline_ni_fa83e8b2.jpg";
+import nycSkylineImage from "@assets/stock_images/manhattan_empire_sta_c78b96fa.jpg";
 
 if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
   console.warn("Missing VITE_STRIPE_PUBLIC_KEY - Stripe checkout will not work");
@@ -251,15 +251,15 @@ export default function LegalOpsLanding() {
 
         {/* Hero Section - Legal Command Center at Night */}
         <section className="relative min-h-screen overflow-hidden bg-[#0a0a1a]">
-          {/* Nighttime NYC Skyline - Empire State Building Focal Point */}
+          {/* True Nighttime NYC Skyline - Empire State Building Focal Point */}
           <div className="absolute inset-0">
             <img 
               src={nycSkylineImage} 
               alt="New York City Skyline at Night with Empire State Building" 
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover object-center"
             />
-            {/* Very light gradient overlay for text readability */}
-            <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.6) 100%)' }}></div>
+            {/* Subtle gradient overlay for text contrast without losing skyline details */}
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.7) 100%)' }}></div>
           </div>
 
           <div className="container mx-auto px-4 sm:px-6 relative z-20 pt-20 pb-16 sm:pt-32 sm:pb-24">
