@@ -28,7 +28,9 @@ import {
   Compass,
   Settings,
   Target,
-  Rocket
+  Rocket,
+  AlertTriangle,
+  Timer
 } from "lucide-react";
 import { HeadSEO } from "@/components/HeadSEO";
 import nycSkylineImage from "@assets/40431e5288cb44250d8204c03e0ba76129ba76dfd36e01e7c40f546ab05de806_1762346626354.jpeg";
@@ -1040,6 +1042,178 @@ export default function LegalOpsLanding() {
                   From Assessment to Stability — One Seamless LegalOps System.
                 </p>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* What If You Don't Partner With OnSpot - Pain Points */}
+        <section className="py-16 sm:py-24 bg-gradient-to-br from-slate-50 via-gray-50 to-slate-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+          <div className="container mx-auto px-4 sm:px-6">
+            {/* Section Header */}
+            <div className="text-center mb-16 max-w-3xl mx-auto">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4" data-testid="text-pain-points-title">
+                What If You Don't Partner With OnSpot?
+              </h2>
+              <p className="text-lg sm:text-xl text-muted-foreground font-light">
+                The hidden costs of keeping your LegalOps in-house.
+              </p>
+            </div>
+
+            {/* Pain Points Grid */}
+            <div className="max-w-5xl mx-auto space-y-8">
+              {/* Pain Point 1: Rising Overhead */}
+              <Card className="hover-elevate">
+                <CardContent className="p-6 sm:p-8">
+                  <div className="flex flex-col sm:flex-row items-start gap-6">
+                    <div className="flex-shrink-0">
+                      <div className="w-14 h-14 bg-red-100 dark:bg-red-950/30 rounded-2xl flex items-center justify-center">
+                        <DollarSign className="w-7 h-7 text-red-600 dark:text-red-400" />
+                      </div>
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <h3 className="text-xl sm:text-2xl font-bold">Rising Overhead, Shrinking Margins</h3>
+                      <p className="text-base text-muted-foreground leading-relaxed">
+                        Every in-house paralegal or admin costs $80K–$100K a year — before benefits, turnover, and training.
+                      </p>
+                      <div className="flex items-start gap-2 pt-2">
+                        <div className="w-5 h-5 bg-red-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <AlertTriangle className="h-3 w-3 text-red-600 dark:text-red-400" />
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          <span className="font-semibold">Result:</span> You lose up to 70% of potential profit margin to back-office work.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Pain Point 2: Turnover */}
+              <Card className="hover-elevate">
+                <CardContent className="p-6 sm:p-8">
+                  <div className="flex flex-col sm:flex-row items-start gap-6">
+                    <div className="flex-shrink-0">
+                      <div className="w-14 h-14 bg-orange-100 dark:bg-orange-950/30 rounded-2xl flex items-center justify-center">
+                        <Clock className="w-7 h-7 text-orange-600 dark:text-orange-400" />
+                      </div>
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <h3 className="text-xl sm:text-2xl font-bold">Turnover and Training Burnout</h3>
+                      <p className="text-base text-muted-foreground leading-relaxed">
+                        When staff leave, knowledge leaves with them. Your firm spends months retraining, re-hiring, and rebuilding trust.
+                      </p>
+                      <div className="flex items-start gap-2 pt-2">
+                        <div className="w-5 h-5 bg-orange-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <AlertTriangle className="h-3 w-3 text-orange-600 dark:text-orange-400" />
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          <span className="font-semibold">Result:</span> Delayed filings, missed rent demands, and stressed partners.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Pain Point 3: Errors */}
+              <Card className="hover-elevate">
+                <CardContent className="p-6 sm:p-8">
+                  <div className="flex flex-col sm:flex-row items-start gap-6">
+                    <div className="flex-shrink-0">
+                      <div className="w-14 h-14 bg-amber-100 dark:bg-amber-950/30 rounded-2xl flex items-center justify-center">
+                        <AlertTriangle className="w-7 h-7 text-amber-600 dark:text-amber-400" />
+                      </div>
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <h3 className="text-xl sm:text-2xl font-bold">Errors That Cost Clients — and Reputation</h3>
+                      <p className="text-base text-muted-foreground leading-relaxed">
+                        A single misfiled petition or late Section 8 notice can trigger escalations or compliance penalties.
+                      </p>
+                      <div className="flex items-start gap-2 pt-2">
+                        <div className="w-5 h-5 bg-amber-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <AlertTriangle className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          <span className="font-semibold">Result:</span> Your reputation suffers and client trust erodes.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Pain Point 4: Lost Billable Hours */}
+              <Card className="hover-elevate">
+                <CardContent className="p-6 sm:p-8">
+                  <div className="flex flex-col sm:flex-row items-start gap-6">
+                    <div className="flex-shrink-0">
+                      <div className="w-14 h-14 bg-rose-100 dark:bg-rose-950/30 rounded-2xl flex items-center justify-center">
+                        <Timer className="w-7 h-7 text-rose-600 dark:text-rose-400" />
+                      </div>
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <h3 className="text-xl sm:text-2xl font-bold">Lost Billable Hours</h3>
+                      <p className="text-base text-muted-foreground leading-relaxed">
+                        Lawyers spend time managing admin chaos instead of billing clients.
+                      </p>
+                      <div className="flex items-start gap-2 pt-2">
+                        <div className="w-5 h-5 bg-rose-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <AlertTriangle className="h-3 w-3 text-rose-600 dark:text-rose-400" />
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          <span className="font-semibold">Result:</span> Thousands of dollars in lost productivity every month.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Pain Point 5: No Scalability */}
+              <Card className="hover-elevate">
+                <CardContent className="p-6 sm:p-8">
+                  <div className="flex flex-col sm:flex-row items-start gap-6">
+                    <div className="flex-shrink-0">
+                      <div className="w-14 h-14 bg-purple-100 dark:bg-purple-950/30 rounded-2xl flex items-center justify-center">
+                        <TrendingDown className="w-7 h-7 text-purple-600 dark:text-purple-400" />
+                      </div>
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <h3 className="text-xl sm:text-2xl font-bold">No Scalability, No Control</h3>
+                      <p className="text-base text-muted-foreground leading-relaxed">
+                        Without systems, every new client increases workload, not profit.
+                      </p>
+                      <div className="flex items-start gap-2 pt-2">
+                        <div className="w-5 h-5 bg-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <AlertTriangle className="h-3 w-3 text-purple-600 dark:text-purple-400" />
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          <span className="font-semibold">Result:</span> You grow in stress, not revenue.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Closing Statement */}
+            <div className="text-center mt-12 max-w-3xl mx-auto">
+              <Card className="bg-gradient-to-br from-violet-50 to-blue-50 dark:from-violet-950/20 dark:to-blue-950/20 border-violet-200 dark:border-violet-800">
+                <CardContent className="p-8">
+                  <p className="text-lg sm:text-xl font-semibold mb-6">
+                    With OnSpot LegalOps<sup className="text-xs">™</sup> you eliminate these risks — transforming chaos into a compliant, cost-efficient, and scalable operation.
+                  </p>
+                  <Button
+                    onClick={scrollToCheckout}
+                    size="lg"
+                    className="min-h-12 px-8 bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700"
+                    data-testid="button-pain-points-cta"
+                  >
+                    Protect Your Firm — Book Your Free LegalOps Diagnostic →
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </section>
