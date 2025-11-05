@@ -249,36 +249,30 @@ export default function LegalOpsLanding() {
           </div>
         </div>
 
-        {/* Hero Section - Stunning NYC Design */}
-        <section className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-900 via-violet-950 to-blue-950">
-          {/* Animated gradient orbs - Homepage style */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-gradient-radial from-violet-500/30 to-transparent rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute bottom-1/3 right-1/4 w-[500px] h-[500px] bg-gradient-radial from-blue-500/20 to-transparent rounded-full blur-3xl" style={{ animation: 'float 20s ease-in-out infinite' }}></div>
-          </div>
-
-          {/* NYC Skyline Image - Beautifully Blended */}
+        {/* Hero Section - Stunning NYC Design with Full Skyline Clarity */}
+        <section className="relative min-h-screen overflow-hidden bg-slate-900">
+          {/* NYC Skyline Image - Full Clarity & Vibrance */}
           <div className="absolute inset-0">
-            <div className="absolute inset-0 bg-gradient-to-b from-slate-900/60 via-violet-950/70 to-blue-950/80 z-10"></div>
             <img 
               src={nycSkylineImage} 
               alt="New York City Skyline" 
-              className="w-full h-full object-cover opacity-40"
+              className="w-full h-full object-cover brightness-110 contrast-110"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent z-10"></div>
+            {/* Subtle bottom fade only for text readability */}
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent"></div>
           </div>
 
           <div className="container mx-auto px-4 sm:px-6 relative z-20 pt-20 pb-16 sm:pt-32 sm:pb-24">
-            {/* OnSpot Logo - Glassmorphic */}
+            {/* OnSpot Logo - Enhanced Contrast */}
             <div className="mb-12 hero-fade-up">
-              <div className="inline-flex items-center gap-2.5 bg-white/5 backdrop-blur-xl px-5 py-2.5 rounded-full border border-white/20 shadow-2xl">
-                <div className="w-8 h-8 bg-gradient-to-br from-violet-600 to-blue-600 rounded-full flex items-center justify-center">
+              <div className="inline-flex items-center gap-2.5 backdrop-blur-2xl bg-white/15 px-5 py-2.5 rounded-full border border-white/40 shadow-2xl">
+                <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-blue-500 rounded-full flex items-center justify-center shadow-lg">
                   <Building2 className="h-4 w-4 text-white" />
                 </div>
-                <span className="font-bold text-lg text-white">
+                <span className="font-bold text-lg text-white drop-shadow-lg">
                   OnSpot
                 </span>
-                <span className="text-sm text-white/70 px-2 border-l border-white/20">
+                <span className="text-sm text-violet-100 px-2 border-l border-white/30">
                   LegalOps NY
                 </span>
               </div>
@@ -289,75 +283,75 @@ export default function LegalOpsLanding() {
               <div className="space-y-10 hero-fade-up">
                 <div className="space-y-6">
                   {/* Ultra-minimal Badge */}
-                  <div className="inline-flex items-center gap-2.5 text-sm font-medium text-white/90 tracking-wide bg-white/5 backdrop-blur-xl px-5 py-2.5 rounded-full border border-white/20">
-                    <div className="w-2 h-2 bg-white/60 rounded-full"></div>
+                  <div className="inline-flex items-center gap-2.5 text-sm font-medium text-white backdrop-blur-2xl bg-white/10 px-5 py-2.5 rounded-full border border-white/30 shadow-xl">
+                    <div className="w-2 h-2 bg-violet-400 rounded-full animate-pulse"></div>
                     Tri-State NY Landlord-Tenant Law Firms
                   </div>
                   
-                  {/* Main Headline - Homepage Style */}
-                  <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold leading-[1.1] text-white tracking-tight" data-testid="text-hero-headline">
+                  {/* Main Headline - Bright White */}
+                  <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold leading-[1.1] text-white tracking-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)]" data-testid="text-hero-headline">
                     Cut Legal Admin Costs by 70%
                   </h1>
                   
-                  {/* Subheadline */}
-                  <p className="text-xl sm:text-2xl lg:text-3xl text-white/70 font-light tracking-wide" data-testid="text-hero-subhead">
+                  {/* Subheadline - Soft Lavender */}
+                  <p className="text-xl sm:text-2xl lg:text-3xl text-violet-200 font-light tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.3)]" data-testid="text-hero-subhead">
                     Zero Escalations. Full Control.
                   </p>
                   
-                  <p className="text-base sm:text-lg text-white/60 leading-relaxed max-w-2xl font-light">
+                  <p className="text-base sm:text-lg text-white/90 leading-relaxed max-w-2xl font-light drop-shadow-[0_1px_6px_rgba(0,0,0,0.3)]">
                     New York landlord–tenant firms: Our specialized LegalOps team manages your Rent Demands, Petitions, and Section 8 compliance with precision — delivering 70% cost savings and zero escalations within 90 days.
                   </p>
                 </div>
 
-                {/* Trust Badges - Glassmorphic Style */}
+                {/* Trust Badges - Bold Neon Gradients */}
                 <div className="flex flex-wrap gap-4 hero-fade-up-delay">
-                  <div className="flex items-center gap-3 bg-white/5 backdrop-blur-xl px-5 py-3.5 rounded-2xl border border-white/20 shadow-2xl group hover:bg-white/10 transition-all duration-300">
-                    <div className="w-10 h-10 bg-gradient-to-br from-green-500/30 to-emerald-500/30 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                      <TrendingDown className="h-5 w-5 text-green-300" />
+                  <div className="flex items-center gap-3 backdrop-blur-2xl bg-gradient-to-br from-emerald-500/20 to-green-500/20 px-5 py-4 rounded-2xl border border-emerald-400/40 shadow-2xl group hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all duration-300">
+                    <div className="w-11 h-11 bg-gradient-to-br from-emerald-400 to-green-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                      <TrendingDown className="h-6 w-6 text-white" />
                     </div>
                     <div>
-                      <div className="text-xs text-white/50 font-medium">Cost Reduction</div>
-                      <div className="text-base font-bold text-white">70% Savings</div>
+                      <div className="text-xs text-emerald-200 font-semibold uppercase tracking-wider">Cost Reduction</div>
+                      <div className="text-lg font-extrabold bg-gradient-to-r from-emerald-300 to-green-300 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(16,185,129,0.6)]">70% Savings</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 bg-white/5 backdrop-blur-xl px-5 py-3.5 rounded-2xl border border-white/20 shadow-2xl group hover:bg-white/10 transition-all duration-300">
-                    <div className="w-10 h-10 bg-gradient-to-br from-violet-500/30 to-purple-500/30 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                      <CheckCircle2 className="h-5 w-5 text-violet-300" />
+                  <div className="flex items-center gap-3 backdrop-blur-2xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 px-5 py-4 rounded-2xl border border-violet-400/40 shadow-2xl group hover:shadow-[0_0_30px_rgba(139,92,246,0.4)] transition-all duration-300">
+                    <div className="w-11 h-11 bg-gradient-to-br from-violet-400 to-purple-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                      <CheckCircle2 className="h-6 w-6 text-white" />
                     </div>
                     <div>
-                      <div className="text-xs text-white/50 font-medium">Escalations</div>
-                      <div className="text-base font-bold text-white">Zero</div>
+                      <div className="text-xs text-violet-200 font-semibold uppercase tracking-wider">Escalations</div>
+                      <div className="text-lg font-extrabold bg-gradient-to-r from-violet-300 to-purple-300 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(139,92,246,0.6)]">Zero</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 bg-white/5 backdrop-blur-xl px-5 py-3.5 rounded-2xl border border-white/20 shadow-2xl group hover:bg-white/10 transition-all duration-300">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500/30 to-cyan-500/30 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                      <Clock className="h-5 w-5 text-blue-300" />
+                  <div className="flex items-center gap-3 backdrop-blur-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 px-5 py-4 rounded-2xl border border-cyan-400/40 shadow-2xl group hover:shadow-[0_0_30px_rgba(34,211,238,0.4)] transition-all duration-300">
+                    <div className="w-11 h-11 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                      <Clock className="h-6 w-6 text-white" />
                     </div>
                     <div>
-                      <div className="text-xs text-white/50 font-medium">Stabilization</div>
-                      <div className="text-base font-bold text-white">&lt;90 Days</div>
+                      <div className="text-xs text-cyan-200 font-semibold uppercase tracking-wider">Stabilization</div>
+                      <div className="text-lg font-extrabold bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(34,211,238,0.6)]">&lt;90 Days</div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Right: Checkout Form - Glassmorphic */}
+              {/* Right: Checkout Form - Enhanced Glassmorphic */}
               <div id="checkout-section" className="lg:sticky lg:top-8 hero-fade-up-delay">
-                <div className="relative overflow-hidden bg-white/10 backdrop-blur-2xl border border-white/30 rounded-3xl shadow-2xl">
-                  {/* Glow effect */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-blue-500/10 blur-2xl rounded-3xl"></div>
+                <div className="relative overflow-hidden bg-white/15 backdrop-blur-3xl border border-white/40 rounded-3xl shadow-2xl">
+                  {/* Vibrant glow effect */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 to-blue-500/20 blur-3xl rounded-3xl"></div>
                   
                   <div className="relative">
-                    <div className="border-b border-white/20 p-6 sm:p-8">
+                    <div className="border-b border-white/30 p-6 sm:p-8">
                       <div className="flex items-start justify-between gap-4 mb-3">
-                        <h2 className="text-2xl sm:text-3xl font-bold text-white" data-testid="text-checkout-title">
+                        <h2 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg" data-testid="text-checkout-title">
                           Start Your 90-Day Trial
                         </h2>
-                        <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 shadow-lg animate-pulse shrink-0" data-testid="badge-scarcity">
+                        <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 shadow-[0_0_20px_rgba(239,68,68,0.6)] animate-pulse shrink-0" data-testid="badge-scarcity">
                           Only 5 Slots
                         </Badge>
                       </div>
-                      <p className="text-sm text-white/70 leading-relaxed" data-testid="text-checkout-description">
+                      <p className="text-sm text-violet-100 leading-relaxed drop-shadow-md" data-testid="text-checkout-description">
                         Secure card capture • Zero charge during trial • Cancel anytime
                       </p>
                     </div>
@@ -365,7 +359,7 @@ export default function LegalOpsLanding() {
                     {!showCheckout ? (
                       <>
                         <div className="space-y-2">
-                          <Label htmlFor="fullName">Full Name *</Label>
+                          <Label htmlFor="fullName" className="text-white font-semibold">Full Name *</Label>
                           <Input
                             id="fullName"
                             value={formData.fullName}
@@ -376,7 +370,7 @@ export default function LegalOpsLanding() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="firmName">Law Firm Name *</Label>
+                          <Label htmlFor="firmName" className="text-white font-semibold">Law Firm Name *</Label>
                           <Input
                             id="firmName"
                             value={formData.firmName}
@@ -387,7 +381,7 @@ export default function LegalOpsLanding() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="email">Email *</Label>
+                          <Label htmlFor="email" className="text-white font-semibold">Email *</Label>
                           <Input
                             id="email"
                             type="email"
@@ -399,7 +393,7 @@ export default function LegalOpsLanding() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="phone">Phone</Label>
+                          <Label htmlFor="phone" className="text-white font-semibold">Phone</Label>
                           <Input
                             id="phone"
                             type="tel"
