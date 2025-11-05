@@ -27,7 +27,7 @@ import {
   DollarSign
 } from "lucide-react";
 import { HeadSEO } from "@/components/HeadSEO";
-import nycSkylineImage from "@assets/stock_images/empire_state_buildin_7cc2f7e7.jpg";
+import nycSkylineImage from "@assets/stock_images/manhattan_skyline_ni_fa83e8b2.jpg";
 
 if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
   console.warn("Missing VITE_STRIPE_PUBLIC_KEY - Stripe checkout will not work");
@@ -250,17 +250,16 @@ export default function LegalOpsLanding() {
         </div>
 
         {/* Hero Section - Legal Command Center at Night */}
-        <section className="relative min-h-screen overflow-hidden bg-[#0E083C]">
-          {/* Nighttime NYC Skyline - Shimmering Lights */}
+        <section className="relative min-h-screen overflow-hidden bg-[#0a0a1a]">
+          {/* Nighttime NYC Skyline - Empire State Building Focal Point */}
           <div className="absolute inset-0">
             <img 
               src={nycSkylineImage} 
-              alt="New York City Skyline at Night" 
-              className="w-full h-full object-cover brightness-105"
-              style={{ animation: 'subtleShimmer 8s ease-in-out infinite' }}
+              alt="New York City Skyline at Night with Empire State Building" 
+              className="w-full h-full object-cover"
             />
-            {/* Thin gradient overlay - transparent to #0E083C at bottom 20% */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0E083C] via-[#0E083C]/40 to-transparent" style={{ backgroundSize: '100% 100%', backgroundPosition: 'bottom', backgroundImage: 'linear-gradient(to top, #0E083C 0%, #0E083C 10%, rgba(14, 8, 60, 0.6) 20%, transparent 40%)' }}></div>
+            {/* Very light gradient overlay for text readability */}
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.6) 100%)' }}></div>
           </div>
 
           <div className="container mx-auto px-4 sm:px-6 relative z-20 pt-20 pb-16 sm:pt-32 sm:pb-24">
@@ -290,16 +289,16 @@ export default function LegalOpsLanding() {
                   </div>
                   
                   {/* Main Headline - Bright White */}
-                  <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold leading-[1.1] text-white tracking-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)]" data-testid="text-hero-headline">
+                  <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold leading-[1.1] text-white tracking-tight drop-shadow-[0_4px_20px_rgba(0,0,0,0.8)]" data-testid="text-hero-headline">
                     Cut Legal Admin Costs by 70%
                   </h1>
                   
-                  {/* Subheadline - Soft Lavender */}
-                  <p className="text-xl sm:text-2xl lg:text-3xl text-violet-200 font-light tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.3)]" data-testid="text-hero-subhead">
+                  {/* Subheadline - Electric Lavender */}
+                  <p className="text-xl sm:text-2xl lg:text-3xl text-[#C4B5FD] font-light tracking-wide drop-shadow-[0_4px_16px_rgba(0,0,0,0.8)]" data-testid="text-hero-subhead">
                     Zero Escalations. Full Control.
                   </p>
                   
-                  <p className="text-base sm:text-lg text-white/90 leading-relaxed max-w-2xl font-light drop-shadow-[0_1px_6px_rgba(0,0,0,0.3)]">
+                  <p className="text-base sm:text-lg text-white leading-relaxed max-w-2xl font-light drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]">
                     New York landlord–tenant firms: Our specialized LegalOps team manages your Rent Demands, Petitions, and Section 8 compliance with precision — delivering 70% cost savings and zero escalations within 90 days.
                   </p>
                 </div>
