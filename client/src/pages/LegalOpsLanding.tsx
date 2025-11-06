@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { HeadSEO } from "@/components/HeadSEO";
 import nycSkylineImage from "@assets/40431e5288cb44250d8204c03e0ba76129ba76dfd36e01e7c40f546ab05de806_1762346626354.jpeg";
+import lawyerImage from "@assets/stock_images/professional_confide_e4371db1.jpg";
 
 if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
   console.warn("Missing VITE_STRIPE_PUBLIC_KEY - Stripe checkout will not work");
@@ -799,91 +800,123 @@ export default function LegalOpsLanding() {
           </div>
         </section>
 
-        {/* The Dream Outcome - Light & Dreamy */}
-        <section className="py-20 sm:py-32 relative overflow-hidden" style={{ background: 'linear-gradient(to bottom, #F6F3FF 0%, #ECE7FF 100%)' }}>
-          {/* Aurora sweep animation */}
-          <div className="absolute inset-0 opacity-[0.07] aurora-sweep" style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(67, 83, 255, 0.3) 50%, transparent 100%)', width: '200%' }}></div>
+        {/* The Dream Outcome - Two-Column Modern Design */}
+        <section className="relative overflow-hidden hero-investor">
+          {/* Elegant overlay for depth */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/30"></div>
+          
+          {/* Subtle animated accents */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-gradient-radial from-white/5 to-transparent rounded-full blur-3xl animate-gentle-float"></div>
+          </div>
           
           <div className="container mx-auto px-4 sm:px-6 relative z-10">
-            <div className="max-w-4xl mx-auto text-center space-y-12">
-              {/* Section Header with soft glow */}
-              <div className="space-y-4">
-                <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white" style={{ textShadow: '0 0 40px rgba(255, 255, 255, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)' }} data-testid="text-dream-outcome-title">
-                  The Dream Outcome
-                </h2>
-                <p className="text-xl sm:text-2xl font-light tracking-wide" style={{ color: '#6C6FA8' }}>
-                  What every law firm wants — and what OnSpot delivers.
-                </p>
-              </div>
-
-              {/* Vision Statement with shimmer */}
-              <div className="space-y-10 py-12">
-                <div className="relative">
-                  <p className="text-2xl sm:text-3xl lg:text-4xl font-light italic leading-relaxed tracking-wide dream-shimmer" style={{ color: '#6C6FA8' }}>
-                    Imagine a back office that runs itself —
+            <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 xl:gap-20 items-center min-h-[600px] py-16 sm:py-20 lg:py-24">
+              {/* Left Column - Content */}
+              <div className="space-y-8 lg:space-y-10">
+                {/* Section Title */}
+                <div className="space-y-4">
+                  <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight" data-testid="text-dream-outcome-title">
+                    The Dream Outcome
+                  </h2>
+                  <p className="text-lg sm:text-xl text-white/70 font-light">
+                    What every law firm wants — and what OnSpot delivers.
                   </p>
-                  <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-16 h-0.5 rounded-full" style={{ background: '#4353FF' }}></div>
-                </div>
-                
-                {/* Three glass chips */}
-                <div className="grid sm:grid-cols-3 gap-4 max-w-3xl mx-auto pt-8">
-                  <div className="dream-float-1 rounded-2xl p-6 backdrop-blur-md" style={{ background: 'rgba(255, 255, 255, 0.35)', boxShadow: '0 6px 24px rgba(34, 35, 89, 0.08)' }}>
-                    <svg className="w-8 h-8 mx-auto mb-3" viewBox="0 0 24 24" fill="none" stroke="#4353FF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" strokeDasharray="60" strokeDashoffset="60" style={{ animation: 'checkDraw 0.6s ease-out 0.3s forwards' }} />
-                      <polyline points="22 4 12 14.01 9 11.01" strokeDasharray="20" strokeDashoffset="20" style={{ animation: 'checkDraw 0.4s ease-out 0.7s forwards' }} />
-                    </svg>
-                    <p className="text-sm leading-relaxed" style={{ color: '#4A4A6A' }}>Every rent demand filed on time.</p>
-                  </div>
-                  <div className="dream-float-2 rounded-2xl p-6 backdrop-blur-md" style={{ background: 'rgba(255, 255, 255, 0.35)', boxShadow: '0 6px 24px rgba(34, 35, 89, 0.08)' }}>
-                    <svg className="w-8 h-8 mx-auto mb-3" viewBox="0 0 24 24" fill="none" stroke="#4353FF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" strokeDasharray="60" strokeDashoffset="60" style={{ animation: 'checkDraw 0.6s ease-out 0.5s forwards' }} />
-                      <polyline points="22 4 12 14.01 9 11.01" strokeDasharray="20" strokeDashoffset="20" style={{ animation: 'checkDraw 0.4s ease-out 0.9s forwards' }} />
-                    </svg>
-                    <p className="text-sm leading-relaxed" style={{ color: '#4A4A6A' }}>Every petition error-free.</p>
-                  </div>
-                  <div className="dream-float-3 rounded-2xl p-6 backdrop-blur-md" style={{ background: 'rgba(255, 255, 255, 0.35)', boxShadow: '0 6px 24px rgba(34, 35, 89, 0.08)' }}>
-                    <svg className="w-8 h-8 mx-auto mb-3" viewBox="0 0 24 24" fill="none" stroke="#4353FF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" strokeDasharray="60" strokeDashoffset="60" style={{ animation: 'checkDraw 0.6s ease-out 0.7s forwards' }} />
-                      <polyline points="22 4 12 14.01 9 11.01" strokeDasharray="20" strokeDashoffset="20" style={{ animation: 'checkDraw 0.4s ease-out 1.1s forwards' }} />
-                    </svg>
-                    <p className="text-sm leading-relaxed" style={{ color: '#4A4A6A' }}>Every client update delivered before they ask.</p>
-                  </div>
                 </div>
 
-                {/* The Promise */}
-                <div className="space-y-6 max-w-3xl mx-auto pt-6">
-                  <p className="text-xl sm:text-2xl font-medium leading-relaxed" style={{ color: '#6C6FA8' }}>
-                    No late nights. No turnover. No escalations.
-                  </p>
-                  <p className="text-lg sm:text-xl leading-relaxed" style={{ color: '#8B8BA8' }}>
-                    Just a stable, high-performing LegalOps system running behind your firm —
-                  </p>
-                  <div className="flex items-center justify-center gap-3 flex-wrap text-base sm:text-lg">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl backdrop-blur-md" style={{ background: 'rgba(255, 255, 255, 0.35)', boxShadow: '0 4px 16px rgba(34, 35, 89, 0.06)' }}>
-                      <span style={{ color: '#4A4A6A' }}>saving up to</span>
-                      <span className="font-bold" style={{ color: '#4353FF' }}>70% in costs</span>
+                {/* Key Points */}
+                <div className="space-y-6">
+                  <div className="flex items-start gap-4 group">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center mt-1">
+                      <CheckCircle2 className="w-4 h-4 text-white" />
                     </div>
-                    <span style={{ color: '#6C6FA8' }}>+</span>
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl backdrop-blur-md" style={{ background: 'rgba(255, 255, 255, 0.35)', boxShadow: '0 4px 16px rgba(34, 35, 89, 0.06)' }}>
-                      <span style={{ color: '#4A4A6A' }}>delivering</span>
-                      <span className="font-bold" style={{ color: '#4353FF' }}>100% peace of mind</span>
+                    <div>
+                      <p className="text-xl sm:text-2xl text-white font-medium leading-relaxed">
+                        Every rent demand filed on time
+                      </p>
+                      <p className="text-white/60 text-sm sm:text-base mt-1">
+                        No delays. No follow-ups. Just precision execution.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-4 group">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center mt-1">
+                      <CheckCircle2 className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-xl sm:text-2xl text-white font-medium leading-relaxed">
+                        Every petition error-free
+                      </p>
+                      <p className="text-white/60 text-sm sm:text-base mt-1">
+                        Flawless documentation that stands up in court.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-4 group">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center mt-1">
+                      <CheckCircle2 className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-xl sm:text-2xl text-white font-medium leading-relaxed">
+                        Every client update delivered before they ask
+                      </p>
+                      <p className="text-white/60 text-sm sm:text-base mt-1">
+                        Proactive communication that builds trust.
+                      </p>
                     </div>
                   </div>
                 </div>
+
+                {/* Bottom Promise */}
+                <div className="pt-6 space-y-4">
+                  <div className="h-px bg-gradient-to-r from-white/20 via-white/40 to-white/20"></div>
+                  <p className="text-lg sm:text-xl text-white/80 leading-relaxed">
+                    <span className="text-white font-medium">No late nights. No turnover. No escalations.</span>
+                    <br />
+                    Just a stable, high-performing system running behind your firm.
+                  </p>
+                  <div className="flex items-center gap-3 flex-wrap text-sm sm:text-base">
+                    <Badge variant="outline" className="bg-white/5 border-white/20 text-white backdrop-blur-sm px-3 py-1.5">
+                      70% cost savings
+                    </Badge>
+                    <span className="text-white/40">+</span>
+                    <Badge variant="outline" className="bg-white/5 border-white/20 text-white backdrop-blur-sm px-3 py-1.5">
+                      100% peace of mind
+                    </Badge>
+                  </div>
+                </div>
               </div>
 
-              {/* Closing Tagline */}
-              <div className="pt-8 pb-4">
-                <div className="inline-block px-8 py-6 rounded-3xl backdrop-blur-md" style={{ background: 'rgba(255, 255, 255, 0.4)', boxShadow: '0 8px 32px rgba(34, 35, 89, 0.12)' }}>
-                  <div className="flex items-center gap-3 mb-2">
-                    <Sparkles className="w-6 h-6" style={{ color: '#4353FF' }} />
-                    <p className="text-xl sm:text-2xl font-bold" style={{ color: '#4A4A6A' }}>
-                      OnSpot LegalOps<sup className="text-xs">™</sup>
-                    </p>
+              {/* Right Column - Lawyer Image */}
+              <div className="relative lg:h-full flex items-center justify-center">
+                <div className="relative w-full max-w-md lg:max-w-lg">
+                  {/* Glow effect behind image */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-violet-500/20 rounded-3xl blur-3xl"></div>
+                  
+                  {/* Image container */}
+                  <div className="relative rounded-3xl overflow-hidden border border-white/10 backdrop-blur-sm bg-white/5">
+                    <img 
+                      src={lawyerImage}
+                      alt="Successful lawyer representing excellence with OnSpot LegalOps"
+                      className="w-full h-auto object-cover"
+                      data-testid="img-lawyer-success"
+                    />
+                    {/* Subtle overlay gradient */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
                   </div>
-                  <p className="text-base sm:text-lg" style={{ color: '#6C6FA8' }}>
-                    turns your legal operations into a system that never sleeps.
-                  </p>
+                  
+                  {/* Floating accent badge */}
+                  <div className="absolute -bottom-6 -left-6 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl px-6 py-4 shadow-2xl">
+                    <div className="flex items-center gap-3">
+                      <Sparkles className="w-6 h-6 text-white" />
+                      <div>
+                        <p className="text-white font-bold text-lg">OnSpot LegalOps<sup className="text-xs">™</sup></p>
+                        <p className="text-white/70 text-sm">Powered success</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
