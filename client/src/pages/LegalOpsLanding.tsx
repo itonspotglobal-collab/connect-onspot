@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { 
@@ -2027,6 +2028,470 @@ export default function LegalOpsLanding() {
                   </Button>
                 </CardContent>
               </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ Section */}
+        <section className="py-20 sm:py-32 bg-gradient-to-br from-slate-50 via-white to-blue-50/30 relative overflow-hidden">
+          {/* Subtle decorative elements */}
+          <div className="absolute top-20 right-10 w-64 h-64 bg-[#4353FF]/5 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-20 left-10 w-80 h-80 bg-blue-500/5 rounded-full blur-3xl"></div>
+          
+          <div className="container mx-auto px-4 sm:px-6 relative z-10">
+            {/* Section Header */}
+            <div className="text-center mb-16 max-w-3xl mx-auto">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#4353FF]/10 border border-[#4353FF]/20 rounded-full mb-6">
+                <MessageCircle className="w-4 h-4" style={{ color: '#4353FF' }} />
+                <span className="text-sm font-semibold" style={{ color: '#4353FF' }}>FAQ</span>
+              </div>
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4" style={{ color: '#1E293B' }} data-testid="text-faq-title">
+                Frequently Asked Questions
+              </h2>
+              <p className="text-xl text-slate-600 font-light">
+                Everything you need to know before outsourcing your LegalOps.
+              </p>
+            </div>
+
+            {/* FAQ Accordion */}
+            <div className="max-w-4xl mx-auto">
+              <Accordion type="single" collapsible className="space-y-4">
+                {/* FAQ 1 */}
+                <AccordionItem 
+                  value="item-1" 
+                  className="bg-white rounded-2xl border border-slate-200 px-6 shadow-sm hover:shadow-md transition-shadow duration-300"
+                  data-testid="accordion-faq-1"
+                >
+                  <AccordionTrigger className="text-lg font-semibold hover:no-underline py-6" style={{ color: '#1E293B' }}>
+                    What exactly is OnSpot LegalOps™?
+                  </AccordionTrigger>
+                  <AccordionContent className="text-base leading-relaxed pb-6 space-y-4" style={{ color: '#475569' }}>
+                    <p>
+                      OnSpot LegalOps™ is a full-service outsourcing system for law firms — combining trained legal professionals, structured processes, and delivery oversight.
+                    </p>
+                    <p>
+                      We handle the operational side of your practice — including rent demands, petitions, Section 8 documentation, legal research, and client coordination — so your team can focus entirely on legal strategy and billable work.
+                    </p>
+                    <p>
+                      Our system is built on the <span className="font-semibold" style={{ color: '#4353FF' }}>OnSpot 4P Operating System</span>: Philosophy, People, Process, and Problem Solving, which guarantees consistent, measurable, and transparent results.
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* FAQ 2 */}
+                <AccordionItem 
+                  value="item-2" 
+                  className="bg-white rounded-2xl border border-slate-200 px-6 shadow-sm hover:shadow-md transition-shadow duration-300"
+                  data-testid="accordion-faq-2"
+                >
+                  <AccordionTrigger className="text-lg font-semibold hover:no-underline py-6" style={{ color: '#1E293B' }}>
+                    How does the "Resourced Services" model work?
+                  </AccordionTrigger>
+                  <AccordionContent className="text-base leading-relaxed pb-6 space-y-4" style={{ color: '#475569' }}>
+                    <p>
+                      In the Resourced Services model, OnSpot provides you with dedicated full-time legal staff (FTEs) who work directly under your firm's management and follow your workflow.
+                    </p>
+                    <p>
+                      You control day-to-day operations, while we handle recruitment, onboarding, HR, payroll, and replacement.
+                    </p>
+                    <p>
+                      We also include tools like Talent Performance Surveys (TPS), Early Warning Systems, and Quarterly Account Health Reviews to ensure ongoing quality and compliance.
+                    </p>
+                    <p>
+                      If you ever want more support, you can easily upgrade to <span className="font-semibold" style={{ color: '#4353FF' }}>Managed Services</span>, where OnSpot provides full operational oversight, coaching, QA reviews, and reporting.
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* FAQ 3 */}
+                <AccordionItem 
+                  value="item-3" 
+                  className="bg-white rounded-2xl border border-slate-200 px-6 shadow-sm hover:shadow-md transition-shadow duration-300"
+                  data-testid="accordion-faq-3"
+                >
+                  <AccordionTrigger className="text-lg font-semibold hover:no-underline py-6" style={{ color: '#1E293B' }}>
+                    What's the difference between "Resourced" and "Managed Services"?
+                  </AccordionTrigger>
+                  <AccordionContent className="text-base leading-relaxed pb-6" style={{ color: '#475569' }}>
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="border-b-2" style={{ borderColor: '#E2E8F0' }}>
+                            <th className="text-left py-3 px-4 font-semibold" style={{ color: '#1E293B' }}>Category</th>
+                            <th className="text-left py-3 px-4 font-semibold" style={{ color: '#1E293B' }}>Resourced Services</th>
+                            <th className="text-left py-3 px-4 font-semibold" style={{ color: '#4353FF' }}>Managed Services</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y" style={{ borderColor: '#E2E8F0' }}>
+                          <tr>
+                            <td className="py-3 px-4 font-medium">Who Manages Daily Work</td>
+                            <td className="py-3 px-4">Your firm</td>
+                            <td className="py-3 px-4" style={{ color: '#4353FF' }}>OnSpot Delivery Manager & Team Manager</td>
+                          </tr>
+                          <tr>
+                            <td className="py-3 px-4 font-medium">Performance Monitoring</td>
+                            <td className="py-3 px-4">Light support (TPS every 30/60/90 days)</td>
+                            <td className="py-3 px-4" style={{ color: '#4353FF' }}>Full KPI tracking, QA audits, dashboards</td>
+                          </tr>
+                          <tr>
+                            <td className="py-3 px-4 font-medium">Reporting</td>
+                            <td className="py-3 px-4">Quarterly reviews</td>
+                            <td className="py-3 px-4" style={{ color: '#4353FF' }}>Weekly/monthly reports</td>
+                          </tr>
+                          <tr>
+                            <td className="py-3 px-4 font-medium">Team Manager</td>
+                            <td className="py-3 px-4">Optional/shared</td>
+                            <td className="py-3 px-4" style={{ color: '#4353FF' }}>Dedicated, full-time</td>
+                          </tr>
+                          <tr>
+                            <td className="py-3 px-4 font-medium">Cost</td>
+                            <td className="py-3 px-4">Lower, flexible</td>
+                            <td className="py-3 px-4" style={{ color: '#4353FF' }}>Higher, full-service</td>
+                          </tr>
+                          <tr>
+                            <td className="py-3 px-4 font-medium">Best For</td>
+                            <td className="py-3 px-4">Firms with internal oversight</td>
+                            <td className="py-3 px-4" style={{ color: '#4353FF' }}>Firms seeking total hands-off operations</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* FAQ 4 */}
+                <AccordionItem 
+                  value="item-4" 
+                  className="bg-white rounded-2xl border border-slate-200 px-6 shadow-sm hover:shadow-md transition-shadow duration-300"
+                  data-testid="accordion-faq-4"
+                >
+                  <AccordionTrigger className="text-lg font-semibold hover:no-underline py-6" style={{ color: '#1E293B' }}>
+                    What roles can OnSpot support?
+                  </AccordionTrigger>
+                  <AccordionContent className="text-base leading-relaxed pb-6 space-y-4" style={{ color: '#475569' }}>
+                    <p>We can deploy specialized legal support staff trained in:</p>
+                    <ul className="space-y-2 pl-6">
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#4353FF' }} />
+                        <span><span className="font-semibold">Landlord–Tenant workflows:</span> rent demands, petitions, Section 8/NYCHA processing</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#4353FF' }} />
+                        <span><span className="font-semibold">Administrative roles:</span> billing, client intake, document management</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#4353FF' }} />
+                        <span>Legal research and drafting</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#4353FF' }} />
+                        <span>Calendar and compliance coordination</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#4353FF' }} />
+                        <span><span className="font-semibold">Digital and marketing support:</span> email campaigns, social proof, SEO, etc.</span>
+                      </li>
+                    </ul>
+                    <p className="pt-2">
+                      Each FTE is handpicked, trained on your tools (Clio, Smokeball, MyCase, etc.), and supported by our internal delivery infrastructure.
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* FAQ 5 */}
+                <AccordionItem 
+                  value="item-5" 
+                  className="bg-white rounded-2xl border border-slate-200 px-6 shadow-sm hover:shadow-md transition-shadow duration-300"
+                  data-testid="accordion-faq-5"
+                >
+                  <AccordionTrigger className="text-lg font-semibold hover:no-underline py-6" style={{ color: '#1E293B' }}>
+                    How much can my firm really save?
+                  </AccordionTrigger>
+                  <AccordionContent className="text-base leading-relaxed pb-6 space-y-4" style={{ color: '#475569' }}>
+                    <p>
+                      On average, firms save <span className="font-bold text-2xl" style={{ color: '#4353FF' }}>up to 70%</span> compared to hiring in-house.
+                    </p>
+                    <p>
+                      A paralegal in New York costs roughly <span className="font-semibold text-red-600">$6,650 per month</span> including benefits and overhead, whereas OnSpot LegalOps staff start at <span className="font-semibold" style={{ color: '#4353FF' }}>$1,950 per month</span> — fully loaded, no hidden costs.
+                    </p>
+                    <p>
+                      Plus, you eliminate expenses like taxes, insurance, hardware, office space, and turnover retraining.
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* FAQ 6 */}
+                <AccordionItem 
+                  value="item-6" 
+                  className="bg-white rounded-2xl border border-slate-200 px-6 shadow-sm hover:shadow-md transition-shadow duration-300"
+                  data-testid="accordion-faq-6"
+                >
+                  <AccordionTrigger className="text-lg font-semibold hover:no-underline py-6" style={{ color: '#1E293B' }}>
+                    How do you ensure quality and compliance?
+                  </AccordionTrigger>
+                  <AccordionContent className="text-base leading-relaxed pb-6 space-y-4" style={{ color: '#475569' }}>
+                    <p>Quality is maintained through our <span className="font-semibold" style={{ color: '#4353FF' }}>Delivery Playbook</span>, which includes:</p>
+                    <ul className="space-y-2 pl-6">
+                      <li className="flex items-start gap-2">
+                        <Shield className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#4353FF' }} />
+                        <span>Talent Performance Surveys (TPS) every 30/60/90 days</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Shield className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#4353FF' }} />
+                        <span>Probation checkpoints and GROW coaching for skill improvement</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Shield className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#4353FF' }} />
+                        <span>Early Warning System (EWS) for client-health tracking</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Shield className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#4353FF' }} />
+                        <span>Risk Management Framework and Issue Escalation SOP</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Shield className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#4353FF' }} />
+                        <span>Quarterly Account Reviews to identify improvements or growth areas</span>
+                      </li>
+                    </ul>
+                    <p className="pt-2">
+                      We also ensure data security, NDA compliance, and confidentiality aligned with U.S. legal standards.
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* FAQ 7 */}
+                <AccordionItem 
+                  value="item-7" 
+                  className="bg-white rounded-2xl border border-slate-200 px-6 shadow-sm hover:shadow-md transition-shadow duration-300"
+                  data-testid="accordion-faq-7"
+                >
+                  <AccordionTrigger className="text-lg font-semibold hover:no-underline py-6" style={{ color: '#1E293B' }}>
+                    How long does it take to get started?
+                  </AccordionTrigger>
+                  <AccordionContent className="text-base leading-relaxed pb-6 space-y-4" style={{ color: '#475569' }}>
+                    <p>
+                      Most clients launch within <span className="font-semibold" style={{ color: '#4353FF' }}>2–3 weeks</span>.
+                    </p>
+                    <p>Our implementation includes:</p>
+                    <ol className="space-y-2 pl-6 list-decimal list-outside">
+                      <li><span className="font-semibold">Kickoff Call</span> (scope alignment & expectations)</li>
+                      <li><span className="font-semibold">Talent Onboarding & Tech Setup</span></li>
+                      <li><span className="font-semibold">Training Phase</span> (tools & SOPs)</li>
+                      <li><span className="font-semibold">Go-Live</span> (your staff begins active case work)</li>
+                      <li><span className="font-semibold">Monitoring & Performance Support</span> (first 90 days)</li>
+                    </ol>
+                    <p className="pt-2">
+                      By Day 90, we deliver a full <span className="font-semibold" style={{ color: '#4353FF' }}>Handoff Summary</span>, confirming stability and next-step recommendations.
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* FAQ 8 */}
+                <AccordionItem 
+                  value="item-8" 
+                  className="bg-white rounded-2xl border border-slate-200 px-6 shadow-sm hover:shadow-md transition-shadow duration-300"
+                  data-testid="accordion-faq-8"
+                >
+                  <AccordionTrigger className="text-lg font-semibold hover:no-underline py-6" style={{ color: '#1E293B' }}>
+                    What if I'm not happy with a staff member's performance?
+                  </AccordionTrigger>
+                  <AccordionContent className="text-base leading-relaxed pb-6 space-y-4" style={{ color: '#475569' }}>
+                    <p>
+                      We make replacements <span className="font-semibold" style={{ color: '#4353FF' }}>fast and frictionless</span>.
+                    </p>
+                    <p>
+                      If a staff member underperforms, our Delivery Manager initiates coaching or replacement at no additional cost.
+                    </p>
+                    <p>
+                      All replacements are pre-vetted and trained using your existing SOPs to ensure zero downtime.
+                    </p>
+                    <p>
+                      Our <span className="font-semibold" style={{ color: '#4353FF' }}>Zero Escalation Guarantee</span> ensures you'll never be left managing issues alone.
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* FAQ 9 */}
+                <AccordionItem 
+                  value="item-9" 
+                  className="bg-white rounded-2xl border border-slate-200 px-6 shadow-sm hover:shadow-md transition-shadow duration-300"
+                  data-testid="accordion-faq-9"
+                >
+                  <AccordionTrigger className="text-lg font-semibold hover:no-underline py-6" style={{ color: '#1E293B' }}>
+                    What does "Fully Managed Upgrade" mean?
+                  </AccordionTrigger>
+                  <AccordionContent className="text-base leading-relaxed pb-6 space-y-4" style={{ color: '#475569' }}>
+                    <p>
+                      The Managed Services upgrade adds a Delivery Manager, Team Manager, and QA Lead to handle:
+                    </p>
+                    <ul className="space-y-2 pl-6">
+                      <li className="flex items-start gap-2">
+                        <Target className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#4353FF' }} />
+                        <span>Daily performance monitoring</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Target className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#4353FF' }} />
+                        <span>Weekly check-ins with your team</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Target className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#4353FF' }} />
+                        <span>Quality audits and dashboards</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Target className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#4353FF' }} />
+                        <span>Coaching and continuous improvement</span>
+                      </li>
+                    </ul>
+                    <p className="pt-2">
+                      It's ideal for firms that want a hands-off, data-driven delivery model without managing staff directly.
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* FAQ 10 */}
+                <AccordionItem 
+                  value="item-10" 
+                  className="bg-white rounded-2xl border border-slate-200 px-6 shadow-sm hover:shadow-md transition-shadow duration-300"
+                  data-testid="accordion-faq-10"
+                >
+                  <AccordionTrigger className="text-lg font-semibold hover:no-underline py-6" style={{ color: '#1E293B' }}>
+                    How does OnSpot maintain confidentiality and data security?
+                  </AccordionTrigger>
+                  <AccordionContent className="text-base leading-relaxed pb-6 space-y-4" style={{ color: '#475569' }}>
+                    <p>
+                      All staff operate under strict NDAs, data-protection policies, and secure IT infrastructure.
+                    </p>
+                    <p>
+                      We follow best practices for client confidentiality, access control, and information handling.
+                    </p>
+                    <p>
+                      Our teams work in monitored environments with encrypted communications and adhere to U.S. privacy standards — ensuring your firm's data is always protected.
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* FAQ 11 */}
+                <AccordionItem 
+                  value="item-11" 
+                  className="bg-white rounded-2xl border border-slate-200 px-6 shadow-sm hover:shadow-md transition-shadow duration-300"
+                  data-testid="accordion-faq-11"
+                >
+                  <AccordionTrigger className="text-lg font-semibold hover:no-underline py-6" style={{ color: '#1E293B' }}>
+                    Can I scale up or down easily?
+                  </AccordionTrigger>
+                  <AccordionContent className="text-base leading-relaxed pb-6 space-y-4" style={{ color: '#475569' }}>
+                    <p>
+                      Yes — <span className="font-semibold" style={{ color: '#4353FF' }}>scalability is built in</span>.
+                    </p>
+                    <p>
+                      You can start with one full-time LegalOps specialist and add more as your caseload grows.
+                    </p>
+                    <p>
+                      Likewise, you can scale down or pause positions with notice — no long-term contracts, no HR headaches.
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* FAQ 12 */}
+                <AccordionItem 
+                  value="item-12" 
+                  className="bg-white rounded-2xl border border-slate-200 px-6 shadow-sm hover:shadow-md transition-shadow duration-300"
+                  data-testid="accordion-faq-12"
+                >
+                  <AccordionTrigger className="text-lg font-semibold hover:no-underline py-6" style={{ color: '#1E293B' }}>
+                    What makes OnSpot different from generic outsourcing companies?
+                  </AccordionTrigger>
+                  <AccordionContent className="text-base leading-relaxed pb-6 space-y-4" style={{ color: '#475569' }}>
+                    <ul className="space-y-3">
+                      <li className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-[#4353FF]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Award className="w-4 h-4" style={{ color: '#4353FF' }} />
+                        </div>
+                        <div>
+                          <span className="font-semibold block">Legal-specific expertise:</span>
+                          <span>Built for landlord–tenant and property law practices.</span>
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-[#4353FF]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Settings className="w-4 h-4" style={{ color: '#4353FF' }} />
+                        </div>
+                        <div>
+                          <span className="font-semibold block">Structured SOPs:</span>
+                          <span>Standardized across every process for consistency.</span>
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-[#4353FF]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <BarChart3 className="w-4 h-4" style={{ color: '#4353FF' }} />
+                        </div>
+                        <div>
+                          <span className="font-semibold block">Delivery oversight:</span>
+                          <span>Even in Resourced mode, we track performance.</span>
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-[#4353FF]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Shield className="w-4 h-4" style={{ color: '#4353FF' }} />
+                        </div>
+                        <div>
+                          <span className="font-semibold block">Transparency:</span>
+                          <span>cNPS and QBR systems ensure accountability.</span>
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-[#4353FF]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Rocket className="w-4 h-4" style={{ color: '#4353FF' }} />
+                        </div>
+                        <div>
+                          <span className="font-semibold block">Scalability:</span>
+                          <span>Instant expansion or Managed upgrade when needed.</span>
+                        </div>
+                      </li>
+                    </ul>
+                    <p className="pt-4 font-medium" style={{ color: '#1E293B' }}>
+                      In short, we don't just fill roles — we build a LegalOps system that runs reliably every day.
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* FAQ 13 */}
+                <AccordionItem 
+                  value="item-13" 
+                  className="bg-white rounded-2xl border border-slate-200 px-6 shadow-sm hover:shadow-md transition-shadow duration-300"
+                  data-testid="accordion-faq-13"
+                >
+                  <AccordionTrigger className="text-lg font-semibold hover:no-underline py-6" style={{ color: '#1E293B' }}>
+                    How do I start my free consultation?
+                  </AccordionTrigger>
+                  <AccordionContent className="text-base leading-relaxed pb-6 space-y-4" style={{ color: '#475569' }}>
+                    <p>
+                      Simply click <span className="font-semibold" style={{ color: '#4353FF' }}>"Start My 90-Day Trial"</span> on this page.
+                    </p>
+                    <p>We'll schedule a 15-minute discovery call to:</p>
+                    <ul className="space-y-2 pl-6 list-disc list-outside">
+                      <li>Review your firm's workflow</li>
+                      <li>Estimate savings and role recommendations</li>
+                      <li>Outline your implementation timeline</li>
+                    </ul>
+                    <p className="pt-2">
+                      You'll receive a custom proposal within 48 hours — no commitment required.
+                    </p>
+                    <div className="pt-4">
+                      <Button 
+                        size="lg" 
+                        className="px-8 rounded-2xl"
+                        style={{ background: 'linear-gradient(135deg, #4353FF 0%, #5B7CFF 100%)' }}
+                        onClick={scrollToCheckout}
+                        data-testid="button-faq-cta"
+                      >
+                        Start My 90-Day Trial
+                        <ChevronRight className="w-5 h-5 ml-2" />
+                      </Button>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </div>
           </div>
         </section>
