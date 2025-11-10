@@ -32,7 +32,9 @@ import {
   Rocket,
   AlertTriangle,
   Timer,
-  MessageCircle
+  MessageCircle,
+  X,
+  ArrowUpRight
 } from "lucide-react";
 import { HeadSEO } from "@/components/HeadSEO";
 import nycSkylineImage from "@assets/40431e5288cb44250d8204c03e0ba76129ba76dfd36e01e7c40f546ab05de806_1762346626354.jpeg";
@@ -1434,6 +1436,218 @@ export default function LegalOpsLanding() {
               <p className="text-xl sm:text-2xl text-white/95 font-light max-w-3xl mx-auto">
                 Power through efficiency. Intelligence through systems.
               </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Local Staff vs. OnSpot LegalOps Comparison */}
+        <section className="py-20 sm:py-32 bg-white relative overflow-hidden">
+          {/* Subtle background accents */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-50 rounded-full blur-3xl opacity-50"></div>
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-violet-50 rounded-full blur-3xl opacity-40"></div>
+          
+          <div className="container mx-auto px-4 sm:px-6 relative z-10">
+            {/* Section Header */}
+            <div className="text-center mb-12 max-w-4xl mx-auto">
+              <div className="flex items-center justify-center gap-2 mb-6">
+                <Building2 className="w-6 h-6" style={{ color: '#4353FF' }} />
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold" style={{ color: '#1E293B' }} data-testid="text-comparison-title">
+                  Local Staff vs. OnSpot LegalOps<sup className="text-2xl">™</sup> (Resourced Services)
+                </h2>
+              </div>
+              <p className="text-xl sm:text-2xl font-light" style={{ color: '#64748B' }}>
+                Smarter, faster, and 70% more efficient — with an option to upgrade to Fully Managed.
+              </p>
+              
+              {/* Upgrade badge */}
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#4353FF]/10 to-violet-500/10 border border-[#4353FF]/20 rounded-full mt-6">
+                <ArrowUpRight className="w-4 h-4" style={{ color: '#4353FF' }} />
+                <span className="text-sm font-semibold" style={{ color: '#4353FF' }}>
+                  Upgrade to Managed Anytime
+                </span>
+              </div>
+            </div>
+
+            {/* Comparison Table */}
+            <div className="max-w-6xl mx-auto">
+              <div className="bg-white rounded-3xl border-2 border-slate-200 overflow-hidden shadow-xl">
+                {/* Table Header */}
+                <div className="grid grid-cols-3 gap-4 bg-gradient-to-r from-slate-50 to-slate-100 p-6 border-b-2 border-slate-200">
+                  <div className="font-bold text-lg" style={{ color: '#1E293B' }}>Feature</div>
+                  <div className="font-bold text-lg text-center" style={{ color: '#1E293B' }}>
+                    Local Staff (NY Paralegal)
+                  </div>
+                  <div className="font-bold text-lg text-center" style={{ color: '#4353FF' }}>
+                    OnSpot LegalOps<sup className="text-xs">™</sup> (Resourced Services)
+                  </div>
+                </div>
+
+                {/* Comparison Rows */}
+                <div className="divide-y divide-slate-200">
+                  {/* Monthly Cost */}
+                  <div className="grid grid-cols-3 gap-4 p-6 hover:bg-slate-50/50 transition-colors duration-200" data-testid="row-monthly-cost">
+                    <div className="font-semibold" style={{ color: '#1E293B' }}>Monthly Cost</div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-red-600">≈ $6,650 / month</div>
+                      <div className="text-sm text-slate-500 italic">(avg. entry paralegal in NYC)</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold" style={{ color: '#4353FF' }}>Starting at $1,950 / month</div>
+                      <div className="text-sm font-medium" style={{ color: '#4353FF' }}>(all-in)</div>
+                    </div>
+                  </div>
+
+                  {/* Eager to Work */}
+                  <div className="grid grid-cols-3 gap-4 p-6 hover:bg-slate-50/50 transition-colors duration-200">
+                    <div className="font-semibold" style={{ color: '#1E293B' }}>Eager to Work</div>
+                    <div className="flex items-center justify-center gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                      <span style={{ color: '#64748B' }}>Sometimes motivated</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="flex gap-1">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                      </div>
+                      <span className="font-medium" style={{ color: '#4353FF' }}>Highly engaged, pre-vetted professionals</span>
+                    </div>
+                  </div>
+
+                  {/* Hiring Process */}
+                  <div className="grid grid-cols-3 gap-4 p-6 hover:bg-slate-50/50 transition-colors duration-200">
+                    <div className="font-semibold" style={{ color: '#1E293B' }}>Hiring Process</div>
+                    <div className="flex items-center justify-center gap-2">
+                      <X className="w-5 h-5 text-red-500 stroke-[3]" />
+                      <span style={{ color: '#64748B' }}>Weeks of recruiting & interviews</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                      <span className="font-medium" style={{ color: '#4353FF' }}>Ready-to-start within days</span>
+                    </div>
+                  </div>
+
+                  {/* Replacement Time */}
+                  <div className="grid grid-cols-3 gap-4 p-6 hover:bg-slate-50/50 transition-colors duration-200">
+                    <div className="font-semibold" style={{ color: '#1E293B' }}>Replacement Time</div>
+                    <div className="flex items-center justify-center gap-2">
+                      <X className="w-5 h-5 text-red-500 stroke-[3]" />
+                      <span style={{ color: '#64748B' }}>Slow, disruptive</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                      <span className="font-medium" style={{ color: '#4353FF' }}>Instant swap — no downtime</span>
+                    </div>
+                  </div>
+
+                  {/* Management Structure */}
+                  <div className="grid grid-cols-3 gap-4 p-6 hover:bg-slate-50/50 transition-colors duration-200">
+                    <div className="font-semibold" style={{ color: '#1E293B' }}>Management Structure</div>
+                    <div className="flex items-center justify-center gap-2">
+                      <X className="w-5 h-5 text-red-500 stroke-[3]" />
+                      <span style={{ color: '#64748B' }}>Self-managed</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                      <span className="font-medium" style={{ color: '#4353FF' }}>You manage directly <span className="text-sm italic text-slate-500">(upgrade to fully managed anytime)</span></span>
+                    </div>
+                  </div>
+
+                  {/* Performance Tracking */}
+                  <div className="grid grid-cols-3 gap-4 p-6 hover:bg-slate-50/50 transition-colors duration-200">
+                    <div className="font-semibold" style={{ color: '#1E293B' }}>Performance Tracking</div>
+                    <div className="flex items-center justify-center gap-2">
+                      <X className="w-5 h-5 text-red-500 stroke-[3]" />
+                      <span style={{ color: '#64748B' }}>Manual & inconsistent</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                      <span className="font-medium" style={{ color: '#4353FF' }}>Included dashboards & KPI templates</span>
+                    </div>
+                  </div>
+
+                  {/* Benefits & Taxes */}
+                  <div className="grid grid-cols-3 gap-4 p-6 hover:bg-slate-50/50 transition-colors duration-200">
+                    <div className="font-semibold" style={{ color: '#1E293B' }}>Benefits & Taxes</div>
+                    <div className="flex items-center justify-center gap-2">
+                      <X className="w-5 h-5 text-red-500 stroke-[3]" />
+                      <span style={{ color: '#64748B' }}>Additional employer expense</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                      <span className="font-medium" style={{ color: '#4353FF' }}>Covered by OnSpot</span>
+                    </div>
+                  </div>
+
+                  {/* Office Equipment */}
+                  <div className="grid grid-cols-3 gap-4 p-6 hover:bg-slate-50/50 transition-colors duration-200">
+                    <div className="font-semibold" style={{ color: '#1E293B' }}>Office Equipment</div>
+                    <div className="flex items-center justify-center gap-2">
+                      <X className="w-5 h-5 text-red-500 stroke-[3]" />
+                      <span style={{ color: '#64748B' }}>Firm provides hardware/software</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                      <span className="font-medium" style={{ color: '#4353FF' }}>Provided & maintained by OnSpot</span>
+                    </div>
+                  </div>
+
+                  {/* Long-Term Commitment */}
+                  <div className="grid grid-cols-3 gap-4 p-6 hover:bg-slate-50/50 transition-colors duration-200">
+                    <div className="font-semibold" style={{ color: '#1E293B' }}>Long-Term Commitment</div>
+                    <div className="flex items-center justify-center gap-2">
+                      <X className="w-5 h-5 text-red-500 stroke-[3]" />
+                      <span style={{ color: '#64748B' }}>Fixed employment contracts</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                      <span className="font-medium" style={{ color: '#4353FF' }}>Flexible month-to-month terms</span>
+                    </div>
+                  </div>
+
+                  {/* Scalability */}
+                  <div className="grid grid-cols-3 gap-4 p-6 hover:bg-slate-50/50 transition-colors duration-200">
+                    <div className="font-semibold" style={{ color: '#1E293B' }}>Scalability</div>
+                    <div className="flex items-center justify-center gap-2">
+                      <X className="w-5 h-5 text-red-500 stroke-[3]" />
+                      <span style={{ color: '#64748B' }}>Limited by budget & space</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                      <span className="font-medium" style={{ color: '#4353FF' }}>Add or reduce FTEs instantly</span>
+                    </div>
+                  </div>
+
+                  {/* Upgrade Option */}
+                  <div className="grid grid-cols-3 gap-4 p-6 bg-gradient-to-r from-blue-50/50 to-violet-50/50 border-t-2 border-[#4353FF]/20">
+                    <div className="font-semibold" style={{ color: '#1E293B' }}>Upgrade Option</div>
+                    <div className="flex items-center justify-center gap-2">
+                      <X className="w-5 h-5 text-red-500 stroke-[3]" />
+                      <span style={{ color: '#64748B' }}>Not applicable</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                      <span className="font-bold" style={{ color: '#4353FF' }}>One-click upgrade to <span className="underline">Managed Services</span> for full oversight</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom CTA */}
+              <div className="text-center mt-12">
+                <p className="text-lg text-slate-600 mb-6 max-w-2xl mx-auto">
+                  Start with Resourced Services — pay only for talent. Upgrade to Managed when you're ready for complete operational support.
+                </p>
+                <Button 
+                  size="lg" 
+                  className="px-8 py-6 text-lg rounded-2xl"
+                  style={{ background: 'linear-gradient(135deg, #4353FF 0%, #5B7CFF 100%)' }}
+                  onClick={scrollToCheckout}
+                  data-testid="button-comparison-cta"
+                >
+                  Start My 90-Day Trial
+                  <ChevronRight className="w-5 h-5 ml-2" />
+                </Button>
+              </div>
             </div>
           </div>
         </section>
