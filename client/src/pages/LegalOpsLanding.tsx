@@ -1604,7 +1604,7 @@ export default function LegalOpsLanding() {
             </div>
 
             {/* Tagline */}
-            <div className="text-center mt-16">
+            <div className="text-center mt-16 mb-8">
               <div className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-xl rounded-full border border-white/20">
                 <Sparkles className="w-5 h-5 text-[#4353FF]" />
                 <p className="text-base sm:text-lg font-light text-white">
@@ -1612,8 +1612,74 @@ export default function LegalOpsLanding() {
                 </p>
               </div>
             </div>
+
+            {/* Extended timeline spine flowing into next section */}
+            <div className="flex justify-center relative" style={{ height: '120px' }}>
+              <svg 
+                className="absolute" 
+                width="4" 
+                height="120" 
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <line 
+                  x1="2" 
+                  y1="0" 
+                  x2="2" 
+                  y2="120" 
+                  stroke="url(#spineGradient)" 
+                  strokeWidth="2"
+                  strokeDasharray="200"
+                  className="playbook-spine-flow"
+                />
+                <defs>
+                  <linearGradient id="spineGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="#4353FF" stopOpacity="0.5" />
+                    <stop offset="100%" stopColor="#4353FF" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+              </svg>
+
+              {/* Flowing particles */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2">
+                <div className="w-2 h-2 rounded-full bg-[#4353FF] playbook-particle-flow-1"></div>
+              </div>
+              <div className="absolute top-0 left-1/2 -translate-x-1/2">
+                <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 playbook-particle-flow-2"></div>
+              </div>
+              <div className="absolute top-0 left-1/2 -translate-x-1/2">
+                <div className="w-2.5 h-2.5 rounded-full bg-blue-300 playbook-particle-flow-3"></div>
+              </div>
+            </div>
           </div>
         </section>
+
+        {/* Gradient Transition Bridge */}
+        <div 
+          className="relative h-32 overflow-hidden"
+          style={{ 
+            background: 'linear-gradient(180deg, #15245A 0%, #1E2F9A 50%, #4353FF 100%)'
+          }}
+        >
+          {/* Flowing light beams */}
+          <div className="absolute inset-0">
+            <div className="absolute top-0 left-1/4 w-px h-full bg-gradient-to-b from-transparent via-white/20 to-transparent playbook-flow-pulse"></div>
+            <div className="absolute top-0 left-1/2 w-px h-full bg-gradient-to-b from-transparent via-white/30 to-transparent playbook-flow-pulse" style={{ animationDelay: '1s' }}></div>
+            <div className="absolute top-0 left-3/4 w-px h-full bg-gradient-to-b from-transparent via-white/20 to-transparent playbook-flow-pulse" style={{ animationDelay: '2s' }}></div>
+          </div>
+          
+          {/* Horizontal flowing line */}
+          <svg className="absolute inset-0 w-full h-full opacity-40" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 1200 128" aria-hidden="true">
+            <path 
+              d="M 0,64 Q 300,32 600,64 T 1200,64" 
+              stroke="rgba(255,255,255,0.5)" 
+              strokeWidth="2" 
+              fill="none"
+              strokeDasharray="20 10"
+              className="playbook-pulse-path"
+            />
+          </svg>
+        </div>
 
         {/* OnSpot Operations Playbook - Animated Showcase */}
         <section 
@@ -1686,12 +1752,12 @@ export default function LegalOpsLanding() {
                 Our system that makes outsourcing effortless
               </p>
 
-              {/* CTA Button */}
+              {/* CTA Button with animated glow */}
               <div className="pt-4">
                 <Button 
                   asChild
                   size="lg" 
-                  className="px-8 py-6 text-lg rounded-2xl bg-white text-[#4353FF] hover:bg-white/95 active:bg-white/90 shadow-xl hover:shadow-2xl transition-all duration-300"
+                  className="px-8 py-6 text-lg rounded-2xl bg-white text-[#4353FF] hover:bg-white/95 active:bg-white/90 transition-all duration-300 playbook-cta-glow"
                   data-testid="button-view-playbook"
                 >
                   <a 
@@ -1703,6 +1769,15 @@ export default function LegalOpsLanding() {
                     <ChevronRight className="w-5 h-5 ml-2" />
                   </a>
                 </Button>
+              </div>
+              
+              {/* Convergence indicator - visual pull toward CTA */}
+              <div className="absolute bottom-32 left-1/2 -translate-x-1/2 w-64 h-32 pointer-events-none" aria-hidden="true">
+                <svg className="w-full h-full opacity-20" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 128">
+                  <path d="M 0,0 Q 128,64 256,0" stroke="rgba(255,255,255,0.6)" strokeWidth="1" fill="none" className="playbook-pulse-path" />
+                  <path d="M 20,20 Q 128,80 236,20" stroke="rgba(255,255,255,0.4)" strokeWidth="1" fill="none" className="playbook-pulse-path" style={{ animationDelay: '1s' }} />
+                  <path d="M 40,40 Q 128,96 216,40" stroke="rgba(255,255,255,0.3)" strokeWidth="1" fill="none" className="playbook-pulse-path" style={{ animationDelay: '2s' }} />
+                </svg>
               </div>
             </div>
           </div>
