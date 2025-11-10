@@ -656,46 +656,46 @@ export default function LegalOpsLanding() {
                 </div>
                 <CardHeader className="pt-8">
                   <CardTitle className="text-2xl" data-testid="text-tier-launch-title">
-                    LegalOps Launch System™
+                    Resourced Services
                   </CardTitle>
                   <CardDescription data-testid="text-tier-launch-description">
-                    Perfect for firms getting started with outsourced legal ops
+                    You manage directly — OnSpot provides pre-vetted talent
                   </CardDescription>
                   <div className="pt-4">
                     <div className="text-4xl font-bold" data-testid="text-tier-launch-price">
-                      $4,950<span className="text-lg font-normal text-muted-foreground">/FTE/mo</span>
+                      $1,950<span className="text-lg font-normal text-muted-foreground">/FTE/mo</span>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">3-month minimum</p>
+                    <p className="text-sm text-muted-foreground mt-1">Month-to-month, flexible terms</p>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span className="text-sm">Full-time LegalOps Team (1–10+ FTEs)</span>
+                    <span className="text-sm">Highly engaged, pre-vetted professionals</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span className="text-sm">Pre-built Legal SOP Suite (Rent Demands, Petitions, Section 8)</span>
+                    <span className="text-sm">Ready-to-start within days</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span className="text-sm">Delivery Manager for daily oversight</span>
+                    <span className="text-sm">Instant replacement — no downtime</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span className="text-sm">LegalOps Dashboard for visibility</span>
+                    <span className="text-sm">Included dashboards & KPI templates</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span className="text-sm">Monthly performance review reports</span>
+                    <span className="text-sm">Benefits, taxes, & equipment covered</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span className="text-sm">Free re-training & replacement coverage</span>
+                    <span className="text-sm">Add or reduce FTEs instantly</span>
                   </div>
                   <div className="flex items-start gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span className="text-sm">24/7 Support coverage</span>
+                    <Star className="h-5 w-5 text-violet-600 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm font-semibold">One-click upgrade to Managed Services anytime</span>
                   </div>
                 </CardContent>
                 <CardFooter>
@@ -706,7 +706,7 @@ export default function LegalOpsLanding() {
                     variant={selectedTier === "launch" ? "default" : "outline"}
                     data-testid="button-select-launch"
                   >
-                    Select Launch System
+                    Select Resourced Services
                   </Button>
                 </CardFooter>
               </Card>
@@ -723,34 +723,34 @@ export default function LegalOpsLanding() {
               >
                 <CardHeader>
                   <CardTitle className="text-2xl" data-testid="text-tier-executive-title">
-                    Executive LegalOps Suite™
+                    Managed Services (Full Oversight)
                   </CardTitle>
                   <CardDescription data-testid="text-tier-executive-description">
-                    Premium service with dedicated US-based support
+                    OnSpot manages everything — daily operations, QA, coaching, and reporting
                   </CardDescription>
                   <div className="pt-4">
                     <div className="text-4xl font-bold" data-testid="text-tier-executive-price">
-                      $7,500<span className="text-lg font-normal text-muted-foreground">/FTE/mo</span>
+                      $4,950<span className="text-lg font-normal text-muted-foreground">/FTE/mo</span>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">1-year minimum</p>
+                    <p className="text-sm text-muted-foreground mt-1">3-month minimum commitment</p>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <span className="text-sm font-semibold">Everything in Launch System, plus:</span>
+                    <span className="text-sm font-semibold">Everything in Resourced Services, plus:</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Star className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <span className="text-sm">Dedicated U.S.-based Client Success Partner</span>
+                    <span className="text-sm">Delivery Manager for daily oversight</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Star className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <span className="text-sm">Priority onboarding (&lt;14 days)</span>
+                    <span className="text-sm">Pre-built Legal SOP Suite (Rent Demands, Petitions, Section 8)</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Star className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <span className="text-sm">Weekly operations meeting with firm partners</span>
+                    <span className="text-sm">Weekly/monthly performance reports & dashboards</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Star className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
@@ -769,14 +769,14 @@ export default function LegalOpsLanding() {
                     variant={selectedTier === "executive" ? "default" : "outline"}
                     data-testid="button-select-executive"
                   >
-                    Select Executive Suite
+                    Select Managed Services
                   </Button>
                 </CardFooter>
               </Card>
             </div>
 
             <div className="text-center mt-8 text-sm text-muted-foreground">
-              <p>Both plans equivalent to $12K–$15K/month of in-house legal admin team cost</p>
+              <p>Resourced Services: 70% less than local NY paralegal ($6,650/mo). Managed Services: complete oversight included.</p>
             </div>
           </div>
         </section>
