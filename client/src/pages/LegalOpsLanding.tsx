@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useStripe, useElements, PaymentElement, Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { 
@@ -214,12 +215,41 @@ function CheckoutWrapper({ selectedTier, fullName, firmName, email, phone }: Che
 export default function LegalOpsLanding() {
   const [selectedTier, setSelectedTier] = useState<"launch" | "executive">("launch");
   const [showCheckout, setShowCheckout] = useState(false);
+  const [showPlaybookModal, setShowPlaybookModal] = useState(false);
+  const [hasSeenPlaybookModal, setHasSeenPlaybookModal] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
     firmName: "",
     email: "",
     phone: "",
   });
+  
+  const processTimelineRef = useRef<HTMLElement>(null);
+
+  // Intersection Observer to trigger playbook modal when user scrolls past "How OnSpot Works"
+  useEffect(() => {
+    if (hasSeenPlaybookModal || !processTimelineRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          // When the section is leaving the viewport (scrolling down past it)
+          if (!entry.isIntersecting && entry.boundingClientRect.top < 0) {
+            setShowPlaybookModal(true);
+            setHasSeenPlaybookModal(true);
+          }
+        });
+      },
+      {
+        threshold: 0,
+        rootMargin: "-100px 0px 0px 0px", // Trigger when section is 100px from top
+      }
+    );
+
+    observer.observe(processTimelineRef.current);
+
+    return () => observer.disconnect();
+  }, [hasSeenPlaybookModal]);
 
   const handleStartTrial = () => {
     if (!formData.fullName || !formData.firmName || !formData.email) {
@@ -1409,7 +1439,7 @@ export default function LegalOpsLanding() {
         </section>
 
         {/* How OnSpot LegalOps Works - Technical Process Timeline */}
-        <section className="py-16 sm:py-24 bg-gradient-to-br from-[#0A143C] to-[#15245A] text-white relative overflow-hidden">
+        <section ref={processTimelineRef} className="py-16 sm:py-24 bg-gradient-to-br from-[#0A143C] to-[#15245A] text-white relative overflow-hidden">
           {/* Grid pattern overlay for technical feel */}
           <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)', backgroundSize: '50px 50px' }}></div>
           
@@ -1604,180 +1634,12 @@ export default function LegalOpsLanding() {
             </div>
 
             {/* Tagline */}
-            <div className="text-center mt-16 mb-8">
+            <div className="text-center mt-16">
               <div className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-xl rounded-full border border-white/20">
                 <Sparkles className="w-5 h-5 text-[#4353FF]" />
                 <p className="text-base sm:text-lg font-light text-white">
                   From Assessment to Stability — One Seamless LegalOps System.
                 </p>
-              </div>
-            </div>
-
-            {/* Extended timeline spine flowing into next section */}
-            <div className="flex justify-center relative" style={{ height: '120px' }}>
-              <svg 
-                className="absolute" 
-                width="4" 
-                height="120" 
-                xmlns="http://www.w3.org/2000/svg"
-                aria-hidden="true"
-              >
-                <line 
-                  x1="2" 
-                  y1="0" 
-                  x2="2" 
-                  y2="120" 
-                  stroke="url(#spineGradient)" 
-                  strokeWidth="2"
-                  strokeDasharray="200"
-                  className="playbook-spine-flow"
-                />
-                <defs>
-                  <linearGradient id="spineGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#4353FF" stopOpacity="0.5" />
-                    <stop offset="100%" stopColor="#4353FF" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-              </svg>
-
-              {/* Flowing particles */}
-              <div className="absolute top-0 left-1/2 -translate-x-1/2">
-                <div className="w-2 h-2 rounded-full bg-[#4353FF] playbook-particle-flow-1"></div>
-              </div>
-              <div className="absolute top-0 left-1/2 -translate-x-1/2">
-                <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 playbook-particle-flow-2"></div>
-              </div>
-              <div className="absolute top-0 left-1/2 -translate-x-1/2">
-                <div className="w-2.5 h-2.5 rounded-full bg-blue-300 playbook-particle-flow-3"></div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Gradient Transition Bridge */}
-        <div 
-          className="relative h-32 overflow-hidden"
-          style={{ 
-            background: 'linear-gradient(180deg, #15245A 0%, #1E2F9A 50%, #4353FF 100%)'
-          }}
-        >
-          {/* Flowing light beams */}
-          <div className="absolute inset-0">
-            <div className="absolute top-0 left-1/4 w-px h-full bg-gradient-to-b from-transparent via-white/20 to-transparent playbook-flow-pulse"></div>
-            <div className="absolute top-0 left-1/2 w-px h-full bg-gradient-to-b from-transparent via-white/30 to-transparent playbook-flow-pulse" style={{ animationDelay: '1s' }}></div>
-            <div className="absolute top-0 left-3/4 w-px h-full bg-gradient-to-b from-transparent via-white/20 to-transparent playbook-flow-pulse" style={{ animationDelay: '2s' }}></div>
-          </div>
-          
-          {/* Horizontal flowing line */}
-          <svg className="absolute inset-0 w-full h-full opacity-40" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 1200 128" aria-hidden="true">
-            <path 
-              d="M 0,64 Q 300,32 600,64 T 1200,64" 
-              stroke="rgba(255,255,255,0.5)" 
-              strokeWidth="2" 
-              fill="none"
-              strokeDasharray="20 10"
-              className="playbook-pulse-path"
-            />
-          </svg>
-        </div>
-
-        {/* OnSpot Operations Playbook - Animated Showcase */}
-        <section 
-          className="py-24 sm:py-32 relative overflow-hidden"
-          style={{ background: 'radial-gradient(circle at 30% 50%, #4353FF 0%, #2B3FCC 35%, #1E2F9A 70%, #0A143C 100%)' }}
-          aria-labelledby="playbook-heading"
-        >
-          {/* Animated flowing lines SVG overlay */}
-          <svg 
-            className="absolute inset-0 w-full h-full opacity-30 pointer-events-none" 
-            xmlns="http://www.w3.org/2000/svg"
-            preserveAspectRatio="none"
-            viewBox="0 0 1200 600"
-            aria-hidden="true"
-          >
-            {/* Flowing paths */}
-            <path 
-              d="M 0,300 Q 300,200 600,300 T 1200,300" 
-              stroke="rgba(255,255,255,0.4)" 
-              strokeWidth="2" 
-              fill="none"
-              strokeDasharray="10 5"
-              className="playbook-pulse-path"
-            />
-            <path 
-              d="M 0,250 Q 400,150 800,250 T 1200,250" 
-              stroke="rgba(255,255,255,0.3)" 
-              strokeWidth="1.5" 
-              fill="none"
-              strokeDasharray="8 4"
-              className="playbook-pulse-path"
-              style={{ animationDelay: '2s' }}
-            />
-            <path 
-              d="M 0,350 Q 350,450 700,350 T 1200,350" 
-              stroke="rgba(255,255,255,0.25)" 
-              strokeWidth="1.5" 
-              fill="none"
-              strokeDasharray="6 3"
-              className="playbook-pulse-path"
-              style={{ animationDelay: '4s' }}
-            />
-            
-            {/* Connected nodes */}
-            <circle cx="300" cy="200" r="4" fill="rgba(255,255,255,0.6)" className="playbook-node-drift-1" />
-            <circle cx="600" cy="300" r="5" fill="rgba(255,255,255,0.7)" className="playbook-node-drift-2" />
-            <circle cx="900" cy="250" r="4" fill="rgba(255,255,255,0.6)" className="playbook-node-drift-3" />
-            <circle cx="450" cy="350" r="3" fill="rgba(255,255,255,0.5)" className="playbook-node-drift-1" style={{ animationDelay: '1s' }} />
-            <circle cx="750" cy="400" r="4" fill="rgba(255,255,255,0.6)" className="playbook-node-drift-2" style={{ animationDelay: '2s' }} />
-          </svg>
-
-          {/* Gradient overlays for depth */}
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/5 to-transparent playbook-flow-pulse"></div>
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
-          <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
-
-          <div className="container mx-auto px-4 sm:px-6 relative z-10">
-            <div className="max-w-3xl mx-auto text-center space-y-8">
-              {/* Headline */}
-              <h2 
-                id="playbook-heading"
-                className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight"
-                data-testid="text-playbook-title"
-              >
-                The OnSpot Operations Playbook
-              </h2>
-
-              {/* Subline */}
-              <p className="text-xl sm:text-2xl text-white/90 font-light max-w-2xl mx-auto">
-                Our system that makes outsourcing effortless
-              </p>
-
-              {/* CTA Button with animated glow */}
-              <div className="pt-4">
-                <Button 
-                  asChild
-                  size="lg" 
-                  className="px-8 py-6 text-lg rounded-2xl bg-white text-[#4353FF] hover:bg-white/95 active:bg-white/90 transition-all duration-300 playbook-cta-glow"
-                  data-testid="button-view-playbook"
-                >
-                  <a 
-                    href="https://www.onspotglobal.com/operations-playbook"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    View the Playbook
-                    <ChevronRight className="w-5 h-5 ml-2" />
-                  </a>
-                </Button>
-              </div>
-              
-              {/* Convergence indicator - visual pull toward CTA */}
-              <div className="absolute bottom-32 left-1/2 -translate-x-1/2 w-64 h-32 pointer-events-none" aria-hidden="true">
-                <svg className="w-full h-full opacity-20" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 128">
-                  <path d="M 0,0 Q 128,64 256,0" stroke="rgba(255,255,255,0.6)" strokeWidth="1" fill="none" className="playbook-pulse-path" />
-                  <path d="M 20,20 Q 128,80 236,20" stroke="rgba(255,255,255,0.4)" strokeWidth="1" fill="none" className="playbook-pulse-path" style={{ animationDelay: '1s' }} />
-                  <path d="M 40,40 Q 128,96 216,40" stroke="rgba(255,255,255,0.3)" strokeWidth="1" fill="none" className="playbook-pulse-path" style={{ animationDelay: '2s' }} />
-                </svg>
               </div>
             </div>
           </div>
@@ -1991,6 +1853,126 @@ export default function LegalOpsLanding() {
         {/* Bottom Spacer for Sticky Footer */}
         <div className="h-16" />
       </div>
+
+      {/* Operations Playbook Modal - Triggered on scroll */}
+      <Dialog open={showPlaybookModal} onOpenChange={setShowPlaybookModal}>
+        <DialogContent 
+          className="max-w-3xl p-0 overflow-hidden border-0 bg-transparent"
+          style={{ 
+            background: 'radial-gradient(circle at 30% 50%, #4353FF 0%, #2B3FCC 35%, #1E2F9A 70%, #0A143C 100%)'
+          }}
+        >
+          {/* Animated flowing lines SVG overlay */}
+          <svg 
+            className="absolute inset-0 w-full h-full opacity-20 pointer-events-none" 
+            xmlns="http://www.w3.org/2000/svg"
+            preserveAspectRatio="none"
+            viewBox="0 0 600 400"
+            aria-hidden="true"
+          >
+            <path 
+              d="M 0,200 Q 150,150 300,200 T 600,200" 
+              stroke="rgba(255,255,255,0.4)" 
+              strokeWidth="2" 
+              fill="none"
+              strokeDasharray="10 5"
+              className="playbook-pulse-path"
+            />
+            <path 
+              d="M 0,150 Q 200,100 400,150 T 600,150" 
+              stroke="rgba(255,255,255,0.3)" 
+              strokeWidth="1.5" 
+              fill="none"
+              strokeDasharray="8 4"
+              className="playbook-pulse-path"
+              style={{ animationDelay: '2s' }}
+            />
+            <circle cx="150" cy="150" r="4" fill="rgba(255,255,255,0.6)" className="playbook-node-drift-1" />
+            <circle cx="300" cy="200" r="5" fill="rgba(255,255,255,0.7)" className="playbook-node-drift-2" />
+            <circle cx="450" cy="150" r="4" fill="rgba(255,255,255,0.6)" className="playbook-node-drift-3" />
+          </svg>
+
+          {/* Content */}
+          <div className="relative z-10 p-8 sm:p-12 text-center space-y-6">
+            {/* Icon badge */}
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                <Sparkles className="w-8 h-8 text-white" />
+              </div>
+            </div>
+
+            <DialogHeader>
+              <DialogTitle className="text-3xl sm:text-4xl font-bold text-white leading-tight">
+                The OnSpot Operations Playbook
+              </DialogTitle>
+              <DialogDescription className="text-lg sm:text-xl text-white/90 font-light pt-2">
+                Our proven system that makes outsourcing effortless
+              </DialogDescription>
+            </DialogHeader>
+
+            {/* Guiding message */}
+            <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 space-y-3">
+              <p className="text-white/95 text-base sm:text-lg">
+                You've seen how OnSpot LegalOps works. Now discover the complete framework that powers every successful implementation.
+              </p>
+              <div className="flex items-start gap-3 text-left">
+                <CheckCircle2 className="w-5 h-5 text-white flex-shrink-0 mt-0.5" />
+                <p className="text-white/85 text-sm sm:text-base">
+                  <span className="font-semibold">4P Operating System:</span> Philosophy, People, Process, Problem Solving
+                </p>
+              </div>
+              <div className="flex items-start gap-3 text-left">
+                <CheckCircle2 className="w-5 h-5 text-white flex-shrink-0 mt-0.5" />
+                <p className="text-white/85 text-sm sm:text-base">
+                  <span className="font-semibold">Service Models:</span> Managed & Resourced solutions
+                </p>
+              </div>
+              <div className="flex items-start gap-3 text-left">
+                <CheckCircle2 className="w-5 h-5 text-white flex-shrink-0 mt-0.5" />
+                <p className="text-white/85 text-sm sm:text-base">
+                  <span className="font-semibold">Implementation Framework:</span> From kickoff to handoff
+                </p>
+              </div>
+            </div>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 pt-4">
+              <Button 
+                asChild
+                size="lg" 
+                className="flex-1 px-6 py-6 text-base rounded-2xl bg-white text-[#4353FF] hover:bg-white/95 active:bg-white/90 transition-all duration-300 playbook-cta-glow"
+                data-testid="button-view-playbook-modal"
+              >
+                <a 
+                  href="https://www.onspotglobal.com/operations-playbook"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  View the Full Playbook
+                  <ChevronRight className="w-5 h-5 ml-2" />
+                </a>
+              </Button>
+              <Button 
+                onClick={() => {
+                  setShowPlaybookModal(false);
+                  scrollToCheckout();
+                }}
+                size="lg" 
+                variant="outline"
+                className="flex-1 px-6 py-6 text-base rounded-2xl bg-white/10 text-white border-white/30 hover:bg-white/20 transition-all duration-300"
+                data-testid="button-start-trial-modal"
+              >
+                Start My Trial Now
+              </Button>
+            </div>
+
+            {/* Helper text */}
+            <p className="text-white/70 text-sm pt-2">
+              Not ready yet? Close this to continue exploring.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
