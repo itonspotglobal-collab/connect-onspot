@@ -1615,6 +1615,99 @@ export default function LegalOpsLanding() {
           </div>
         </section>
 
+        {/* OnSpot Operations Playbook - Animated Showcase */}
+        <section 
+          className="py-24 sm:py-32 relative overflow-hidden"
+          style={{ background: 'radial-gradient(circle at 30% 50%, #4353FF 0%, #2B3FCC 35%, #1E2F9A 70%, #0A143C 100%)' }}
+          aria-labelledby="playbook-heading"
+        >
+          {/* Animated flowing lines SVG overlay */}
+          <svg 
+            className="absolute inset-0 w-full h-full opacity-30 pointer-events-none" 
+            xmlns="http://www.w3.org/2000/svg"
+            preserveAspectRatio="none"
+            viewBox="0 0 1200 600"
+            aria-hidden="true"
+          >
+            {/* Flowing paths */}
+            <path 
+              d="M 0,300 Q 300,200 600,300 T 1200,300" 
+              stroke="rgba(255,255,255,0.4)" 
+              strokeWidth="2" 
+              fill="none"
+              strokeDasharray="10 5"
+              className="playbook-pulse-path"
+            />
+            <path 
+              d="M 0,250 Q 400,150 800,250 T 1200,250" 
+              stroke="rgba(255,255,255,0.3)" 
+              strokeWidth="1.5" 
+              fill="none"
+              strokeDasharray="8 4"
+              className="playbook-pulse-path"
+              style={{ animationDelay: '2s' }}
+            />
+            <path 
+              d="M 0,350 Q 350,450 700,350 T 1200,350" 
+              stroke="rgba(255,255,255,0.25)" 
+              strokeWidth="1.5" 
+              fill="none"
+              strokeDasharray="6 3"
+              className="playbook-pulse-path"
+              style={{ animationDelay: '4s' }}
+            />
+            
+            {/* Connected nodes */}
+            <circle cx="300" cy="200" r="4" fill="rgba(255,255,255,0.6)" className="playbook-node-drift-1" />
+            <circle cx="600" cy="300" r="5" fill="rgba(255,255,255,0.7)" className="playbook-node-drift-2" />
+            <circle cx="900" cy="250" r="4" fill="rgba(255,255,255,0.6)" className="playbook-node-drift-3" />
+            <circle cx="450" cy="350" r="3" fill="rgba(255,255,255,0.5)" className="playbook-node-drift-1" style={{ animationDelay: '1s' }} />
+            <circle cx="750" cy="400" r="4" fill="rgba(255,255,255,0.6)" className="playbook-node-drift-2" style={{ animationDelay: '2s' }} />
+          </svg>
+
+          {/* Gradient overlays for depth */}
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/5 to-transparent playbook-flow-pulse"></div>
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
+          <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+
+          <div className="container mx-auto px-4 sm:px-6 relative z-10">
+            <div className="max-w-3xl mx-auto text-center space-y-8">
+              {/* Headline */}
+              <h2 
+                id="playbook-heading"
+                className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight"
+                data-testid="text-playbook-title"
+              >
+                The OnSpot Operations Playbook
+              </h2>
+
+              {/* Subline */}
+              <p className="text-xl sm:text-2xl text-white/90 font-light max-w-2xl mx-auto">
+                Our system that makes outsourcing effortless
+              </p>
+
+              {/* CTA Button */}
+              <div className="pt-4">
+                <Button 
+                  asChild
+                  size="lg" 
+                  className="px-8 py-6 text-lg rounded-2xl bg-white text-[#4353FF] hover:bg-white/95 active:bg-white/90 shadow-xl hover:shadow-2xl transition-all duration-300"
+                  data-testid="button-view-playbook"
+                >
+                  <a 
+                    href="https://www.onspotglobal.com/operations-playbook"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    View the Playbook
+                    <ChevronRight className="w-5 h-5 ml-2" />
+                  </a>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* What If You Don't Partner With OnSpot - Pain Points */}
         <section className="py-16 sm:py-24 bg-gradient-to-br from-slate-50 via-gray-50 to-slate-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
           <div className="container mx-auto px-4 sm:px-6">

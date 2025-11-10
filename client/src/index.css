@@ -1659,4 +1659,73 @@
       animation: none;
     }
   }
+
+  /* Operations Playbook Section Animations */
+  @keyframes pulsePath {
+    0%, 100% {
+      stroke-dashoffset: 0;
+      opacity: 0.3;
+    }
+    50% {
+      stroke-dashoffset: 50;
+      opacity: 0.8;
+    }
+  }
+
+  @keyframes nodeDrift {
+    0%, 100% {
+      transform: translate(0, 0);
+      opacity: 0.6;
+    }
+    33% {
+      transform: translate(10px, -8px);
+      opacity: 0.9;
+    }
+    66% {
+      transform: translate(-8px, 12px);
+      opacity: 0.75;
+    }
+  }
+
+  @keyframes flowPulse {
+    0%, 100% {
+      opacity: 0.2;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.6;
+      transform: scale(1.1);
+    }
+  }
+
+  /* Utility classes for Operations Playbook */
+  .playbook-pulse-path {
+    animation: pulsePath 8s ease-in-out infinite;
+  }
+
+  .playbook-node-drift-1 {
+    animation: nodeDrift 12s ease-in-out infinite;
+  }
+
+  .playbook-node-drift-2 {
+    animation: nodeDrift 13s ease-in-out infinite 1s;
+  }
+
+  .playbook-node-drift-3 {
+    animation: nodeDrift 14s ease-in-out infinite 2s;
+  }
+
+  .playbook-flow-pulse {
+    animation: flowPulse 6s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .playbook-pulse-path,
+    .playbook-node-drift-1,
+    .playbook-node-drift-2,
+    .playbook-node-drift-3,
+    .playbook-flow-pulse {
+      animation: none;
+    }
+  }
 }
