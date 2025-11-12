@@ -379,7 +379,7 @@ export default function LegalOpsLanding() {
 
               {/* Right: Checkout Form - Command Center Panel with Skyline Light Reflections */}
               <div id="checkout-section" className="lg:sticky lg:top-8 hero-fade-up-delay">
-                <div className="relative overflow-hidden bg-white/15 backdrop-blur-3xl border border-white/40 rounded-3xl shadow-2xl">
+                <div className="relative overflow-hidden bg-white/15 backdrop-blur-3xl border border-white/40 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.3),0_16px_64px_rgba(0,0,0,0.2)]">
                   {/* Skyline light reflections */}
                   <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-violet-500/15 to-blue-500/10 blur-2xl rounded-3xl" style={{ animation: 'lightReflection 6s ease-in-out infinite' }}></div>
                   <div className="absolute top-0 left-0 w-full h-1/3 bg-gradient-to-b from-cyan-400/10 to-transparent blur-xl"></div>
@@ -387,45 +387,47 @@ export default function LegalOpsLanding() {
                   
                   <div className="relative">
                     <div className="border-b border-white/30 p-6 sm:p-8">
-                      <div className="flex items-start justify-between gap-4 mb-3">
+                      <div className="flex items-start justify-between gap-4 mb-4">
                         <h2 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg" data-testid="text-checkout-title">
                           Start Your 90-Day Trial
                         </h2>
-                        <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 shadow-[0_0_20px_rgba(239,68,68,0.6)] animate-pulse shrink-0" data-testid="badge-scarcity">
+                        <Badge className="bg-[#FF5C4D] text-white font-bold text-sm px-4 py-2 border-0 shadow-[0_0_25px_rgba(255,92,77,0.7)] animate-pulse shrink-0 rounded-full" data-testid="badge-scarcity">
                           Only 5 Slots
                         </Badge>
                       </div>
-                      <p className="text-sm text-violet-100 leading-relaxed drop-shadow-md" data-testid="text-checkout-description">
-                        Secure card capture • Zero charge during trial • Cancel anytime
+                      <p className="text-sm leading-relaxed drop-shadow-md tracking-wide" style={{ color: '#C8C8C8' }} data-testid="text-checkout-description">
+                        Easy and simple • Zero implementation cost • Cancel anytime
                       </p>
                     </div>
-                    <div className="p-6 sm:p-8 space-y-5">
+                    <div className="p-6 sm:p-8 space-y-4">
                     {!showCheckout ? (
                       <>
-                        <div className="space-y-2">
-                          <Label htmlFor="fullName" className="text-white font-semibold">Full Name *</Label>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="fullName" className="text-white font-semibold text-sm">Full Name *</Label>
                           <Input
                             id="fullName"
                             value={formData.fullName}
                             onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                             placeholder="John Smith"
                             required
+                            className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
                             data-testid="input-full-name"
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="firmName" className="text-white font-semibold">Law Firm Name *</Label>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="firmName" className="text-white font-semibold text-sm">Law Firm Name *</Label>
                           <Input
                             id="firmName"
                             value={formData.firmName}
                             onChange={(e) => setFormData({ ...formData, firmName: e.target.value })}
                             placeholder="Smith & Associates"
                             required
+                            className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
                             data-testid="input-firm-name"
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="email" className="text-white font-semibold">Email *</Label>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="email" className="text-white font-semibold text-sm">Email *</Label>
                           <Input
                             id="email"
                             type="email"
@@ -433,33 +435,38 @@ export default function LegalOpsLanding() {
                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                             placeholder="john@lawfirm.com"
                             required
+                            className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
                             data-testid="input-email"
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="phone" className="text-white font-semibold">Phone</Label>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="phone" className="text-white font-semibold text-sm">Phone</Label>
                           <Input
                             id="phone"
                             type="tel"
                             value={formData.phone}
                             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                             placeholder="(718) 555-0123"
+                            className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
                             data-testid="input-phone"
                           />
                         </div>
-                        <Button
-                          onClick={handleStartTrial}
-                          className="relative group w-full bg-gradient-to-r from-violet-600 to-blue-600 text-white font-semibold hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] transition-all duration-300 rounded-2xl min-h-12 text-base"
-                          size="lg"
-                          disabled={!formData.fullName || !formData.firmName || !formData.email}
-                          data-testid="button-continue-to-payment"
-                        >
-                          <span className="flex items-center gap-2 justify-center">
-                            Continue to Secure Payment
-                            <Sparkles className="w-4 h-4" />
-                          </span>
-                          <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-violet-600 to-blue-600 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-300 -z-10"></div>
-                        </Button>
+                        <div className="pt-2">
+                          <Button
+                            onClick={handleStartTrial}
+                            className="relative group w-full text-white font-semibold rounded-2xl min-h-12 text-base transition-all duration-300 shadow-lg hover:shadow-[0_0_25px_rgba(67,83,255,0.5)]"
+                            style={{ backgroundColor: '#4353FF' }}
+                            size="lg"
+                            disabled={!formData.fullName || !formData.firmName || !formData.email}
+                            data-testid="button-continue-to-payment"
+                          >
+                            <span className="flex items-center gap-2 justify-center">
+                              Start Now
+                              <ChevronRight className="w-5 h-5" />
+                            </span>
+                            <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-300 -z-10" style={{ backgroundColor: '#4353FF' }}></div>
+                          </Button>
+                        </div>
                       </>
                     ) : (
                       <CheckoutWrapper
