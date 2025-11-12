@@ -1832,4 +1832,163 @@
       animation: none;
     }
   }
+
+  /* ===== MOBILE-FIRST RESPONSIVE UTILITIES ===== */
+
+  /* Fluid Typography Scale using clamp() - Recalibrated for mobile-first */
+  .text-fluid-xs {
+    font-size: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+  }
+
+  .text-fluid-sm {
+    font-size: clamp(0.875rem, 0.825rem + 0.25vw, 1rem);
+  }
+
+  .text-fluid-base {
+    font-size: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  }
+
+  .text-fluid-lg {
+    font-size: clamp(1.125rem, 1.05rem + 0.4vw, 1.25rem);
+  }
+
+  .text-fluid-xl {
+    font-size: clamp(1.25rem, 1.15rem + 0.5vw, 1.5rem);
+  }
+
+  .text-fluid-2xl {
+    font-size: clamp(1.5rem, 1.35rem + 0.75vw, 2rem);
+  }
+
+  .text-fluid-3xl {
+    font-size: clamp(1.75rem, 1.5rem + 1.25vw, 2.5rem);
+  }
+
+  .text-fluid-4xl {
+    font-size: clamp(1.75rem, 1.5rem + 1.25vw, 3rem);
+  }
+
+  .text-fluid-5xl {
+    font-size: clamp(2rem, 1.65rem + 1.75vw, 3.5rem);
+  }
+
+  .text-fluid-6xl {
+    font-size: clamp(2.25rem, 1.75rem + 2.5vw, 4rem);
+  }
+
+  /* Fluid Container with safe gutters */
+  .container-fluid {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+
+  @media (min-width: 640px) {
+    .container-fluid {
+      padding-left: max(1.5rem, env(safe-area-inset-left));
+      padding-right: max(1.5rem, env(safe-area-inset-right));
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container-fluid {
+      max-width: 1280px;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .container-fluid {
+      max-width: 1536px;
+    }
+  }
+
+  /* Touch target minimum (48px for accessibility) */
+  .touch-target {
+    min-height: 3rem;
+    min-width: 3rem;
+  }
+
+  .touch-target-lg {
+    min-height: 3.5rem;
+    min-width: 3.5rem;
+  }
+
+  /* Mobile-first spacing tokens */
+  .gutter-mobile {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .gutter-mobile {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+
+  /* Sticky CTA with safe area insets */
+  .sticky-bottom-cta {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+    z-index: 50;
+  }
+
+  /* Horizontal scroll container with snap */
+  .scroll-snap-x {
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .scroll-snap-x::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scroll-snap-item {
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+
+  /* Prevent layout shift */
+  .aspect-ratio-fixed {
+    position: relative;
+    width: 100%;
+  }
+
+  .aspect-ratio-fixed::before {
+    content: '';
+    display: block;
+  }
+
+  .aspect-ratio-16-9::before {
+    padding-top: 56.25%;
+  }
+
+  .aspect-ratio-4-3::before {
+    padding-top: 75%;
+  }
+
+  .aspect-ratio-1-1::before {
+    padding-top: 100%;
+  }
+
+  /* Reduce motion for all animations */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }

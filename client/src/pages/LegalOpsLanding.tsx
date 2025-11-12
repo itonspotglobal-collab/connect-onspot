@@ -474,15 +474,15 @@ export default function LegalOpsLanding() {
       
       <div className="min-h-screen bg-background">
         {/* Sticky CTA Footer */}
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-r from-violet-600 to-blue-600 text-white py-3 px-4 shadow-2xl">
-          <div className="container mx-auto flex items-center justify-between gap-4">
-            <p className="text-sm sm:text-base font-semibold">
+        <div className="sticky-bottom-cta bg-gradient-to-r from-violet-600 to-blue-600 text-white py-3 shadow-2xl">
+          <div className="container-fluid flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+            <p className="text-xs sm:text-sm md:text-base font-semibold text-center sm:text-left">
               Ready to replace your legal admin chaos with guaranteed stability?
             </p>
             <Button
               onClick={scrollToCheckout}
               variant="outline"
-              className="bg-white text-violet-600 border-white hover:bg-white/90 min-h-9"
+              className="w-full sm:w-auto bg-white text-violet-600 border-white hover:bg-white/90 touch-target whitespace-nowrap"
               data-testid="button-sticky-cta"
             >
               Start My LegalOps Trial →
@@ -498,12 +498,15 @@ export default function LegalOpsLanding() {
               src={nycSkylineImage} 
               alt="New York City Skyline at Night with Empire State Building" 
               className="w-full h-full object-cover object-center"
+              loading="eager"
+              width="1920"
+              height="1080"
             />
             {/* Subtle gradient overlay for text contrast without losing skyline details */}
             <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.7) 100%)' }}></div>
           </div>
 
-          <div className="container mx-auto px-4 sm:px-6 relative z-20 pt-20 pb-16 sm:pt-24 sm:pb-24">
+          <div className="container-fluid relative z-20 pt-16 pb-20 sm:pt-20 sm:pb-24 md:pt-24 md:pb-28">
             {/* OnSpot Logo - Enhanced Contrast */}
             <div className="mb-10 hero-fade-up">
               <div className="inline-flex items-center gap-2.5 backdrop-blur-2xl bg-white/15 px-5 py-2.5 rounded-full border border-white/40 shadow-2xl">
@@ -519,35 +522,35 @@ export default function LegalOpsLanding() {
               </div>
             </div>
 
-            <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 lg:gap-16 items-center">
               {/* Left: Headline & Value Prop */}
               <div className="hero-fade-up">
-                <div className="space-y-3.5 mb-5">
+                <div className="space-y-3 sm:space-y-4 mb-6">
                   {/* Ultra-minimal Badge */}
-                  <div className="inline-flex items-center gap-2.5 text-sm font-medium text-white backdrop-blur-2xl bg-white/10 px-5 py-2.5 rounded-full border border-white/30 shadow-xl">
+                  <div className="inline-flex items-center gap-2 sm:gap-2.5 text-xs sm:text-sm font-medium text-white backdrop-blur-2xl bg-white/10 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full border border-white/30 shadow-xl">
                     <div className="w-2 h-2 bg-violet-400 rounded-full animate-pulse"></div>
-                    Tri-State NY Landlord-Tenant Law Firms
+                    <span className="text-xs sm:text-sm">Tri-State NY Landlord-Tenant Law Firms</span>
                   </div>
                   
-                  {/* Main Headline - Pure White */}
-                  <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold leading-[1.1] text-[#FFFFFF] tracking-tight drop-shadow-[0_4px_20px_rgba(0,0,0,0.8)]" data-testid="text-hero-headline">
+                  {/* Main Headline - Pure White - Fluid Typography */}
+                  <h1 className="text-fluid-4xl md:text-fluid-5xl lg:text-fluid-6xl font-bold leading-[1.1] text-[#FFFFFF] tracking-tight drop-shadow-[0_4px_20px_rgba(0,0,0,0.8)]" data-testid="text-hero-headline">
                     Cut Legal Admin Costs by 70%
                   </h1>
                   
-                  {/* Subheadline - Soft Blue-Gray */}
-                  <p className="text-xl sm:text-2xl lg:text-3xl text-[#C8D1F0] font-light tracking-wide drop-shadow-[0_4px_16px_rgba(0,0,0,0.8)]" data-testid="text-hero-subhead">
+                  {/* Subheadline - Soft Blue-Gray - Fluid Typography */}
+                  <p className="text-fluid-xl md:text-fluid-2xl text-[#C8D1F0] font-light tracking-wide drop-shadow-[0_4px_16px_rgba(0,0,0,0.8)]" data-testid="text-hero-subhead">
                     Zero Escalations. Full Control.
                   </p>
                   
-                  {/* Body - Muted Silver */}
-                  <p className="text-base sm:text-lg text-[#D0D4E6] leading-relaxed max-w-2xl font-light drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)] pt-2">
+                  {/* Body - Muted Silver - Fluid Typography */}
+                  <p className="text-fluid-base text-[#D0D4E6] leading-relaxed max-w-2xl font-light drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)] pt-2">
                     New York landlord–tenant firms: Our specialized LegalOps team manages your Rent Demands, Petitions, and Section 8 compliance with precision — delivering 70% cost savings and zero escalations within 90 days.
                   </p>
                 </div>
 
-                {/* Metric Boxes - Equal Width, Horizontal Row */}
-                <div className="grid grid-cols-3 gap-6 hero-fade-up-delay">
-                  <div className="flex flex-col items-center gap-3 backdrop-blur-2xl bg-[#1D2E66] px-4 py-5 rounded-2xl border border-white/30 shadow-2xl group hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all duration-300">
+                {/* Metric Boxes - Horizontal Scroll on Mobile, Grid on Desktop */}
+                <div className="flex md:grid md:grid-cols-3 gap-4 md:gap-6 hero-fade-up-delay overflow-x-auto md:overflow-visible scroll-snap-x pb-4 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0">
+                  <div className="flex-shrink-0 w-[260px] md:w-auto flex flex-col items-center gap-3 backdrop-blur-2xl bg-[#1D2E66] px-4 py-5 rounded-2xl border border-white/30 shadow-2xl group hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all duration-300 scroll-snap-item">
                     <div className="w-11 h-11 bg-gradient-to-br from-emerald-400 to-green-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                       <TrendingDown className="h-6 w-6 text-white" />
                     </div>
@@ -556,7 +559,7 @@ export default function LegalOpsLanding() {
                       <div className="text-lg font-extrabold bg-gradient-to-r from-emerald-300 to-green-300 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(16,185,129,0.6)]">70% Savings</div>
                     </div>
                   </div>
-                  <div className="flex flex-col items-center gap-3 backdrop-blur-2xl bg-[#1D2E66] px-4 py-5 rounded-2xl border border-white/30 shadow-2xl group hover:shadow-[0_0_30px_rgba(139,92,246,0.4)] transition-all duration-300">
+                  <div className="flex-shrink-0 w-[260px] md:w-auto flex flex-col items-center gap-3 backdrop-blur-2xl bg-[#1D2E66] px-4 py-5 rounded-2xl border border-white/30 shadow-2xl group hover:shadow-[0_0_30px_rgba(139,92,246,0.4)] transition-all duration-300 scroll-snap-item">
                     <div className="w-11 h-11 bg-gradient-to-br from-violet-400 to-purple-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                       <CheckCircle2 className="h-6 w-6 text-white" />
                     </div>
@@ -565,7 +568,7 @@ export default function LegalOpsLanding() {
                       <div className="text-lg font-extrabold bg-gradient-to-r from-violet-300 to-purple-300 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(139,92,246,0.6)]">Zero</div>
                     </div>
                   </div>
-                  <div className="flex flex-col items-center gap-3 backdrop-blur-2xl bg-[#1D2E66] px-4 py-5 rounded-2xl border border-white/30 shadow-2xl group hover:shadow-[0_0_30px_rgba(34,211,238,0.4)] transition-all duration-300">
+                  <div className="flex-shrink-0 w-[260px] md:w-auto flex flex-col items-center gap-3 backdrop-blur-2xl bg-[#1D2E66] px-4 py-5 rounded-2xl border border-white/30 shadow-2xl group hover:shadow-[0_0_30px_rgba(34,211,238,0.4)] transition-all duration-300 scroll-snap-item">
                     <div className="w-11 h-11 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                       <Clock className="h-6 w-6 text-white" />
                     </div>
@@ -635,8 +638,9 @@ export default function LegalOpsLanding() {
                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                             placeholder="john@lawfirm.com"
                             required
-                            className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
+                            className="bg-white/10 border-white/30 text-white placeholder:text-white/50 w-full touch-target"
                             data-testid="input-email"
+                            autoComplete="email"
                           />
                         </div>
                         <div className="space-y-1.5">
@@ -647,16 +651,17 @@ export default function LegalOpsLanding() {
                             value={formData.phone}
                             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                             placeholder="(718) 555-0123"
-                            className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
+                            className="bg-white/10 border-white/30 text-white placeholder:text-white/50 w-full touch-target"
                             data-testid="input-phone"
+                            autoComplete="tel"
+                            inputMode="tel"
                           />
                         </div>
                         <div className="pt-2">
                           <Button
                             onClick={handleStartTrial}
-                            className="relative group w-full text-white font-semibold rounded-2xl min-h-12 text-base transition-all duration-300 shadow-lg hover:shadow-[0_0_25px_rgba(67,83,255,0.5)]"
+                            className="relative group w-full text-white font-semibold rounded-2xl touch-target-lg text-base transition-all duration-300 shadow-lg hover:shadow-[0_0_25px_rgba(67,83,255,0.5)]"
                             style={{ backgroundColor: '#4353FF' }}
-                            size="lg"
                             disabled={!formData.fullName || !formData.firmName || !formData.email}
                             data-testid="button-continue-to-payment"
                           >
