@@ -40,7 +40,7 @@ import {
 import { HeadSEO } from "@/components/HeadSEO";
 import nycSkylineImage from "@assets/40431e5288cb44250d8204c03e0ba76129ba76dfd36e01e7c40f546ab05de806_1762346626354.jpeg";
 import lawyerImage from "@assets/stock_images/professional_confide_e4371db1.jpg";
-import selectiveLawyerImage from "@assets/stock_images/professional_caucasi_581dda11.jpg";
+import selectiveLawyerImage from "@assets/stock_images/professional_white_m_6ddf92df.jpg";
 
 if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
   console.warn("Missing VITE_STRIPE_PUBLIC_KEY - Stripe checkout will not work");
