@@ -1740,6 +1740,43 @@
     }
   }
 
+  @keyframes staggerFadeUp {
+    0% {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes screeningLine {
+    0% {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+    10% {
+      opacity: 1;
+    }
+    90% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(500%);
+      opacity: 0;
+    }
+  }
+
+  @keyframes glowPulse {
+    0%, 100% {
+      box-shadow: 0 4px 20px rgba(67, 83, 255, 0.15);
+    }
+    50% {
+      box-shadow: 0 6px 30px rgba(67, 83, 255, 0.35);
+    }
+  }
+
   /* Utility classes for Operations Playbook */
   .playbook-pulse-path {
     animation: pulsePath 8s ease-in-out infinite;
