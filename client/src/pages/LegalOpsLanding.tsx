@@ -467,11 +467,198 @@ export default function LegalOpsLanding() {
     document.getElementById("checkout-section")?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // Enhanced JSON-LD schemas + performance optimizations for GEO targeting
+  useEffect(() => {
+    const addedElements: Element[] = [];
+    
+    // Helper to track elements we add
+    const trackElement = (element: Element) => {
+      addedElements.push(element);
+      return element;
+    };
+    
+    // Helper to add/track link elements
+    const addLink = (rel: string, href: string, attrs?: Record<string, string>) => {
+      // Check if this exact link already exists (check both rel AND href)
+      const selector = `link[rel="${rel}"][href="${href}"]`;
+      if (document.querySelector(selector)) return;
+      
+      const link = document.createElement("link");
+      link.setAttribute("rel", rel);
+      link.setAttribute("href", href);
+      link.setAttribute("data-legalops-head", "true");
+      if (attrs) {
+        Object.entries(attrs).forEach(([key, val]) => link.setAttribute(key, val));
+      }
+      document.head.appendChild(trackElement(link));
+    };
+    
+    // XML Sitemap & Robots (additional links not handled by HeadSEO)
+    addLink("sitemap", "/sitemap.xml", { type: "application/xml" });
+    addLink("robots", "/robots.txt", { type: "text/plain" });
+    
+    // Performance: Preconnect to CDNs
+    addLink("preconnect", "https://fonts.googleapis.com");
+    addLink("preconnect", "https://fonts.gstatic.com", { crossorigin: "anonymous" });
+    
+    // Performance: Preload critical resources (hero image)
+    addLink("preload", nycSkylineImage, { as: "image", fetchpriority: "high" });
+    
+    // Clean up old LegalOps schemas
+    document.querySelectorAll('script[data-legalops-schema]').forEach(s => s.remove());
+    
+    // JSON-LD: Organization
+    const orgSchema = document.createElement('script');
+    orgSchema.type = 'application/ld+json';
+    orgSchema.setAttribute('data-legalops-schema', 'organization');
+    orgSchema.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "OnSpot",
+      "legalName": "OnSpot Global",
+      "url": "https://www.onspotglobal.com",
+      "logo": "https://www.onspotglobal.com/assets/onspot-logo.png",
+      "description": "Legal operations and managed services for law firms",
+      "sameAs": [
+        "https://www.linkedin.com/company/onspotglobal",
+        "https://www.facebook.com/onspotglobal",
+        "https://twitter.com/onspotglobal"
+      ]
+    });
+    document.head.appendChild(trackElement(orgSchema));
+    
+    // JSON-LD: ProfessionalService with multi-city serviceArea
+    const serviceSchema = document.createElement('script');
+    serviceSchema.type = 'application/ld+json';
+    serviceSchema.setAttribute('data-legalops-schema', 'service');
+    serviceSchema.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "ProfessionalService",
+      "name": "OnSpot LegalOps",
+      "description": "Legal operations and managed services for landlord-tenant law firms",
+      "provider": {
+        "@type": "Organization",
+        "name": "OnSpot",
+        "legalName": "OnSpot Global"
+      },
+      "serviceType": "Legal Operations Management",
+      "areaServed": [
+        { "@type": "City", "name": "New York", "address": { "@type": "PostalAddress", "addressRegion": "NY", "addressCountry": "US" } },
+        { "@type": "City", "name": "Dallas", "address": { "@type": "PostalAddress", "addressRegion": "TX", "addressCountry": "US" } },
+        { "@type": "City", "name": "Houston", "address": { "@type": "PostalAddress", "addressRegion": "TX", "addressCountry": "US" } },
+        { "@type": "City", "name": "Austin", "address": { "@type": "PostalAddress", "addressRegion": "TX", "addressCountry": "US" } },
+        { "@type": "City", "name": "Miami", "address": { "@type": "PostalAddress", "addressRegion": "FL", "addressCountry": "US" } },
+        { "@type": "City", "name": "Orlando", "address": { "@type": "PostalAddress", "addressRegion": "FL", "addressCountry": "US" } },
+        { "@type": "City", "name": "Tampa", "address": { "@type": "PostalAddress", "addressRegion": "FL", "addressCountry": "US" } }
+      ],
+      "offers": [
+        {
+          "@type": "Offer",
+          "name": "Resourced Services",
+          "price": "1950",
+          "priceCurrency": "USD",
+          "description": "Pay only for talent. OnSpot handles recruiting, vetting, and replacement."
+        },
+        {
+          "@type": "Offer",
+          "name": "Managed Services",
+          "price": "4950",
+          "priceCurrency": "USD",
+          "description": "Full operational oversight including daily management, QA, coaching, and reporting."
+        }
+      ]
+    });
+    document.head.appendChild(trackElement(serviceSchema));
+    
+    // JSON-LD: FAQPage (mirror existing FAQs)
+    const faqSchema = document.createElement('script');
+    faqSchema.type = 'application/ld+json';
+    faqSchema.setAttribute('data-legalops-schema', 'faq');
+    faqSchema.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is OnSpot LegalOps?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "OnSpot LegalOps is a specialized managed service for landlord-tenant law firms in New York, Texas, and Florida. We provide fully-managed legal operations teams that handle case intake, document preparation, court filing, and client communication—all backed by zero-escalation guarantees and instant replacement SLAs."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How much does OnSpot LegalOps cost?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "We offer two service models: Resourced Services at $1,950/FTE/month (talent only, you manage) and Managed Services starting at $4,950/FTE/month (full operational oversight). Both include a 90-day trial with guaranteed stability."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What locations does OnSpot LegalOps serve?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "We specialize in landlord-tenant law firms across New York (NYC), Texas (Dallas, Houston, Austin), and Florida (Miami, Orlando, Tampa). Our team understands local court procedures and filing requirements in each jurisdiction."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How quickly can I start?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Most firms are operational within 7-14 days. We provide ready-to-start talent, pre-built dashboards, and KPI templates so you can launch without delays."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What's included in Managed Services?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Managed Services includes daily operations management, quality assurance, performance coaching, weekly reporting, escalation handling, and continuous process improvement. You get complete operational oversight without managing day-to-day tasks."
+          }
+        }
+      ]
+    });
+    document.head.appendChild(trackElement(faqSchema));
+    
+    // JSON-LD: BreadcrumbList
+    const breadcrumbSchema = document.createElement('script');
+    breadcrumbSchema.type = 'application/ld+json';
+    breadcrumbSchema.setAttribute('data-legalops-schema', 'breadcrumb');
+    breadcrumbSchema.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://www.onspotglobal.com"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "LegalOps",
+          "item": "https://www.onspotglobal.com/legalops-ny"
+        }
+      ]
+    });
+    document.head.appendChild(trackElement(breadcrumbSchema));
+    
+    // Cleanup function - remove added elements on unmount
+    return () => {
+      addedElements.forEach(el => el.remove());
+      document.querySelectorAll('script[data-legalops-schema]').forEach(s => s.remove());
+      document.querySelectorAll('[data-legalops-head]').forEach(el => el.remove());
+    };
+  }, []);
+
   return (
     <>
       <HeadSEO
-        title="LegalOps for NY Landlord-Tenant Firms - Cut Costs 70%"
-        description="Cut legal admin costs by 70% for NY landlord-tenant firms. Zero escalations. Full control. 90-day trial with guaranteed stability."
+        title="LegalOps for NY, TX, FL Landlord-Tenant Law Firms | OnSpot Legal Operations"
+        description="OnSpot LegalOps for landlord-tenant law firms in New York City, Dallas, Houston, Austin, Miami, Orlando, Tampa. Cut legal admin costs 70% with managed legal operations. Zero escalations. 90-day trial."
       />
       
       <div className="min-h-screen bg-background">
