@@ -133,7 +133,7 @@ function CheckoutForm({ selectedTier, onSuccess }: CheckoutFormProps) {
         <Button
           type="submit"
           disabled={!stripe || isProcessing}
-          className="w-full min-h-10"
+          className="w-full touch-target"
           size="lg"
           data-testid="button-submit-payment"
         >
@@ -395,7 +395,7 @@ function RightFitSection() {
                       checkoutSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }
                   }}
-                  className="relative group font-semibold text-white rounded-full px-10 shadow-lg hover:shadow-[0_0_30px_rgba(67,83,255,0.5)] transition-all duration-300"
+                  className="relative group font-semibold text-white rounded-full px-10 shadow-lg hover:shadow-[0_0_30px_rgba(67,83,255,0.5)] transition-all duration-300 touch-target"
                   style={{
                     backgroundColor: '#4353FF',
                     animation: 'glowPulse 6s ease-in-out infinite',
@@ -524,7 +524,7 @@ export default function LegalOpsLanding() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 md:gap-16 items-center">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16 items-center">
               {/* Left: Headline & Value Prop */}
               <div className="hero-fade-up">
                 <div className="space-y-3 sm:space-y-4 mb-6">
@@ -919,7 +919,7 @@ export default function LegalOpsLanding() {
                 <CardFooter>
                   <Button
                     onClick={scrollToCheckout}
-                    className="w-full min-h-10"
+                    className="w-full touch-target"
                     size="lg"
                     variant={selectedTier === "launch" ? "default" : "outline"}
                     data-testid="button-select-launch"
@@ -982,7 +982,7 @@ export default function LegalOpsLanding() {
                 <CardFooter>
                   <Button
                     onClick={scrollToCheckout}
-                    className="w-full min-h-10"
+                    className="w-full touch-target"
                     size="lg"
                     variant={selectedTier === "executive" ? "default" : "outline"}
                     data-testid="button-select-executive"
@@ -1472,7 +1472,7 @@ export default function LegalOpsLanding() {
               </p>
               <Button 
                 size="lg" 
-                className="px-8 py-6 text-lg rounded-2xl"
+                className="px-8 py-6 text-lg rounded-2xl touch-target"
                 style={{ background: 'linear-gradient(135deg, #4353FF 0%, #5B7CFF 100%)' }}
                 data-testid="button-schedule-consultation"
               >
@@ -1860,7 +1860,7 @@ export default function LegalOpsLanding() {
                 </p>
                 <Button 
                   size="lg" 
-                  className="px-8 py-6 text-lg rounded-2xl"
+                  className="px-8 py-6 text-lg rounded-2xl touch-target"
                   style={{ background: 'linear-gradient(135deg, #4353FF 0%, #5B7CFF 100%)' }}
                   onClick={scrollToCheckout}
                   data-testid="button-comparison-cta"
@@ -2700,7 +2700,7 @@ export default function LegalOpsLanding() {
                     <div className="pt-4">
                       <Button 
                         size="lg" 
-                        className="px-8 rounded-2xl"
+                        className="px-8 rounded-2xl touch-target"
                         style={{ background: 'linear-gradient(135deg, #4353FF 0%, #5B7CFF 100%)' }}
                         onClick={scrollToCheckout}
                         data-testid="button-faq-cta"
@@ -2839,7 +2839,7 @@ export default function LegalOpsLanding() {
               <Button 
                 asChild
                 size="lg" 
-                className="flex-1 px-6 py-6 text-base rounded-2xl bg-white text-[#4353FF] hover:bg-white/95 active:bg-white/90 transition-all duration-300 playbook-cta-glow"
+                className="flex-1 px-6 py-6 text-base rounded-2xl bg-white text-[#4353FF] hover:bg-white/95 active:bg-white/90 transition-all duration-300 playbook-cta-glow touch-target"
                 data-testid="button-view-playbook-modal"
               >
                 <a 
