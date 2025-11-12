@@ -485,6 +485,93 @@ export default function LegalOpsLanding() {
           </div>
         </section>
 
+        {/* Are We the Right Fit? Section */}
+        <section className="py-16 sm:py-20 bg-gradient-to-br from-violet-50/30 via-white to-violet-50/20 dark:from-slate-900 dark:via-slate-850 dark:to-slate-900 relative overflow-hidden">
+          <div className="container mx-auto px-4 sm:px-6">
+            <div className="max-w-3xl mx-auto">
+              {/* Header */}
+              <div className="text-center mb-10">
+                <h2 className="text-3xl sm:text-4xl font-bold mb-4 bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-200 bg-clip-text text-transparent" data-testid="text-right-fit-title">
+                  Are We the Right Fit?
+                </h2>
+                <p className="text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl mx-auto" data-testid="text-right-fit-description">
+                  OnSpot only partners with law firms that value precision, process, and performance. We're selective about who we work with because exceptional results require the right partnership from day one.
+                </p>
+              </div>
+
+              {/* Checklist */}
+              <div className="space-y-3.5 mb-10">
+                <div className="flex items-start gap-4 group" data-testid="checklist-item-volume">
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: '#4353FF15' }}>
+                    <CheckCircle2 className="h-4 w-4" style={{ color: '#4353FF' }} />
+                  </div>
+                  <p className="text-base text-slate-700 dark:text-slate-200 leading-relaxed">
+                    You handle <span className="font-semibold">50+ eviction cases monthly</span> and need consistent, scalable support
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-4 group" data-testid="checklist-item-quality">
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: '#4353FF15' }}>
+                    <CheckCircle2 className="h-4 w-4" style={{ color: '#4353FF' }} />
+                  </div>
+                  <p className="text-base text-slate-700 dark:text-slate-200 leading-relaxed">
+                    You're committed to <span className="font-semibold">process excellence</span> and measurable operational improvements
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-4 group" data-testid="checklist-item-tech">
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: '#4353FF15' }}>
+                    <CheckCircle2 className="h-4 w-4" style={{ color: '#4353FF' }} />
+                  </div>
+                  <p className="text-base text-slate-700 dark:text-slate-200 leading-relaxed">
+                    You use (or are willing to adopt) <span className="font-semibold">cloud-based case management tools</span>
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-4 group" data-testid="checklist-item-control">
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: '#4353FF15' }}>
+                    <CheckCircle2 className="h-4 w-4" style={{ color: '#4353FF' }} />
+                  </div>
+                  <p className="text-base text-slate-700 dark:text-slate-200 leading-relaxed">
+                    You want <span className="font-semibold">full visibility and control</span> over your operations, not a black-box vendor
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-4 group" data-testid="checklist-item-growth">
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: '#4353FF15' }}>
+                    <CheckCircle2 className="h-4 w-4" style={{ color: '#4353FF' }} />
+                  </div>
+                  <p className="text-base text-slate-700 dark:text-slate-200 leading-relaxed">
+                    You're ready to <span className="font-semibold">invest in long-term efficiency</span>, not just short-term cost cuts
+                  </p>
+                </div>
+              </div>
+
+              {/* CTA */}
+              <div className="text-center">
+                <Button
+                  onClick={() => {
+                    const checkoutSection = document.getElementById('checkout-section');
+                    if (checkoutSection) {
+                      checkoutSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                  }}
+                  className="relative group font-semibold text-white rounded-xl px-8 shadow-lg hover:shadow-[0_0_20px_rgba(67,83,255,0.4)] transition-all duration-300"
+                  style={{ backgroundColor: '#4353FF' }}
+                  size="lg"
+                  data-testid="button-apply-consultation"
+                >
+                  <span className="flex items-center gap-2">
+                    Apply for Consultation
+                    <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" />
+                  </span>
+                  <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-300 -z-10" style={{ backgroundColor: '#4353FF' }}></div>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Zero Escalation Guarantee Section */}
         <section className="py-16 sm:py-20 bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 relative overflow-hidden">
           {/* Background decoration */}
