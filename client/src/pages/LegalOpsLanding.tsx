@@ -40,6 +40,7 @@ import {
 import { HeadSEO } from "@/components/HeadSEO";
 import nycSkylineImage from "@assets/40431e5288cb44250d8204c03e0ba76129ba76dfd36e01e7c40f546ab05de806_1762346626354.jpeg";
 import lawyerImage from "@assets/stock_images/professional_confide_e4371db1.jpg";
+import selectiveLawyerImage from "@assets/stock_images/professional_caucasi_581dda11.jpg";
 
 if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
   console.warn("Missing VITE_STRIPE_PUBLIC_KEY - Stripe checkout will not work");
@@ -324,16 +325,16 @@ function RightFitSection() {
             {/* Left: Duotone Image */}
             <div className="relative aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl">
               <img
-                src={lawyerImage}
-                alt="Professional partner reviewing candidate selection"
-                className="w-full h-full object-cover"
+                src={selectiveLawyerImage}
+                alt="Executive attorney partner embodying selective partnership standards"
+                className="w-full h-full object-cover object-center"
               />
-              {/* Duotone overlay */}
+              {/* Duotone overlay - OnSpot blue wash */}
               <div
-                className="absolute inset-0 bg-[#4353FF] dark:bg-[#1E2A6D] opacity-70 mix-blend-multiply dark:mix-blend-overlay"
+                className="absolute inset-0 bg-[#4353FF] dark:bg-[#2A3A8F] opacity-60 mix-blend-multiply dark:mix-blend-overlay"
               ></div>
-              {/* Soft gradient for depth */}
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-transparent"></div>
+              {/* Soft gradient for professional depth */}
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/30 via-transparent to-slate-900/10"></div>
             </div>
 
             {/* Right: Checklist with Screening Line */}
