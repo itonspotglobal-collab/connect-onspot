@@ -298,13 +298,9 @@ function RightFitSection() {
     <section
       ref={fitSectionRef}
       className="py-20 sm:py-24 bg-gradient-to-br from-slate-50/80 via-violet-50/30 to-slate-50/80 dark:from-slate-900 dark:via-slate-850 dark:to-slate-900 relative overflow-hidden"
-      style={{ border: '10px solid red' }}
     >
       <div className="container mx-auto px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-4">
-            <h1 className="text-6xl font-black text-red-600">🔴 NEW PREMIUM SECTION LOADED 🔴</h1>
-          </div>
           {/* Header with Badge */}
           <div className="text-center mb-16 relative">
             <Badge
@@ -333,7 +329,7 @@ function RightFitSection() {
             {/* Left: Duotone Image */}
             <div className="relative aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl">
               <img
-                src={selectiveLawyerImage}
+                src={`${selectiveLawyerImage}?v=${Date.now()}`}
                 alt="Executive attorney partner embodying selective partnership standards"
                 className="w-full h-full object-cover object-center"
               />
