@@ -326,19 +326,13 @@ function RightFitSection() {
 
           {/* Two-column layout */}
           <div className="grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.5fr)] gap-12 lg:gap-16 items-center">
-            {/* Left: Duotone Image */}
+            {/* Left: Professional Image */}
             <div className="relative aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl">
               <img
                 src={`${selectiveLawyerImage}?v=${Date.now()}`}
                 alt="Executive attorney partner embodying selective partnership standards"
                 className="w-full h-full object-cover object-center"
               />
-              {/* Duotone overlay - OnSpot blue wash */}
-              <div
-                className="absolute inset-0 bg-[#4353FF] dark:bg-[#2A3A8F] opacity-60 mix-blend-multiply dark:mix-blend-overlay"
-              ></div>
-              {/* Soft gradient for professional depth */}
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/30 via-transparent to-slate-900/10"></div>
             </div>
 
             {/* Right: Checklist with Screening Line */}
