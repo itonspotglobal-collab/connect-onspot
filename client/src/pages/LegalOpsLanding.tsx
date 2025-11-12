@@ -221,6 +221,10 @@ function RightFitSection() {
   const [isInView, setIsInView] = useState(false);
 
   useEffect(() => {
+    console.log("✅ RightFitSection component mounted with new lawyer image");
+  }, []);
+
+  useEffect(() => {
     const currentRef = fitSectionRef.current;
     if (!currentRef) return;
 
