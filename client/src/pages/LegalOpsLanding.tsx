@@ -456,6 +456,13 @@ export default function LegalOpsLanding() {
     return () => observer.disconnect();
   }, [hasSeenPlaybookModal]);
 
+  // Booking calendar URL and helper
+  const BOOKING_URL = "https://api.leadconnectorhq.com/widget/booking/2oCPWrG6iXVnuUGRXKBK";
+  
+  const openBooking = () => {
+    window.open(BOOKING_URL, "_blank", "noopener,noreferrer");
+  };
+
   const handleStartTrial = () => {
     if (!formData.fullName || !formData.firmName || !formData.email) {
       return;
@@ -669,7 +676,7 @@ export default function LegalOpsLanding() {
               Ready to replace your legal admin chaos with guaranteed stability?
             </p>
             <Button
-              onClick={scrollToCheckout}
+              onClick={openBooking}
               variant="outline"
               className="w-full sm:w-auto bg-white text-violet-600 border-white hover:bg-white/90 touch-target whitespace-nowrap"
               data-testid="button-sticky-cta"
@@ -1105,7 +1112,7 @@ export default function LegalOpsLanding() {
                 </CardContent>
                 <CardFooter>
                   <Button
-                    onClick={scrollToCheckout}
+                    onClick={openBooking}
                     className="w-full touch-target"
                     size="lg"
                     variant={selectedTier === "launch" ? "default" : "outline"}
@@ -1168,7 +1175,7 @@ export default function LegalOpsLanding() {
                 </CardContent>
                 <CardFooter>
                   <Button
-                    onClick={scrollToCheckout}
+                    onClick={openBooking}
                     className="w-full touch-target"
                     size="lg"
                     variant={selectedTier === "executive" ? "default" : "outline"}
@@ -1661,6 +1668,7 @@ export default function LegalOpsLanding() {
                 size="lg" 
                 className="px-8 py-6 text-lg rounded-2xl touch-target"
                 style={{ background: 'linear-gradient(135deg, #4353FF 0%, #5B7CFF 100%)' }}
+                onClick={openBooking}
                 data-testid="button-schedule-consultation"
               >
                 Schedule Your LegalOps Consultation
@@ -2049,7 +2057,7 @@ export default function LegalOpsLanding() {
                   size="lg" 
                   className="px-8 py-6 text-lg rounded-2xl touch-target"
                   style={{ background: 'linear-gradient(135deg, #4353FF 0%, #5B7CFF 100%)' }}
-                  onClick={scrollToCheckout}
+                  onClick={openBooking}
                   data-testid="button-comparison-cta"
                 >
                   Start My 90-Day Trial
@@ -2426,7 +2434,7 @@ export default function LegalOpsLanding() {
                     With OnSpot LegalOps<sup className="text-xs">™</sup> you eliminate these risks — transforming chaos into a compliant, cost-efficient, and scalable operation.
                   </p>
                   <Button
-                    onClick={scrollToCheckout}
+                    onClick={openBooking}
                     size="lg"
                     className="min-h-12 px-8 bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700"
                     data-testid="button-pain-points-cta"
@@ -2889,7 +2897,7 @@ export default function LegalOpsLanding() {
                         size="lg" 
                         className="px-8 rounded-2xl touch-target"
                         style={{ background: 'linear-gradient(135deg, #4353FF 0%, #5B7CFF 100%)' }}
-                        onClick={scrollToCheckout}
+                        onClick={openBooking}
                         data-testid="button-faq-cta"
                       >
                         Start My 90-Day Trial
@@ -2914,7 +2922,7 @@ export default function LegalOpsLanding() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button
-                onClick={scrollToCheckout}
+                onClick={openBooking}
                 size="lg"
                 variant="outline"
                 className="bg-white text-violet-600 border-white hover:bg-white/90 min-h-12 px-8"
@@ -3041,7 +3049,7 @@ export default function LegalOpsLanding() {
               <Button 
                 onClick={() => {
                   setShowPlaybookModal(false);
-                  scrollToCheckout();
+                  openBooking();
                 }}
                 size="lg" 
                 variant="outline"
