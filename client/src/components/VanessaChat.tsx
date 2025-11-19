@@ -368,23 +368,21 @@ export function VanessaChat({
       setMessages((prev) => {
         const updated = [...prev];
         const lastMessage = updated[updated.length - 1];
-        
+
         // Clear typing indicator if present
         if (lastMessage && lastMessage.isTyping) {
           lastMessage.isTyping = false;
           lastMessage.text =
             "I couldn't find an answer for that right now. Would you like me to connect you with an OnSpot Manager?\n\nIn the meantime, you can:\n- Browse our FAQ topics above\n- Email us at **sales@onspotglobal.com** (for business inquiries)\n- Email us at **careers@onspotglobal.com** (for job applications)";
         }
-        
+
         return updated;
       });
     }
   };
 
   const handleBookCall = () => {
-    window.open(
-      "https://api.leadconnectorhq.com/widget/booking/2oCPWrG6iXVnuUGRXKBK",
-    );
+    window.open("https://calendly.com/hello-onspotglobal/website-bookings");
   };
 
   // Auto-scroll to bottom with batching via requestAnimationFrame
@@ -592,14 +590,14 @@ export function VanessaChat({
       setMessages((prev) => {
         const updated = [...prev];
         const lastMessage = updated[updated.length - 1];
-        
+
         // Clear typing indicator if present
         if (lastMessage && lastMessage.isTyping) {
           lastMessage.isTyping = false;
           lastMessage.text =
             "I couldn't find an answer for that right now. Would you like me to connect you with an OnSpot Manager?\n\nIn the meantime, you can:\n- Browse our FAQ topics above\n- Email us at **sales@onspotglobal.com** (for business inquiries)\n- Email us at **careers@onspotglobal.com** (for job applications)";
         }
-        
+
         return updated;
       });
     }
