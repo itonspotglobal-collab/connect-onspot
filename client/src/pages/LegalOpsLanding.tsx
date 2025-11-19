@@ -528,6 +528,23 @@ export default function LegalOpsLanding() {
     window.open(BOOKING_URL, "_blank", "noopener,noreferrer");
   };
 
+  // Smart scarcity slot counter - generates 3-7 slots based on current date
+  // Changes daily but stays consistent throughout the day for authenticity
+  const getAvailableSlots = (): number => {
+    const today = new Date();
+    const dayOfMonth = today.getDate();
+    const month = today.getMonth();
+    
+    // Combine day and month to create semi-random seed
+    // This creates a number that changes daily but is predictable for the same day
+    const seed = (dayOfMonth * 7 + month * 13) % 5;
+    
+    // Return a value between 3-7 slots
+    return 3 + seed;
+  };
+
+  const availableSlots = getAvailableSlots();
+
   const handleStartTrial = () => {
     if (!formData.fullName || !formData.firmName || !formData.email) {
       return;
@@ -971,7 +988,7 @@ export default function LegalOpsLanding() {
                           className="bg-[#FF5C4D] text-white font-bold text-sm px-4 py-2 border-0 shadow-[0_0_25px_rgba(255,92,77,0.7)] animate-pulse shrink-0 rounded-full"
                           data-testid="badge-scarcity"
                         >
-                          Only 5 Slots
+                          Only {availableSlots} Slots
                         </Badge>
                       </div>
                       <p
@@ -4321,7 +4338,7 @@ export default function LegalOpsLanding() {
               Book Your LegalOps Diagnostic
             </h2>
             <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
-              Only 5 New York slots available this month. Secure yours now.
+              Only {availableSlots} New York slots available this month. Secure yours now.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button
