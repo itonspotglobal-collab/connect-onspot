@@ -1160,7 +1160,7 @@ export default function LegalOpsLanding() {
                 </h2>
                 <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
                   We're so confident in our system that if you don't achieve
-                  operational stability within 90 days, we'll continue working
+                  operational stability within 30 days, we'll continue working
                   at no additional charge until you reach zero escalations.
                 </p>
               </div>
