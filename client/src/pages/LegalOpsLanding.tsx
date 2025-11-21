@@ -952,7 +952,7 @@ export default function LegalOpsLanding() {
                         Stabilization
                       </div>
                       <div className="text-lg font-extrabold bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(34,211,238,0.6)]">
-                        &lt;90 Days
+                        &lt;30 Days
                       </div>
                     </div>
                   </div>
