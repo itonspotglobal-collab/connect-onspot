@@ -1175,11 +1175,11 @@ export default function LegalOpsLanding() {
                         </div>
                         <div>
                           <h3 className="font-bold text-lg mb-1">
-                            90-Day Stability Target
+                            30-Day Stability Target
                           </h3>
                           <p className="text-sm text-muted-foreground">
                             We aim to achieve zero escalations within your first
-                            90 days
+                            30 days
                           </p>
                         </div>
                       </div>
