@@ -1017,67 +1017,98 @@ export default function LegalOpsLanding() {
         {/* US Vector Map Section */}
         <section className="py-12 md:py-16 bg-white dark:bg-slate-950">
           <div className="container-fluid">
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-5xl mx-auto">
               {/* Map Container */}
               <div className="us-map-fade-in flex justify-center mb-8">
-                <div className="relative w-full max-w-2xl h-64 md:h-72">
-                  {/* Simplified vector US map */}
+                <div className="relative w-full max-w-3xl h-72 md:h-80">
+                  {/* Professional US Vector Map */}
                   <svg
-                    viewBox="0 0 960 600"
+                    viewBox="0 0 1000 600"
                     className="w-full h-full"
-                    data-testid="svg-us-vector-map"
+                    data-testid="svg-us-professional-map"
                     preserveAspectRatio="xMidYMid meet"
                   >
-                    {/* All states outline - light gray */}
-                    <g className="us-states-base">
-                      {/* Simplified US continental outline */}
-                      <path
-                        d="M 150 180 L 850 180 L 850 480 L 150 480 Z"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1"
-                        className="text-slate-300 dark:text-slate-700"
-                      />
-                      {/* Interior state lines (simplified grid) */}
-                      <line x1="250" y1="180" x2="250" y2="480" stroke="currentColor" strokeWidth="0.5" className="text-slate-200 dark:text-slate-800" />
-                      <line x1="350" y1="180" x2="350" y2="480" stroke="currentColor" strokeWidth="0.5" className="text-slate-200 dark:text-slate-800" />
-                      <line x1="450" y1="180" x2="450" y2="480" stroke="currentColor" strokeWidth="0.5" className="text-slate-200 dark:text-slate-800" />
-                      <line x1="550" y1="180" x2="550" y2="480" stroke="currentColor" strokeWidth="0.5" className="text-slate-200 dark:text-slate-800" />
-                      <line x1="650" y1="180" x2="650" y2="480" stroke="currentColor" strokeWidth="0.5" className="text-slate-200 dark:text-slate-800" />
-                      <line x1="750" y1="180" x2="750" y2="480" stroke="currentColor" strokeWidth="0.5" className="text-slate-200 dark:text-slate-800" />
-                      <line x1="150" y1="280" x2="850" y2="280" stroke="currentColor" strokeWidth="0.5" className="text-slate-200 dark:text-slate-800" />
-                      <line x1="150" y1="380" x2="850" y2="380" stroke="currentColor" strokeWidth="0.5" className="text-slate-200 dark:text-slate-800" />
+                    {/* Base states - light gray outlines */}
+                    <g className="us-states-base" fill="none" strokeWidth="1">
+                      {/* Continental US outline */}
+                      <path d="M 100 150 L 900 150 L 900 500 L 100 500 Z" stroke="currentColor" className="text-slate-300 dark:text-slate-700" />
+                      
+                      {/* Simplified state boundaries */}
+                      {/* Pacific Coast */}
+                      <path d="M 100 200 L 200 200 L 200 450 L 100 450 Z" stroke="currentColor" className="text-slate-200 dark:text-slate-800" />
+                      {/* Mountain West */}
+                      <path d="M 200 200 L 350 200 L 350 450 L 200 450 Z" stroke="currentColor" className="text-slate-200 dark:text-slate-800" />
+                      {/* Great Plains */}
+                      <path d="M 350 200 L 500 200 L 500 450 L 350 450 Z" stroke="currentColor" className="text-slate-200 dark:text-slate-800" />
+                      {/* Midwest */}
+                      <path d="M 500 200 L 650 200 L 650 450 L 500 450 Z" stroke="currentColor" className="text-slate-200 dark:text-slate-800" />
+                      {/* Southeast */}
+                      <path d="M 650 250 L 800 250 L 800 450 L 650 450 Z" stroke="currentColor" className="text-slate-200 dark:text-slate-800" />
+                      {/* Northeast */}
+                      <path d="M 800 150 L 900 150 L 900 250 L 800 250 Z" stroke="currentColor" className="text-slate-200 dark:text-slate-800" />
+                      
+                      {/* Regional divisions */}
+                      <line x1="200" y1="200" x2="200" y2="450" stroke="currentColor" className="text-slate-200 dark:text-slate-800" />
+                      <line x1="350" y1="200" x2="350" y2="450" stroke="currentColor" className="text-slate-200 dark:text-slate-800" />
+                      <line x1="500" y1="200" x2="500" y2="450" stroke="currentColor" className="text-slate-200 dark:text-slate-800" />
+                      <line x1="650" y1="200" x2="650" y2="450" stroke="currentColor" className="text-slate-200 dark:text-slate-800" />
+                      <line x1="800" y1="150" x2="800" y2="450" stroke="currentColor" className="text-slate-200 dark:text-slate-800" />
+                      <line x1="100" y1="300" x2="900" y2="300" stroke="currentColor" className="text-slate-200 dark:text-slate-800" strokeWidth="0.5" />
                     </g>
 
-                    {/* New York - Highlighted */}
+                    {/* New York - Northeast - Highlighted */}
                     <g className="us-state-highlight state-ny">
-                      {/* State shape - simplified rectangle */}
-                      <rect x="800" y="200" width="35" height="45" fill="currentColor" className="text-blue-500/25" />
-                      <rect x="800" y="200" width="35" height="45" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-blue-500 us-state-hover" />
-                      {/* Label */}
-                      <text x="845" y="227" fontSize="11" fontWeight="600" fill="currentColor" className="text-slate-700 dark:text-slate-300 tracking-wide uppercase">
+                      <path
+                        d="M 850 155 L 880 155 L 880 200 L 850 200 Z"
+                        fill="currentColor"
+                        className="text-blue-500/20"
+                      />
+                      <path
+                        d="M 850 155 L 880 155 L 880 200 L 850 200 Z"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.2"
+                        className="text-blue-500 us-state-hover"
+                      />
+                      <text x="890" y="178" fontSize="12" fontWeight="600" fill="currentColor" className="text-slate-700 dark:text-slate-300">
                         NY
                       </text>
                     </g>
 
-                    {/* Texas - Highlighted */}
+                    {/* Texas - South Central - Highlighted */}
                     <g className="us-state-highlight state-tx">
-                      {/* State shape - simplified rectangle */}
-                      <rect x="300" y="350" width="50" height="70" fill="currentColor" className="text-blue-500/25" />
-                      <rect x="300" y="350" width="50" height="70" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-blue-500 us-state-hover" />
-                      {/* Label */}
-                      <text x="310" y="400" fontSize="11" fontWeight="600" fill="currentColor" className="text-slate-700 dark:text-slate-300 tracking-wide uppercase">
+                      <path
+                        d="M 380 320 L 480 320 L 480 420 L 380 420 Z"
+                        fill="currentColor"
+                        className="text-blue-500/20"
+                      />
+                      <path
+                        d="M 380 320 L 480 320 L 480 420 L 380 420 Z"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.2"
+                        className="text-blue-500 us-state-hover"
+                      />
+                      <text x="345" y="375" fontSize="12" fontWeight="600" fill="currentColor" className="text-slate-700 dark:text-slate-300">
                         TX
                       </text>
                     </g>
 
-                    {/* Florida - Highlighted */}
+                    {/* Florida - Southeast - Highlighted */}
                     <g className="us-state-highlight state-fl">
-                      {/* State shape - simplified rectangle */}
-                      <rect x="820" y="380" width="20" height="50" fill="currentColor" className="text-blue-500/25" />
-                      <rect x="820" y="380" width="20" height="50" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-blue-500 us-state-hover" />
-                      {/* Label */}
-                      <text x="800" y="420" fontSize="11" fontWeight="600" fill="currentColor" className="text-slate-700 dark:text-slate-300 tracking-wide uppercase">
+                      <path
+                        d="M 800 380 L 830 380 L 830 460 L 800 460 Z"
+                        fill="currentColor"
+                        className="text-blue-500/20"
+                      />
+                      <path
+                        d="M 800 380 L 830 380 L 830 460 L 800 460 Z"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.2"
+                        className="text-blue-500 us-state-hover"
+                      />
+                      <text x="760" y="422" fontSize="12" fontWeight="600" fill="currentColor" className="text-slate-700 dark:text-slate-300">
                         FL
                       </text>
                     </g>
@@ -1087,7 +1118,7 @@ export default function LegalOpsLanding() {
 
               {/* Caption */}
               <div className="text-center">
-                <p className="text-xs text-slate-600 dark:text-slate-400 font-light tracking-wide">
+                <p className="text-sm text-slate-700 dark:text-slate-400 font-light tracking-wide">
                   Serving Landlord–Tenant Law Firms Across Key US Markets
                 </p>
               </div>
