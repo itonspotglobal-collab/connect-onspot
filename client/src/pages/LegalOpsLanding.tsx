@@ -59,6 +59,7 @@ import {
   MessageCircle,
   X,
   ArrowUpRight,
+  Scale,
 } from "lucide-react";
 import { HeadSEO } from "@/components/HeadSEO";
 import nycSkylineImage from "@assets/40431e5288cb44250d8204c03e0ba76129ba76dfd36e01e7c40f546ab05de806_1762346626354.jpeg";
@@ -1012,17 +1013,39 @@ export default function LegalOpsLanding() {
           </div>
         </section>
 
-        {/* Niche Indicator Section */}
-        <section className="py-8 md:py-10 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
+        {/* Premium Identity Band */}
+        <section className="py-12 md:py-14 bg-gradient-to-b from-blue-50/30 to-white dark:from-slate-900/20 dark:to-slate-950 border-b border-blue-100/50 dark:border-slate-800/50">
           <div className="container-fluid">
-            <div className="flex items-center justify-center">
-              <div className="inline-flex items-center gap-3 text-center">
-                <div className="w-1 h-8 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full"></div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-600 dark:text-slate-300 tracking-wide">Serving Landlord-Tenant Law Firms</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">New York • Texas • Florida</p>
+            <div className="max-w-3xl mx-auto">
+              <div className="flex items-center justify-center gap-6 md:gap-8">
+                {/* Left Accent Line */}
+                <div className="hidden sm:flex flex-col items-center gap-2">
+                  <Scale className="w-5 h-5 text-blue-400/60" />
+                  <div className="w-0.5 h-12 bg-gradient-to-b from-blue-400/60 to-blue-200/20"></div>
                 </div>
-                <div className="w-1 h-8 bg-gradient-to-b from-blue-600 to-blue-500 rounded-full"></div>
+
+                {/* Center Content */}
+                <div className="flex flex-col items-center gap-4 niche-band-entrance">
+                  <p className="text-xs font-bold text-slate-500 dark:text-slate-400 tracking-widest uppercase">
+                    Serving Landlord–Tenant Law Firms
+                  </p>
+                  
+                  <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
+                    {["New York", "Texas", "Florida"].map((location, idx) => (
+                      <div key={idx} className="niche-chip">
+                        <span className="px-3.5 py-1.5 rounded-full bg-gradient-to-r from-blue-400/15 to-blue-500/10 border border-blue-300/30 text-xs font-medium text-blue-700 dark:text-blue-300 hover:border-blue-400/50 hover:shadow-[0_0_16px_rgba(59,130,246,0.25)] transition-all duration-300 inline-block cursor-default">
+                          {location}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Right Accent Line */}
+                <div className="hidden sm:flex flex-col items-center gap-2">
+                  <div className="w-0.5 h-12 bg-gradient-to-t from-blue-400/60 to-blue-200/20"></div>
+                  <Scale className="w-5 h-5 text-blue-400/60" />
+                </div>
               </div>
             </div>
           </div>

@@ -1897,6 +1897,48 @@
     }
   }
 
+  /* Premium Identity Band Animations */
+  @keyframes nicheEntranceFade {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .niche-band-entrance {
+    animation: nicheEntranceFade 0.6s ease-out 0.1s both;
+  }
+
+  .niche-chip {
+    perspective: 1000px;
+  }
+
+  .niche-chip span {
+    position: relative;
+  }
+
+  .niche-chip span::before {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    width: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, currentColor, transparent);
+    transform: translateX(-50%);
+    transition: width 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    opacity: 0;
+  }
+
+  .niche-chip span:hover::before {
+    width: 100%;
+    opacity: 0.6;
+  }
+
   /* ===== MOBILE-FIRST RESPONSIVE UTILITIES ===== */
 
   /* Fluid Typography Scale using clamp() - Recalibrated for mobile-first */
