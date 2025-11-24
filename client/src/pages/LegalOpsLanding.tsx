@@ -827,7 +827,7 @@ export default function LegalOpsLanding() {
 
       <div className="min-h-screen bg-background">
         {/* Sticky CTA Footer */}
-        <div className="sticky-bottom-cta bg-gradient-to-r from-violet-600 to-blue-600 text-white py-3 shadow-2xl">
+        <div className="sticky-bottom-cta relative bg-gradient-to-r from-violet-500/95 to-blue-600/95 text-white py-2.5 shadow-sm border-t border-white/10" style={{ backdropFilter: 'blur(12px)' }}>
           <div className="container-fluid flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
             <p className="text-xs sm:text-sm md:text-base font-semibold text-center sm:text-left">
               Ready to replace your legal admin chaos with guaranteed stability?
@@ -850,8 +850,8 @@ export default function LegalOpsLanding() {
             background: "radial-gradient(1400px 700px at 15% -15%, hsl(236 42% 58% / 0.4) 0%, transparent 65%), radial-gradient(1000px 600px at 85% 5%, hsl(220 100% 65% / 0.25) 0%, transparent 60%), radial-gradient(800px 400px at 95% 100%, hsl(280 80% 45% / 0.15) 0%, transparent 50%), linear-gradient(155deg, hsl(236 42% 48%) 0%, hsl(236 50% 36%) 45%, hsl(240 45% 25%) 100%)"
           }}
         >
-          <div className="container-fluid relative z-20 py-12 sm:py-14 md:py-16 flex items-center min-h-[calc(100vh-80px)]">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-center h-full">
+          <div className="relative z-20 px-6 sm:px-8 md:px-12 lg:px-16 py-12 sm:py-14 md:py-16 flex items-center min-h-[calc(100vh-80px)]">
+            <div className="max-w-7xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-center h-full">
               {/* Left: Headline & Value Prop - Optimized Spacing */}
               <div className="hero-fade-up space-y-5 md:space-y-6">
                 {/* Integrated Brand Badge - Refined Label */}
