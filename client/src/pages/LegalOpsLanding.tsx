@@ -858,19 +858,13 @@ export default function LegalOpsLanding() {
                   <Building2 className="h-4 w-4 text-white" />
                 </div>
                 <span className="font-bold text-base text-white">OnSpot</span>
-                <span className="text-xs text-violet-100 px-2 border-l border-white/25">LegalOps NY</span>
+                <span className="text-xs text-violet-100 px-2 border-l border-white/25">LegalOps</span>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-center h-full">
               {/* Left: Headline & Value Prop - Optimized Spacing */}
-              <div className="hero-fade-up space-y-6 md:space-y-8">
-                {/* Minimal Badge */}
-                <div className="inline-flex items-center gap-2 text-xs font-medium text-white backdrop-blur-xl bg-white/12 px-4 py-2 rounded-full border border-white/25">
-                  <div className="w-2 h-2 bg-white rounded-full opacity-70"></div>
-                  <span>Tri-State NY Landlord-Tenant Law Firms</span>
-                </div>
-
+              <div className="hero-fade-up space-y-5 md:space-y-6">
                 {/* Main Headline */}
                 <h1
                   className="text-4xl sm:text-5xl md:text-6xl font-bold leading-tight tracking-tight"
@@ -894,33 +888,33 @@ export default function LegalOpsLanding() {
                   Designed for high-volume landlord–tenant practices across New York and other major states, OnSpot provides a LegalOps team that handles Rent Demands, Petitions, and Section 8 compliance — while flexibly supporting additional legal workflows. Firms achieve 70% cost savings, fast stabilization, and zero escalations within 30 days.
                 </p>
 
-                {/* Metric Boxes - Compact Grid */}
-                <div className="flex md:grid md:grid-cols-3 gap-3 md:gap-4 hero-fade-up-delay overflow-x-auto md:overflow-visible scroll-snap-x -mx-4 px-4 md:mx-0 md:px-0">
-                  <div className="flex-shrink-0 w-[240px] md:w-auto flex flex-col items-center gap-2 backdrop-blur-xl bg-white/10 px-4 py-4 rounded-xl border border-white/20 scroll-snap-item">
-                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-300 to-green-400 rounded-lg flex items-center justify-center">
-                      <TrendingDown className="h-5 w-5 text-white" />
+                {/* Metric Boxes - Unified OnSpot Blue Theme */}
+                <div className="flex md:grid md:grid-cols-3 gap-3 md:gap-3 hero-fade-up-delay overflow-x-auto md:overflow-visible scroll-snap-x -mx-4 px-4 md:mx-0 md:px-0 pt-2">
+                  <div className="flex-shrink-0 w-[220px] md:w-auto flex flex-col items-center gap-1.5 bg-gradient-to-br from-blue-500/10 to-blue-600/5 backdrop-blur-sm px-3 py-3 rounded-lg border border-blue-300/20 scroll-snap-item">
+                    <div className="w-8 h-8 bg-blue-400/30 rounded-md flex items-center justify-center">
+                      <TrendingDown className="h-4 w-4 text-blue-200" />
                     </div>
                     <div className="text-center">
-                      <div className="text-xs text-white/60 font-semibold uppercase tracking-wide">Cost Reduction</div>
-                      <div className="text-lg font-bold text-emerald-200">70% Savings</div>
+                      <div className="text-xs text-blue-100/70 font-medium tracking-wide">Cost Reduction</div>
+                      <div className="text-base font-semibold text-blue-100">70% Savings</div>
                     </div>
                   </div>
-                  <div className="flex-shrink-0 w-[240px] md:w-auto flex flex-col items-center gap-2 backdrop-blur-xl bg-white/10 px-4 py-4 rounded-xl border border-white/20 scroll-snap-item">
-                    <div className="w-10 h-10 bg-gradient-to-br from-violet-300 to-purple-400 rounded-lg flex items-center justify-center">
-                      <CheckCircle2 className="h-5 w-5 text-white" />
+                  <div className="flex-shrink-0 w-[220px] md:w-auto flex flex-col items-center gap-1.5 bg-gradient-to-br from-blue-500/10 to-blue-600/5 backdrop-blur-sm px-3 py-3 rounded-lg border border-blue-300/20 scroll-snap-item">
+                    <div className="w-8 h-8 bg-blue-400/30 rounded-md flex items-center justify-center">
+                      <CheckCircle2 className="h-4 w-4 text-blue-200" />
                     </div>
                     <div className="text-center">
-                      <div className="text-xs text-white/60 font-semibold uppercase tracking-wide">Escalations</div>
-                      <div className="text-lg font-bold text-violet-200">Zero</div>
+                      <div className="text-xs text-blue-100/70 font-medium tracking-wide">Escalations</div>
+                      <div className="text-base font-semibold text-blue-100">Zero</div>
                     </div>
                   </div>
-                  <div className="flex-shrink-0 w-[240px] md:w-auto flex flex-col items-center gap-2 backdrop-blur-xl bg-white/10 px-4 py-4 rounded-xl border border-white/20 scroll-snap-item">
-                    <div className="w-10 h-10 bg-gradient-to-br from-cyan-300 to-blue-400 rounded-lg flex items-center justify-center">
-                      <Clock className="h-5 w-5 text-white" />
+                  <div className="flex-shrink-0 w-[220px] md:w-auto flex flex-col items-center gap-1.5 bg-gradient-to-br from-blue-500/10 to-blue-600/5 backdrop-blur-sm px-3 py-3 rounded-lg border border-blue-300/20 scroll-snap-item">
+                    <div className="w-8 h-8 bg-blue-400/30 rounded-md flex items-center justify-center">
+                      <Clock className="h-4 w-4 text-blue-200" />
                     </div>
                     <div className="text-center">
-                      <div className="text-xs text-white/60 font-semibold uppercase tracking-wide">Stabilization</div>
-                      <div className="text-lg font-bold text-cyan-200">&lt;30 Days</div>
+                      <div className="text-xs text-blue-100/70 font-medium tracking-wide">Stabilization</div>
+                      <div className="text-base font-semibold text-blue-100">&lt;30 Days</div>
                     </div>
                   </div>
                 </div>
@@ -1013,6 +1007,22 @@ export default function LegalOpsLanding() {
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Niche Indicator Section */}
+        <section className="py-8 md:py-10 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
+          <div className="container-fluid">
+            <div className="flex items-center justify-center">
+              <div className="inline-flex items-center gap-3 text-center">
+                <div className="w-1 h-8 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full"></div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-600 dark:text-slate-300 tracking-wide">Serving Landlord-Tenant Law Firms</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">New York • Texas • Florida</p>
+                </div>
+                <div className="w-1 h-8 bg-gradient-to-b from-blue-600 to-blue-500 rounded-full"></div>
               </div>
             </div>
           </div>
