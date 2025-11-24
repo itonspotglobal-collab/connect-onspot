@@ -1973,70 +1973,57 @@
     animation: inherit;
   }
 
-  /* Geolocation Grid Animations */
-  @keyframes geoHaloPulse {
-    0%, 100% {
-      transform: scale(1);
-      opacity: 0.2;
-    }
-    50% {
-      transform: scale(1.2);
-      opacity: 0.08;
-    }
-  }
-
-  @keyframes geoMarkerFloat {
-    0%, 100% {
-      transform: translateY(0px);
-    }
-    50% {
-      transform: translateY(-2px);
-    }
-  }
-
-  @keyframes gridFadeIn {
+  /* US Vector Map Animations */
+  @keyframes mapFadeInScale {
     from {
       opacity: 0;
+      transform: scale(0.95);
     }
     to {
       opacity: 1;
+      transform: scale(1);
     }
   }
 
-  .geo-grid-container {
-    animation: gridFadeIn 0.8s ease-out both;
+  @keyframes stateGlow {
+    0%, 100% {
+      filter: drop-shadow(0 0 0px rgba(59, 130, 246, 0));
+    }
+    50% {
+      filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.3));
+    }
+  }
+
+  .us-map-fade-in {
+    animation: mapFadeInScale 0.7s ease-out both;
     animation-timeline: view();
-    animation-range: entry 0% cover 40%;
+    animation-range: entry 0% cover 35%;
   }
 
-  .geo-grid-background {
-    animation: geoMarkerFloat 4s ease-in-out infinite;
-    animation-timeline: view();
+  .us-state-highlight {
+    transition: all 0.3s ease-out;
   }
 
-  .geo-halo-pulse {
-    animation: geoHaloPulse 2.5s ease-in-out infinite;
+  .us-state-highlight:hover .us-state-hover {
+    filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.6));
   }
 
-  .geo-marker {
-    animation: geoMarkerFloat 3.5s ease-in-out infinite;
-    transition: transform 0.2s ease-out;
+  .state-ny,
+  .state-tx,
+  .state-fl {
+    animation: stateGlow 2.8s ease-in-out infinite;
   }
 
-  .geo-marker:hover {
-    transform: translateY(-4px);
-  }
-
-  .geo-marker-ny {
+  .state-ny {
     animation-delay: 0s;
   }
 
-  .geo-marker-tx {
-    animation-delay: 0.15s;
+  .state-tx {
+    animation-delay: 0.6s;
   }
 
-  .geo-marker-fl {
-    animation-delay: 0.3s;
+  .state-fl {
+    animation-delay: 1.2s;
   }
 
   /* ===== MOBILE-FIRST RESPONSIVE UTILITIES ===== */

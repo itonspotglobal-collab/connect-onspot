@@ -1014,101 +1014,81 @@ export default function LegalOpsLanding() {
           </div>
         </section>
 
-        {/* Geolocation Grid Section */}
-        <section className="py-16 md:py-24 bg-white dark:bg-slate-950">
+        {/* US Vector Map Section */}
+        <section className="py-12 md:py-16 bg-white dark:bg-slate-950">
           <div className="container-fluid">
-            <div className="max-w-5xl mx-auto">
-              {/* Dotted Grid Container with Parallax */}
-              <div className="geo-grid-container relative h-64 md:h-80 flex items-center justify-center">
-                {/* Subtle dot matrix background */}
-                <div className="geo-grid-background absolute inset-0 flex items-center justify-center overflow-hidden">
+            <div className="max-w-4xl mx-auto">
+              {/* Map Container */}
+              <div className="us-map-fade-in flex justify-center mb-8">
+                <div className="relative w-full max-w-2xl h-64 md:h-72">
+                  {/* Simplified vector US map */}
                   <svg
-                    className="w-full h-full absolute"
-                    viewBox="0 0 1000 320"
-                    preserveAspectRatio="none"
-                    data-testid="svg-dot-grid"
+                    viewBox="0 0 960 600"
+                    className="w-full h-full"
+                    data-testid="svg-us-vector-map"
+                    preserveAspectRatio="xMidYMid meet"
                   >
-                    <defs>
-                      <pattern
-                        id="dotGrid"
-                        width="40"
-                        height="40"
-                        patternUnits="userSpaceOnUse"
-                      >
-                        <circle
-                          cx="20"
-                          cy="20"
-                          r="1.5"
-                          fill="currentColor"
-                          className="text-slate-300 dark:text-slate-700"
-                          opacity="0.3"
-                        />
-                      </pattern>
-                    </defs>
-                    <rect
-                      width="1000"
-                      height="320"
-                      fill="url(#dotGrid)"
-                    />
+                    {/* All states outline - light gray */}
+                    <g className="us-states-base">
+                      {/* Simplified US continental outline */}
+                      <path
+                        d="M 150 180 L 850 180 L 850 480 L 150 480 Z"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1"
+                        className="text-slate-300 dark:text-slate-700"
+                      />
+                      {/* Interior state lines (simplified grid) */}
+                      <line x1="250" y1="180" x2="250" y2="480" stroke="currentColor" strokeWidth="0.5" className="text-slate-200 dark:text-slate-800" />
+                      <line x1="350" y1="180" x2="350" y2="480" stroke="currentColor" strokeWidth="0.5" className="text-slate-200 dark:text-slate-800" />
+                      <line x1="450" y1="180" x2="450" y2="480" stroke="currentColor" strokeWidth="0.5" className="text-slate-200 dark:text-slate-800" />
+                      <line x1="550" y1="180" x2="550" y2="480" stroke="currentColor" strokeWidth="0.5" className="text-slate-200 dark:text-slate-800" />
+                      <line x1="650" y1="180" x2="650" y2="480" stroke="currentColor" strokeWidth="0.5" className="text-slate-200 dark:text-slate-800" />
+                      <line x1="750" y1="180" x2="750" y2="480" stroke="currentColor" strokeWidth="0.5" className="text-slate-200 dark:text-slate-800" />
+                      <line x1="150" y1="280" x2="850" y2="280" stroke="currentColor" strokeWidth="0.5" className="text-slate-200 dark:text-slate-800" />
+                      <line x1="150" y1="380" x2="850" y2="380" stroke="currentColor" strokeWidth="0.5" className="text-slate-200 dark:text-slate-800" />
+                    </g>
+
+                    {/* New York - Highlighted */}
+                    <g className="us-state-highlight state-ny">
+                      {/* State shape - simplified rectangle */}
+                      <rect x="800" y="200" width="35" height="45" fill="currentColor" className="text-blue-500/25" />
+                      <rect x="800" y="200" width="35" height="45" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-blue-500 us-state-hover" />
+                      {/* Label */}
+                      <text x="845" y="227" fontSize="11" fontWeight="600" fill="currentColor" className="text-slate-700 dark:text-slate-300 tracking-wide uppercase">
+                        NY
+                      </text>
+                    </g>
+
+                    {/* Texas - Highlighted */}
+                    <g className="us-state-highlight state-tx">
+                      {/* State shape - simplified rectangle */}
+                      <rect x="300" y="350" width="50" height="70" fill="currentColor" className="text-blue-500/25" />
+                      <rect x="300" y="350" width="50" height="70" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-blue-500 us-state-hover" />
+                      {/* Label */}
+                      <text x="310" y="400" fontSize="11" fontWeight="600" fill="currentColor" className="text-slate-700 dark:text-slate-300 tracking-wide uppercase">
+                        TX
+                      </text>
+                    </g>
+
+                    {/* Florida - Highlighted */}
+                    <g className="us-state-highlight state-fl">
+                      {/* State shape - simplified rectangle */}
+                      <rect x="820" y="380" width="20" height="50" fill="currentColor" className="text-blue-500/25" />
+                      <rect x="820" y="380" width="20" height="50" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-blue-500 us-state-hover" />
+                      {/* Label */}
+                      <text x="800" y="420" fontSize="11" fontWeight="600" fill="currentColor" className="text-slate-700 dark:text-slate-300 tracking-wide uppercase">
+                        FL
+                      </text>
+                    </g>
                   </svg>
-                </div>
-
-                {/* Location Markers with Halos */}
-                <div className="geo-markers absolute inset-0 flex items-center justify-between px-4 md:px-8">
-                  {/* New York */}
-                  <div className="geo-marker geo-marker-ny flex flex-col items-center">
-                    <div className="relative mb-8">
-                      {/* Outer halo */}
-                      <div className="absolute inset-0 w-12 h-12 bg-blue-500/20 rounded-full blur-lg geo-halo-pulse"></div>
-                      {/* Pin circle */}
-                      <div className="relative w-6 h-6 bg-blue-500 rounded-full border-2 border-blue-300 shadow-[0_0_12px_rgba(59,130,246,0.4)]"></div>
-                    </div>
-                    {/* Hairline connector */}
-                    <div className="w-px h-6 bg-gradient-to-b from-blue-300 to-transparent"></div>
-                    {/* Label */}
-                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 tracking-widest uppercase mt-2 whitespace-nowrap">
-                      New York
-                    </span>
-                  </div>
-
-                  {/* Texas */}
-                  <div className="geo-marker geo-marker-tx flex flex-col items-center">
-                    <div className="relative mb-8">
-                      {/* Outer halo */}
-                      <div className="absolute inset-0 w-12 h-12 bg-blue-500/20 rounded-full blur-lg geo-halo-pulse" style={{ animationDelay: "0.2s" }}></div>
-                      {/* Pin circle */}
-                      <div className="relative w-6 h-6 bg-blue-500 rounded-full border-2 border-blue-300 shadow-[0_0_12px_rgba(59,130,246,0.4)]"></div>
-                    </div>
-                    {/* Hairline connector */}
-                    <div className="w-px h-6 bg-gradient-to-b from-blue-300 to-transparent"></div>
-                    {/* Label */}
-                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 tracking-widest uppercase mt-2 whitespace-nowrap">
-                      Texas
-                    </span>
-                  </div>
-
-                  {/* Florida */}
-                  <div className="geo-marker geo-marker-fl flex flex-col items-center">
-                    <div className="relative mb-8">
-                      {/* Outer halo */}
-                      <div className="absolute inset-0 w-12 h-12 bg-blue-500/20 rounded-full blur-lg geo-halo-pulse" style={{ animationDelay: "0.4s" }}></div>
-                      {/* Pin circle */}
-                      <div className="relative w-6 h-6 bg-blue-500 rounded-full border-2 border-blue-300 shadow-[0_0_12px_rgba(59,130,246,0.4)]"></div>
-                    </div>
-                    {/* Hairline connector */}
-                    <div className="w-px h-6 bg-gradient-to-b from-blue-300 to-transparent"></div>
-                    {/* Label */}
-                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 tracking-widest uppercase mt-2 whitespace-nowrap">
-                      Florida
-                    </span>
-                  </div>
                 </div>
               </div>
 
-              {/* Caption below */}
-              <div className="text-center mt-12">
-                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 tracking-widest uppercase">
-                  Serving Landlord–Tenant Law Firms Across Key Markets
+              {/* Caption */}
+              <div className="text-center">
+                <p className="text-xs text-slate-600 dark:text-slate-400 font-light tracking-wide">
+                  Serving Landlord–Tenant Law Firms Across Key US Markets
                 </p>
               </div>
             </div>
