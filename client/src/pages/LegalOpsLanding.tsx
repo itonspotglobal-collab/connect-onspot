@@ -1014,81 +1014,102 @@ export default function LegalOpsLanding() {
           </div>
         </section>
 
-        {/* US Market Map Section */}
-        <section className="py-12 md:py-16 bg-gradient-to-b from-white to-blue-50/40 dark:from-slate-950 dark:to-slate-900/60">
+        {/* Geolocation Grid Section */}
+        <section className="py-16 md:py-24 bg-white dark:bg-slate-950">
           <div className="container-fluid">
-            <div className="max-w-4xl mx-auto">
-              {/* Caption */}
-              <div className="text-center mb-8 md:mb-10">
-                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 tracking-widest uppercase letter-spacing">
-                  Serving Landlord–Tenant Law Firms Across Key Markets
-                </p>
-              </div>
-
-              {/* Map Container */}
-              <div className="us-map-container flex justify-center">
-                <div className="relative w-full max-w-2xl">
-                  {/* Simplified US Map SVG */}
+            <div className="max-w-5xl mx-auto">
+              {/* Dotted Grid Container with Parallax */}
+              <div className="geo-grid-container relative h-64 md:h-80 flex items-center justify-center">
+                {/* Subtle dot matrix background */}
+                <div className="geo-grid-background absolute inset-0 flex items-center justify-center overflow-hidden">
                   <svg
-                    viewBox="0 0 960 600"
-                    className="w-full h-auto"
-                    data-testid="svg-us-map"
+                    className="w-full h-full absolute"
+                    viewBox="0 0 1000 320"
+                    preserveAspectRatio="none"
+                    data-testid="svg-dot-grid"
                   >
-                    {/* Base US outline - simplified */}
-                    <g className="us-map-base">
-                      {/* Simplified US border outline */}
-                      <path
-                        d="M 200 150 L 850 150 L 850 450 L 200 450 Z"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        className="text-slate-300 dark:text-slate-700"
-                        opacity="0.3"
-                      />
-                    </g>
-
-                    {/* New York - highlighted */}
-                    <g className="us-state-ny map-state-active">
-                      <circle cx="750" cy="180" r="24" fill="currentColor" className="text-blue-400/40" />
-                      <circle cx="750" cy="180" r="24" fill="none" stroke="currentColor" strokeWidth="2" className="text-blue-500" opacity="0.6" />
-                      <text x="750" y="240" textAnchor="middle" className="text-xs font-semibold fill-slate-700 dark:fill-slate-300">
-                        NY
-                      </text>
-                    </g>
-
-                    {/* Texas - highlighted */}
-                    <g className="us-state-tx map-state-active">
-                      <circle cx="380" cy="340" r="28" fill="currentColor" className="text-blue-400/40" />
-                      <circle cx="380" cy="340" r="28" fill="none" stroke="currentColor" strokeWidth="2" className="text-blue-500" opacity="0.6" />
-                      <text x="380" y="410" textAnchor="middle" className="text-xs font-semibold fill-slate-700 dark:fill-slate-300">
-                        TX
-                      </text>
-                    </g>
-
-                    {/* Florida - highlighted */}
-                    <g className="us-state-fl map-state-active">
-                      <circle cx="810" cy="380" r="22" fill="currentColor" className="text-blue-400/40" />
-                      <circle cx="810" cy="380" r="22" fill="none" stroke="currentColor" strokeWidth="2" className="text-blue-500" opacity="0.6" />
-                      <text x="810" y="440" textAnchor="middle" className="text-xs font-semibold fill-slate-700 dark:fill-slate-300">
-                        FL
-                      </text>
-                    </g>
+                    <defs>
+                      <pattern
+                        id="dotGrid"
+                        width="40"
+                        height="40"
+                        patternUnits="userSpaceOnUse"
+                      >
+                        <circle
+                          cx="20"
+                          cy="20"
+                          r="1.5"
+                          fill="currentColor"
+                          className="text-slate-300 dark:text-slate-700"
+                          opacity="0.3"
+                        />
+                      </pattern>
+                    </defs>
+                    <rect
+                      width="1000"
+                      height="320"
+                      fill="url(#dotGrid)"
+                    />
                   </svg>
+                </div>
 
-                  {/* Legend below map */}
-                  <div className="flex items-center justify-center gap-6 md:gap-8 mt-8">
-                    {[
-                      { label: "New York", color: "bg-blue-500/40" },
-                      { label: "Texas", color: "bg-blue-500/40" },
-                      { label: "Florida", color: "bg-blue-500/40" }
-                    ].map((item, idx) => (
-                      <div key={idx} className="flex items-center gap-2">
-                        <div className={`w-2.5 h-2.5 rounded-full ${item.color} border border-blue-500/60`}></div>
-                        <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">{item.label}</span>
-                      </div>
-                    ))}
+                {/* Location Markers with Halos */}
+                <div className="geo-markers absolute inset-0 flex items-center justify-between px-4 md:px-8">
+                  {/* New York */}
+                  <div className="geo-marker geo-marker-ny flex flex-col items-center">
+                    <div className="relative mb-8">
+                      {/* Outer halo */}
+                      <div className="absolute inset-0 w-12 h-12 bg-blue-500/20 rounded-full blur-lg geo-halo-pulse"></div>
+                      {/* Pin circle */}
+                      <div className="relative w-6 h-6 bg-blue-500 rounded-full border-2 border-blue-300 shadow-[0_0_12px_rgba(59,130,246,0.4)]"></div>
+                    </div>
+                    {/* Hairline connector */}
+                    <div className="w-px h-6 bg-gradient-to-b from-blue-300 to-transparent"></div>
+                    {/* Label */}
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 tracking-widest uppercase mt-2 whitespace-nowrap">
+                      New York
+                    </span>
+                  </div>
+
+                  {/* Texas */}
+                  <div className="geo-marker geo-marker-tx flex flex-col items-center">
+                    <div className="relative mb-8">
+                      {/* Outer halo */}
+                      <div className="absolute inset-0 w-12 h-12 bg-blue-500/20 rounded-full blur-lg geo-halo-pulse" style={{ animationDelay: "0.2s" }}></div>
+                      {/* Pin circle */}
+                      <div className="relative w-6 h-6 bg-blue-500 rounded-full border-2 border-blue-300 shadow-[0_0_12px_rgba(59,130,246,0.4)]"></div>
+                    </div>
+                    {/* Hairline connector */}
+                    <div className="w-px h-6 bg-gradient-to-b from-blue-300 to-transparent"></div>
+                    {/* Label */}
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 tracking-widest uppercase mt-2 whitespace-nowrap">
+                      Texas
+                    </span>
+                  </div>
+
+                  {/* Florida */}
+                  <div className="geo-marker geo-marker-fl flex flex-col items-center">
+                    <div className="relative mb-8">
+                      {/* Outer halo */}
+                      <div className="absolute inset-0 w-12 h-12 bg-blue-500/20 rounded-full blur-lg geo-halo-pulse" style={{ animationDelay: "0.4s" }}></div>
+                      {/* Pin circle */}
+                      <div className="relative w-6 h-6 bg-blue-500 rounded-full border-2 border-blue-300 shadow-[0_0_12px_rgba(59,130,246,0.4)]"></div>
+                    </div>
+                    {/* Hairline connector */}
+                    <div className="w-px h-6 bg-gradient-to-b from-blue-300 to-transparent"></div>
+                    {/* Label */}
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 tracking-widest uppercase mt-2 whitespace-nowrap">
+                      Florida
+                    </span>
                   </div>
                 </div>
+              </div>
+
+              {/* Caption below */}
+              <div className="text-center mt-12">
+                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 tracking-widest uppercase">
+                  Serving Landlord–Tenant Law Firms Across Key Markets
+                </p>
               </div>
             </div>
           </div>
