@@ -893,7 +893,6 @@ export default function LegalOpsLanding() {
                 <p className="text-base leading-relaxed max-w-2xl font-light opacity-90" style={{ color: '#E0E8F5' }}>
                   Designed for high-volume landlord–tenant practices across New York and other major states, OnSpot provides a LegalOps team that handles Rent Demands, Petitions, and Section 8 compliance — while flexibly supporting additional legal workflows. Firms achieve 70% cost savings, fast stabilization, and zero escalations within 30 days.
                 </p>
-              </div>
 
                 {/* Metric Boxes - Compact Grid */}
                 <div className="flex md:grid md:grid-cols-3 gap-3 md:gap-4 hero-fade-up-delay overflow-x-auto md:overflow-visible scroll-snap-x -mx-4 px-4 md:mx-0 md:px-0">
