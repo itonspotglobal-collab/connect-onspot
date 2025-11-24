@@ -843,313 +843,162 @@ export default function LegalOpsLanding() {
           </div>
         </div>
 
-        {/* Hero Section - Legal Command Center at Night */}
-        <section className="relative min-h-screen overflow-hidden bg-[#0a0a1a]">
-          {/* True Nighttime NYC Skyline - Empire State Building Focal Point */}
-          <div className="absolute inset-0 hero-skyline-fade">
-            <img
-              src={nycSkylineImage}
-              alt="New York City Skyline at Night with Empire State Building"
-              className="w-full h-full object-cover object-center"
-              loading="eager"
-              width="1920"
-              height="1080"
-            />
-            {/* Premium OnSpot-blue gradient overlay blended with NYC skyline */}
-            <div
-              className="absolute inset-0"
-              style={{
-                background:
-                  "linear-gradient(135deg, rgba(67, 83, 255, 0.25) 0%, rgba(16, 24, 64, 0.6) 50%, rgba(0, 0, 0, 0.8) 100%)",
-              }}
-            ></div>
-            {/* Additional depth layer for premium cinematic feel */}
-            <div
-              className="absolute inset-0"
-              style={{
-                background:
-                  "linear-gradient(to bottom, rgba(0, 0, 0, 0.3) 0%, rgba(10, 10, 26, 0.7) 100%)",
-              }}
-            ></div>
-          </div>
-
-          <div className="container-fluid relative z-20 pt-16 pb-20 sm:pt-20 sm:pb-24 md:pt-24 md:pb-28">
-            {/* OnSpot Logo - Enhanced Contrast */}
-            <div className="mb-10 hero-fade-up">
-              <div className="inline-flex items-center gap-2.5 backdrop-blur-2xl bg-white/15 px-5 py-2.5 rounded-full border border-white/40 shadow-2xl">
-                <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-blue-500 rounded-full flex items-center justify-center shadow-lg">
+        {/* Hero Section - Premium OnSpot Brand */}
+        <section 
+          className="relative overflow-hidden"
+          style={{
+            background: "radial-gradient(1400px 700px at 15% -15%, hsl(236 42% 58% / 0.4) 0%, transparent 65%), radial-gradient(1000px 600px at 85% 5%, hsl(220 100% 65% / 0.25) 0%, transparent 60%), radial-gradient(800px 400px at 95% 100%, hsl(280 80% 45% / 0.15) 0%, transparent 50%), linear-gradient(155deg, hsl(236 42% 48%) 0%, hsl(236 50% 36%) 45%, hsl(240 45% 25%) 100%)"
+          }}
+        >
+          <div className="container-fluid relative z-20 py-12 sm:py-14 md:py-16 flex items-center min-h-[calc(100vh-80px)]">
+            {/* OnSpot Logo - Clean, Minimal */}
+            <div className="mb-8 hero-fade-up">
+              <div className="inline-flex items-center gap-2.5 backdrop-blur-xl bg-white/12 px-5 py-2.5 rounded-full border border-white/30 shadow-lg">
+                <div className="w-8 h-8 bg-gradient-to-br from-violet-400 to-blue-400 rounded-full flex items-center justify-center">
                   <Building2 className="h-4 w-4 text-white" />
                 </div>
-                <span className="font-bold text-lg text-white drop-shadow-lg">
-                  OnSpot
-                </span>
-                <span className="text-sm text-violet-100 px-2 border-l border-white/30">
-                  LegalOps NY
-                </span>
+                <span className="font-bold text-base text-white">OnSpot</span>
+                <span className="text-xs text-violet-100 px-2 border-l border-white/25">LegalOps NY</span>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16 items-center">
-              {/* Left: Headline & Value Prop */}
-              <div className="hero-fade-up relative">
-                {/* Soft radial glow behind headline in OnSpot blue */}
-                <div
-                  className="absolute top-0 left-0 w-full h-80 radial-glow-pulse pointer-events-none"
-                  style={{
-                    background:
-                      "radial-gradient(circle at 30% 30%, rgba(67, 83, 255, 0.4) 0%, transparent 60%)",
-                    filter: "blur(60px)",
-                  }}
-                ></div>
-
-                <div className="space-y-3 sm:space-y-4 mb-6 relative z-10">
-                  {/* Ultra-minimal Badge */}
-                  <div className="inline-flex items-center gap-2 sm:gap-2.5 text-xs sm:text-sm font-medium text-white backdrop-blur-2xl bg-white/10 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full border border-white/30 shadow-xl">
-                    <div className="w-2 h-2 bg-violet-400 rounded-full animate-pulse"></div>
-                    <span className="text-xs sm:text-sm">
-                      Tri-State NY Landlord-Tenant Law Firms
-                    </span>
-                  </div>
-
-                  {/* Main Headline - Enhanced Typography with Float Animation */}
-                  <h1
-                    className="text-[clamp(2.75rem,7vw,5rem)] md:text-[clamp(3.5rem,8vw,6rem)] font-bold leading-[1.05] tracking-[-0.02em] drop-shadow-[0_6px_30px_rgba(0,0,0,0.9)] hero-headline-float"
-                    style={{ color: '#F0F4FF' }}
-                    data-testid="text-hero-headline"
-                  >
-                    Cut Legal Admin Costs by 70%
-                  </h1>
-
-                  {/* Subheadline - Soft Blue-Gray - Fluid Typography */}
-                  <p
-                    className="text-fluid-xl md:text-fluid-2xl text-[#C8D1F0] font-light tracking-wide drop-shadow-[0_4px_16px_rgba(0,0,0,0.8)]"
-                    data-testid="text-hero-subhead"
-                  >
-                    Zero Escalations. Full Control.
-                  </p>
-
-                  {/* Body - Muted Silver - Fluid Typography */}
-                  <p className="text-fluid-base text-[#D0D4E6] leading-relaxed max-w-2xl font-light drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)] pt-2">
-                    Designed for high-volume landlord–tenant practices across New York and other major states, OnSpot provides a LegalOps team that handles Rent Demands, Petitions, and Section 8 compliance — while flexibly supporting additional legal workflows. Firms achieve 70% cost savings, fast stabilization, and zero escalations within 30 days.
-                  </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-center h-full">
+              {/* Left: Headline & Value Prop - Optimized Spacing */}
+              <div className="hero-fade-up space-y-6 md:space-y-8">
+                {/* Minimal Badge */}
+                <div className="inline-flex items-center gap-2 text-xs font-medium text-white backdrop-blur-xl bg-white/12 px-4 py-2 rounded-full border border-white/25">
+                  <div className="w-2 h-2 bg-white rounded-full opacity-70"></div>
+                  <span>Tri-State NY Landlord-Tenant Law Firms</span>
                 </div>
 
-                {/* Metric Boxes - Horizontal Scroll on Mobile, Grid on Desktop */}
-                <div className="flex md:grid md:grid-cols-3 gap-4 md:gap-6 hero-fade-up-delay overflow-x-auto md:overflow-visible scroll-snap-x pb-4 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0">
-                  <div className="flex-shrink-0 w-[260px] md:w-auto flex flex-col items-center gap-3 backdrop-blur-2xl bg-[#1D2E66] px-4 py-5 rounded-2xl border border-white/30 shadow-2xl group hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all duration-300 scroll-snap-item">
-                    <div className="w-11 h-11 bg-gradient-to-br from-emerald-400 to-green-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      <TrendingDown className="h-6 w-6 text-white" />
+                {/* Main Headline */}
+                <h1
+                  className="text-4xl sm:text-5xl md:text-6xl font-bold leading-tight tracking-tight"
+                  style={{ color: '#F5F7FF' }}
+                  data-testid="text-hero-headline"
+                >
+                  Cut Legal Admin Costs by 70%
+                </h1>
+
+                {/* Subheadline */}
+                <p
+                  className="text-xl sm:text-2xl font-light leading-snug tracking-wide"
+                  style={{ color: '#D8DFF5' }}
+                  data-testid="text-hero-subhead"
+                >
+                  Zero Escalations. Full Control.
+                </p>
+
+                {/* Body */}
+                <p className="text-base leading-relaxed max-w-2xl font-light opacity-90" style={{ color: '#E0E8F5' }}>
+                  Designed for high-volume landlord–tenant practices across New York and other major states, OnSpot provides a LegalOps team that handles Rent Demands, Petitions, and Section 8 compliance — while flexibly supporting additional legal workflows. Firms achieve 70% cost savings, fast stabilization, and zero escalations within 30 days.
+                </p>
+              </div>
+
+                {/* Metric Boxes - Compact Grid */}
+                <div className="flex md:grid md:grid-cols-3 gap-3 md:gap-4 hero-fade-up-delay overflow-x-auto md:overflow-visible scroll-snap-x -mx-4 px-4 md:mx-0 md:px-0">
+                  <div className="flex-shrink-0 w-[240px] md:w-auto flex flex-col items-center gap-2 backdrop-blur-xl bg-white/10 px-4 py-4 rounded-xl border border-white/20 scroll-snap-item">
+                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-300 to-green-400 rounded-lg flex items-center justify-center">
+                      <TrendingDown className="h-5 w-5 text-white" />
                     </div>
                     <div className="text-center">
-                      <div className="text-xs text-[#B9C3E0] font-semibold uppercase tracking-wider">
-                        Cost Reduction
-                      </div>
-                      <div className="text-lg font-extrabold bg-gradient-to-r from-emerald-300 to-green-300 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(16,185,129,0.6)]">
-                        70% Savings
-                      </div>
+                      <div className="text-xs text-white/60 font-semibold uppercase tracking-wide">Cost Reduction</div>
+                      <div className="text-lg font-bold text-emerald-200">70% Savings</div>
                     </div>
                   </div>
-                  <div className="flex-shrink-0 w-[260px] md:w-auto flex flex-col items-center gap-3 backdrop-blur-2xl bg-[#1D2E66] px-4 py-5 rounded-2xl border border-white/30 shadow-2xl group hover:shadow-[0_0_30px_rgba(139,92,246,0.4)] transition-all duration-300 scroll-snap-item">
-                    <div className="w-11 h-11 bg-gradient-to-br from-violet-400 to-purple-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      <CheckCircle2 className="h-6 w-6 text-white" />
+                  <div className="flex-shrink-0 w-[240px] md:w-auto flex flex-col items-center gap-2 backdrop-blur-xl bg-white/10 px-4 py-4 rounded-xl border border-white/20 scroll-snap-item">
+                    <div className="w-10 h-10 bg-gradient-to-br from-violet-300 to-purple-400 rounded-lg flex items-center justify-center">
+                      <CheckCircle2 className="h-5 w-5 text-white" />
                     </div>
                     <div className="text-center">
-                      <div className="text-xs text-[#B9C3E0] font-semibold uppercase tracking-wider">
-                        Escalations
-                      </div>
-                      <div className="text-lg font-extrabold bg-gradient-to-r from-violet-300 to-purple-300 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(139,92,246,0.6)]">
-                        Zero
-                      </div>
+                      <div className="text-xs text-white/60 font-semibold uppercase tracking-wide">Escalations</div>
+                      <div className="text-lg font-bold text-violet-200">Zero</div>
                     </div>
                   </div>
-                  <div className="flex-shrink-0 w-[260px] md:w-auto flex flex-col items-center gap-3 backdrop-blur-2xl bg-[#1D2E66] px-4 py-5 rounded-2xl border border-white/30 shadow-2xl group hover:shadow-[0_0_30px_rgba(34,211,238,0.4)] transition-all duration-300 scroll-snap-item">
-                    <div className="w-11 h-11 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      <Clock className="h-6 w-6 text-white" />
+                  <div className="flex-shrink-0 w-[240px] md:w-auto flex flex-col items-center gap-2 backdrop-blur-xl bg-white/10 px-4 py-4 rounded-xl border border-white/20 scroll-snap-item">
+                    <div className="w-10 h-10 bg-gradient-to-br from-cyan-300 to-blue-400 rounded-lg flex items-center justify-center">
+                      <Clock className="h-5 w-5 text-white" />
                     </div>
                     <div className="text-center">
-                      <div className="text-xs text-[#B9C3E0] font-semibold uppercase tracking-wider">
-                        Stabilization
-                      </div>
-                      <div className="text-lg font-extrabold bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(34,211,238,0.6)]">
-                        &lt;30 Days
-                      </div>
+                      <div className="text-xs text-white/60 font-semibold uppercase tracking-wide">Stabilization</div>
+                      <div className="text-lg font-bold text-cyan-200">&lt;30 Days</div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Right: Elevated Checkout Form - Premium Command Center Panel */}
+              {/* Right: Premium Checkout Form - Clean Glass */}
               <div
                 id="checkout-section"
-                className="lg:sticky md:top-8 hero-fade-up-delay"
+                className="lg:sticky md:top-16 hero-fade-up-delay"
               >
-                <div className="relative overflow-hidden bg-white/20 backdrop-blur-3xl border-2 border-white/50 rounded-3xl shadow-[0_12px_48px_rgba(0,0,0,0.5),0_24px_96px_rgba(67,83,255,0.3)]">
-                  {/* Enhanced NYC reflection texture for premium depth */}
+                <div className="relative overflow-hidden bg-white/15 backdrop-blur-2xl border border-white/25 rounded-2xl shadow-lg">
+                  {/* Subtle gradient layer */}
                   <div
-                    className="absolute inset-0 opacity-30 rounded-3xl"
+                    className="absolute inset-0 rounded-2xl opacity-40"
                     style={{
-                      backgroundImage: `url(${nycSkylineImage})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                      filter: 'blur(12px) brightness(0.6)',
-                      mixBlendMode: 'overlay',
+                      background: "linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)"
                     }}
                   ></div>
-                  
-                  {/* Brighter skyline light reflections */}
-                  <div
-                    className="absolute inset-0 bg-gradient-to-br from-amber-500/15 via-violet-500/20 to-blue-500/15 blur-2xl rounded-3xl"
-                    style={{
-                      animation: "lightReflection 6s ease-in-out infinite",
-                    }}
-                  ></div>
-                  <div className="absolute top-0 left-0 w-full h-1/3 bg-gradient-to-b from-cyan-400/15 to-transparent blur-xl"></div>
-                  <div className="absolute bottom-0 right-0 w-2/3 h-1/2 bg-gradient-to-tl from-amber-400/15 to-transparent blur-xl"></div>
 
                   <div className="relative">
-                    <div className="border-b border-white/40 p-6 sm:p-8">
-                      <div className="flex items-start justify-between gap-4 mb-4">
+                    <div className="border-b border-white/20 px-6 sm:px-8 pt-6 pb-5">
+                      <div className="flex items-start justify-between gap-3 mb-3">
                         <h2
-                          className="text-2xl sm:text-3xl font-bold drop-shadow-lg"
+                          className="text-xl sm:text-2xl font-bold"
                           style={{ color: '#FFFFFF' }}
                           data-testid="text-checkout-title"
                         >
                           Start Your 90-Day Trial
                         </h2>
-                        {/* Larger, brighter premium enrollment badge */}
+                        {/* Premium enrollment badge - clean and bright */}
                         <Badge
-                          className="bg-gradient-to-r from-[#FF5C4D] to-[#FF7A6B] text-white font-extrabold text-base px-6 py-3 border-2 border-white/40 shadow-[0_0_40px_rgba(255,92,77,1),0_0_80px_rgba(255,92,77,0.5)] animate-pulse shrink-0 rounded-full backdrop-blur-sm"
+                          className="bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold text-sm px-4 py-2 border border-white/30 shadow-lg animate-pulse shrink-0 rounded-full"
                           data-testid="badge-scarcity"
                         >
-                          Only {availableSlots} Slots
+                          {availableSlots} Slots
                         </Badge>
                       </div>
                       <p
-                        className="text-sm leading-relaxed drop-shadow-md tracking-wide"
-                        style={{ color: "#C8C8C8" }}
+                        className="text-xs leading-relaxed tracking-wide opacity-80"
+                        style={{ color: "#E8EBF8" }}
                         data-testid="text-checkout-description"
                       >
-                        Easy and simple • Zero implementation cost • Cancel
-                        anytime
+                        Easy and simple • Zero implementation cost • Cancel anytime
                       </p>
                     </div>
-                    <div className="p-6 sm:p-8 space-y-4">
+                    <div className="px-6 sm:px-8 py-6 space-y-4">
                       {!showCheckout ? (
                         <>
-                          <div className="space-y-1.5">
-                            <Label
-                              htmlFor="fullName"
-                              className="text-white font-semibold text-sm"
-                            >
-                              Full Name *
-                            </Label>
-                            <Input
-                              id="fullName"
-                              value={formData.fullName}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  fullName: e.target.value,
-                                })
-                              }
-                              placeholder="John Smith"
-                              required
-                              className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
-                              data-testid="input-full-name"
-                            />
+                          <div className="space-y-1">
+                            <Label htmlFor="fullName" className="text-xs text-white/70 font-semibold">Full Name *</Label>
+                            <Input id="fullName" value={formData.fullName} onChange={(e) => setFormData({...formData, fullName: e.target.value})} placeholder="John Smith" required className="bg-white/10 border-white/20 text-white placeholder:text-white/40 text-sm h-9" data-testid="input-full-name" />
                           </div>
-                          <div className="space-y-1.5">
-                            <Label
-                              htmlFor="firmName"
-                              className="text-white font-semibold text-sm"
-                            >
-                              Law Firm Name *
-                            </Label>
-                            <Input
-                              id="firmName"
-                              value={formData.firmName}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  firmName: e.target.value,
-                                })
-                              }
-                              placeholder="Smith & Associates"
-                              required
-                              className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
-                              data-testid="input-firm-name"
-                            />
+                          <div className="space-y-1">
+                            <Label htmlFor="firmName" className="text-xs text-white/70 font-semibold">Law Firm Name *</Label>
+                            <Input id="firmName" value={formData.firmName} onChange={(e) => setFormData({...formData, firmName: e.target.value})} placeholder="Smith & Associates" required className="bg-white/10 border-white/20 text-white placeholder:text-white/40 text-sm h-9" data-testid="input-firm-name" />
                           </div>
-                          <div className="space-y-1.5">
-                            <Label
-                              htmlFor="email"
-                              className="text-white font-semibold text-sm"
-                            >
-                              Email *
-                            </Label>
-                            <Input
-                              id="email"
-                              type="email"
-                              value={formData.email}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  email: e.target.value,
-                                })
-                              }
-                              placeholder="john@lawfirm.com"
-                              required
-                              className="bg-white/10 border-white/30 text-white placeholder:text-white/50 w-full touch-target"
-                              data-testid="input-email"
-                              autoComplete="email"
-                            />
+                          <div className="space-y-1">
+                            <Label htmlFor="email" className="text-xs text-white/70 font-semibold">Email *</Label>
+                            <Input id="email" type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="john@lawfirm.com" required className="bg-white/10 border-white/20 text-white placeholder:text-white/40 text-sm h-9 w-full" data-testid="input-email" autoComplete="email" />
                           </div>
-                          <div className="space-y-1.5">
-                            <Label
-                              htmlFor="phone"
-                              className="text-white font-semibold text-sm"
-                            >
-                              Phone
-                            </Label>
-                            <Input
-                              id="phone"
-                              type="tel"
-                              value={formData.phone}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  phone: e.target.value,
-                                })
-                              }
-                              placeholder="(718) 555-0123"
-                              className="bg-white/10 border-white/30 text-white placeholder:text-white/50 w-full touch-target"
-                              data-testid="input-phone"
-                              autoComplete="tel"
-                              inputMode="tel"
-                            />
+                          <div className="space-y-1">
+                            <Label htmlFor="phone" className="text-xs text-white/70 font-semibold">Phone</Label>
+                            <Input id="phone" type="tel" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} placeholder="(718) 555-0123" className="bg-white/10 border-white/20 text-white placeholder:text-white/40 text-sm h-9 w-full" data-testid="input-phone" autoComplete="tel" inputMode="tel" />
                           </div>
                           <div className="pt-2">
                             <Button
                               onClick={handleStartTrial}
-                              className="relative group w-full text-white font-semibold rounded-2xl touch-target-lg text-base transition-all duration-300 shadow-lg hover:shadow-[0_0_25px_rgba(67,83,255,0.5)] overflow-hidden"
+                              className="relative group w-full text-white font-bold rounded-xl text-sm h-10 transition-all duration-200 shadow-md hover:shadow-lg overflow-hidden"
                               style={{ backgroundColor: "#4353FF" }}
-                              disabled={
-                                !formData.fullName ||
-                                !formData.firmName ||
-                                !formData.email
-                              }
+                              disabled={!formData.fullName || !formData.firmName || !formData.email}
                               data-testid="button-continue-to-payment"
                             >
-                              <span className="flex items-center gap-2 justify-center relative z-10">
+                              <span className="flex items-center gap-1.5 justify-center relative z-10 text-sm">
                                 Start Now
-                                <ChevronRight className="w-5 h-5" />
+                                <ChevronRight className="w-4 h-4" />
                               </span>
-                              {/* Shimmer effect overlay */}
-                              <div className="absolute inset-0 cta-shimmer"></div>
-                              <div
-                                className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-300 -z-10"
-                                style={{ backgroundColor: "#4353FF" }}
-                              ></div>
+                              <div className="absolute inset-0 opacity-0 group-hover:opacity-15 bg-white transition-opacity duration-200 -z-10 rounded-xl"></div>
                             </Button>
                           </div>
                         </>
