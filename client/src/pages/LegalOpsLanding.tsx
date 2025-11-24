@@ -851,20 +851,17 @@ export default function LegalOpsLanding() {
           }}
         >
           <div className="container-fluid relative z-20 py-12 sm:py-14 md:py-16 flex items-center min-h-[calc(100vh-80px)]">
-            {/* OnSpot Logo - Clean, Minimal */}
-            <div className="mb-8 hero-fade-up">
-              <div className="inline-flex items-center gap-2.5 backdrop-blur-xl bg-white/12 px-5 py-2.5 rounded-full border border-white/30 shadow-lg">
-                <div className="w-8 h-8 bg-gradient-to-br from-violet-400 to-blue-400 rounded-full flex items-center justify-center">
-                  <Building2 className="h-4 w-4 text-white" />
-                </div>
-                <span className="font-bold text-base text-white">OnSpot</span>
-                <span className="text-xs text-violet-100 px-2 border-l border-white/25">LegalOps</span>
-              </div>
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-center h-full">
               {/* Left: Headline & Value Prop - Optimized Spacing */}
               <div className="hero-fade-up space-y-5 md:space-y-6">
+                {/* Integrated Brand Badge - Refined Label */}
+                <div className="inline-flex items-center gap-2 backdrop-blur-md bg-white/6 px-3.5 py-1.5 rounded-full border border-white/12">
+                  <div className="w-6 h-6 bg-white/15 rounded-full flex items-center justify-center">
+                    <Building2 className="h-3 w-3 text-white/70" />
+                  </div>
+                  <span className="text-xs font-semibold text-white/80 tracking-wide">OnSpot LegalOps</span>
+                </div>
+
                 {/* Main Headline */}
                 <h1
                   className="text-4xl sm:text-5xl md:text-6xl font-bold leading-tight tracking-tight"
