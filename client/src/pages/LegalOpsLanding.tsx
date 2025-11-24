@@ -60,6 +60,7 @@ import {
   X,
   ArrowUpRight,
   Scale,
+  AlertCircle,
 } from "lucide-react";
 import { HeadSEO } from "@/components/HeadSEO";
 import nycSkylineImage from "@assets/40431e5288cb44250d8204c03e0ba76129ba76dfd36e01e7c40f546ab05de806_1762346626354.jpeg";
@@ -1045,6 +1046,114 @@ export default function LegalOpsLanding() {
                 <div className="hidden sm:flex flex-col items-center gap-2">
                   <div className="w-0.5 h-12 bg-gradient-to-t from-blue-400/60 to-blue-200/20"></div>
                   <Scale className="w-5 h-5 text-blue-400/60" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* The Problem Section */}
+        <section className="py-14 md:py-18 bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-slate-950 dark:to-slate-900/50">
+          <div className="container-fluid">
+            <div className="max-w-6xl mx-auto">
+              {/* Header */}
+              <div className="text-center mb-12 md:mb-14">
+                <h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-3">
+                  The Problem
+                </h2>
+                <p className="text-lg text-slate-600 dark:text-slate-400 font-light max-w-2xl mx-auto">
+                  Why your firm feels stuck in operations
+                </p>
+              </div>
+
+              {/* Two-Column Layout */}
+              <div className="grid md:grid-cols-2 gap-6 md:gap-8">
+                {/* Left: Bullet List Card */}
+                <div className="problem-card-entrance">
+                  <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 h-full hover-elevate">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="text-slate-900 dark:text-white text-lg flex items-center gap-2">
+                        <AlertTriangle className="w-5 h-5 text-blue-500" />
+                        Your Operations Are Under Pressure
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="space-y-3">
+                        {[
+                          "Case loads overwhelming your legal staff",
+                          "Manual case management creating delays",
+                          "Client escalations draining resources",
+                          "Compliance deadlines slipping through cracks",
+                          "High attorney turnover from operational burnout"
+                        ].map((point, idx) => (
+                          <li key={idx} className="flex gap-3 items-start problem-bullet">
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></div>
+                            <span className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">{point}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Right: Three Stacked Cards */}
+                <div className="space-y-4 md:space-y-5">
+                  {/* Card 1: Operational Bandwidth */}
+                  <div className="problem-card-entrance problem-card-delay-1">
+                    <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 hover-elevate">
+                      <CardContent className="p-5 md:p-6">
+                        <div className="flex gap-3 items-start">
+                          <Clock className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <h3 className="font-semibold text-slate-900 dark:text-white mb-1.5">
+                              Operational Bandwidth
+                            </h3>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                              Your team is stretched thin managing cases and operations simultaneously, leaving no bandwidth for strategic growth.
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Card 2: Frustration and Bottlenecks */}
+                  <div className="problem-card-entrance problem-card-delay-2">
+                    <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 hover-elevate">
+                      <CardContent className="p-5 md:p-6">
+                        <div className="flex gap-3 items-start">
+                          <AlertCircle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <h3 className="font-semibold text-slate-900 dark:text-white mb-1.5">
+                              Frustration and Bottlenecks
+                            </h3>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                              Manual workflows create delays that compound client frustration and erode trust in your firm's capabilities.
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Card 3: What's Really at Stake */}
+                  <div className="problem-card-entrance problem-card-delay-3">
+                    <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 hover-elevate">
+                      <CardContent className="p-5 md:p-6">
+                        <div className="flex gap-3 items-start">
+                          <Scale className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <h3 className="font-semibold text-slate-900 dark:text-white mb-1.5">
+                              What's Really at Stake
+                            </h3>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                              Without operational stability, you risk losing high-value cases, losing clients to competitors, and losing your best talent.
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
               </div>
             </div>

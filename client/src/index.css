@@ -1939,6 +1939,40 @@
     opacity: 0.6;
   }
 
+  /* The Problem Section Animations */
+  @keyframes problemCardEntrance {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .problem-card-entrance {
+    animation: problemCardEntrance 0.6s ease-out both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 30%;
+  }
+
+  .problem-card-delay-1 {
+    animation-delay: 0s;
+  }
+
+  .problem-card-delay-2 {
+    animation-delay: 0.1s;
+  }
+
+  .problem-card-delay-3 {
+    animation-delay: 0.2s;
+  }
+
+  .problem-bullet {
+    animation: inherit;
+  }
+
   /* ===== MOBILE-FIRST RESPONSIVE UTILITIES ===== */
 
   /* Fluid Typography Scale using clamp() - Recalibrated for mobile-first */
