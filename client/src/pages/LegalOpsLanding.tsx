@@ -846,7 +846,7 @@ export default function LegalOpsLanding() {
         {/* Hero Section - Legal Command Center at Night */}
         <section className="relative min-h-screen overflow-hidden bg-[#0a0a1a]">
           {/* True Nighttime NYC Skyline - Empire State Building Focal Point */}
-          <div className="absolute inset-0">
+          <div className="absolute inset-0 hero-skyline-fade">
             <img
               src={nycSkylineImage}
               alt="New York City Skyline at Night with Empire State Building"
@@ -855,12 +855,20 @@ export default function LegalOpsLanding() {
               width="1920"
               height="1080"
             />
-            {/* Subtle gradient overlay for text contrast without losing skyline details */}
+            {/* Premium OnSpot-blue gradient overlay blended with NYC skyline */}
             <div
               className="absolute inset-0"
               style={{
                 background:
-                  "linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.7) 100%)",
+                  "linear-gradient(135deg, rgba(67, 83, 255, 0.25) 0%, rgba(16, 24, 64, 0.6) 50%, rgba(0, 0, 0, 0.8) 100%)",
+              }}
+            ></div>
+            {/* Additional depth layer for premium cinematic feel */}
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  "linear-gradient(to bottom, rgba(0, 0, 0, 0.3) 0%, rgba(10, 10, 26, 0.7) 100%)",
               }}
             ></div>
           </div>
@@ -883,8 +891,18 @@ export default function LegalOpsLanding() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16 items-center">
               {/* Left: Headline & Value Prop */}
-              <div className="hero-fade-up">
-                <div className="space-y-3 sm:space-y-4 mb-6">
+              <div className="hero-fade-up relative">
+                {/* Soft radial glow behind headline in OnSpot blue */}
+                <div
+                  className="absolute top-0 left-0 w-full h-80 radial-glow-pulse pointer-events-none"
+                  style={{
+                    background:
+                      "radial-gradient(circle at 30% 30%, rgba(67, 83, 255, 0.4) 0%, transparent 60%)",
+                    filter: "blur(60px)",
+                  }}
+                ></div>
+
+                <div className="space-y-3 sm:space-y-4 mb-6 relative z-10">
                   {/* Ultra-minimal Badge */}
                   <div className="inline-flex items-center gap-2 sm:gap-2.5 text-xs sm:text-sm font-medium text-white backdrop-blur-2xl bg-white/10 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full border border-white/30 shadow-xl">
                     <div className="w-2 h-2 bg-violet-400 rounded-full animate-pulse"></div>
@@ -893,9 +911,10 @@ export default function LegalOpsLanding() {
                     </span>
                   </div>
 
-                  {/* Main Headline - Pure White - Fluid Typography */}
+                  {/* Main Headline - Enhanced Typography with Float Animation */}
                   <h1
-                    className="text-fluid-4xl md:text-fluid-5xl md:text-fluid-6xl font-bold leading-[1.1] text-[#FFFFFF] tracking-tight drop-shadow-[0_4px_20px_rgba(0,0,0,0.8)]"
+                    className="text-[clamp(2.75rem,7vw,5rem)] md:text-[clamp(3.5rem,8vw,6rem)] font-bold leading-[1.05] tracking-[-0.02em] drop-shadow-[0_6px_30px_rgba(0,0,0,0.9)] hero-headline-float"
+                    style={{ color: '#F0F4FF' }}
                     data-testid="text-hero-headline"
                   >
                     Cut Legal Admin Costs by 70%
@@ -959,33 +978,47 @@ export default function LegalOpsLanding() {
                 </div>
               </div>
 
-              {/* Right: Checkout Form - Command Center Panel with Skyline Light Reflections */}
+              {/* Right: Elevated Checkout Form - Premium Command Center Panel */}
               <div
                 id="checkout-section"
                 className="lg:sticky md:top-8 hero-fade-up-delay"
               >
-                <div className="relative overflow-hidden bg-white/15 backdrop-blur-3xl border border-white/40 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.3),0_16px_64px_rgba(0,0,0,0.2)]">
-                  {/* Skyline light reflections */}
+                <div className="relative overflow-hidden bg-white/20 backdrop-blur-3xl border-2 border-white/50 rounded-3xl shadow-[0_12px_48px_rgba(0,0,0,0.5),0_24px_96px_rgba(67,83,255,0.3)]">
+                  {/* Enhanced NYC reflection texture for premium depth */}
                   <div
-                    className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-violet-500/15 to-blue-500/10 blur-2xl rounded-3xl"
+                    className="absolute inset-0 opacity-30 rounded-3xl"
+                    style={{
+                      backgroundImage: `url(${nycSkylineImage})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                      filter: 'blur(12px) brightness(0.6)',
+                      mixBlendMode: 'overlay',
+                    }}
+                  ></div>
+                  
+                  {/* Brighter skyline light reflections */}
+                  <div
+                    className="absolute inset-0 bg-gradient-to-br from-amber-500/15 via-violet-500/20 to-blue-500/15 blur-2xl rounded-3xl"
                     style={{
                       animation: "lightReflection 6s ease-in-out infinite",
                     }}
                   ></div>
-                  <div className="absolute top-0 left-0 w-full h-1/3 bg-gradient-to-b from-cyan-400/10 to-transparent blur-xl"></div>
-                  <div className="absolute bottom-0 right-0 w-2/3 h-1/2 bg-gradient-to-tl from-amber-400/10 to-transparent blur-xl"></div>
+                  <div className="absolute top-0 left-0 w-full h-1/3 bg-gradient-to-b from-cyan-400/15 to-transparent blur-xl"></div>
+                  <div className="absolute bottom-0 right-0 w-2/3 h-1/2 bg-gradient-to-tl from-amber-400/15 to-transparent blur-xl"></div>
 
                   <div className="relative">
-                    <div className="border-b border-white/30 p-6 sm:p-8">
+                    <div className="border-b border-white/40 p-6 sm:p-8">
                       <div className="flex items-start justify-between gap-4 mb-4">
                         <h2
-                          className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg"
+                          className="text-2xl sm:text-3xl font-bold drop-shadow-lg"
+                          style={{ color: '#FFFFFF' }}
                           data-testid="text-checkout-title"
                         >
                           Start Your 90-Day Trial
                         </h2>
+                        {/* Larger, brighter premium enrollment badge */}
                         <Badge
-                          className="bg-[#FF5C4D] text-white font-bold text-sm px-4 py-2 border-0 shadow-[0_0_25px_rgba(255,92,77,0.7)] animate-pulse shrink-0 rounded-full"
+                          className="bg-gradient-to-r from-[#FF5C4D] to-[#FF7A6B] text-white font-extrabold text-base px-6 py-3 border-2 border-white/40 shadow-[0_0_40px_rgba(255,92,77,1),0_0_80px_rgba(255,92,77,0.5)] animate-pulse shrink-0 rounded-full backdrop-blur-sm"
                           data-testid="badge-scarcity"
                         >
                           Only {availableSlots} Slots
@@ -1098,7 +1131,7 @@ export default function LegalOpsLanding() {
                           <div className="pt-2">
                             <Button
                               onClick={handleStartTrial}
-                              className="relative group w-full text-white font-semibold rounded-2xl touch-target-lg text-base transition-all duration-300 shadow-lg hover:shadow-[0_0_25px_rgba(67,83,255,0.5)]"
+                              className="relative group w-full text-white font-semibold rounded-2xl touch-target-lg text-base transition-all duration-300 shadow-lg hover:shadow-[0_0_25px_rgba(67,83,255,0.5)] overflow-hidden"
                               style={{ backgroundColor: "#4353FF" }}
                               disabled={
                                 !formData.fullName ||
@@ -1107,10 +1140,12 @@ export default function LegalOpsLanding() {
                               }
                               data-testid="button-continue-to-payment"
                             >
-                              <span className="flex items-center gap-2 justify-center">
+                              <span className="flex items-center gap-2 justify-center relative z-10">
                                 Start Now
                                 <ChevronRight className="w-5 h-5" />
                               </span>
+                              {/* Shimmer effect overlay */}
+                              <div className="absolute inset-0 cta-shimmer"></div>
                               <div
                                 className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-300 -z-10"
                                 style={{ backgroundColor: "#4353FF" }}
