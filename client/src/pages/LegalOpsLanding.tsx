@@ -1058,12 +1058,9 @@ export default function LegalOpsLanding() {
             <div className="max-w-6xl mx-auto">
               {/* Header */}
               <div className="text-center mb-12 md:mb-14">
-                <h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-3">
-                  The Problem
+                <h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white">
+                  Why law firms come to OnSpot
                 </h2>
-                <p className="text-lg text-slate-600 dark:text-slate-400 font-light max-w-2xl mx-auto">
-                  Why your firm feels stuck in operations
-                </p>
               </div>
 
               {/* Two-Column Layout */}
