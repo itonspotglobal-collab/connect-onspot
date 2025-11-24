@@ -1014,38 +1014,80 @@ export default function LegalOpsLanding() {
           </div>
         </section>
 
-        {/* Premium Identity Band */}
-        <section className="py-12 md:py-14 bg-gradient-to-b from-blue-50/30 to-white dark:from-slate-900/20 dark:to-slate-950 border-b border-blue-100/50 dark:border-slate-800/50">
+        {/* US Market Map Section */}
+        <section className="py-12 md:py-16 bg-gradient-to-b from-white to-blue-50/40 dark:from-slate-950 dark:to-slate-900/60">
           <div className="container-fluid">
-            <div className="max-w-3xl mx-auto">
-              <div className="flex items-center justify-center gap-6 md:gap-8">
-                {/* Left Accent Line */}
-                <div className="hidden sm:flex flex-col items-center gap-2">
-                  <Scale className="w-5 h-5 text-blue-400/60" />
-                  <div className="w-0.5 h-12 bg-gradient-to-b from-blue-400/60 to-blue-200/20"></div>
-                </div>
+            <div className="max-w-4xl mx-auto">
+              {/* Caption */}
+              <div className="text-center mb-8 md:mb-10">
+                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 tracking-widest uppercase letter-spacing">
+                  Serving Landlord–Tenant Law Firms Across Key Markets
+                </p>
+              </div>
 
-                {/* Center Content */}
-                <div className="flex flex-col items-center gap-4 niche-band-entrance">
-                  <p className="text-xs font-bold text-slate-500 dark:text-slate-400 tracking-widest uppercase">
-                    Serving Landlord–Tenant Law Firms
-                  </p>
-                  
-                  <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
-                    {["New York", "Texas", "Florida"].map((location, idx) => (
-                      <div key={idx} className="niche-chip">
-                        <span className="px-3.5 py-1.5 rounded-full bg-gradient-to-r from-blue-400/15 to-blue-500/10 border border-blue-300/30 text-xs font-medium text-blue-700 dark:text-blue-300 hover:border-blue-400/50 hover:shadow-[0_0_16px_rgba(59,130,246,0.25)] transition-all duration-300 inline-block cursor-default">
-                          {location}
-                        </span>
+              {/* Map Container */}
+              <div className="us-map-container flex justify-center">
+                <div className="relative w-full max-w-2xl">
+                  {/* Simplified US Map SVG */}
+                  <svg
+                    viewBox="0 0 960 600"
+                    className="w-full h-auto"
+                    data-testid="svg-us-map"
+                  >
+                    {/* Base US outline - simplified */}
+                    <g className="us-map-base">
+                      {/* Simplified US border outline */}
+                      <path
+                        d="M 200 150 L 850 150 L 850 450 L 200 450 Z"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        className="text-slate-300 dark:text-slate-700"
+                        opacity="0.3"
+                      />
+                    </g>
+
+                    {/* New York - highlighted */}
+                    <g className="us-state-ny map-state-active">
+                      <circle cx="750" cy="180" r="24" fill="currentColor" className="text-blue-400/40" />
+                      <circle cx="750" cy="180" r="24" fill="none" stroke="currentColor" strokeWidth="2" className="text-blue-500" opacity="0.6" />
+                      <text x="750" y="240" textAnchor="middle" className="text-xs font-semibold fill-slate-700 dark:fill-slate-300">
+                        NY
+                      </text>
+                    </g>
+
+                    {/* Texas - highlighted */}
+                    <g className="us-state-tx map-state-active">
+                      <circle cx="380" cy="340" r="28" fill="currentColor" className="text-blue-400/40" />
+                      <circle cx="380" cy="340" r="28" fill="none" stroke="currentColor" strokeWidth="2" className="text-blue-500" opacity="0.6" />
+                      <text x="380" y="410" textAnchor="middle" className="text-xs font-semibold fill-slate-700 dark:fill-slate-300">
+                        TX
+                      </text>
+                    </g>
+
+                    {/* Florida - highlighted */}
+                    <g className="us-state-fl map-state-active">
+                      <circle cx="810" cy="380" r="22" fill="currentColor" className="text-blue-400/40" />
+                      <circle cx="810" cy="380" r="22" fill="none" stroke="currentColor" strokeWidth="2" className="text-blue-500" opacity="0.6" />
+                      <text x="810" y="440" textAnchor="middle" className="text-xs font-semibold fill-slate-700 dark:fill-slate-300">
+                        FL
+                      </text>
+                    </g>
+                  </svg>
+
+                  {/* Legend below map */}
+                  <div className="flex items-center justify-center gap-6 md:gap-8 mt-8">
+                    {[
+                      { label: "New York", color: "bg-blue-500/40" },
+                      { label: "Texas", color: "bg-blue-500/40" },
+                      { label: "Florida", color: "bg-blue-500/40" }
+                    ].map((item, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <div className={`w-2.5 h-2.5 rounded-full ${item.color} border border-blue-500/60`}></div>
+                        <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">{item.label}</span>
                       </div>
                     ))}
                   </div>
-                </div>
-
-                {/* Right Accent Line */}
-                <div className="hidden sm:flex flex-col items-center gap-2">
-                  <div className="w-0.5 h-12 bg-gradient-to-t from-blue-400/60 to-blue-200/20"></div>
-                  <Scale className="w-5 h-5 text-blue-400/60" />
                 </div>
               </div>
             </div>
