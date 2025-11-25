@@ -1015,71 +1015,85 @@ export default function LegalOpsLanding() {
         </section>
 
         {/* US Market Coverage Map */}
-        <section className="py-12 md:py-16 bg-white dark:bg-slate-950 border-y border-slate-200 dark:border-slate-800/50">
+        <section className="py-12 md:py-16 bg-white dark:bg-slate-950">
           <div className="container-fluid">
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-5xl mx-auto">
               {/* Map Container */}
               <div className="us-map-entrance flex justify-center">
                 <svg
-                  viewBox="0 0 960 600"
-                  className="w-full max-w-2xl h-auto"
-                  data-testid="svg-us-map-coverage"
+                  viewBox="0 0 980 620"
+                  className="w-full max-w-3xl h-auto"
+                  data-testid="svg-us-real-map"
                   preserveAspectRatio="xMidYMid meet"
                 >
-                  {/* US Continental Outline & States */}
-                  <g className="us-states">
-                    {/* Base US outline */}
-                    <path
-                      d="M 150 200 L 800 200 L 800 450 L 150 450 Z"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      className="text-slate-300 dark:text-slate-700"
-                    />
-                    
-                    {/* State grid - simplified divisions */}
-                    <line x1="250" y1="200" x2="250" y2="450" stroke="currentColor" strokeWidth="0.8" className="text-slate-200 dark:text-slate-800" opacity="0.5" />
-                    <line x1="350" y1="200" x2="350" y2="450" stroke="currentColor" strokeWidth="0.8" className="text-slate-200 dark:text-slate-800" opacity="0.5" />
-                    <line x1="450" y1="200" x2="450" y2="450" stroke="currentColor" strokeWidth="0.8" className="text-slate-200 dark:text-slate-800" opacity="0.5" />
-                    <line x1="550" y1="200" x2="550" y2="450" stroke="currentColor" strokeWidth="0.8" className="text-slate-200 dark:text-slate-800" opacity="0.5" />
-                    <line x1="650" y1="200" x2="650" y2="450" stroke="currentColor" strokeWidth="0.8" className="text-slate-200 dark:text-slate-800" opacity="0.5" />
-                    <line x1="700" y1="200" x2="700" y2="450" stroke="currentColor" strokeWidth="0.8" className="text-slate-200 dark:text-slate-800" opacity="0.5" />
-                    <line x1="150" y1="300" x2="800" y2="300" stroke="currentColor" strokeWidth="0.8" className="text-slate-200 dark:text-slate-800" opacity="0.5" />
-                    <line x1="150" y1="375" x2="800" y2="375" stroke="currentColor" strokeWidth="0.8" className="text-slate-200 dark:text-slate-800" opacity="0.5" />
-                  </g>
+                  <defs>
+                    <style>{`
+                      .us-state-base { fill: none; stroke: #e2e8f0; stroke-width: 1; }
+                      .dark .us-state-base { stroke: #475569; }
+                      .us-state-highlight { fill: #3b82f6; fill-opacity: 0.2; stroke: #3b82f6; stroke-width: 1.5; }
+                      .us-state-highlight:hover { fill-opacity: 0.35; filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.6)); }
+                    `}</style>
+                  </defs>
 
-                  {/* NEW YORK - Top Right */}
-                  <g className="state-highlight state-ny-map">
-                    <rect x="730" y="220" width="50" height="50" fill="currentColor" className="text-blue-500/25" />
-                    <rect x="730" y="220" width="50" height="50" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-blue-500" />
-                    <text x="780" y="310" fontSize="13" fontWeight="600" textAnchor="middle" fill="currentColor" className="text-slate-700 dark:text-slate-300">
+                  {/* US States - Simplified realistic shapes */}
+                  {/* Pacific Coast */}
+                  <path className="us-state-base" d="M 50 200 L 150 180 L 160 280 L 80 300 Z" /> {/* Washington/Oregon */}
+                  <path className="us-state-base" d="M 50 300 L 150 280 L 160 420 L 80 440 Z" /> {/* California */}
+
+                  {/* Mountain West */}
+                  <path className="us-state-base" d="M 150 180 L 250 160 L 260 300 L 160 280 Z" /> {/* Idaho/Montana */}
+                  <path className="us-state-base" d="M 150 300 L 250 280 L 260 420 L 160 420 Z" /> {/* Nevada/Utah/Arizona */}
+                  <path className="us-state-base" d="M 250 160 L 350 140 L 360 300 L 260 300 Z" /> {/* Wyoming/Colorado */}
+                  <path className="us-state-base" d="M 250 300 L 350 280 L 360 420 L 260 420 Z" /> {/* New Mexico */}
+
+                  {/* Great Plains & Midwest */}
+                  <path className="us-state-base" d="M 350 140 L 450 130 L 460 300 L 360 300 Z" /> {/* Nebraska/Kansas */}
+                  <path className="us-state-base" d="M 350 300 L 450 280 L 460 420 L 360 420 Z" /> {/* Oklahoma/Texas */}
+                  <path className="us-state-base" d="M 450 130 L 550 125 L 560 300 L 460 300 Z" /> {/* Iowa/Minnesota */}
+                  <path className="us-state-base" d="M 450 300 L 550 280 L 560 420 L 460 420 Z" /> {/* Arkansas/Louisiana */}
+
+                  {/* Midwest/Upper */}
+                  <path className="us-state-base" d="M 550 125 L 650 120 L 660 300 L 560 300 Z" /> {/* Michigan/Wisconsin */}
+                  <path className="us-state-base" d="M 550 300 L 650 280 L 660 400 L 560 400 Z" /> {/* Tennessee/Mississippi */}
+
+                  {/* Northeast */}
+                  <path className="us-state-base" d="M 650 120 L 750 115 L 760 300 L 660 300 Z" /> {/* New York/Pennsylvania */}
+                  <path className="us-state-base" d="M 750 115 L 830 112 L 840 200 L 760 200 Z" /> {/* New England */}
+
+                  {/* Southeast */}
+                  <path className="us-state-base" d="M 650 300 L 750 280 L 760 380 L 660 390 Z" /> {/* Carolinas/Georgia */}
+                  <path className="us-state-base" d="M 750 280 L 820 275 L 830 380 L 760 380 Z" /> {/* Florida */}
+
+                  {/* HIGHLIGHTED STATES */}
+                  {/* NEW YORK */}
+                  <g className="state-highlight state-ny-highlight">
+                    <path d="M 700 180 L 740 175 L 745 240 L 705 245 Z" />
+                    <text x="722" y="260" fontSize="12" fontWeight="600" textAnchor="middle" fill="currentColor" className="text-slate-700 dark:text-slate-300">
                       NY
                     </text>
                   </g>
 
-                  {/* TEXAS - Center South */}
-                  <g className="state-highlight state-tx-map">
-                    <rect x="300" y="340" width="120" height="90" fill="currentColor" className="text-blue-500/25" />
-                    <rect x="300" y="340" width="120" height="90" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-blue-500" />
-                    <text x="360" y="450" fontSize="13" fontWeight="600" textAnchor="middle" fill="currentColor" className="text-slate-700 dark:text-slate-300">
+                  {/* TEXAS */}
+                  <g className="state-highlight state-tx-highlight">
+                    <path d="M 380 320 L 480 310 L 485 430 L 385 440 Z" />
+                    <text x="432" y="455" fontSize="12" fontWeight="600" textAnchor="middle" fill="currentColor" className="text-slate-700 dark:text-slate-300">
                       TX
                     </text>
                   </g>
 
-                  {/* FLORIDA - Right Southeast */}
-                  <g className="state-highlight state-fl-map">
-                    <rect x="760" y="360" width="30" height="80" fill="currentColor" className="text-blue-500/25" />
-                    <rect x="760" y="360" width="30" height="80" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-blue-500" />
-                    <text x="810" y="410" fontSize="13" fontWeight="600" textAnchor="middle" fill="currentColor" className="text-slate-700 dark:text-slate-300">
+                  {/* FLORIDA */}
+                  <g className="state-highlight state-fl-highlight">
+                    <path d="M 770 330 L 795 327 L 798 420 L 773 425 Z" />
+                    <text x="783" y="440" fontSize="12" fontWeight="600" textAnchor="middle" fill="currentColor" className="text-slate-700 dark:text-slate-300">
                       FL
                     </text>
                   </g>
                 </svg>
               </div>
 
-              {/* Caption Below Map */}
+              {/* Caption */}
               <div className="text-center mt-8">
-                <p className="text-xs text-slate-600 dark:text-slate-400 font-light tracking-wide">
+                <p className="text-sm text-slate-600 dark:text-slate-400 font-light tracking-wide">
                   Serving Landlord–Tenant Law Firms Across Key US Markets
                 </p>
               </div>
