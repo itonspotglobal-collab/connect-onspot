@@ -2728,14 +2728,14 @@ export default function LegalOpsLanding() {
         </section>
 
         {/* Local Staff vs. OnSpot LegalOps Comparison */}
-        <section className="py-20 sm:py-32 bg-white relative overflow-hidden">
+        <section className="py-12 sm:py-16 bg-white relative overflow-hidden">
           {/* Subtle background accents */}
           <div className="absolute top-0 right-0 w-96 h-96 bg-blue-50 rounded-full blur-3xl opacity-50"></div>
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-violet-50 rounded-full blur-3xl opacity-40"></div>
 
           <div className="container-fluid relative z-10">
             {/* Section Header */}
-            <div className="text-center mb-12 max-w-4xl mx-auto">
+            <div className="text-center mb-8 max-w-4xl mx-auto">
               <div className="flex items-center justify-center gap-2 mb-6">
                 <Building2 className="w-6 h-6" style={{ color: "#4353FF" }} />
                 <h2
@@ -2772,23 +2772,23 @@ export default function LegalOpsLanding() {
 
             {/* Comparison Table */}
             <div className="max-w-6xl mx-auto">
-              <div className="bg-white rounded-3xl border-2 border-slate-200 overflow-hidden shadow-xl">
+              <div className="bg-white rounded-2xl border-2 border-slate-200 overflow-hidden shadow-lg">
                 {/* Table Header */}
-                <div className="grid grid-cols-3 gap-4 bg-gradient-to-r from-slate-50 to-slate-100 p-6 border-b-2 border-slate-200">
+                <div className="grid grid-cols-3 gap-3 bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b-2 border-slate-200">
                   <div
-                    className="font-bold text-lg"
+                    className="font-bold text-sm md:text-base"
                     style={{ color: "#1E293B" }}
                   >
                     Feature
                   </div>
                   <div
-                    className="font-bold text-lg text-center"
+                    className="font-bold text-sm md:text-base text-center"
                     style={{ color: "#1E293B" }}
                   >
                     Local Staff (NY Paralegal)
                   </div>
                   <div
-                    className="font-bold text-lg text-center"
+                    className="font-bold text-sm md:text-base text-center"
                     style={{ color: "#4353FF" }}
                   >
                     OnSpot LegalOps<sup className="text-xs">™</sup> (Resourced
@@ -2800,29 +2800,29 @@ export default function LegalOpsLanding() {
                 <div className="divide-y divide-slate-200">
                   {/* Monthly Cost */}
                   <div
-                    className="grid grid-cols-3 gap-4 p-6 hover:bg-slate-50/50 transition-colors duration-200"
+                    className="grid grid-cols-3 gap-3 px-4 py-3 hover:bg-slate-50/50 transition-colors duration-200"
                     data-testid="row-monthly-cost"
                   >
-                    <div className="font-semibold" style={{ color: "#1E293B" }}>
+                    <div className="font-semibold text-sm" style={{ color: "#1E293B" }}>
                       Monthly Cost
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-red-600">
-                        ≈ $6,650 / month
+                      <div className="text-lg md:text-xl font-bold text-red-600">
+                        ≈ $6,650
                       </div>
-                      <div className="text-sm text-slate-500 italic">
-                        (avg. entry paralegal in NYC)
+                      <div className="text-xs text-slate-500 italic">
+                        (avg. NYC paralegal)
                       </div>
                     </div>
                     <div className="text-center">
                       <div
-                        className="text-2xl font-bold"
+                        className="text-lg md:text-xl font-bold"
                         style={{ color: "#4353FF" }}
                       >
-                        Starting at $1,950 / month
+                        $1,950
                       </div>
                       <div
-                        className="text-sm font-medium"
+                        className="text-xs font-medium"
                         style={{ color: "#4353FF" }}
                       >
                         (all-in)
@@ -2831,132 +2831,129 @@ export default function LegalOpsLanding() {
                   </div>
 
                   {/* Eager to Work */}
-                  <div className="grid grid-cols-3 gap-4 p-6 hover:bg-slate-50/50 transition-colors duration-200">
-                    <div className="font-semibold" style={{ color: "#1E293B" }}>
+                  <div className="grid grid-cols-3 gap-3 px-4 py-3 hover:bg-slate-50/50 transition-colors duration-200">
+                    <div className="font-semibold text-sm" style={{ color: "#1E293B" }}>
                       Eager to Work
                     </div>
-                    <div className="flex items-center justify-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                      <span style={{ color: "#64748B" }}>
+                    <div className="flex items-center justify-center gap-1">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                      <span className="text-xs md:text-sm" style={{ color: "#64748B" }}>
                         Sometimes motivated
                       </span>
                     </div>
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="flex gap-1">
-                        <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                        <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                    <div className="flex items-center justify-center gap-1">
+                      <div className="flex gap-0.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                       </div>
                       <span
-                        className="font-medium"
+                        className="font-medium text-xs md:text-sm"
                         style={{ color: "#4353FF" }}
                       >
-                        Highly engaged, pre-vetted professionals
+                        Highly engaged, pre-vetted
                       </span>
                     </div>
                   </div>
 
                   {/* Hiring Process */}
-                  <div className="grid grid-cols-3 gap-4 p-6 hover:bg-slate-50/50 transition-colors duration-200">
-                    <div className="font-semibold" style={{ color: "#1E293B" }}>
+                  <div className="grid grid-cols-3 gap-3 px-4 py-3 hover:bg-slate-50/50 transition-colors duration-200">
+                    <div className="font-semibold text-sm" style={{ color: "#1E293B" }}>
                       Hiring Process
                     </div>
-                    <div className="flex items-center justify-center gap-2">
-                      <X className="w-5 h-5 text-red-500 stroke-[3]" />
-                      <span style={{ color: "#64748B" }}>
-                        Weeks of recruiting & interviews
+                    <div className="flex items-center justify-center gap-1">
+                      <X className="w-4 h-4 text-red-500 stroke-[3]" />
+                      <span className="text-xs md:text-sm" style={{ color: "#64748B" }}>
+                        Weeks of recruiting
                       </span>
                     </div>
-                    <div className="flex items-center justify-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                    <div className="flex items-center justify-center gap-1">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                       <span
-                        className="font-medium"
+                        className="font-medium text-xs md:text-sm"
                         style={{ color: "#4353FF" }}
                       >
-                        Ready-to-start within days
+                        Ready within days
                       </span>
                     </div>
                   </div>
 
                   {/* Replacement Time */}
-                  <div className="grid grid-cols-3 gap-4 p-6 hover:bg-slate-50/50 transition-colors duration-200">
-                    <div className="font-semibold" style={{ color: "#1E293B" }}>
+                  <div className="grid grid-cols-3 gap-3 px-4 py-3 hover:bg-slate-50/50 transition-colors duration-200">
+                    <div className="font-semibold text-sm" style={{ color: "#1E293B" }}>
                       Replacement Time
                     </div>
-                    <div className="flex items-center justify-center gap-2">
-                      <X className="w-5 h-5 text-red-500 stroke-[3]" />
-                      <span style={{ color: "#64748B" }}>Slow, disruptive</span>
+                    <div className="flex items-center justify-center gap-1">
+                      <X className="w-4 h-4 text-red-500 stroke-[3]" />
+                      <span className="text-xs md:text-sm" style={{ color: "#64748B" }}>Slow, disruptive</span>
                     </div>
-                    <div className="flex items-center justify-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                    <div className="flex items-center justify-center gap-1">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                       <span
-                        className="font-medium"
+                        className="font-medium text-xs md:text-sm"
                         style={{ color: "#4353FF" }}
                       >
-                        Instant swap — no downtime
+                        Instant swap
                       </span>
                     </div>
                   </div>
 
                   {/* Management Structure */}
-                  <div className="grid grid-cols-3 gap-4 p-6 hover:bg-slate-50/50 transition-colors duration-200">
-                    <div className="font-semibold" style={{ color: "#1E293B" }}>
-                      Management Structure
+                  <div className="grid grid-cols-3 gap-3 px-4 py-3 hover:bg-slate-50/50 transition-colors duration-200">
+                    <div className="font-semibold text-sm" style={{ color: "#1E293B" }}>
+                      Management
                     </div>
-                    <div className="flex items-center justify-center gap-2">
-                      <X className="w-5 h-5 text-red-500 stroke-[3]" />
-                      <span style={{ color: "#64748B" }}>Self-managed</span>
+                    <div className="flex items-center justify-center gap-1">
+                      <X className="w-4 h-4 text-red-500 stroke-[3]" />
+                      <span className="text-xs md:text-sm" style={{ color: "#64748B" }}>Self-managed</span>
                     </div>
-                    <div className="flex items-center justify-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                    <div className="flex items-center justify-center gap-1">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                       <span
-                        className="font-medium"
+                        className="font-medium text-xs md:text-sm"
                         style={{ color: "#4353FF" }}
                       >
-                        You manage directly{" "}
-                        <span className="text-sm italic text-slate-500">
-                          (upgrade to fully managed anytime)
-                        </span>
+                        You manage directly
                       </span>
                     </div>
                   </div>
 
                   {/* Performance Tracking */}
-                  <div className="grid grid-cols-3 gap-4 p-6 hover:bg-slate-50/50 transition-colors duration-200">
-                    <div className="font-semibold" style={{ color: "#1E293B" }}>
+                  <div className="grid grid-cols-3 gap-3 px-4 py-3 hover:bg-slate-50/50 transition-colors duration-200">
+                    <div className="font-semibold text-sm" style={{ color: "#1E293B" }}>
                       Performance Tracking
                     </div>
-                    <div className="flex items-center justify-center gap-2">
-                      <X className="w-5 h-5 text-red-500 stroke-[3]" />
-                      <span style={{ color: "#64748B" }}>
+                    <div className="flex items-center justify-center gap-1">
+                      <X className="w-4 h-4 text-red-500 stroke-[3]" />
+                      <span className="text-xs md:text-sm" style={{ color: "#64748B" }}>
                         Manual & inconsistent
                       </span>
                     </div>
-                    <div className="flex items-center justify-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                    <div className="flex items-center justify-center gap-1">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                       <span
-                        className="font-medium"
+                        className="font-medium text-xs md:text-sm"
                         style={{ color: "#4353FF" }}
                       >
-                        Included dashboards & KPI templates
+                        Dashboards & KPI templates
                       </span>
                     </div>
                   </div>
 
                   {/* Benefits & Taxes */}
-                  <div className="grid grid-cols-3 gap-4 p-6 hover:bg-slate-50/50 transition-colors duration-200">
-                    <div className="font-semibold" style={{ color: "#1E293B" }}>
+                  <div className="grid grid-cols-3 gap-3 px-4 py-3 hover:bg-slate-50/50 transition-colors duration-200">
+                    <div className="font-semibold text-sm" style={{ color: "#1E293B" }}>
                       Benefits & Taxes
                     </div>
-                    <div className="flex items-center justify-center gap-2">
-                      <X className="w-5 h-5 text-red-500 stroke-[3]" />
-                      <span style={{ color: "#64748B" }}>
-                        Additional employer expense
+                    <div className="flex items-center justify-center gap-1">
+                      <X className="w-4 h-4 text-red-500 stroke-[3]" />
+                      <span className="text-xs md:text-sm" style={{ color: "#64748B" }}>
+                        Employer expense
                       </span>
                     </div>
-                    <div className="flex items-center justify-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                    <div className="flex items-center justify-center gap-1">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                       <span
-                        className="font-medium"
+                        className="font-medium text-xs md:text-sm"
                         style={{ color: "#4353FF" }}
                       >
                         Covered by OnSpot
@@ -2965,42 +2962,42 @@ export default function LegalOpsLanding() {
                   </div>
 
                   {/* Office Equipment */}
-                  <div className="grid grid-cols-3 gap-4 p-6 hover:bg-slate-50/50 transition-colors duration-200">
-                    <div className="font-semibold" style={{ color: "#1E293B" }}>
-                      Office Equipment
+                  <div className="grid grid-cols-3 gap-3 px-4 py-3 hover:bg-slate-50/50 transition-colors duration-200">
+                    <div className="font-semibold text-sm" style={{ color: "#1E293B" }}>
+                      Equipment
                     </div>
-                    <div className="flex items-center justify-center gap-2">
-                      <X className="w-5 h-5 text-red-500 stroke-[3]" />
-                      <span style={{ color: "#64748B" }}>
-                        Firm provides hardware/software
+                    <div className="flex items-center justify-center gap-1">
+                      <X className="w-4 h-4 text-red-500 stroke-[3]" />
+                      <span className="text-xs md:text-sm" style={{ color: "#64748B" }}>
+                        Firm provides
                       </span>
                     </div>
-                    <div className="flex items-center justify-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                    <div className="flex items-center justify-center gap-1">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                       <span
-                        className="font-medium"
+                        className="font-medium text-xs md:text-sm"
                         style={{ color: "#4353FF" }}
                       >
-                        Provided & maintained by OnSpot
+                        OnSpot provides
                       </span>
                     </div>
                   </div>
 
                   {/* Long-Term Commitment */}
-                  <div className="grid grid-cols-3 gap-4 p-6 hover:bg-slate-50/50 transition-colors duration-200">
-                    <div className="font-semibold" style={{ color: "#1E293B" }}>
-                      Long-Term Commitment
+                  <div className="grid grid-cols-3 gap-3 px-4 py-3 hover:bg-slate-50/50 transition-colors duration-200">
+                    <div className="font-semibold text-sm" style={{ color: "#1E293B" }}>
+                      Commitment
                     </div>
-                    <div className="flex items-center justify-center gap-2">
-                      <X className="w-5 h-5 text-red-500 stroke-[3]" />
-                      <span style={{ color: "#64748B" }}>
-                        Fixed employment contracts
+                    <div className="flex items-center justify-center gap-1">
+                      <X className="w-4 h-4 text-red-500 stroke-[3]" />
+                      <span className="text-xs md:text-sm" style={{ color: "#64748B" }}>
+                        Fixed contracts
                       </span>
                     </div>
-                    <div className="flex items-center justify-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                    <div className="flex items-center justify-center gap-1">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                       <span
-                        className="font-medium"
+                        className="font-medium text-xs md:text-sm"
                         style={{ color: "#4353FF" }}
                       >
                         Flexible month-to-month terms
