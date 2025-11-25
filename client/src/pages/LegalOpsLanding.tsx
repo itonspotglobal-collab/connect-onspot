@@ -1103,30 +1103,46 @@ export default function LegalOpsLanding() {
           </div>
         </section>
 
-        {/* The Problem Section */}
-        <section className="py-14 md:py-18 bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-slate-950 dark:to-slate-900/50">
-          <div className="container-fluid">
-            <div className="max-w-6xl mx-auto">
+        {/* Why Law Firms Come to OnSpot - Premium Section */}
+        <section className="py-20 md:py-28 bg-gradient-to-br from-blue-600/95 via-blue-500/90 to-purple-600/85 dark:from-blue-900/80 dark:via-blue-800/75 dark:to-purple-900/70 relative overflow-hidden">
+          {/* Background glow effect */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-white/10 rounded-full blur-3xl opacity-30"></div>
+            <div className="absolute top-0 right-0 w-80 h-80 bg-blue-300/10 rounded-full blur-2xl opacity-20"></div>
+            <div className="absolute bottom-0 left-0 w-80 h-80 bg-purple-300/10 rounded-full blur-2xl opacity-20"></div>
+          </div>
+
+          <div className="container-fluid relative z-10">
+            <div className="max-w-6xl mx-auto px-4 md:px-6">
               {/* Header */}
-              <div className="text-center mb-12 md:mb-14">
-                <h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white">
+              <div className="text-center mb-16 md:mb-20 why-section-header">
+                <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
                   Why law firms come to OnSpot
                 </h2>
+                <p className="text-lg text-blue-100 font-light max-w-2xl mx-auto">
+                  Solving the operational challenges that impact your bottom line
+                </p>
               </div>
 
               {/* Two-Column Layout */}
-              <div className="grid md:grid-cols-2 gap-6 md:gap-8">
-                {/* Left: Bullet List Card */}
-                <div className="problem-card-entrance">
-                  <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 h-full hover-elevate">
-                    <CardHeader className="pb-4">
-                      <CardTitle className="text-slate-900 dark:text-white text-lg flex items-center gap-2">
-                        <AlertTriangle className="w-5 h-5 text-blue-500" />
-                        Your Operations Are Under Pressure
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ul className="space-y-3">
+              <div className="grid md:grid-cols-2 gap-8 md:gap-10">
+                {/* Left: Bullet List Card - Glass Panel */}
+                <div className="why-card-entrance">
+                  <div className="rounded-2xl bg-white/15 backdrop-blur-xl border border-white/25 p-8 h-full hover-elevate transition-all duration-300 group relative overflow-hidden">
+                    {/* Subtle glow on hover */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                    
+                    <div className="relative z-10">
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
+                          <AlertTriangle className="w-5 h-5 text-white" />
+                        </div>
+                        <h3 className="text-xl font-semibold text-white">
+                          Your Operations Are Under Pressure
+                        </h3>
+                      </div>
+                      
+                      <ul className="space-y-3.5">
                         {[
                           "Case loads overwhelming your legal staff",
                           "Manual case management creating delays",
@@ -1134,73 +1150,79 @@ export default function LegalOpsLanding() {
                           "Compliance deadlines slipping through cracks",
                           "High attorney turnover from operational burnout"
                         ].map((point, idx) => (
-                          <li key={idx} className="flex gap-3 items-start problem-bullet">
-                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></div>
-                            <span className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">{point}</span>
+                          <li key={idx} className="flex gap-3 items-start">
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-200 mt-1.5 flex-shrink-0"></div>
+                            <span className="text-blue-50 text-sm leading-relaxed font-light">{point}</span>
                           </li>
                         ))}
                       </ul>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Right: Three Stacked Cards */}
-                <div className="space-y-4 md:space-y-5">
+                {/* Right: Three Stacked Cards - Glass Panels */}
+                <div className="space-y-6 md:space-y-7">
                   {/* Card 1: Operational Bandwidth */}
-                  <div className="problem-card-entrance problem-card-delay-1">
-                    <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 hover-elevate">
-                      <CardContent className="p-5 md:p-6">
-                        <div className="flex gap-3 items-start">
-                          <Clock className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                          <div>
-                            <h3 className="font-semibold text-slate-900 dark:text-white mb-1.5">
-                              Operational Bandwidth
-                            </h3>
-                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                              Your team is stretched thin managing cases and operations simultaneously, leaving no bandwidth for strategic growth.
-                            </p>
-                          </div>
+                  <div className="why-card-entrance" style={{ animationDelay: '0.05s' }}>
+                    <div className="rounded-2xl bg-white/15 backdrop-blur-xl border border-white/25 p-6 md:p-7 hover-elevate transition-all duration-300 group relative overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                      
+                      <div className="relative z-10 flex gap-4 items-start">
+                        <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
+                          <Clock className="w-5 h-5 text-white" />
                         </div>
-                      </CardContent>
-                    </Card>
+                        <div>
+                          <h3 className="font-semibold text-white mb-2">
+                            Operational Bandwidth
+                          </h3>
+                          <p className="text-blue-50 text-sm leading-relaxed font-light">
+                            Your team is stretched thin managing cases and operations simultaneously, leaving no bandwidth for strategic growth.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Card 2: Frustration and Bottlenecks */}
-                  <div className="problem-card-entrance problem-card-delay-2">
-                    <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 hover-elevate">
-                      <CardContent className="p-5 md:p-6">
-                        <div className="flex gap-3 items-start">
-                          <AlertCircle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                          <div>
-                            <h3 className="font-semibold text-slate-900 dark:text-white mb-1.5">
-                              Frustration and Bottlenecks
-                            </h3>
-                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                              Manual workflows create delays that compound client frustration and erode trust in your firm's capabilities.
-                            </p>
-                          </div>
+                  <div className="why-card-entrance" style={{ animationDelay: '0.1s' }}>
+                    <div className="rounded-2xl bg-white/15 backdrop-blur-xl border border-white/25 p-6 md:p-7 hover-elevate transition-all duration-300 group relative overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                      
+                      <div className="relative z-10 flex gap-4 items-start">
+                        <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
+                          <AlertCircle className="w-5 h-5 text-white" />
                         </div>
-                      </CardContent>
-                    </Card>
+                        <div>
+                          <h3 className="font-semibold text-white mb-2">
+                            Frustration and Bottlenecks
+                          </h3>
+                          <p className="text-blue-50 text-sm leading-relaxed font-light">
+                            Manual workflows create delays that compound client frustration and erode trust in your firm's capabilities.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Card 3: What's Really at Stake */}
-                  <div className="problem-card-entrance problem-card-delay-3">
-                    <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 hover-elevate">
-                      <CardContent className="p-5 md:p-6">
-                        <div className="flex gap-3 items-start">
-                          <Scale className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                          <div>
-                            <h3 className="font-semibold text-slate-900 dark:text-white mb-1.5">
-                              What's Really at Stake
-                            </h3>
-                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                              Without operational stability, you risk losing high-value cases, losing clients to competitors, and losing your best talent.
-                            </p>
-                          </div>
+                  <div className="why-card-entrance" style={{ animationDelay: '0.15s' }}>
+                    <div className="rounded-2xl bg-white/15 backdrop-blur-xl border border-white/25 p-6 md:p-7 hover-elevate transition-all duration-300 group relative overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                      
+                      <div className="relative z-10 flex gap-4 items-start">
+                        <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
+                          <Scale className="w-5 h-5 text-white" />
                         </div>
-                      </CardContent>
-                    </Card>
+                        <div>
+                          <h3 className="font-semibold text-white mb-2">
+                            What's Really at Stake
+                          </h3>
+                          <p className="text-blue-50 text-sm leading-relaxed font-light">
+                            Without operational stability, you risk losing high-value cases, losing clients to competitors, and losing your best talent.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

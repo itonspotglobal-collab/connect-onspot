@@ -2205,3 +2205,14 @@
   animation-timeline: view();
   animation-range: entry 0% cover 30%;
 }
+
+/* Why Law Firms Section Animations */
+.why-section-header {
+  animation: fadeInUp 0.8s ease-out;
+}
+
+.why-card-entrance {
+  animation: fadeInUp 0.8s ease-out both;
+  animation-timeline: view();
+  animation-range: entry 0% cover 25%;
+}
