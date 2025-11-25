@@ -1973,57 +1973,34 @@
     animation: inherit;
   }
 
-  /* US Vector Map Animations */
-  @keyframes mapFadeInScale {
+  /* Geographic Identity Band */
+  @keyframes chipFadeIn {
     from {
       opacity: 0;
-      transform: scale(0.95);
+      transform: translateY(4px);
     }
     to {
       opacity: 1;
-      transform: scale(1);
+      transform: translateY(0);
     }
   }
 
-  @keyframes stateGlow {
-    0%, 100% {
-      filter: drop-shadow(0 0 0px rgba(59, 130, 246, 0));
-    }
-    50% {
-      filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.3));
-    }
-  }
-
-  .us-map-fade-in {
-    animation: mapFadeInScale 0.7s ease-out both;
+  .geo-location-chip {
+    animation: chipFadeIn 0.5s ease-out both;
     animation-timeline: view();
-    animation-range: entry 0% cover 35%;
+    animation-range: entry 0% cover 30%;
   }
 
-  .us-state-highlight {
-    transition: all 0.3s ease-out;
-  }
-
-  .us-state-highlight:hover .us-state-hover {
-    filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.6));
-  }
-
-  .state-ny,
-  .state-tx,
-  .state-fl {
-    animation: stateGlow 2.8s ease-in-out infinite;
-  }
-
-  .state-ny {
+  .geo-location-chip:nth-child(1) {
     animation-delay: 0s;
   }
 
-  .state-tx {
-    animation-delay: 0.6s;
+  .geo-location-chip:nth-child(2) {
+    animation-delay: 0.1s;
   }
 
-  .state-fl {
-    animation-delay: 1.2s;
+  .geo-location-chip:nth-child(3) {
+    animation-delay: 0.2s;
   }
 
   /* ===== MOBILE-FIRST RESPONSIVE UTILITIES ===== */
