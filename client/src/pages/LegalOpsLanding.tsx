@@ -1014,25 +1014,102 @@ export default function LegalOpsLanding() {
           </div>
         </section>
 
-        {/* US Market Coverage Map */}
-        <section className="py-14 md:py-18 bg-white dark:bg-slate-950">
+        {/* Geographic Coverage Section */}
+        <section className="py-20 md:py-28 bg-gradient-to-br from-blue-50/50 to-purple-50/30 dark:from-slate-900/50 dark:to-slate-800/30 border-t border-b border-slate-200 dark:border-slate-800/50">
           <div className="container-fluid">
-            <div className="max-w-5xl mx-auto">
-              {/* Real US Map Image */}
-              <div className="flex justify-center mb-10">
-                <img 
-                  src="/assets/Image 11-25-25 at 6.12 PM_1764065562971.jpeg" 
-                  alt="United States map showing New York, Texas, and Florida highlighted in blue" 
-                  className="w-full max-w-4xl h-auto"
-                  data-testid="img-us-map"
-                />
+            <div className="max-w-6xl mx-auto px-4 md:px-6">
+              {/* Header */}
+              <div className="text-center mb-16 md:mb-20 geo-section-header">
+                <h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-4">
+                  Where We Operate
+                </h2>
+                <p className="text-lg text-slate-600 dark:text-slate-400 font-light max-w-2xl mx-auto">
+                  Serving landlord–tenant law firms in key US markets
+                </p>
               </div>
 
-              {/* Caption */}
-              <div className="text-center">
-                <p className="text-sm text-slate-600 dark:text-slate-400 font-light tracking-wide">
-                  Serving Landlord–Tenant Law Firms Across Key US Markets
-                </p>
+              {/* Geographic Cards */}
+              <div className="grid md:grid-cols-3 gap-6 md:gap-8">
+                {/* New York Card */}
+                <div className="geo-card-entrance">
+                  <Card className="border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm h-full hover-elevate transition-all duration-300 relative overflow-hidden group">
+                    {/* Accent Line */}
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-400 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
+                    
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-slate-900 dark:text-white text-2xl font-semibold flex items-start gap-3">
+                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-1">
+                          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                        </div>
+                        <span>New York</span>
+                      </CardTitle>
+                    </CardHeader>
+                    
+                    <CardContent>
+                      <p className="text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+                        High-volume L&T practices serving metro NYC and upstate markets
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Texas Card */}
+                <div className="geo-card-entrance" style={{ animationDelay: '0.1s' }}>
+                  <Card className="border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm h-full hover-elevate transition-all duration-300 relative overflow-hidden group">
+                    {/* Accent Line */}
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-400 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
+                    
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-slate-900 dark:text-white text-2xl font-semibold flex items-start gap-3">
+                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-1">
+                          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                        </div>
+                        <span>Texas</span>
+                      </CardTitle>
+                    </CardHeader>
+                    
+                    <CardContent>
+                      <p className="text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+                        Fast-growing eviction dockets across Houston, Dallas, and Austin regions
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Florida Card */}
+                <div className="geo-card-entrance" style={{ animationDelay: '0.2s' }}>
+                  <Card className="border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm h-full hover-elevate transition-all duration-300 relative overflow-hidden group">
+                    {/* Accent Line */}
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-400 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
+                    
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-slate-900 dark:text-white text-2xl font-semibold flex items-start gap-3">
+                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-1">
+                          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                        </div>
+                        <span>Florida</span>
+                      </CardTitle>
+                    </CardHeader>
+                    
+                    <CardContent>
+                      <p className="text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+                        Seasonal demand spikes and residential property specialization
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+
+              {/* US Map Below Cards */}
+              <div className="mt-16 md:mt-20 pt-12 border-t border-slate-200 dark:border-slate-800/50">
+                <div className="flex justify-center geo-map-entrance">
+                  <img 
+                    src="/assets/Image 11-25-25 at 6.12 PM_1764065562971.jpeg" 
+                    alt="United States map showing New York, Texas, and Florida highlighted in blue" 
+                    className="w-full max-w-3xl h-auto"
+                    data-testid="img-us-map"
+                  />
+                </div>
               </div>
             </div>
           </div>

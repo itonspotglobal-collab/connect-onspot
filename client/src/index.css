@@ -2185,3 +2185,23 @@
     }
   }
 }
+/* Geographic section animations */
+.geo-section-header {
+  animation: fadeInUp 0.8s ease-out;
+}
+
+.geo-card-entrance {
+  animation: fadeInUp 0.8s ease-out both;
+  animation-timeline: view();
+  animation-range: entry 0% cover 30%;
+}
+
+.geo-card-entrance:nth-child(1) { animation-delay: 0s; }
+.geo-card-entrance:nth-child(2) { animation-delay: 0.1s; }
+.geo-card-entrance:nth-child(3) { animation-delay: 0.2s; }
+
+.geo-map-entrance {
+  animation: fadeInUp 0.8s ease-out both;
+  animation-timeline: view();
+  animation-range: entry 0% cover 30%;
+}
