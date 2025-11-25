@@ -384,13 +384,13 @@ function RightFitSection() {
           <div className="grid md:grid-cols-2 gap-10 md:gap-12 items-stretch">
             {/* LEFT: Photo Card with Gradient Overlay */}
             <div
+              className="relative rounded-2xl overflow-hidden shadow-md bg-slate-100 dark:bg-slate-800"
               style={{
+                minHeight: "520px",
                 opacity: isInView ? 1 : 0,
                 transform: isInView ? "translateY(0)" : "translateY(24px)",
                 transition: "opacity 0.7s ease-out, transform 0.7s ease-out",
               }}
-              className="relative rounded-2xl overflow-hidden shadow-md bg-slate-100 dark:bg-slate-800"
-              style={{ minHeight: "520px" }}
             >
               <img
                 src="/assets/rightfit-handshake.png"
@@ -1007,6 +1007,103 @@ export default function LegalOpsLanding() {
           </div>
         </section>
 
+        {/* Zero Escalation Guarantee Section */}
+        <section className="py-12 sm:py-16 md:py-20 bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 relative overflow-hidden">
+          {/* Background decoration */}
+          <div className="absolute top-0 left-0 w-full h-full">
+            <div className="absolute top-20 left-10 w-72 h-72 bg-amber-200/20 dark:bg-amber-500/5 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-20 right-10 w-96 h-96 bg-yellow-200/20 dark:bg-yellow-500/5 rounded-full blur-3xl"></div>
+          </div>
+
+          <div className="container-fluid relative z-10">
+            <div className="max-w-5xl mx-auto">
+              <div className="text-center mb-12">
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-3xl mb-6 shadow-2xl">
+                  <Shield className="w-10 h-10 text-white" />
+                </div>
+                <h2
+                  className="text-3xl sm:text-5xl font-bold mb-4"
+                  data-testid="text-guarantee-title"
+                >
+                  Zero Escalation Guarantee
+                </h2>
+                <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+                  We're so confident in our system that if you don't achieve
+                  operational stability within 30 days, we'll continue working
+                  at no additional charge until you reach zero escalations.
+                </p>
+              </div>
+
+              <Card className="shadow-2xl border-2 border-amber-200 dark:border-amber-800">
+                <CardContent className="p-8 sm:p-12">
+                  <div className="grid sm:grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 bg-amber-500/20 rounded-xl flex items-center justify-center flex-shrink-0 mt-1">
+                          <CheckCircle2 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-lg mb-1">
+                            30-Day Stability Target
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            We aim to achieve zero escalations within your first
+                            30 days
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 bg-amber-500/20 rounded-xl flex items-center justify-center flex-shrink-0 mt-1">
+                          <CheckCircle2 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-lg mb-1">
+                            No Extra Charges
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            If it takes longer, we work for free until you're
+                            stable
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 bg-amber-500/20 rounded-xl flex items-center justify-center flex-shrink-0 mt-1">
+                          <CheckCircle2 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-lg mb-1">
+                            Performance Tracking
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            Daily metrics and weekly reviews ensure we stay on
+                            target
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 bg-amber-500/20 rounded-xl flex items-center justify-center flex-shrink-0 mt-1">
+                          <CheckCircle2 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-lg mb-1">
+                            Full Transparency
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            Complete visibility into our progress every step of
+                            the way
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+
         {/* Geographic Coverage Section */}
         <section className="py-20 md:py-28 bg-gradient-to-br from-blue-50/50 to-purple-50/30 dark:from-slate-900/50 dark:to-slate-800/30 border-t border-b border-slate-200 dark:border-slate-800/50">
           <div className="container-fluid">
@@ -1225,103 +1322,6 @@ export default function LegalOpsLanding() {
 
         {/* Are We the Right Fit? Section - Premium */}
         <RightFitSection />
-
-        {/* Zero Escalation Guarantee Section */}
-        <section className="py-12 sm:py-16 md:py-20 bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 relative overflow-hidden">
-          {/* Background decoration */}
-          <div className="absolute top-0 left-0 w-full h-full">
-            <div className="absolute top-20 left-10 w-72 h-72 bg-amber-200/20 dark:bg-amber-500/5 rounded-full blur-3xl"></div>
-            <div className="absolute bottom-20 right-10 w-96 h-96 bg-yellow-200/20 dark:bg-yellow-500/5 rounded-full blur-3xl"></div>
-          </div>
-
-          <div className="container-fluid relative z-10">
-            <div className="max-w-5xl mx-auto">
-              <div className="text-center mb-12">
-                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-3xl mb-6 shadow-2xl">
-                  <Shield className="w-10 h-10 text-white" />
-                </div>
-                <h2
-                  className="text-3xl sm:text-5xl font-bold mb-4"
-                  data-testid="text-guarantee-title"
-                >
-                  Zero Escalation Guarantee
-                </h2>
-                <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-                  We're so confident in our system that if you don't achieve
-                  operational stability within 30 days, we'll continue working
-                  at no additional charge until you reach zero escalations.
-                </p>
-              </div>
-
-              <Card className="shadow-2xl border-2 border-amber-200 dark:border-amber-800">
-                <CardContent className="p-8 sm:p-12">
-                  <div className="grid sm:grid-cols-2 gap-8">
-                    <div className="space-y-4">
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-amber-500/20 rounded-xl flex items-center justify-center flex-shrink-0 mt-1">
-                          <CheckCircle2 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-lg mb-1">
-                            30-Day Stability Target
-                          </h3>
-                          <p className="text-sm text-muted-foreground">
-                            We aim to achieve zero escalations within your first
-                            30 days
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-amber-500/20 rounded-xl flex items-center justify-center flex-shrink-0 mt-1">
-                          <CheckCircle2 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-lg mb-1">
-                            No Extra Charges
-                          </h3>
-                          <p className="text-sm text-muted-foreground">
-                            If it takes longer, we work for free until you're
-                            stable
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-4">
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-amber-500/20 rounded-xl flex items-center justify-center flex-shrink-0 mt-1">
-                          <CheckCircle2 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-lg mb-1">
-                            Performance Tracking
-                          </h3>
-                          <p className="text-sm text-muted-foreground">
-                            Daily metrics and weekly reviews ensure we stay on
-                            target
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-amber-500/20 rounded-xl flex items-center justify-center flex-shrink-0 mt-1">
-                          <CheckCircle2 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-lg mb-1">
-                            Full Transparency
-                          </h3>
-                          <p className="text-sm text-muted-foreground">
-                            Complete visibility into our progress every step of
-                            the way
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </section>
 
         {/* New York Law Firm Success Section */}
         <section className="py-16 sm:py-20 bg-white dark:bg-slate-900">
