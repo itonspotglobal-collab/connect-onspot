@@ -350,27 +350,27 @@ function RightFitSection() {
   return (
     <section
       ref={fitSectionRef}
-      className="py-20 sm:py-24 bg-gradient-to-br from-slate-50/80 via-violet-50/30 to-slate-50/80 dark:from-slate-900 dark:via-slate-850 dark:to-slate-900 relative overflow-hidden"
+      className="py-20 sm:py-28 bg-white dark:bg-slate-900 relative overflow-hidden"
     >
       <div className="container-fluid">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-7xl mx-auto px-4 md:px-6">
           {/* Header with Badge */}
-          <div className="text-center mb-16 relative">
+          <div className="text-center mb-20 relative">
             <Badge
-              className="mb-6 text-xs font-semibold px-4 py-2 border-0 shadow-lg"
+              className="mb-6 text-xs font-semibold px-4 py-2 border-0"
               style={{ backgroundColor: "#4353FF", color: "white" }}
               data-testid="badge-limited-intake"
             >
               Limited Intake • By Application
             </Badge>
             <h2
-              className="text-4xl sm:text-5xl font-bold mb-6 bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-200 bg-clip-text text-transparent"
+              className="text-4xl sm:text-5xl font-bold mb-6 text-slate-900 dark:text-white"
               data-testid="text-right-fit-title"
             >
               Are We the Right Fit?
             </h2>
             <p
-              className="text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-3xl mx-auto"
+              className="text-lg text-slate-600 dark:text-slate-400 leading-relaxed max-w-3xl mx-auto font-light"
               data-testid="text-right-fit-description"
             >
               OnSpot only partners with law firms that value precision, process,
@@ -379,75 +379,53 @@ function RightFitSection() {
             </p>
           </div>
 
-          {/* Two-column layout */}
-          <div className="grid md:grid-cols-[minmax(0,1.1fr)_minmax(0,1.5fr)] gap-12 md:gap-16 items-center">
+          {/* Two-column layout with aligned tops */}
+          <div className="grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] gap-8 md:gap-12 items-start">
             {/* Left: Professional Image */}
-            <div className="relative aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl">
+            <div className="relative rounded-2xl overflow-hidden shadow-sm bg-slate-100 dark:bg-slate-800" style={{ aspectRatio: "4/5" }}>
               <img
                 src="/assets/rightfit-handshake.png"
                 alt="Professional handshake demonstrating successful partnership"
-                className="w-full h-full object-cover object-center"
+                className="w-full h-full object-contain object-center"
                 loading="lazy"
                 width="400"
                 height="500"
               />
             </div>
 
-            {/* Right: Checklist with Screening Line */}
-            <div className="relative">
-              {/* Animated Screening Line */}
-              {isInView && (
-                <div
-                  className="absolute left-0 top-0 w-0.5 h-full bg-gradient-to-b from-transparent via-[#4353FF] to-transparent"
-                  style={{
-                    animation: "screeningLine 2.5s ease-out forwards",
-                  }}
-                ></div>
-              )}
-
+            {/* Right: Checklist */}
+            <div className="space-y-5">
               {/* Checklist Cards */}
-              <div className="space-y-4 pl-6">
-                {checklist.map((item, index) => (
-                  <Card
-                    key={item.id}
-                    className="group relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-slate-200 dark:border-slate-700 shadow-md hover:shadow-xl overflow-visible"
-                    style={{
-                      opacity: isInView ? 1 : 0,
-                      transform: isInView
-                        ? "translateY(0)"
-                        : "translateY(24px)",
-                      transition: `opacity 0.6s ease-out ${isInView ? index * 120 : 0}ms, transform 0.6s ease-out ${isInView ? index * 120 : 0}ms`,
-                    }}
-                    data-testid={`checklist-card-${item.id}`}
-                  >
-                    <CardContent className="p-5 flex items-start gap-4">
-                      {/* Icon with hover transition */}
-                      <div className="relative w-7 h-7 flex-shrink-0 mt-0.5">
-                        {/* Outline icon (default) */}
-                        <div
-                          className="absolute inset-0 rounded-full flex items-center justify-center transition-opacity duration-300 group-hover:opacity-0"
-                          style={{ backgroundColor: "#4353FF15" }}
-                        >
-                          <div className="w-5 h-5 rounded-full border-2 border-[#4353FF]"></div>
-                        </div>
-                        {/* Filled icon (hover) */}
-                        <div className="absolute inset-0 rounded-full flex items-center justify-center transition-opacity duration-300 opacity-0 group-hover:opacity-100">
-                          <CheckCircle2
-                            className="h-7 w-7"
-                            style={{ color: "#4353FF" }}
-                          />
-                        </div>
-                      </div>
-                      <p className="text-base text-slate-700 dark:text-slate-200 leading-relaxed flex-1">
-                        {item.text}
-                      </p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+              {checklist.map((item, index) => (
+                <div
+                  key={item.id}
+                  style={{
+                    opacity: isInView ? 1 : 0,
+                    transform: isInView
+                      ? "translateY(0)"
+                      : "translateY(20px)",
+                    transition: `opacity 0.6s ease-out ${isInView ? index * 100 : 0}ms, transform 0.6s ease-out ${isInView ? index * 100 : 0}ms`,
+                  }}
+                  data-testid={`checklist-card-${item.id}`}
+                  className="flex items-start gap-4 p-5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50"
+                >
+                  {/* Check Icon */}
+                  <div className="flex-shrink-0 mt-0.5">
+                    <CheckCircle2
+                      className="w-6 h-6"
+                      style={{ color: "#4353FF" }}
+                      strokeWidth={2.5}
+                    />
+                  </div>
+                  {/* Text */}
+                  <p className="text-base text-slate-700 dark:text-slate-200 leading-relaxed font-light flex-1">
+                    {item.text}
+                  </p>
+                </div>
+              ))}
 
-              {/* CTA Button */}
-              <div className="mt-10 text-center md:text-left pl-6">
+              {/* CTA Button - Centered */}
+              <div className="pt-6 flex justify-center">
                 <Button
                   onClick={() => {
                     const checkoutSection =
@@ -459,17 +437,16 @@ function RightFitSection() {
                       });
                     }
                   }}
-                  className="relative group font-semibold text-white rounded-full px-10 shadow-lg hover:shadow-[0_0_30px_rgba(67,83,255,0.5)] transition-all duration-300 touch-target"
+                  className="relative font-semibold text-white rounded-full px-8 shadow-md hover:shadow-lg transition-all duration-300"
                   style={{
                     backgroundColor: "#4353FF",
-                    animation: "glowPulse 6s ease-in-out infinite",
                   }}
                   size="lg"
                   data-testid="button-apply-consultation"
                 >
                   <span className="flex items-center gap-2">
                     Apply for Consultation
-                    <ArrowUpRight className="w-5 h-5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" />
+                    <ArrowUpRight className="w-5 h-5 transition-transform duration-300" />
                   </span>
                 </Button>
               </div>
