@@ -66,6 +66,7 @@ import { HeadSEO } from "@/components/HeadSEO";
 import nycSkylineImage from "@assets/40431e5288cb44250d8204c03e0ba76129ba76dfd36e01e7c40f546ab05de806_1762346626354.jpeg";
 import lawyerImage from "@assets/stock_images/professional_confide_e4371db1.jpg";
 import selectiveLawyerImage from "@assets/stock_images/caucasian_white_male_8dcc3295.jpg";
+import usMapImage from "@assets/Image 11-25-25 at 6.12 PM_1764065562971.jpeg";
 
 if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
   console.warn(
@@ -1018,93 +1019,14 @@ export default function LegalOpsLanding() {
         <section className="py-14 md:py-18 bg-white dark:bg-slate-950">
           <div className="container-fluid">
             <div className="max-w-5xl mx-auto">
-              {/* Real US Map */}
+              {/* Real US Map Image */}
               <div className="flex justify-center mb-10">
-                <svg viewBox="0 0 975 610" className="w-full max-w-4xl h-auto" data-testid="svg-us-real-map" preserveAspectRatio="xMidYMid meet">
-                  <defs>
-                    <style>{`
-                      .state { fill: #f1f5f9; stroke: #cbd5e1; stroke-width: 0.7; }
-                      .dark .state { fill: #0f172a; stroke: #334155; }
-                      .state-ny, .state-tx, .state-fl { fill: #4353FF; fill-opacity: 0.3; stroke: #4353FF; stroke-width: 1.2; }
-                      .state-label { font-size: 10px; font-weight: 700; fill: #1e293b; text-anchor: middle; letter-spacing: 0.5px; }
-                      .dark .state-label { fill: #cbd5e1; }
-                    `}</style>
-                  </defs>
-
-                  {/* WA */ }
-                  <path class="state" d="M 75 95 L 135 80 L 140 160 L 80 170 Z" />
-                  {/* OR */ }
-                  <path class="state" d="M 75 160 L 135 150 L 140 230 L 80 240 Z" />
-                  {/* CA */ }
-                  <path class="state" d="M 75 230 L 135 220 L 140 340 L 80 350 Z" />
-                  {/* NV */ }
-                  <path class="state" d="M 135 220 L 180 210 L 185 340 L 140 350 Z" />
-                  {/* ID */ }
-                  <path class="state" d="M 135 150 L 185 135 L 190 220 L 140 230 Z" />
-                  {/* MT */ }
-                  <path class="state" d="M 135 80 L 210 60 L 215 150 L 185 165 Z" />
-                  {/* WY */ }
-                  <path class="state" d="M 185 135 L 240 115 L 245 210 L 190 230 Z" />
-                  {/* UT */ }
-                  <path class="state" d="M 180 210 L 230 200 L 235 280 L 185 290 Z" />
-                  {/* AZ */ }
-                  <path class="state" d="M 180 280 L 230 270 L 235 350 L 185 360 Z" />
-                  {/* NM */ }
-                  <path class="state" d="M 230 270 L 280 260 L 285 360 L 235 370 Z" />
-                  {/* CO */ }
-                  <path class="state" d="M 240 115 L 300 100 L 305 210 L 245 225 Z" />
-                  {/* ND */ }
-                  <path class="state" d="M 210 60 L 290 40 L 295 120 L 215 140 Z" />
-                  {/* SD */ }
-                  <path class="state" d="M 290 40 L 360 25 L 365 130 L 295 145 Z" />
-                  {/* NE */ }
-                  <path class="state" d="M 300 100 L 370 85 L 375 190 L 305 205 Z" />
-                  {/* KS */ }
-                  <path class="state" d="M 370 85 L 430 75 L 435 180 L 375 190 Z" />
-                  {/* OK */ }
-                  <path class="state" d="M 280 260 L 370 245 L 375 320 L 285 330 Z" />
-                  {/* TX */ }
-                  <path class="state-tx" d="M 280 320 L 385 300 L 390 450 L 285 460 Z" />
-                  <text class="state-label" x="335" y="385">TX</text>
-                  {/* MN */ }
-                  <path class="state" d="M 360 25 L 430 10 L 435 110 L 365 125 Z" />
-                  {/* WI */ }
-                  <path class="state" d="M 430 10 L 480 5 L 485 105 L 435 115 Z" />
-                  {/* MI */ }
-                  <path class="state" d="M 480 5 L 530 0 L 535 90 L 485 105 Z" />
-                  {/* IA */ }
-                  <path class="state" d="M 430 75 L 490 60 L 495 155 L 435 170 Z" />
-                  {/* MO */ }
-                  <path class="state" d="M 490 60 L 550 45 L 555 160 L 495 175 Z" />
-                  {/* IL */ }
-                  <path class="state" d="M 550 45 L 590 40 L 595 160 L 555 170 Z" />
-                  {/* IN-OH */ }
-                  <path class="state" d="M 590 40 L 640 35 L 645 165 L 595 170 Z" />
-                  {/* PA-NJ */ }
-                  <path class="state" d="M 640 35 L 680 32 L 685 150 L 645 160 Z" />
-                  {/* NY */ }
-                  <path class="state-ny" d="M 660 60 L 690 58 L 695 140 L 665 142 Z" />
-                  <text class="state-label" x="678" y="110">NY</text>
-                  {/* KY-TN */ }
-                  <path class="state" d="M 550 160 L 620 145 L 625 230 L 555 245 Z" />
-                  {/* AR */ }
-                  <path class="state" d="M 430 180 L 500 165 L 505 245 L 435 260 Z" />
-                  {/* LA */ }
-                  <path class="state" d="M 450 320 L 500 310 L 505 380 L 455 390 Z" />
-                  {/* MS */ }
-                  <path class="state" d="M 500 310 L 550 300 L 555 380 L 505 390 Z" />
-                  {/* AL */ }
-                  <path class="state" d="M 550 300 L 590 295 L 595 380 L 555 385 Z" />
-                  {/* GA */ }
-                  <path class="state" d="M 590 295 L 630 290 L 635 380 L 595 385 Z" />
-                  {/* SC-NC */ }
-                  <path class="state" d="M 630 290 L 680 285 L 685 380 L 635 385 Z" />
-                  {/* FL */ }
-                  <path class="state-fl" d="M 650 380 L 680 378 L 682 480 L 652 482 Z" />
-                  <text class="state-label" x="666" y="435">FL</text>
-                  {/* VT-NH-ME */ }
-                  <path class="state" d="M 680 32 L 720 30 L 725 120 L 685 125 Z" />
-                </svg>
+                <img 
+                  src={usMapImage} 
+                  alt="United States map showing New York, Texas, and Florida highlighted in blue" 
+                  className="w-full max-w-4xl h-auto"
+                  data-testid="img-us-map"
+                />
               </div>
 
               {/* Caption */}
