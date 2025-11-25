@@ -66,7 +66,7 @@ import { HeadSEO } from "@/components/HeadSEO";
 import nycSkylineImage from "@assets/40431e5288cb44250d8204c03e0ba76129ba76dfd36e01e7c40f546ab05de806_1762346626354.jpeg";
 import lawyerImage from "@assets/stock_images/professional_confide_e4371db1.jpg";
 import selectiveLawyerImage from "@assets/stock_images/caucasian_white_male_8dcc3295.jpg";
-import usMapImage from "@assets/Image 11-25-25 at 6.12 PM_1764065562971.jpeg";
+import usMapImage from "@assets/Image%2011-25-25%20at%206.12%20PM_1764065562971.jpeg";
 
 if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
   console.warn(
