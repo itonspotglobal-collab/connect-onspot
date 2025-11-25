@@ -1014,24 +1014,74 @@ export default function LegalOpsLanding() {
           </div>
         </section>
 
-        {/* Geographic Identity Band */}
-        <section className="py-8 md:py-10 bg-slate-50/50 dark:bg-slate-900/30 border-t border-b border-slate-200 dark:border-slate-800">
+        {/* US Market Coverage Map */}
+        <section className="py-12 md:py-16 bg-white dark:bg-slate-950 border-y border-slate-200 dark:border-slate-800/50">
           <div className="container-fluid">
-            <div className="max-w-3xl mx-auto text-center">
-              {/* Header Line */}
-              <p className="text-xs font-bold text-slate-600 dark:text-slate-400 tracking-widest uppercase mb-4">
-                Serving Landlord–Tenant Law Firms In
-              </p>
+            <div className="max-w-4xl mx-auto">
+              {/* Map Container */}
+              <div className="us-map-entrance flex justify-center">
+                <svg
+                  viewBox="0 0 960 600"
+                  className="w-full max-w-2xl h-auto"
+                  data-testid="svg-us-map-coverage"
+                  preserveAspectRatio="xMidYMid meet"
+                >
+                  {/* US Continental Outline & States */}
+                  <g className="us-states">
+                    {/* Base US outline */}
+                    <path
+                      d="M 150 200 L 800 200 L 800 450 L 150 450 Z"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      className="text-slate-300 dark:text-slate-700"
+                    />
+                    
+                    {/* State grid - simplified divisions */}
+                    <line x1="250" y1="200" x2="250" y2="450" stroke="currentColor" strokeWidth="0.8" className="text-slate-200 dark:text-slate-800" opacity="0.5" />
+                    <line x1="350" y1="200" x2="350" y2="450" stroke="currentColor" strokeWidth="0.8" className="text-slate-200 dark:text-slate-800" opacity="0.5" />
+                    <line x1="450" y1="200" x2="450" y2="450" stroke="currentColor" strokeWidth="0.8" className="text-slate-200 dark:text-slate-800" opacity="0.5" />
+                    <line x1="550" y1="200" x2="550" y2="450" stroke="currentColor" strokeWidth="0.8" className="text-slate-200 dark:text-slate-800" opacity="0.5" />
+                    <line x1="650" y1="200" x2="650" y2="450" stroke="currentColor" strokeWidth="0.8" className="text-slate-200 dark:text-slate-800" opacity="0.5" />
+                    <line x1="700" y1="200" x2="700" y2="450" stroke="currentColor" strokeWidth="0.8" className="text-slate-200 dark:text-slate-800" opacity="0.5" />
+                    <line x1="150" y1="300" x2="800" y2="300" stroke="currentColor" strokeWidth="0.8" className="text-slate-200 dark:text-slate-800" opacity="0.5" />
+                    <line x1="150" y1="375" x2="800" y2="375" stroke="currentColor" strokeWidth="0.8" className="text-slate-200 dark:text-slate-800" opacity="0.5" />
+                  </g>
 
-              {/* Location Chips */}
-              <div className="flex flex-wrap items-center justify-center gap-3">
-                {["New York", "Texas", "Florida"].map((location, idx) => (
-                  <div key={idx} className="geo-location-chip">
-                    <span className="px-4 py-2 rounded-full border border-blue-500/60 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-500/10 transition-all duration-300 inline-block cursor-default">
-                      {location}
-                    </span>
-                  </div>
-                ))}
+                  {/* NEW YORK - Top Right */}
+                  <g className="state-highlight state-ny-map">
+                    <rect x="730" y="220" width="50" height="50" fill="currentColor" className="text-blue-500/25" />
+                    <rect x="730" y="220" width="50" height="50" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-blue-500" />
+                    <text x="780" y="310" fontSize="13" fontWeight="600" textAnchor="middle" fill="currentColor" className="text-slate-700 dark:text-slate-300">
+                      NY
+                    </text>
+                  </g>
+
+                  {/* TEXAS - Center South */}
+                  <g className="state-highlight state-tx-map">
+                    <rect x="300" y="340" width="120" height="90" fill="currentColor" className="text-blue-500/25" />
+                    <rect x="300" y="340" width="120" height="90" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-blue-500" />
+                    <text x="360" y="450" fontSize="13" fontWeight="600" textAnchor="middle" fill="currentColor" className="text-slate-700 dark:text-slate-300">
+                      TX
+                    </text>
+                  </g>
+
+                  {/* FLORIDA - Right Southeast */}
+                  <g className="state-highlight state-fl-map">
+                    <rect x="760" y="360" width="30" height="80" fill="currentColor" className="text-blue-500/25" />
+                    <rect x="760" y="360" width="30" height="80" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-blue-500" />
+                    <text x="810" y="410" fontSize="13" fontWeight="600" textAnchor="middle" fill="currentColor" className="text-slate-700 dark:text-slate-300">
+                      FL
+                    </text>
+                  </g>
+                </svg>
+              </div>
+
+              {/* Caption Below Map */}
+              <div className="text-center mt-8">
+                <p className="text-xs text-slate-600 dark:text-slate-400 font-light tracking-wide">
+                  Serving Landlord–Tenant Law Firms Across Key US Markets
+                </p>
               </div>
             </div>
           </div>
