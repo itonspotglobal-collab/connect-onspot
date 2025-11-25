@@ -1015,84 +1015,75 @@ export default function LegalOpsLanding() {
         </section>
 
         {/* US Market Coverage Map */}
-        <section className="py-12 md:py-16 bg-white dark:bg-slate-950">
+        <section className="py-14 md:py-18 bg-white dark:bg-slate-950">
           <div className="container-fluid">
-            <div className="max-w-5xl mx-auto">
+            <div className="max-w-6xl mx-auto">
               {/* Map Container */}
-              <div className="us-map-entrance flex justify-center">
-                <svg
-                  viewBox="0 0 980 620"
-                  className="w-full max-w-3xl h-auto"
-                  data-testid="svg-us-real-map"
-                  preserveAspectRatio="xMidYMid meet"
-                >
+              <div className="flex justify-center mb-10">
+                <svg viewBox="0 0 960 600" className="w-full max-w-4xl h-auto" data-testid="svg-us-comprehensive-map" preserveAspectRatio="xMidYMid meet">
                   <defs>
                     <style>{`
-                      .us-state-base { fill: none; stroke: #e2e8f0; stroke-width: 1; }
-                      .dark .us-state-base { stroke: #475569; }
-                      .us-state-highlight { fill: #3b82f6; fill-opacity: 0.2; stroke: #3b82f6; stroke-width: 1.5; }
-                      .us-state-highlight:hover { fill-opacity: 0.35; filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.6)); }
+                      .us-state { fill: #f1f5f9; stroke: #cbd5e1; stroke-width: 0.8; }
+                      .dark .us-state { fill: #0f172a; stroke: #334155; }
+                      .state-ny, .state-tx, .state-fl { fill: #4353FF; fill-opacity: 0.25; stroke: #4353FF; stroke-width: 1.2; }
+                      text.state-label { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 11px; font-weight: 600; fill: #1e293b; letter-spacing: 1px; }
+                      .dark text.state-label { fill: #e2e8f0; }
                     `}</style>
                   </defs>
+                  
+                  {/* Continental US States */}
+                  <path className="us-state" d="M 50 150 L 100 145 L 110 180 L 60 185 Z" /> {/* WA */}
+                  <path className="us-state" d="M 100 145 L 150 142 L 160 200 L 110 205 Z" /> {/* MT */}
+                  <path className="us-state" d="M 150 142 L 200 140 L 210 250 L 160 252 Z" /> {/* ND */}
+                  <path className="us-state" d="M 200 140 L 250 138 L 260 270 L 210 272 Z" /> {/* MN */}
+                  <path className="us-state" d="M 250 138 L 300 137 L 310 290 L 260 292 Z" /> {/* WI */}
+                  <path className="us-state" d="M 300 137 L 350 136 L 360 310 L 310 312 Z" /> {/* MI */}
+                  <path className="us-state" d="M 350 136 L 400 135 L 410 330 L 360 332 Z" /> {/* NY-PA region */}
+                  <path className="us-state" d="M 400 135 L 450 134 L 460 350 L 410 352 Z" /> {/* NE region */}
+                  
+                  <path className="us-state" d="M 50 185 L 100 180 L 110 230 L 60 235 Z" /> {/* OR */}
+                  <path className="us-state" d="M 100 230 L 150 225 L 160 320 L 110 325 Z" /> {/* ID */}
+                  <path className="us-state" d="M 150 225 L 200 220 L 210 350 L 160 355 Z" /> {/* WY */}
+                  <path className="us-state" d="M 200 350 L 250 345 L 260 450 L 210 455 Z" /> {/* CO */}
+                  
+                  <path className="us-state" d="M 50 235 L 100 230 L 110 350 L 60 355 Z" /> {/* CA */}
+                  <path className="us-state" d="M 100 325 L 150 320 L 160 450 L 110 455 Z" /> {/* NV */}
+                  <path className="us-state" d="M 150 320 L 200 315 L 210 450 L 160 455 Z" /> {/* UT */}
+                  <path className="us-state" d="M 200 450 L 250 445 L 260 550 L 210 555 Z" /> {/* NM */}
+                  <path className="us-state" d="M 250 345 L 300 340 L 310 500 L 260 505 Z" /> {/* KS */}
+                  
+                  <path className="us-state" d="M 200 315 L 250 310 L 260 400 L 210 405 Z" /> {/* AZ */}
+                  <path className="us-state" d="M 250 445 L 300 440 L 310 570 L 260 575 Z" /> {/* TX west */}
+                  <path className="us-state" d="M 300 340 L 350 335 L 360 500 L 310 505 Z" /> {/* NE */}
+                  <path className="us-state" d="M 350 335 L 400 330 L 410 480 L 360 485 Z" /> {/* IA */}
+                  <path className="us-state" d="M 400 330 L 450 325 L 460 480 L 410 485 Z" /> {/* IL */}
+                  
+                  <path className="us-state" d="M 300 500 L 350 495 L 360 570 L 310 575 Z" /> {/* OK */}
+                  <path className="us-state" d="M 350 500 L 400 495 L 410 570 L 360 575 Z" /> {/* AR */}
+                  <path className="us-state" d="M 400 480 L 450 475 L 460 570 L 410 575 Z" /> {/* KY-TN */}
+                  <path className="us-state" d="M 450 325 L 500 320 L 510 500 L 460 505 Z" /> {/* IN-OH */}
+                  <path className="us-state" d="M 500 320 L 550 315 L 560 500 L 510 505 Z" /> {/* PA-NJ-NY region */}
+                  
+                  <path className="us-state" d="M 450 475 L 500 470 L 510 570 L 460 575 Z" /> {/* MS-LA */}
+                  <path className="us-state" d="M 500 500 L 550 495 L 560 570 L 510 575 Z" /> {/* GA-SC */}
+                  <path className="us-state" d="M 550 495 L 600 490 L 610 570 L 560 575 Z" /> {/* FL */}
 
-                  {/* US States - Simplified realistic shapes */}
-                  {/* Pacific Coast */}
-                  <path className="us-state-base" d="M 50 200 L 150 180 L 160 280 L 80 300 Z" /> {/* Washington/Oregon */}
-                  <path className="us-state-base" d="M 50 300 L 150 280 L 160 420 L 80 440 Z" /> {/* California */}
-
-                  {/* Mountain West */}
-                  <path className="us-state-base" d="M 150 180 L 250 160 L 260 300 L 160 280 Z" /> {/* Idaho/Montana */}
-                  <path className="us-state-base" d="M 150 300 L 250 280 L 260 420 L 160 420 Z" /> {/* Nevada/Utah/Arizona */}
-                  <path className="us-state-base" d="M 250 160 L 350 140 L 360 300 L 260 300 Z" /> {/* Wyoming/Colorado */}
-                  <path className="us-state-base" d="M 250 300 L 350 280 L 360 420 L 260 420 Z" /> {/* New Mexico */}
-
-                  {/* Great Plains & Midwest */}
-                  <path className="us-state-base" d="M 350 140 L 450 130 L 460 300 L 360 300 Z" /> {/* Nebraska/Kansas */}
-                  <path className="us-state-base" d="M 350 300 L 450 280 L 460 420 L 360 420 Z" /> {/* Oklahoma/Texas */}
-                  <path className="us-state-base" d="M 450 130 L 550 125 L 560 300 L 460 300 Z" /> {/* Iowa/Minnesota */}
-                  <path className="us-state-base" d="M 450 300 L 550 280 L 560 420 L 460 420 Z" /> {/* Arkansas/Louisiana */}
-
-                  {/* Midwest/Upper */}
-                  <path className="us-state-base" d="M 550 125 L 650 120 L 660 300 L 560 300 Z" /> {/* Michigan/Wisconsin */}
-                  <path className="us-state-base" d="M 550 300 L 650 280 L 660 400 L 560 400 Z" /> {/* Tennessee/Mississippi */}
-
-                  {/* Northeast */}
-                  <path className="us-state-base" d="M 650 120 L 750 115 L 760 300 L 660 300 Z" /> {/* New York/Pennsylvania */}
-                  <path className="us-state-base" d="M 750 115 L 830 112 L 840 200 L 760 200 Z" /> {/* New England */}
-
-                  {/* Southeast */}
-                  <path className="us-state-base" d="M 650 300 L 750 280 L 760 380 L 660 390 Z" /> {/* Carolinas/Georgia */}
-                  <path className="us-state-base" d="M 750 280 L 820 275 L 830 380 L 760 380 Z" /> {/* Florida */}
-
-                  {/* HIGHLIGHTED STATES */}
                   {/* NEW YORK */}
-                  <g className="state-highlight state-ny-highlight">
-                    <path d="M 700 180 L 740 175 L 745 240 L 705 245 Z" />
-                    <text x="722" y="260" fontSize="12" fontWeight="600" textAnchor="middle" fill="currentColor" className="text-slate-700 dark:text-slate-300">
-                      NY
-                    </text>
-                  </g>
+                  <path className="state-ny" d="M 520 330 L 545 328 L 548 380 L 523 382 Z" />
+                  <text className="state-label" x="533" y="410">NY</text>
 
                   {/* TEXAS */}
-                  <g className="state-highlight state-tx-highlight">
-                    <path d="M 380 320 L 480 310 L 485 430 L 385 440 Z" />
-                    <text x="432" y="455" fontSize="12" fontWeight="600" textAnchor="middle" fill="currentColor" className="text-slate-700 dark:text-slate-300">
-                      TX
-                    </text>
-                  </g>
+                  <path className="state-tx" d="M 260 470 L 340 465 L 345 560 L 265 565 Z" />
+                  <text className="state-label" x="300" y="585">TX</text>
 
                   {/* FLORIDA */}
-                  <g className="state-highlight state-fl-highlight">
-                    <path d="M 770 330 L 795 327 L 798 420 L 773 425 Z" />
-                    <text x="783" y="440" fontSize="12" fontWeight="600" textAnchor="middle" fill="currentColor" className="text-slate-700 dark:text-slate-300">
-                      FL
-                    </text>
-                  </g>
+                  <path className="state-fl" d="M 575 510 L 595 508 L 598 570 L 578 572 Z" />
+                  <text className="state-label" x="586" y="588">FL</text>
                 </svg>
               </div>
 
               {/* Caption */}
-              <div className="text-center mt-8">
+              <div className="text-center">
                 <p className="text-sm text-slate-600 dark:text-slate-400 font-light tracking-wide">
                   Serving Landlord–Tenant Law Firms Across Key US Markets
                 </p>
