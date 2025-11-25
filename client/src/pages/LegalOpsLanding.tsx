@@ -384,7 +384,7 @@ function RightFitSection() {
             {/* Left: Professional Image */}
             <div className="relative aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl">
               <img
-                src="/assets/Are we the right fit_1764066826444.png"
+                src="/assets/rightfit-handshake.png"
                 alt="Professional handshake demonstrating successful partnership"
                 className="w-full h-full object-cover object-center"
                 loading="lazy"
