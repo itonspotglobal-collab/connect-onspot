@@ -61,6 +61,7 @@ import {
   ArrowUpRight,
   Scale,
   AlertCircle,
+  Check,
 } from "lucide-react";
 import { HeadSEO } from "@/components/HeadSEO";
 import nycSkylineImage from "@assets/40431e5288cb44250d8204c03e0ba76129ba76dfd36e01e7c40f546ab05de806_1762346626354.jpeg";
@@ -263,7 +264,7 @@ function RightFitSection() {
   const [isInView, setIsInView] = useState(false);
 
   useEffect(() => {
-    console.log("✅ RightFitSection component mounted with new lawyer image");
+    console.log("✅ RightFitSection rebuilt with unified card layout");
   }, []);
 
   useEffect(() => {
@@ -279,7 +280,7 @@ function RightFitSection() {
         });
       },
       {
-        threshold: 0.35,
+        threshold: 0.25,
         rootMargin: "0px",
       },
     );
@@ -350,10 +351,10 @@ function RightFitSection() {
   return (
     <section
       ref={fitSectionRef}
-      className="py-20 sm:py-28 bg-white dark:bg-slate-900 relative overflow-hidden"
+      className="py-24 sm:py-32 bg-gradient-to-b from-white via-slate-50/50 to-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 relative overflow-hidden"
     >
       <div className="container-fluid">
-        <div className="max-w-7xl mx-auto px-4 md:px-6">
+        <div className="max-w-6xl mx-auto px-4 md:px-6">
           {/* Header with Badge */}
           <div className="text-center mb-20 relative">
             <Badge
@@ -379,53 +380,68 @@ function RightFitSection() {
             </p>
           </div>
 
-          {/* Two-column layout with aligned tops */}
-          <div className="grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] gap-8 md:gap-12 items-start">
-            {/* Left: Professional Image */}
-            <div className="relative rounded-2xl overflow-hidden shadow-sm bg-slate-100 dark:bg-slate-800" style={{ aspectRatio: "4/5" }}>
+          {/* Two-column split layout */}
+          <div className="grid md:grid-cols-2 gap-10 md:gap-12 items-stretch">
+            {/* LEFT: Photo Card with Gradient Overlay */}
+            <div
+              style={{
+                opacity: isInView ? 1 : 0,
+                transform: isInView ? "translateY(0)" : "translateY(24px)",
+                transition: "opacity 0.7s ease-out, transform 0.7s ease-out",
+              }}
+              className="relative rounded-2xl overflow-hidden shadow-md bg-slate-100 dark:bg-slate-800"
+              style={{ minHeight: "520px" }}
+            >
               <img
                 src="/assets/rightfit-handshake.png"
                 alt="Professional handshake demonstrating successful partnership"
-                className="w-full h-full object-contain object-center"
+                className="w-full h-full object-cover object-center"
                 loading="lazy"
-                width="400"
-                height="500"
               />
+              {/* Soft white overlay gradient at bottom to highlight OnSpot logo */}
+              <div className="absolute inset-0 bg-gradient-to-t from-white/40 via-transparent to-transparent pointer-events-none"></div>
             </div>
 
-            {/* Right: Checklist */}
-            <div className="space-y-5">
-              {/* Checklist Cards */}
-              {checklist.map((item, index) => (
-                <div
-                  key={item.id}
-                  style={{
-                    opacity: isInView ? 1 : 0,
-                    transform: isInView
-                      ? "translateY(0)"
-                      : "translateY(20px)",
-                    transition: `opacity 0.6s ease-out ${isInView ? index * 100 : 0}ms, transform 0.6s ease-out ${isInView ? index * 100 : 0}ms`,
-                  }}
-                  data-testid={`checklist-card-${item.id}`}
-                  className="flex items-start gap-4 p-5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50"
-                >
-                  {/* Check Icon */}
-                  <div className="flex-shrink-0 mt-0.5">
-                    <CheckCircle2
-                      className="w-6 h-6"
-                      style={{ color: "#4353FF" }}
-                      strokeWidth={2.5}
-                    />
+            {/* RIGHT: Unified Qualification Card */}
+            <div
+              style={{
+                opacity: isInView ? 1 : 0,
+                transform: isInView ? "translateY(0)" : "translateY(24px)",
+                transition: "opacity 0.7s ease-out 100ms, transform 0.7s ease-out 100ms",
+              }}
+              className="rounded-2xl border border-slate-200/60 dark:border-slate-700/40 bg-white/70 dark:bg-slate-800/60 backdrop-blur-sm shadow-md p-8 md:p-10 flex flex-col"
+            >
+              {/* Checklist Items */}
+              <div className="space-y-6 flex-1">
+                {checklist.map((item, index) => (
+                  <div
+                    key={item.id}
+                    style={{
+                      opacity: isInView ? 1 : 0,
+                      transform: isInView ? "translateX(0)" : "translateX(-12px)",
+                      transition: `opacity 0.5s ease-out ${isInView ? 200 + index * 80 : 0}ms, transform 0.5s ease-out ${isInView ? 200 + index * 80 : 0}ms`,
+                    }}
+                    className="flex items-start gap-4"
+                    data-testid={`checklist-item-${item.id}`}
+                  >
+                    {/* Check Icon */}
+                    <div className="flex-shrink-0 mt-0.5">
+                      <Check
+                        className="w-5 h-5"
+                        style={{ color: "#4353FF" }}
+                        strokeWidth={3}
+                      />
+                    </div>
+                    {/* Text */}
+                    <p className="text-base text-slate-700 dark:text-slate-200 leading-relaxed font-light">
+                      {item.text}
+                    </p>
                   </div>
-                  {/* Text */}
-                  <p className="text-base text-slate-700 dark:text-slate-200 leading-relaxed font-light flex-1">
-                    {item.text}
-                  </p>
-                </div>
-              ))}
+                ))}
+              </div>
 
-              {/* CTA Button - Centered */}
-              <div className="pt-6 flex justify-center">
+              {/* CTA Button - Inside card, aligned left */}
+              <div className="pt-8 mt-6 border-t border-slate-200/50 dark:border-slate-700/30">
                 <Button
                   onClick={() => {
                     const checkoutSection =
@@ -437,16 +453,16 @@ function RightFitSection() {
                       });
                     }
                   }}
-                  className="relative font-semibold text-white rounded-full px-8 shadow-md hover:shadow-lg transition-all duration-300"
+                  className="relative font-semibold text-white rounded-full px-8 shadow-md hover:shadow-lg transition-all duration-300 group"
                   style={{
-                    backgroundColor: "#4353FF",
+                    background: "linear-gradient(135deg, #4353FF 0%, #5B6FFF 100%)",
                   }}
                   size="lg"
                   data-testid="button-apply-consultation"
                 >
                   <span className="flex items-center gap-2">
                     Apply for Consultation
-                    <ArrowUpRight className="w-5 h-5 transition-transform duration-300" />
+                    <ArrowUpRight className="w-5 h-5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" />
                   </span>
                 </Button>
               </div>
