@@ -1099,18 +1099,6 @@ export default function LegalOpsLanding() {
                   </Card>
                 </div>
               </div>
-
-              {/* US Map Below Cards */}
-              <div className="mt-16 md:mt-20 pt-12 border-t border-slate-200 dark:border-slate-800/50">
-                <div className="flex justify-center geo-map-entrance">
-                  <img 
-                    src="/assets/Image 11-25-25 at 6.12 PM_1764065562971.jpeg" 
-                    alt="United States map showing New York, Texas, and Florida highlighted in blue" 
-                    className="w-full max-w-3xl h-auto"
-                    data-testid="img-us-map"
-                  />
-                </div>
-              </div>
             </div>
           </div>
         </section>
