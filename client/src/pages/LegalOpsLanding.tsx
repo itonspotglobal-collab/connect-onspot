@@ -455,10 +455,8 @@ export default function LegalOpsLanding() {
   const availableSlots = getAvailableSlots();
 
   const handleStartTrial = () => {
-    if (!formData.fullName || !formData.firmName || !formData.email) {
-      return;
-    }
-    setShowCheckout(true);
+    window.location.href =
+      "https://calendly.com/hello-onspotglobal/website-bookings";
   };
 
   const scrollToCheckout = () => {
