@@ -83,47 +83,34 @@ type CheckoutFormProps = {
 };
 
 function CheckoutForm({ selectedTier, onSuccess }: CheckoutFormProps) {
-  const stripe = useStripe();
-  const elements = useElements();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [checkoutProgress, setCheckoutProgress] = useState(0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!stripe || !elements) {
-      return;
-    }
-
     setIsProcessing(true);
-    setCheckoutProgress(33);
 
     try {
-      setCheckoutProgress(66);
-
-      const { error } = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: `${window.location.origin}/legal-ops/success`,
-        },
+      const res = await apiRequest("POST", "/api/legal-ops/create-trial", {
+        selectedTier,
       });
 
-      setCheckoutProgress(100);
+      const data = await res.json();
 
-      if (error) {
+      if (data.success) {
         toast({
-          title: "Payment Setup Failed",
-          description: error.message,
-          variant: "destructive",
+          title: "Trial Confirmed!",
+          description: "Redirecting to booking calendar...",
         });
-        setCheckoutProgress(0);
+        // Redirect to Calendly booking link
+        window.location.href =
+          "https://calendly.com/hello-onspotglobal/website-bookings";
       } else {
         toast({
-          title: "Card Captured Successfully",
-          description: "Your 90-day LegalOps trial is confirmed!",
+          title: "Something went wrong",
+          description: data.message || "Please try again.",
+          variant: "destructive",
         });
-        onSuccess();
       }
     } catch (err) {
       toast({
@@ -131,7 +118,6 @@ function CheckoutForm({ selectedTier, onSuccess }: CheckoutFormProps) {
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
-      setCheckoutProgress(0);
     } finally {
       setIsProcessing(false);
     }
@@ -143,39 +129,24 @@ function CheckoutForm({ selectedTier, onSuccess }: CheckoutFormProps) {
       className="space-y-4"
       data-testid="form-checkout"
     >
-      {isProcessing && checkoutProgress > 0 && (
-        <div className="space-y-2">
-          <Progress value={checkoutProgress} className="h-2" />
-          <p className="text-sm text-muted-foreground text-center">
-            {checkoutProgress < 50 && "Preparing secure checkout..."}
-            {checkoutProgress >= 50 &&
-              checkoutProgress < 100 &&
-              "Processing card..."}
-            {checkoutProgress === 100 && "Almost done!"}
-          </p>
-        </div>
-      )}
-
-      <PaymentElement />
-
       <div className="pt-2 space-y-3">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Shield className="h-4 w-4 text-green-600" />
-          <span>Card capture only. No charge until trial ends.</span>
+          <span>No payment required to start your trial.</span>
         </div>
 
         <Button
           type="submit"
-          disabled={!stripe || isProcessing}
+          disabled={isProcessing}
           className="w-full touch-target"
           size="lg"
           data-testid="button-submit-payment"
         >
-          {isProcessing ? "Processing..." : "Start My 90-Day Trial →"}
+          {isProcessing ? "Preparing..." : "Start My 90-Day Trial →"}
         </Button>
 
         <p className="text-xs text-center text-muted-foreground">
-          No hidden fees. Cancel anytime before deployment.
+          Book a consultation to get started.
         </p>
       </div>
     </form>
@@ -197,65 +168,8 @@ function CheckoutWrapper({
   email,
   phone,
 }: CheckoutWrapperProps) {
-  const [clientSecret, setClientSecret] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
-
-  const tierPrices = {
-    launch: 495000, // $4,950 in cents
-    executive: 750000, // $7,500 in cents
-  };
-
-  useEffect(() => {
-    async function createPaymentIntent() {
-      try {
-        const res = await apiRequest("POST", "/api/legal-ops/create-trial", {
-          fullName,
-          firmName,
-          email,
-          phone,
-          tier: selectedTier,
-          amount: tierPrices[selectedTier],
-        });
-        const data = await res.json();
-        setClientSecret(data.clientSecret);
-      } catch (error) {
-        toast({
-          title: "Setup Error",
-          description: "Unable to initialize checkout. Please try again.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    createPaymentIntent();
-  }, [selectedTier, fullName, firmName, email, phone, toast]);
-
-  if (isLoading || !clientSecret) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div
-          className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"
-          aria-label="Loading"
-        />
-      </div>
-    );
-  }
-
-  if (!stripePromise) {
-    return (
-      <div className="text-center py-8 text-destructive">
-        <p>Stripe is not configured. Please contact support.</p>
-      </div>
-    );
-  }
-
   return (
-    <Elements stripe={stripePromise} options={{ clientSecret }}>
-      <CheckoutForm selectedTier={selectedTier} onSuccess={() => {}} />
-    </Elements>
+    <CheckoutForm selectedTier={selectedTier} onSuccess={() => {}} />
   );
 }
 
