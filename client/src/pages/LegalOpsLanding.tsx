@@ -62,6 +62,9 @@ import {
   Scale,
   AlertCircle,
   Check,
+  FileText,
+  Folder,
+  Lock,
 } from "lucide-react";
 import { HeadSEO } from "@/components/HeadSEO";
 import nycSkylineImage from "@assets/40431e5288cb44250d8204c03e0ba76129ba76dfd36e01e7c40f546ab05de806_1762346626354.jpeg";
@@ -1810,7 +1813,7 @@ export default function LegalOpsLanding() {
             </div>
 
             {/* Service Categories Grid */}
-            <div className="grid md:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8 max-w-7xl mx-auto">
+            <div className="grid md:grid-cols-3 gap-6 md:gap-8 max-w-7xl mx-auto">
               {/* Category 1: Client Communication */}
               <div
                 className="group bg-white rounded-3xl border border-slate-200/60 p-8 hover-elevate active-elevate-2 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10"
@@ -2314,6 +2317,35 @@ export default function LegalOpsLanding() {
               </div>
 
               {/* Category 6: Marketing & Firm Growth */}
+              {/* Category 1: Document Preparation & Review */
+              <div className="group bg-white rounded-3xl border border-slate-200/60 p-8 hover-elevate active-elevate-2 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10" data-testid="card-document-prep">
+                <div className="mb-6">
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-all duration-300" style={{background: "linear-gradient(135deg, #4353FF 0%, #5B7CFF 100%)"}}>
+                    <FileText className="w-7 h-7 text-white" />
+                  </div>
+                  <h3 className="text-2xl font-bold mb-3" style={{ color: "#1E293B" }}>Document Preparation & Review</h3>
+                  <p className="text-base font-medium mb-4" style={{ color: "#4353FF" }}>Accurate docs, faster turnaround.</p>
+                </div>
+                <ul className="space-y-2.5 mb-6">
+                  <li className="flex items-start gap-2 text-sm" style={{ color: "#475569" }}>
+                    <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: "#4353FF" }} />
+                    <span>Drafting and proofreading purchase and sale agreements, lease agreements, and closing documents</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm" style={{ color: "#475569" }}>
+                    <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: "#4353FF" }} />
+                    <span>Preparing deeds, mortgage documents, and promissory notes</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm" style={{ color: "#475569" }}>
+                    <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: "#4353FF" }} />
+                    <span>Reviewing title commitments, lien searches, and survey reports</span>
+                  </li>
+                </ul>
+                <div className="pt-4 border-t border-slate-100">
+                  <p className="text-sm font-semibold" style={{ color: "#64748B" }}>
+                    <span style={{ color: "#4353FF" }}>Outcome:</span> Flawless documents, zero revision cycles.
+                  </p>
+                </div>
+              </div>
               <div
                 className="group bg-white rounded-3xl border border-slate-200/60 p-8 hover-elevate active-elevate-2 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10"
                 data-testid="card-marketing-growth"
