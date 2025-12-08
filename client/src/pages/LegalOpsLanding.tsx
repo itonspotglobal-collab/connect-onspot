@@ -1038,25 +1038,13 @@ export default function LegalOpsLanding() {
 
               {/* Map Image - Top */}
               <div className="flex justify-center mb-12 md:mb-14 map-entrance">
-                <div className="relative w-full max-w-2xl">
-                  {/* Premium glow effect behind map */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-2xl blur-2xl opacity-60"></div>
-                  
-                  {/* Map image with glassmorphism frame */}
-                  <div className="relative rounded-2xl overflow-hidden backdrop-blur-xl bg-white/10 dark:bg-slate-900/20 border border-white/30 dark:border-slate-700/30 p-4 md:p-6 shadow-2xl hover-elevate transition-all duration-500 group">
-                    {/* Inner subtle glow */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-30 transition-opacity duration-500 rounded-xl"></div>
-                    
-                    <img 
-                      src="/assets/US_Map_MArker_1765185930811.png" 
-                      alt="US Map showing OnSpot coverage areas" 
-                      className="w-full h-auto object-contain relative z-10"
-                      style={{
-                        filter: 'drop-shadow(0 10px 25px rgba(67, 83, 255, 0.12))'
-                      }}
-                    />
-                  </div>
-                </div>
+                <Card className="w-full max-w-3xl border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/30 shadow-md p-5 md:p-6">
+                  <img 
+                    src="/assets/US_Map_MArker_1765185930811.png" 
+                    alt="US Map showing OnSpot coverage areas" 
+                    className="w-full h-auto object-contain block"
+                  />
+                </Card>
               </div>
 
               {/* State Cards Grid - Below Map */}
