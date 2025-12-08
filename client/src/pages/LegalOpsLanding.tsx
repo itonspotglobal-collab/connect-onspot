@@ -966,7 +966,7 @@ export default function LegalOpsLanding() {
                   100% { transform: translateX(-50%); }
                 }
                 .guarantee-track {
-                  animation: guaranteeScroll 15s linear infinite;
+                  animation: guaranteeScroll 8s linear infinite;
                 }
                 .guarantee-track:hover {
                   animation-play-state: paused;
