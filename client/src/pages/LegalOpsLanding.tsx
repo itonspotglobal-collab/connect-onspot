@@ -71,6 +71,10 @@ import nycSkylineImage from "@assets/40431e5288cb44250d8204c03e0ba76129ba76dfd36
 import lawyerImage from "@assets/stock_images/professional_confide_e4371db1.jpg";
 import selectiveLawyerImage from "@assets/stock_images/caucasian_white_male_8dcc3295.jpg";
 import usMapImage from "@assets/US_Coverage_1765189431049.png";
+import stabilityTargetImage from "@assets/30-DAY_STABILITY_TARGET_1765200843502.png";
+import noExtraChargesImage from "@assets/NO_EXTRA_CHARGES_1765200843502.png";
+import performanceTrackingImage from "@assets/PERFORMANCE_TRACKING_1765200843502.png";
+import fullTransparencyImage from "@assets/FULL_TRANSPARENCY_1765200843501.png";
 
 if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
   console.warn(
@@ -950,72 +954,99 @@ export default function LegalOpsLanding() {
                 </p>
               </div>
 
-              <Card className="shadow-2xl border-2 border-amber-200 dark:border-amber-800">
-                <CardContent className="p-8 sm:p-12">
-                  <div className="grid sm:grid-cols-2 gap-8">
-                    <div className="space-y-4">
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-amber-500/20 rounded-xl flex items-center justify-center flex-shrink-0 mt-1">
-                          <CheckCircle2 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-lg mb-1">
-                            30-Day Stability Target
-                          </h3>
-                          <p className="text-sm text-muted-foreground">
-                            We aim to achieve zero escalations within your first
-                            30 days
-                          </p>
-                        </div>
+              {/* Mindvalley-style Animated Image Carousel */}
+              <div className="relative overflow-hidden rounded-3xl">
+                {/* CSS for continuous scroll animation */}
+                <style>{`
+                  @keyframes scrollLeft {
+                    0% { transform: translateX(0); }
+                    100% { transform: translateX(-50%); }
+                  }
+                  .guarantee-carousel {
+                    display: flex;
+                    animation: scrollLeft 30s linear infinite;
+                  }
+                  .guarantee-carousel:hover {
+                    animation-play-state: paused;
+                  }
+                `}</style>
+                
+                {/* Row 1 - Scrolling from right to left */}
+                <div className="overflow-hidden mb-4">
+                  <div className="guarantee-carousel">
+                    {/* First set of images */}
+                    <div className="flex gap-4 flex-shrink-0">
+                      <div className="w-[400px] md:w-[500px] flex-shrink-0 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
+                        <img 
+                          src={stabilityTargetImage} 
+                          alt="30-Day Stability Target" 
+                          className="w-full h-auto object-cover"
+                          data-testid="img-stability-target"
+                        />
                       </div>
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-amber-500/20 rounded-xl flex items-center justify-center flex-shrink-0 mt-1">
-                          <CheckCircle2 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-lg mb-1">
-                            No Extra Charges
-                          </h3>
-                          <p className="text-sm text-muted-foreground">
-                            If it takes longer, we work for free until you're
-                            stable
-                          </p>
-                        </div>
+                      <div className="w-[400px] md:w-[500px] flex-shrink-0 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
+                        <img 
+                          src={noExtraChargesImage} 
+                          alt="No Extra Charges" 
+                          className="w-full h-auto object-cover"
+                          data-testid="img-no-extra-charges"
+                        />
+                      </div>
+                      <div className="w-[400px] md:w-[500px] flex-shrink-0 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
+                        <img 
+                          src={performanceTrackingImage} 
+                          alt="Performance Tracking" 
+                          className="w-full h-auto object-cover"
+                          data-testid="img-performance-tracking"
+                        />
+                      </div>
+                      <div className="w-[400px] md:w-[500px] flex-shrink-0 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
+                        <img 
+                          src={fullTransparencyImage} 
+                          alt="Full Transparency" 
+                          className="w-full h-auto object-cover"
+                          data-testid="img-full-transparency"
+                        />
                       </div>
                     </div>
-                    <div className="space-y-4">
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-amber-500/20 rounded-xl flex items-center justify-center flex-shrink-0 mt-1">
-                          <CheckCircle2 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-lg mb-1">
-                            Performance Tracking
-                          </h3>
-                          <p className="text-sm text-muted-foreground">
-                            Daily metrics and weekly reviews ensure we stay on
-                            target
-                          </p>
-                        </div>
+                    {/* Duplicate set for seamless loop */}
+                    <div className="flex gap-4 flex-shrink-0 ml-4">
+                      <div className="w-[400px] md:w-[500px] flex-shrink-0 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
+                        <img 
+                          src={stabilityTargetImage} 
+                          alt="30-Day Stability Target" 
+                          className="w-full h-auto object-cover"
+                        />
                       </div>
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-amber-500/20 rounded-xl flex items-center justify-center flex-shrink-0 mt-1">
-                          <CheckCircle2 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-lg mb-1">
-                            Full Transparency
-                          </h3>
-                          <p className="text-sm text-muted-foreground">
-                            Complete visibility into our progress every step of
-                            the way
-                          </p>
-                        </div>
+                      <div className="w-[400px] md:w-[500px] flex-shrink-0 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
+                        <img 
+                          src={noExtraChargesImage} 
+                          alt="No Extra Charges" 
+                          className="w-full h-auto object-cover"
+                        />
+                      </div>
+                      <div className="w-[400px] md:w-[500px] flex-shrink-0 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
+                        <img 
+                          src={performanceTrackingImage} 
+                          alt="Performance Tracking" 
+                          className="w-full h-auto object-cover"
+                        />
+                      </div>
+                      <div className="w-[400px] md:w-[500px] flex-shrink-0 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
+                        <img 
+                          src={fullTransparencyImage} 
+                          alt="Full Transparency" 
+                          className="w-full h-auto object-cover"
+                        />
                       </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+
+                {/* Gradient overlays for smooth edges */}
+                <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-amber-50 dark:from-slate-900 to-transparent pointer-events-none z-10"></div>
+                <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-amber-50 dark:from-slate-900 to-transparent pointer-events-none z-10"></div>
+              </div>
             </div>
           </div>
         </section>
