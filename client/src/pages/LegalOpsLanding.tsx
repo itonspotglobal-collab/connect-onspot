@@ -1016,135 +1016,166 @@ export default function LegalOpsLanding() {
           </div>
         </section>
 
-        {/* Geographic Coverage Section */}
-        <section className="py-20 md:py-28 bg-gradient-to-br from-blue-50/50 to-purple-50/30 dark:from-slate-900/50 dark:to-slate-800/30 border-t border-b border-slate-200 dark:border-slate-800/50">
-          <div className="container-fluid">
-            <div className="max-w-6xl mx-auto px-4 md:px-6">
+        {/* Geographic Coverage Section - Premium Map Integration */}
+        <section className="py-20 md:py-32 bg-gradient-to-br from-blue-50/50 to-purple-50/30 dark:from-slate-900/50 dark:to-slate-800/30 border-t border-b border-slate-200 dark:border-slate-800/50 relative overflow-hidden">
+          {/* Subtle background elements */}
+          <div className="absolute inset-0 opacity-30">
+            <div className="absolute top-1/4 right-0 w-96 h-96 bg-gradient-to-l from-blue-200/20 to-transparent blur-3xl"></div>
+            <div className="absolute bottom-1/4 left-0 w-96 h-96 bg-gradient-to-r from-purple-200/20 to-transparent blur-3xl"></div>
+          </div>
+
+          <div className="container-fluid relative z-10">
+            <div className="max-w-7xl mx-auto px-4 md:px-6">
               {/* Header */}
-              <div className="text-center mb-16 md:mb-20 geo-section-header">
+              <div className="text-center mb-16 md:mb-24 geo-section-header">
                 <h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-4">
                   Where We Operate
                 </h2>
                 <p className="text-lg text-slate-600 dark:text-slate-400 font-light max-w-2xl mx-auto">
-                  Serving landlord–tenant law firms across the United States
+                  Serving law firms across the United States
                 </p>
               </div>
 
-              {/* Geographic Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 md:gap-8">
-                {/* New York Card */}
-                <div className="geo-card-entrance">
-                  <Card className="border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm h-full hover-elevate transition-all duration-300 relative overflow-hidden group">
-                    {/* Accent Line */}
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-400 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
-                    
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-slate-900 dark:text-white text-2xl font-semibold flex items-start gap-3">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-1">
-                          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                        </div>
-                        <span>New York</span>
-                      </CardTitle>
-                    </CardHeader>
-                    
-                    <CardContent>
-                      <p className="text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
-                        High-volume L&T practices serving metro NYC and upstate markets
-                      </p>
-                    </CardContent>
-                  </Card>
+              {/* Map + Cards Layout */}
+              <div className="grid lg:grid-cols-2 gap-8 md:gap-12 lg:gap-16 items-center">
+                {/* Left Column: State Cards */}
+                <div className="space-y-4 md:space-y-5 order-2 lg:order-1">
+                  {/* Tri-State Card */}
+                  <div className="geo-card-entrance">
+                    <Card className="border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm h-full hover-elevate transition-all duration-300 relative overflow-hidden group">
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-400 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
+                      
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-slate-900 dark:text-white text-xl font-semibold flex items-start gap-3">
+                          <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-0.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                          </div>
+                          <span>Tri-State</span>
+                        </CardTitle>
+                      </CardHeader>
+                      
+                      <CardContent className="pt-1">
+                        <p className="text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+                          Legal operations support for high-volume practices across NY, NJ, and CT with expertise in estate planning, contract review, and compliance management.
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Texas Card */}
+                  <div className="geo-card-entrance" style={{ animationDelay: '0.1s' }}>
+                    <Card className="border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm h-full hover-elevate transition-all duration-300 relative overflow-hidden group">
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-400 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
+                      
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-slate-900 dark:text-white text-xl font-semibold flex items-start gap-3">
+                          <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-0.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                          </div>
+                          <span>Texas</span>
+                        </CardTitle>
+                      </CardHeader>
+                      
+                      <CardContent className="pt-1">
+                        <p className="text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+                          Operational excellence for growing practices across Dallas, Houston, and Austin serving business law, litigation, and corporate needs.
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Florida Card */}
+                  <div className="geo-card-entrance" style={{ animationDelay: '0.2s' }}>
+                    <Card className="border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm h-full hover-elevate transition-all duration-300 relative overflow-hidden group">
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-400 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
+                      
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-slate-900 dark:text-white text-xl font-semibold flex items-start gap-3">
+                          <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-0.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                          </div>
+                          <span>Florida</span>
+                        </CardTitle>
+                      </CardHeader>
+                      
+                      <CardContent className="pt-1">
+                        <p className="text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+                          Document handling and case management for Miami, Orlando, and Tampa firms with seasonal case load optimization.
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* California Card */}
+                  <div className="geo-card-entrance" style={{ animationDelay: '0.3s' }}>
+                    <Card className="border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm h-full hover-elevate transition-all duration-300 relative overflow-hidden group">
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-400 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
+                      
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-slate-900 dark:text-white text-xl font-semibold flex items-start gap-3">
+                          <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-0.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                          </div>
+                          <span>California</span>
+                        </CardTitle>
+                      </CardHeader>
+                      
+                      <CardContent className="pt-1">
+                        <p className="text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+                          Comprehensive legal ops for Bay Area and LA firms with specialized support for tech-focused practices and high-growth environments.
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Illinois Card */}
+                  <div className="geo-card-entrance" style={{ animationDelay: '0.4s' }}>
+                    <Card className="border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm h-full hover-elevate transition-all duration-300 relative overflow-hidden group">
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-400 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
+                      
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-slate-900 dark:text-white text-xl font-semibold flex items-start gap-3">
+                          <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-0.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                          </div>
+                          <span>Illinois</span>
+                        </CardTitle>
+                      </CardHeader>
+                      
+                      <CardContent className="pt-1">
+                        <p className="text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+                          Chicago-based operations support for firms handling corporate, IP, and civil litigation with regional market expertise.
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
 
-                {/* Texas Card */}
-                <div className="geo-card-entrance" style={{ animationDelay: '0.1s' }}>
-                  <Card className="border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm h-full hover-elevate transition-all duration-300 relative overflow-hidden group">
-                    {/* Accent Line */}
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-400 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
+                {/* Right Column: Map Image */}
+                <div className="flex justify-center items-center order-1 lg:order-2 map-entrance">
+                  <div className="relative w-full h-full flex items-center justify-center">
+                    {/* Premium glow effect behind map */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-3xl blur-2xl opacity-60"></div>
                     
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-slate-900 dark:text-white text-2xl font-semibold flex items-start gap-3">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-1">
-                          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                        </div>
-                        <span>Texas</span>
-                      </CardTitle>
-                    </CardHeader>
-                    
-                    <CardContent>
-                      <p className="text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
-                        Fast-growing eviction dockets across Houston, Dallas, and Austin regions
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
+                    {/* Map image with glassmorphism frame */}
+                    <div className="relative rounded-3xl overflow-hidden backdrop-blur-xl bg-white/10 dark:bg-slate-900/20 border border-white/30 dark:border-slate-700/30 p-6 md:p-8 shadow-2xl hover-elevate transition-all duration-500 group">
+                      {/* Inner subtle glow */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-30 transition-opacity duration-500 rounded-2xl"></div>
+                      
+                      <img 
+                        src="/assets/US_Map_MArker_1765185930811.png" 
+                        alt="US Map showing OnSpot coverage areas" 
+                        className="w-full h-auto object-contain relative z-10 drop-shadow-2xl"
+                        style={{
+                          filter: 'drop-shadow(0 20px 40px rgba(67, 83, 255, 0.15))'
+                        }}
+                      />
+                    </div>
 
-                {/* Florida Card */}
-                <div className="geo-card-entrance" style={{ animationDelay: '0.2s' }}>
-                  <Card className="border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm h-full hover-elevate transition-all duration-300 relative overflow-hidden group">
-                    {/* Accent Line */}
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-400 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
-                    
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-slate-900 dark:text-white text-2xl font-semibold flex items-start gap-3">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-1">
-                          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                        </div>
-                        <span>Florida</span>
-                      </CardTitle>
-                    </CardHeader>
-                    
-                    <CardContent>
-                      <p className="text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
-                        Seasonal demand spikes and residential property specialization
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* California Card */}
-                <div className="geo-card-entrance" style={{ animationDelay: '0.3s' }}>
-                  <Card className="border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm h-full hover-elevate transition-all duration-300 relative overflow-hidden group">
-                    {/* Accent Line */}
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-400 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
-                    
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-slate-900 dark:text-white text-2xl font-semibold flex items-start gap-3">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-1">
-                          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                        </div>
-                        <span>California</span>
-                      </CardTitle>
-                    </CardHeader>
-                    
-                    <CardContent>
-                      <p className="text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
-                        Bay Area and Los Angeles metro L&T markets with high-volume dockets
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Illinois Card */}
-                <div className="geo-card-entrance" style={{ animationDelay: '0.4s' }}>
-                  <Card className="border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm h-full hover-elevate transition-all duration-300 relative overflow-hidden group">
-                    {/* Accent Line */}
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-400 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
-                    
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-slate-900 dark:text-white text-2xl font-semibold flex items-start gap-3">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-1">
-                          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                        </div>
-                        <span>Illinois</span>
-                      </CardTitle>
-                    </CardHeader>
-                    
-                    <CardContent>
-                      <p className="text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
-                        Chicago and Midwest region with competitive property markets
-                      </p>
-                    </CardContent>
-                  </Card>
+                    {/* Floating accent elements */}
+                    <div className="absolute top-8 right-8 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl animate-pulse opacity-50"></div>
+                    <div className="absolute bottom-12 left-8 w-40 h-40 bg-purple-500/10 rounded-full blur-2xl animate-pulse opacity-40" style={{ animationDelay: '1s' }}></div>
+                  </div>
                 </div>
               </div>
             </div>
