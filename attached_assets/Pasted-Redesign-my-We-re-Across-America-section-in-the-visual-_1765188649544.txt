@@ -1,0 +1,67 @@
+Redesign my “We’re Across America” section in the visual style of Mindvalley: cinematic, gradient-heavy, human, and emotional – while still fitting in one laptop screen (max ~850–900px height).
+
+Keep:
+- The headline: “We’re Across America”
+- Subheadline text
+- The 3 stat chips (5 Key Regions, 40+ Cities, 24/7 Coverage)
+- The regions list (Tri-State, Texas, etc.)
+- The US map concept
+
+Transform the VISUALS and LAYOUT like this:
+
+1. Overall mood:
+   - Think Mindvalley hero sections: vibrant mesh/diagonal gradients, soft glows, and overlapping layers instead of flat white.
+   - Use a full-width gradient background for this section (e.g. deep OnSpot blue blending into softer violet/sky blue) with subtle noise or texture.
+   - Add a very soft light “halo” behind the content, similar to Mindvalley’s glowing center focus.
+
+2. Composition:
+   - Still a split-screen that fits in one viewport:
+     - LEFT: headline, subheadline, stat chips, regions list.
+     - RIGHT: large, cinematic map + human/brand elements.
+   - Tighter vertical spacing so everything (header + stats + left/right content) sits comfortably on one screen.
+
+3. Right side (Mindvalley-style visual hero):
+   - Use the US map as the core, but:
+     - Make it large, slightly cropped, and tilted or floating (subtle perspective or drop shadow).
+     - Place it on top of an organic gradient shape (blob / arc) that bleeds out of its card.
+   - Replace the flat grey card with a translucent, glassy panel (glassmorphism feel) over the gradient.
+   - Keep the pins but recolor them to match OnSpot’s palette (blue/indigo) and give them a soft outer glow.
+   - Add a few circular avatar chips or tiny photos (or placeholders) around the map pins to suggest real OnSpot team members or pods – like Mindvalley shows faces around their platform.
+   - Include a small badge/pill overlapping the bottom of the map: e.g. “Live pods across the U.S.” with a glowing green status dot.
+
+4. Left side (copy + list with emotion):
+   - Make the headline large and bold, similar to Mindvalley’s hero (around 52–60px).
+   - Under the subheadline, keep the stat chips but:
+     - Put them in a single, pill-shaped container with a subtle inner gradient and thin white/blue border.
+     - Add tiny icons per stat (map pin, city skyline, clock).
+   - Below, show the REGIONS list as a vertical stack with:
+     - Colored dots for each region in harmonious blues/teals/purples (no primary rainbow).
+     - Slight glow/underline or left border on hover.
+   - Add a small “trust” strip like Mindvalley’s “Featured on”:
+     - Under the regions list, add a thin line + text like: “Supporting legal teams in the nation’s busiest markets”.
+     - Optionally add 2–3 simple city name badges (NYC, LA, Miami) in tiny soft pills.
+
+5. Background + depth:
+   - Use layered gradients behind everything, Mindvalley-style:
+     - For example, one mesh gradient anchored behind the map, another subtle radial behind the headline.
+   - Add very subtle floating shapes (blurred circles or light orbs) in the background with low opacity for movement.
+   - Everything should feel like it’s sitting *in* the gradient, not on a white card.
+
+6. Microanimation:
+   - Animate:
+     - Slight floating/parallax on the map or gradient blob (slow up/down translate).
+     - Gentle pulsing of one or two key pins.
+   - On hover over a region in the list, lightly highlight the corresponding pin (e.g., scale up or brighten that pin); if mapping is complex, at least use a generic hover glow that feels interactive.
+
+7. CTA integration:
+   - Keep the global bottom CTA strip if it exists, but visually connect it:
+     - Let the section gradient bleed into that purple/blue bar so it feels like one continuous story.
+   - Optionally add a small secondary CTA near the stats (e.g. “See full coverage map”) in ghost-button style.
+
+8. Constraints:
+   - Must look visually rich like Mindvalley’s sections: gradients, glow, human elements, overlapping cards.
+   - Must still feel premium SaaS/legal (not spiritual), so keep typography modern and clean.
+   - Avoid clutter: 1 hero visual (map + avatars), 1 main gradient, a few supporting orbs only.
+   - Ensure all core content remains accessible and legible over the gradients.
+
+Refactor my current section into this Mindvalley-inspired hero so that when you land on it, it feels like a transformational, nationwide coverage moment rather than a simple informational block.
