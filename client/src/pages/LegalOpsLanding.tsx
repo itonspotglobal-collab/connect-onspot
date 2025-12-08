@@ -1682,10 +1682,10 @@ export default function LegalOpsLanding() {
                     </div>
                     <div>
                       <p className="text-xl sm:text-2xl text-white font-medium leading-relaxed">
-                        Every rent demand filed on time
+                        Every case moves forward without delays
                       </p>
                       <p className="text-white/60 text-sm sm:text-base mt-1">
-                        No delays. No follow-ups. Just precision execution.
+                        No bottlenecks. No follow-ups. Just consistent, predictable execution across your entire caseload.
                       </p>
                     </div>
                   </div>
@@ -1696,10 +1696,10 @@ export default function LegalOpsLanding() {
                     </div>
                     <div>
                       <p className="text-xl sm:text-2xl text-white font-medium leading-relaxed">
-                        Every petition error-free
+                        Every document delivered with flawless accuracy
                       </p>
                       <p className="text-white/60 text-sm sm:text-base mt-1">
-                        Flawless documentation that stands up in court.
+                        Clean, compliant, court-ready documentation—produced the same way, every time.
                       </p>
                     </div>
                   </div>
@@ -1710,10 +1710,10 @@ export default function LegalOpsLanding() {
                     </div>
                     <div>
                       <p className="text-xl sm:text-2xl text-white font-medium leading-relaxed">
-                        Every client update delivered before they ask
+                        Every client kept informed before they even ask
                       </p>
                       <p className="text-white/60 text-sm sm:text-base mt-1">
-                        Proactive communication that builds trust.
+                        Proactive communication and real-time updates that build trust and reduce inbound requests.
                       </p>
                     </div>
                   </div>
