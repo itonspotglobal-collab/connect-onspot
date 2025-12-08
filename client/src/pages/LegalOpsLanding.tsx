@@ -67,6 +67,7 @@ import { HeadSEO } from "@/components/HeadSEO";
 import nycSkylineImage from "@assets/40431e5288cb44250d8204c03e0ba76129ba76dfd36e01e7c40f546ab05de806_1762346626354.jpeg";
 import lawyerImage from "@assets/stock_images/professional_confide_e4371db1.jpg";
 import selectiveLawyerImage from "@assets/stock_images/caucasian_white_male_8dcc3295.jpg";
+import usMapImage from "@assets/US_Map_MArker_1765185930811.png";
 
 if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
   console.warn(
@@ -1040,7 +1041,7 @@ export default function LegalOpsLanding() {
               <div className="flex justify-center mb-12 md:mb-14 map-entrance">
                 <Card className="w-full max-w-3xl border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/30 shadow-md p-5 md:p-6">
                   <img 
-                    src="/assets/US_Map_MArker_1765185930811.png" 
+                    src={usMapImage}
                     alt="US Map showing OnSpot coverage areas" 
                     className="w-full h-auto object-contain block"
                   />
