@@ -1167,14 +1167,11 @@ export default function LegalOpsLanding() {
           </div>
         </section>
 
-        {/* Why Law Firms Come to OnSpot - Mindvalley-Inspired Premium Section */}
-        <section className="relative overflow-hidden bg-slate-950">
-          {/* Cinematic gradient background */}
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-slate-950 to-black"></div>
-          
+        {/* Why Law Firms Come to OnSpot - Mindvalley-Inspired Light Section */}
+        <section className="relative overflow-hidden bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-slate-100 dark:via-white dark:to-slate-100">
           {/* Subtle glow orbs */}
-          <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
-          <div className="absolute bottom-1/4 right-0 w-[500px] h-[500px] bg-purple-600/8 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-400/5 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="absolute bottom-1/4 right-0 w-[500px] h-[500px] bg-purple-400/5 rounded-full blur-3xl pointer-events-none"></div>
 
           <div className="container-fluid relative z-10">
             {/* Hero Header with Image */}
@@ -1183,13 +1180,13 @@ export default function LegalOpsLanding() {
                 <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
                   {/* Left: Text Content */}
                   <div className="order-2 lg:order-1">
-                    <p className="text-amber-400 text-sm font-semibold uppercase tracking-widest mb-4">
+                    <p className="text-amber-600 text-sm font-semibold uppercase tracking-widest mb-4">
                       Great change starts here
                     </p>
-                    <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
+                    <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
                       Why law firms come to OnSpot
                     </h2>
-                    <p className="text-xl md:text-2xl text-gray-300 font-light leading-relaxed max-w-xl">
+                    <p className="text-xl md:text-2xl text-gray-600 font-light leading-relaxed max-w-xl">
                       Solving the operational challenges that impact your bottom line and transform your practice.
                     </p>
                   </div>
@@ -1198,7 +1195,7 @@ export default function LegalOpsLanding() {
                   <div className="order-1 lg:order-2">
                     <div className="relative">
                       {/* Glow behind image */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 to-blue-500/20 rounded-3xl blur-2xl scale-105"></div>
+                      <div className="absolute inset-0 bg-gradient-to-br from-amber-400/20 to-blue-400/20 rounded-3xl blur-2xl scale-105"></div>
                       <img 
                         src={legalTeamImage}
                         alt="OnSpot Legal Team - Your 24/7 Operations Partner"
@@ -1211,22 +1208,22 @@ export default function LegalOpsLanding() {
             </div>
 
             {/* Transformation Points - Mindvalley Style */}
-            <div className="border-t border-white/10">
+            <div className="border-t border-gray-200">
               {/* Point 1 */}
-              <div className="py-16 md:py-20 border-b border-white/10">
+              <div className="py-16 md:py-20 border-b border-gray-200">
                 <div className="max-w-7xl mx-auto px-4 md:px-8">
                   <div className="grid lg:grid-cols-12 gap-8 lg:gap-16 items-start">
                     {/* Number */}
                     <div className="lg:col-span-1">
-                      <span className="text-6xl md:text-7xl font-bold text-amber-500/30">1</span>
+                      <span className="text-6xl md:text-7xl font-bold text-amber-500/40">1</span>
                     </div>
                     {/* Content */}
                     <div className="lg:col-span-6">
-                      <h3 className="text-2xl md:text-3xl font-bold text-white mb-4">
+                      <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
                         Your Operations Are Under Pressure
                       </h3>
                       <div className="space-y-4">
-                        <p className="text-gray-400 leading-relaxed">
+                        <p className="text-gray-600 leading-relaxed">
                           Law firms like yours face mounting operational challenges that drain resources and limit growth potential.
                         </p>
                         <ul className="space-y-3 pt-2">
@@ -1238,8 +1235,8 @@ export default function LegalOpsLanding() {
                             "High attorney turnover from operational burnout"
                           ].map((point, idx) => (
                             <li key={idx} className="flex gap-3 items-start">
-                              <div className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-2 flex-shrink-0"></div>
-                              <span className="text-gray-300 leading-relaxed">{point}</span>
+                              <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 flex-shrink-0"></div>
+                              <span className="text-gray-700 leading-relaxed">{point}</span>
                             </li>
                           ))}
                         </ul>
@@ -1247,8 +1244,8 @@ export default function LegalOpsLanding() {
                     </div>
                     {/* Icon */}
                     <div className="lg:col-span-5 flex justify-center lg:justify-end">
-                      <div className="w-24 h-24 md:w-32 md:h-32 rounded-3xl bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-amber-500/20 flex items-center justify-center">
-                        <AlertTriangle className="w-12 h-12 md:w-16 md:h-16 text-amber-400" />
+                      <div className="w-24 h-24 md:w-32 md:h-32 rounded-3xl bg-gradient-to-br from-amber-100 to-amber-50 border border-amber-200 flex items-center justify-center shadow-lg">
+                        <AlertTriangle className="w-12 h-12 md:w-16 md:h-16 text-amber-500" />
                       </div>
                     </div>
                   </div>
@@ -1256,25 +1253,25 @@ export default function LegalOpsLanding() {
               </div>
 
               {/* Point 2 */}
-              <div className="py-16 md:py-20 border-b border-white/10">
+              <div className="py-16 md:py-20 border-b border-gray-200">
                 <div className="max-w-7xl mx-auto px-4 md:px-8">
                   <div className="grid lg:grid-cols-12 gap-8 lg:gap-16 items-start">
                     {/* Number */}
                     <div className="lg:col-span-1">
-                      <span className="text-6xl md:text-7xl font-bold text-blue-500/30">2</span>
+                      <span className="text-6xl md:text-7xl font-bold text-blue-500/40">2</span>
                     </div>
                     {/* Content */}
                     <div className="lg:col-span-6">
-                      <h3 className="text-2xl md:text-3xl font-bold text-white mb-4">
+                      <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
                         Operational Bandwidth Crisis
                       </h3>
                       <div className="space-y-4">
-                        <p className="text-gray-400 leading-relaxed">
+                        <p className="text-gray-600 leading-relaxed">
                           Your team is stretched thin managing cases and operations simultaneously, leaving no bandwidth for strategic growth.
                         </p>
-                        <div className="p-6 rounded-2xl bg-white/5 border border-white/10 mt-6">
-                          <p className="text-blue-300 font-medium mb-2">How OnSpot transforms this:</p>
-                          <p className="text-gray-300 leading-relaxed">
+                        <div className="p-6 rounded-2xl bg-blue-50 border border-blue-100 mt-6">
+                          <p className="text-blue-700 font-medium mb-2">How OnSpot transforms this:</p>
+                          <p className="text-gray-700 leading-relaxed">
                             We take over your operational workload entirely, giving your legal team the freedom to focus on what they do best: practicing law and winning cases.
                           </p>
                         </div>
@@ -1282,8 +1279,8 @@ export default function LegalOpsLanding() {
                     </div>
                     {/* Icon */}
                     <div className="lg:col-span-5 flex justify-center lg:justify-end">
-                      <div className="w-24 h-24 md:w-32 md:h-32 rounded-3xl bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/20 flex items-center justify-center">
-                        <Clock className="w-12 h-12 md:w-16 md:h-16 text-blue-400" />
+                      <div className="w-24 h-24 md:w-32 md:h-32 rounded-3xl bg-gradient-to-br from-blue-100 to-blue-50 border border-blue-200 flex items-center justify-center shadow-lg">
+                        <Clock className="w-12 h-12 md:w-16 md:h-16 text-blue-500" />
                       </div>
                     </div>
                   </div>
@@ -1291,25 +1288,25 @@ export default function LegalOpsLanding() {
               </div>
 
               {/* Point 3 */}
-              <div className="py-16 md:py-20 border-b border-white/10">
+              <div className="py-16 md:py-20 border-b border-gray-200">
                 <div className="max-w-7xl mx-auto px-4 md:px-8">
                   <div className="grid lg:grid-cols-12 gap-8 lg:gap-16 items-start">
                     {/* Number */}
                     <div className="lg:col-span-1">
-                      <span className="text-6xl md:text-7xl font-bold text-purple-500/30">3</span>
+                      <span className="text-6xl md:text-7xl font-bold text-purple-500/40">3</span>
                     </div>
                     {/* Content */}
                     <div className="lg:col-span-6">
-                      <h3 className="text-2xl md:text-3xl font-bold text-white mb-4">
+                      <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
                         Frustration and Bottlenecks
                       </h3>
                       <div className="space-y-4">
-                        <p className="text-gray-400 leading-relaxed">
+                        <p className="text-gray-600 leading-relaxed">
                           Manual workflows create delays that compound client frustration and erode trust in your firm's capabilities.
                         </p>
-                        <div className="p-6 rounded-2xl bg-white/5 border border-white/10 mt-6">
-                          <p className="text-purple-300 font-medium mb-2">How OnSpot transforms this:</p>
-                          <p className="text-gray-300 leading-relaxed">
+                        <div className="p-6 rounded-2xl bg-purple-50 border border-purple-100 mt-6">
+                          <p className="text-purple-700 font-medium mb-2">How OnSpot transforms this:</p>
+                          <p className="text-gray-700 leading-relaxed">
                             Our streamlined processes eliminate bottlenecks, ensuring faster response times and improved client satisfaction across every touchpoint.
                           </p>
                         </div>
@@ -1317,8 +1314,8 @@ export default function LegalOpsLanding() {
                     </div>
                     {/* Icon */}
                     <div className="lg:col-span-5 flex justify-center lg:justify-end">
-                      <div className="w-24 h-24 md:w-32 md:h-32 rounded-3xl bg-gradient-to-br from-purple-500/20 to-purple-600/10 border border-purple-500/20 flex items-center justify-center">
-                        <AlertCircle className="w-12 h-12 md:w-16 md:h-16 text-purple-400" />
+                      <div className="w-24 h-24 md:w-32 md:h-32 rounded-3xl bg-gradient-to-br from-purple-100 to-purple-50 border border-purple-200 flex items-center justify-center shadow-lg">
+                        <AlertCircle className="w-12 h-12 md:w-16 md:h-16 text-purple-500" />
                       </div>
                     </div>
                   </div>
@@ -1331,20 +1328,20 @@ export default function LegalOpsLanding() {
                   <div className="grid lg:grid-cols-12 gap-8 lg:gap-16 items-start">
                     {/* Number */}
                     <div className="lg:col-span-1">
-                      <span className="text-6xl md:text-7xl font-bold text-rose-500/30">4</span>
+                      <span className="text-6xl md:text-7xl font-bold text-rose-500/40">4</span>
                     </div>
                     {/* Content */}
                     <div className="lg:col-span-6">
-                      <h3 className="text-2xl md:text-3xl font-bold text-white mb-4">
+                      <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
                         What's Really at Stake
                       </h3>
                       <div className="space-y-4">
-                        <p className="text-gray-400 leading-relaxed">
+                        <p className="text-gray-600 leading-relaxed">
                           Without operational stability, you risk losing high-value cases, losing clients to competitors, and losing your best talent.
                         </p>
-                        <div className="p-6 rounded-2xl bg-white/5 border border-white/10 mt-6">
-                          <p className="text-rose-300 font-medium mb-2">How OnSpot transforms this:</p>
-                          <p className="text-gray-300 leading-relaxed">
+                        <div className="p-6 rounded-2xl bg-rose-50 border border-rose-100 mt-6">
+                          <p className="text-rose-700 font-medium mb-2">How OnSpot transforms this:</p>
+                          <p className="text-gray-700 leading-relaxed">
                             We provide the operational stability your firm needs to retain clients, attract talent, and scale confidently without the growing pains.
                           </p>
                         </div>
@@ -1352,8 +1349,8 @@ export default function LegalOpsLanding() {
                     </div>
                     {/* Icon */}
                     <div className="lg:col-span-5 flex justify-center lg:justify-end">
-                      <div className="w-24 h-24 md:w-32 md:h-32 rounded-3xl bg-gradient-to-br from-rose-500/20 to-rose-600/10 border border-rose-500/20 flex items-center justify-center">
-                        <Scale className="w-12 h-12 md:w-16 md:h-16 text-rose-400" />
+                      <div className="w-24 h-24 md:w-32 md:h-32 rounded-3xl bg-gradient-to-br from-rose-100 to-rose-50 border border-rose-200 flex items-center justify-center shadow-lg">
+                        <Scale className="w-12 h-12 md:w-16 md:h-16 text-rose-500" />
                       </div>
                     </div>
                   </div>
