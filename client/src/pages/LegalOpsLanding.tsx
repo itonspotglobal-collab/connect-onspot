@@ -955,55 +955,38 @@ export default function LegalOpsLanding() {
                 </p>
               </div>
 
-              {/* Mindvalley-style Full-Width Single Row Carousel */}
+              {/* Mindvalley-style Continuous Auto-Scroll Carousel */}
+              <style>{`
+                @keyframes guaranteeScroll {
+                  0% { transform: translateX(0); }
+                  100% { transform: translateX(-50%); }
+                }
+                .guarantee-track {
+                  animation: guaranteeScroll 35s linear infinite;
+                }
+                .guarantee-track:hover {
+                  animation-play-state: paused;
+                }
+                @media (prefers-reduced-motion: reduce) {
+                  .guarantee-track {
+                    animation: none;
+                  }
+                }
+              `}</style>
               <div 
-                className="relative -mx-4 sm:-mx-6 lg:-mx-8 xl:-mx-16 2xl:-mx-24"
+                className="relative -mx-4 sm:-mx-6 lg:-mx-8 xl:-mx-16 2xl:-mx-24 overflow-hidden"
                 role="region"
                 aria-roledescription="carousel"
                 aria-label="Our Guarantee Benefits"
               >
-                {/* Previous Button */}
-                <button
-                  onClick={() => {
-                    const el = document.getElementById('guarantee-carousel');
-                    if (el) el.scrollBy({ left: -400, behavior: 'smooth' });
-                  }}
-                  className="absolute left-2 sm:left-4 lg:left-8 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/90 dark:bg-slate-800/90 shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center hover:scale-105 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  aria-label="View previous guarantee"
-                  data-testid="button-carousel-prev"
-                >
-                  <ChevronLeft className="w-5 h-5 md:w-6 md:h-6 text-slate-700 dark:text-slate-200" />
-                </button>
-
-                {/* Next Button */}
-                <button
-                  onClick={() => {
-                    const el = document.getElementById('guarantee-carousel');
-                    if (el) el.scrollBy({ left: 400, behavior: 'smooth' });
-                  }}
-                  className="absolute right-2 sm:right-4 lg:right-8 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/90 dark:bg-slate-800/90 shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center hover:scale-105 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  aria-label="View next guarantee"
-                  data-testid="button-carousel-next"
-                >
-                  <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-slate-700 dark:text-slate-200" />
-                </button>
-
-                {/* Horizontal Scrollable Container */}
+                {/* Continuous scrolling track with duplicated content for seamless loop */}
                 <div 
-                  id="guarantee-carousel"
-                  className="flex gap-4 md:gap-6 overflow-x-auto scroll-smooth snap-x snap-mandatory px-4 sm:px-6 lg:px-8 xl:px-16 2xl:px-24 pb-4"
-                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                  className="guarantee-track flex gap-4 md:gap-6 py-4"
                   data-testid="carousel-guarantee"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    const el = document.getElementById('guarantee-carousel');
-                    if (e.key === 'ArrowLeft' && el) el.scrollBy({ left: -400, behavior: 'smooth' });
-                    if (e.key === 'ArrowRight' && el) el.scrollBy({ left: 400, behavior: 'smooth' });
-                  }}
                 >
-                  {/* Card 1: 30-Day Stability Target */}
+                  {/* First set of cards */}
                   <figure 
-                    className="flex-shrink-0 w-[280px] sm:w-[340px] md:w-[400px] lg:w-[480px] xl:w-[520px] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300 snap-center"
+                    className="flex-shrink-0 w-[280px] sm:w-[340px] md:w-[400px] lg:w-[480px] xl:w-[520px] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300"
                     data-testid="card-stability-target"
                   >
                     <img 
@@ -1015,9 +998,8 @@ export default function LegalOpsLanding() {
                     />
                   </figure>
 
-                  {/* Card 2: No Extra Charges */}
                   <figure 
-                    className="flex-shrink-0 w-[280px] sm:w-[340px] md:w-[400px] lg:w-[480px] xl:w-[520px] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300 snap-center"
+                    className="flex-shrink-0 w-[280px] sm:w-[340px] md:w-[400px] lg:w-[480px] xl:w-[520px] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300"
                     data-testid="card-no-extra-charges"
                   >
                     <img 
@@ -1029,9 +1011,8 @@ export default function LegalOpsLanding() {
                     />
                   </figure>
 
-                  {/* Card 3: Performance Tracking */}
                   <figure 
-                    className="flex-shrink-0 w-[280px] sm:w-[340px] md:w-[400px] lg:w-[480px] xl:w-[520px] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300 snap-center"
+                    className="flex-shrink-0 w-[280px] sm:w-[340px] md:w-[400px] lg:w-[480px] xl:w-[520px] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300"
                     data-testid="card-performance-tracking"
                   >
                     <img 
@@ -1043,9 +1024,8 @@ export default function LegalOpsLanding() {
                     />
                   </figure>
 
-                  {/* Card 4: Full Transparency */}
                   <figure 
-                    className="flex-shrink-0 w-[280px] sm:w-[340px] md:w-[400px] lg:w-[480px] xl:w-[520px] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300 snap-center"
+                    className="flex-shrink-0 w-[280px] sm:w-[340px] md:w-[400px] lg:w-[480px] xl:w-[520px] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300"
                     data-testid="card-full-transparency"
                   >
                     <img 
@@ -1056,11 +1036,25 @@ export default function LegalOpsLanding() {
                       data-testid="img-full-transparency"
                     />
                   </figure>
+
+                  {/* Duplicated cards for seamless infinite loop */}
+                  <figure className="flex-shrink-0 w-[280px] sm:w-[340px] md:w-[400px] lg:w-[480px] xl:w-[520px] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300">
+                    <img src={stabilityTargetImage} alt="30-Day Stability Target" className="w-full h-auto object-cover" loading="lazy" />
+                  </figure>
+                  <figure className="flex-shrink-0 w-[280px] sm:w-[340px] md:w-[400px] lg:w-[480px] xl:w-[520px] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300">
+                    <img src={noExtraChargesImage} alt="No Extra Charges" className="w-full h-auto object-cover" loading="lazy" />
+                  </figure>
+                  <figure className="flex-shrink-0 w-[280px] sm:w-[340px] md:w-[400px] lg:w-[480px] xl:w-[520px] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300">
+                    <img src={performanceTrackingImage} alt="Performance Tracking" className="w-full h-auto object-cover" loading="lazy" />
+                  </figure>
+                  <figure className="flex-shrink-0 w-[280px] sm:w-[340px] md:w-[400px] lg:w-[480px] xl:w-[520px] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300">
+                    <img src={fullTransparencyImage} alt="Full Transparency" className="w-full h-auto object-cover" loading="lazy" />
+                  </figure>
                 </div>
 
                 {/* Gradient fade edges for premium look */}
-                <div className="absolute left-0 top-0 bottom-4 w-8 sm:w-12 lg:w-16 bg-gradient-to-r from-amber-50 dark:from-slate-900 to-transparent pointer-events-none z-10"></div>
-                <div className="absolute right-0 top-0 bottom-4 w-8 sm:w-12 lg:w-16 bg-gradient-to-l from-amber-50 dark:from-slate-900 to-transparent pointer-events-none z-10"></div>
+                <div className="absolute left-0 top-0 bottom-0 w-12 sm:w-20 lg:w-32 bg-gradient-to-r from-amber-50 dark:from-slate-900 to-transparent pointer-events-none z-10"></div>
+                <div className="absolute right-0 top-0 bottom-0 w-12 sm:w-20 lg:w-32 bg-gradient-to-l from-amber-50 dark:from-slate-900 to-transparent pointer-events-none z-10"></div>
               </div>
             </div>
           </div>
