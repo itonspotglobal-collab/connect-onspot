@@ -73,6 +73,7 @@ import lawyerImage from "@assets/stock_images/professional_confide_e4371db1.jpg"
 import selectiveLawyerImage from "@assets/stock_images/caucasian_white_male_8dcc3295.jpg";
 import usMapImage from "@assets/US_Coverage_1765189431049.png";
 import usMapMockup from "@assets/US_MAP_MOCKUP_1765202588593.png";
+import legalTeamImage from "@assets/OnSpot_Legal_Team_1765206051566.png";
 import stabilityTargetImage from "@assets/30-DAY_STABILITY_TARGET_1765200843502.png";
 import noExtraChargesImage from "@assets/NO_EXTRA_CHARGES_1765200843502.png";
 import performanceTrackingImage from "@assets/PERFORMANCE_TRACKING_1765200843502.png";
@@ -1166,124 +1167,193 @@ export default function LegalOpsLanding() {
           </div>
         </section>
 
-        {/* Why Law Firms Come to OnSpot - Premium Section */}
-        <section className="py-20 md:py-28 bg-gradient-to-br from-blue-600/95 via-blue-500/90 to-purple-600/85 dark:from-blue-900/80 dark:via-blue-800/75 dark:to-purple-900/70 relative overflow-hidden">
-          {/* Background glow effect */}
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-white/10 rounded-full blur-3xl opacity-30"></div>
-            <div className="absolute top-0 right-0 w-80 h-80 bg-blue-300/10 rounded-full blur-2xl opacity-20"></div>
-            <div className="absolute bottom-0 left-0 w-80 h-80 bg-purple-300/10 rounded-full blur-2xl opacity-20"></div>
-          </div>
+        {/* Why Law Firms Come to OnSpot - Mindvalley-Inspired Premium Section */}
+        <section className="relative overflow-hidden bg-slate-950">
+          {/* Cinematic gradient background */}
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-slate-950 to-black"></div>
+          
+          {/* Subtle glow orbs */}
+          <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="absolute bottom-1/4 right-0 w-[500px] h-[500px] bg-purple-600/8 rounded-full blur-3xl pointer-events-none"></div>
 
           <div className="container-fluid relative z-10">
-            <div className="max-w-6xl mx-auto px-4 md:px-6">
-              {/* Header */}
-              <div className="text-center mb-16 md:mb-20 why-section-header">
-                <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-                  Why law firms come to OnSpot
-                </h2>
-                <p className="text-lg text-blue-100 font-light max-w-2xl mx-auto">
-                  Solving the operational challenges that impact your bottom line
-                </p>
-              </div>
+            {/* Hero Header with Image */}
+            <div className="py-20 md:py-28 lg:py-32">
+              <div className="max-w-7xl mx-auto px-4 md:px-8">
+                <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+                  {/* Left: Text Content */}
+                  <div className="order-2 lg:order-1">
+                    <p className="text-amber-400 text-sm font-semibold uppercase tracking-widest mb-4">
+                      Great change starts here
+                    </p>
+                    <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
+                      Why law firms come to OnSpot
+                    </h2>
+                    <p className="text-xl md:text-2xl text-gray-300 font-light leading-relaxed max-w-xl">
+                      Solving the operational challenges that impact your bottom line and transform your practice.
+                    </p>
+                  </div>
 
-              {/* Two-Column Layout */}
-              <div className="grid md:grid-cols-2 gap-8 md:gap-10">
-                {/* Left: Bullet List Card - Glass Panel */}
-                <div className="why-card-entrance">
-                  <div className="rounded-2xl bg-white/15 backdrop-blur-xl border border-white/25 p-8 h-full hover-elevate transition-all duration-300 group relative overflow-hidden">
-                    {/* Subtle glow on hover */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-                    
-                    <div className="relative z-10">
-                      <div className="flex items-center gap-3 mb-6">
-                        <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
-                          <AlertTriangle className="w-5 h-5 text-white" />
-                        </div>
-                        <h3 className="text-xl font-semibold text-white">
-                          Your Operations Are Under Pressure
-                        </h3>
-                      </div>
-                      
-                      <ul className="space-y-3.5">
-                        {[
-                          "Case loads overwhelming your legal staff",
-                          "Manual case management creating delays",
-                          "Client escalations draining resources",
-                          "Compliance deadlines slipping through cracks",
-                          "High attorney turnover from operational burnout"
-                        ].map((point, idx) => (
-                          <li key={idx} className="flex gap-3 items-start">
-                            <div className="w-1.5 h-1.5 rounded-full bg-blue-200 mt-1.5 flex-shrink-0"></div>
-                            <span className="text-blue-50 text-sm leading-relaxed font-light">{point}</span>
-                          </li>
-                        ))}
-                      </ul>
+                  {/* Right: Hero Image */}
+                  <div className="order-1 lg:order-2">
+                    <div className="relative">
+                      {/* Glow behind image */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 to-blue-500/20 rounded-3xl blur-2xl scale-105"></div>
+                      <img 
+                        src={legalTeamImage}
+                        alt="OnSpot Legal Team - Your 24/7 Operations Partner"
+                        className="relative w-full h-auto rounded-3xl shadow-2xl"
+                      />
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
 
-                {/* Right: Three Stacked Cards - Glass Panels */}
-                <div className="space-y-6 md:space-y-7">
-                  {/* Card 1: Operational Bandwidth */}
-                  <div className="why-card-entrance" style={{ animationDelay: '0.05s' }}>
-                    <div className="rounded-2xl bg-white/15 backdrop-blur-xl border border-white/25 p-6 md:p-7 hover-elevate transition-all duration-300 group relative overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-                      
-                      <div className="relative z-10 flex gap-4 items-start">
-                        <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
-                          <Clock className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-white mb-2">
-                            Operational Bandwidth
-                          </h3>
-                          <p className="text-blue-50 text-sm leading-relaxed font-light">
-                            Your team is stretched thin managing cases and operations simultaneously, leaving no bandwidth for strategic growth.
+            {/* Transformation Points - Mindvalley Style */}
+            <div className="border-t border-white/10">
+              {/* Point 1 */}
+              <div className="py-16 md:py-20 border-b border-white/10">
+                <div className="max-w-7xl mx-auto px-4 md:px-8">
+                  <div className="grid lg:grid-cols-12 gap-8 lg:gap-16 items-start">
+                    {/* Number */}
+                    <div className="lg:col-span-1">
+                      <span className="text-6xl md:text-7xl font-bold text-amber-500/30">1</span>
+                    </div>
+                    {/* Content */}
+                    <div className="lg:col-span-6">
+                      <h3 className="text-2xl md:text-3xl font-bold text-white mb-4">
+                        Your Operations Are Under Pressure
+                      </h3>
+                      <div className="space-y-4">
+                        <p className="text-gray-400 leading-relaxed">
+                          Law firms like yours face mounting operational challenges that drain resources and limit growth potential.
+                        </p>
+                        <ul className="space-y-3 pt-2">
+                          {[
+                            "Case loads overwhelming your legal staff",
+                            "Manual case management creating delays",
+                            "Client escalations draining resources",
+                            "Compliance deadlines slipping through cracks",
+                            "High attorney turnover from operational burnout"
+                          ].map((point, idx) => (
+                            <li key={idx} className="flex gap-3 items-start">
+                              <div className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-2 flex-shrink-0"></div>
+                              <span className="text-gray-300 leading-relaxed">{point}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                    {/* Icon */}
+                    <div className="lg:col-span-5 flex justify-center lg:justify-end">
+                      <div className="w-24 h-24 md:w-32 md:h-32 rounded-3xl bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-amber-500/20 flex items-center justify-center">
+                        <AlertTriangle className="w-12 h-12 md:w-16 md:h-16 text-amber-400" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Point 2 */}
+              <div className="py-16 md:py-20 border-b border-white/10">
+                <div className="max-w-7xl mx-auto px-4 md:px-8">
+                  <div className="grid lg:grid-cols-12 gap-8 lg:gap-16 items-start">
+                    {/* Number */}
+                    <div className="lg:col-span-1">
+                      <span className="text-6xl md:text-7xl font-bold text-blue-500/30">2</span>
+                    </div>
+                    {/* Content */}
+                    <div className="lg:col-span-6">
+                      <h3 className="text-2xl md:text-3xl font-bold text-white mb-4">
+                        Operational Bandwidth Crisis
+                      </h3>
+                      <div className="space-y-4">
+                        <p className="text-gray-400 leading-relaxed">
+                          Your team is stretched thin managing cases and operations simultaneously, leaving no bandwidth for strategic growth.
+                        </p>
+                        <div className="p-6 rounded-2xl bg-white/5 border border-white/10 mt-6">
+                          <p className="text-blue-300 font-medium mb-2">How OnSpot transforms this:</p>
+                          <p className="text-gray-300 leading-relaxed">
+                            We take over your operational workload entirely, giving your legal team the freedom to focus on what they do best: practicing law and winning cases.
                           </p>
                         </div>
                       </div>
                     </div>
+                    {/* Icon */}
+                    <div className="lg:col-span-5 flex justify-center lg:justify-end">
+                      <div className="w-24 h-24 md:w-32 md:h-32 rounded-3xl bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/20 flex items-center justify-center">
+                        <Clock className="w-12 h-12 md:w-16 md:h-16 text-blue-400" />
+                      </div>
+                    </div>
                   </div>
+                </div>
+              </div>
 
-                  {/* Card 2: Frustration and Bottlenecks */}
-                  <div className="why-card-entrance" style={{ animationDelay: '0.1s' }}>
-                    <div className="rounded-2xl bg-white/15 backdrop-blur-xl border border-white/25 p-6 md:p-7 hover-elevate transition-all duration-300 group relative overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-                      
-                      <div className="relative z-10 flex gap-4 items-start">
-                        <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
-                          <AlertCircle className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-white mb-2">
-                            Frustration and Bottlenecks
-                          </h3>
-                          <p className="text-blue-50 text-sm leading-relaxed font-light">
-                            Manual workflows create delays that compound client frustration and erode trust in your firm's capabilities.
+              {/* Point 3 */}
+              <div className="py-16 md:py-20 border-b border-white/10">
+                <div className="max-w-7xl mx-auto px-4 md:px-8">
+                  <div className="grid lg:grid-cols-12 gap-8 lg:gap-16 items-start">
+                    {/* Number */}
+                    <div className="lg:col-span-1">
+                      <span className="text-6xl md:text-7xl font-bold text-purple-500/30">3</span>
+                    </div>
+                    {/* Content */}
+                    <div className="lg:col-span-6">
+                      <h3 className="text-2xl md:text-3xl font-bold text-white mb-4">
+                        Frustration and Bottlenecks
+                      </h3>
+                      <div className="space-y-4">
+                        <p className="text-gray-400 leading-relaxed">
+                          Manual workflows create delays that compound client frustration and erode trust in your firm's capabilities.
+                        </p>
+                        <div className="p-6 rounded-2xl bg-white/5 border border-white/10 mt-6">
+                          <p className="text-purple-300 font-medium mb-2">How OnSpot transforms this:</p>
+                          <p className="text-gray-300 leading-relaxed">
+                            Our streamlined processes eliminate bottlenecks, ensuring faster response times and improved client satisfaction across every touchpoint.
                           </p>
                         </div>
                       </div>
                     </div>
+                    {/* Icon */}
+                    <div className="lg:col-span-5 flex justify-center lg:justify-end">
+                      <div className="w-24 h-24 md:w-32 md:h-32 rounded-3xl bg-gradient-to-br from-purple-500/20 to-purple-600/10 border border-purple-500/20 flex items-center justify-center">
+                        <AlertCircle className="w-12 h-12 md:w-16 md:h-16 text-purple-400" />
+                      </div>
+                    </div>
                   </div>
+                </div>
+              </div>
 
-                  {/* Card 3: What's Really at Stake */}
-                  <div className="why-card-entrance" style={{ animationDelay: '0.15s' }}>
-                    <div className="rounded-2xl bg-white/15 backdrop-blur-xl border border-white/25 p-6 md:p-7 hover-elevate transition-all duration-300 group relative overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-                      
-                      <div className="relative z-10 flex gap-4 items-start">
-                        <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
-                          <Scale className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-white mb-2">
-                            What's Really at Stake
-                          </h3>
-                          <p className="text-blue-50 text-sm leading-relaxed font-light">
-                            Without operational stability, you risk losing high-value cases, losing clients to competitors, and losing your best talent.
+              {/* Point 4 */}
+              <div className="py-16 md:py-20">
+                <div className="max-w-7xl mx-auto px-4 md:px-8">
+                  <div className="grid lg:grid-cols-12 gap-8 lg:gap-16 items-start">
+                    {/* Number */}
+                    <div className="lg:col-span-1">
+                      <span className="text-6xl md:text-7xl font-bold text-rose-500/30">4</span>
+                    </div>
+                    {/* Content */}
+                    <div className="lg:col-span-6">
+                      <h3 className="text-2xl md:text-3xl font-bold text-white mb-4">
+                        What's Really at Stake
+                      </h3>
+                      <div className="space-y-4">
+                        <p className="text-gray-400 leading-relaxed">
+                          Without operational stability, you risk losing high-value cases, losing clients to competitors, and losing your best talent.
+                        </p>
+                        <div className="p-6 rounded-2xl bg-white/5 border border-white/10 mt-6">
+                          <p className="text-rose-300 font-medium mb-2">How OnSpot transforms this:</p>
+                          <p className="text-gray-300 leading-relaxed">
+                            We provide the operational stability your firm needs to retain clients, attract talent, and scale confidently without the growing pains.
                           </p>
                         </div>
+                      </div>
+                    </div>
+                    {/* Icon */}
+                    <div className="lg:col-span-5 flex justify-center lg:justify-end">
+                      <div className="w-24 h-24 md:w-32 md:h-32 rounded-3xl bg-gradient-to-br from-rose-500/20 to-rose-600/10 border border-rose-500/20 flex items-center justify-center">
+                        <Scale className="w-12 h-12 md:w-16 md:h-16 text-rose-400" />
                       </div>
                     </div>
                   </div>
