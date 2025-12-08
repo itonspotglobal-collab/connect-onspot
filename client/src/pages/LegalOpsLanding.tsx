@@ -67,7 +67,7 @@ import { HeadSEO } from "@/components/HeadSEO";
 import nycSkylineImage from "@assets/40431e5288cb44250d8204c03e0ba76129ba76dfd36e01e7c40f546ab05de806_1762346626354.jpeg";
 import lawyerImage from "@assets/stock_images/professional_confide_e4371db1.jpg";
 import selectiveLawyerImage from "@assets/stock_images/caucasian_white_male_8dcc3295.jpg";
-import usMapImage from "@assets/US_Map_MArker_1765185930811.png";
+import usMapImage from "@assets/US_Coverage_1765189431049.png";
 
 if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
   console.warn(
@@ -1017,227 +1017,131 @@ export default function LegalOpsLanding() {
           </div>
         </section>
 
-        {/* Geographic Coverage Section - Mindvalley Cinematic Hero */}
-        <section className="relative overflow-hidden min-h-[750px] lg:min-h-[750px] flex items-center">
+        {/* Geographic Coverage Section - 2-Row Layout with Enhanced Map */}
+        <section className="relative py-16 md:py-20 bg-white dark:bg-slate-50">
           <style>{`
             @keyframes pinPulse {
-              0%, 100% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.4)); }
-              50% { transform: scale(1.1); opacity: 0.5; filter: drop-shadow(0 0 16px rgba(34, 197, 94, 0.6)); }
+              0%, 100% { transform: scale(1); opacity: 1; }
+              50% { transform: scale(1.15); opacity: 0.5; }
             }
-            @keyframes floatSlow {
-              0%, 100% { transform: translateY(0px); }
-              50% { transform: translateY(-20px); }
-            }
-            @keyframes orbFloat {
-              0%, 100% { transform: translate(0, 0); }
-              25% { transform: translate(15px, -15px); }
-              50% { transform: translate(0, 20px); }
-              75% { transform: translate(-15px, -10px); }
-            }
-            .pin-pulse { animation: pinPulse 2.8s ease-in-out infinite; }
-            .float-slow { animation: floatSlow 6s ease-in-out infinite; }
-            .orb-float-1 { animation: orbFloat 8s ease-in-out infinite; }
-            .orb-float-2 { animation: orbFloat 10s ease-in-out infinite; animation-delay: 1s; }
-            .orb-float-3 { animation: orbFloat 9s ease-in-out infinite; animation-delay: 2s; }
-            .region-hover { transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1); }
-            .region-hover:hover { 
-              transform: translateX(6px);
-              background: rgba(59, 130, 246, 0.15);
-              border-left: 2px solid rgba(59, 130, 246, 0.5);
-              padding-left: calc(0.75rem - 2px);
+            .pin-pulse { animation: pinPulse 2.5s ease-in-out infinite; }
+            .region-pill-hover { transition: all 200ms ease-out; }
+            .region-pill-hover:hover {
+              background: rgba(219, 234, 254, 0.8);
+              transform: translateY(-2px);
+              box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
             }
           `}</style>
 
-          {/* Mindvalley-style mesh gradient background */}
-          <div className="absolute inset-0 -z-20">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-indigo-500/5 to-purple-600/10 dark:from-blue-600/20 dark:via-indigo-500/10 dark:to-purple-600/20"></div>
-            <div className="absolute inset-0" style={{
-              backgroundImage: `
-                radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(168, 85, 247, 0.08) 0%, transparent 50%),
-                radial-gradient(circle at 40% 20%, rgba(59, 130, 246, 0.08) 0%, transparent 50%)
-              `,
-            }}></div>
-          </div>
-
-          {/* Floating orbs for depth */}
-          <div className="absolute inset-0 overflow-hidden -z-10">
-            <div className="orb-float-1 absolute top-20 left-10 w-48 h-48 bg-blue-400/10 rounded-full blur-3xl"></div>
-            <div className="orb-float-2 absolute bottom-20 right-20 w-64 h-64 bg-purple-400/8 rounded-full blur-3xl"></div>
-            <div className="orb-float-3 absolute top-1/2 left-1/2 w-80 h-80 bg-indigo-400/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
-          </div>
-
-          <div className="container-fluid relative z-10 w-full">
+          <div className="container-fluid">
             <div className="max-w-7xl mx-auto px-4 md:px-8">
-              {/* Horizontal split: left text/regions, right map */}
-              <div className="grid lg:grid-cols-2 gap-8 md:gap-12 items-center">
+              {/* TOP ROW: 2 Columns - Headline & Map */}
+              <div className="grid lg:grid-cols-2 gap-8 md:gap-12 mb-12 items-start">
                 
-                {/* LEFT: Headline, Stats, Regions, Trust Strip */}
-                <div className="flex flex-col justify-center">
-                  {/* Eyebrow label */}
-                  <div className="mb-3 md:mb-4">
-                    <p className="text-xs font-bold text-blue-600 dark:text-blue-500 uppercase tracking-widest">
-                      OnSpot Coverage
-                    </p>
-                  </div>
+                {/* LEFT COLUMN: Headline, Subheadline, Stats */}
+                <div className="flex flex-col justify-start pt-2">
+                  {/* Eyebrow Label */}
+                  <p className="text-xs font-bold text-blue-600 dark:text-blue-700 uppercase tracking-widest mb-3">
+                    OnSpot Coverage
+                  </p>
 
-                  {/* Hero Headline - Mindvalley scale */}
-                  <h2 className="text-5xl md:text-6xl lg:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-900 via-indigo-900 to-blue-900 dark:from-blue-200 dark:via-indigo-200 dark:to-blue-300 mb-3 leading-tight">
+                  {/* Main Headline */}
+                  <h2 className="text-5xl md:text-6xl font-bold text-blue-950 dark:text-blue-900 mb-3 leading-tight">
                     We're Across America
                   </h2>
 
                   {/* Subheadline */}
-                  <p className="text-base md:text-lg text-gray-700 dark:text-gray-300 font-light mb-6 md:mb-7 max-w-lg">
+                  <p className="text-base md:text-lg text-gray-700 dark:text-gray-800 font-light mb-6 max-w-lg">
                     Present in key markets. Ready to serve your firm, wherever you are.
                   </p>
 
-                  {/* Hero Stat Strip - Glassmorphism */}
-                  <div className="mb-6 md:mb-8">
-                    <div className="inline-flex items-center gap-6 px-6 py-3.5 rounded-full bg-white/40 dark:bg-white/10 backdrop-blur-md border border-white/60 dark:border-white/20 text-sm font-semibold text-blue-900 dark:text-blue-100 w-fit shadow-lg">
-                      <div className="flex items-center gap-2">
-                        <div className="w-1 h-1 rounded-full bg-blue-600 dark:bg-blue-300"></div>
-                        <span>5 Key Regions</span>
-                      </div>
-                      <div className="w-px h-4 bg-blue-300/40 dark:bg-blue-400/30"></div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-1 h-1 rounded-full bg-blue-600 dark:bg-blue-300"></div>
-                        <span>40+ Cities</span>
-                      </div>
-                      <div className="w-px h-4 bg-blue-300/40 dark:bg-blue-400/30"></div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-1 h-1 rounded-full bg-blue-600 dark:bg-blue-300"></div>
-                        <span>24/7 Coverage</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Regions List - Emotional connection */}
-                  <div className="space-y-2 mb-7 md:mb-8">
-                    <p className="text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-widest">Where We Operate</p>
-                    
-                    {/* Tri-State */}
-                    <div className="region-hover px-3 py-2.5 rounded-lg cursor-pointer">
-                      <div className="flex items-start gap-3">
-                        <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-blue-600 to-blue-700 flex-shrink-0 mt-1.5 shadow-lg" style={{ boxShadow: '0 0 12px rgba(37, 99, 235, 0.4)' }}></div>
-                        <div className="min-w-0">
-                          <p className="font-bold text-gray-900 dark:text-white text-sm">Tri-State</p>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">NY • NJ • CT</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Texas */}
-                    <div className="region-hover px-3 py-2.5 rounded-lg cursor-pointer">
-                      <div className="flex items-start gap-3">
-                        <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex-shrink-0 mt-1.5 shadow-lg" style={{ boxShadow: '0 0 10px rgba(59, 130, 246, 0.3)' }}></div>
-                        <div className="min-w-0">
-                          <p className="font-bold text-gray-900 dark:text-white text-sm">Texas</p>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">Dallas • Houston • Austin</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Florida */}
-                    <div className="region-hover px-3 py-2.5 rounded-lg cursor-pointer">
-                      <div className="flex items-start gap-3">
-                        <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex-shrink-0 mt-1.5 shadow-lg" style={{ boxShadow: '0 0 10px rgba(6, 182, 212, 0.3)' }}></div>
-                        <div className="min-w-0">
-                          <p className="font-bold text-gray-900 dark:text-white text-sm">Florida</p>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">Miami • Orlando • Tampa</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* California */}
-                    <div className="region-hover px-3 py-2.5 rounded-lg cursor-pointer">
-                      <div className="flex items-start gap-3">
-                        <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-sky-500 to-blue-500 flex-shrink-0 mt-1.5 shadow-lg" style={{ boxShadow: '0 0 10px rgba(14, 165, 233, 0.3)' }}></div>
-                        <div className="min-w-0">
-                          <p className="font-bold text-gray-900 dark:text-white text-sm">California</p>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">Bay Area • LA</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Illinois */}
-                    <div className="region-hover px-3 py-2.5 rounded-lg cursor-pointer">
-                      <div className="flex items-start gap-3">
-                        <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 flex-shrink-0 mt-1.5 shadow-lg" style={{ boxShadow: '0 0 10px rgba(99, 102, 241, 0.3)' }}></div>
-                        <div className="min-w-0">
-                          <p className="font-bold text-gray-900 dark:text-white text-sm">Illinois</p>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">Chicago</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Trust strip - Mindvalley style */}
-                  <div className="pt-6 border-t border-blue-200/40 dark:border-blue-400/20">
-                    <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-3">
-                      Supporting legal teams in the nation's busiest markets
-                    </p>
-                    <div className="flex gap-2 flex-wrap">
-                      <div className="px-3 py-1.5 rounded-full bg-blue-50/60 dark:bg-blue-900/20 border border-blue-200/40 dark:border-blue-400/30 text-xs font-semibold text-blue-900 dark:text-blue-200">New York</div>
-                      <div className="px-3 py-1.5 rounded-full bg-blue-50/60 dark:bg-blue-900/20 border border-blue-200/40 dark:border-blue-400/30 text-xs font-semibold text-blue-900 dark:text-blue-200">Los Angeles</div>
-                      <div className="px-3 py-1.5 rounded-full bg-blue-50/60 dark:bg-blue-900/20 border border-blue-200/40 dark:border-blue-400/30 text-xs font-semibold text-blue-900 dark:text-blue-200">Miami</div>
-                    </div>
+                  {/* Stats Pill */}
+                  <div className="inline-flex items-center gap-4 px-5 py-3 rounded-full bg-blue-50 dark:bg-blue-100/20 border border-blue-200/60 dark:border-blue-300/40 text-sm font-semibold text-blue-900 dark:text-blue-950 w-fit">
+                    <span>5 Key Regions</span>
+                    <div className="w-1 h-1 rounded-full bg-blue-400 dark:bg-blue-300"></div>
+                    <span>40+ Cities</span>
+                    <div className="w-1 h-1 rounded-full bg-blue-400 dark:bg-blue-300"></div>
+                    <span>24/7 Coverage</span>
                   </div>
                 </div>
 
-                {/* RIGHT: Cinematic Map with Glassmorphism */}
-                <div className="relative hidden lg:flex items-center justify-center h-[650px]">
-                  {/* Floating map container */}
-                  <div className="float-slow relative w-full max-w-2xl h-full flex items-center justify-center">
-                    {/* Organic gradient shape behind map */}
-                    <div className="absolute inset-0 rounded-3xl opacity-40 pointer-events-none" style={{
-                      backgroundImage: `
-                        radial-gradient(ellipse 900px 700px at center, rgba(59, 130, 246, 0.25) 0%, rgba(99, 102, 241, 0.1) 40%, transparent 70%)
-                      `,
-                    }}></div>
+                {/* RIGHT COLUMN: Hero Map Card */}
+                <div className="relative flex items-start justify-center lg:justify-end">
+                  {/* Map Card Container */}
+                  <div className="w-full max-w-md">
+                    {/* Card with rounded corners and shadow */}
+                    <div className="relative bg-white dark:bg-gray-900 rounded-2xl md:rounded-3xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
+                      {/* Inner gradient overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent dark:from-white/5 pointer-events-none rounded-2xl md:rounded-3xl"></div>
 
-                    {/* Glass morphism map card */}
-                    <div className="relative w-full mx-2 md:mx-0">
-                      <div className="bg-white/30 dark:bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/50 dark:border-white/20 shadow-2xl overflow-hidden">
-                        {/* Gradient overlay inside card */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent dark:from-white/5 dark:to-transparent rounded-3xl pointer-events-none"></div>
-                        
-                        {/* Map image */}
-                        <img 
-                          src={usMapImage}
-                          alt="US Map showing OnSpot coverage areas" 
-                          className="w-full h-auto object-contain relative z-10"
-                        />
-                        
-                        {/* Status badge with glow */}
-                        <div className="absolute bottom-6 left-6 flex items-center gap-3 px-4 py-3 rounded-full bg-white/80 dark:bg-gray-900/70 backdrop-blur-md border border-emerald-200/60 dark:border-emerald-400/40 z-20 shadow-xl">
-                          <div className="w-2 h-2 rounded-full bg-emerald-500 pin-pulse"></div>
-                          <span className="text-sm font-semibold text-emerald-900 dark:text-emerald-200">Live pods across the U.S.</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Mobile Map */}
-                <div className="relative w-full lg:hidden h-[300px]">
-                  <div className="absolute inset-0 rounded-2xl opacity-30 pointer-events-none" style={{
-                    backgroundImage: `radial-gradient(ellipse 400px 300px at center, rgba(59, 130, 246, 0.2) 0%, transparent 70%)`,
-                  }}></div>
-                  
-                  <div className="relative h-full w-full">
-                    <div className="bg-white/30 dark:bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/40 dark:border-white/15 h-full overflow-hidden shadow-xl">
-                      <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none rounded-2xl"></div>
-                      
+                      {/* Map Image */}
                       <img 
                         src={usMapImage}
                         alt="US Map showing OnSpot coverage areas" 
-                        className="w-full h-full object-contain relative z-10"
+                        className="w-full h-auto object-contain block relative z-10"
                       />
-                      
-                      <div className="absolute bottom-4 left-4 flex items-center gap-2 px-3 py-2 rounded-full bg-white/80 dark:bg-gray-900/70 backdrop-blur-sm border border-emerald-200/50 dark:border-emerald-400/30 z-20 shadow-lg">
+
+                      {/* Live Pods Badge - Bottom Left */}
+                      <div className="absolute bottom-4 left-4 md:bottom-6 md:left-6 flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-white dark:bg-gray-800 border border-emerald-200/50 dark:border-emerald-400/40 z-20 shadow-md hover:shadow-lg transition-shadow duration-200">
                         <div className="w-2 h-2 rounded-full bg-emerald-500 pin-pulse"></div>
-                        <span className="text-xs font-semibold text-emerald-900 dark:text-emerald-200">Live pods</span>
+                        <span className="text-xs md:text-sm font-semibold text-emerald-900 dark:text-emerald-200">Live pods across the U.S.</span>
                       </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* BOTTOM ROW: Full-Width Region Pills */}
+              <div className="border-t border-gray-200/50 dark:border-gray-700/50 pt-12 md:pt-16">
+                {/* Label */}
+                <p className="text-xs font-bold text-blue-700 dark:text-blue-600 uppercase tracking-widest mb-6">
+                  Where We Operate
+                </p>
+
+                {/* Region Pills - Flex wrap layout */}
+                <div className="flex flex-wrap gap-3 md:gap-4">
+                  {/* Tri-State */}
+                  <div className="region-pill-hover px-4 md:px-5 py-3 rounded-full bg-blue-50 dark:bg-blue-100/15 border border-blue-200/60 dark:border-blue-300/40 hover:border-blue-300 dark:hover:border-blue-400/50 cursor-pointer">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-blue-600 flex-shrink-0"></div>
+                      <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">Tri-State</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400">NY • NJ • CT</span>
+                    </div>
+                  </div>
+
+                  {/* Texas */}
+                  <div className="region-pill-hover px-4 md:px-5 py-3 rounded-full bg-blue-50 dark:bg-blue-100/15 border border-blue-200/60 dark:border-blue-300/40 hover:border-blue-300 dark:hover:border-blue-400/50 cursor-pointer">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0"></div>
+                      <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">Texas</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400">Dallas • Houston • Austin</span>
+                    </div>
+                  </div>
+
+                  {/* Florida */}
+                  <div className="region-pill-hover px-4 md:px-5 py-3 rounded-full bg-blue-50 dark:bg-blue-100/15 border border-blue-200/60 dark:border-blue-300/40 hover:border-blue-300 dark:hover:border-blue-400/50 cursor-pointer">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-cyan-500 flex-shrink-0"></div>
+                      <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">Florida</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400">Miami • Orlando • Tampa</span>
+                    </div>
+                  </div>
+
+                  {/* California */}
+                  <div className="region-pill-hover px-4 md:px-5 py-3 rounded-full bg-blue-50 dark:bg-blue-100/15 border border-blue-200/60 dark:border-blue-300/40 hover:border-blue-300 dark:hover:border-blue-400/50 cursor-pointer">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-sky-500 flex-shrink-0"></div>
+                      <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">California</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400">Bay Area • LA</span>
+                    </div>
+                  </div>
+
+                  {/* Illinois */}
+                  <div className="region-pill-hover px-4 md:px-5 py-3 rounded-full bg-blue-50 dark:bg-blue-100/15 border border-blue-200/60 dark:border-blue-300/40 hover:border-blue-300 dark:hover:border-blue-400/50 cursor-pointer">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0"></div>
+                      <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">Illinois</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400">Chicago</span>
                     </div>
                   </div>
                 </div>

@@ -1,0 +1,50 @@
+Refactor my “We’re Across America” section to use a 2-row layout and a new map image called `US Coverage.png`.
+
+Layout requirements:
+
+TOP ROW (2 columns):
+- Left column:
+  - Small label: “ONSPOT COVERAGE”
+  - H1: “We’re Across America”
+  - Subheadline under it: “Present in key markets. Ready to serve your firm, wherever you are.”
+  - A single pill below the subheadline with three inline stats:
+      [ 5 Key Regions ]   [ 40+ Cities ]   [ 24/7 Coverage ]
+- Right column:
+  - A hero map card using my new image `US Coverage.png` instead of the current grey map.
+  - The `<img>` should use that file, for example: `<img src="/US Coverage.png" alt="OnSpot coverage across the US" />`
+  - The card should have:
+      - Rounded corners
+      - Soft shadow
+      - Slightly larger map than before so it feels like a hero visual
+      - A small pill inside the bottom-left or bottom-right corner saying:
+        “Live pods across the U.S.” with a green status dot.
+
+BOTTOM ROW (full width):
+- A horizontal strip under the two columns, spanning the same width.
+- Left side: label “Where we operate”.
+- To the right of that label on the same row, show each region as a pill:
+    [ Tri-State · NY • NJ • CT ]
+    [ Texas · Dallas • Houston • Austin ]
+    [ Florida · Miami • Orlando · Tampa ]
+    [ California · Bay Area · LA ]
+    [ Illinois · Chicago ]
+- Each pill:
+    - Light blue/gray background
+    - Rounded pill shape
+    - Small colored dot/icon on the left
+    - On hover: slightly darker background and a very subtle lift.
+
+VISUAL STYLE:
+- Keep the overall page light mode.
+- Make sure the blue map image looks intentional:
+    - Either place the map on a very light neutral background inside the card OR a very deep navy that complements the bright blue of the map.
+    - Avoid pure black behind it; if the PNG has a black background, treat the card as dark (deep navy) with white text in the pill.
+- Align the height of the left text block and the right map card so they feel like one cohesive row.
+- Reduce vertical padding so the entire section (headline, top row, bottom row) fits within ~85–90vh on a 13–15" laptop.
+
+RESPONSIVE BEHAVIOR:
+- Desktop: 2 columns on the top row, full-width row of region pills underneath.
+- Tablet/mobile:
+    - Stack in this order: title + subtitle, stat pill, map card, “Where we operate” row with region pills wrapping onto multiple lines.
+
+Update my JSX/HTML and CSS accordingly, use the new `US Coverage.png` map image, and remove references to the old grey map asset.
