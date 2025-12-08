@@ -954,98 +954,66 @@ export default function LegalOpsLanding() {
                 </p>
               </div>
 
-              {/* Mindvalley-style Animated Image Carousel */}
-              <div className="relative overflow-hidden rounded-3xl">
-                {/* CSS for continuous scroll animation */}
-                <style>{`
-                  @keyframes scrollLeft {
-                    0% { transform: translateX(0); }
-                    100% { transform: translateX(-50%); }
-                  }
-                  .guarantee-carousel {
-                    display: flex;
-                    animation: scrollLeft 30s linear infinite;
-                  }
-                  .guarantee-carousel:hover {
-                    animation-play-state: paused;
-                  }
-                `}</style>
-                
-                {/* Row 1 - Scrolling from right to left */}
-                <div className="overflow-hidden mb-4">
-                  <div className="guarantee-carousel">
-                    {/* First set of images */}
-                    <div className="flex gap-4 flex-shrink-0">
-                      <div className="w-[400px] md:w-[500px] flex-shrink-0 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
-                        <img 
-                          src={stabilityTargetImage} 
-                          alt="30-Day Stability Target" 
-                          className="w-full h-auto object-cover"
-                          data-testid="img-stability-target"
-                        />
-                      </div>
-                      <div className="w-[400px] md:w-[500px] flex-shrink-0 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
-                        <img 
-                          src={noExtraChargesImage} 
-                          alt="No Extra Charges" 
-                          className="w-full h-auto object-cover"
-                          data-testid="img-no-extra-charges"
-                        />
-                      </div>
-                      <div className="w-[400px] md:w-[500px] flex-shrink-0 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
-                        <img 
-                          src={performanceTrackingImage} 
-                          alt="Performance Tracking" 
-                          className="w-full h-auto object-cover"
-                          data-testid="img-performance-tracking"
-                        />
-                      </div>
-                      <div className="w-[400px] md:w-[500px] flex-shrink-0 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
-                        <img 
-                          src={fullTransparencyImage} 
-                          alt="Full Transparency" 
-                          className="w-full h-auto object-cover"
-                          data-testid="img-full-transparency"
-                        />
-                      </div>
-                    </div>
-                    {/* Duplicate set for seamless loop */}
-                    <div className="flex gap-4 flex-shrink-0 ml-4">
-                      <div className="w-[400px] md:w-[500px] flex-shrink-0 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
-                        <img 
-                          src={stabilityTargetImage} 
-                          alt="30-Day Stability Target" 
-                          className="w-full h-auto object-cover"
-                        />
-                      </div>
-                      <div className="w-[400px] md:w-[500px] flex-shrink-0 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
-                        <img 
-                          src={noExtraChargesImage} 
-                          alt="No Extra Charges" 
-                          className="w-full h-auto object-cover"
-                        />
-                      </div>
-                      <div className="w-[400px] md:w-[500px] flex-shrink-0 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
-                        <img 
-                          src={performanceTrackingImage} 
-                          alt="Performance Tracking" 
-                          className="w-full h-auto object-cover"
-                        />
-                      </div>
-                      <div className="w-[400px] md:w-[500px] flex-shrink-0 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
-                        <img 
-                          src={fullTransparencyImage} 
-                          alt="Full Transparency" 
-                          className="w-full h-auto object-cover"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              {/* Mindvalley-style 2-Row Image Grid */}
+              <div className="relative max-w-6xl mx-auto">
+                {/* 2x2 Grid Layout */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                  {/* Card 1: 30-Day Stability Target */}
+                  <figure 
+                    className="rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300"
+                    data-testid="card-stability-target"
+                  >
+                    <img 
+                      src={stabilityTargetImage} 
+                      alt="30-Day Stability Target: We aim to achieve zero escalations within your first 30 days, making your business self-propelling" 
+                      className="w-full h-auto object-cover"
+                      loading="lazy"
+                      data-testid="img-stability-target"
+                    />
+                  </figure>
 
-                {/* Gradient overlays for smooth edges */}
-                <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-amber-50 dark:from-slate-900 to-transparent pointer-events-none z-10"></div>
-                <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-amber-50 dark:from-slate-900 to-transparent pointer-events-none z-10"></div>
+                  {/* Card 2: No Extra Charges */}
+                  <figure 
+                    className="rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300"
+                    data-testid="card-no-extra-charges"
+                  >
+                    <img 
+                      src={noExtraChargesImage} 
+                      alt="No Extra Charges: If it takes longer than 30 days, we work for free until you're stable" 
+                      className="w-full h-auto object-cover"
+                      loading="lazy"
+                      data-testid="img-no-extra-charges"
+                    />
+                  </figure>
+
+                  {/* Card 3: Performance Tracking */}
+                  <figure 
+                    className="rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300"
+                    data-testid="card-performance-tracking"
+                  >
+                    <img 
+                      src={performanceTrackingImage} 
+                      alt="Performance Tracking: Daily metrics and weekly reviews ensure we stay on target with your operations" 
+                      className="w-full h-auto object-cover"
+                      loading="lazy"
+                      data-testid="img-performance-tracking"
+                    />
+                  </figure>
+
+                  {/* Card 4: Full Transparency */}
+                  <figure 
+                    className="rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300"
+                    data-testid="card-full-transparency"
+                  >
+                    <img 
+                      src={fullTransparencyImage} 
+                      alt="Full Transparency: Complete visibility into our progress every step of the way" 
+                      className="w-full h-auto object-cover"
+                      loading="lazy"
+                      data-testid="img-full-transparency"
+                    />
+                  </figure>
+                </div>
               </div>
             </div>
           </div>
