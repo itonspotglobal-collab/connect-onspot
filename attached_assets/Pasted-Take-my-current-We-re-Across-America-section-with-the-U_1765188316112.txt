@@ -1,0 +1,71 @@
+Take my current “We’re Across America” section (with the US map on the left and the region list on the right) and redesign it into a hero-level, wow-factor section that:
+
+- Fits fully in one laptop viewport (max height ~850–900px).
+- Has a strong, modern SaaS look (Stripe / Linear / Vercel vibes).
+- Uses a horizontal, split-screen layout instead of a tall stacked layout.
+
+Keep my content (headline, subheadline, 3 stat chips, regions list, map), but change the COMPOSITION and STYLING like this:
+
+1. Layout (critical):
+   - Make this a single row hero:
+     - LEFT: text + stats + regions list.
+     - RIGHT: oversized US map.
+   - No separate giant card under the header. The map and regions should visually belong to the same horizontal band.
+   - Reduce top padding so the header, stats, and split layout all fit in one screen on a 13–15" laptop.
+
+2. Left side (text + regions):
+   - At the top left, keep:
+       ONSPOT COVERAGE (small label)
+       We’re Across America (big bold H1)
+       Subheading (same text, slightly smaller and softer).
+   - Directly under the subheading, show a single horizontal stat pill:
+       [ 5 Key Regions ]   [ 40+ Cities ]   [ 24/7 Coverage ]
+     Style:
+       - Pill-shaped, light blue tint, subtle border, inline icons or separators.
+   - Under the stat pill, show the “Regions we’re active in” list:
+       - List the 5 regions in a simple vertical list (no full big box).
+       - Each row: colored dot + bold region name + small muted description.
+       - On hover, slightly shift the row to the right and change background to a very light blue (micro interaction).
+   - Tighten the vertical spacing so the header, stat pill, and list all live in a compact left column.
+
+3. Right side (WOW map):
+   - Make the US map large enough to dominate the right side (bigger than it is now).
+   - Place it on a soft, rounded “glass” card:
+       - White to very light blue subtle gradient.
+       - Large border-radius (20–24px).
+       - Soft shadow for depth.
+   - Behind the map shape, add a large radial gradient or abstract shape in pale OnSpot blue to create a halo effect.
+     Example: radial-gradient(circle at center, rgba(80,130,255,0.25) 0%, transparent 60%).
+   - Change map pins to OnSpot blue instead of orange.
+   - Add a gentle “ping” animation to the pins:
+       - CSS keyframes to scale up 5–8% and fade a ring out every 2.5–3 seconds.
+       - Use different animation delays so not all pins pulse at the same time.
+   - Optionally add a tiny floating label in the bottom corner of the map card like:
+       [ ● Live pods across the U.S. ]
+     Small pill, thin border, subtle shadow.
+
+4. Background band / section feel:
+   - Give this entire section a full-width background band so it feels like its own slice of the page:
+       - Very light blue/gray vertical gradient (e.g. #F7FAFF at top to white at bottom).
+       - The content container (left/right split) sits centered on top.
+   - Slightly overlap the map card against the right edge of the band or content container to create depth and a “designed” feel (not just two rectangles).
+
+5. Typography:
+   - Make the main H1 clearly larger and more dramatic than before (e.g. 48–56px, tight line-height).
+   - Use a dark navy for the H1, mid-gray for body, and a blue accent for labels.
+   - Region names one weight heavier than descriptions.
+
+6. Responsiveness:
+   - On desktop: left and right columns side-by-side, map large and dominant.
+   - On tablet/mobile: stack with map first, then text + regions, while preserving the halo and ping animations.
+   - Preserve one-screen feel on desktop; mobile can scroll naturally.
+
+7. Implementation:
+   - Refactor my existing section into this new design using semantic HTML/CSS (or React + modern CSS).
+   - Keep the code clean and minimal: no unnecessary wrappers, no heavy borders, no extra boxes.
+   - Focus on:
+       - Depth (overlaps, halo, shadow),
+       - Motion (pin ping, hover shifts),
+       - Tight vertical spacing so everything is visible at once.
+
+Use my existing content but apply this layout and styling so that the result feels like a premium SaaS hero section, not just a basic content block.
