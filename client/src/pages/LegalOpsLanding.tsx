@@ -1017,102 +1017,144 @@ export default function LegalOpsLanding() {
           </div>
         </section>
 
-        {/* Geographic Coverage Section - Bright, Soft, Modern */}
-        <section className="py-16 md:py-20 bg-white dark:bg-slate-50 relative">
+        {/* Geographic Coverage Section - Enhanced with Wow Factor */}
+        <section className="py-8 md:py-12 bg-white dark:bg-slate-50 relative">
+          <style>{`
+            @keyframes pinPulse {
+              0%, 100% { transform: scale(1); opacity: 1; }
+              50% { transform: scale(1.08); opacity: 0.7; }
+            }
+            .pin-pulse-1 { animation: pinPulse 2.8s ease-in-out infinite; }
+            .pin-pulse-2 { animation: pinPulse 3s ease-in-out infinite; animation-delay: 0.6s; }
+            .pin-pulse-3 { animation: pinPulse 2.9s ease-in-out infinite; animation-delay: 1.2s; }
+            .region-hover { transition: all 200ms ease-out; }
+            .region-hover:hover { transform: translateX(3px); }
+          `}</style>
+
           <div className="container-fluid">
             <div className="max-w-7xl mx-auto px-4 md:px-6">
               {/* Header */}
-              <div className="mb-12 md:mb-16">
-                <p className="text-xs font-bold text-gray-500 dark:text-gray-600 uppercase tracking-widest mb-3">
+              <div className="mb-8 md:mb-10">
+                <p className="text-xs font-bold text-blue-600 dark:text-blue-700 uppercase tracking-widest mb-3">
                   OnSpot Coverage
                 </p>
-                <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-gray-950 mb-4 leading-tight">
+                <h2 className="text-5xl md:text-6xl font-bold text-blue-950 dark:text-blue-900 mb-4 leading-tight">
                   We're Across America
                 </h2>
-                <p className="text-lg text-gray-600 dark:text-gray-700 font-light max-w-2xl">
+                <p className="text-lg text-gray-700 dark:text-gray-800 font-light max-w-2xl">
                   Present in key markets. Ready to serve your firm, wherever you are.
                 </p>
               </div>
 
+              {/* Hero Stat Strip */}
+              <div className="flex justify-start mb-10 md:mb-14">
+                <div className="inline-flex items-center gap-6 px-6 py-3 rounded-full bg-gradient-to-r from-blue-50 to-white dark:from-blue-100/50 dark:to-gray-50 border border-blue-200/50 dark:border-blue-300/30 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-blue-900 dark:text-blue-950">5 Key Regions</span>
+                  </div>
+                  <div className="w-1 h-1 rounded-full bg-gray-400 dark:bg-gray-600"></div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-blue-900 dark:text-blue-950">40+ Cities</span>
+                  </div>
+                  <div className="w-1 h-1 rounded-full bg-gray-400 dark:bg-gray-600"></div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-blue-900 dark:text-blue-950">24/7 Coverage</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Background Band with subtle gradient */}
+              <div className="absolute left-0 right-0 h-[480px] md:h-[520px] -mx-[calc(50vw-50%)] bg-gradient-to-b from-blue-50/60 via-blue-100/30 to-white dark:from-blue-100/40 dark:via-blue-50/20 dark:to-slate-50 rounded-t-3xl rounded-b-3xl shadow-sm -z-10 top-[280px] md:top-[320px]"></div>
+
               {/* Main Grid: Map + Regions */}
-              <div className="grid lg:grid-cols-3 gap-6 md:gap-8 items-start">
-                {/* Left: Map Card (2/3 width on desktop) */}
-                <div className="lg:col-span-2">
-                  <div className="bg-gray-50 dark:bg-gray-100 rounded-3xl p-8 md:p-10 shadow-sm hover:shadow-md transition-shadow duration-300">
-                    <img 
-                      src={usMapImage}
-                      alt="US Map showing OnSpot coverage areas" 
-                      className="w-full h-auto object-contain"
-                    />
-                    
-                    {/* Bottom label inside map card */}
-                    <div className="mt-6 flex items-center gap-2 px-4 py-3 rounded-full bg-white dark:bg-gray-50 border border-gray-200 dark:border-gray-300 w-fit">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                      <span className="text-sm text-gray-700 dark:text-gray-800 font-medium">Live legal ops pods across the U.S.</span>
+              <div className="grid lg:grid-cols-12 gap-0 items-start relative">
+                {/* Left: Map Card (spans 7 cols, overlaps right) */}
+                <div className="lg:col-span-7 relative z-20">
+                  <div className="relative group">
+                    {/* Soft glow halo behind map */}
+                    <div className="absolute inset-0 -m-8 opacity-40 pointer-events-none rounded-3xl" style={{
+                      backgroundImage: 'radial-gradient(circle at center, rgba(59, 130, 246, 0.15) 0%, transparent 70%)',
+                    }}></div>
+
+                    {/* Map card with enhanced shadow */}
+                    <div className="relative bg-white dark:bg-gray-50 rounded-3xl p-8 md:p-10 shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden border border-blue-100/50 dark:border-blue-200/20">
+                      <div className="absolute inset-0 bg-gradient-to-br from-blue-50/40 to-transparent pointer-events-none rounded-3xl"></div>
+                      
+                      <img 
+                        src={usMapImage}
+                        alt="US Map showing OnSpot coverage areas" 
+                        className="w-full h-auto object-contain relative z-10"
+                      />
+                      
+                      {/* Bottom label inside map card */}
+                      <div className="mt-6 flex items-center gap-2 px-4 py-3 rounded-full bg-gradient-to-r from-emerald-50 to-white dark:from-emerald-100/40 dark:to-gray-50 border border-emerald-200/50 dark:border-emerald-300/30 w-fit">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 pin-pulse-1"></div>
+                        <span className="text-sm text-emerald-900 dark:text-emerald-950 font-semibold">Live legal ops pods across the U.S.</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Right: Regions Panel (1/3 width on desktop) */}
-                <div className="lg:col-span-1">
-                  <div className="bg-gray-50 dark:bg-gray-100 rounded-3xl p-6 md:p-8 shadow-sm">
+                {/* Right: Regions Panel (spans 5 cols, overlaps left) */}
+                <div className="lg:col-span-5 lg:-ml-4 relative z-30 mt-6 md:mt-0">
+                  <div className="bg-gradient-to-br from-white to-blue-50/40 dark:from-gray-50 dark:to-blue-100/20 rounded-3xl p-6 md:p-8 shadow-lg border border-blue-100/40 dark:border-blue-200/20 backdrop-blur-sm">
                     {/* Panel Title */}
-                    <p className="text-xs font-bold text-gray-500 dark:text-gray-600 uppercase tracking-widest mb-6">
+                    <p className="text-xs font-bold text-blue-700 dark:text-blue-800 uppercase tracking-widest mb-6">
                       Regions We're Active In
                     </p>
 
                     {/* Regions List */}
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {/* Tri-State */}
-                      <div className="group px-4 py-3 rounded-2xl hover:bg-blue-50 dark:hover:bg-blue-100 transition-colors duration-200 cursor-default">
+                      <div className="region-hover group px-4 py-3 rounded-2xl hover:bg-blue-100/50 dark:hover:bg-blue-200/30 cursor-default">
                         <div className="flex items-start gap-3">
-                          <div className="w-2.5 h-2.5 rounded-full bg-blue-500 flex-shrink-0 mt-1"></div>
+                          <div className="w-2.5 h-2.5 rounded-full bg-blue-600 flex-shrink-0 mt-1"></div>
                           <div className="min-w-0">
-                            <p className="font-semibold text-gray-900 dark:text-gray-950 text-sm">Tri-State</p>
+                            <p className="font-bold text-gray-900 dark:text-gray-950 text-sm">Tri-State</p>
                             <p className="text-xs text-gray-600 dark:text-gray-700 mt-0.5">NY • NJ • CT · High-volume practices</p>
                           </div>
                         </div>
                       </div>
 
                       {/* Texas */}
-                      <div className="group px-4 py-3 rounded-2xl hover:bg-blue-50 dark:hover:bg-blue-100 transition-colors duration-200 cursor-default">
+                      <div className="region-hover group px-4 py-3 rounded-2xl hover:bg-blue-100/50 dark:hover:bg-blue-200/30 cursor-default">
                         <div className="flex items-start gap-3">
                           <div className="w-2.5 h-2.5 rounded-full bg-blue-500 flex-shrink-0 mt-1"></div>
                           <div className="min-w-0">
-                            <p className="font-semibold text-gray-900 dark:text-gray-950 text-sm">Texas</p>
+                            <p className="font-bold text-gray-900 dark:text-gray-950 text-sm">Texas</p>
                             <p className="text-xs text-gray-600 dark:text-gray-700 mt-0.5">Dallas • Houston • Austin · Growing firms</p>
                           </div>
                         </div>
                       </div>
 
                       {/* Florida */}
-                      <div className="group px-4 py-3 rounded-2xl hover:bg-blue-50 dark:hover:bg-blue-100 transition-colors duration-200 cursor-default">
+                      <div className="region-hover group px-4 py-3 rounded-2xl hover:bg-blue-100/50 dark:hover:bg-blue-200/30 cursor-default">
                         <div className="flex items-start gap-3">
-                          <div className="w-2.5 h-2.5 rounded-full bg-blue-500 flex-shrink-0 mt-1"></div>
+                          <div className="w-2.5 h-2.5 rounded-full bg-cyan-500 flex-shrink-0 mt-1"></div>
                           <div className="min-w-0">
-                            <p className="font-semibold text-gray-900 dark:text-gray-950 text-sm">Florida</p>
+                            <p className="font-bold text-gray-900 dark:text-gray-950 text-sm">Florida</p>
                             <p className="text-xs text-gray-600 dark:text-gray-700 mt-0.5">Miami • Orlando • Tampa · Seasonal expertise</p>
                           </div>
                         </div>
                       </div>
 
                       {/* California */}
-                      <div className="group px-4 py-3 rounded-2xl hover:bg-blue-50 dark:hover:bg-blue-100 transition-colors duration-200 cursor-default">
+                      <div className="region-hover group px-4 py-3 rounded-2xl hover:bg-blue-100/50 dark:hover:bg-blue-200/30 cursor-default">
                         <div className="flex items-start gap-3">
-                          <div className="w-2.5 h-2.5 rounded-full bg-blue-500 flex-shrink-0 mt-1"></div>
+                          <div className="w-2.5 h-2.5 rounded-full bg-sky-500 flex-shrink-0 mt-1"></div>
                           <div className="min-w-0">
-                            <p className="font-semibold text-gray-900 dark:text-gray-950 text-sm">California</p>
+                            <p className="font-bold text-gray-900 dark:text-gray-950 text-sm">California</p>
                             <p className="text-xs text-gray-600 dark:text-gray-700 mt-0.5">Bay Area • LA · Tech-focused firms</p>
                           </div>
                         </div>
                       </div>
 
                       {/* Illinois */}
-                      <div className="group px-4 py-3 rounded-2xl hover:bg-blue-50 dark:hover:bg-blue-100 transition-colors duration-200 cursor-default">
+                      <div className="region-hover group px-4 py-3 rounded-2xl hover:bg-blue-100/50 dark:hover:bg-blue-200/30 cursor-default">
                         <div className="flex items-start gap-3">
-                          <div className="w-2.5 h-2.5 rounded-full bg-blue-500 flex-shrink-0 mt-1"></div>
+                          <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 flex-shrink-0 mt-1"></div>
                           <div className="min-w-0">
-                            <p className="font-semibold text-gray-900 dark:text-gray-950 text-sm">Illinois</p>
+                            <p className="font-bold text-gray-900 dark:text-gray-950 text-sm">Illinois</p>
                             <p className="text-xs text-gray-600 dark:text-gray-700 mt-0.5">Chicago · Regional expertise</p>
                           </div>
                         </div>
@@ -1120,10 +1162,10 @@ export default function LegalOpsLanding() {
                     </div>
 
                     {/* Footer Pill */}
-                    <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-300">
-                      <div className="flex items-center gap-2 px-4 py-3 rounded-full border border-dashed border-gray-300 dark:border-gray-400">
-                        <div className="w-2 h-2 rounded-full bg-cyan-500"></div>
-                        <span className="text-xs text-gray-600 dark:text-gray-700 font-medium">Ready to open another region? Plug in a new pod in weeks.</span>
+                    <div className="mt-6 pt-6 border-t border-blue-200/50 dark:border-blue-300/20">
+                      <div className="flex items-center gap-2 px-4 py-3 rounded-full border border-dashed border-cyan-300/60 dark:border-cyan-400/40 bg-cyan-50/30 dark:bg-cyan-100/15">
+                        <div className="w-2 h-2 rounded-full bg-cyan-500 pin-pulse-3"></div>
+                        <span className="text-xs text-cyan-900 dark:text-cyan-950 font-medium">Ready to open another region? Plug in a new pod in weeks.</span>
                       </div>
                     </div>
                   </div>

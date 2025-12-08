@@ -1,0 +1,56 @@
+Take my existing “We’re Across America” section and evolve it into something with more wow factor, while still staying clean and light-mode.
+
+Keep:
+- The same basic layout: headline + subhead at the top, map on the left, regions list on the right.
+- One-screen height on a MacBook.
+- Light overall aesthetic (no full dark mode).
+
+Upgrade it visually with these changes:
+
+1. Background band and depth:
+   - Add a very light, full-width background band behind the map and regions cards (for example a soft blue or light warm gray) so this section feels like its own horizontal slice of the page.
+   - Keep the page background white, but let this section have a rounded top and bottom or a subtle shadow so it looks like its own “module”.
+   - Slight gradient on the band, from a very light blue at the top to white at the bottom, very subtle.
+
+2. Hero stat strip:
+   - Directly under the main headline, add a pill-shaped stat strip containing 2–3 key metrics, like:
+     - “5 key regions • 40+ cities • 24/7 coverage”
+   - Use small icons or dividers between stats, and a soft blue-tinted background.
+   - This should feel like a Stripe/Linear stat bar: compact, rounded, and slightly emphasized, but not huge.
+
+3. Map card wow factor:
+   - Let the map card slightly overlap the background band (e.g., card is larger and breaks out of the band by a few pixels), and give it a more pronounced but still soft shadow.
+   - Add a subtle glowing halo behind the center of the US map using a radial gradient (very soft blue to transparent) so the map becomes the focal point.
+   - Change the pins to OnSpot-blue and give them a small pulsing animation (CSS keyframes) where the outer ring fades in/out slowly, like a locator ping.
+
+4. Motion on pins:
+   - Add a keyframe animation for a gentle scale/opacity pulse on the pin markers, no more than 5–8% size change, duration about 2.5–3 seconds, easing in/out.
+   - Only a few pins need to animate at once. Stagger the animation with different delays so they don’t pulse in sync.
+
+5. Regions list card:
+   - Keep it light and minimal, but:
+     - Add a very subtle gradient or tint to the card background (almost white with a hint of blue).
+     - Add a 1px border with low-opacity blue/gray for definition.
+   - Each region row:
+     - On hover, shift it slightly to the right (2–3px) and change background to a very pale blue.
+     - Make the left dots use different accent colors but all within the OnSpot palette (different tints of blue and teal, not rainbow).
+
+6. Visual connection between map and list:
+   - For desktop, place the regions card slightly overlapping the right edge of the map band so they feel connected.
+   - Optionally add a faint curved line or arrow that starts at the northeast pin and visually points toward the “Tri-State” row in the list (super light stroke).
+
+7. Typography finesse:
+   - Slightly increase the headline size and tighten the line-height for more impact.
+   - Use a slightly darker navy for the headline than for other text to make it pop.
+   - Make region names 1 step bolder than their descriptions.
+
+8. Responsiveness:
+   - On mobile, stack the map first, then the regions card.
+   - Keep the hero stat pill visible under the headline on mobile as well (centered).
+
+Focus on:
+- Depth (overlaps, shadows, gradient halo),
+- Motion (pulsing pins and subtle hover shifts),
+- Story (hero stat pill that makes the coverage feel impressive),
+
+while keeping the overall layout simple, clean, and professional.
