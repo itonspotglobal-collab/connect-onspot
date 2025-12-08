@@ -1017,148 +1017,142 @@ export default function LegalOpsLanding() {
           </div>
         </section>
 
-        {/* Geographic Coverage Section - Premium Map Integration */}
-        <section className="py-10 md:py-12 bg-gradient-to-br from-blue-50/50 to-purple-50/30 dark:from-slate-900/50 dark:to-slate-800/30 border-t border-b border-slate-200 dark:border-slate-800/50 relative overflow-hidden">
-          {/* Subtle background elements */}
-          <div className="absolute inset-0 opacity-30">
-            <div className="absolute top-1/4 right-0 w-96 h-96 bg-gradient-to-l from-blue-200/20 to-transparent blur-3xl"></div>
-            <div className="absolute bottom-1/4 left-0 w-96 h-96 bg-gradient-to-r from-purple-200/20 to-transparent blur-3xl"></div>
+        {/* Geographic Coverage Section - Creative & Alive */}
+        <section className="py-12 md:py-14 bg-gradient-to-b from-white via-blue-50/40 to-white dark:from-slate-900 dark:via-slate-900/50 dark:to-slate-900 relative overflow-hidden">
+          {/* Animated background elements */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/15 to-purple-400/10 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-tr from-blue-500/10 to-cyan-400/10 rounded-full blur-3xl" style={{ animation: 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite', animationDelay: '1s' }}></div>
           </div>
 
           <div className="container-fluid relative z-10">
-            <div className="max-w-6xl mx-auto px-4 md:px-6">
-              {/* Header */}
-              <div className="text-center mb-6 md:mb-8 geo-section-header">
-                <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-1">
-                  Where We Operate
+            <div className="max-w-7xl mx-auto px-4 md:px-6">
+              {/* Dynamic Header with Message */}
+              <div className="text-center mb-10 md:mb-12">
+                <div className="inline-flex items-center justify-center mb-4 md:mb-5">
+                  <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-100/60 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800/50">
+                    <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+                    <span className="text-xs md:text-sm font-medium text-blue-700 dark:text-blue-300">Nationwide Coverage</span>
+                  </div>
+                </div>
+                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white mb-3 md:mb-4 leading-tight">
+                  We're Across America
                 </h2>
-                <p className="text-sm md:text-base text-slate-600 dark:text-slate-400 font-light">
-                  Serving law firms across the United States
+                <p className="text-base md:text-lg text-slate-600 dark:text-slate-300 font-light max-w-2xl mx-auto">
+                  Present in key markets. Ready to serve your firm, wherever you are.
                 </p>
               </div>
 
-              {/* Map Image - Top */}
-              <div className="flex justify-center mb-8 md:mb-10 map-entrance">
-                <Card className="w-full max-w-2xl border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/30 shadow-md p-3 md:p-4">
-                  <img 
-                    src={usMapImage}
-                    alt="US Map showing OnSpot coverage areas" 
-                    className="w-full h-auto object-contain block"
-                  />
-                </Card>
+              {/* Map & Cards in Unified Layout */}
+              <div className="grid lg:grid-cols-3 gap-8 md:gap-10 items-start">
+                {/* Left: Map - Hero Element */}
+                <div className="lg:col-span-2 map-entrance order-1">
+                  <div className="relative group">
+                    {/* Glow effect behind map */}
+                    <div className="absolute -inset-4 bg-gradient-to-br from-blue-500/20 via-purple-500/10 to-blue-400/15 rounded-2xl blur-2xl opacity-60 group-hover:opacity-80 transition-opacity duration-500"></div>
+                    
+                    {/* Map Card with premium styling */}
+                    <Card className="relative border border-blue-200/50 dark:border-blue-800/30 bg-white/80 dark:bg-slate-800/40 backdrop-blur-xl shadow-lg p-6 md:p-8 overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-br from-blue-400/5 to-transparent pointer-events-none"></div>
+                      
+                      <img 
+                        src={usMapImage}
+                        alt="US Map showing OnSpot coverage areas" 
+                        className="w-full h-auto object-contain block relative z-10"
+                      />
+                    </Card>
+                  </div>
+                </div>
+
+                {/* Right: Compact State Cards - Vertical Stack */}
+                <div className="space-y-3 md:space-y-3.5 order-2">
+                  {/* Section Label */}
+                  <div className="px-1 py-2">
+                    <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Our Regions</p>
+                  </div>
+
+                  {/* Tri-State Card */}
+                  <div className="geo-card-entrance">
+                    <Card className="border border-slate-200/80 dark:border-slate-700/50 bg-white/70 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800/80 backdrop-blur-sm hover-elevate transition-all duration-300 cursor-default group">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm md:text-base font-bold text-slate-900 dark:text-white flex items-start gap-2">
+                          <div className="w-2.5 h-2.5 rounded-full bg-blue-500 mt-1.5 flex-shrink-0 group-hover:scale-125 transition-transform duration-300"></div>
+                          <span>Tri-State</span>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <p className="text-xs text-slate-600 dark:text-slate-400 leading-snug">NY, NJ, CT • Legal ops for high-volume practices</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Texas Card */}
+                  <div className="geo-card-entrance" style={{ animationDelay: '0.05s' }}>
+                    <Card className="border border-slate-200/80 dark:border-slate-700/50 bg-white/70 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800/80 backdrop-blur-sm hover-elevate transition-all duration-300 cursor-default group">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm md:text-base font-bold text-slate-900 dark:text-white flex items-start gap-2">
+                          <div className="w-2.5 h-2.5 rounded-full bg-blue-500 mt-1.5 flex-shrink-0 group-hover:scale-125 transition-transform duration-300"></div>
+                          <span>Texas</span>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <p className="text-xs text-slate-600 dark:text-slate-400 leading-snug">Dallas, Houston, Austin • Growing practices</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Florida Card */}
+                  <div className="geo-card-entrance" style={{ animationDelay: '0.1s' }}>
+                    <Card className="border border-slate-200/80 dark:border-slate-700/50 bg-white/70 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800/80 backdrop-blur-sm hover-elevate transition-all duration-300 cursor-default group">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm md:text-base font-bold text-slate-900 dark:text-white flex items-start gap-2">
+                          <div className="w-2.5 h-2.5 rounded-full bg-blue-500 mt-1.5 flex-shrink-0 group-hover:scale-125 transition-transform duration-300"></div>
+                          <span>Florida</span>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <p className="text-xs text-slate-600 dark:text-slate-400 leading-snug">Miami, Orlando, Tampa • Seasonal expertise</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* California Card */}
+                  <div className="geo-card-entrance" style={{ animationDelay: '0.15s' }}>
+                    <Card className="border border-slate-200/80 dark:border-slate-700/50 bg-white/70 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800/80 backdrop-blur-sm hover-elevate transition-all duration-300 cursor-default group">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm md:text-base font-bold text-slate-900 dark:text-white flex items-start gap-2">
+                          <div className="w-2.5 h-2.5 rounded-full bg-blue-500 mt-1.5 flex-shrink-0 group-hover:scale-125 transition-transform duration-300"></div>
+                          <span>California</span>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <p className="text-xs text-slate-600 dark:text-slate-400 leading-snug">Bay Area, LA • Tech-focused firms</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Illinois Card */}
+                  <div className="geo-card-entrance" style={{ animationDelay: '0.2s' }}>
+                    <Card className="border border-slate-200/80 dark:border-slate-700/50 bg-white/70 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800/80 backdrop-blur-sm hover-elevate transition-all duration-300 cursor-default group">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm md:text-base font-bold text-slate-900 dark:text-white flex items-start gap-2">
+                          <div className="w-2.5 h-2.5 rounded-full bg-blue-500 mt-1.5 flex-shrink-0 group-hover:scale-125 transition-transform duration-300"></div>
+                          <span>Illinois</span>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <p className="text-xs text-slate-600 dark:text-slate-400 leading-snug">Chicago • Regional expertise</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
               </div>
 
-              {/* State Cards Grid - Below Map */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
-                {/* Tri-State Card */}
-                <div className="geo-card-entrance">
-                  <Card className="border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm h-full hover-elevate transition-all duration-300 relative overflow-hidden group">
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-400 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
-                    
-                    <CardHeader className="pb-1.5">
-                      <CardTitle className="text-slate-900 dark:text-white text-base font-semibold flex items-start gap-1.5">
-                        <div className="flex-shrink-0 w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-0.5">
-                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-                        </div>
-                        <span>Tri-State</span>
-                      </CardTitle>
-                    </CardHeader>
-                    
-                    <CardContent className="pt-0.5 pb-2">
-                      <p className="text-xs text-slate-600 dark:text-slate-400 font-light leading-snug">
-                        Legal operations support for high-volume practices across NY, NJ, and CT with expertise in estate planning, contract review, and compliance management.
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Texas Card */}
-                <div className="geo-card-entrance" style={{ animationDelay: '0.1s' }}>
-                  <Card className="border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm h-full hover-elevate transition-all duration-300 relative overflow-hidden group">
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-400 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
-                    
-                    <CardHeader className="pb-1.5">
-                      <CardTitle className="text-slate-900 dark:text-white text-base font-semibold flex items-start gap-1.5">
-                        <div className="flex-shrink-0 w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-0.5">
-                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-                        </div>
-                        <span>Texas</span>
-                      </CardTitle>
-                    </CardHeader>
-                    
-                    <CardContent className="pt-0.5 pb-2">
-                      <p className="text-xs text-slate-600 dark:text-slate-400 font-light leading-snug">
-                        Operational excellence for growing practices across Dallas, Houston, and Austin serving business law, litigation, and corporate needs.
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Florida Card */}
-                <div className="geo-card-entrance" style={{ animationDelay: '0.2s' }}>
-                  <Card className="border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm h-full hover-elevate transition-all duration-300 relative overflow-hidden group">
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-400 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
-                    
-                    <CardHeader className="pb-1.5">
-                      <CardTitle className="text-slate-900 dark:text-white text-base font-semibold flex items-start gap-1.5">
-                        <div className="flex-shrink-0 w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-0.5">
-                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-                        </div>
-                        <span>Florida</span>
-                      </CardTitle>
-                    </CardHeader>
-                    
-                    <CardContent className="pt-0.5 pb-2">
-                      <p className="text-xs text-slate-600 dark:text-slate-400 font-light leading-snug">
-                        Document handling and case management for Miami, Orlando, and Tampa firms with seasonal case load optimization.
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* California Card */}
-                <div className="geo-card-entrance" style={{ animationDelay: '0.3s' }}>
-                  <Card className="border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm h-full hover-elevate transition-all duration-300 relative overflow-hidden group">
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-400 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
-                    
-                    <CardHeader className="pb-1.5">
-                      <CardTitle className="text-slate-900 dark:text-white text-base font-semibold flex items-start gap-1.5">
-                        <div className="flex-shrink-0 w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-0.5">
-                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-                        </div>
-                        <span>California</span>
-                      </CardTitle>
-                    </CardHeader>
-                    
-                    <CardContent className="pt-0.5 pb-2">
-                      <p className="text-xs text-slate-600 dark:text-slate-400 font-light leading-snug">
-                        Comprehensive legal ops for Bay Area and LA firms with specialized support for tech-focused practices and high-growth environments.
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Illinois Card */}
-                <div className="geo-card-entrance" style={{ animationDelay: '0.4s' }}>
-                  <Card className="border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm h-full hover-elevate transition-all duration-300 relative overflow-hidden group">
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-400 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
-                    
-                    <CardHeader className="pb-1.5">
-                      <CardTitle className="text-slate-900 dark:text-white text-base font-semibold flex items-start gap-1.5">
-                        <div className="flex-shrink-0 w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-0.5">
-                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-                        </div>
-                        <span>Illinois</span>
-                      </CardTitle>
-                    </CardHeader>
-                    
-                    <CardContent className="pt-0.5 pb-2">
-                      <p className="text-xs text-slate-600 dark:text-slate-400 font-light leading-snug">
-                        Chicago-based operations support for firms handling corporate, IP, and civil litigation with regional market expertise.
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
+              {/* Bottom Message */}
+              <div className="mt-10 md:mt-12 text-center">
+                <p className="text-sm md:text-base text-slate-600 dark:text-slate-400 font-light">
+                  <span className="text-blue-600 dark:text-blue-400 font-semibold">OnSpot is here.</span> Your firm's legal operations just got simpler.
+                </p>
               </div>
             </div>
           </div>
