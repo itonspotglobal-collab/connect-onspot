@@ -1018,13 +1018,14 @@ export default function LegalOpsLanding() {
         </section>
 
         {/* Geographic Coverage Section - 2-Row Layout with Enhanced Map */}
-        <section className="relative py-16 md:py-20 bg-white dark:bg-slate-50">
+        <section className="relative py-16 md:py-20 overflow-hidden">
+          {/* Mindvalley-style gradient background */}
+          <div className="absolute inset-0 -z-20 bg-gradient-to-b from-blue-50/60 via-purple-50/40 to-white dark:from-blue-900/30 dark:via-purple-900/15 dark:to-slate-50"></div>
+
+          {/* Glow orb behind map area */}
+          <div className="absolute right-0 top-1/3 -z-10 w-96 h-96 bg-violet-400/8 dark:bg-violet-300/10 rounded-full blur-3xl pointer-events-none"></div>
+
           <style>{`
-            @keyframes pinPulse {
-              0%, 100% { transform: scale(1); opacity: 1; }
-              50% { transform: scale(1.15); opacity: 0.5; }
-            }
-            .pin-pulse { animation: pinPulse 2.5s ease-in-out infinite; }
             .region-pill-hover { transition: all 200ms ease-out; }
             .region-pill-hover:hover {
               background: rgba(219, 234, 254, 0.8);
@@ -1035,18 +1036,13 @@ export default function LegalOpsLanding() {
 
           <div className="container-fluid">
             <div className="max-w-7xl mx-auto px-4 md:px-8">
-              {/* TOP ROW: 2 Columns - Headline & Map */}
-              <div className="grid lg:grid-cols-2 gap-8 md:gap-12 mb-12 items-start">
+              {/* TOP ROW: 2 Columns - Headline & Map (wider right column) */}
+              <div className="grid gap-8 md:gap-12 mb-12 items-start" style={{ gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.35fr)' }}>
                 
                 {/* LEFT COLUMN: Headline, Subheadline, Stats */}
                 <div className="flex flex-col justify-start pt-2">
-                  {/* Eyebrow Label */}
-                  <p className="text-xs font-bold text-blue-600 dark:text-blue-700 uppercase tracking-widest mb-3">
-                    OnSpot Coverage
-                  </p>
-
                   {/* Main Headline */}
-                  <h2 className="text-5xl md:text-6xl font-bold text-blue-950 dark:text-blue-900 mb-3 leading-tight">
+                  <h2 className="text-5xl md:text-6xl font-bold text-blue-950 dark:text-blue-900 mb-4 leading-tight">
                     We're Across America
                   </h2>
 
@@ -1065,14 +1061,14 @@ export default function LegalOpsLanding() {
                   </div>
                 </div>
 
-                {/* RIGHT COLUMN: Hero Map Card */}
-                <div className="relative flex items-start justify-center lg:justify-end">
+                {/* RIGHT COLUMN: Hero Map Card - Larger & Breaking Out */}
+                <div className="relative flex items-start justify-center lg:justify-end -mr-4 md:-mr-8">
                   {/* Map Card Container */}
-                  <div className="w-full max-w-md">
-                    {/* Card with rounded corners and shadow */}
-                    <div className="relative bg-white dark:bg-gray-900 rounded-2xl md:rounded-3xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
+                  <div className="w-full max-w-xl">
+                    {/* Card with rounded corners and soft shadow */}
+                    <div className="relative bg-white dark:bg-gray-900 rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-shadow duration-300">
                       {/* Inner gradient overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent dark:from-white/5 pointer-events-none rounded-2xl md:rounded-3xl"></div>
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent dark:from-white/5 pointer-events-none rounded-3xl"></div>
 
                       {/* Map Image */}
                       <img 
@@ -1080,12 +1076,6 @@ export default function LegalOpsLanding() {
                         alt="US Map showing OnSpot coverage areas" 
                         className="w-full h-auto object-contain block relative z-10"
                       />
-
-                      {/* Live Pods Badge - Bottom Left */}
-                      <div className="absolute bottom-4 left-4 md:bottom-6 md:left-6 flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-white dark:bg-gray-800 border border-emerald-200/50 dark:border-emerald-400/40 z-20 shadow-md hover:shadow-lg transition-shadow duration-200">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500 pin-pulse"></div>
-                        <span className="text-xs md:text-sm font-semibold text-emerald-900 dark:text-emerald-200">Live pods across the U.S.</span>
-                      </div>
                     </div>
                   </div>
                 </div>

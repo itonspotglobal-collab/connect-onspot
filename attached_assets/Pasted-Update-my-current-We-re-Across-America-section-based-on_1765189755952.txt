@@ -1,0 +1,32 @@
+Update my current “We’re Across America” section based on the latest version you generated, with these specific changes and a Mindvalley-style visual treatment:
+
+1. Remove elements:
+   - Delete the small label text “ONSPOT COVERAGE” above the H1.
+   - Remove the pill inside the map card that says “Live pods across the U.S.” (including its dot and container).
+
+2. Make the map bigger and more dominant:
+   - In the top two-column layout, increase the width of the right column so the map card feels larger than the text block.
+     - For example, use something like: grid-template-columns: 1fr 1.3fr (or equivalent flex-basis) on desktop.
+   - Increase the height of the map card and let the image fill more of it (while staying responsive).
+   - Allow the map card to visually “break out” slightly:
+     - Add a small negative right margin or extra max-width so it feels like it’s extending beyond the main content width a bit.
+   - Make sure the whole section still fits within ~85–90vh on a laptop screen.
+
+3. Mindvalley-style background and glow:
+   - Wrap the entire section in a soft gradient background instead of pure white.
+     - Use a subtle vertical or diagonal gradient in blues/purples, e.g. from very light lavender/blue at the top to white at the bottom.
+   - Behind the map card, add a blurred radial gradient or “glow orb” to make that area feel like the focal point.
+     - Example: a large blurred circle in a pale violet/blue tone, with low opacity.
+   - Keep the text area on the left clean and fully readable (no harsh gradients behind the main copy).
+
+4. Keep what’s already working:
+   - Keep the main H1 “We’re Across America” and the subtitle text as they are.
+   - Keep the stat pill under the subtitle with: [ 5 Key Regions ] [ 40+ Cities ] [ 24/7 Coverage ].
+   - Keep the “Where we operate” row at the bottom with the horizontal region pills; just ensure colors still work nicely over the new background.
+
+5. Styling notes:
+   - Use soft shadows and rounded corners for the map card (Mindvalley-style softness, not sharp).
+   - Let the map image (`US Coverage.png`) be bright and saturated against a more subtle background so it pops.
+   - Maintain the light, premium SaaS typography, but make sure the new gradients and glow give it a more cinematic, inspirational feel like Mindvalley’s sections.
+
+Implement these changes in my existing JSX/HTML and CSS, reusing existing class names where possible so the diff is minimal.
