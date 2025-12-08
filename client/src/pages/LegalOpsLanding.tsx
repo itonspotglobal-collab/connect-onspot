@@ -1814,10 +1814,294 @@ export default function LegalOpsLanding() {
 
             {/* Service Categories Grid */}
             <div className="grid md:grid-cols-3 gap-6 md:gap-8 max-w-7xl mx-auto">
-              {/* Category 1: Client Communication */}
+              {/* Card 1: Document Preparation & Review */}
               <div
                 className="group bg-white rounded-3xl border border-slate-200/60 p-8 hover-elevate active-elevate-2 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10"
-                data-testid="card-client-communication"
+                data-testid="card-document-prep"
+              >
+                <div className="mb-6">
+                  <div
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-all duration-300"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, #4353FF 0%, #5B7CFF 100%)",
+                    }}
+                  >
+                    <FileText className="w-7 h-7 text-white" />
+                  </div>
+                  <h3
+                    className="text-2xl font-bold mb-3"
+                    style={{ color: "#1E293B" }}
+                  >
+                    Document Preparation & Review
+                  </h3>
+                  <p
+                    className="text-base font-medium mb-4"
+                    style={{ color: "#4353FF" }}
+                  >
+                    Accurate docs, faster turnaround.
+                  </p>
+                </div>
+                <ul className="space-y-2.5 mb-6">
+                  <li
+                    className="flex items-start gap-2 text-sm"
+                    style={{ color: "#475569" }}
+                  >
+                    <CheckCircle2
+                      className="w-4 h-4 flex-shrink-0 mt-0.5"
+                      style={{ color: "#4353FF" }}
+                    />
+                    <span>Drafting and proofreading purchase agreements, lease agreements, and closing documents</span>
+                  </li>
+                  <li
+                    className="flex items-start gap-2 text-sm"
+                    style={{ color: "#475569" }}
+                  >
+                    <CheckCircle2
+                      className="w-4 h-4 flex-shrink-0 mt-0.5"
+                      style={{ color: "#4353FF" }}
+                    />
+                    <span>Preparing deeds, mortgage documents, and promissory notes</span>
+                  </li>
+                  <li
+                    className="flex items-start gap-2 text-sm"
+                    style={{ color: "#475569" }}
+                  >
+                    <CheckCircle2
+                      className="w-4 h-4 flex-shrink-0 mt-0.5"
+                      style={{ color: "#4353FF" }}
+                    />
+                    <span>Reviewing title commitments, lien searches, and survey reports</span>
+                  </li>
+                </ul>
+                <div className="pt-4 border-t border-slate-100">
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "#64748B" }}
+                  >
+                    <span style={{ color: "#4353FF" }}>Outcome:</span>{" "}
+                    Flawless documents, zero revision cycles.
+                  </p>
+                </div>
+              </div>
+
+              {/* Card 2: Transaction Coordination */}
+              <div
+                className="group bg-white rounded-3xl border border-slate-200/60 p-8 hover-elevate active-elevate-2 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10"
+                data-testid="card-transaction-coordination"
+              >
+                <div className="mb-6">
+                  <div
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-all duration-300"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, #4353FF 0%, #5B7CFF 100%)",
+                    }}
+                  >
+                    <Clock className="w-7 h-7 text-white" />
+                  </div>
+                  <h3
+                    className="text-2xl font-bold mb-3"
+                    style={{ color: "#1E293B" }}
+                  >
+                    Transaction Coordination
+                  </h3>
+                  <p
+                    className="text-base font-medium mb-4"
+                    style={{ color: "#4353FF" }}
+                  >
+                    Every deadline tracked, every stakeholder aligned.
+                  </p>
+                </div>
+                <ul className="space-y-2.5 mb-6">
+                  <li
+                    className="flex items-start gap-2 text-sm"
+                    style={{ color: "#475569" }}
+                  >
+                    <CheckCircle2
+                      className="w-4 h-4 flex-shrink-0 mt-0.5"
+                      style={{ color: "#4353FF" }}
+                    />
+                    <span>Tracking contract timelines (inspection, financing, closing dates)</span>
+                  </li>
+                  <li
+                    className="flex items-start gap-2 text-sm"
+                    style={{ color: "#475569" }}
+                  >
+                    <CheckCircle2
+                      className="w-4 h-4 flex-shrink-0 mt-0.5"
+                      style={{ color: "#4353FF" }}
+                    />
+                    <span>Coordinating with title companies, lenders, agents, and clients</span>
+                  </li>
+                  <li
+                    className="flex items-start gap-2 text-sm"
+                    style={{ color: "#475569" }}
+                  >
+                    <CheckCircle2
+                      className="w-4 h-4 flex-shrink-0 mt-0.5"
+                      style={{ color: "#4353FF" }}
+                    />
+                    <span>Organizing closing checklists and due diligence documents</span>
+                  </li>
+                </ul>
+                <div className="pt-4 border-t border-slate-100">
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "#64748B" }}
+                  >
+                    <span style={{ color: "#4353FF" }}>Outcome:</span>{" "}
+                    Smooth closings, no missed deadlines.
+                  </p>
+                </div>
+              </div>
+
+              {/* Card 3: Title & Escrow Support */}
+              <div
+                className="group bg-white rounded-3xl border border-slate-200/60 p-8 hover-elevate active-elevate-2 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10"
+                data-testid="card-title-escrow"
+              >
+                <div className="mb-6">
+                  <div
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-all duration-300"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, #4353FF 0%, #5B7CFF 100%)",
+                    }}
+                  >
+                    <Lock className="w-7 h-7 text-white" />
+                  </div>
+                  <h3
+                    className="text-2xl font-bold mb-3"
+                    style={{ color: "#1E293B" }}
+                  >
+                    Title & Escrow Support
+                  </h3>
+                  <p
+                    className="text-base font-medium mb-4"
+                    style={{ color: "#4353FF" }}
+                  >
+                    Clear titles, resolved exceptions, certified closings.
+                  </p>
+                </div>
+                <ul className="space-y-2.5 mb-6">
+                  <li
+                    className="flex items-start gap-2 text-sm"
+                    style={{ color: "#475569" }}
+                  >
+                    <CheckCircle2
+                      className="w-4 h-4 flex-shrink-0 mt-0.5"
+                      style={{ color: "#4353FF" }}
+                    />
+                    <span>Ordering and reviewing title searches</span>
+                  </li>
+                  <li
+                    className="flex items-start gap-2 text-sm"
+                    style={{ color: "#475569" }}
+                  >
+                    <CheckCircle2
+                      className="w-4 h-4 flex-shrink-0 mt-0.5"
+                      style={{ color: "#4353FF" }}
+                    />
+                    <span>Liaising with title agents to resolve title issues</span>
+                  </li>
+                  <li
+                    className="flex items-start gap-2 text-sm"
+                    style={{ color: "#475569" }}
+                  >
+                    <CheckCircle2
+                      className="w-4 h-4 flex-shrink-0 mt-0.5"
+                      style={{ color: "#4353FF" }}
+                    />
+                    <span>Preparing title affidavits and clearing exceptions</span>
+                  </li>
+                </ul>
+                <div className="pt-4 border-t border-slate-100">
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "#64748B" }}
+                  >
+                    <span style={{ color: "#4353FF" }}>Outcome:</span>{" "}
+                    Insurable titles, confident closings.
+                  </p>
+                </div>
+              </div>
+
+              {/* Card 4: Client File Management */}
+              <div
+                className="group bg-white rounded-3xl border border-slate-200/60 p-8 hover-elevate active-elevate-2 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10"
+                data-testid="card-file-management"
+              >
+                <div className="mb-6">
+                  <div
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-all duration-300"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, #4353FF 0%, #5B7CFF 100%)",
+                    }}
+                  >
+                    <Folder className="w-7 h-7 text-white" />
+                  </div>
+                  <h3
+                    className="text-2xl font-bold mb-3"
+                    style={{ color: "#1E293B" }}
+                  >
+                    Client File Management
+                  </h3>
+                  <p
+                    className="text-base font-medium mb-4"
+                    style={{ color: "#4353FF" }}
+                  >
+                    Organized files, perfect compliance, audit-ready.
+                  </p>
+                </div>
+                <ul className="space-y-2.5 mb-6">
+                  <li
+                    className="flex items-start gap-2 text-sm"
+                    style={{ color: "#475569" }}
+                  >
+                    <CheckCircle2
+                      className="w-4 h-4 flex-shrink-0 mt-0.5"
+                      style={{ color: "#4353FF" }}
+                    />
+                    <span>Organizing digital case files and transaction records</span>
+                  </li>
+                  <li
+                    className="flex items-start gap-2 text-sm"
+                    style={{ color: "#475569" }}
+                  >
+                    <CheckCircle2
+                      className="w-4 h-4 flex-shrink-0 mt-0.5"
+                      style={{ color: "#4353FF" }}
+                    />
+                    <span>Ensuring compliance with state bar and firm document retention standards</span>
+                  </li>
+                  <li
+                    className="flex items-start gap-2 text-sm"
+                    style={{ color: "#475569" }}
+                  >
+                    <CheckCircle2
+                      className="w-4 h-4 flex-shrink-0 mt-0.5"
+                      style={{ color: "#4353FF" }}
+                    />
+                    <span>Maintaining CRM entries and email logs</span>
+                  </li>
+                </ul>
+                <div className="pt-4 border-t border-slate-100">
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "#64748B" }}
+                  >
+                    <span style={{ color: "#4353FF" }}>Outcome:</span>{" "}
+                    Complete records, ready for audits and ethics reviews.
+                  </p>
+                </div>
+              </div>
+
+              {/* Card 5: Client Communication & Intake */}
+              <div
+                className="group bg-white rounded-3xl border border-slate-200/60 p-8 hover-elevate active-elevate-2 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10"
+                data-testid="card-communication-intake"
               >
                 <div className="mb-6">
                   <div
@@ -1833,13 +2117,13 @@ export default function LegalOpsLanding() {
                     className="text-2xl font-bold mb-3"
                     style={{ color: "#1E293B" }}
                   >
-                    Client Communication & Relationship Management
+                    Client Communication & Intake
                   </h3>
                   <p
                     className="text-base font-medium mb-4"
                     style={{ color: "#4353FF" }}
                   >
-                    Strengthen trust with every interaction.
+                    First impression that lasts.
                   </p>
                 </div>
                 <ul className="space-y-2.5 mb-6">
@@ -1851,7 +2135,7 @@ export default function LegalOpsLanding() {
                       className="w-4 h-4 flex-shrink-0 mt-0.5"
                       style={{ color: "#4353FF" }}
                     />
-                    <span>Case progress updates and milestone reporting</span>
+                    <span>Managing client intake forms and KYC requirements</span>
                   </li>
                   <li
                     className="flex items-start gap-2 text-sm"
@@ -1861,7 +2145,7 @@ export default function LegalOpsLanding() {
                       className="w-4 h-4 flex-shrink-0 mt-0.5"
                       style={{ color: "#4353FF" }}
                     />
-                    <span>CRM setup, maintenance, and follow-ups</span>
+                    <span>Scheduling consultations and follow-ups</span>
                   </li>
                   <li
                     className="flex items-start gap-2 text-sm"
@@ -1871,41 +2155,7 @@ export default function LegalOpsLanding() {
                       className="w-4 h-4 flex-shrink-0 mt-0.5"
                       style={{ color: "#4353FF" }}
                     />
-                    <span>
-                      Internal coordination between attorneys and staff
-                    </span>
-                  </li>
-                  <li
-                    className="flex items-start gap-2 text-sm"
-                    style={{ color: "#475569" }}
-                  >
-                    <CheckCircle2
-                      className="w-4 h-4 flex-shrink-0 mt-0.5"
-                      style={{ color: "#4353FF" }}
-                    />
-                    <span>Call moderation and meeting facilitation</span>
-                  </li>
-                  <li
-                    className="flex items-start gap-2 text-sm"
-                    style={{ color: "#475569" }}
-                  >
-                    <CheckCircle2
-                      className="w-4 h-4 flex-shrink-0 mt-0.5"
-                      style={{ color: "#4353FF" }}
-                    />
-                    <span>Client consultation scheduling and reminders</span>
-                  </li>
-                  <li
-                    className="flex items-start gap-2 text-sm"
-                    style={{ color: "#475569" }}
-                  >
-                    <CheckCircle2
-                      className="w-4 h-4 flex-shrink-0 mt-0.5"
-                      style={{ color: "#4353FF" }}
-                    />
-                    <span>
-                      Handling inquiries, feedback, and satisfaction tracking
-                    </span>
+                    <span>Answering routine client inquiries</span>
                   </li>
                 </ul>
                 <div className="pt-4 border-t border-slate-100">
@@ -1914,15 +2164,15 @@ export default function LegalOpsLanding() {
                     style={{ color: "#64748B" }}
                   >
                     <span style={{ color: "#4353FF" }}>Outcome:</span>{" "}
-                    Transparent communication and zero missed follow-ups.
+                    Happy clients from day one.
                   </p>
                 </div>
               </div>
 
-              {/* Category 2: Digital & Technical Enablement */}
+              {/* Card 6: Billing & Admin */}
               <div
                 className="group bg-white rounded-3xl border border-slate-200/60 p-8 hover-elevate active-elevate-2 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10"
-                data-testid="card-digital-technical"
+                data-testid="card-billing-admin"
               >
                 <div className="mb-6">
                   <div
@@ -1932,19 +2182,19 @@ export default function LegalOpsLanding() {
                         "linear-gradient(135deg, #4353FF 0%, #5B7CFF 100%)",
                     }}
                   >
-                    <Settings className="w-7 h-7 text-white" />
+                    <DollarSign className="w-7 h-7 text-white" />
                   </div>
                   <h3
                     className="text-2xl font-bold mb-3"
                     style={{ color: "#1E293B" }}
                   >
-                    Digital & Technical Enablement
+                    Billing & Admin
                   </h3>
                   <p
                     className="text-base font-medium mb-4"
                     style={{ color: "#4353FF" }}
                   >
-                    Keep your digital presence and systems running smoothly.
+                    Faster invoices, better cashflow.
                   </p>
                 </div>
                 <ul className="space-y-2.5 mb-6">
@@ -1956,9 +2206,7 @@ export default function LegalOpsLanding() {
                       className="w-4 h-4 flex-shrink-0 mt-0.5"
                       style={{ color: "#4353FF" }}
                     />
-                    <span>
-                      Website and content updates for practice areas and cases
-                    </span>
+                    <span>Time tracking and pre-billing assistance</span>
                   </li>
                   <li
                     className="flex items-start gap-2 text-sm"
@@ -1968,9 +2216,7 @@ export default function LegalOpsLanding() {
                       className="w-4 h-4 flex-shrink-0 mt-0.5"
                       style={{ color: "#4353FF" }}
                     />
-                    <span>
-                      Professional social media and LinkedIn presence management
-                    </span>
+                    <span>Invoicing and payment follow-ups</span>
                   </li>
                   <li
                     className="flex items-start gap-2 text-sm"
@@ -1980,145 +2226,7 @@ export default function LegalOpsLanding() {
                       className="w-4 h-4 flex-shrink-0 mt-0.5"
                       style={{ color: "#4353FF" }}
                     />
-                    <span>
-                      Legal tech integration support (Clio, MyCase, HighLevel)
-                    </span>
-                  </li>
-                  <li
-                    className="flex items-start gap-2 text-sm"
-                    style={{ color: "#475569" }}
-                  >
-                    <CheckCircle2
-                      className="w-4 h-4 flex-shrink-0 mt-0.5"
-                      style={{ color: "#4353FF" }}
-                    />
-                    <span>
-                      Secure digital file management and naming conventions
-                    </span>
-                  </li>
-                  <li
-                    className="flex items-start gap-2 text-sm"
-                    style={{ color: "#475569" }}
-                  >
-                    <CheckCircle2
-                      className="w-4 h-4 flex-shrink-0 mt-0.5"
-                      style={{ color: "#4353FF" }}
-                    />
-                    <span>
-                      Cybersecurity hygiene (access control, password
-                      management)
-                    </span>
-                  </li>
-                  <li
-                    className="flex items-start gap-2 text-sm"
-                    style={{ color: "#475569" }}
-                  >
-                    <CheckCircle2
-                      className="w-4 h-4 flex-shrink-0 mt-0.5"
-                      style={{ color: "#4353FF" }}
-                    />
-                    <span>Daily email triage and correspondence handling</span>
-                  </li>
-                </ul>
-                <div className="pt-4 border-t border-slate-100">
-                  <p
-                    className="text-sm font-semibold"
-                    style={{ color: "#64748B" }}
-                  >
-                    <span style={{ color: "#4353FF" }}>Outcome:</span> A
-                    connected, compliant, and secure digital law office.
-                  </p>
-                </div>
-              </div>
-
-              {/* Category 3: Administrative Excellence */}
-              <div
-                className="group bg-white rounded-3xl border border-slate-200/60 p-8 hover-elevate active-elevate-2 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10"
-                data-testid="card-administrative"
-              >
-                <div className="mb-6">
-                  <div
-                    className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-all duration-300"
-                    style={{
-                      background:
-                        "linear-gradient(135deg, #4353FF 0%, #5B7CFF 100%)",
-                    }}
-                  >
-                    <Award className="w-7 h-7 text-white" />
-                  </div>
-                  <h3
-                    className="text-2xl font-bold mb-3"
-                    style={{ color: "#1E293B" }}
-                  >
-                    Administrative Excellence
-                  </h3>
-                  <p
-                    className="text-base font-medium mb-4"
-                    style={{ color: "#4353FF" }}
-                  >
-                    Focus on law. We handle the details.
-                  </p>
-                </div>
-                <ul className="space-y-2.5 mb-6">
-                  <li
-                    className="flex items-start gap-2 text-sm"
-                    style={{ color: "#475569" }}
-                  >
-                    <CheckCircle2
-                      className="w-4 h-4 flex-shrink-0 mt-0.5"
-                      style={{ color: "#4353FF" }}
-                    />
-                    <span>Calendar, document, and inbox organization</span>
-                  </li>
-                  <li
-                    className="flex items-start gap-2 text-sm"
-                    style={{ color: "#475569" }}
-                  >
-                    <CheckCircle2
-                      className="w-4 h-4 flex-shrink-0 mt-0.5"
-                      style={{ color: "#4353FF" }}
-                    />
-                    <span>Client intake and onboarding automation</span>
-                  </li>
-                  <li
-                    className="flex items-start gap-2 text-sm"
-                    style={{ color: "#475569" }}
-                  >
-                    <CheckCircle2
-                      className="w-4 h-4 flex-shrink-0 mt-0.5"
-                      style={{ color: "#4353FF" }}
-                    />
-                    <span>Billing, invoicing, and payment tracking</span>
-                  </li>
-                  <li
-                    className="flex items-start gap-2 text-sm"
-                    style={{ color: "#475569" }}
-                  >
-                    <CheckCircle2
-                      className="w-4 h-4 flex-shrink-0 mt-0.5"
-                      style={{ color: "#4353FF" }}
-                    />
-                    <span>Data entry, database maintenance, and reporting</span>
-                  </li>
-                  <li
-                    className="flex items-start gap-2 text-sm"
-                    style={{ color: "#475569" }}
-                  >
-                    <CheckCircle2
-                      className="w-4 h-4 flex-shrink-0 mt-0.5"
-                      style={{ color: "#4353FF" }}
-                    />
-                    <span>Travel, meeting, and event coordination</span>
-                  </li>
-                  <li
-                    className="flex items-start gap-2 text-sm"
-                    style={{ color: "#475569" }}
-                  >
-                    <CheckCircle2
-                      className="w-4 h-4 flex-shrink-0 mt-0.5"
-                      style={{ color: "#4353FF" }}
-                    />
-                    <span>Drafting letters, memos, and correspondence</span>
+                    <span>Calendar and inbox management for attorneys</span>
                   </li>
                 </ul>
                 <div className="pt-4 border-t border-slate-100">
@@ -2127,195 +2235,10 @@ export default function LegalOpsLanding() {
                     style={{ color: "#64748B" }}
                   >
                     <span style={{ color: "#4353FF" }}>Outcome:</span>{" "}
-                    Predictable operations and full administrative control.
+                    Consistent revenue, zero admin headaches.
                   </p>
                 </div>
               </div>
-
-              {/* Category 4: Research & Documentation Support */}
-              <div
-                className="group bg-white rounded-3xl border border-slate-200/60 p-8 hover-elevate active-elevate-2 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10"
-                data-testid="card-research-documentation"
-              >
-                <div className="mb-6">
-                  <div
-                    className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-all duration-300"
-                    style={{
-                      background:
-                        "linear-gradient(135deg, #4353FF 0%, #5B7CFF 100%)",
-                    }}
-                  >
-                    <BarChart3 className="w-7 h-7 text-white" />
-                  </div>
-                  <h3
-                    className="text-2xl font-bold mb-3"
-                    style={{ color: "#1E293B" }}
-                  >
-                    Research & Documentation Support
-                  </h3>
-                  <p
-                    className="text-base font-medium mb-4"
-                    style={{ color: "#4353FF" }}
-                  >
-                    Deliver accuracy and insight, faster.
-                  </p>
-                </div>
-                <ul className="space-y-2.5 mb-6">
-                  <li
-                    className="flex items-start gap-2 text-sm"
-                    style={{ color: "#475569" }}
-                  >
-                    <CheckCircle2
-                      className="w-4 h-4 flex-shrink-0 mt-0.5"
-                      style={{ color: "#4353FF" }}
-                    />
-                    <span>Legal research and case summarization</span>
-                  </li>
-                  <li
-                    className="flex items-start gap-2 text-sm"
-                    style={{ color: "#475569" }}
-                  >
-                    <CheckCircle2
-                      className="w-4 h-4 flex-shrink-0 mt-0.5"
-                      style={{ color: "#4353FF" }}
-                    />
-                    <span>Drafting and reviewing legal documents</span>
-                  </li>
-                  <li
-                    className="flex items-start gap-2 text-sm"
-                    style={{ color: "#475569" }}
-                  >
-                    <CheckCircle2
-                      className="w-4 h-4 flex-shrink-0 mt-0.5"
-                      style={{ color: "#4353FF" }}
-                    />
-                    <span>
-                      Proofreading, formatting, and citation verification
-                    </span>
-                  </li>
-                  <li
-                    className="flex items-start gap-2 text-sm"
-                    style={{ color: "#475569" }}
-                  >
-                    <CheckCircle2
-                      className="w-4 h-4 flex-shrink-0 mt-0.5"
-                      style={{ color: "#4353FF" }}
-                    />
-                    <span>Contract and agreement template management</span>
-                  </li>
-                  <li
-                    className="flex items-start gap-2 text-sm"
-                    style={{ color: "#475569" }}
-                  >
-                    <CheckCircle2
-                      className="w-4 h-4 flex-shrink-0 mt-0.5"
-                      style={{ color: "#4353FF" }}
-                    />
-                    <span>Presentation and motion preparation</span>
-                  </li>
-                </ul>
-                <div className="pt-4 border-t border-slate-100">
-                  <p
-                    className="text-sm font-semibold"
-                    style={{ color: "#64748B" }}
-                  >
-                    <span style={{ color: "#4353FF" }}>Outcome:</span> Reliable
-                    legal documentation — ready when you are.
-                  </p>
-                </div>
-              </div>
-
-              {/* Category 5: Legal Process Support */}
-              <div
-                className="group bg-white rounded-3xl border border-slate-200/60 p-8 hover-elevate active-elevate-2 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10"
-                data-testid="card-legal-process"
-              >
-                <div className="mb-6">
-                  <div
-                    className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-all duration-300"
-                    style={{
-                      background:
-                        "linear-gradient(135deg, #4353FF 0%, #5B7CFF 100%)",
-                    }}
-                  >
-                    <Shield className="w-7 h-7 text-white" />
-                  </div>
-                  <h3
-                    className="text-2xl font-bold mb-3"
-                    style={{ color: "#1E293B" }}
-                  >
-                    Legal Process Support
-                  </h3>
-                  <p
-                    className="text-base font-medium mb-4"
-                    style={{ color: "#4353FF" }}
-                  >
-                    Keep your cases moving with flawless execution.
-                  </p>
-                </div>
-                <ul className="space-y-2.5 mb-6">
-                  <li
-                    className="flex items-start gap-2 text-sm"
-                    style={{ color: "#475569" }}
-                  >
-                    <CheckCircle2
-                      className="w-4 h-4 flex-shrink-0 mt-0.5"
-                      style={{ color: "#4353FF" }}
-                    />
-                    <span>E-filing and court submission coordination</span>
-                  </li>
-                  <li
-                    className="flex items-start gap-2 text-sm"
-                    style={{ color: "#475569" }}
-                  >
-                    <CheckCircle2
-                      className="w-4 h-4 flex-shrink-0 mt-0.5"
-                      style={{ color: "#4353FF" }}
-                    />
-                    <span>Discovery and evidence management support</span>
-                  </li>
-                  <li
-                    className="flex items-start gap-2 text-sm"
-                    style={{ color: "#475569" }}
-                  >
-                    <CheckCircle2
-                      className="w-4 h-4 flex-shrink-0 mt-0.5"
-                      style={{ color: "#4353FF" }}
-                    />
-                    <span>Trial and hearing preparation assistance</span>
-                  </li>
-                  <li
-                    className="flex items-start gap-2 text-sm"
-                    style={{ color: "#475569" }}
-                  >
-                    <CheckCircle2
-                      className="w-4 h-4 flex-shrink-0 mt-0.5"
-                      style={{ color: "#4353FF" }}
-                    />
-                    <span>Meeting and deposition prep</span>
-                  </li>
-                  <li
-                    className="flex items-start gap-2 text-sm"
-                    style={{ color: "#475569" }}
-                  >
-                    <CheckCircle2
-                      className="w-4 h-4 flex-shrink-0 mt-0.5"
-                      style={{ color: "#4353FF" }}
-                    />
-                    <span>Legal forms and correspondence handling</span>
-                  </li>
-                </ul>
-                <div className="pt-4 border-t border-slate-100">
-                  <p
-                    className="text-sm font-semibold"
-                    style={{ color: "#64748B" }}
-                  >
-                    <span style={{ color: "#4353FF" }}>Outcome:</span> Fewer
-                    errors, faster filings, complete compliance.
-                  </p>
-                </div>
-              </div>
-
             </div>
 
             {/* Bottom CTA */}
