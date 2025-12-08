@@ -1,0 +1,70 @@
+Design a single responsive section for a landing page with a Replit-style dark SaaS vibe.
+
+Goals:
+- The entire section must fit in one laptop viewport (max height ~900–1000px).
+- Layout: one clear row with two main elements: a US map on the left and a regions panel on the right.
+- The design should feel seamless, clean, simple, powerful, and “alive” (subtle motion and glow), not corporate or boxy.
+
+Structure:
+1. Section background:
+   - Full-width dark theme.
+   - Use a radial or subtle linear gradient (deep navy to dark gray, e.g. #020617 to #111827).
+   - Enough contrast so cards sit on top and feel elevated.
+
+2. Header (top of section):
+   - Small eyebrow label: “ONSPOT COVERAGE” in all caps, tiny tracking, muted blue/gray.
+   - Main title: “We’re Across America” in large, bold, light text.
+   - Short subtitle below in softer gray-blue. Max width ~520px.
+   - Header should sit above the grid, left-aligned.
+
+3. Main grid:
+   - Two columns on desktop: 
+     - Left: map card (about 55–60% width).
+     - Right: regions panel card (40–45%).
+   - On mobile, stack map on top, regions panel below, full width.
+
+4. Map card (left):
+   - Dark, semi-transparent card (#0f172a with alpha).
+   - Large border-radius (20–24px), soft shadow, no hard borders.
+   - Inside, place a simplified gray US map image with OnSpot-blue pins.
+   - Add a subtle inner blue glow behind the center of the map using a radial gradient.
+   - At the bottom-left of the card, add a small pill-shaped label with:
+     - A tiny green status dot with a glow.
+     - Text like “Live legal ops pods across the U.S.”
+   - Everything should feel like a Replit/Stripe dashboard widget, not a plain image block.
+
+5. Regions panel (right):
+   - Another dark card matching the map card radius and shadow.
+   - Title/label at the top: “Regions we’re active in” in small uppercase.
+   - Below, a vertical list of 4 regions:
+       - Tri-State — NY • NJ • CT · High-volume practices
+       - Texas — Dallas • Houston • Austin · Growing firms
+       - Florida — Miami • Orlando • Tampa · Seasonal expertise
+       - California — Bay Area • LA · Tech-focused firms
+   - Each region row:
+       - No full-width boxes; use pill-like hover states only.
+       - Layout: small colored dot on the left, then region name (bold) and description (muted).
+       - On hover: slight lift (translateY(-1px)), subtle brighter background (dark blue), and soft shadow.
+
+6. Footer pill inside the regions panel:
+   - Small dashed-outline pill at the bottom with:
+       - A small cyan or blue glowing dot.
+       - Text like: “Ready to open another region? Plug in a new pod in weeks.”
+   - Keep it subtle and secondary.
+
+7. Typography and colors:
+   - Use a modern sans-serif (system UI or something like Inter).
+   - Main text: light gray (#e5e7eb), muted text: #9ca3af.
+   - Accent blue: use a bright but not neon blue (e.g. #3b82f6) for dots, links, and pins.
+   - Do NOT use bright white backgrounds; everything should be dark-mode, soft, and consistent.
+
+8. Interactions:
+   - Smooth transitions (150–200ms) on hover for region rows.
+   - No crazy animations; just tiny motion and opacity changes to feel alive.
+
+9. Constraints:
+   - Avoid multiple nested boxes; only 2 main cards (map and regions) in this section.
+   - Ensure the section looks good on MacBook 13–15" without vertical scrolling.
+   - Make it responsive and accessible (good contrast, readable font sizes).
+
+Implement this in HTML/CSS (or React + Tailwind) with a focus on visual polish and clean layout.
