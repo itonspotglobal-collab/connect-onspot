@@ -217,9 +217,9 @@ function RightFitSection() {
       id: "volume",
       text: (
         <>
-          You handle{" "}
-          <span className="font-semibold">50+ eviction cases monthly</span> and
-          need consistent, scalable support
+          You need dependable support without the{" "}
+          <span className="font-semibold">cost, turnover, and delays</span> of
+          hiring in-house
         </>
       ),
     },
