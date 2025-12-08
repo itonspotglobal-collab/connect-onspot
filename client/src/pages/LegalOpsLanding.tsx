@@ -43,6 +43,7 @@ import {
   Users,
   Award,
   ChevronRight,
+  ChevronLeft,
   Star,
   BarChart3,
   Zap,
@@ -954,13 +955,55 @@ export default function LegalOpsLanding() {
                 </p>
               </div>
 
-              {/* Mindvalley-style 2-Row Image Grid */}
-              <div className="relative max-w-6xl mx-auto">
-                {/* 2x2 Grid Layout */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              {/* Mindvalley-style Full-Width Single Row Carousel */}
+              <div 
+                className="relative -mx-4 sm:-mx-6 lg:-mx-8 xl:-mx-16 2xl:-mx-24"
+                role="region"
+                aria-roledescription="carousel"
+                aria-label="Our Guarantee Benefits"
+              >
+                {/* Previous Button */}
+                <button
+                  onClick={() => {
+                    const el = document.getElementById('guarantee-carousel');
+                    if (el) el.scrollBy({ left: -400, behavior: 'smooth' });
+                  }}
+                  className="absolute left-2 sm:left-4 lg:left-8 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/90 dark:bg-slate-800/90 shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center hover:scale-105 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  aria-label="View previous guarantee"
+                  data-testid="button-carousel-prev"
+                >
+                  <ChevronLeft className="w-5 h-5 md:w-6 md:h-6 text-slate-700 dark:text-slate-200" />
+                </button>
+
+                {/* Next Button */}
+                <button
+                  onClick={() => {
+                    const el = document.getElementById('guarantee-carousel');
+                    if (el) el.scrollBy({ left: 400, behavior: 'smooth' });
+                  }}
+                  className="absolute right-2 sm:right-4 lg:right-8 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/90 dark:bg-slate-800/90 shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center hover:scale-105 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  aria-label="View next guarantee"
+                  data-testid="button-carousel-next"
+                >
+                  <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-slate-700 dark:text-slate-200" />
+                </button>
+
+                {/* Horizontal Scrollable Container */}
+                <div 
+                  id="guarantee-carousel"
+                  className="flex gap-4 md:gap-6 overflow-x-auto scroll-smooth snap-x snap-mandatory px-4 sm:px-6 lg:px-8 xl:px-16 2xl:px-24 pb-4"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                  data-testid="carousel-guarantee"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    const el = document.getElementById('guarantee-carousel');
+                    if (e.key === 'ArrowLeft' && el) el.scrollBy({ left: -400, behavior: 'smooth' });
+                    if (e.key === 'ArrowRight' && el) el.scrollBy({ left: 400, behavior: 'smooth' });
+                  }}
+                >
                   {/* Card 1: 30-Day Stability Target */}
                   <figure 
-                    className="rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300"
+                    className="flex-shrink-0 w-[280px] sm:w-[340px] md:w-[400px] lg:w-[480px] xl:w-[520px] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300 snap-center"
                     data-testid="card-stability-target"
                   >
                     <img 
@@ -974,7 +1017,7 @@ export default function LegalOpsLanding() {
 
                   {/* Card 2: No Extra Charges */}
                   <figure 
-                    className="rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300"
+                    className="flex-shrink-0 w-[280px] sm:w-[340px] md:w-[400px] lg:w-[480px] xl:w-[520px] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300 snap-center"
                     data-testid="card-no-extra-charges"
                   >
                     <img 
@@ -988,7 +1031,7 @@ export default function LegalOpsLanding() {
 
                   {/* Card 3: Performance Tracking */}
                   <figure 
-                    className="rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300"
+                    className="flex-shrink-0 w-[280px] sm:w-[340px] md:w-[400px] lg:w-[480px] xl:w-[520px] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300 snap-center"
                     data-testid="card-performance-tracking"
                   >
                     <img 
@@ -1002,7 +1045,7 @@ export default function LegalOpsLanding() {
 
                   {/* Card 4: Full Transparency */}
                   <figure 
-                    className="rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300"
+                    className="flex-shrink-0 w-[280px] sm:w-[340px] md:w-[400px] lg:w-[480px] xl:w-[520px] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300 snap-center"
                     data-testid="card-full-transparency"
                   >
                     <img 
@@ -1014,6 +1057,10 @@ export default function LegalOpsLanding() {
                     />
                   </figure>
                 </div>
+
+                {/* Gradient fade edges for premium look */}
+                <div className="absolute left-0 top-0 bottom-4 w-8 sm:w-12 lg:w-16 bg-gradient-to-r from-amber-50 dark:from-slate-900 to-transparent pointer-events-none z-10"></div>
+                <div className="absolute right-0 top-0 bottom-4 w-8 sm:w-12 lg:w-16 bg-gradient-to-l from-amber-50 dark:from-slate-900 to-transparent pointer-events-none z-10"></div>
               </div>
             </div>
           </div>
