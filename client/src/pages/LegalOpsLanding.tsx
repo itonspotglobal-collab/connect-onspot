@@ -79,6 +79,7 @@ import noExtraChargesImage from "@assets/NO_EXTRA_CHARGES_1765200843502.png";
 import performanceTrackingImage from "@assets/PERFORMANCE_TRACKING_1765200843502.png";
 import fullTransparencyImage from "@assets/FULL_TRANSPARENCY_1765200843501.png";
 import stressedProfessionalImage from "@assets/WHAT_IF_YOU_DONT_PARTNER_WITH_ONSPOT_1765207999583.png";
+import profitsLostImage from "@assets/Profits_1765208843745.png";
 
 if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
   console.warn(
@@ -2994,21 +2995,14 @@ export default function LegalOpsLanding() {
             <div className="max-w-7xl mx-auto px-4 md:px-8">
               {/* Two Column Layout - Image Left, Content Right */}
               <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-                {/* Left: Image */}
-                <div className="relative order-2 lg:order-1">
-                  <div className="relative rounded-3xl overflow-hidden shadow-2xl">
+                {/* Left: Image - Tall vertical format */}
+                <div className="relative order-2 lg:order-1 flex justify-center">
+                  <div className="relative rounded-3xl overflow-hidden shadow-2xl max-w-md lg:max-w-lg">
                     <img
-                      src={stressedProfessionalImage}
-                      alt="Stressed professional without OnSpot support"
-                      className="w-full h-auto object-cover"
+                      src={profitsLostImage}
+                      alt="Profits lost to overhead - laptop mockup"
+                      className="w-full h-auto object-cover object-center"
                     />
-                    {/* Overlay gradient for depth */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
-                  </div>
-                  {/* Floating stat badge */}
-                  <div className="absolute -bottom-4 -right-4 md:bottom-6 md:right-6 bg-white rounded-2xl shadow-xl p-4 border border-gray-100">
-                    <div className="text-3xl font-bold text-red-600">70%</div>
-                    <div className="text-xs text-gray-500 font-medium">profit lost to overhead</div>
                   </div>
                 </div>
 
