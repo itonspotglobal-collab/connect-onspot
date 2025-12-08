@@ -78,6 +78,7 @@ import stabilityTargetImage from "@assets/30-DAY_STABILITY_TARGET_1765200843502.
 import noExtraChargesImage from "@assets/NO_EXTRA_CHARGES_1765200843502.png";
 import performanceTrackingImage from "@assets/PERFORMANCE_TRACKING_1765200843502.png";
 import fullTransparencyImage from "@assets/FULL_TRANSPARENCY_1765200843501.png";
+import stressedProfessionalImage from "@assets/WHAT_IF_YOU_DONT_PARTNER_WITH_ONSPOT_1765207999583.png";
 
 if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
   console.warn(
@@ -2997,7 +2998,7 @@ export default function LegalOpsLanding() {
                 <div className="relative order-2 lg:order-1">
                   <div className="relative rounded-3xl overflow-hidden shadow-2xl">
                     <img
-                      src="/assets/attached_assets/WHAT_IF_YOU_DONT_PARTNER_WITH_ONSPOT_1765207999583.png"
+                      src={stressedProfessionalImage}
                       alt="Stressed professional without OnSpot support"
                       className="w-full h-auto object-cover"
                     />
