@@ -2997,11 +2997,12 @@ export default function LegalOpsLanding() {
               <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
                 {/* Left: Image - Full height to match content */}
                 <div className="relative order-2 lg:order-1 flex items-center justify-center">
-                  <div className="relative rounded-3xl overflow-hidden shadow-2xl" style={{ aspectRatio: '4/5' }}>
+                  <div className="relative w-full rounded-3xl overflow-hidden shadow-2xl" style={{ aspectRatio: '3/4' }}>
                     <img
                       src={profitsLostImage}
                       alt="Profits lost to overhead - laptop mockup"
-                      className="w-auto h-full object-cover object-center min-w-full"
+                      className="absolute inset-0 w-full h-full object-cover"
+                      style={{ objectPosition: 'center 45%' }}
                     />
                   </div>
                 </div>
