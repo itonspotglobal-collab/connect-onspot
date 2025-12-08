@@ -1026,12 +1026,12 @@ export default function LegalOpsLanding() {
                   Where We Operate
                 </h2>
                 <p className="text-lg text-slate-600 dark:text-slate-400 font-light max-w-2xl mx-auto">
-                  Serving landlord–tenant law firms in key US markets
+                  Serving landlord–tenant law firms across the United States
                 </p>
               </div>
 
               {/* Geographic Cards */}
-              <div className="grid md:grid-cols-3 gap-6 md:gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 md:gap-8">
                 {/* New York Card */}
                 <div className="geo-card-entrance">
                   <Card className="border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm h-full hover-elevate transition-all duration-300 relative overflow-hidden group">
@@ -1096,6 +1096,52 @@ export default function LegalOpsLanding() {
                     <CardContent>
                       <p className="text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
                         Seasonal demand spikes and residential property specialization
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* California Card */}
+                <div className="geo-card-entrance" style={{ animationDelay: '0.3s' }}>
+                  <Card className="border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm h-full hover-elevate transition-all duration-300 relative overflow-hidden group">
+                    {/* Accent Line */}
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-400 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
+                    
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-slate-900 dark:text-white text-2xl font-semibold flex items-start gap-3">
+                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-1">
+                          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                        </div>
+                        <span>California</span>
+                      </CardTitle>
+                    </CardHeader>
+                    
+                    <CardContent>
+                      <p className="text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+                        Bay Area and Los Angeles metro L&T markets with high-volume dockets
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Illinois Card */}
+                <div className="geo-card-entrance" style={{ animationDelay: '0.4s' }}>
+                  <Card className="border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm h-full hover-elevate transition-all duration-300 relative overflow-hidden group">
+                    {/* Accent Line */}
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-400 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
+                    
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-slate-900 dark:text-white text-2xl font-semibold flex items-start gap-3">
+                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-1">
+                          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                        </div>
+                        <span>Illinois</span>
+                      </CardTitle>
+                    </CardHeader>
+                    
+                    <CardContent>
+                      <p className="text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+                        Chicago and Midwest region with competitive property markets
                       </p>
                     </CardContent>
                   </Card>
