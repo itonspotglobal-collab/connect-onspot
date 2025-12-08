@@ -1018,7 +1018,7 @@ export default function LegalOpsLanding() {
         </section>
 
         {/* Geographic Coverage Section - Premium Map Integration */}
-        <section className="py-16 md:py-20 bg-gradient-to-br from-blue-50/50 to-purple-50/30 dark:from-slate-900/50 dark:to-slate-800/30 border-t border-b border-slate-200 dark:border-slate-800/50 relative overflow-hidden">
+        <section className="py-10 md:py-12 bg-gradient-to-br from-blue-50/50 to-purple-50/30 dark:from-slate-900/50 dark:to-slate-800/30 border-t border-b border-slate-200 dark:border-slate-800/50 relative overflow-hidden">
           {/* Subtle background elements */}
           <div className="absolute inset-0 opacity-30">
             <div className="absolute top-1/4 right-0 w-96 h-96 bg-gradient-to-l from-blue-200/20 to-transparent blur-3xl"></div>
@@ -1028,18 +1028,18 @@ export default function LegalOpsLanding() {
           <div className="container-fluid relative z-10">
             <div className="max-w-6xl mx-auto px-4 md:px-6">
               {/* Header */}
-              <div className="text-center mb-10 md:mb-12 geo-section-header">
-                <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-2">
+              <div className="text-center mb-6 md:mb-8 geo-section-header">
+                <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-1">
                   Where We Operate
                 </h2>
-                <p className="text-base md:text-lg text-slate-600 dark:text-slate-400 font-light">
+                <p className="text-sm md:text-base text-slate-600 dark:text-slate-400 font-light">
                   Serving law firms across the United States
                 </p>
               </div>
 
               {/* Map Image - Top */}
-              <div className="flex justify-center mb-12 md:mb-14 map-entrance">
-                <Card className="w-full max-w-3xl border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/30 shadow-md p-5 md:p-6">
+              <div className="flex justify-center mb-8 md:mb-10 map-entrance">
+                <Card className="w-full max-w-2xl border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/30 shadow-md p-3 md:p-4">
                   <img 
                     src={usMapImage}
                     alt="US Map showing OnSpot coverage areas" 
@@ -1049,23 +1049,23 @@ export default function LegalOpsLanding() {
               </div>
 
               {/* State Cards Grid - Below Map */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
                 {/* Tri-State Card */}
                 <div className="geo-card-entrance">
                   <Card className="border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm h-full hover-elevate transition-all duration-300 relative overflow-hidden group">
                     <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-400 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
                     
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-slate-900 dark:text-white text-lg font-semibold flex items-start gap-2">
-                        <div className="flex-shrink-0 w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-0.5">
+                    <CardHeader className="pb-1.5">
+                      <CardTitle className="text-slate-900 dark:text-white text-base font-semibold flex items-start gap-1.5">
+                        <div className="flex-shrink-0 w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-0.5">
                           <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
                         </div>
                         <span>Tri-State</span>
                       </CardTitle>
                     </CardHeader>
                     
-                    <CardContent className="pt-0">
-                      <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+                    <CardContent className="pt-0.5 pb-2">
+                      <p className="text-xs text-slate-600 dark:text-slate-400 font-light leading-snug">
                         Legal operations support for high-volume practices across NY, NJ, and CT with expertise in estate planning, contract review, and compliance management.
                       </p>
                     </CardContent>
@@ -1077,17 +1077,17 @@ export default function LegalOpsLanding() {
                   <Card className="border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm h-full hover-elevate transition-all duration-300 relative overflow-hidden group">
                     <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-400 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
                     
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-slate-900 dark:text-white text-lg font-semibold flex items-start gap-2">
-                        <div className="flex-shrink-0 w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-0.5">
+                    <CardHeader className="pb-1.5">
+                      <CardTitle className="text-slate-900 dark:text-white text-base font-semibold flex items-start gap-1.5">
+                        <div className="flex-shrink-0 w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-0.5">
                           <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
                         </div>
                         <span>Texas</span>
                       </CardTitle>
                     </CardHeader>
                     
-                    <CardContent className="pt-0">
-                      <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+                    <CardContent className="pt-0.5 pb-2">
+                      <p className="text-xs text-slate-600 dark:text-slate-400 font-light leading-snug">
                         Operational excellence for growing practices across Dallas, Houston, and Austin serving business law, litigation, and corporate needs.
                       </p>
                     </CardContent>
@@ -1099,17 +1099,17 @@ export default function LegalOpsLanding() {
                   <Card className="border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm h-full hover-elevate transition-all duration-300 relative overflow-hidden group">
                     <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-400 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
                     
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-slate-900 dark:text-white text-lg font-semibold flex items-start gap-2">
-                        <div className="flex-shrink-0 w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-0.5">
+                    <CardHeader className="pb-1.5">
+                      <CardTitle className="text-slate-900 dark:text-white text-base font-semibold flex items-start gap-1.5">
+                        <div className="flex-shrink-0 w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-0.5">
                           <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
                         </div>
                         <span>Florida</span>
                       </CardTitle>
                     </CardHeader>
                     
-                    <CardContent className="pt-0">
-                      <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+                    <CardContent className="pt-0.5 pb-2">
+                      <p className="text-xs text-slate-600 dark:text-slate-400 font-light leading-snug">
                         Document handling and case management for Miami, Orlando, and Tampa firms with seasonal case load optimization.
                       </p>
                     </CardContent>
@@ -1121,17 +1121,17 @@ export default function LegalOpsLanding() {
                   <Card className="border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm h-full hover-elevate transition-all duration-300 relative overflow-hidden group">
                     <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-400 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
                     
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-slate-900 dark:text-white text-lg font-semibold flex items-start gap-2">
-                        <div className="flex-shrink-0 w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-0.5">
+                    <CardHeader className="pb-1.5">
+                      <CardTitle className="text-slate-900 dark:text-white text-base font-semibold flex items-start gap-1.5">
+                        <div className="flex-shrink-0 w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-0.5">
                           <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
                         </div>
                         <span>California</span>
                       </CardTitle>
                     </CardHeader>
                     
-                    <CardContent className="pt-0">
-                      <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+                    <CardContent className="pt-0.5 pb-2">
+                      <p className="text-xs text-slate-600 dark:text-slate-400 font-light leading-snug">
                         Comprehensive legal ops for Bay Area and LA firms with specialized support for tech-focused practices and high-growth environments.
                       </p>
                     </CardContent>
@@ -1143,17 +1143,17 @@ export default function LegalOpsLanding() {
                   <Card className="border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm h-full hover-elevate transition-all duration-300 relative overflow-hidden group">
                     <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-400 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
                     
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-slate-900 dark:text-white text-lg font-semibold flex items-start gap-2">
-                        <div className="flex-shrink-0 w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-0.5">
+                    <CardHeader className="pb-1.5">
+                      <CardTitle className="text-slate-900 dark:text-white text-base font-semibold flex items-start gap-1.5">
+                        <div className="flex-shrink-0 w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-0.5">
                           <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
                         </div>
                         <span>Illinois</span>
                       </CardTitle>
                     </CardHeader>
                     
-                    <CardContent className="pt-0">
-                      <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+                    <CardContent className="pt-0.5 pb-2">
+                      <p className="text-xs text-slate-600 dark:text-slate-400 font-light leading-snug">
                         Chicago-based operations support for firms handling corporate, IP, and civil litigation with regional market expertise.
                       </p>
                     </CardContent>
