@@ -1092,26 +1092,26 @@ export default function LegalOpsLanding() {
           </div>
         </section>
 
-        {/* Security / Confidentiality Trust Strip */}
-        <section className="py-6 sm:py-8 bg-slate-900 border-y border-slate-800">
+        {/* Security / Confidentiality Trust Strip - Light, flows from Zero Escalation section */}
+        <section className="py-6 sm:py-8 bg-white border-b border-gray-100">
           <div className="container-fluid">
             <div className="max-w-6xl mx-auto">
               <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-8 md:gap-12">
-                <div className="flex items-center gap-2 text-slate-400">
-                  <FileText className="w-4 h-4 text-[#4353FF]" />
-                  <span className="text-xs sm:text-sm">NDA-Protected</span>
+                <div className="flex items-center gap-2 text-gray-400">
+                  <FileText className="w-4 h-4 text-gray-400" />
+                  <span className="text-xs sm:text-sm font-medium">NDA-Protected</span>
                 </div>
-                <div className="flex items-center gap-2 text-slate-400">
-                  <Lock className="w-4 h-4 text-[#4353FF]" />
-                  <span className="text-xs sm:text-sm">Secure Access Controls</span>
+                <div className="flex items-center gap-2 text-gray-400">
+                  <Lock className="w-4 h-4 text-gray-400" />
+                  <span className="text-xs sm:text-sm font-medium">Secure Access Controls</span>
                 </div>
-                <div className="flex items-center gap-2 text-slate-400">
-                  <Shield className="w-4 h-4 text-[#4353FF]" />
-                  <span className="text-xs sm:text-sm">Confidentiality-First</span>
+                <div className="flex items-center gap-2 text-gray-400">
+                  <Shield className="w-4 h-4 text-gray-400" />
+                  <span className="text-xs sm:text-sm font-medium">Confidentiality-First</span>
                 </div>
-                <div className="flex items-center gap-2 text-slate-400">
-                  <Scale className="w-4 h-4 text-[#4353FF]" />
-                  <span className="text-xs sm:text-sm">Support Work Only — Final Sign-Off Stays With You</span>
+                <div className="flex items-center gap-2 text-gray-400">
+                  <Scale className="w-4 h-4 text-gray-400" />
+                  <span className="text-xs sm:text-sm font-medium">Support Work Only — Final Sign-Off Stays With You</span>
                 </div>
               </div>
             </div>
