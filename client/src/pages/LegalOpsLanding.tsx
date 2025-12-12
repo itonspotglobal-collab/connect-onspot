@@ -64,6 +64,7 @@ import {
   AlertCircle,
   Check,
   FileText,
+  FileCheck,
   Folder,
   Lock,
   RotateCcw,
@@ -1716,48 +1717,33 @@ export default function LegalOpsLanding() {
                   </p>
                 </div>
 
-                {/* Key Points with Stagger Animation */}
-                <div className="space-y-6">
-                  <div className="dream-bullet-1 flex items-start gap-4 group">
-                    <div className="flex-shrink-0 w-7 h-7 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mt-0.5">
-                      <CheckCircle2 className="w-4 h-4 text-white" />
+                {/* Outcome Bullets - One-Line Payoffs with Stagger Animation */}
+                <div className="space-y-5">
+                  <div className="dream-bullet-1 flex items-center gap-4">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
+                      <Zap className="w-5 h-5 text-white" />
                     </div>
-                    <div>
-                      <p className="text-xl sm:text-2xl text-white font-semibold leading-relaxed">
-                        Every case moves forward without delays
-                      </p>
-                      <p className="text-white/70 text-sm sm:text-base mt-1.5">
-                        No bottlenecks. No follow-ups. Just consistent, predictable execution across your entire caseload.
-                      </p>
-                    </div>
+                    <p className="text-xl sm:text-2xl text-white font-medium">
+                      Every case moves forward — without delays.
+                    </p>
                   </div>
 
-                  <div className="dream-bullet-2 flex items-start gap-4 group">
-                    <div className="flex-shrink-0 w-7 h-7 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mt-0.5">
-                      <CheckCircle2 className="w-4 h-4 text-white" />
+                  <div className="dream-bullet-2 flex items-center gap-4">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
+                      <FileCheck className="w-5 h-5 text-white" />
                     </div>
-                    <div>
-                      <p className="text-xl sm:text-2xl text-white font-semibold leading-relaxed">
-                        Every document delivered with flawless accuracy
-                      </p>
-                      <p className="text-white/70 text-sm sm:text-base mt-1.5">
-                        Clean, compliant, court-ready documentation—produced the same way, every time.
-                      </p>
-                    </div>
+                    <p className="text-xl sm:text-2xl text-white font-medium">
+                      Every document delivered — with flawless accuracy.
+                    </p>
                   </div>
 
-                  <div className="dream-bullet-3 flex items-start gap-4 group">
-                    <div className="flex-shrink-0 w-7 h-7 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mt-0.5">
-                      <CheckCircle2 className="w-4 h-4 text-white" />
+                  <div className="dream-bullet-3 flex items-center gap-4">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
+                      <Users className="w-5 h-5 text-white" />
                     </div>
-                    <div>
-                      <p className="text-xl sm:text-2xl text-white font-semibold leading-relaxed">
-                        Every client kept informed before they even ask
-                      </p>
-                      <p className="text-white/70 text-sm sm:text-base mt-1.5">
-                        Proactive communication and real-time updates that build trust and reduce inbound requests.
-                      </p>
-                    </div>
+                    <p className="text-xl sm:text-2xl text-white font-medium">
+                      Every client kept informed — before they even ask.
+                    </p>
                   </div>
                 </div>
 
