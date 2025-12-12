@@ -905,7 +905,7 @@ export default function LegalOpsLanding() {
 
                 {/* Main Headline */}
                 <h1
-                  className="text-4xl sm:text-5xl md:text-6xl font-bold leading-tight tracking-tight"
+                  className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-tight"
                   style={{ color: '#F5F7FF' }}
                   data-testid="text-hero-headline"
                 >
@@ -914,7 +914,7 @@ export default function LegalOpsLanding() {
 
                 {/* Subheadline */}
                 <p
-                  className="text-xl sm:text-2xl font-light leading-snug tracking-wide"
+                  className="text-lg sm:text-xl md:text-2xl font-light leading-snug tracking-wide"
                   style={{ color: '#D8DFF5' }}
                   data-testid="text-hero-subhead"
                 >
@@ -922,7 +922,7 @@ export default function LegalOpsLanding() {
                 </p>
 
                 {/* Body */}
-                <p className="text-base leading-relaxed max-w-2xl font-light opacity-90" style={{ color: '#E0E8F5' }}>
+                <p className="text-sm sm:text-base leading-relaxed max-w-2xl font-light opacity-90" style={{ color: '#E0E8F5' }}>
                   OnSpot provides dedicated legal operations teams that handle case intake, document preparation, client coordination, and workflow management—so your attorneys focus entirely on legal strategy and billable work. Predictable costs, zero operational chaos, and guaranteed replacements.
                 </p>
 
@@ -1229,7 +1229,7 @@ export default function LegalOpsLanding() {
         </section>
 
         {/* Why Law Firms Come to OnSpot - Premium Grid Section */}
-        <section className="relative py-20 sm:py-28 overflow-hidden bg-gradient-to-b from-white via-blue-50/30 to-white dark:from-slate-900 dark:via-slate-900/50 dark:to-slate-900">
+        <section className="relative py-16 sm:py-20 md:py-28 overflow-hidden bg-gradient-to-b from-white via-blue-50/30 to-white dark:from-slate-900 dark:via-slate-900/50 dark:to-slate-900">
           <style>{`
             .reason-card {
               transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -1250,13 +1250,13 @@ export default function LegalOpsLanding() {
           <div className="container-fluid relative z-10">
             <div className="max-w-7xl mx-auto px-4 md:px-8">
               {/* Intro */}
-              <div className="text-center mb-16 space-y-4">
-                <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold leading-tight">Why Law Firms Choose OnSpot</h2>
-                <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">Reclaim time. Reduce risk. Achieve predictability.</p>
+              <div className="text-center mb-10 sm:mb-16 space-y-3 sm:space-y-4">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-tight">Why Law Firms Choose OnSpot</h2>
+                <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">Reclaim time. Reduce risk. Achieve predictability.</p>
               </div>
 
               {/* Reasons Grid */}
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {[
                   {
                     icon: Clock,
@@ -1291,7 +1291,7 @@ export default function LegalOpsLanding() {
                 ].map((item, idx) => {
                   const IconComponent = item.icon;
                   return (
-                    <div key={idx} className="reason-card bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border border-blue-100/50 dark:border-blue-500/20 rounded-2xl p-6 md:p-8">
+                    <div key={idx} className="reason-card bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border border-blue-100/50 dark:border-blue-500/20 rounded-2xl p-5 sm:p-6 md:p-8">
                       <div className="reason-icon w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/10 flex items-center justify-center mb-4">
                         <IconComponent className="w-6 h-6" style={{ color: '#4353FF' }} />
                       </div>
@@ -1308,28 +1308,28 @@ export default function LegalOpsLanding() {
         <RightFitSection />
 
         {/* New York Law Firm Success Section */}
-        <section className="py-16 sm:py-20 bg-white dark:bg-slate-900">
+        <section className="py-12 sm:py-16 md:py-20 bg-white dark:bg-slate-900">
           <div className="container-fluid">
             <div className="max-w-5xl mx-auto">
-              <div className="text-center mb-12">
-                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-violet-600 to-blue-600 rounded-3xl mb-6 shadow-2xl">
-                  <Building2 className="w-10 h-10 text-white" />
+              <div className="text-center mb-8 sm:mb-12">
+                <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-violet-600 to-blue-600 rounded-2xl sm:rounded-3xl mb-4 sm:mb-6 shadow-2xl">
+                  <Building2 className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
                 </div>
                 <h2
-                  className="text-3xl sm:text-5xl font-bold mb-4"
+                  className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4"
                   data-testid="text-success-title"
                 >
                   New York Law Firm Success Story
                 </h2>
-                <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+                <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
                   Manhattan landlord-tenant practice rebuilds entire legal ops
                   infrastructure under crisis conditions
                 </p>
               </div>
 
-              <div className="grid sm:grid-cols-2 gap-6">
+              <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
                 <Card className="shadow-lg hover-elevate">
-                  <CardContent className="p-8">
+                  <CardContent className="p-5 sm:p-6 md:p-8">
                     <div className="flex items-start gap-4 mb-4">
                       <div className="w-12 h-12 bg-green-500/20 rounded-2xl flex items-center justify-center flex-shrink-0">
                         <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
@@ -1348,10 +1348,10 @@ export default function LegalOpsLanding() {
                 </Card>
 
                 <Card className="shadow-lg hover-elevate">
-                  <CardContent className="p-8">
-                    <div className="flex items-start gap-4 mb-4">
-                      <div className="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center flex-shrink-0">
-                        <Clock className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  <CardContent className="p-5 sm:p-6 md:p-8">
+                    <div className="flex items-start gap-3 sm:gap-4 mb-4">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-500/20 rounded-xl sm:rounded-2xl flex items-center justify-center flex-shrink-0">
+                        <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
                       </div>
                       <div>
                         <h3 className="font-bold text-lg mb-1">
@@ -1366,16 +1366,16 @@ export default function LegalOpsLanding() {
                 </Card>
 
                 <Card className="shadow-lg hover-elevate">
-                  <CardContent className="p-8">
-                    <div className="flex items-start gap-4 mb-4">
-                      <div className="w-12 h-12 bg-violet-500/20 rounded-2xl flex items-center justify-center flex-shrink-0">
-                        <TrendingDown className="h-6 w-6 text-violet-600 dark:text-violet-400" />
+                  <CardContent className="p-5 sm:p-6 md:p-8">
+                    <div className="flex items-start gap-3 sm:gap-4 mb-4">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-violet-500/20 rounded-xl sm:rounded-2xl flex items-center justify-center flex-shrink-0">
+                        <TrendingDown className="h-5 w-5 sm:h-6 sm:w-6 text-violet-600 dark:text-violet-400" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-lg mb-1">
+                        <h3 className="font-bold text-base sm:text-lg mb-1">
                           Zero Escalations
                         </h3>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-xs sm:text-sm text-muted-foreground">
                           Maintained for 12+ consecutive months after
                           stabilization
                         </p>
@@ -1385,16 +1385,16 @@ export default function LegalOpsLanding() {
                 </Card>
 
                 <Card className="shadow-lg hover-elevate">
-                  <CardContent className="p-8">
-                    <div className="flex items-start gap-4 mb-4">
-                      <div className="w-12 h-12 bg-amber-500/20 rounded-2xl flex items-center justify-center flex-shrink-0">
-                        <DollarSign className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                  <CardContent className="p-5 sm:p-6 md:p-8">
+                    <div className="flex items-start gap-3 sm:gap-4 mb-4">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-amber-500/20 rounded-xl sm:rounded-2xl flex items-center justify-center flex-shrink-0">
+                        <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600 dark:text-amber-400" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-lg mb-1">
+                        <h3 className="font-bold text-base sm:text-lg mb-1">
                           72% Cost Reduction
                         </h3>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-xs sm:text-sm text-muted-foreground">
                           Sustained reduction in operational costs year over
                           year
                         </p>
@@ -1408,17 +1408,17 @@ export default function LegalOpsLanding() {
         </section>
 
         {/* Pricing Section - Two-Tier Hormozi Stack */}
-        <section className="py-16 sm:py-24 bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+        <section className="py-12 sm:py-16 md:py-24 bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
           <div className="container-fluid">
-            <div className="text-center mb-12">
+            <div className="text-center mb-8 sm:mb-12">
               <h2
-                className="text-3xl sm:text-4xl font-bold mb-4"
+                className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4"
                 data-testid="text-pricing-title"
               >
                 Choose Your LegalOps System
               </h2>
               <p
-                className="text-lg text-muted-foreground max-w-2xl mx-auto"
+                className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto"
                 data-testid="text-pricing-subtitle"
               >
                 Both options include our Zero Escalation Guarantee and 90-day
@@ -1426,7 +1426,7 @@ export default function LegalOpsLanding() {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-6 sm:gap-8 max-w-5xl mx-auto">
               {/* Option A - Launch System (Most Popular) */}
               <Card
                 className={`relative ${
@@ -1700,7 +1700,7 @@ export default function LegalOpsLanding() {
 
         {/* The Dream Outcome - OnSpot Blue with Animations */}
         <section 
-          className="relative overflow-hidden py-20 md:py-28"
+          className="relative overflow-hidden py-16 sm:py-20 md:py-28"
           style={{ 
             background: "linear-gradient(135deg, #4353FF 0%, #5B6CFF 50%, #4353FF 100%)",
             backgroundSize: "200% 200%",
@@ -1735,47 +1735,47 @@ export default function LegalOpsLanding() {
           </div>
 
           <div className="container-fluid relative z-10">
-            <div className="grid md:grid-cols-2 gap-12 md:gap-16 xl:gap-20 items-center min-h-[550px]">
+            <div className="grid md:grid-cols-2 gap-8 md:gap-12 lg:gap-16 xl:gap-20 items-center md:min-h-[550px]">
               {/* Left Column - Content */}
-              <div className="space-y-8 md:space-y-10">
+              <div className="space-y-6 sm:space-y-8 md:space-y-10">
                 {/* Section Title */}
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   <h2
-                    className="dream-headline-animated text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-tight"
+                    className="dream-headline-animated text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight"
                     data-testid="text-dream-outcome-title"
                   >
                     The Dream Outcome
                   </h2>
-                  <p className="text-lg sm:text-xl text-white/80 font-light">
+                  <p className="text-base sm:text-lg md:text-xl text-white/80 font-light">
                     What every law firm wants — and what OnSpot delivers.
                   </p>
                 </div>
 
                 {/* Outcome Bullets - One-Line Payoffs with Stagger Animation */}
-                <div className="space-y-5">
-                  <div className="dream-bullet-1 flex items-center gap-4">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
-                      <Zap className="w-5 h-5 text-white" />
+                <div className="space-y-4 sm:space-y-5">
+                  <div className="dream-bullet-1 flex items-start sm:items-center gap-3 sm:gap-4">
+                    <div className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
+                      <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                     </div>
-                    <p className="text-xl sm:text-2xl text-white font-medium">
+                    <p className="text-base sm:text-xl md:text-2xl text-white font-medium">
                       Every case moves forward — without delays.
                     </p>
                   </div>
 
-                  <div className="dream-bullet-2 flex items-center gap-4">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
-                      <FileCheck className="w-5 h-5 text-white" />
+                  <div className="dream-bullet-2 flex items-start sm:items-center gap-3 sm:gap-4">
+                    <div className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
+                      <FileCheck className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                     </div>
-                    <p className="text-xl sm:text-2xl text-white font-medium">
+                    <p className="text-base sm:text-xl md:text-2xl text-white font-medium">
                       Every document delivered — with flawless accuracy.
                     </p>
                   </div>
 
-                  <div className="dream-bullet-3 flex items-center gap-4">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
-                      <Users className="w-5 h-5 text-white" />
+                  <div className="dream-bullet-3 flex items-start sm:items-center gap-3 sm:gap-4">
+                    <div className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
+                      <Users className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                     </div>
-                    <p className="text-xl sm:text-2xl text-white font-medium">
+                    <p className="text-base sm:text-xl md:text-2xl text-white font-medium">
                       Every client kept informed — before they even ask.
                     </p>
                   </div>
