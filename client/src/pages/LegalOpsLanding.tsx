@@ -894,21 +894,33 @@ export default function LegalOpsLanding() {
           <div className="relative z-20 px-6 sm:px-8 md:px-12 lg:px-20 py-16 sm:py-20 md:py-24 lg:py-28 flex items-center min-h-screen">
             <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 xl:gap-28 items-center">
               {/* Left: Editorial Content */}
-              <div className="hero-fade-up space-y-8 md:space-y-10 relative">
-                {/* Subtle Infrastructure Grid Texture */}
+              <div className="hero-fade-up space-y-6 md:space-y-8 relative">
+                {/* Subtle Infrastructure Grid Texture with Radial Fade */}
                 <div 
-                  className="absolute -inset-8 sm:-inset-12 -z-10 pointer-events-none opacity-[0.03]"
+                  className="absolute -inset-8 sm:-inset-16 -z-10 pointer-events-none"
                   style={{
                     backgroundImage: `
-                      linear-gradient(rgba(67, 83, 255, 0.5) 1px, transparent 1px),
-                      linear-gradient(90deg, rgba(67, 83, 255, 0.5) 1px, transparent 1px)
+                      linear-gradient(rgba(67, 83, 255, 0.4) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(67, 83, 255, 0.4) 1px, transparent 1px)
                     `,
-                    backgroundSize: '32px 32px'
+                    backgroundSize: '40px 40px',
+                    maskImage: 'radial-gradient(ellipse 70% 60% at 30% 40%, black 0%, transparent 70%)',
+                    WebkitMaskImage: 'radial-gradient(ellipse 70% 60% at 30% 40%, black 0%, transparent 70%)',
+                    opacity: 0.04
                   }}
                 ></div>
                 
-                {/* Main Headline - Hormozi Direct */}
-                <div className="space-y-4">
+                {/* Authority Eyebrow - System Metadata */}
+                <p 
+                  className="text-[0.7rem] sm:text-xs font-medium uppercase tracking-[0.25em]"
+                  style={{ color: 'rgba(255, 255, 255, 0.6)' }}
+                  data-testid="text-hero-eyebrow"
+                >
+                  Built from real law firm operations
+                </p>
+
+                {/* Main Headline with Asymmetrical Accent */}
+                <div className="space-y-5 relative">
                   <h1
                     className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.5rem] xl:text-6xl font-bold leading-[1.08] tracking-tight"
                     style={{ color: '#FFFFFF' }}
@@ -918,45 +930,51 @@ export default function LegalOpsLanding() {
                     <span className="block"> Without Hiring More Staff</span>
                   </h1>
                   
+                  {/* Asymmetrical Accent - Single Visual Signature */}
+                  <div 
+                    className="w-12 h-px"
+                    style={{ backgroundColor: 'rgba(67, 83, 255, 0.6)' }}
+                  ></div>
+                  
                   {/* Tight Subhead - One Line */}
                   <p
                     className="text-lg sm:text-xl md:text-2xl font-normal leading-snug"
-                    style={{ color: 'rgba(255, 255, 255, 0.85)' }}
+                    style={{ color: 'rgba(255, 255, 255, 0.8)' }}
                     data-testid="text-hero-subhead"
                   >
                     Managed legal operations. 70% cost reduction. Zero escalations.
                   </p>
                 </div>
 
-                {/* Rotating Proof Line - Fade Only */}
-                <div className="relative h-6 overflow-hidden">
+                {/* Rotating Proof Line - Fade Only, Fixed Width */}
+                <div className="relative h-5 overflow-hidden max-w-[34ch] sm:max-w-[40ch]">
                   <style>{`
-                    @keyframes proof-fade {
-                      0%, 28% { opacity: 1; }
-                      33%, 95% { opacity: 0; }
+                    @keyframes proof-fade-refined {
+                      0%, 30% { opacity: 1; }
+                      33%, 97% { opacity: 0; }
                       100% { opacity: 0; }
                     }
-                    .proof-line-1 { animation: proof-fade 10.5s ease-in-out infinite; }
-                    .proof-line-2 { animation: proof-fade 10.5s ease-in-out 3.5s infinite; }
-                    .proof-line-3 { animation: proof-fade 10.5s ease-in-out 7s infinite; }
+                    .proof-refined-1 { animation: proof-fade-refined 12s ease-in-out infinite; }
+                    .proof-refined-2 { animation: proof-fade-refined 12s ease-in-out 4s infinite; }
+                    .proof-refined-3 { animation: proof-fade-refined 12s ease-in-out 8s infinite; }
                   `}</style>
                   <p 
-                    className="proof-line-1 absolute inset-0 text-xs sm:text-sm font-normal tracking-wide"
-                    style={{ color: 'rgba(148, 163, 184, 0.75)' }}
+                    className="proof-refined-1 absolute inset-0 text-xs sm:text-sm font-normal tracking-wide whitespace-nowrap"
+                    style={{ color: 'rgba(148, 163, 184, 0.65)' }}
                     data-testid="text-hero-proof-1"
                   >
                     Trusted by high-volume law firms across the U.S.
                   </p>
                   <p 
-                    className="proof-line-2 absolute inset-0 text-xs sm:text-sm font-normal tracking-wide opacity-0"
-                    style={{ color: 'rgba(148, 163, 184, 0.75)' }}
+                    className="proof-refined-2 absolute inset-0 text-xs sm:text-sm font-normal tracking-wide whitespace-nowrap opacity-0"
+                    style={{ color: 'rgba(148, 163, 184, 0.65)' }}
                     data-testid="text-hero-proof-2"
                   >
                     Built for firms that value process, precision, and control.
                   </p>
                   <p 
-                    className="proof-line-3 absolute inset-0 text-xs sm:text-sm font-normal tracking-wide opacity-0"
-                    style={{ color: 'rgba(148, 163, 184, 0.75)' }}
+                    className="proof-refined-3 absolute inset-0 text-xs sm:text-sm font-normal tracking-wide whitespace-nowrap opacity-0"
+                    style={{ color: 'rgba(148, 163, 184, 0.65)' }}
                     data-testid="text-hero-proof-3"
                   >
                     Designed to scale without operational risk.
