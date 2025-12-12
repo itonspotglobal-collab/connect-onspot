@@ -1558,16 +1558,21 @@ export default function LegalOpsLanding() {
                   </p>
                   <div className="pt-4">
                     <div
-                      className="text-4xl font-bold"
+                      className="flex items-baseline gap-2"
                       data-testid="text-tier-executive-price"
                     >
-                      $3,399
+                      <span className="text-2xl font-bold text-muted-foreground line-through decoration-2">
+                        $3,399
+                      </span>
+                      <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">
+                        $2,799
+                      </span>
                       <span className="text-lg font-normal text-muted-foreground">
                         /FTE/mo
                       </span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Limited-time onboarding rate: $2,799/mo
+                    <p className="text-sm font-medium text-blue-600 dark:text-blue-400 mt-1">
+                      Limited-time onboarding rate
                     </p>
                     <p className="text-sm text-muted-foreground mt-1">
                       3-month minimum commitment
