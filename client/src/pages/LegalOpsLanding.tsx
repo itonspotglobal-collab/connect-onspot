@@ -2327,231 +2327,143 @@ export default function LegalOpsLanding() {
           </div>
         </section>
 
-        {/* Everything You Save with OnSpot LegalOps */}
+        {/* Everything You Save with OnSpot LegalOps - Compact Elegant Grid */}
         <section
-          className="py-20 sm:py-32 relative overflow-hidden"
+          className="py-12 sm:py-16 md:py-20 relative overflow-hidden"
           style={{
-            background:
-              "linear-gradient(135deg, #1E3A8A 0%, #3B82F6 50%, #93C5FD 100%)",
+            background: "linear-gradient(135deg, #1E3A8A 0%, #3B82F6 50%, #93C5FD 100%)",
           }}
         >
-          {/* Subtle overlay for depth */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-white/5"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-white/5"></div>
 
           <div className="container-fluid relative z-10">
-            {/* Section Header */}
-            <div className="text-center mb-16 max-w-3xl mx-auto">
+            {/* Section Header - Compact */}
+            <div className="text-center mb-10 sm:mb-12 max-w-2xl mx-auto px-4">
               <h2
-                className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6 leading-tight"
+                className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3"
                 data-testid="text-savings-title"
               >
-                Everything You Save with OnSpot LegalOps
-                <sup className="text-2xl">™</sup>
+                Everything You Save with OnSpot LegalOps<sup className="text-base">™</sup>
               </h2>
-              <p className="text-xl sm:text-2xl text-white/90 font-light">
+              <p className="text-base sm:text-lg text-white/80 font-light">
                 Smarter operations. Lighter overhead. Greater freedom.
               </p>
             </div>
 
-            {/* Savings Grid */}
-            <div className="max-w-6xl mx-auto space-y-6">
-              {/* Saving 1: 70% in Operating Costs */}
+            {/* Compact 2x3 Grid */}
+            <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 px-4">
+              {/* Saving 1: Operating Costs */}
               <div
-                className="group bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 md:p-10 hover-elevate active-elevate-2 transition-all duration-500"
+                className="bg-white/10 backdrop-blur-md border border-white/15 rounded-xl p-5 hover-elevate transition-all duration-300"
                 data-testid="card-savings-costs"
               >
-                <div className="flex flex-col md:flex-row items-start gap-6">
-                  <div className="flex-shrink-0">
-                    <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                      <DollarSign
-                        className="w-9 h-9 text-white"
-                        strokeWidth={2.5}
-                      />
-                    </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
+                    <DollarSign className="w-5 h-5 text-white" strokeWidth={2} />
                   </div>
-                  <div className="flex-1 space-y-3">
-                    <h3 className="text-3xl sm:text-4xl font-bold text-white">
-                      70% in Operating Costs
-                    </h3>
-                    <p className="text-lg text-white/80 leading-relaxed">
-                      By replacing high-cost paralegals and admin roles with
-                      trained full-time LegalOps professionals, you instantly
-                      reduce fixed payroll, benefits, and hiring expenses.
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-1">70% Cost Savings</h3>
+                    <p className="text-sm text-white/70 leading-relaxed">
+                      Replace high-cost roles with trained LegalOps professionals. More margin on every case.
                     </p>
-                    <div className="pt-2 flex items-start gap-2">
-                      <Sparkles className="w-5 h-5 text-white/90 flex-shrink-0 mt-0.5" />
-                      <p className="text-base text-white font-medium">
-                        <span className="opacity-90">Outcome:</span> More margin
-                        on every case — without cutting quality.
-                      </p>
-                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Saving 2: Countless Hours */}
+              {/* Saving 2: Hours */}
               <div
-                className="group bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 md:p-10 hover-elevate active-elevate-2 transition-all duration-500"
+                className="bg-white/10 backdrop-blur-md border border-white/15 rounded-xl p-5 hover-elevate transition-all duration-300"
                 data-testid="card-savings-time"
               >
-                <div className="flex flex-col md:flex-row items-start gap-6">
-                  <div className="flex-shrink-0">
-                    <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                      <Clock className="w-9 h-9 text-white" strokeWidth={2.5} />
-                    </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
+                    <Clock className="w-5 h-5 text-white" strokeWidth={2} />
                   </div>
-                  <div className="flex-1 space-y-3">
-                    <h3 className="text-3xl sm:text-4xl font-bold text-white">
-                      Countless Hours of Non-Billable Work
-                    </h3>
-                    <p className="text-lg text-white/80 leading-relaxed">
-                      No more time wasted managing staff, chasing documents, or
-                      fixing admin errors.
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-1">Countless Hours</h3>
+                    <p className="text-sm text-white/70 leading-relaxed">
+                      No more managing staff or chasing documents. Focus on billable work.
                     </p>
-                    <div className="pt-2 flex items-start gap-2">
-                      <Sparkles className="w-5 h-5 text-white/90 flex-shrink-0 mt-0.5" />
-                      <p className="text-base text-white font-medium">
-                        <span className="opacity-90">Outcome:</span> Attorneys
-                        focus on clients and billable work that drives profit.
-                      </p>
-                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Saving 3: Stress & Turnover */}
+              {/* Saving 3: Turnover */}
               <div
-                className="group bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 md:p-10 hover-elevate active-elevate-2 transition-all duration-500"
+                className="bg-white/10 backdrop-blur-md border border-white/15 rounded-xl p-5 hover-elevate transition-all duration-300"
                 data-testid="card-savings-turnover"
               >
-                <div className="flex flex-col md:flex-row items-start gap-6">
-                  <div className="flex-shrink-0">
-                    <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                      <Users className="w-9 h-9 text-white" strokeWidth={2.5} />
-                    </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
+                    <Users className="w-5 h-5 text-white" strokeWidth={2} />
                   </div>
-                  <div className="flex-1 space-y-3">
-                    <h3 className="text-3xl sm:text-4xl font-bold text-white">
-                      Stress & Turnover Cycles
-                    </h3>
-                    <p className="text-lg text-white/80 leading-relaxed">
-                      Our managed team structure eliminates re-hiring,
-                      retraining, and burnout.
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-1">Stress & Turnover</h3>
+                    <p className="text-sm text-white/70 leading-relaxed">
+                      Managed team structure eliminates re-hiring and burnout cycles.
                     </p>
-                    <div className="pt-2 flex items-start gap-2">
-                      <Sparkles className="w-5 h-5 text-white/90 flex-shrink-0 mt-0.5" />
-                      <p className="text-base text-white font-medium">
-                        <span className="opacity-90">Outcome:</span> Stability
-                        and continuity you can depend on.
-                      </p>
-                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Saving 4: Training & Technology */}
+              {/* Saving 4: Training */}
               <div
-                className="group bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 md:p-10 hover-elevate active-elevate-2 transition-all duration-500"
+                className="bg-white/10 backdrop-blur-md border border-white/15 rounded-xl p-5 hover-elevate transition-all duration-300"
                 data-testid="card-savings-training"
               >
-                <div className="flex flex-col md:flex-row items-start gap-6">
-                  <div className="flex-shrink-0">
-                    <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                      <Settings
-                        className="w-9 h-9 text-white"
-                        strokeWidth={2.5}
-                      />
-                    </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
+                    <Settings className="w-5 h-5 text-white" strokeWidth={2} />
                   </div>
-                  <div className="flex-1 space-y-3">
-                    <h3 className="text-3xl sm:text-4xl font-bold text-white">
-                      Training & Technology Overhead
-                    </h3>
-                    <p className="text-lg text-white/80 leading-relaxed">
-                      We handle onboarding, tools, SOPs, and continuous
-                      improvement — so you don't have to.
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-1">Training Overhead</h3>
+                    <p className="text-sm text-white/70 leading-relaxed">
+                      We handle onboarding, tools, and SOPs. Always-ready staff.
                     </p>
-                    <div className="pt-2 flex items-start gap-2">
-                      <Sparkles className="w-5 h-5 text-white/90 flex-shrink-0 mt-0.5" />
-                      <p className="text-base text-white font-medium">
-                        <span className="opacity-90">Outcome:</span>{" "}
-                        Always-ready staff, always-updated systems.
-                      </p>
-                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Saving 5: Risk of Escalations */}
+              {/* Saving 5: Escalations */}
               <div
-                className="group bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 md:p-10 hover-elevate active-elevate-2 transition-all duration-500"
+                className="bg-white/10 backdrop-blur-md border border-white/15 rounded-xl p-5 hover-elevate transition-all duration-300"
                 data-testid="card-savings-risk"
               >
-                <div className="flex flex-col md:flex-row items-start gap-6">
-                  <div className="flex-shrink-0">
-                    <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                      <Shield
-                        className="w-9 h-9 text-white"
-                        strokeWidth={2.5}
-                      />
-                    </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
+                    <Shield className="w-5 h-5 text-white" strokeWidth={2} />
                   </div>
-                  <div className="flex-1 space-y-3">
-                    <h3 className="text-3xl sm:text-4xl font-bold text-white">
-                      Risk of Escalations & Errors
-                    </h3>
-                    <p className="text-lg text-white/80 leading-relaxed">
-                      With the Zero-Escalation Guarantee, your cases stay
-                      compliant, accurate, and on time.
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-1">Escalation Risk</h3>
+                    <p className="text-sm text-white/70 leading-relaxed">
+                      Zero-Escalation Guarantee keeps cases compliant and on time.
                     </p>
-                    <div className="pt-2 flex items-start gap-2">
-                      <Sparkles className="w-5 h-5 text-white/90 flex-shrink-0 mt-0.5" />
-                      <p className="text-base text-white font-medium">
-                        <span className="opacity-90">Outcome:</span> Predictable
-                        delivery and client confidence.
-                      </p>
-                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Saving 6: Lost Growth Opportunities */}
+              {/* Saving 6: Growth */}
               <div
-                className="group bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 md:p-10 hover-elevate active-elevate-2 transition-all duration-500"
+                className="bg-white/10 backdrop-blur-md border border-white/15 rounded-xl p-5 hover-elevate transition-all duration-300"
                 data-testid="card-savings-growth"
               >
-                <div className="flex flex-col md:flex-row items-start gap-6">
-                  <div className="flex-shrink-0">
-                    <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                      <Rocket
-                        className="w-9 h-9 text-white"
-                        strokeWidth={2.5}
-                      />
-                    </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
+                    <Rocket className="w-5 h-5 text-white" strokeWidth={2} />
                   </div>
-                  <div className="flex-1 space-y-3">
-                    <h3 className="text-3xl sm:text-4xl font-bold text-white">
-                      Lost Growth Opportunities
-                    </h3>
-                    <p className="text-lg text-white/80 leading-relaxed">
-                      Every hour freed from operations goes into strategy,
-                      client acquisition, and expansion.
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-1">Lost Opportunities</h3>
+                    <p className="text-sm text-white/70 leading-relaxed">
+                      Every freed hour goes into strategy and expansion. Scale, don't just survive.
                     </p>
-                    <div className="pt-2 flex items-start gap-2">
-                      <Sparkles className="w-5 h-5 text-white/90 flex-shrink-0 mt-0.5" />
-                      <p className="text-base text-white font-medium">
-                        <span className="opacity-90">Outcome:</span> A law firm
-                        that scales — not just survives.
-                      </p>
-                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Bottom tagline */}
-            <div className="text-center mt-16">
-              <p className="text-xl sm:text-2xl text-white/95 font-light max-w-3xl mx-auto">
+            {/* Bottom tagline - Compact */}
+            <div className="text-center mt-8 sm:mt-10">
+              <p className="text-base sm:text-lg text-white/80 font-light">
                 Power through efficiency. Intelligence through systems.
               </p>
             </div>
