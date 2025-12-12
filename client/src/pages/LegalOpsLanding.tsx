@@ -66,6 +66,7 @@ import {
   FileText,
   Folder,
   Lock,
+  RotateCcw,
 } from "lucide-react";
 import { HeadSEO } from "@/components/HeadSEO";
 import nycSkylineImage from "@assets/40431e5288cb44250d8204c03e0ba76129ba76dfd36e01e7c40f546ab05de806_1762346626354.jpeg";
@@ -773,10 +774,10 @@ export default function LegalOpsLanding() {
           {/* Cinematic Bottom Fade Overlay */}
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/20 pointer-events-none"></div>
           
-          <div className="relative z-20 px-6 sm:px-8 md:px-12 lg:px-16 py-12 sm:py-14 md:py-16 flex items-center min-h-screen pb-20">
-            <div className="max-w-7xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-center h-full">
+          <div className="relative z-20 px-6 sm:px-8 md:px-12 lg:px-16 py-10 sm:py-12 md:py-14 flex items-center min-h-screen pb-16">
+            <div className="max-w-7xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center h-full">
               {/* Left: Headline & Value Prop - Optimized Spacing */}
-              <div className="hero-fade-up space-y-5 md:space-y-6">
+              <div className="hero-fade-up space-y-4 md:space-y-5">
                 {/* Integrated Brand Badge - Refined Label */}
                 <div className="inline-flex items-center gap-2 backdrop-blur-md bg-white/6 px-3.5 py-1.5 rounded-full border border-white/12">
                   <div className="w-6 h-6 bg-white/15 rounded-full flex items-center justify-center">
@@ -805,7 +806,7 @@ export default function LegalOpsLanding() {
 
                 {/* Body */}
                 <p className="text-base leading-relaxed max-w-2xl font-light opacity-90" style={{ color: '#E0E8F5' }}>
-                  OnSpot began by supporting overwhelmed landlord–tenant firms in New York—where speed, accuracy, and volume collide every day. After transforming those operations and eliminating escalations, firms in other states asked for the same support. Today, OnSpot delivers LegalOps teams nationwide, streamlining the admin, documentation, and workflow burden behind every practice area.
+                  OnSpot provides dedicated legal operations teams that handle case intake, document preparation, client coordination, and workflow management—so your attorneys focus entirely on legal strategy and billable work. Predictable costs, zero operational chaos, and guaranteed replacements.
                 </p>
 
                 {/* Metric Boxes - Unified OnSpot Blue Theme */}
@@ -902,17 +903,33 @@ export default function LegalOpsLanding() {
                           <div className="pt-2">
                             <Button
                               onClick={handleStartTrial}
-                              className="relative group w-full text-white font-bold rounded-xl text-sm h-10 transition-all duration-200 shadow-md hover:shadow-lg overflow-hidden"
+                              className="relative group w-full text-white font-bold rounded-xl text-sm h-11 transition-all duration-200 shadow-lg hover:shadow-xl overflow-hidden"
                               style={{ backgroundColor: "#4353FF" }}
                               disabled={!formData.fullName || !formData.firmName || !formData.email}
                               data-testid="button-continue-to-payment"
                             >
-                              <span className="flex items-center gap-1.5 justify-center relative z-10 text-sm">
+                              <span className="flex items-center gap-1.5 justify-center relative z-10 text-sm font-semibold">
                                 Start Now
                                 <ChevronRight className="w-4 h-4" />
                               </span>
-                              <div className="absolute inset-0 opacity-0 group-hover:opacity-15 bg-white transition-opacity duration-200 -z-10 rounded-xl"></div>
+                              <div className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-white transition-opacity duration-200 -z-10 rounded-xl"></div>
                             </Button>
+                          </div>
+                          <div className="flex items-center justify-center gap-4 pt-4">
+                            <div className="flex items-center gap-1 text-xs text-white/60">
+                              <Lock className="w-3 h-3" />
+                              <span>NDA-backed</span>
+                            </div>
+                            <div className="w-px h-3 bg-white/20"></div>
+                            <div className="flex items-center gap-1 text-xs text-white/60">
+                              <Shield className="w-3 h-3" />
+                              <span>Secure</span>
+                            </div>
+                            <div className="w-px h-3 bg-white/20"></div>
+                            <div className="flex items-center gap-1 text-xs text-white/60">
+                              <RotateCcw className="w-3 h-3" />
+                              <span>Replacement</span>
+                            </div>
                           </div>
                         </>
                       ) : (
