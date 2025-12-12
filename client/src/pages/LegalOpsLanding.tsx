@@ -163,14 +163,12 @@ function GuaranteeCarousel() {
             }`}
           >
             <div className="w-full max-w-3xl mx-auto px-4">
-              <div className="rounded-[28px] sm:rounded-[32px] overflow-hidden shadow-2xl">
-                <img 
-                  src={item.src} 
-                  alt={item.alt}
-                  className="w-full h-auto object-cover"
-                  loading="lazy"
-                />
-              </div>
+              <img 
+                src={item.src} 
+                alt={item.alt}
+                className="w-full h-auto object-cover rounded-[28px] sm:rounded-[32px] shadow-2xl"
+                loading="lazy"
+              />
             </div>
           </div>
         ))}
