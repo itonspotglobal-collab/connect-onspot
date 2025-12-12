@@ -927,7 +927,7 @@ export default function LegalOpsLanding() {
                     data-testid="text-hero-headline"
                   >
                     Fix Legal Operations<br className="hidden sm:block" />
-                    <span className="block">With a System</span>
+                    <span className="block">With a System That Powers Your Firm</span>
                   </h1>
                   
                   {/* Asymmetrical Accent - Single Visual Signature */}
