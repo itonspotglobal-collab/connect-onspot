@@ -67,6 +67,8 @@ import {
   Folder,
   Lock,
   RotateCcw,
+  GitBranch,
+  CheckSquare,
 } from "lucide-react";
 import { HeadSEO } from "@/components/HeadSEO";
 import nycSkylineImage from "@assets/40431e5288cb44250d8204c03e0ba76129ba76dfd36e01e7c40f546ab05de806_1762346626354.jpeg";
@@ -2674,184 +2676,107 @@ export default function LegalOpsLanding() {
               <div className="absolute left-8 top-8 bottom-8 w-0.5 bg-gradient-to-b from-blue-500/50 via-cyan-500/50 to-emerald-500/50 hidden md:block"></div>
 
               <div className="space-y-8">
-                {/* Step 1: Assess */}
+                {/* Step 1: Intake */}
                 <div className="flex flex-col md:flex-row items-start gap-6 group">
                   <div className="flex-shrink-0">
                     <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      <Compass className="w-8 h-8 text-white" />
+                      <FileText className="w-8 h-8 text-white" />
                     </div>
                   </div>
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-3">
-                      <div className="text-sm font-bold text-[#C8D1F0] opacity-60">
-                        STEP 1
-                      </div>
+                      <div className="text-sm font-bold text-[#C8D1F0] opacity-60">STEP 1</div>
                       <div className="h-px flex-1 bg-gradient-to-r from-white/20 to-transparent"></div>
                     </div>
-                    <h3
-                      className="text-2xl font-bold"
-                      style={{ color: "#4353FF" }}
-                    >
-                      Assess
-                    </h3>
-                    <p className="text-base text-white/90 leading-relaxed">
-                      We start with a LegalOps Diagnostic to map your workflows,
-                      uncover bottlenecks, and identify up to 70% in potential
-                      savings.
-                    </p>
-                    <div className="flex items-start gap-2 pt-2">
-                      <div className="w-5 h-5 bg-emerald-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle2 className="h-3 w-3 text-emerald-400" />
-                      </div>
-                      <p className="text-sm text-[#C8D1F0]">
-                        <span className="font-semibold">Outcome:</span> Clear
-                        plan and measurable goals before deployment.
-                      </p>
+                    <h3 className="text-xl font-bold" style={{ color: "#4353FF" }}>Intake & Discovery</h3>
+                    <p className="text-sm text-white/80 leading-relaxed">Map workflows, uncover bottlenecks, assess integration points.</p>
+                    <div className="flex items-start gap-2 pt-1">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                      <p className="text-xs text-[#C8D1F0]"><span className="font-semibold">Clear plan</span> before deployment</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Step 2: Build */}
+                {/* Step 2: Workflow Mapping */}
                 <div className="flex flex-col md:flex-row items-start gap-6 group">
                   <div className="flex-shrink-0">
                     <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-violet-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      <Settings className="w-8 h-8 text-white" />
+                      <GitBranch className="w-8 h-8 text-white" />
                     </div>
                   </div>
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-3">
-                      <div className="text-sm font-bold text-[#C8D1F0] opacity-60">
-                        STEP 2
-                      </div>
+                      <div className="text-sm font-bold text-[#C8D1F0] opacity-60">STEP 2</div>
                       <div className="h-px flex-1 bg-gradient-to-r from-white/20 to-transparent"></div>
                     </div>
-                    <h3
-                      className="text-2xl font-bold"
-                      style={{ color: "#4353FF" }}
-                    >
-                      Workflow Integration & SOP Alignment
-                    </h3>
-                    <p className="text-base text-white/90 leading-relaxed">
-                      We map your existing legal workflows, align them with
-                      proven LegalOps SOPs, and integrate seamlessly with your
-                      case management, intake, and communication systems.
-                    </p>
-                    <div className="flex items-start gap-2 pt-2">
-                      <div className="w-5 h-5 bg-emerald-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle2 className="h-3 w-3 text-emerald-400" />
-                      </div>
-                      <p className="text-sm text-[#C8D1F0]">
-                        <span className="font-semibold">Outcome:</span> A
-                        ready-to-run back office built for your firm.
-                      </p>
+                    <h3 className="text-xl font-bold" style={{ color: "#4353FF" }}>Workflow Mapping</h3>
+                    <p className="text-sm text-white/80 leading-relaxed">Integrate with your tools, systems, and existing processes.</p>
+                    <div className="flex items-start gap-2 pt-1">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                      <p className="text-xs text-[#C8D1F0]"><span className="font-semibold">Seamless integration</span> with your stack</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Step 3: Train */}
+                {/* Step 3: Staffing */}
                 <div className="flex flex-col md:flex-row items-start gap-6 group">
                   <div className="flex-shrink-0">
                     <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      <Target className="w-8 h-8 text-white" />
+                      <Users className="w-8 h-8 text-white" />
                     </div>
                   </div>
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-3">
-                      <div className="text-sm font-bold text-[#C8D1F0] opacity-60">
-                        STEP 3
-                      </div>
+                      <div className="text-sm font-bold text-[#C8D1F0] opacity-60">STEP 3</div>
                       <div className="h-px flex-1 bg-gradient-to-r from-white/20 to-transparent"></div>
                     </div>
-                    <h3
-                      className="text-2xl font-bold"
-                      style={{ color: "#4353FF" }}
-                    >
-                      Train
-                    </h3>
-                    <p className="text-base text-white/90 leading-relaxed">
-                      Your OnSpot team is trained on your tools and case
-                      templates, ensuring error-free execution from day one.
-                    </p>
-                    <div className="flex items-start gap-2 pt-2">
-                      <div className="w-5 h-5 bg-emerald-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle2 className="h-3 w-3 text-emerald-400" />
-                      </div>
-                      <p className="text-sm text-[#C8D1F0]">
-                        <span className="font-semibold">Outcome:</span> Seamless
-                        handoff — zero disruption.
-                      </p>
+                    <h3 className="text-xl font-bold" style={{ color: "#4353FF" }}>Staffing & Training</h3>
+                    <p className="text-sm text-white/80 leading-relaxed">Deploy and train your dedicated operations team on day one.</p>
+                    <div className="flex items-start gap-2 pt-1">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                      <p className="text-xs text-[#C8D1F0]"><span className="font-semibold">Experienced team</span> ready to execute</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Step 4: Manage */}
+                {/* Step 4: SOP Alignment */}
                 <div className="flex flex-col md:flex-row items-start gap-6 group">
                   <div className="flex-shrink-0">
                     <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                      <CheckSquare className="w-8 h-8 text-white" />
+                    </div>
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-3">
+                      <div className="text-sm font-bold text-[#C8D1F0] opacity-60">STEP 4</div>
+                      <div className="h-px flex-1 bg-gradient-to-r from-white/20 to-transparent"></div>
+                    </div>
+                    <h3 className="text-xl font-bold" style={{ color: "#4353FF" }}>SOP Implementation</h3>
+                    <p className="text-sm text-white/80 leading-relaxed">Lock in standardized processes designed for your firm's needs.</p>
+                    <div className="flex items-start gap-2 pt-1">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                      <p className="text-xs text-[#C8D1F0]"><span className="font-semibold">Predictable execution</span> across all workflows</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step 5: QA & Reporting */}
+                <div className="flex flex-col md:flex-row items-start gap-6 group">
+                  <div className="flex-shrink-0">
+                    <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                       <BarChart3 className="w-8 h-8 text-white" />
                     </div>
                   </div>
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-3">
-                      <div className="text-sm font-bold text-[#C8D1F0] opacity-60">
-                        STEP 4
-                      </div>
+                      <div className="text-sm font-bold text-[#C8D1F0] opacity-60">STEP 5</div>
                       <div className="h-px flex-1 bg-gradient-to-r from-white/20 to-transparent"></div>
                     </div>
-                    <h3
-                      className="text-2xl font-bold"
-                      style={{ color: "#4353FF" }}
-                    >
-                      Manage
-                    </h3>
-                    <p className="text-base text-white/90 leading-relaxed">
-                      A Delivery Manager oversees performance daily, supported
-                      by the LegalOps Dashboard for transparent reporting and
-                      QA.
-                    </p>
-                    <div className="flex items-start gap-2 pt-2">
-                      <div className="w-5 h-5 bg-emerald-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle2 className="h-3 w-3 text-emerald-400" />
-                      </div>
-                      <p className="text-sm text-[#C8D1F0]">
-                        <span className="font-semibold">Outcome:</span>{" "}
-                        Real-time visibility and complete control.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Step 5: Stabilize */}
-                <div className="flex flex-col md:flex-row items-start gap-6 group">
-                  <div className="flex-shrink-0">
-                    <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      <Shield className="w-8 h-8 text-white" />
-                    </div>
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-3">
-                      <div className="text-sm font-bold text-[#C8D1F0] opacity-60">
-                        STEP 5
-                      </div>
-                      <div className="h-px flex-1 bg-gradient-to-r from-white/20 to-transparent"></div>
-                    </div>
-                    <h3
-                      className="text-2xl font-bold"
-                      style={{ color: "#4353FF" }}
-                    >
-                      Stabilize
-                    </h3>
-                    <p className="text-base text-white/90 leading-relaxed">
-                      Our Zero Escalation Guarantee ensures issues are resolved
-                      fast and accuracy stays consistent across every case.
-                    </p>
-                    <div className="flex items-start gap-2 pt-2">
-                      <div className="w-5 h-5 bg-emerald-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle2 className="h-3 w-3 text-emerald-400" />
-                      </div>
-                      <p className="text-sm text-[#C8D1F0]">
-                        <span className="font-semibold">Outcome:</span> Reliable
-                        delivery, regained client confidence.
+                    <h3 className="text-xl font-bold" style={{ color: "#4353FF" }}>QA & Reporting</h3>
+                    <p className="text-sm text-white/80 leading-relaxed">Real-time dashboards, daily QA, transparent performance metrics.</p>
+                    <div className="flex items-start gap-2 pt-1">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                      <p className="text-xs text-[#C8D1F0]"><span className="font-semibold">Full visibility</span> and complete control
                       </p>
                     </div>
                   </div>
