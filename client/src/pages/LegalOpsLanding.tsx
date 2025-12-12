@@ -44,6 +44,8 @@ import {
   Award,
   ChevronRight,
   ChevronLeft,
+  ChevronDown,
+  ChevronUp,
   Star,
   BarChart3,
   Zap,
@@ -526,6 +528,7 @@ export default function LegalOpsLanding() {
   const [showCheckout, setShowCheckout] = useState(false);
   const [showPlaybookModal, setShowPlaybookModal] = useState(false);
   const [hasSeenPlaybookModal, setHasSeenPlaybookModal] = useState(false);
+  const [showAllFAQs, setShowAllFAQs] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
     firmName: "",
@@ -2867,23 +2870,23 @@ export default function LegalOpsLanding() {
               </p>
             </div>
 
-            {/* FAQ Accordion */}
+            {/* FAQ Accordion - Mobile Optimized */}
             <div className="max-w-4xl mx-auto px-4 sm:px-0">
-              <Accordion type="single" collapsible className="space-y-3 sm:space-y-4">
+              <Accordion type="single" collapsible className="space-y-2 sm:space-y-4">
                 {/* FAQ 1 */}
                 <AccordionItem
                   value="item-1"
-                  className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 px-4 sm:px-6 shadow-sm hover:shadow-md transition-shadow duration-300"
+                  className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 px-3 sm:px-6 shadow-sm hover:shadow-md transition-shadow duration-200"
                   data-testid="accordion-faq-1"
                 >
                   <AccordionTrigger
-                    className="text-base sm:text-lg font-semibold hover:no-underline py-4 sm:py-6 text-left"
+                    className="text-sm sm:text-lg font-semibold hover:no-underline py-3 sm:py-6 text-left leading-snug sm:leading-normal"
                     style={{ color: "#1E293B" }}
                   >
                     What exactly is OnSpot LegalOps™?
                   </AccordionTrigger>
                   <AccordionContent
-                    className="text-base leading-relaxed pb-6 space-y-4"
+                    className="text-sm sm:text-base leading-snug sm:leading-relaxed pb-4 sm:pb-6 space-y-3 sm:space-y-4"
                     style={{ color: "#475569" }}
                   >
                     <p>
@@ -2891,7 +2894,7 @@ export default function LegalOpsLanding() {
                       law firms — combining trained legal professionals,
                       structured processes, and delivery oversight.
                     </p>
-                    <p className="text-sm italic text-slate-500">
+                    <p className="text-xs sm:text-sm italic text-slate-500">
                       Our teams are trained specifically for legal workflows — not general virtual assistance.
                     </p>
                     <p>
@@ -2919,17 +2922,17 @@ export default function LegalOpsLanding() {
                 {/* FAQ 2 */}
                 <AccordionItem
                   value="item-2"
-                  className="bg-white rounded-2xl border border-slate-200 px-6 shadow-sm hover:shadow-md transition-shadow duration-300"
+                  className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 px-3 sm:px-6 shadow-sm hover:shadow-md transition-shadow duration-200"
                   data-testid="accordion-faq-2"
                 >
                   <AccordionTrigger
-                    className="text-lg font-semibold hover:no-underline py-6"
+                    className="text-sm sm:text-lg font-semibold hover:no-underline py-3 sm:py-6 text-left leading-snug sm:leading-normal"
                     style={{ color: "#1E293B" }}
                   >
                     How does the "Resourced Services" model work?
                   </AccordionTrigger>
                   <AccordionContent
-                    className="text-base leading-relaxed pb-6 space-y-4"
+                    className="text-sm sm:text-base leading-snug sm:leading-relaxed pb-4 sm:pb-6 space-y-3 sm:space-y-4"
                     style={{ color: "#475569" }}
                   >
                     <p>
@@ -2963,18 +2966,18 @@ export default function LegalOpsLanding() {
                 {/* FAQ 3 */}
                 <AccordionItem
                   value="item-3"
-                  className="bg-white rounded-2xl border border-slate-200 px-6 shadow-sm hover:shadow-md transition-shadow duration-300"
+                  className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 px-3 sm:px-6 shadow-sm hover:shadow-md transition-shadow duration-200"
                   data-testid="accordion-faq-3"
                 >
                   <AccordionTrigger
-                    className="text-lg font-semibold hover:no-underline py-6"
+                    className="text-sm sm:text-lg font-semibold hover:no-underline py-3 sm:py-6 text-left leading-snug sm:leading-normal"
                     style={{ color: "#1E293B" }}
                   >
                     What's the difference between "Resourced" and "Managed
                     Services"?
                   </AccordionTrigger>
                   <AccordionContent
-                    className="text-base leading-relaxed pb-6"
+                    className="text-sm sm:text-base leading-snug sm:leading-relaxed pb-4 sm:pb-6"
                     style={{ color: "#475569" }}
                   >
                     <div className="overflow-x-auto">
@@ -3087,17 +3090,17 @@ export default function LegalOpsLanding() {
                 {/* FAQ 4 */}
                 <AccordionItem
                   value="item-4"
-                  className="bg-white rounded-2xl border border-slate-200 px-6 shadow-sm hover:shadow-md transition-shadow duration-300"
+                  className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 px-3 sm:px-6 shadow-sm hover:shadow-md transition-shadow duration-200"
                   data-testid="accordion-faq-4"
                 >
                   <AccordionTrigger
-                    className="text-lg font-semibold hover:no-underline py-6"
+                    className="text-sm sm:text-lg font-semibold hover:no-underline py-3 sm:py-6 text-left leading-snug sm:leading-normal"
                     style={{ color: "#1E293B" }}
                   >
                     What roles can OnSpot support?
                   </AccordionTrigger>
                   <AccordionContent
-                    className="text-base leading-relaxed pb-6 space-y-4"
+                    className="text-sm sm:text-base leading-snug sm:leading-relaxed pb-4 sm:pb-6 space-y-3 sm:space-y-4"
                     style={{ color: "#475569" }}
                   >
                     <p>
@@ -3166,23 +3169,23 @@ export default function LegalOpsLanding() {
                 {/* FAQ 5 */}
                 <AccordionItem
                   value="item-5"
-                  className="bg-white rounded-2xl border border-slate-200 px-6 shadow-sm hover:shadow-md transition-shadow duration-300"
+                  className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 px-3 sm:px-6 shadow-sm hover:shadow-md transition-shadow duration-200"
                   data-testid="accordion-faq-5"
                 >
                   <AccordionTrigger
-                    className="text-lg font-semibold hover:no-underline py-6"
+                    className="text-sm sm:text-lg font-semibold hover:no-underline py-3 sm:py-6 text-left leading-snug sm:leading-normal"
                     style={{ color: "#1E293B" }}
                   >
                     How much can my firm really save?
                   </AccordionTrigger>
                   <AccordionContent
-                    className="text-base leading-relaxed pb-6 space-y-4"
+                    className="text-sm sm:text-base leading-snug sm:leading-relaxed pb-4 sm:pb-6 space-y-3 sm:space-y-4"
                     style={{ color: "#475569" }}
                   >
                     <p>
                       On average, firms save{" "}
                       <span
-                        className="font-bold text-2xl"
+                        className="font-bold text-xl sm:text-2xl"
                         style={{ color: "#4353FF" }}
                       >
                         up to 70%
@@ -3211,22 +3214,24 @@ export default function LegalOpsLanding() {
                   </AccordionContent>
                 </AccordionItem>
 
-                {/* FAQ 6 */}
-                <AccordionItem
-                  value="item-6"
-                  className="bg-white rounded-2xl border border-slate-200 px-6 shadow-sm hover:shadow-md transition-shadow duration-300"
-                  data-testid="accordion-faq-6"
-                >
-                  <AccordionTrigger
-                    className="text-lg font-semibold hover:no-underline py-6"
-                    style={{ color: "#1E293B" }}
+                {/* Mobile "View all FAQs" toggle - Hidden FAQs 6-13 on mobile until expanded */}
+                <div className={`space-y-2 sm:space-y-4 ${showAllFAQs ? 'block' : 'hidden sm:block'}`}>
+                  {/* FAQ 6 */}
+                  <AccordionItem
+                    value="item-6"
+                    className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 px-3 sm:px-6 shadow-sm hover:shadow-md transition-shadow duration-200"
+                    data-testid="accordion-faq-6"
                   >
-                    How do you ensure quality and compliance?
-                  </AccordionTrigger>
-                  <AccordionContent
-                    className="text-base leading-relaxed pb-6 space-y-4"
-                    style={{ color: "#475569" }}
-                  >
+                    <AccordionTrigger
+                      className="text-sm sm:text-lg font-semibold hover:no-underline py-3 sm:py-6 text-left leading-snug sm:leading-normal"
+                      style={{ color: "#1E293B" }}
+                    >
+                      How do you ensure quality and compliance?
+                    </AccordionTrigger>
+                    <AccordionContent
+                      className="text-sm sm:text-base leading-snug sm:leading-relaxed pb-4 sm:pb-6 space-y-3 sm:space-y-4"
+                      style={{ color: "#475569" }}
+                    >
                     <p>
                       Quality is maintained through our{" "}
                       <span
@@ -3296,17 +3301,17 @@ export default function LegalOpsLanding() {
                 {/* FAQ 7 */}
                 <AccordionItem
                   value="item-7"
-                  className="bg-white rounded-2xl border border-slate-200 px-6 shadow-sm hover:shadow-md transition-shadow duration-300"
+                  className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 px-3 sm:px-6 shadow-sm hover:shadow-md transition-shadow duration-200"
                   data-testid="accordion-faq-7"
                 >
                   <AccordionTrigger
-                    className="text-lg font-semibold hover:no-underline py-6"
+                    className="text-sm sm:text-lg font-semibold hover:no-underline py-3 sm:py-6 text-left leading-snug sm:leading-normal"
                     style={{ color: "#1E293B" }}
                   >
                     How long does it take to get started?
                   </AccordionTrigger>
                   <AccordionContent
-                    className="text-base leading-relaxed pb-6 space-y-4"
+                    className="text-sm sm:text-base leading-snug sm:leading-relaxed pb-4 sm:pb-6 space-y-3 sm:space-y-4"
                     style={{ color: "#475569" }}
                   >
                     <p>
@@ -3361,17 +3366,17 @@ export default function LegalOpsLanding() {
                 {/* FAQ 8 */}
                 <AccordionItem
                   value="item-8"
-                  className="bg-white rounded-2xl border border-slate-200 px-6 shadow-sm hover:shadow-md transition-shadow duration-300"
+                  className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 px-3 sm:px-6 shadow-sm hover:shadow-md transition-shadow duration-200"
                   data-testid="accordion-faq-8"
                 >
                   <AccordionTrigger
-                    className="text-lg font-semibold hover:no-underline py-6"
+                    className="text-sm sm:text-lg font-semibold hover:no-underline py-3 sm:py-6 text-left leading-snug sm:leading-normal"
                     style={{ color: "#1E293B" }}
                   >
                     What if I'm not happy with a staff member's performance?
                   </AccordionTrigger>
                   <AccordionContent
-                    className="text-base leading-relaxed pb-6 space-y-4"
+                    className="text-sm sm:text-base leading-snug sm:leading-relaxed pb-4 sm:pb-6 space-y-3 sm:space-y-4"
                     style={{ color: "#475569" }}
                   >
                     <p>
@@ -3408,17 +3413,17 @@ export default function LegalOpsLanding() {
                 {/* FAQ 9 */}
                 <AccordionItem
                   value="item-9"
-                  className="bg-white rounded-2xl border border-slate-200 px-6 shadow-sm hover:shadow-md transition-shadow duration-300"
+                  className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 px-3 sm:px-6 shadow-sm hover:shadow-md transition-shadow duration-200"
                   data-testid="accordion-faq-9"
                 >
                   <AccordionTrigger
-                    className="text-lg font-semibold hover:no-underline py-6"
+                    className="text-sm sm:text-lg font-semibold hover:no-underline py-3 sm:py-6 text-left leading-snug sm:leading-normal"
                     style={{ color: "#1E293B" }}
                   >
                     What does "Fully Managed Upgrade" mean?
                   </AccordionTrigger>
                   <AccordionContent
-                    className="text-base leading-relaxed pb-6 space-y-4"
+                    className="text-sm sm:text-base leading-snug sm:leading-relaxed pb-4 sm:pb-6 space-y-3 sm:space-y-4"
                     style={{ color: "#475569" }}
                   >
                     <p>
@@ -3465,17 +3470,17 @@ export default function LegalOpsLanding() {
                 {/* FAQ 10 */}
                 <AccordionItem
                   value="item-10"
-                  className="bg-white rounded-2xl border border-slate-200 px-6 shadow-sm hover:shadow-md transition-shadow duration-300"
+                  className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 px-3 sm:px-6 shadow-sm hover:shadow-md transition-shadow duration-200"
                   data-testid="accordion-faq-10"
                 >
                   <AccordionTrigger
-                    className="text-lg font-semibold hover:no-underline py-6"
+                    className="text-sm sm:text-lg font-semibold hover:no-underline py-3 sm:py-6 text-left leading-snug sm:leading-normal"
                     style={{ color: "#1E293B" }}
                   >
                     How does OnSpot maintain confidentiality and data security?
                   </AccordionTrigger>
                   <AccordionContent
-                    className="text-base leading-relaxed pb-6 space-y-4"
+                    className="text-sm sm:text-base leading-snug sm:leading-relaxed pb-4 sm:pb-6 space-y-3 sm:space-y-4"
                     style={{ color: "#475569" }}
                   >
                     <p>
@@ -3497,17 +3502,17 @@ export default function LegalOpsLanding() {
                 {/* FAQ 11 */}
                 <AccordionItem
                   value="item-11"
-                  className="bg-white rounded-2xl border border-slate-200 px-6 shadow-sm hover:shadow-md transition-shadow duration-300"
+                  className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 px-3 sm:px-6 shadow-sm hover:shadow-md transition-shadow duration-200"
                   data-testid="accordion-faq-11"
                 >
                   <AccordionTrigger
-                    className="text-lg font-semibold hover:no-underline py-6"
+                    className="text-sm sm:text-lg font-semibold hover:no-underline py-3 sm:py-6 text-left leading-snug sm:leading-normal"
                     style={{ color: "#1E293B" }}
                   >
                     Can I scale up or down easily?
                   </AccordionTrigger>
                   <AccordionContent
-                    className="text-base leading-relaxed pb-6 space-y-4"
+                    className="text-sm sm:text-base leading-snug sm:leading-relaxed pb-4 sm:pb-6 space-y-3 sm:space-y-4"
                     style={{ color: "#475569" }}
                   >
                     <p>
@@ -3534,18 +3539,18 @@ export default function LegalOpsLanding() {
                 {/* FAQ 12 */}
                 <AccordionItem
                   value="item-12"
-                  className="bg-white rounded-2xl border border-slate-200 px-6 shadow-sm hover:shadow-md transition-shadow duration-300"
+                  className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 px-3 sm:px-6 shadow-sm hover:shadow-md transition-shadow duration-200"
                   data-testid="accordion-faq-12"
                 >
                   <AccordionTrigger
-                    className="text-lg font-semibold hover:no-underline py-6"
+                    className="text-sm sm:text-lg font-semibold hover:no-underline py-3 sm:py-6 text-left leading-snug sm:leading-normal"
                     style={{ color: "#1E293B" }}
                   >
                     What makes OnSpot different from generic outsourcing
                     companies?
                   </AccordionTrigger>
                   <AccordionContent
-                    className="text-base leading-relaxed pb-6 space-y-4"
+                    className="text-sm sm:text-base leading-snug sm:leading-relaxed pb-4 sm:pb-6 space-y-3 sm:space-y-4"
                     style={{ color: "#475569" }}
                   >
                     <ul className="space-y-3">
@@ -3644,17 +3649,17 @@ export default function LegalOpsLanding() {
                 {/* FAQ 13 */}
                 <AccordionItem
                   value="item-13"
-                  className="bg-white rounded-2xl border border-slate-200 px-6 shadow-sm hover:shadow-md transition-shadow duration-300"
+                  className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 px-3 sm:px-6 shadow-sm hover:shadow-md transition-shadow duration-200"
                   data-testid="accordion-faq-13"
                 >
                   <AccordionTrigger
-                    className="text-lg font-semibold hover:no-underline py-6"
+                    className="text-sm sm:text-lg font-semibold hover:no-underline py-3 sm:py-6 text-left leading-snug sm:leading-normal"
                     style={{ color: "#1E293B" }}
                   >
                     How do I start my free consultation?
                   </AccordionTrigger>
                   <AccordionContent
-                    className="text-base leading-relaxed pb-6 space-y-4"
+                    className="text-sm sm:text-base leading-snug sm:leading-relaxed pb-4 sm:pb-6 space-y-3 sm:space-y-4"
                     style={{ color: "#475569" }}
                   >
                     <p>
@@ -3694,7 +3699,27 @@ export default function LegalOpsLanding() {
                     </div>
                   </AccordionContent>
                 </AccordionItem>
+                </div>
               </Accordion>
+
+              {/* Mobile "View all FAQs" button - only visible on mobile when not expanded */}
+              <button
+                onClick={() => setShowAllFAQs(!showAllFAQs)}
+                className="sm:hidden w-full mt-3 py-3 px-4 text-sm font-medium text-[#4353FF] bg-[#4353FF]/5 rounded-xl border border-[#4353FF]/20 hover-elevate transition-all duration-200 flex items-center justify-center gap-2 touch-target"
+                data-testid="button-view-all-faqs"
+              >
+                {showAllFAQs ? (
+                  <>
+                    <ChevronUp className="w-4 h-4" />
+                    Show fewer questions
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-4 h-4" />
+                    View all 13 FAQs
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </section>
