@@ -910,14 +910,20 @@ export default function LegalOpsLanding() {
                   }}
                 ></div>
                 
-                {/* Authority Eyebrow - System Metadata */}
-                <p 
-                  className="text-[0.7rem] sm:text-xs font-medium uppercase tracking-[0.25em]"
-                  style={{ color: 'rgba(255, 255, 255, 0.6)' }}
-                  data-testid="text-hero-eyebrow"
-                >
-                  Forged inside high-volume law firms
-                </p>
+                {/* Authority Eyebrow - Visible Anchor */}
+                <div className="flex items-center gap-3">
+                  <div 
+                    className="w-8 h-px"
+                    style={{ backgroundColor: 'rgba(99, 102, 241, 0.7)' }}
+                  ></div>
+                  <p 
+                    className="text-xs sm:text-sm font-semibold uppercase tracking-[0.2em]"
+                    style={{ color: 'rgba(167, 139, 250, 0.9)' }}
+                    data-testid="text-hero-eyebrow"
+                  >
+                    Forged by high-volume law firms
+                  </p>
+                </div>
 
                 {/* Main Headline with Asymmetrical Accent */}
                 <div className="space-y-5 relative">
