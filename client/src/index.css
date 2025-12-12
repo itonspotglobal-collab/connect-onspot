@@ -2200,6 +2200,126 @@
     }
   }
 }
+/* ========================================
+   MOBILE OPTIMIZATION UTILITIES
+   ======================================== */
+
+/* Consistent section spacing - removes gaps */
+.section-seamless {
+  margin-top: -1px;
+}
+
+/* Typography scaling for mobile */
+.text-responsive-xl {
+  font-size: clamp(1.5rem, 5vw, 2.25rem);
+  line-height: 1.2;
+}
+
+.text-responsive-2xl {
+  font-size: clamp(1.75rem, 6vw, 3rem);
+  line-height: 1.15;
+}
+
+.text-responsive-3xl {
+  font-size: clamp(2rem, 7vw, 3.75rem);
+  line-height: 1.1;
+}
+
+.text-responsive-4xl {
+  font-size: clamp(2.25rem, 8vw, 4.5rem);
+  line-height: 1.05;
+}
+
+/* Safe area padding for notched devices */
+.safe-area-bottom {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.safe-area-x {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+
+/* Prevent orphaned words on mobile */
+@media (max-width: 639px) {
+  .no-orphan {
+    text-wrap: balance;
+  }
+}
+
+/* Enhanced touch targets for mobile CTAs */
+@media (max-width: 639px) {
+  .touch-target {
+    min-height: 3rem;
+    padding-top: 0.875rem;
+    padding-bottom: 0.875rem;
+  }
+  
+  .touch-target-lg {
+    min-height: 3.5rem;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+}
+
+/* Ensure backgrounds extend to edges */
+.bg-full-bleed {
+  margin-left: calc(-50vw + 50%);
+  margin-right: calc(-50vw + 50%);
+  padding-left: calc(50vw - 50%);
+  padding-right: calc(50vw - 50%);
+}
+
+/* Vertical rhythm consistency */
+.section-padding-sm {
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+}
+
+.section-padding-md {
+  padding-top: 4rem;
+  padding-bottom: 4rem;
+}
+
+.section-padding-lg {
+  padding-top: 5rem;
+  padding-bottom: 5rem;
+}
+
+@media (min-width: 640px) {
+  .section-padding-sm {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+  }
+  
+  .section-padding-md {
+    padding-top: 5rem;
+    padding-bottom: 5rem;
+  }
+  
+  .section-padding-lg {
+    padding-top: 6rem;
+    padding-bottom: 6rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .section-padding-sm {
+    padding-top: 5rem;
+    padding-bottom: 5rem;
+  }
+  
+  .section-padding-md {
+    padding-top: 6rem;
+    padding-bottom: 6rem;
+  }
+  
+  .section-padding-lg {
+    padding-top: 8rem;
+    padding-bottom: 8rem;
+  }
+}
+
 /* Geographic section animations */
 .geo-section-header {
   animation: fadeInUp 0.8s ease-out;
