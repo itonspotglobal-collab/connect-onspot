@@ -163,7 +163,7 @@ function GuaranteeCarousel() {
             }`}
           >
             <div className="w-full max-w-3xl mx-auto px-4">
-              <div className="rounded-2xl overflow-hidden shadow-2xl">
+              <div className="rounded-[28px] sm:rounded-[32px] overflow-hidden shadow-2xl">
                 <img 
                   src={item.src} 
                   alt={item.alt}
