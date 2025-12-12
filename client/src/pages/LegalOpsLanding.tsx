@@ -3745,7 +3745,7 @@ export default function LegalOpsLanding() {
               Book Your LegalOps Diagnostic
             </h2>
             <p className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8 opacity-90 max-w-2xl mx-auto">
-              Only {availableSlots} New York slots available this month. Secure yours now.
+              Only {availableSlots} slots available this month. Secure yours now.
             </p>
             <div className="flex flex-col gap-4 sm:gap-6 justify-center items-center">
               <Button
@@ -3759,18 +3759,18 @@ export default function LegalOpsLanding() {
               </Button>
               <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 text-sm">
                 <a
-                  href="tel:1-718-540-5053"
+                  href="tel:1-917-801-9294"
                   className="flex items-center gap-2 hover:underline touch-target justify-center"
                 >
                   <Phone className="h-4 w-4" />
-                  1-718-540-5053
+                  1-917-801-9294
                 </a>
                 <a
-                  href="mailto:hello@onspot.com"
+                  href="mailto:jake@onspotglobal.com"
                   className="flex items-center gap-2 hover:underline touch-target justify-center"
                 >
                   <Mail className="h-4 w-4" />
-                  hello@onspot.com
+                  jake@onspotglobal.com
                 </a>
               </div>
             </div>
