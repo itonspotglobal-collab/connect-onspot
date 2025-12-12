@@ -85,6 +85,144 @@ import fullTransparencyImage from "@assets/FULL_TRANSPARENCY_1765200843501.png";
 import stressedProfessionalImage from "@assets/WHAT_IF_YOU_DONT_PARTNER_WITH_ONSPOT_1765207999583.png";
 import profitsLostImage from "@assets/Profits_1765208843745.png";
 
+// Guarantee Carousel Component - Fast, Swipeable, with Progress Dots
+function GuaranteeCarousel() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const guarantees = [
+    {
+      icon: Target,
+      title: "30-Day Stability",
+      desc: "Zero escalations within your first month.",
+    },
+    {
+      icon: Shield,
+      title: "No Extra Charges",
+      desc: "If it takes longer, we work free until stable.",
+    },
+    {
+      icon: BarChart3,
+      title: "Daily Metrics",
+      desc: "Weekly reviews ensure we stay on target.",
+    },
+    {
+      icon: CheckCircle2,
+      title: "Full Transparency",
+      desc: "Complete visibility into every step.",
+    },
+  ];
+
+  const startAutoplay = () => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % guarantees.length);
+    }, 2500);
+  };
+
+  useEffect(() => {
+    startAutoplay();
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
+
+  const goToSlide = (index: number) => {
+    setActiveIndex(index);
+    startAutoplay();
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const minSwipe = 50;
+    if (Math.abs(distance) > minSwipe) {
+      if (distance > 0) {
+        setActiveIndex((prev) => (prev + 1) % guarantees.length);
+      } else {
+        setActiveIndex((prev) => (prev - 1 + guarantees.length) % guarantees.length);
+      }
+      startAutoplay();
+    }
+  };
+
+  return (
+    <div className="relative">
+      {/* Cards Container */}
+      <div
+        className="relative h-[180px] sm:h-[200px] overflow-hidden touch-pan-y"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        data-testid="carousel-guarantee"
+      >
+        {guarantees.map((item, idx) => {
+          const IconComponent = item.icon;
+          return (
+            <div
+              key={idx}
+              className={`absolute inset-0 flex items-center justify-center transition-all duration-500 ease-out ${
+                idx === activeIndex
+                  ? "opacity-100 translate-x-0 scale-100"
+                  : idx < activeIndex
+                  ? "opacity-0 -translate-x-8 scale-95"
+                  : "opacity-0 translate-x-8 scale-95"
+              }`}
+            >
+              <div className="w-full max-w-md mx-auto px-4">
+                <div className="bg-white/80 backdrop-blur-xl border border-gray-200/60 rounded-2xl p-6 sm:p-8 shadow-xl text-center">
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-[#4353FF]/10 rounded-xl mb-4">
+                    <IconComponent className="w-6 h-6 text-[#4353FF]" />
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">
+                    {item.title}
+                  </h3>
+                  <p className="text-sm sm:text-base text-gray-600">
+                    {item.desc}
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Progress Dots */}
+      <div className="flex justify-center gap-2 mt-6">
+        {guarantees.map((_, idx) => (
+          <button
+            key={idx}
+            onClick={() => goToSlide(idx)}
+            className={`transition-all duration-300 rounded-full ${
+              idx === activeIndex
+                ? "w-8 h-2 bg-[#4353FF]"
+                : "w-2 h-2 bg-gray-300 hover:bg-gray-400"
+            }`}
+            aria-label={`Go to slide ${idx + 1}`}
+            data-testid={`dot-guarantee-${idx}`}
+          />
+        ))}
+      </div>
+
+      {/* Swipe hint for mobile */}
+      <p className="text-center text-xs text-gray-400 mt-3 sm:hidden">
+        Swipe to explore
+      </p>
+    </div>
+  );
+}
+
 if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
   console.warn(
     "Missing VITE_STRIPE_PUBLIC_KEY - Stripe checkout will not work",
@@ -952,134 +1090,28 @@ export default function LegalOpsLanding() {
           </div>
         </section>
 
-        {/* Zero Escalation Guarantee Section */}
-        <section className="py-12 sm:py-16 md:py-20 bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 relative overflow-hidden">
-          {/* Background decoration */}
-          <div className="absolute top-0 left-0 w-full h-full">
-            <div className="absolute top-20 left-10 w-72 h-72 bg-amber-200/20 dark:bg-amber-500/5 rounded-full blur-3xl"></div>
-            <div className="absolute bottom-20 right-10 w-96 h-96 bg-yellow-200/20 dark:bg-yellow-500/5 rounded-full blur-3xl"></div>
-          </div>
-
+        {/* Zero Escalation Guarantee Section - Premium Carousel */}
+        <section className="py-12 sm:py-16 bg-gradient-to-b from-slate-50 to-white relative overflow-hidden">
           <div className="container-fluid relative z-10">
             <div className="max-w-5xl mx-auto">
-              <div className="text-center mb-12">
-                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-3xl mb-6 shadow-2xl">
-                  <Shield className="w-10 h-10 text-white" />
+              {/* Header - Confident & Concise */}
+              <div className="text-center mb-10">
+                <div className="inline-flex items-center justify-center w-14 h-14 bg-[#4353FF] rounded-2xl mb-4 shadow-lg">
+                  <Shield className="w-7 h-7 text-white" />
                 </div>
                 <h2
-                  className="text-3xl sm:text-5xl font-bold mb-4"
+                  className="text-2xl sm:text-4xl font-bold text-gray-900 mb-3"
                   data-testid="text-guarantee-title"
                 >
                   Zero Escalation Guarantee
                 </h2>
-                <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-                  We're so confident in our system that if you don't achieve
-                  operational stability within 30 days, we'll continue working
-                  at no additional charge until you reach zero escalations.
+                <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
+                  30 days to stability — or we work free until you're there.
                 </p>
               </div>
 
-              {/* Mindvalley-style Continuous Auto-Scroll Carousel */}
-              <style>{`
-                @keyframes guaranteeScroll {
-                  0% { transform: translateX(0); }
-                  100% { transform: translateX(-50%); }
-                }
-                .guarantee-track {
-                  animation: guaranteeScroll 5s linear infinite;
-                }
-                .guarantee-track:hover {
-                  animation-play-state: paused;
-                }
-                @media (prefers-reduced-motion: reduce) {
-                  .guarantee-track {
-                    animation: none;
-                  }
-                }
-              `}</style>
-              <div 
-                className="relative -mx-4 sm:-mx-6 lg:-mx-8 xl:-mx-16 2xl:-mx-24 overflow-hidden"
-                role="region"
-                aria-roledescription="carousel"
-                aria-label="Our Guarantee Benefits"
-              >
-                {/* Continuous scrolling track with duplicated content for seamless loop */}
-                <div 
-                  className="guarantee-track flex gap-4 md:gap-6 py-4"
-                  data-testid="carousel-guarantee"
-                >
-                  {/* First set of cards */}
-                  <figure 
-                    className="flex-shrink-0 w-[280px] sm:w-[340px] md:w-[400px] lg:w-[480px] xl:w-[520px] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300"
-                    data-testid="card-stability-target"
-                  >
-                    <img 
-                      src={stabilityTargetImage} 
-                      alt="30-Day Stability Target: We aim to achieve zero escalations within your first 30 days, making your business self-propelling" 
-                      className="w-full h-auto object-cover"
-                      loading="lazy"
-                      data-testid="img-stability-target"
-                    />
-                  </figure>
-
-                  <figure 
-                    className="flex-shrink-0 w-[280px] sm:w-[340px] md:w-[400px] lg:w-[480px] xl:w-[520px] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300"
-                    data-testid="card-no-extra-charges"
-                  >
-                    <img 
-                      src={noExtraChargesImage} 
-                      alt="No Extra Charges: If it takes longer than 30 days, we work for free until you're stable" 
-                      className="w-full h-auto object-cover"
-                      loading="lazy"
-                      data-testid="img-no-extra-charges"
-                    />
-                  </figure>
-
-                  <figure 
-                    className="flex-shrink-0 w-[280px] sm:w-[340px] md:w-[400px] lg:w-[480px] xl:w-[520px] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300"
-                    data-testid="card-performance-tracking"
-                  >
-                    <img 
-                      src={performanceTrackingImage} 
-                      alt="Performance Tracking: Daily metrics and weekly reviews ensure we stay on target with your operations" 
-                      className="w-full h-auto object-cover"
-                      loading="lazy"
-                      data-testid="img-performance-tracking"
-                    />
-                  </figure>
-
-                  <figure 
-                    className="flex-shrink-0 w-[280px] sm:w-[340px] md:w-[400px] lg:w-[480px] xl:w-[520px] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300"
-                    data-testid="card-full-transparency"
-                  >
-                    <img 
-                      src={fullTransparencyImage} 
-                      alt="Full Transparency: Complete visibility into our progress every step of the way" 
-                      className="w-full h-auto object-cover"
-                      loading="lazy"
-                      data-testid="img-full-transparency"
-                    />
-                  </figure>
-
-                  {/* Duplicated cards for seamless infinite loop */}
-                  <figure className="flex-shrink-0 w-[280px] sm:w-[340px] md:w-[400px] lg:w-[480px] xl:w-[520px] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300">
-                    <img src={stabilityTargetImage} alt="30-Day Stability Target" className="w-full h-auto object-cover" loading="lazy" />
-                  </figure>
-                  <figure className="flex-shrink-0 w-[280px] sm:w-[340px] md:w-[400px] lg:w-[480px] xl:w-[520px] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300">
-                    <img src={noExtraChargesImage} alt="No Extra Charges" className="w-full h-auto object-cover" loading="lazy" />
-                  </figure>
-                  <figure className="flex-shrink-0 w-[280px] sm:w-[340px] md:w-[400px] lg:w-[480px] xl:w-[520px] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300">
-                    <img src={performanceTrackingImage} alt="Performance Tracking" className="w-full h-auto object-cover" loading="lazy" />
-                  </figure>
-                  <figure className="flex-shrink-0 w-[280px] sm:w-[340px] md:w-[400px] lg:w-[480px] xl:w-[520px] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300">
-                    <img src={fullTransparencyImage} alt="Full Transparency" className="w-full h-auto object-cover" loading="lazy" />
-                  </figure>
-                </div>
-
-                {/* Gradient fade edges for premium look */}
-                <div className="absolute left-0 top-0 bottom-0 w-12 sm:w-20 lg:w-32 bg-gradient-to-r from-amber-50 dark:from-slate-900 to-transparent pointer-events-none z-10"></div>
-                <div className="absolute right-0 top-0 bottom-0 w-12 sm:w-20 lg:w-32 bg-gradient-to-l from-amber-50 dark:from-slate-900 to-transparent pointer-events-none z-10"></div>
-              </div>
+              {/* Premium Glass Card Carousel with Fade */}
+              <GuaranteeCarousel />
             </div>
           </div>
         </section>
