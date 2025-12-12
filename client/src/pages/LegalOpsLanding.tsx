@@ -1513,6 +1513,9 @@ export default function LegalOpsLanding() {
                   <CardDescription data-testid="text-tier-launch-description">
                     You manage directly — OnSpot provides pre-vetted talent
                   </CardDescription>
+                  <p className="text-xs text-muted-foreground mt-2 italic">
+                    Best for firms that already have strong internal process leadership.
+                  </p>
                   <div className="pt-4">
                     <div
                       className="text-4xl font-bold"
@@ -1604,16 +1607,22 @@ export default function LegalOpsLanding() {
                     OnSpot manages everything — daily operations, QA, coaching,
                     and reporting
                   </CardDescription>
+                  <p className="text-xs text-muted-foreground mt-2 italic">
+                    Ideal for firms that want performance, accountability, and zero micromanagement.
+                  </p>
                   <div className="pt-4">
                     <div
                       className="text-4xl font-bold"
                       data-testid="text-tier-executive-price"
                     >
-                      $4,950
+                      $3,399
                       <span className="text-lg font-normal text-muted-foreground">
                         /FTE/mo
                       </span>
                     </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Limited-time onboarding rate: $2,799/mo
+                    </p>
                     <p className="text-sm text-muted-foreground mt-1">
                       3-month minimum commitment
                     </p>
@@ -1673,10 +1682,17 @@ export default function LegalOpsLanding() {
               </Card>
             </div>
 
-            <div className="text-center mt-8 text-sm text-muted-foreground">
+            <div className="text-center mt-8 text-sm text-muted-foreground space-y-3">
               <p>
                 Resourced Services: 70% less than local NY paralegal
                 ($6,650/mo). Managed Services: complete oversight included.
+              </p>
+              <p className="text-xs text-muted-foreground/80 flex items-center justify-center gap-2">
+                <span>🔒 NDA-backed teams</span>
+                <span className="text-muted-foreground/40">•</span>
+                <span>Secure access controls</span>
+                <span className="text-muted-foreground/40">•</span>
+                <span>Confidentiality-first operations</span>
               </p>
             </div>
           </div>
@@ -3164,6 +3180,9 @@ export default function LegalOpsLanding() {
                       law firms — combining trained legal professionals,
                       structured processes, and delivery oversight.
                     </p>
+                    <p className="text-sm italic text-slate-500">
+                      Our teams are trained specifically for legal workflows — not general virtual assistance.
+                    </p>
                     <p>
                       We handle the operational side of your practice —
                       including rent demands, petitions, Section 8
@@ -4008,6 +4027,9 @@ export default function LegalOpsLanding() {
                 </a>
               </div>
             </div>
+            <p className="text-xs text-white/60 mt-8 max-w-2xl mx-auto">
+              We support preparation, coordination, and operational execution. All filings and legal sign-offs remain with licensed professionals.
+            </p>
           </div>
         </section>
 
