@@ -1434,7 +1434,7 @@ export default function LegalOpsLanding() {
             </div>
 
             <div className="grid md:grid-cols-2 gap-6 sm:gap-8 max-w-5xl mx-auto">
-              {/* Option A - Launch System (Most Popular) */}
+              {/* Option A - Resourced Services */}
               <Card
                 className={`relative ${
                   selectedTier === "launch"
@@ -1444,15 +1444,7 @@ export default function LegalOpsLanding() {
                 onClick={() => setSelectedTier("launch")}
                 data-testid="card-tier-launch"
               >
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <Badge
-                    className="bg-violet-600 text-white text-sm px-4 py-1"
-                    data-testid="badge-most-popular"
-                  >
-                    ⭐ Most Popular
-                  </Badge>
-                </div>
-                <CardHeader className="pt-8">
+                <CardHeader>
                   <CardTitle
                     className="text-2xl"
                     data-testid="text-tier-launch-title"
@@ -1535,17 +1527,25 @@ export default function LegalOpsLanding() {
                 </CardFooter>
               </Card>
 
-              {/* Option B - Executive Suite (Anchor) */}
+              {/* Option B - Managed Services (Most Popular) */}
               <Card
-                className={`relative opacity-90 ${
+                className={`relative ${
                   selectedTier === "executive"
-                    ? "border-2 border-blue-600 shadow-2xl"
+                    ? "border-2 border-blue-600 shadow-2xl scale-105"
                     : "hover-elevate"
                 }`}
                 onClick={() => setSelectedTier("executive")}
                 data-testid="card-tier-executive"
               >
-                <CardHeader>
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <Badge
+                    className="bg-blue-600 text-white text-sm px-4 py-1"
+                    data-testid="badge-most-popular"
+                  >
+                    Most Popular
+                  </Badge>
+                </div>
+                <CardHeader className="pt-8">
                   <CardTitle
                     className="text-2xl"
                     data-testid="text-tier-executive-title"
