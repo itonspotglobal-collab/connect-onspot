@@ -949,50 +949,6 @@ export default function LegalOpsLanding() {
           </div>
         </section>
 
-        {/* Niche / Expertise Positioning Section */}
-        <section className="py-12 sm:py-14 md:py-16 bg-gradient-to-b from-slate-900/50 to-slate-800/40 dark:from-slate-950 dark:to-slate-900 relative overflow-hidden border-t border-white/10">
-          <style>{`
-            @keyframes dividerExpand {
-              0% { scaleX(0); opacity: 0.5; }
-              50% { scaleX(1); opacity: 1; }
-              100% { scaleX(1); opacity: 0.8; }
-            }
-            .divider-line {
-              animation: dividerExpand 2s ease-in-out infinite;
-              transform-origin: center;
-            }
-          `}</style>
-          
-          <div className="container-fluid relative z-10">
-            <div className="max-w-4xl mx-auto text-center space-y-8">
-              {/* Origin Statement */}
-              <p className="text-sm md:text-base font-light tracking-wide text-blue-100/80 uppercase" data-testid="text-origin-statement">
-                Founded in high-volume New York legal operations
-              </p>
-              
-              {/* Animated Divider */}
-              <div className="flex items-center justify-center gap-4">
-                <div className="flex-1 h-px bg-gradient-to-r from-transparent to-blue-400/40"></div>
-                <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-blue-400 to-blue-500" style={{ boxShadow: '0 0 8px rgba(79, 100, 255, 0.6)' }}></div>
-                <div className="flex-1 h-px bg-gradient-to-l from-transparent to-blue-400/40"></div>
-              </div>
-              
-              {/* Now Serving Statement */}
-              <div className="space-y-3">
-                <p className="text-sm md:text-base font-light text-white/70" data-testid="text-now-serving">
-                  Now serving legal operations across
-                </p>
-                <p className="text-xl md:text-2xl font-semibold tracking-tight" style={{ color: '#4353FF' }} data-testid="text-coverage-locations">
-                  New York • Texas • Florida
-                </p>
-                <p className="text-xs md:text-sm text-white/50 font-light" data-testid="text-expertise-note">
-                  Specialized teams for landlord-tenant, family law, corporate compliance, and commercial practice areas
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* Zero Escalation Guarantee Section */}
         <section className="py-12 sm:py-16 md:py-20 bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 relative overflow-hidden">
           {/* Background decoration */}
