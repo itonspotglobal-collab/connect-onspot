@@ -145,7 +145,7 @@ function GuaranteeCarousel() {
     <div className="relative">
       {/* Image Cards Container */}
       <div
-        className="relative h-[200px] sm:h-[280px] md:h-[320px] lg:h-[360px] overflow-hidden touch-pan-y"
+        className="relative h-[200px] sm:h-[280px] md:h-[320px] lg:h-[360px] overflow-hidden touch-pan-y rounded-2xl"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -162,15 +162,11 @@ function GuaranteeCarousel() {
                 : "opacity-0 translate-x-12 scale-95"
             }`}
           >
-            <div className="w-full max-w-3xl mx-auto px-4">
+            <div className="w-full h-full flex items-center justify-center">
               <img 
                 src={item.src} 
                 alt={item.alt}
-                className="w-full h-auto block shadow-lg"
-                style={{ 
-                  clipPath: 'inset(0 round 12px)',
-                  WebkitClipPath: 'inset(0 round 12px)'
-                }}
+                className="w-full h-full object-cover"
                 loading="lazy"
               />
             </div>
