@@ -942,13 +942,16 @@ export default function LegalOpsLanding() {
                     style={{ backgroundColor: 'rgba(67, 83, 255, 0.6)' }}
                   ></div>
                   
-                  {/* Tight Subhead - One Line */}
+                  {/* Subhead - Value Statement */}
                   <p
-                    className="text-lg sm:text-xl md:text-2xl font-normal leading-snug"
+                    className="text-base sm:text-lg md:text-xl font-normal leading-relaxed max-w-xl"
                     style={{ color: 'rgba(255, 255, 255, 0.8)' }}
                     data-testid="text-hero-subhead"
                   >
-                    Stabilized in under 30 days. 70% cost reduction. Zero escalations.
+                    <span className="font-medium">Stabilized in under 30 days. 70% cost reduction. Zero escalations.</span>{' '}
+                    <span style={{ color: 'rgba(255, 255, 255, 0.65)' }}>
+                      OnSpot delivers a structured LegalOps system that brings stability, precision, and scalability to your firm — without operational chaos.
+                    </span>
                   </p>
                 </div>
 
