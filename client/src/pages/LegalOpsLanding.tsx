@@ -164,21 +164,17 @@ function GuaranteeCarousel() {
           >
             <div className="w-full max-w-3xl mx-auto px-4">
               <div 
-                className="shadow-2xl"
-                style={{ 
-                  borderRadius: '24px',
-                  overflow: 'hidden',
-                  WebkitMaskImage: '-webkit-radial-gradient(white, black)',
-                  maskImage: 'radial-gradient(white, black)'
-                }}
+                className="bg-white/90 backdrop-blur-xl shadow-2xl p-3 sm:p-4"
+                style={{ borderRadius: '28px' }}
               >
-                <img 
-                  src={item.src} 
-                  alt={item.alt}
-                  className="w-full h-auto block"
-                  style={{ display: 'block' }}
-                  loading="lazy"
-                />
+                <div style={{ borderRadius: '20px', overflow: 'hidden' }}>
+                  <img 
+                    src={item.src} 
+                    alt={item.alt}
+                    className="w-full h-auto block"
+                    loading="lazy"
+                  />
+                </div>
               </div>
             </div>
           </div>
