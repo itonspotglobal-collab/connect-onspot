@@ -2832,6 +2832,117 @@ export default function LegalOpsLanding() {
           </div>
         </section>
 
+        {/* Dream Outcome Section - Cinematic Blue */}
+        <section className="relative py-20 md:py-32 overflow-hidden" style={{ background: "linear-gradient(135deg, #4353FF 0%, #5B7CFF 100%)" }}>
+          <style>{`
+            @keyframes headline-glow {
+              0%, 100% { text-shadow: 0 0 20px rgba(255, 255, 255, 0.5); }
+              50% { text-shadow: 0 0 40px rgba(255, 255, 255, 0.8); }
+            }
+            @keyframes gradient-shift {
+              0%, 100% { background-position: 0% 50%; }
+              50% { background-position: 100% 50%; }
+            }
+            @keyframes bullet-reveal {
+              0% { opacity: 0; transform: translateX(-20px); }
+              100% { opacity: 1; transform: translateX(0); }
+            }
+            .dream-headline {
+              animation: headline-glow 3s ease-in-out infinite;
+            }
+            .dream-bullet {
+              animation: bullet-reveal 0.6s ease-out forwards;
+            }
+            .dream-bullet:nth-child(1) { animation-delay: 0.2s; }
+            .dream-bullet:nth-child(2) { animation-delay: 0.4s; }
+            .dream-bullet:nth-child(3) { animation-delay: 0.6s; }
+            .dream-bg {
+              background: linear-gradient(135deg, #4353FF 0%, #5B7CFF 50%, #4353FF 100%);
+              background-size: 200% 200%;
+              animation: gradient-shift 6s ease infinite;
+            }
+          `}</style>
+
+          {/* Accent elements */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute top-20 right-10 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-10 left-10 w-96 h-96 bg-white/5 rounded-full blur-3xl"></div>
+          </div>
+
+          <div className="container-fluid relative z-10">
+            <div className="max-w-7xl mx-auto px-4 md:px-8">
+              <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+                {/* Left: Image */}
+                <div className="relative order-2 lg:order-1">
+                  <div className="relative rounded-3xl overflow-hidden shadow-2xl">
+                    <img 
+                      src={lawyerImage}
+                      alt="Confident lawyer - dream outcome achieved"
+                      className="w-full h-auto object-cover aspect-square"
+                    />
+                    {/* Subtle overlay glow */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#4353FF]/20 via-transparent to-transparent"></div>
+                  </div>
+                </div>
+
+                {/* Right: Content */}
+                <div className="order-1 lg:order-2 text-white space-y-8">
+                  {/* Headline */}
+                  <div className="space-y-4">
+                    <h2 className="dream-headline text-4xl sm:text-5xl md:text-6xl font-bold leading-tight">
+                      Your Dream Outcome
+                    </h2>
+                    <p className="text-lg sm:text-xl text-white/90 font-light leading-relaxed max-w-lg">
+                      Your law firm, operating at peak efficiency without the operational chaos.
+                    </p>
+                  </div>
+
+                  {/* Outcome Bullets */}
+                  <div className="space-y-4">
+                    {[
+                      {
+                        icon: Zap,
+                        text: "100% billable focus — your attorneys practice law, not manage files."
+                      },
+                      {
+                        icon: TrendingDown,
+                        text: "Zero escalations — predictable delivery on every case, every deadline."
+                      },
+                      {
+                        icon: Award,
+                        text: "Unstoppable growth — scale your firm without scaling your overhead."
+                      }
+                    ].map((item, idx) => {
+                      const IconComponent = item.icon;
+                      return (
+                        <div key={idx} className="dream-bullet flex items-start gap-4 opacity-0">
+                          <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center">
+                            <IconComponent className="w-6 h-6 text-white" />
+                          </div>
+                          <p className="text-base sm:text-lg font-light leading-relaxed pt-2">{item.text}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* CTA */}
+                  <div className="pt-4">
+                    <Button
+                      onClick={openBooking}
+                      size="lg"
+                      className="px-8 py-6 text-lg rounded-2xl bg-white text-[#4353FF] hover:bg-white/90 font-semibold touch-target"
+                      data-testid="button-dream-outcome-cta"
+                    >
+                      Schedule Your Free Assessment
+                      <ChevronRight className="w-5 h-5 ml-2" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* What If You Don't Partner With OnSpot - Mindvalley Style */}
         <section className="py-20 md:py-28 bg-gradient-to-b from-amber-50/80 via-orange-50/50 to-white relative overflow-hidden">
           {/* Warm glow orbs */}
