@@ -1712,151 +1712,89 @@ export default function LegalOpsLanding() {
           </div>
         </section>
 
-        {/* The Dream Outcome - OnSpot Blue with Animations */}
+        {/* Execution Standards - Authoritative Operational Section */}
         <section 
-          className="relative overflow-hidden py-16 sm:py-20 md:py-28"
-          style={{ 
-            background: "linear-gradient(135deg, #4353FF 0%, #5B6CFF 50%, #4353FF 100%)",
-            backgroundSize: "200% 200%",
-            animation: "dream-gradient-shift 8s ease infinite"
-          }}
+          className="relative py-20 sm:py-24 md:py-32 bg-slate-950"
         >
-          <style>{`
-            @keyframes dream-gradient-shift {
-              0%, 100% { background-position: 0% 50%; }
-              50% { background-position: 100% 50%; }
-            }
-            @keyframes dream-headline-glow {
-              0%, 100% { text-shadow: 0 0 30px rgba(255, 255, 255, 0.4); }
-              50% { text-shadow: 0 0 60px rgba(255, 255, 255, 0.7), 0 0 100px rgba(255, 255, 255, 0.3); }
-            }
-            @keyframes dream-bullet-stagger {
-              0% { opacity: 0; transform: translateX(-20px); }
-              100% { opacity: 1; transform: translateX(0); }
-            }
-            .dream-headline-animated {
-              animation: dream-headline-glow 3s ease-in-out infinite;
-            }
-            .dream-bullet-1 { animation: dream-bullet-stagger 0.6s ease-out 0.2s forwards; opacity: 0; }
-            .dream-bullet-2 { animation: dream-bullet-stagger 0.6s ease-out 0.4s forwards; opacity: 0; }
-            .dream-bullet-3 { animation: dream-bullet-stagger 0.6s ease-out 0.6s forwards; opacity: 0; }
-          `}</style>
-
-          {/* Subtle animated accents */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute top-10 right-10 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-gentle-float"></div>
-            <div className="absolute bottom-10 left-10 w-96 h-96 bg-white/5 rounded-full blur-3xl"></div>
-          </div>
-
           <div className="container-fluid relative z-10">
-            <div className="grid md:grid-cols-2 gap-8 md:gap-12 lg:gap-16 xl:gap-20 items-center md:min-h-[550px]">
-              {/* Left Column - Content */}
-              <div className="space-y-6 sm:space-y-8 md:space-y-10">
-                {/* Section Title */}
-                <div className="space-y-3 sm:space-y-4">
-                  <h2
-                    className="dream-headline-animated text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight"
-                    data-testid="text-dream-outcome-title"
-                  >
-                    The Dream Outcome
-                  </h2>
-                  <p className="text-base sm:text-lg md:text-xl text-white/80 font-light">
-                    What every law firm wants — and what OnSpot delivers.
-                  </p>
-                </div>
+            <div className="max-w-4xl mx-auto">
+              {/* Section Header - Authoritative */}
+              <div className="mb-12 sm:mb-16 md:mb-20">
+                <p 
+                  className="text-xs sm:text-sm font-medium tracking-widest uppercase mb-4"
+                  style={{ color: '#64748B' }}
+                >
+                  Execution Standards
+                </p>
+                <h2
+                  className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight mb-4"
+                  data-testid="text-dream-outcome-title"
+                >
+                  What We Deliver. Every Time.
+                </h2>
+                <p className="text-base sm:text-lg text-slate-400 max-w-2xl">
+                  These are not goals. They are non-negotiable operating standards built into every engagement.
+                </p>
+              </div>
 
-                {/* Outcome Bullets - One-Line Payoffs with Stagger Animation */}
-                <div className="space-y-4 sm:space-y-5">
-                  <div className="dream-bullet-1 flex items-start sm:items-center gap-3 sm:gap-4">
-                    <div className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
-                      <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                    </div>
-                    <p className="text-base sm:text-xl md:text-2xl text-white font-medium">
-                      Every case moves forward — without delays.
+              {/* Execution Standards - Vertical Anchor Layout */}
+              <div className="relative">
+                {/* Vertical Line Anchor */}
+                <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-[#4353FF] via-[#4353FF]/50 to-transparent"></div>
+
+                {/* Standards List */}
+                <div className="space-y-10 sm:space-y-12 pl-8 sm:pl-12">
+                  {/* Standard 1 */}
+                  <div className="relative">
+                    <div className="absolute -left-8 sm:-left-12 top-1 w-2 h-2 rounded-full bg-[#4353FF]"></div>
+                    <p className="text-lg sm:text-xl md:text-2xl font-semibold text-white leading-snug">
+                      Every case moves forward without delay.
+                    </p>
+                    <p className="text-sm sm:text-base text-slate-500 mt-2">
+                      No bottlenecks. No waiting on staff. No excuses.
                     </p>
                   </div>
 
-                  <div className="dream-bullet-2 flex items-start sm:items-center gap-3 sm:gap-4">
-                    <div className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
-                      <FileCheck className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                    </div>
-                    <p className="text-base sm:text-xl md:text-2xl text-white font-medium">
-                      Every document delivered — with flawless accuracy.
+                  {/* Standard 2 */}
+                  <div className="relative">
+                    <div className="absolute -left-8 sm:-left-12 top-1 w-2 h-2 rounded-full bg-[#4353FF]"></div>
+                    <p className="text-lg sm:text-xl md:text-2xl font-semibold text-white leading-snug">
+                      Every document is delivered accurate and on time.
+                    </p>
+                    <p className="text-sm sm:text-base text-slate-500 mt-2">
+                      QA-checked. Court-ready. Zero rework.
                     </p>
                   </div>
 
-                  <div className="dream-bullet-3 flex items-start sm:items-center gap-3 sm:gap-4">
-                    <div className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
-                      <Users className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                    </div>
-                    <p className="text-base sm:text-xl md:text-2xl text-white font-medium">
-                      Every client kept informed — before they even ask.
+                  {/* Standard 3 */}
+                  <div className="relative">
+                    <div className="absolute -left-8 sm:-left-12 top-1 w-2 h-2 rounded-full bg-[#4353FF]"></div>
+                    <p className="text-lg sm:text-xl md:text-2xl font-semibold text-white leading-snug">
+                      Every client is informed before they ask.
+                    </p>
+                    <p className="text-sm sm:text-base text-slate-500 mt-2">
+                      Proactive updates. Consistent communication. Trust maintained.
                     </p>
                   </div>
-                </div>
 
-                {/* Bottom Promise */}
-                <div className="pt-6 space-y-4">
-                  <div className="h-px bg-gradient-to-r from-white/10 via-white/30 to-white/10"></div>
-                  <p className="text-lg sm:text-xl text-white leading-relaxed">
-                    <span className="font-semibold">
-                      No late nights. No turnover. No escalations.
-                    </span>
-                    <br />
-                    <span className="text-white/80">Just a stable, high-performing system running behind your firm.</span>
-                  </p>
-                  <div className="flex items-center gap-3 flex-wrap text-sm sm:text-base pt-2">
-                    <Badge
-                      variant="outline"
-                      className="bg-white/10 border-white/30 text-white backdrop-blur-sm px-4 py-2"
-                    >
-                      70% cost savings
-                    </Badge>
-                    <span className="text-white/50">+</span>
-                    <Badge
-                      variant="outline"
-                      className="bg-white/10 border-white/30 text-white backdrop-blur-sm px-4 py-2"
-                    >
-                      100% peace of mind
-                    </Badge>
+                  {/* Standard 4 */}
+                  <div className="relative">
+                    <div className="absolute -left-8 sm:-left-12 top-1 w-2 h-2 rounded-full bg-[#4353FF]"></div>
+                    <p className="text-lg sm:text-xl md:text-2xl font-semibold text-white leading-snug">
+                      Every issue is resolved without escalation.
+                    </p>
+                    <p className="text-sm sm:text-base text-slate-500 mt-2">
+                      Problems handled internally. Your focus stays on law.
+                    </p>
                   </div>
                 </div>
               </div>
 
-              {/* Right Column - Lawyer Image */}
-              <div className="relative md:h-full flex items-center justify-center">
-                <div className="relative w-full max-w-md md:max-w-lg">
-                  {/* Glow effect behind image */}
-                  <div className="absolute inset-0 bg-white/10 rounded-3xl blur-3xl"></div>
-
-                  {/* Image container */}
-                  <div className="relative rounded-3xl overflow-hidden border border-white/20 backdrop-blur-sm bg-white/5 shadow-2xl">
-                    <img
-                      src={lawyerImage}
-                      alt="Successful lawyer representing excellence with OnSpot LegalOps"
-                      className="w-full h-auto object-cover"
-                      loading="lazy"
-                      width="600"
-                      height="800"
-                      data-testid="img-lawyer-success"
-                    />
-                    {/* Subtle overlay gradient */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#4353FF]/30 via-transparent to-transparent"></div>
-                  </div>
-
-                  {/* Floating accent badge */}
-                  <div className="absolute -bottom-4 -left-4 bg-white/15 backdrop-blur-xl border border-white/25 rounded-2xl px-5 py-3 shadow-2xl">
-                    <div className="flex items-center gap-3">
-                      <Sparkles className="w-5 h-5 text-white" />
-                      <div>
-                        <p className="text-white font-bold text-base">
-                          OnSpot LegalOps<sup className="text-xs">™</sup>
-                        </p>
-                        <p className="text-white/70 text-xs">Powered success</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              {/* Bottom Statement - Minimal */}
+              <div className="mt-16 sm:mt-20 pt-8 border-t border-slate-800">
+                <p className="text-sm sm:text-base text-slate-500">
+                  This is how OnSpot operates. Not aspirations — systems.
+                </p>
               </div>
             </div>
           </div>
