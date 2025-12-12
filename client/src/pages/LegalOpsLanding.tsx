@@ -916,7 +916,7 @@ export default function LegalOpsLanding() {
                   style={{ color: 'rgba(255, 255, 255, 0.6)' }}
                   data-testid="text-hero-eyebrow"
                 >
-                  Built from real law firm operations
+                  Forged inside high-volume law firms
                 </p>
 
                 {/* Main Headline with Asymmetrical Accent */}
@@ -926,8 +926,8 @@ export default function LegalOpsLanding() {
                     style={{ color: '#FFFFFF' }}
                     data-testid="text-hero-headline"
                   >
-                    End Operational Chaos<br className="hidden sm:block" />
-                    <span className="block"> Without Hiring More Staff</span>
+                    Fix Legal Operations<br className="hidden sm:block" />
+                    <span className="block">With a System</span>
                   </h1>
                   
                   {/* Asymmetrical Accent - Single Visual Signature */}
@@ -942,7 +942,7 @@ export default function LegalOpsLanding() {
                     style={{ color: 'rgba(255, 255, 255, 0.8)' }}
                     data-testid="text-hero-subhead"
                   >
-                    Managed legal operations. 70% cost reduction. Zero escalations.
+                    &lt; 30 days to stability. 70% cost reduction. Zero escalations.
                   </p>
                 </div>
 
