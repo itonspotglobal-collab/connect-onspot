@@ -78,10 +78,10 @@ import selectiveLawyerImage from "@assets/stock_images/caucasian_white_male_8dcc
 import usMapImage from "@assets/US_Coverage_1765189431049.png";
 import usMapMockup from "@assets/US_MAP_MOCKUP_1765202588593.png";
 import legalTeamImage from "@assets/OnSpot_Legal_Team_1765206051566.png";
-import stabilityTargetImage from "@assets/30-DAY_STABILITY_TARGET_1765200843502.png";
-import noExtraChargesImage from "@assets/NO_EXTRA_CHARGES_1765200843502.png";
-import performanceTrackingImage from "@assets/PERFORMANCE_TRACKING_1765200843502.png";
-import fullTransparencyImage from "@assets/FULL_TRANSPARENCY_1765200843501.png";
+import stabilityTargetImage from "@assets/30-DAY_STABILITY_TARGET_1765546113570.png";
+import noExtraChargesImage from "@assets/NO_EXTRA_CHARGES_1765546113569.png";
+import performanceTrackingImage from "@assets/PERFORMANCE_TRACKING_1765546113569.png";
+import fullTransparencyImage from "@assets/FULL_TRANSPARENCY_1765546113567.png";
 import stressedProfessionalImage from "@assets/WHAT_IF_YOU_DONT_PARTNER_WITH_ONSPOT_1765207999583.png";
 import profitsLostImage from "@assets/Profits_1765208843745.png";
 
@@ -92,33 +92,17 @@ function GuaranteeCarousel() {
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const guarantees = [
-    {
-      icon: Target,
-      title: "30-Day Stability",
-      desc: "Zero escalations within your first month.",
-    },
-    {
-      icon: Shield,
-      title: "No Extra Charges",
-      desc: "If it takes longer, we work free until stable.",
-    },
-    {
-      icon: BarChart3,
-      title: "Daily Metrics",
-      desc: "Weekly reviews ensure we stay on target.",
-    },
-    {
-      icon: CheckCircle2,
-      title: "Full Transparency",
-      desc: "Complete visibility into every step.",
-    },
+  const guaranteeImages = [
+    { src: stabilityTargetImage, alt: "30-Day Stability Target - How to Make Your Business Self-Propelling" },
+    { src: noExtraChargesImage, alt: "No Extra Charges - If it takes longer, we work for free until you're stable" },
+    { src: performanceTrackingImage, alt: "Performance Tracking - Daily metrics and weekly reviews ensure we stay on target" },
+    { src: fullTransparencyImage, alt: "Full Transparency - Complete visibility into our progress every step of the way" },
   ];
 
   const startAutoplay = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
     intervalRef.current = setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % guarantees.length);
+      setActiveIndex((prev) => (prev + 1) % guaranteeImages.length);
     }, 2500);
   };
 
@@ -149,9 +133,9 @@ function GuaranteeCarousel() {
     const minSwipe = 50;
     if (Math.abs(distance) > minSwipe) {
       if (distance > 0) {
-        setActiveIndex((prev) => (prev + 1) % guarantees.length);
+        setActiveIndex((prev) => (prev + 1) % guaranteeImages.length);
       } else {
-        setActiveIndex((prev) => (prev - 1 + guarantees.length) % guarantees.length);
+        setActiveIndex((prev) => (prev - 1 + guaranteeImages.length) % guaranteeImages.length);
       }
       startAutoplay();
     }
@@ -159,48 +143,42 @@ function GuaranteeCarousel() {
 
   return (
     <div className="relative">
-      {/* Cards Container */}
+      {/* Image Cards Container */}
       <div
-        className="relative h-[180px] sm:h-[200px] overflow-hidden touch-pan-y"
+        className="relative h-[200px] sm:h-[280px] md:h-[320px] lg:h-[360px] overflow-hidden touch-pan-y"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         data-testid="carousel-guarantee"
       >
-        {guarantees.map((item, idx) => {
-          const IconComponent = item.icon;
-          return (
-            <div
-              key={idx}
-              className={`absolute inset-0 flex items-center justify-center transition-all duration-500 ease-out ${
-                idx === activeIndex
-                  ? "opacity-100 translate-x-0 scale-100"
-                  : idx < activeIndex
-                  ? "opacity-0 -translate-x-8 scale-95"
-                  : "opacity-0 translate-x-8 scale-95"
-              }`}
-            >
-              <div className="w-full max-w-md mx-auto px-4">
-                <div className="bg-white/80 backdrop-blur-xl border border-gray-200/60 rounded-2xl p-6 sm:p-8 shadow-xl text-center">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-[#4353FF]/10 rounded-xl mb-4">
-                    <IconComponent className="w-6 h-6 text-[#4353FF]" />
-                  </div>
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">
-                    {item.title}
-                  </h3>
-                  <p className="text-sm sm:text-base text-gray-600">
-                    {item.desc}
-                  </p>
-                </div>
+        {guaranteeImages.map((item, idx) => (
+          <div
+            key={idx}
+            className={`absolute inset-0 flex items-center justify-center transition-all duration-500 ease-out ${
+              idx === activeIndex
+                ? "opacity-100 translate-x-0 scale-100"
+                : idx < activeIndex
+                ? "opacity-0 -translate-x-12 scale-95"
+                : "opacity-0 translate-x-12 scale-95"
+            }`}
+          >
+            <div className="w-full max-w-3xl mx-auto px-4">
+              <div className="rounded-2xl overflow-hidden shadow-2xl">
+                <img 
+                  src={item.src} 
+                  alt={item.alt}
+                  className="w-full h-auto object-cover"
+                  loading="lazy"
+                />
               </div>
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
 
       {/* Progress Dots */}
       <div className="flex justify-center gap-2 mt-6">
-        {guarantees.map((_, idx) => (
+        {guaranteeImages.map((_, idx) => (
           <button
             key={idx}
             onClick={() => goToSlide(idx)}
