@@ -894,7 +894,19 @@ export default function LegalOpsLanding() {
           <div className="relative z-20 px-6 sm:px-8 md:px-12 lg:px-20 py-16 sm:py-20 md:py-24 lg:py-28 flex items-center min-h-screen">
             <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 xl:gap-28 items-center">
               {/* Left: Editorial Content */}
-              <div className="hero-fade-up space-y-8 md:space-y-10">
+              <div className="hero-fade-up space-y-8 md:space-y-10 relative">
+                {/* Subtle Infrastructure Grid Texture */}
+                <div 
+                  className="absolute -inset-8 sm:-inset-12 -z-10 pointer-events-none opacity-[0.03]"
+                  style={{
+                    backgroundImage: `
+                      linear-gradient(rgba(67, 83, 255, 0.5) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(67, 83, 255, 0.5) 1px, transparent 1px)
+                    `,
+                    backgroundSize: '32px 32px'
+                  }}
+                ></div>
+                
                 {/* Main Headline - Hormozi Direct */}
                 <div className="space-y-4">
                   <h1
