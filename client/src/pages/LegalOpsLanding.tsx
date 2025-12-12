@@ -884,184 +884,146 @@ export default function LegalOpsLanding() {
           </div>
         </div>
 
-        {/* Hero Section - Premium OnSpot Brand */}
+        {/* Hero Section - Hormozi-Style Premium */}
         <section 
           className="relative overflow-visible"
           style={{
-            background: "radial-gradient(1400px 700px at 15% -15%, hsl(236 42% 58% / 0.4) 0%, transparent 65%), radial-gradient(1000px 600px at 85% 5%, hsl(220 100% 65% / 0.25) 0%, transparent 60%), radial-gradient(800px 400px at 95% 100%, hsl(280 80% 45% / 0.15) 0%, transparent 50%), linear-gradient(155deg, hsl(236 42% 48%) 0%, hsl(236 50% 36%) 45%, hsl(240 45% 25%) 100%), linear-gradient(180deg, transparent 0%, transparent 60%, hsl(240 40% 20%) 100%)"
+            background: "linear-gradient(165deg, #1a1f3c 0%, #0f1225 50%, #0a0d1a 100%)"
           }}
         >
-          {/* Cinematic Bottom Fade Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/20 pointer-events-none"></div>
+          {/* Subtle gradient accent */}
+          <div 
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: "radial-gradient(ellipse 80% 50% at 20% 40%, rgba(67, 83, 255, 0.08) 0%, transparent 70%)"
+            }}
+          ></div>
           
-          <div className="relative z-20 px-6 sm:px-8 md:px-12 lg:px-16 py-10 sm:py-12 md:py-14 flex items-center min-h-screen pb-16">
-            <div className="max-w-7xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center h-full">
-              {/* Left: Headline & Value Prop - Refined Hierarchy */}
-              <div className="hero-fade-up space-y-5 md:space-y-6">
-                {/* Pre-headline - Tension Layer */}
-                <p 
-                  className="text-xs sm:text-sm font-medium tracking-widest uppercase"
-                  style={{ color: '#A5B4FC' }}
-                  data-testid="text-hero-preheadline"
-                >
-                  When legal operations break down, your firm pays the price
-                </p>
-
-                {/* Main Headline - Authority & Inevitability */}
-                <h1
-                  className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.1] tracking-tight"
-                  style={{ color: '#F5F7FF' }}
-                  data-testid="text-hero-headline"
-                >
-                  Operational Stability<br className="hidden sm:block" />
-                  <span className="block sm:inline"> for Law Firms</span>
-                </h1>
-
-                {/* Subheadline - Secondary Payoff */}
-                <p
-                  className="text-lg sm:text-xl md:text-2xl font-light leading-snug tracking-wide"
-                  style={{ color: '#D8DFF5' }}
-                  data-testid="text-hero-subhead"
-                >
-                  Cut admin costs by 70%. Zero escalations. Full control.
-                </p>
-
-                {/* Authority Cue - Minimal, no logos */}
-                <p 
-                  className="text-xs sm:text-sm font-medium tracking-wide"
-                  style={{ color: '#94A3B8' }}
-                  data-testid="text-hero-authority"
-                >
-                  Trusted by law firms across key U.S. markets.
-                </p>
-
-                {/* Thin Divider - Moment of Emphasis */}
-                <div className="pt-2 pb-1">
-                  <div className="w-16 h-px bg-white/20"></div>
+          <div className="relative z-20 px-6 sm:px-8 md:px-12 lg:px-20 py-16 sm:py-20 md:py-24 lg:py-28 flex items-center min-h-screen">
+            <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 xl:gap-28 items-center">
+              {/* Left: Editorial Content */}
+              <div className="hero-fade-up space-y-8 md:space-y-10">
+                {/* Main Headline - Hormozi Direct */}
+                <div className="space-y-4">
+                  <h1
+                    className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.5rem] xl:text-6xl font-bold leading-[1.08] tracking-tight"
+                    style={{ color: '#FFFFFF' }}
+                    data-testid="text-hero-headline"
+                  >
+                    End Operational Chaos<br className="hidden sm:block" />
+                    <span className="block"> Without Hiring More Staff</span>
+                  </h1>
+                  
+                  {/* Tight Subhead - One Line */}
+                  <p
+                    className="text-lg sm:text-xl md:text-2xl font-normal leading-snug"
+                    style={{ color: 'rgba(255, 255, 255, 0.85)' }}
+                    data-testid="text-hero-subhead"
+                  >
+                    Managed legal operations. 70% cost reduction. Zero escalations.
+                  </p>
                 </div>
 
-                {/* Metric Boxes - Unified OnSpot Blue Theme */}
-                <div className="flex md:grid md:grid-cols-3 gap-3 md:gap-3 hero-fade-up-delay overflow-x-auto md:overflow-visible scroll-snap-x -mx-4 px-4 md:mx-0 md:px-0">
-                  <div className="flex-shrink-0 w-[220px] md:w-auto flex flex-col items-center gap-1.5 bg-gradient-to-br from-blue-500/10 to-blue-600/5 backdrop-blur-sm px-3 py-3 rounded-lg border border-blue-300/20 scroll-snap-item">
-                    <div className="w-8 h-8 bg-blue-400/30 rounded-md flex items-center justify-center">
-                      <TrendingDown className="h-4 w-4 text-blue-200" />
-                    </div>
-                    <div className="text-center">
-                      <div className="text-xs text-blue-100/70 font-medium tracking-wide">Cost Reduction</div>
-                      <div className="text-base font-semibold text-blue-100">70% Savings</div>
-                    </div>
-                  </div>
-                  <div className="flex-shrink-0 w-[220px] md:w-auto flex flex-col items-center gap-1.5 bg-gradient-to-br from-blue-500/10 to-blue-600/5 backdrop-blur-sm px-3 py-3 rounded-lg border border-blue-300/20 scroll-snap-item">
-                    <div className="w-8 h-8 bg-blue-400/30 rounded-md flex items-center justify-center">
-                      <CheckCircle2 className="h-4 w-4 text-blue-200" />
-                    </div>
-                    <div className="text-center">
-                      <div className="text-xs text-blue-100/70 font-medium tracking-wide">Escalations</div>
-                      <div className="text-base font-semibold text-blue-100">Zero</div>
-                    </div>
-                  </div>
-                  <div className="flex-shrink-0 w-[220px] md:w-auto flex flex-col items-center gap-1.5 bg-gradient-to-br from-blue-500/10 to-blue-600/5 backdrop-blur-sm px-3 py-3 rounded-lg border border-blue-300/20 scroll-snap-item">
-                    <div className="w-8 h-8 bg-blue-400/30 rounded-md flex items-center justify-center">
-                      <Clock className="h-4 w-4 text-blue-200" />
-                    </div>
-                    <div className="text-center">
-                      <div className="text-xs text-blue-100/70 font-medium tracking-wide">Stabilization</div>
-                      <div className="text-base font-semibold text-blue-100">&lt;30 Days</div>
-                    </div>
-                  </div>
+                {/* Rotating Proof Line - Fade Only */}
+                <div className="relative h-6 overflow-hidden">
+                  <style>{`
+                    @keyframes proof-fade {
+                      0%, 28% { opacity: 1; }
+                      33%, 95% { opacity: 0; }
+                      100% { opacity: 0; }
+                    }
+                    .proof-line-1 { animation: proof-fade 10.5s ease-in-out infinite; }
+                    .proof-line-2 { animation: proof-fade 10.5s ease-in-out 3.5s infinite; }
+                    .proof-line-3 { animation: proof-fade 10.5s ease-in-out 7s infinite; }
+                  `}</style>
+                  <p 
+                    className="proof-line-1 absolute inset-0 text-xs sm:text-sm font-normal tracking-wide"
+                    style={{ color: 'rgba(148, 163, 184, 0.75)' }}
+                    data-testid="text-hero-proof-1"
+                  >
+                    Trusted by high-volume law firms across the U.S.
+                  </p>
+                  <p 
+                    className="proof-line-2 absolute inset-0 text-xs sm:text-sm font-normal tracking-wide opacity-0"
+                    style={{ color: 'rgba(148, 163, 184, 0.75)' }}
+                    data-testid="text-hero-proof-2"
+                  >
+                    Built for firms that value process, precision, and control.
+                  </p>
+                  <p 
+                    className="proof-line-3 absolute inset-0 text-xs sm:text-sm font-normal tracking-wide opacity-0"
+                    style={{ color: 'rgba(148, 163, 184, 0.75)' }}
+                    data-testid="text-hero-proof-3"
+                  >
+                    Designed to scale without operational risk.
+                  </p>
                 </div>
               </div>
 
-              {/* Right: Premium Checkout Form - Clean Glass */}
+              {/* Right: Premium Checkout Form - Minimal Glass */}
               <div
                 id="checkout-section"
-                className="lg:sticky md:top-16 hero-fade-up-delay"
+                className="lg:sticky lg:top-20 hero-fade-up-delay"
               >
-                <div className="relative overflow-hidden bg-white/15 backdrop-blur-2xl border border-white/25 rounded-2xl shadow-lg">
-                  {/* Subtle gradient layer */}
-                  <div
-                    className="absolute inset-0 rounded-2xl opacity-40"
-                    style={{
-                      background: "linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)"
-                    }}
-                  ></div>
-
+                <div className="relative overflow-hidden bg-white/8 backdrop-blur-xl border border-white/15 rounded-xl shadow-2xl">
                   <div className="relative">
-                    <div className="border-b border-white/20 px-6 sm:px-8 pt-6 pb-5">
-                      <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="border-b border-white/10 px-6 sm:px-8 pt-7 pb-5">
+                      <div className="flex items-center justify-between gap-4 mb-2">
                         <h2
-                          className="text-xl sm:text-2xl font-bold"
+                          className="text-lg sm:text-xl font-semibold tracking-tight"
                           style={{ color: '#FFFFFF' }}
                           data-testid="text-checkout-title"
                         >
                           Start Your 90-Day Trial
                         </h2>
-                        {/* Premium enrollment badge - clean and bright */}
                         <Badge
-                          className="bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold text-sm px-4 py-2 border border-white/30 shadow-lg animate-pulse shrink-0 rounded-full"
+                          className="bg-[#4353FF] text-white font-medium text-xs px-3 py-1.5 border-0 shrink-0"
                           data-testid="badge-scarcity"
                         >
-                          {availableSlots} Slots
+                          {availableSlots} Slots Left
                         </Badge>
                       </div>
                       <p
-                        className="text-xs leading-relaxed tracking-wide opacity-80"
-                        style={{ color: "#E8EBF8" }}
+                        className="text-xs tracking-wide"
+                        style={{ color: 'rgba(255, 255, 255, 0.55)' }}
                         data-testid="text-checkout-description"
                       >
-                        Easy and simple • Zero implementation cost • Cancel anytime
+                        No implementation cost • Cancel anytime
                       </p>
                     </div>
                     <div className="px-6 sm:px-8 py-6 space-y-4">
                       {!showCheckout ? (
                         <>
-                          <div className="space-y-1">
-                            <Label htmlFor="fullName" className="text-xs text-white/70 font-semibold">Full Name *</Label>
-                            <Input id="fullName" value={formData.fullName} onChange={(e) => setFormData({...formData, fullName: e.target.value})} placeholder="John Smith" required className="bg-white/10 border-white/20 text-white placeholder:text-white/40 text-sm h-9" data-testid="input-full-name" />
+                          <div className="space-y-1.5">
+                            <Label htmlFor="fullName" className="text-xs text-white/60 font-medium">Full Name *</Label>
+                            <Input id="fullName" value={formData.fullName} onChange={(e) => setFormData({...formData, fullName: e.target.value})} placeholder="John Smith" required className="bg-white/5 border-white/10 text-white placeholder:text-white/30 text-sm h-10 focus:border-[#4353FF]/50 focus:ring-[#4353FF]/20" data-testid="input-full-name" />
                           </div>
-                          <div className="space-y-1">
-                            <Label htmlFor="firmName" className="text-xs text-white/70 font-semibold">Law Firm Name *</Label>
-                            <Input id="firmName" value={formData.firmName} onChange={(e) => setFormData({...formData, firmName: e.target.value})} placeholder="Smith & Associates" required className="bg-white/10 border-white/20 text-white placeholder:text-white/40 text-sm h-9" data-testid="input-firm-name" />
+                          <div className="space-y-1.5">
+                            <Label htmlFor="firmName" className="text-xs text-white/60 font-medium">Law Firm Name *</Label>
+                            <Input id="firmName" value={formData.firmName} onChange={(e) => setFormData({...formData, firmName: e.target.value})} placeholder="Smith & Associates" required className="bg-white/5 border-white/10 text-white placeholder:text-white/30 text-sm h-10 focus:border-[#4353FF]/50 focus:ring-[#4353FF]/20" data-testid="input-firm-name" />
                           </div>
-                          <div className="space-y-1">
-                            <Label htmlFor="email" className="text-xs text-white/70 font-semibold">Email *</Label>
-                            <Input id="email" type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="john@lawfirm.com" required className="bg-white/10 border-white/20 text-white placeholder:text-white/40 text-sm h-9 w-full" data-testid="input-email" autoComplete="email" />
+                          <div className="space-y-1.5">
+                            <Label htmlFor="email" className="text-xs text-white/60 font-medium">Email *</Label>
+                            <Input id="email" type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="john@lawfirm.com" required className="bg-white/5 border-white/10 text-white placeholder:text-white/30 text-sm h-10 w-full focus:border-[#4353FF]/50 focus:ring-[#4353FF]/20" data-testid="input-email" autoComplete="email" />
                           </div>
-                          <div className="space-y-1">
-                            <Label htmlFor="phone" className="text-xs text-white/70 font-semibold">Phone</Label>
-                            <Input id="phone" type="tel" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} placeholder="(718) 555-0123" className="bg-white/10 border-white/20 text-white placeholder:text-white/40 text-sm h-9 w-full" data-testid="input-phone" autoComplete="tel" inputMode="tel" />
+                          <div className="space-y-1.5">
+                            <Label htmlFor="phone" className="text-xs text-white/60 font-medium">Phone</Label>
+                            <Input id="phone" type="tel" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} placeholder="(917) 555-0123" className="bg-white/5 border-white/10 text-white placeholder:text-white/30 text-sm h-10 w-full focus:border-[#4353FF]/50 focus:ring-[#4353FF]/20" data-testid="input-phone" autoComplete="tel" inputMode="tel" />
                           </div>
-                          <div className="pt-2">
+                          <div className="pt-3">
                             <Button
                               onClick={handleStartTrial}
-                              className="relative group w-full text-white font-bold rounded-xl text-sm h-11 transition-all duration-200 shadow-lg hover:shadow-xl overflow-hidden"
+                              className="w-full text-white font-semibold rounded-lg text-sm h-11 transition-all duration-200"
                               style={{ backgroundColor: "#4353FF" }}
                               disabled={!formData.fullName || !formData.firmName || !formData.email}
                               data-testid="button-continue-to-payment"
                             >
-                              <span className="flex items-center gap-1.5 justify-center relative z-10 text-sm font-semibold">
-                                Start Now
-                                <ChevronRight className="w-4 h-4" />
-                              </span>
-                              <div className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-white transition-opacity duration-200 -z-10 rounded-xl"></div>
+                              Start Now
                             </Button>
                           </div>
-                          <div className="flex items-center justify-center gap-4 pt-4">
-                            <div className="flex items-center gap-1 text-xs text-white/60">
-                              <Lock className="w-3 h-3" />
-                              <span>NDA-backed</span>
-                            </div>
-                            <div className="w-px h-3 bg-white/20"></div>
-                            <div className="flex items-center gap-1 text-xs text-white/60">
-                              <Shield className="w-3 h-3" />
-                              <span>Secure</span>
-                            </div>
-                            <div className="w-px h-3 bg-white/20"></div>
-                            <div className="flex items-center gap-1 text-xs text-white/60">
-                              <RotateCcw className="w-3 h-3" />
-                              <span>Replacement</span>
-                            </div>
-                          </div>
+                          <p className="text-center text-xs pt-2" style={{ color: 'rgba(255, 255, 255, 0.4)' }}>
+                            NDA-backed • Secure • Replacement guarantee
+                          </p>
                         </>
                       ) : (
                         <CheckoutWrapper
