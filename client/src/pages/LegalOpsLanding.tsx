@@ -932,7 +932,7 @@ export default function LegalOpsLanding() {
                   style={{ color: '#94A3B8' }}
                   data-testid="text-hero-authority"
                 >
-                  Trusted by landlord-tenant practices across five U.S. regions.
+                  Trusted by law firms across key U.S. markets.
                 </p>
 
                 {/* Thin Divider - Moment of Emphasis */}
