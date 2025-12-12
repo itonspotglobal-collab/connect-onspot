@@ -2524,116 +2524,109 @@ export default function LegalOpsLanding() {
           </div>
         </section>
 
-        {/* Local Staff vs. OnSpot LegalOps Comparison - Mindvalley Style Table */}
-        <section className="py-16 md:py-24 bg-gradient-to-b from-white via-gray-50/30 to-white relative overflow-hidden">
-          {/* Subtle glow orbs */}
-          <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-blue-400/5 rounded-full blur-3xl pointer-events-none"></div>
-          <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-violet-400/5 rounded-full blur-3xl pointer-events-none"></div>
-
+        {/* Local Staff vs. OnSpot LegalOps Comparison - Compact Feature Grid */}
+        <section className="py-12 md:py-16 bg-white relative">
           <div className="container-fluid relative z-10">
-            <div className="max-w-5xl mx-auto px-4 md:px-8">
-              {/* Section Header - Mindvalley Style */}
-              <div className="text-center mb-10">
-                <p className="text-amber-600 text-sm font-semibold uppercase tracking-widest mb-3">
+            <div className="max-w-4xl mx-auto px-4">
+              {/* Section Header - Minimal */}
+              <div className="text-center mb-8">
+                <p className="text-[#4353FF] text-xs font-semibold uppercase tracking-widest mb-2">
                   The comparison
                 </p>
                 <h2
-                  className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-3"
+                  className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2"
                   data-testid="text-comparison-title"
                 >
-                  Local Staff vs. OnSpot LegalOps<sup className="text-lg">™</sup>
+                  Local Staff vs. OnSpot LegalOps<sup className="text-sm">™</sup>
                 </h2>
-                <p className="text-lg text-gray-600 font-light max-w-2xl mx-auto">
-                  Smarter, faster, and 70% more efficient — with an option to upgrade to Fully Managed.
+                <p className="text-sm text-gray-500 max-w-lg mx-auto">
+                  70% cost reduction with professional-grade execution.
                 </p>
               </div>
 
-              {/* Compact Comparison Table */}
-              <div className="rounded-2xl border border-gray-200 bg-white shadow-lg overflow-hidden">
-                {/* Table Header */}
-                <div className="grid grid-cols-3 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
-                  <div className="px-4 py-3 md:px-6 md:py-4">
-                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Feature</span>
+              {/* Compact Feature Grid Table */}
+              <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+                {/* Header Row */}
+                <div className="grid grid-cols-3 bg-gray-50 border-b border-gray-200">
+                  <div className="px-3 py-2 md:px-4 md:py-2.5"></div>
+                  <div className="px-3 py-2 md:px-4 md:py-2.5 text-center border-l border-gray-200">
+                    <span className="text-[10px] md:text-xs font-semibold text-gray-500 uppercase tracking-wide">NY Paralegal</span>
                   </div>
-                  <div className="px-4 py-3 md:px-6 md:py-4 text-center border-l border-gray-200">
-                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Local Staff</span>
-                    <div className="text-xs text-gray-400 mt-0.5">NY Paralegal</div>
-                  </div>
-                  <div className="px-4 py-3 md:px-6 md:py-4 text-center border-l border-blue-200 bg-blue-50/50">
-                    <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">OnSpot LegalOps<sup>™</sup></span>
-                    <div className="text-xs text-blue-500 mt-0.5">Resourced Services</div>
+                  <div className="px-3 py-2 md:px-4 md:py-2.5 text-center border-l border-[#4353FF]/20 bg-[#4353FF]/5">
+                    <span className="text-[10px] md:text-xs font-semibold text-[#4353FF] uppercase tracking-wide">OnSpot</span>
                   </div>
                 </div>
 
-                {/* Table Rows - Compact */}
+                {/* COST ROW - Emphasized */}
+                <div className="grid grid-cols-3 bg-gradient-to-r from-gray-50/50 to-[#4353FF]/5 border-b border-gray-200">
+                  <div className="px-3 py-3 md:px-4 flex items-center">
+                    <span className="text-xs md:text-sm font-bold text-gray-900">Monthly Cost</span>
+                  </div>
+                  <div className="px-3 py-3 md:px-4 text-center border-l border-gray-200 flex items-center justify-center">
+                    <span className="text-sm md:text-base font-bold text-gray-600">~$6,650</span>
+                  </div>
+                  <div className="px-3 py-3 md:px-4 text-center border-l border-[#4353FF]/20 bg-[#4353FF]/10 flex items-center justify-center gap-1">
+                    <span className="text-sm md:text-lg font-bold text-[#4353FF]">$1,950</span>
+                    <span className="text-[10px] text-[#4353FF]/70 hidden sm:inline">all-in</span>
+                  </div>
+                </div>
+
+                {/* Feature Rows - Compact */}
                 <div className="divide-y divide-gray-100">
                   {[
-                    { feature: "Monthly Cost", local: { value: "~$6,650", sub: "avg. NYC", negative: true }, onspot: { value: "$1,950", sub: "all-in", positive: true } },
-                    { feature: "Eager to Work", local: { value: "Sometimes motivated", icon: "partial" }, onspot: { value: "Highly engaged, pre-vetted", icon: "check" } },
-                    { feature: "Hiring Process", local: { value: "Weeks of recruiting", icon: "x" }, onspot: { value: "Ready within days", icon: "check" } },
-                    { feature: "Replacement Time", local: { value: "Slow, disruptive", icon: "x" }, onspot: { value: "Instant swap", icon: "check" } },
-                    { feature: "Management", local: { value: "Self-managed", icon: "x" }, onspot: { value: "You manage directly", icon: "check" } },
-                    { feature: "Performance Tracking", local: { value: "Manual & inconsistent", icon: "x" }, onspot: { value: "Dashboards & KPIs", icon: "check" } },
-                    { feature: "Benefits & Taxes", local: { value: "Employer expense", icon: "x" }, onspot: { value: "Covered by OnSpot", icon: "check" } },
-                    { feature: "Equipment", local: { value: "Firm provides", icon: "x" }, onspot: { value: "OnSpot provides", icon: "check" } },
-                    { feature: "Commitment", local: { value: "Fixed contracts", icon: "x" }, onspot: { value: "Month-to-month", icon: "check" } },
-                    { feature: "Scalability", local: { value: "Limited", icon: "x" }, onspot: { value: "Scale FTEs instantly", icon: "check" } },
+                    { feature: "Hiring Time", local: "Weeks", onspot: "Days" },
+                    { feature: "Replacement", local: "Disruptive", onspot: "Instant" },
+                    { feature: "Benefits & Taxes", local: "Your expense", onspot: "Included" },
+                    { feature: "Equipment", local: "You provide", onspot: "Included" },
+                    { feature: "Performance Tracking", local: "Manual", onspot: "Dashboards" },
+                    { feature: "Commitment", local: "Contract", onspot: "Month-to-month" },
                   ].map((row, idx) => (
-                    <div key={idx} className="grid grid-cols-3 hover:bg-gray-50/50 transition-colors" data-testid={`row-${row.feature.toLowerCase().replace(/\s+/g, '-')}`}>
-                      <div className="px-4 py-2.5 md:px-6 md:py-3 flex items-center">
-                        <span className="text-sm font-medium text-gray-800">{row.feature}</span>
+                    <div key={idx} className="grid grid-cols-3" data-testid={`row-${row.feature.toLowerCase().replace(/\s+/g, '-')}`}>
+                      <div className="px-3 py-2 md:px-4 md:py-2.5 flex items-center">
+                        <span className="text-xs text-gray-700">{row.feature}</span>
                       </div>
-                      <div className="px-4 py-2.5 md:px-6 md:py-3 text-center border-l border-gray-100 flex items-center justify-center gap-1.5">
-                        {row.local.icon === "x" && <X className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />}
-                        {row.local.icon === "partial" && <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />}
-                        <span className={`text-xs md:text-sm ${row.local.negative ? 'font-bold text-red-600' : 'text-gray-500'}`}>
-                          {row.local.value}
-                        </span>
-                        {row.local.sub && <span className="text-xs text-gray-400 hidden md:inline">({row.local.sub})</span>}
+                      <div className="px-3 py-2 md:px-4 md:py-2.5 text-center border-l border-gray-100 flex items-center justify-center gap-1">
+                        <div className="w-3.5 h-3.5 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                          <X className="w-2 h-2 text-gray-400" />
+                        </div>
+                        <span className="text-xs text-gray-500">{row.local}</span>
                       </div>
-                      <div className="px-4 py-2.5 md:px-6 md:py-3 text-center border-l border-blue-100 bg-blue-50/30 flex items-center justify-center gap-1.5">
-                        {row.onspot.icon === "check" && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />}
-                        <span className={`text-xs md:text-sm font-medium ${row.onspot.positive ? 'font-bold text-blue-600' : 'text-gray-700'}`}>
-                          {row.onspot.value}
-                        </span>
-                        {row.onspot.sub && <span className="text-xs text-blue-500 hidden md:inline">({row.onspot.sub})</span>}
+                      <div className="px-3 py-2 md:px-4 md:py-2.5 text-center border-l border-[#4353FF]/10 bg-[#4353FF]/[0.02] flex items-center justify-center gap-1">
+                        <div className="w-3.5 h-3.5 rounded-full bg-[#4353FF]/20 flex items-center justify-center flex-shrink-0">
+                          <Check className="w-2 h-2 text-[#4353FF]" />
+                        </div>
+                        <span className="text-xs font-medium text-gray-700">{row.onspot}</span>
                       </div>
                     </div>
                   ))}
+                </div>
 
-                  {/* Upgrade Option Row - Highlighted */}
-                  <div className="grid grid-cols-3 bg-gradient-to-r from-blue-50/50 to-violet-50/50 border-t border-blue-200">
-                    <div className="px-4 py-3 md:px-6 md:py-4 flex items-center">
-                      <span className="text-sm font-semibold text-gray-800">Upgrade Option</span>
-                    </div>
-                    <div className="px-4 py-3 md:px-6 md:py-4 text-center border-l border-gray-200 flex items-center justify-center gap-1.5">
-                      <X className="w-3.5 h-3.5 text-red-400" />
-                      <span className="text-xs md:text-sm text-gray-400">N/A</span>
-                    </div>
-                    <div className="px-4 py-3 md:px-6 md:py-4 text-center border-l border-blue-200 bg-blue-50/50 flex items-center justify-center gap-1.5">
-                      <ArrowUpRight className="w-3.5 h-3.5 text-blue-600" />
-                      <span className="text-xs md:text-sm font-semibold text-blue-600">Upgrade to Managed anytime</span>
-                    </div>
+                {/* Upgrade Row */}
+                <div className="grid grid-cols-3 border-t border-gray-200 bg-gray-50/50">
+                  <div className="px-3 py-2.5 md:px-4 flex items-center">
+                    <span className="text-xs font-medium text-gray-700">Upgrade Path</span>
+                  </div>
+                  <div className="px-3 py-2.5 md:px-4 text-center border-l border-gray-200 flex items-center justify-center">
+                    <span className="text-xs text-gray-400">—</span>
+                  </div>
+                  <div className="px-3 py-2.5 md:px-4 text-center border-l border-[#4353FF]/10 flex items-center justify-center gap-1">
+                    <ArrowUpRight className="w-3 h-3 text-[#4353FF]" />
+                    <span className="text-xs font-medium text-[#4353FF]">Managed Services</span>
                   </div>
                 </div>
               </div>
 
-              {/* Bottom CTA */}
-              <div className="text-center mt-10">
-                <p className="text-gray-600 mb-5 max-w-xl mx-auto text-sm md:text-base">
-                  Start with Resourced Services — upgrade to Managed when you're ready for complete operational support.
-                </p>
+              {/* Compact CTA */}
+              <div className="text-center mt-6">
                 <Button
-                  size="lg"
-                  className="px-8 py-6 text-lg rounded-2xl touch-target"
-                  style={{
-                    background: "linear-gradient(135deg, #4353FF 0%, #5B7CFF 100%)",
-                  }}
+                  size="default"
+                  className="px-6 rounded-xl"
+                  style={{ background: "#4353FF" }}
                   onClick={openBooking}
                   data-testid="button-comparison-cta"
                 >
                   Start My 90-Day Trial
-                  <ChevronRight className="w-5 h-5 ml-2" />
+                  <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
               </div>
             </div>
