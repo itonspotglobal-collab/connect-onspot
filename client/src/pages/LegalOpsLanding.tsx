@@ -896,41 +896,52 @@ export default function LegalOpsLanding() {
           
           <div className="relative z-20 px-6 sm:px-8 md:px-12 lg:px-16 py-10 sm:py-12 md:py-14 flex items-center min-h-screen pb-16">
             <div className="max-w-7xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center h-full">
-              {/* Left: Headline & Value Prop - Optimized Spacing */}
-              <div className="hero-fade-up space-y-4 md:space-y-5">
-                {/* Integrated Brand Badge - Refined Label */}
-                <div className="inline-flex items-center gap-2 backdrop-blur-md bg-white/6 px-3.5 py-1.5 rounded-full border border-white/12">
-                  <div className="w-6 h-6 bg-white/15 rounded-full flex items-center justify-center">
-                    <Building2 className="h-3 w-3 text-white/70" />
-                  </div>
-                  <span className="text-xs font-semibold text-white/80 tracking-wide">OnSpot LegalOps</span>
-                </div>
+              {/* Left: Headline & Value Prop - Refined Hierarchy */}
+              <div className="hero-fade-up space-y-5 md:space-y-6">
+                {/* Pre-headline - Tension Layer */}
+                <p 
+                  className="text-xs sm:text-sm font-medium tracking-widest uppercase"
+                  style={{ color: '#A5B4FC' }}
+                  data-testid="text-hero-preheadline"
+                >
+                  When legal operations break down, your firm pays the price
+                </p>
 
-                {/* Main Headline */}
+                {/* Main Headline - Authority & Inevitability */}
                 <h1
-                  className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-tight"
+                  className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.1] tracking-tight"
                   style={{ color: '#F5F7FF' }}
                   data-testid="text-hero-headline"
                 >
-                  Cut Legal Admin Costs by 70%
+                  Operational Stability<br className="hidden sm:block" />
+                  <span className="block sm:inline"> for Law Firms</span>
                 </h1>
 
-                {/* Subheadline */}
+                {/* Subheadline - Secondary Payoff */}
                 <p
                   className="text-lg sm:text-xl md:text-2xl font-light leading-snug tracking-wide"
                   style={{ color: '#D8DFF5' }}
                   data-testid="text-hero-subhead"
                 >
-                  Zero Escalations. Full Control.
+                  Cut admin costs by 70%. Zero escalations. Full control.
                 </p>
 
-                {/* Body */}
-                <p className="text-sm sm:text-base leading-relaxed max-w-2xl font-light opacity-90" style={{ color: '#E0E8F5' }}>
-                  OnSpot provides dedicated legal operations teams that handle case intake, document preparation, client coordination, and workflow management—so your attorneys focus entirely on legal strategy and billable work. Predictable costs, zero operational chaos, and guaranteed replacements.
+                {/* Authority Cue - Minimal, no logos */}
+                <p 
+                  className="text-xs sm:text-sm font-medium tracking-wide"
+                  style={{ color: '#94A3B8' }}
+                  data-testid="text-hero-authority"
+                >
+                  Trusted by landlord-tenant practices across five U.S. regions.
                 </p>
+
+                {/* Thin Divider - Moment of Emphasis */}
+                <div className="pt-2 pb-1">
+                  <div className="w-16 h-px bg-white/20"></div>
+                </div>
 
                 {/* Metric Boxes - Unified OnSpot Blue Theme */}
-                <div className="flex md:grid md:grid-cols-3 gap-3 md:gap-3 hero-fade-up-delay overflow-x-auto md:overflow-visible scroll-snap-x -mx-4 px-4 md:mx-0 md:px-0 pt-2">
+                <div className="flex md:grid md:grid-cols-3 gap-3 md:gap-3 hero-fade-up-delay overflow-x-auto md:overflow-visible scroll-snap-x -mx-4 px-4 md:mx-0 md:px-0">
                   <div className="flex-shrink-0 w-[220px] md:w-auto flex flex-col items-center gap-1.5 bg-gradient-to-br from-blue-500/10 to-blue-600/5 backdrop-blur-sm px-3 py-3 rounded-lg border border-blue-300/20 scroll-snap-item">
                     <div className="w-8 h-8 bg-blue-400/30 rounded-md flex items-center justify-center">
                       <TrendingDown className="h-4 w-4 text-blue-200" />
