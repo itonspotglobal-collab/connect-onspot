@@ -2870,121 +2870,52 @@ export default function LegalOpsLanding() {
           </div>
         </section>
 
-        {/* What If You Don't Partner With OnSpot - Mindvalley Style */}
-        <section className="py-20 md:py-28 bg-gradient-to-b from-amber-50/80 via-orange-50/50 to-white relative overflow-hidden">
-          {/* Warm glow orbs */}
-          <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-amber-400/10 rounded-full blur-3xl pointer-events-none"></div>
-          <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-orange-300/10 rounded-full blur-3xl pointer-events-none"></div>
+        {/* What If You Don't Partner With OnSpot - Typography Driven */}
+        <section className="py-28 sm:py-36 md:py-44 bg-slate-950">
+          <div className="container-fluid">
+            <div className="max-w-4xl mx-auto px-4 md:px-8">
+              {/* Centered Typography */}
+              <div className="text-center">
+                {/* Main Headline - Scaled Up */}
+                <h2
+                  className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-8 leading-[1.1] tracking-tight"
+                  data-testid="text-pain-points-title"
+                >
+                  What If You Don't Partner With OnSpot?
+                </h2>
 
-          <div className="container-fluid relative z-10">
-            <div className="max-w-7xl mx-auto px-4 md:px-8">
-              {/* Two Column Layout - Image Left, Content Right */}
-              <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-                {/* Left: Image - Full height to match content */}
-                <div className="relative order-2 lg:order-1 flex items-center justify-center">
-                  <div 
-                    className="relative w-full rounded-3xl overflow-hidden shadow-2xl"
-                    style={{ 
-                      aspectRatio: '4/5',
-                      backgroundImage: `url(${profitsLostImage})`,
-                      backgroundSize: '130%',
-                      backgroundPosition: 'center 60%',
-                      backgroundRepeat: 'no-repeat'
+                {/* Tightened Body Copy */}
+                <p className="text-lg sm:text-xl md:text-2xl text-slate-400 leading-relaxed max-w-3xl mx-auto font-light">
+                  Rising overhead. Turnover chaos. Missed deadlines. Errors that cost reputation. Every in-house paralegal is $80K–$100K before benefits — and when they leave, knowledge leaves with them.
+                </p>
+
+                {/* Single Line Statement */}
+                <p className="mt-10 text-xl sm:text-2xl text-white font-medium">
+                  You grow in stress, not revenue.
+                </p>
+
+                {/* Subtle Divider */}
+                <div className="w-16 h-px bg-slate-700 mx-auto my-12"></div>
+
+                {/* Resolution */}
+                <p className="text-base sm:text-lg text-slate-500 max-w-2xl mx-auto">
+                  With OnSpot, you eliminate these risks — transforming chaos into a compliant, cost-efficient operation.
+                </p>
+
+                {/* CTA */}
+                <div className="mt-12">
+                  <Button
+                    onClick={openBooking}
+                    size="lg"
+                    className="px-8 py-6 text-base rounded-xl touch-target"
+                    style={{
+                      background: "linear-gradient(135deg, #4353FF 0%, #5B7CFF 100%)",
                     }}
-                    role="img"
-                    aria-label="Profits lost to overhead - laptop mockup"
-                  />
-                </div>
-
-                {/* Right: Content */}
-                <div className="order-1 lg:order-2">
-                  {/* Eyebrow */}
-                  <p className="text-red-600 text-sm font-semibold uppercase tracking-widest mb-4">
-                    The hidden costs
-                  </p>
-                  
-                  {/* Main Headline */}
-                  <h2
-                    className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight"
-                    data-testid="text-pain-points-title"
+                    data-testid="button-pain-points-cta"
                   >
-                    What If You Don't Partner With OnSpot?
-                  </h2>
-
-                  <p className="text-lg text-gray-600 mb-10 leading-relaxed">
-                    The hidden costs of keeping your LegalOps in-house add up fast. Here's what law firms face without a dedicated operations partner:
-                  </p>
-
-                  {/* Numbered Pain Points - Mindvalley Style */}
-                  <div className="space-y-6">
-                    {[
-                      {
-                        num: "1",
-                        title: "Rising Overhead, Shrinking Margins",
-                        desc: "Every in-house paralegal costs $80K–$100K/year — before benefits and training.",
-                        result: "Lose up to 70% of profit margin to back-office work."
-                      },
-                      {
-                        num: "2",
-                        title: "Turnover & Training Burnout",
-                        desc: "When staff leave, knowledge leaves with them. Months spent retraining.",
-                        result: "Delayed filings, missed deadlines, stressed partners."
-                      },
-                      {
-                        num: "3",
-                        title: "Errors That Cost Reputation",
-                        desc: "A single misfiled petition or late notice triggers compliance penalties.",
-                        result: "Client trust erodes and reputation suffers."
-                      },
-                      {
-                        num: "4",
-                        title: "Lost Billable Hours",
-                        desc: "Lawyers manage admin chaos instead of billing clients.",
-                        result: "Thousands in lost productivity every month."
-                      },
-                      {
-                        num: "5",
-                        title: "No Scalability",
-                        desc: "Every new client increases workload, not profit.",
-                        result: "You grow in stress, not revenue."
-                      }
-                    ].map((point, idx) => (
-                      <div key={idx} className="flex gap-4 group">
-                        {/* Number Circle */}
-                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-                          <span className="text-lg font-bold text-red-600">{point.num}</span>
-                        </div>
-                        {/* Content */}
-                        <div className="flex-1">
-                          <h3 className="text-lg font-bold text-gray-900 mb-1">{point.title}</h3>
-                          <p className="text-gray-600 text-sm mb-1">{point.desc}</p>
-                          <p className="text-red-600 text-sm font-medium flex items-center gap-1">
-                            <AlertTriangle className="w-3.5 h-3.5" />
-                            {point.result}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* CTA Section */}
-                  <div className="mt-10 p-6 bg-gradient-to-r from-blue-50 to-violet-50 rounded-2xl border border-blue-100">
-                    <p className="text-gray-800 font-medium mb-4">
-                      With OnSpot LegalOps<sup className="text-xs">™</sup>, you eliminate these risks — transforming chaos into a compliant, cost-efficient operation.
-                    </p>
-                    <Button
-                      onClick={openBooking}
-                      size="lg"
-                      className="px-6 py-5 text-base rounded-xl touch-target"
-                      style={{
-                        background: "linear-gradient(135deg, #4353FF 0%, #5B7CFF 100%)",
-                      }}
-                      data-testid="button-pain-points-cta"
-                    >
-                      Protect Your Firm — Book Free Diagnostic
-                      <ChevronRight className="w-5 h-5 ml-2" />
-                    </Button>
-                  </div>
+                    Book Free Diagnostic
+                    <ChevronRight className="w-5 h-5 ml-2" />
+                  </Button>
                 </div>
               </div>
             </div>
