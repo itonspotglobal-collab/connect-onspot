@@ -6,11 +6,15 @@
 .carousel-rounded-image {
   border-radius: 24px !important;
   overflow: hidden !important;
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
+  mask-image: radial-gradient(white, black);
 }
 
 .carousel-rounded-image img {
   border-radius: 24px !important;
   display: block !important;
+  width: 100% !important;
+  height: auto !important;
 }
 
 @layer base {
