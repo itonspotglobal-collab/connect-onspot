@@ -2898,42 +2898,66 @@ export default function LegalOpsLanding() {
                   </div>
 
                   {/* Outcome Bullets */}
-                  <div className="space-y-4">
+                  <div className="space-y-5">
                     {[
                       {
-                        icon: Zap,
-                        text: "100% billable focus — your attorneys practice law, not manage files."
+                        icon: CheckCircle2,
+                        title: "Every case moves forward without delays",
+                        desc: "No bottlenecks. No follow-ups. Just consistent, predictable execution across your entire caseload."
                       },
                       {
-                        icon: TrendingDown,
-                        text: "Zero escalations — predictable delivery on every case, every deadline."
+                        icon: CheckCircle2,
+                        title: "Every document delivered with flawless accuracy",
+                        desc: "Clean, compliant, court-ready documentation—produced the same way, every time."
                       },
                       {
-                        icon: Award,
-                        text: "Unstoppable growth — scale your firm without scaling your overhead."
+                        icon: CheckCircle2,
+                        title: "Every client kept informed before they even ask",
+                        desc: "Proactive communication and real-time updates that build trust and reduce inbound requests."
                       }
                     ].map((item, idx) => {
                       const IconComponent = item.icon;
                       return (
-                        <div key={idx} className="dream-bullet flex items-start gap-4 opacity-0">
-                          <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center">
-                            <IconComponent className="w-6 h-6 text-white" />
+                        <div key={idx} className="dream-bullet opacity-0 space-y-1">
+                          <div className="flex items-start gap-3">
+                            <IconComponent className="w-5 h-5 text-white flex-shrink-0 mt-0.5" />
+                            <h4 className="text-base sm:text-lg font-semibold leading-snug">{item.title}</h4>
                           </div>
-                          <p className="text-base sm:text-lg font-light leading-relaxed pt-2">{item.text}</p>
+                          <p className="text-sm text-white/80 leading-relaxed pl-8">{item.desc}</p>
                         </div>
                       );
                     })}
                   </div>
 
-                  {/* CTA */}
-                  <div className="pt-4">
+                  {/* Divider */}
+                  <div className="h-px bg-white/20 my-6"></div>
+
+                  {/* Confidence Statement */}
+                  <div className="space-y-3">
+                    <p className="text-lg font-semibold leading-tight">No late nights. No turnover. No escalations.</p>
+                    <p className="text-sm text-white/80 leading-relaxed">Just a stable, high-performing system running behind your firm.</p>
+                  </div>
+
+                  {/* Metrics Badges */}
+                  <div className="flex flex-wrap gap-4 pt-4">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full border border-white/30">
+                      <span className="text-sm font-semibold">70% cost savings</span>
+                    </div>
+                    <div className="flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full border border-white/30">
+                      <span className="text-sm font-semibold">100% peace of mind</span>
+                    </div>
+                  </div>
+
+                  {/* CTA Section */}
+                  <div className="pt-6 space-y-4">
+                    <p className="text-base sm:text-lg font-light">Ready to replace your legal admin chaos with guaranteed stability?</p>
                     <Button
                       onClick={openBooking}
                       size="lg"
                       className="px-8 py-6 text-lg rounded-2xl bg-white text-[#4353FF] hover:bg-white/90 font-semibold touch-target"
                       data-testid="button-dream-outcome-cta"
                     >
-                      Schedule Your Free Assessment
+                      Start My LegalOps Trial
                       <ChevronRight className="w-5 h-5 ml-2" />
                     </Button>
                   </div>
