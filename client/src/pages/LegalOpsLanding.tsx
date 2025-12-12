@@ -1092,6 +1092,32 @@ export default function LegalOpsLanding() {
           </div>
         </section>
 
+        {/* Security / Confidentiality Trust Strip */}
+        <section className="py-6 sm:py-8 bg-slate-900 border-y border-slate-800">
+          <div className="container-fluid">
+            <div className="max-w-6xl mx-auto">
+              <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-8 md:gap-12">
+                <div className="flex items-center gap-2 text-slate-400">
+                  <FileText className="w-4 h-4 text-[#4353FF]" />
+                  <span className="text-xs sm:text-sm">NDA-Protected</span>
+                </div>
+                <div className="flex items-center gap-2 text-slate-400">
+                  <Lock className="w-4 h-4 text-[#4353FF]" />
+                  <span className="text-xs sm:text-sm">Secure Access Controls</span>
+                </div>
+                <div className="flex items-center gap-2 text-slate-400">
+                  <Shield className="w-4 h-4 text-[#4353FF]" />
+                  <span className="text-xs sm:text-sm">Confidentiality-First</span>
+                </div>
+                <div className="flex items-center gap-2 text-slate-400">
+                  <Scale className="w-4 h-4 text-[#4353FF]" />
+                  <span className="text-xs sm:text-sm">Support Work Only — Final Sign-Off Stays With You</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Geographic Coverage Section - Full-Width Mockup Background */}
         <section className="relative min-h-[600px] md:min-h-[700px] lg:min-h-[800px] overflow-hidden">
           {/* Full-width background image */}
