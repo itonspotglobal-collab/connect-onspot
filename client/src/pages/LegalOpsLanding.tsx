@@ -1641,22 +1641,22 @@ export default function LegalOpsLanding() {
         </section>
 
         {/* Dashboard Preview */}
-        <section className="py-16 sm:py-24 bg-slate-50 dark:bg-slate-950">
+        <section className="py-12 sm:py-16 md:py-24 bg-slate-50 dark:bg-slate-950">
           <div className="container-fluid">
-            <div className="text-center mb-12">
+            <div className="text-center mb-8 sm:mb-12 px-4">
               <h2
-                className="text-3xl sm:text-4xl font-bold mb-4"
+                className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4"
                 data-testid="text-dashboard-title"
               >
                 Full Visibility Into Your Legal Operations
               </h2>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
                 Track every case, monitor performance, and ensure compliance in
                 real-time
               </p>
             </div>
 
-            <div className="grid sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            <div className="grid sm:grid-cols-3 gap-4 sm:gap-6 max-w-4xl mx-auto px-4 sm:px-0">
               <Card className="text-center hover-elevate">
                 <CardHeader>
                   <BarChart3 className="h-12 w-12 text-violet-600 mx-auto mb-2" />
@@ -2559,7 +2559,7 @@ export default function LegalOpsLanding() {
         </section>
 
         {/* Local Staff vs. OnSpot LegalOps Comparison - Compact Feature Grid */}
-        <section className="py-12 md:py-16 bg-white relative">
+        <section className="py-12 sm:py-14 md:py-16 bg-white relative">
           <div className="container-fluid relative z-10">
             <div className="max-w-4xl mx-auto px-4">
               {/* Section Header - Minimal */}
@@ -2651,10 +2651,10 @@ export default function LegalOpsLanding() {
               </div>
 
               {/* Compact CTA */}
-              <div className="text-center mt-6">
+              <div className="text-center mt-6 sm:mt-8">
                 <Button
-                  size="default"
-                  className="px-6 rounded-xl"
+                  size="lg"
+                  className="w-full sm:w-auto px-6 sm:px-8 rounded-xl touch-target"
                   style={{ background: "#4353FF" }}
                   onClick={openBooking}
                   data-testid="button-comparison-cta"
@@ -2923,49 +2923,49 @@ export default function LegalOpsLanding() {
         </section>
 
         {/* FAQ Section */}
-        <section className="py-20 sm:py-32 bg-gradient-to-br from-slate-50 via-white to-blue-50/30 relative overflow-hidden">
+        <section className="py-14 sm:py-20 md:py-28 bg-gradient-to-br from-slate-50 via-white to-blue-50/30 relative overflow-hidden">
           {/* Subtle decorative elements */}
-          <div className="absolute top-20 right-10 w-64 h-64 bg-[#4353FF]/5 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-20 left-10 w-80 h-80 bg-blue-500/5 rounded-full blur-3xl"></div>
+          <div className="absolute top-20 right-10 w-64 h-64 bg-[#4353FF]/5 rounded-full blur-3xl hidden sm:block"></div>
+          <div className="absolute bottom-20 left-10 w-80 h-80 bg-blue-500/5 rounded-full blur-3xl hidden sm:block"></div>
 
           <div className="container-fluid relative z-10">
             {/* Section Header */}
-            <div className="text-center mb-16 max-w-3xl mx-auto">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#4353FF]/10 border border-[#4353FF]/20 rounded-full mb-6">
+            <div className="text-center mb-10 sm:mb-16 max-w-3xl mx-auto px-4">
+              <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-[#4353FF]/10 border border-[#4353FF]/20 rounded-full mb-4 sm:mb-6">
                 <MessageCircle
-                  className="w-4 h-4"
+                  className="w-3.5 h-3.5 sm:w-4 sm:h-4"
                   style={{ color: "#4353FF" }}
                 />
                 <span
-                  className="text-sm font-semibold"
+                  className="text-xs sm:text-sm font-semibold"
                   style={{ color: "#4353FF" }}
                 >
                   FAQ
                 </span>
               </div>
               <h2
-                className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4"
+                className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4"
                 style={{ color: "#1E293B" }}
                 data-testid="text-faq-title"
               >
                 Frequently Asked Questions
               </h2>
-              <p className="text-xl text-slate-600 font-light">
+              <p className="text-base sm:text-lg md:text-xl text-slate-600 font-light">
                 Everything you need to know before outsourcing your LegalOps.
               </p>
             </div>
 
             {/* FAQ Accordion */}
-            <div className="max-w-4xl mx-auto">
-              <Accordion type="single" collapsible className="space-y-4">
+            <div className="max-w-4xl mx-auto px-4 sm:px-0">
+              <Accordion type="single" collapsible className="space-y-3 sm:space-y-4">
                 {/* FAQ 1 */}
                 <AccordionItem
                   value="item-1"
-                  className="bg-white rounded-2xl border border-slate-200 px-6 shadow-sm hover:shadow-md transition-shadow duration-300"
+                  className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 px-4 sm:px-6 shadow-sm hover:shadow-md transition-shadow duration-300"
                   data-testid="accordion-faq-1"
                 >
                   <AccordionTrigger
-                    className="text-lg font-semibold hover:no-underline py-6"
+                    className="text-base sm:text-lg font-semibold hover:no-underline py-4 sm:py-6 text-left"
                     style={{ color: "#1E293B" }}
                   >
                     What exactly is OnSpot LegalOps™?
@@ -3788,45 +3788,45 @@ export default function LegalOpsLanding() {
         </section>
 
         {/* Final CTA Section */}
-        <section className="py-16 sm:py-24 bg-gradient-to-br from-violet-600 via-blue-600 to-indigo-600 text-white">
-          <div className="container-fluid text-center">
+        <section className="py-12 sm:py-16 md:py-24 bg-gradient-to-br from-violet-600 via-blue-600 to-indigo-600 text-white">
+          <div className="container-fluid text-center px-4 sm:px-6">
             <h2
-              className="text-3xl sm:text-4xl font-bold mb-6"
+              className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6"
               data-testid="text-final-cta-title"
             >
               Book Your LegalOps Diagnostic
             </h2>
-            <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8 opacity-90 max-w-2xl mx-auto">
               Only {availableSlots} New York slots available this month. Secure yours now.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <div className="flex flex-col gap-4 sm:gap-6 justify-center items-center">
               <Button
                 onClick={openBooking}
                 size="lg"
                 variant="outline"
-                className="bg-white text-violet-600 border-white hover:bg-white/90 min-h-12 px-8"
+                className="w-full sm:w-auto bg-white text-violet-600 border-white hover:bg-white/90 touch-target px-6 sm:px-8"
                 data-testid="button-final-cta"
               >
                 Start My 90-Day LegalOps Trial →
               </Button>
-              <div className="flex items-center gap-4 text-sm">
+              <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 text-sm">
                 <a
                   href="tel:1-718-540-5053"
-                  className="flex items-center gap-2 hover:underline"
+                  className="flex items-center gap-2 hover:underline touch-target justify-center"
                 >
                   <Phone className="h-4 w-4" />
                   1-718-540-5053
                 </a>
                 <a
                   href="mailto:hello@onspot.com"
-                  className="flex items-center gap-2 hover:underline"
+                  className="flex items-center gap-2 hover:underline touch-target justify-center"
                 >
                   <Mail className="h-4 w-4" />
                   hello@onspot.com
                 </a>
               </div>
             </div>
-            <p className="text-xs text-white/60 mt-8 max-w-2xl mx-auto">
+            <p className="text-xs text-white/60 mt-6 sm:mt-8 max-w-2xl mx-auto px-4">
               We support preparation, coordination, and operational execution. All filings and legal sign-offs remain with licensed professionals.
             </p>
           </div>
