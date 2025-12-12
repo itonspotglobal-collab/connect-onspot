@@ -966,7 +966,7 @@ export default function LegalOpsLanding() {
                   100% { transform: translateX(-50%); }
                 }
                 .guarantee-track {
-                  animation: guaranteeScroll 8s linear infinite;
+                  animation: guaranteeScroll 5s linear infinite;
                 }
                 .guarantee-track:hover {
                   animation-play-state: paused;
@@ -1413,10 +1413,10 @@ export default function LegalOpsLanding() {
                       </div>
                       <div>
                         <h3 className="font-bold text-lg mb-1">
-                          118-Day Stabilization
+                          Stabilized in Under 90 Days
                         </h3>
                         <p className="text-sm text-muted-foreground">
-                          Achieved full operational stability in under 4 months
+                          Achieved full operational stability in weeks, not months
                         </p>
                       </div>
                     </div>
@@ -1635,8 +1635,9 @@ export default function LegalOpsLanding() {
                   <div className="flex items-start gap-2">
                     <Star className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
                     <span className="text-sm">
-                      Pre-built Legal SOP Suite (Rent Demands, Petitions,
-                      Section 8)
+                      Pre-built Legal SOP Suite (Case intake, document
+                      preparation, calendaring, CRM, client communication,
+                      compliance workflows)
                     </span>
                   </div>
                   <div className="flex items-start gap-2">
@@ -2807,12 +2808,12 @@ export default function LegalOpsLanding() {
                       className="text-2xl font-bold"
                       style={{ color: "#4353FF" }}
                     >
-                      Build
+                      Workflow Integration & SOP Alignment
                     </h3>
                     <p className="text-base text-white/90 leading-relaxed">
-                      We assemble a dedicated full-time legal ops team trained
-                      in Rent Demands, Petitions, and Section 8 cases — powered
-                      by our proven SOP framework.
+                      We map your existing legal workflows, align them with
+                      proven LegalOps SOPs, and integrate seamlessly with your
+                      case management, intake, and communication systems.
                     </p>
                     <div className="flex items-start gap-2 pt-2">
                       <div className="w-5 h-5 bg-emerald-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
