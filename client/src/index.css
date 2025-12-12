@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Mindvalley-style rounded carousel images */
+.carousel-rounded-image {
+  border-radius: 24px !important;
+  overflow: hidden !important;
+}
+
+.carousel-rounded-image img {
+  border-radius: 24px !important;
+  display: block !important;
+}
+
 @layer base {
   html {
     scroll-padding-top: 80px; /* Account for fixed nav height */
