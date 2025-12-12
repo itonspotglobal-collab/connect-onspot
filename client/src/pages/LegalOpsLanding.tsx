@@ -884,20 +884,12 @@ export default function LegalOpsLanding() {
           </div>
         </div>
 
-        {/* Hero Section - Hormozi-Style Premium */}
+        {/* Hero Section - Hormozi-Style Premium with OnSpot Brand Colors */}
         <section 
-          className="relative overflow-visible"
-          style={{
-            background: "linear-gradient(165deg, #1a1f3c 0%, #0f1225 50%, #0a0d1a 100%)"
-          }}
+          className="relative overflow-visible hero-investor"
         >
-          {/* Subtle gradient accent */}
-          <div 
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background: "radial-gradient(ellipse 80% 50% at 20% 40%, rgba(67, 83, 255, 0.08) 0%, transparent 70%)"
-            }}
-          ></div>
+          {/* Elegant Gradient Overlay for Depth */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/20 pointer-events-none"></div>
           
           <div className="relative z-20 px-6 sm:px-8 md:px-12 lg:px-20 py-16 sm:py-20 md:py-24 lg:py-28 flex items-center min-h-screen">
             <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 xl:gap-28 items-center">
