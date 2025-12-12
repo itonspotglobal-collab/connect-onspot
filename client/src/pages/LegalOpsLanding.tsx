@@ -1413,7 +1413,7 @@ export default function LegalOpsLanding() {
                       </div>
                       <div>
                         <h3 className="font-bold text-lg mb-1">
-                          Stabilized in Under 90 Days
+                          Stabilized in Under 30 Days
                         </h3>
                         <p className="text-sm text-muted-foreground">
                           Achieved full operational stability in weeks, not months
