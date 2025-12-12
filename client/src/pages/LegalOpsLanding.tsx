@@ -1663,72 +1663,98 @@ export default function LegalOpsLanding() {
           </div>
         </section>
 
-        {/* The Dream Outcome - Two-Column Modern Design */}
-        <section className="relative overflow-hidden hero-investor">
-          {/* Elegant overlay for depth */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/30"></div>
+        {/* The Dream Outcome - OnSpot Blue with Animations */}
+        <section 
+          className="relative overflow-hidden py-20 md:py-28"
+          style={{ 
+            background: "linear-gradient(135deg, #4353FF 0%, #5B6CFF 50%, #4353FF 100%)",
+            backgroundSize: "200% 200%",
+            animation: "dream-gradient-shift 8s ease infinite"
+          }}
+        >
+          <style>{`
+            @keyframes dream-gradient-shift {
+              0%, 100% { background-position: 0% 50%; }
+              50% { background-position: 100% 50%; }
+            }
+            @keyframes dream-headline-glow {
+              0%, 100% { text-shadow: 0 0 30px rgba(255, 255, 255, 0.4); }
+              50% { text-shadow: 0 0 60px rgba(255, 255, 255, 0.7), 0 0 100px rgba(255, 255, 255, 0.3); }
+            }
+            @keyframes dream-bullet-stagger {
+              0% { opacity: 0; transform: translateX(-20px); }
+              100% { opacity: 1; transform: translateX(0); }
+            }
+            .dream-headline-animated {
+              animation: dream-headline-glow 3s ease-in-out infinite;
+            }
+            .dream-bullet-1 { animation: dream-bullet-stagger 0.6s ease-out 0.2s forwards; opacity: 0; }
+            .dream-bullet-2 { animation: dream-bullet-stagger 0.6s ease-out 0.4s forwards; opacity: 0; }
+            .dream-bullet-3 { animation: dream-bullet-stagger 0.6s ease-out 0.6s forwards; opacity: 0; }
+          `}</style>
 
           {/* Subtle animated accents */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-gradient-radial from-white/5 to-transparent rounded-full blur-3xl animate-gentle-float"></div>
+            <div className="absolute top-10 right-10 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-gentle-float"></div>
+            <div className="absolute bottom-10 left-10 w-96 h-96 bg-white/5 rounded-full blur-3xl"></div>
           </div>
 
           <div className="container-fluid relative z-10">
-            <div className="grid md:grid-cols-2 gap-12 md:gap-16 xl:gap-20 items-center min-h-[600px] py-16 sm:py-20 md:py-24">
+            <div className="grid md:grid-cols-2 gap-12 md:gap-16 xl:gap-20 items-center min-h-[550px]">
               {/* Left Column - Content */}
               <div className="space-y-8 md:space-y-10">
                 {/* Section Title */}
                 <div className="space-y-4">
                   <h2
-                    className="text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-tight"
+                    className="dream-headline-animated text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-tight"
                     data-testid="text-dream-outcome-title"
                   >
                     The Dream Outcome
                   </h2>
-                  <p className="text-lg sm:text-xl text-white/70 font-light">
+                  <p className="text-lg sm:text-xl text-white/80 font-light">
                     What every law firm wants — and what OnSpot delivers.
                   </p>
                 </div>
 
-                {/* Key Points */}
+                {/* Key Points with Stagger Animation */}
                 <div className="space-y-6">
-                  <div className="flex items-start gap-4 group">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center mt-1">
+                  <div className="dream-bullet-1 flex items-start gap-4 group">
+                    <div className="flex-shrink-0 w-7 h-7 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mt-0.5">
                       <CheckCircle2 className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                      <p className="text-xl sm:text-2xl text-white font-medium leading-relaxed">
+                      <p className="text-xl sm:text-2xl text-white font-semibold leading-relaxed">
                         Every case moves forward without delays
                       </p>
-                      <p className="text-white/60 text-sm sm:text-base mt-1">
+                      <p className="text-white/70 text-sm sm:text-base mt-1.5">
                         No bottlenecks. No follow-ups. Just consistent, predictable execution across your entire caseload.
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-4 group">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center mt-1">
+                  <div className="dream-bullet-2 flex items-start gap-4 group">
+                    <div className="flex-shrink-0 w-7 h-7 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mt-0.5">
                       <CheckCircle2 className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                      <p className="text-xl sm:text-2xl text-white font-medium leading-relaxed">
+                      <p className="text-xl sm:text-2xl text-white font-semibold leading-relaxed">
                         Every document delivered with flawless accuracy
                       </p>
-                      <p className="text-white/60 text-sm sm:text-base mt-1">
+                      <p className="text-white/70 text-sm sm:text-base mt-1.5">
                         Clean, compliant, court-ready documentation—produced the same way, every time.
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-4 group">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center mt-1">
+                  <div className="dream-bullet-3 flex items-start gap-4 group">
+                    <div className="flex-shrink-0 w-7 h-7 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mt-0.5">
                       <CheckCircle2 className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                      <p className="text-xl sm:text-2xl text-white font-medium leading-relaxed">
+                      <p className="text-xl sm:text-2xl text-white font-semibold leading-relaxed">
                         Every client kept informed before they even ask
                       </p>
-                      <p className="text-white/60 text-sm sm:text-base mt-1">
+                      <p className="text-white/70 text-sm sm:text-base mt-1.5">
                         Proactive communication and real-time updates that build trust and reduce inbound requests.
                       </p>
                     </div>
@@ -1737,26 +1763,25 @@ export default function LegalOpsLanding() {
 
                 {/* Bottom Promise */}
                 <div className="pt-6 space-y-4">
-                  <div className="h-px bg-gradient-to-r from-white/20 via-white/40 to-white/20"></div>
-                  <p className="text-lg sm:text-xl text-white/80 leading-relaxed">
-                    <span className="text-white font-medium">
+                  <div className="h-px bg-gradient-to-r from-white/10 via-white/30 to-white/10"></div>
+                  <p className="text-lg sm:text-xl text-white leading-relaxed">
+                    <span className="font-semibold">
                       No late nights. No turnover. No escalations.
                     </span>
                     <br />
-                    Just a stable, high-performing system running behind your
-                    firm.
+                    <span className="text-white/80">Just a stable, high-performing system running behind your firm.</span>
                   </p>
-                  <div className="flex items-center gap-3 flex-wrap text-sm sm:text-base">
+                  <div className="flex items-center gap-3 flex-wrap text-sm sm:text-base pt-2">
                     <Badge
                       variant="outline"
-                      className="bg-white/5 border-white/20 text-white backdrop-blur-sm px-3 py-1.5"
+                      className="bg-white/10 border-white/30 text-white backdrop-blur-sm px-4 py-2"
                     >
                       70% cost savings
                     </Badge>
-                    <span className="text-white/40">+</span>
+                    <span className="text-white/50">+</span>
                     <Badge
                       variant="outline"
-                      className="bg-white/5 border-white/20 text-white backdrop-blur-sm px-3 py-1.5"
+                      className="bg-white/10 border-white/30 text-white backdrop-blur-sm px-4 py-2"
                     >
                       100% peace of mind
                     </Badge>
@@ -1768,10 +1793,10 @@ export default function LegalOpsLanding() {
               <div className="relative md:h-full flex items-center justify-center">
                 <div className="relative w-full max-w-md md:max-w-lg">
                   {/* Glow effect behind image */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-violet-500/20 rounded-3xl blur-3xl"></div>
+                  <div className="absolute inset-0 bg-white/10 rounded-3xl blur-3xl"></div>
 
                   {/* Image container */}
-                  <div className="relative rounded-3xl overflow-hidden border border-white/10 backdrop-blur-sm bg-white/5">
+                  <div className="relative rounded-3xl overflow-hidden border border-white/20 backdrop-blur-sm bg-white/5 shadow-2xl">
                     <img
                       src={lawyerImage}
                       alt="Successful lawyer representing excellence with OnSpot LegalOps"
@@ -1782,18 +1807,18 @@ export default function LegalOpsLanding() {
                       data-testid="img-lawyer-success"
                     />
                     {/* Subtle overlay gradient */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#4353FF]/30 via-transparent to-transparent"></div>
                   </div>
 
                   {/* Floating accent badge */}
-                  <div className="absolute -bottom-6 -left-6 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl px-6 py-4 shadow-2xl">
+                  <div className="absolute -bottom-4 -left-4 bg-white/15 backdrop-blur-xl border border-white/25 rounded-2xl px-5 py-3 shadow-2xl">
                     <div className="flex items-center gap-3">
-                      <Sparkles className="w-6 h-6 text-white" />
+                      <Sparkles className="w-5 h-5 text-white" />
                       <div>
-                        <p className="text-white font-bold text-lg">
+                        <p className="text-white font-bold text-base">
                           OnSpot LegalOps<sup className="text-xs">™</sup>
                         </p>
-                        <p className="text-white/70 text-sm">Powered success</p>
+                        <p className="text-white/70 text-xs">Powered success</p>
                       </div>
                     </div>
                   </div>
