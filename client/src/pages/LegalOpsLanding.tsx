@@ -942,7 +942,7 @@ export default function LegalOpsLanding() {
                     style={{ color: 'rgba(255, 255, 255, 0.8)' }}
                     data-testid="text-hero-subhead"
                   >
-                    &lt; 30 days to stability. 70% cost reduction. Zero escalations.
+                    Stabilized in under 30 days. 70% cost reduction. Zero escalations.
                   </p>
                 </div>
 
