@@ -1109,6 +1109,11 @@ export default function LegalOpsLanding() {
               <div className="max-w-7xl mx-auto px-4 md:px-8">
                 {/* Left-aligned content for better readability against the map */}
                 <div className="max-w-xl lg:max-w-2xl">
+                  {/* Origin Statement */}
+                  <p className="text-sm md:text-base font-light tracking-wide text-amber-300/80 uppercase mb-4" data-testid="text-origin-geo">
+                    Founded in high-volume New York legal operations
+                  </p>
+                  
                   {/* Main Headline */}
                   <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight drop-shadow-lg">
                     We're Across America
