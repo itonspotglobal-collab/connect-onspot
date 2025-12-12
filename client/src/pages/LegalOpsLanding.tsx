@@ -163,14 +163,16 @@ function GuaranteeCarousel() {
             }`}
           >
             <div className="w-full max-w-3xl mx-auto px-4">
-              <div className="rounded-xl overflow-hidden shadow-lg isolate">
-                <img 
-                  src={item.src} 
-                  alt={item.alt}
-                  className="w-full h-auto block rounded-xl"
-                  loading="lazy"
-                />
-              </div>
+              <img 
+                src={item.src} 
+                alt={item.alt}
+                className="w-full h-auto block shadow-lg"
+                style={{ 
+                  clipPath: 'inset(0 round 12px)',
+                  WebkitClipPath: 'inset(0 round 12px)'
+                }}
+                loading="lazy"
+              />
             </div>
           </div>
         ))}
