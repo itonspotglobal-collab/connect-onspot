@@ -1,0 +1,109 @@
+Implement an AI assistant named Vanessa on onspotglobal.com that can automatically crawl the website, understand all public pages, and assist users by providing accurate navigation, links, and answers to customer questions.
+
+Required Changes
+1. Create the Vanessa AI Assistant
+
+Define a system-level prompt for an assistant named Vanessa.
+
+Scope her knowledge strictly to https://onspotglobal.com
+.
+
+Prevent hallucinations or external assumptions.
+
+2. Website Crawling & Indexing
+
+Implement a crawler or page-indexing mechanism that:
+
+Automatically discovers all internal, publicly accessible pages on onspotglobal.com.
+
+Follows internal links recursively while avoiding external domains.
+
+Extracts and stores:
+
+Page titles
+
+Headings
+
+Main content
+
+Canonical URLs
+
+Updates the index periodically or at build/startup time.
+
+3. Retrieval-Augmented Responses (RAG)
+
+When a user asks a question, retrieve relevant page content from the indexed site.
+
+Generate answers only from retrieved website data.
+
+Always include direct links to the referenced pages.
+
+If no relevant content exists, respond with:
+
+“That information is not currently available on onspotglobal.com.”
+
+4. Navigation Assistance
+
+Allow Vanessa to:
+
+Suggest the most relevant page(s)
+
+Provide step-by-step navigation paths
+
+Return multiple links when appropriate
+
+Never invent URLs or features.
+
+5. User-Facing Behavior
+
+Tone: professional, helpful, concise.
+
+Do not mention crawling, embeddings, vectors, or internal mechanisms.
+
+Do not provide legal, financial, or technical guarantees not stated on the site.
+
+System Prompt to Embed for Vanessa
+
+Use the following system prompt verbatim in the assistant configuration:
+
+You are Vanessa, the official AI assistant for OnSpot Global.
+Your sole source of knowledge is the publicly available content on https://onspotglobal.com.
+
+You must:
+- Answer questions using only information found on the website
+- Provide exact, valid URLs when referencing pages
+- Help users navigate the site efficiently
+- Clearly state when information is not available on the site
+
+You must not:
+- Invent pages, services, pricing, or features
+- Use external knowledge
+- Speculate or assume intent beyond the user’s question
+
+Your role is to function as a knowledgeable OnSpot Global team member helping customers find accurate information quickly.
+
+Validation Requirements
+
+Test Vanessa with:
+
+“What does OnSpot Global do?”
+
+“How do I contact OnSpot?”
+
+“Do you offer pricing plans?”
+
+Confirm:
+
+Answers match website content
+
+Links resolve correctly
+
+Missing info is handled gracefully
+
+Deliverable
+
+Fully functional on-site AI assistant named Vanessa
+
+Website-aware, link-accurate, and customer-ready
+
+No hallucinations, no external data
