@@ -38,6 +38,27 @@ const EXCLUDED_PATTERNS = [
   "#",
 ];
 
+// Known pages for fallback when sitemap/crawling fails (client-rendered sites)
+const KNOWN_PAGES = [
+  "/",
+  "/about",
+  "/services",
+  "/pricing",
+  "/contact",
+  "/careers",
+  "/clients",
+  "/talent",
+  "/outsourcing",
+  "/virtual-assistants",
+  "/staffing",
+  "/bpo",
+  "/faq",
+  "/privacy",
+  "/terms",
+  "/coming-soon",
+  "/legalops",
+];
+
 // Track visited URLs to avoid duplicates
 const visitedUrls = new Set<string>();
 const crawledPages: CrawledPage[] = [];
@@ -173,6 +194,89 @@ async function crawlPage(url: string): Promise<CrawledPage | null> {
 }
 
 /**
+ * Fetches sitemap.xml and extracts URLs
+ */
+async function discoverFromSitemap(): Promise<string[]> {
+  const sitemapUrls = [
+    `${BASE_URL}/sitemap.xml`,
+    `${BASE_URL}/sitemap-0.xml`,
+    `${BASE_URL}/sitemap_index.xml`,
+  ];
+  
+  const links: string[] = [];
+  
+  for (const sitemapUrl of sitemapUrls) {
+    try {
+      console.log(`📍 Checking sitemap: ${sitemapUrl}`);
+      const response = await axios.get(sitemapUrl, {
+        timeout: 10000,
+        headers: { "User-Agent": "OnSpot-Vanessa-Bot/1.0" },
+      });
+      
+      const $ = cheerio.load(response.data, { xmlMode: true });
+      
+      // Extract URLs from sitemap
+      $("url loc, sitemap loc").each((_, el) => {
+        const loc = $(el).text().trim();
+        if (loc && loc.startsWith(BASE_URL) && !shouldExcludeUrl(loc)) {
+          links.push(normalizeUrl(loc));
+        }
+      });
+      
+      if (links.length > 0) {
+        console.log(`✅ Found ${links.length} URLs in sitemap`);
+        break; // Use first successful sitemap
+      }
+    } catch (error) {
+      // Sitemap not found, continue to next
+    }
+  }
+  
+  return links;
+}
+
+/**
+ * Extracts links from Next.js __NEXT_DATA__ script tag
+ */
+function extractNextDataLinks($: cheerio.CheerioAPI): string[] {
+  const links: string[] = [];
+  
+  try {
+    const nextDataScript = $("#__NEXT_DATA__").html();
+    if (nextDataScript) {
+      const nextData = JSON.parse(nextDataScript);
+      
+      // Extract page paths from buildManifest or props
+      const extractPaths = (obj: any, paths: string[] = []): string[] => {
+        if (!obj || typeof obj !== "object") return paths;
+        
+        for (const [key, value] of Object.entries(obj)) {
+          if (key === "href" || key === "url" || key === "pathname" || key === "path") {
+            if (typeof value === "string" && value.startsWith("/") && !value.includes("?")) {
+              const fullUrl = `${BASE_URL}${value}`;
+              if (!shouldExcludeUrl(fullUrl)) {
+                paths.push(normalizeUrl(fullUrl));
+              }
+            }
+          }
+          if (typeof value === "object") {
+            extractPaths(value, paths);
+          }
+        }
+        return paths;
+      };
+      
+      const extracted = extractPaths(nextData);
+      links.push(...extracted);
+    }
+  } catch (error) {
+    // JSON parse failed, skip
+  }
+  
+  return links;
+}
+
+/**
  * Discovers internal links on a page
  */
 async function discoverLinks(url: string): Promise<string[]> {
@@ -187,6 +291,7 @@ async function discoverLinks(url: string): Promise<string[]> {
     const $ = cheerio.load(response.data);
     const links: string[] = [];
 
+    // Standard anchor tag discovery
     $("a[href]").each((_, element) => {
       const href = $(element).attr("href");
       if (!href) return;
@@ -206,6 +311,14 @@ async function discoverLinks(url: string): Promise<string[]> {
         links.push(normalized);
       }
     });
+
+    // Also check for Next.js __NEXT_DATA__ links
+    const nextLinks = extractNextDataLinks($);
+    for (const link of nextLinks) {
+      if (!visitedUrls.has(link) && !links.includes(link)) {
+        links.push(link);
+      }
+    }
 
     return links;
   } catch (error) {
@@ -268,8 +381,48 @@ export async function crawlWebsite(): Promise<SiteIndex> {
   const startTime = Date.now();
 
   try {
-    // Start crawling from the homepage
+    // First, try to discover URLs from sitemap
+    const sitemapUrls = await discoverFromSitemap();
+    
+    if (sitemapUrls.length > 0) {
+      console.log(`📍 Crawling ${sitemapUrls.length} URLs from sitemap...`);
+      for (const url of sitemapUrls) {
+        if (crawledPages.length >= MAX_PAGES) break;
+        
+        const normalized = normalizeUrl(url);
+        if (visitedUrls.has(normalized) || shouldExcludeUrl(normalized)) continue;
+        
+        visitedUrls.add(normalized);
+        const pageData = await crawlPage(normalized);
+        if (pageData) {
+          crawledPages.push(pageData);
+        }
+        await new Promise((resolve) => setTimeout(resolve, CRAWL_DELAY_MS));
+      }
+    }
+    
+    // Then do recursive crawl from homepage for any pages not in sitemap
     await crawlRecursive(BASE_URL);
+    
+    // If very few pages found, use known pages fallback (for client-rendered sites)
+    if (crawledPages.length < 5) {
+      console.log(`📍 Using known pages fallback (${KNOWN_PAGES.length} pages)...`);
+      for (const pagePath of KNOWN_PAGES) {
+        if (crawledPages.length >= MAX_PAGES) break;
+        
+        const fullUrl = `${BASE_URL}${pagePath}`;
+        const normalized = normalizeUrl(fullUrl);
+        
+        if (visitedUrls.has(normalized)) continue;
+        
+        visitedUrls.add(normalized);
+        const pageData = await crawlPage(normalized);
+        if (pageData) {
+          crawledPages.push(pageData);
+        }
+        await new Promise((resolve) => setTimeout(resolve, CRAWL_DELAY_MS));
+      }
+    }
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
     console.log(`✅ Crawl completed in ${duration}s — ${crawledPages.length} pages indexed`);
