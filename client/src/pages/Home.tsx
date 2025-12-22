@@ -45,7 +45,11 @@ import {
   SiYoutube,
 } from "react-icons/si";
 import { Link } from "wouter";
-const VanessaChat = lazy(() => import("@/components/VanessaChat").then(module => ({ default: module.VanessaChat })));
+const VanessaChat = lazy(() =>
+  import("@/components/VanessaChat").then((module) => ({
+    default: module.VanessaChat,
+  })),
+);
 import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
 
 import FlashLogo from "../assets/logos/Flash.png";
@@ -1405,8 +1409,8 @@ export default function Home() {
                     height="400"
                     loading="lazy"
                     className="w-full h-full object-cover blur-sm group-hover:blur-none opacity-60 group-hover:opacity-100 transition-all duration-500"
-                    style={{ 
-                      objectPosition: `center ${profile.focalY || '15%'}`,
+                    style={{
+                      objectPosition: `center ${profile.focalY || "15%"}`,
                     }}
                   />
 
@@ -1629,7 +1633,8 @@ export default function Home() {
                 }`}
                 style={{
                   marginTop:
-                    expandedFooterSection === "navigation" || window.innerWidth >= 768
+                    expandedFooterSection === "navigation" ||
+                    window.innerWidth >= 768
                       ? "16px"
                       : "0",
                 }}
@@ -1725,7 +1730,8 @@ export default function Home() {
                 }`}
                 style={{
                   marginTop:
-                    expandedFooterSection === "company" || window.innerWidth >= 768
+                    expandedFooterSection === "company" ||
+                    window.innerWidth >= 768
                       ? "16px"
                       : "0",
                 }}
@@ -1821,7 +1827,8 @@ export default function Home() {
                 }`}
                 style={{
                   marginTop:
-                    expandedFooterSection === "download" || window.innerWidth >= 768
+                    expandedFooterSection === "download" ||
+                    window.innerWidth >= 768
                       ? "16px"
                       : "0",
                 }}
@@ -1893,7 +1900,8 @@ export default function Home() {
                 }`}
                 style={{
                   marginTop:
-                    expandedFooterSection === "connect" || window.innerWidth >= 768
+                    expandedFooterSection === "connect" ||
+                    window.innerWidth >= 768
                       ? "16px"
                       : "0",
                 }}
@@ -1904,7 +1912,9 @@ export default function Home() {
                   data-testid="footer-email"
                 >
                   <Mail className="w-5 h-5 flex-shrink-0 group-hover:scale-110 transition-transform duration-300" />
-                  <span className="break-all sm:break-normal">hello@onspotglobal.com</span>
+                  <span className="break-all sm:break-normal">
+                    hello@onspotglobal.com
+                  </span>
                 </a>
                 <a
                   href="tel:+1234567890"
@@ -1912,7 +1922,7 @@ export default function Home() {
                   data-testid="footer-phone"
                 >
                   <Phone className="w-5 h-5 flex-shrink-0 group-hover:scale-110 transition-transform duration-300" />
-                  <span>1-718 540 5053</span>
+                  <span>1-917-801-9294</span>
                 </a>
                 <div className="flex items-start justify-center md:justify-start gap-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300">
                   <span className="break-words sm:break-normal">
@@ -1982,7 +1992,11 @@ export default function Home() {
 
       {/* Vanessa AI Assistant Chat */}
       {showVanessaChat ? (
-        <Suspense fallback={<div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-gradient-to-r from-violet-600 to-blue-600 animate-pulse" />}>
+        <Suspense
+          fallback={
+            <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-gradient-to-r from-violet-600 to-blue-600 animate-pulse" />
+          }
+        >
           <VanessaChat
             isOpen={showVanessaChat}
             onClose={() => setShowVanessaChat(false)}
