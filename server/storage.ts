@@ -2269,7 +2269,17 @@ export class MemStorage implements IStorage {
     const id = randomUUID();
     const newPost: Post = {
       id,
-      ...post,
+      title: post.title,
+      slug: post.slug,
+      excerpt: post.excerpt,
+      content: post.content,
+      coverImageUrl: post.coverImageUrl || null,
+      category: post.category,
+      author: post.author,
+      isFeatured: post.isFeatured ?? false,
+      status: post.status || "draft",
+      readTime: post.readTime || null,
+      publishedAt: post.publishedAt || null,
       likes: 0,
       createdAt: new Date(),
       updatedAt: new Date(),

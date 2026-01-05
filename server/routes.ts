@@ -4975,6 +4975,208 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============================================
+  // Blog Posts API (Insights page) - No Auth Required
+  // Publishing, editing, and deleting posts
+  // ============================================
+
+  // GET /api/posts - Fetch published posts (for public display)
+  app.get("/api/posts", async (req: Request, res: Response) => {
+    try {
+      const requestId = (req as any).requestId;
+      const { category, featured, all } = req.query;
+
+      console.log(`📰 Fetching posts [${requestId}]:`, { category, featured, all });
+
+      let posts;
+      if (all === "true") {
+        posts = await storage.listAllPosts();
+      } else {
+        posts = await storage.listPublishedPosts({
+          category: category as string | undefined,
+          featured: featured === "true" ? true : undefined,
+        });
+      }
+
+      res.json({ success: true, posts });
+    } catch (error: any) {
+      const requestId = (req as any).requestId;
+      console.error(`❌ Error fetching posts [${requestId}]:`, error.message);
+      res.status(500).json({
+        error: "Failed to fetch posts",
+        message: error.message,
+        requestId,
+      });
+    }
+  });
+
+  // GET /api/posts/:id - Fetch single post by ID
+  app.get("/api/posts/:id", async (req: Request, res: Response) => {
+    try {
+      const requestId = (req as any).requestId;
+      const { id } = req.params;
+
+      console.log(`📰 Fetching post [${requestId}]: ${id}`);
+
+      const post = await storage.getPost(id);
+      if (!post) {
+        return res.status(404).json({
+          error: "Post not found",
+          requestId,
+        });
+      }
+
+      res.json({ success: true, post });
+    } catch (error: any) {
+      const requestId = (req as any).requestId;
+      console.error(`❌ Error fetching post [${requestId}]:`, error.message);
+      res.status(500).json({
+        error: "Failed to fetch post",
+        message: error.message,
+        requestId,
+      });
+    }
+  });
+
+  // POST /api/posts - Create new post (PUBLISH)
+  app.post("/api/posts", async (req: Request, res: Response) => {
+    try {
+      const requestId = (req as any).requestId;
+      const postData = req.body;
+
+      console.log(`📝 Creating new post [${requestId}]:`, {
+        title: postData.title,
+        slug: postData.slug,
+        status: postData.status,
+      });
+
+      // Validate required fields
+      if (!postData.title || !postData.slug || !postData.content || !postData.excerpt || !postData.category || !postData.author) {
+        return res.status(400).json({
+          error: "Missing required fields",
+          message: "title, slug, content, excerpt, category, and author are required",
+          requestId,
+        });
+      }
+
+      // Check for duplicate slug
+      const existingPost = await storage.getPostBySlug(postData.slug);
+      if (existingPost) {
+        return res.status(409).json({
+          error: "Slug already exists",
+          message: "A post with this slug already exists",
+          requestId,
+        });
+      }
+
+      // Set published date if status is published
+      if (postData.status === "published" && !postData.publishedAt) {
+        postData.publishedAt = new Date();
+      }
+
+      const newPost = await storage.createPost(postData);
+
+      console.log(`✅ Post created [${requestId}]:`, {
+        id: newPost.id,
+        slug: newPost.slug,
+      });
+
+      res.status(201).json({ success: true, post: newPost });
+    } catch (error: any) {
+      const requestId = (req as any).requestId;
+      console.error(`❌ Error creating post [${requestId}]:`, error.message);
+      res.status(500).json({
+        error: "Failed to create post",
+        message: error.message,
+        requestId,
+      });
+    }
+  });
+
+  // PUT /api/posts/:id - Update existing post (EDIT)
+  app.put("/api/posts/:id", async (req: Request, res: Response) => {
+    try {
+      const requestId = (req as any).requestId;
+      const { id } = req.params;
+      const updates = req.body;
+
+      console.log(`✏️ Updating post [${requestId}]: ${id}`);
+
+      // Check post exists
+      const existingPost = await storage.getPost(id);
+      if (!existingPost) {
+        return res.status(404).json({
+          error: "Post not found",
+          requestId,
+        });
+      }
+
+      // If changing slug, check for duplicates
+      if (updates.slug && updates.slug !== existingPost.slug) {
+        const slugPost = await storage.getPostBySlug(updates.slug);
+        if (slugPost) {
+          return res.status(409).json({
+            error: "Slug already exists",
+            message: "A post with this slug already exists",
+            requestId,
+          });
+        }
+      }
+
+      // Set published date if status is changing to published
+      if (updates.status === "published" && existingPost.status !== "published" && !updates.publishedAt) {
+        updates.publishedAt = new Date();
+      }
+
+      const updatedPost = await storage.updatePost(id, updates);
+
+      console.log(`✅ Post updated [${requestId}]:`, {
+        id: updatedPost?.id,
+        slug: updatedPost?.slug,
+      });
+
+      res.json({ success: true, post: updatedPost });
+    } catch (error: any) {
+      const requestId = (req as any).requestId;
+      console.error(`❌ Error updating post [${requestId}]:`, error.message);
+      res.status(500).json({
+        error: "Failed to update post",
+        message: error.message,
+        requestId,
+      });
+    }
+  });
+
+  // DELETE /api/posts/:id - Delete post
+  app.delete("/api/posts/:id", async (req: Request, res: Response) => {
+    try {
+      const requestId = (req as any).requestId;
+      const { id } = req.params;
+
+      console.log(`🗑️ Deleting post [${requestId}]: ${id}`);
+
+      const deleted = await storage.deletePost(id);
+      if (!deleted) {
+        return res.status(404).json({
+          error: "Post not found",
+          requestId,
+        });
+      }
+
+      console.log(`✅ Post deleted [${requestId}]: ${id}`);
+
+      res.json({ success: true, message: "Post deleted successfully" });
+    } catch (error: any) {
+      const requestId = (req as any).requestId;
+      console.error(`❌ Error deleting post [${requestId}]:`, error.message);
+      res.status(500).json({
+        error: "Failed to delete post",
+        message: error.message,
+        requestId,
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
