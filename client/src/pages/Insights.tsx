@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   BookOpen, 
   Coffee, 
@@ -19,10 +21,49 @@ import {
   Target,
   TrendingUp
 } from "lucide-react";
+import type { Post } from "@shared/schema";
 
-const articles = [
+interface ArticleDisplay {
+  id: string;
+  title: string;
+  excerpt: string;
+  author: string;
+  date: string;
+  readTime: string;
+  likes: number;
+  category: string;
+  featured: boolean;
+  image: string;
+}
+
+function mapPostToArticle(post: Post): ArticleDisplay {
+  const placeholderImages: Record<string, string> = {
+    "Global Outsourcing": "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=400&h=250&fit=crop&crop=faces",
+    "Technology": "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=400&h=250&fit=crop&crop=faces",
+    "Customer Service": "https://images.unsplash.com/photo-1600298881974-6be191ceeda1?w=400&h=250&fit=crop&crop=faces",
+    "Industry Trends": "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=250&fit=crop&crop=faces",
+    "Process Optimization": "https://images.unsplash.com/photo-1553484771-371a605b060b?w=400&h=250&fit=crop&crop=faces",
+  };
+  
+  return {
+    id: post.id,
+    title: post.title,
+    excerpt: post.excerpt,
+    author: post.author,
+    date: post.publishedAt 
+      ? new Date(post.publishedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+      : new Date(post.createdAt!).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+    readTime: post.readTime || "3 min read",
+    likes: post.likes ?? 0,
+    category: post.category,
+    featured: post.isFeatured ?? false,
+    image: post.coverImageUrl || placeholderImages[post.category] || "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=400&h=250&fit=crop&crop=faces",
+  };
+}
+
+const fallbackArticles: ArticleDisplay[] = [
   {
-    id: 1,
+    id: "1",
     title: "Leveraging Ghana's Tech Talent and the World-Class Customer Service of the Philippines",
     excerpt: "Discover how combining Ghana's emerging tech capabilities with the Philippines' proven customer service excellence creates unbeatable outsourcing solutions.",
     author: "OnSpot Team",
@@ -34,7 +75,7 @@ const articles = [
     image: "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=400&h=250&fit=crop&crop=faces"
   },
   {
-    id: 2,
+    id: "2",
     title: "Ghana's Software Development Capabilities: An Untapped Goldmine for Outsourcing",
     excerpt: "Explore Ghana's rapidly growing tech ecosystem and how it's becoming a premier destination for software development outsourcing.",
     author: "Tech Research Team",
@@ -46,7 +87,7 @@ const articles = [
     image: "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=400&h=250&fit=crop&crop=faces"
   },
   {
-    id: 3,
+    id: "3",
     title: "It's in the Culture: Why the Philippines is the Gold Standard in Global Customer Service",
     excerpt: "The Philippines has this deep understanding of Western expectations because of its historical ties to America and strong cultural alignment with Western business practices.",
     author: "Nur Laminero",
@@ -58,7 +99,7 @@ const articles = [
     image: "https://images.unsplash.com/photo-1600298881974-6be191ceeda1?w=400&h=250&fit=crop&crop=faces"
   },
   {
-    id: 4,
+    id: "4",
     title: "Latest Updates in Outsourcing: A 2024 Perspective",
     excerpt: "As the global market continuously shifts, outsourcing trends have adapted to align with modern business demands. Here's what's shaping the industry.",
     author: "Renier Macalino",
@@ -70,7 +111,7 @@ const articles = [
     image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=250&fit=crop&crop=faces"
   },
   {
-    id: 5,
+    id: "5",
     title: "Process Efficiency: The Foundation of Exceptional Customer Service",
     excerpt: "Learn how streamlined processes and efficient workflows create the backbone of outstanding customer service delivery.",
     author: "Operations Team",
@@ -114,6 +155,10 @@ export default function Insights() {
   const [email, setEmail] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All Articles");
 
+  const { data: postsResponse, isLoading, isError } = useQuery<{ success: boolean; posts: Post[] }>({
+    queryKey: ["/api/posts"],
+  });
+
   const categories = [
     "All Articles",
     "Global Outsourcing", 
@@ -122,6 +167,12 @@ export default function Insights() {
     "Industry Trends",
     "Process Optimization"
   ];
+
+  const articles: ArticleDisplay[] = postsResponse?.success && postsResponse.posts?.length 
+    ? postsResponse.posts.map(mapPostToArticle)
+    : fallbackArticles;
+  
+  const showLoading = isLoading && !postsResponse;
 
   const featuredArticles = articles.filter(article => article.featured);
   const filteredArticles = selectedCategory === "All Articles" 
@@ -200,7 +251,19 @@ export default function Insights() {
               <h3 className="text-2xl font-bold">Featured Posts</h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {featuredArticles.map((article) => (
+              {showLoading ? (
+                Array.from({ length: 2 }).map((_, i) => (
+                  <Card key={i} className="overflow-hidden">
+                    <Skeleton className="aspect-video" />
+                    <CardContent className="p-6">
+                      <Skeleton className="h-4 w-2/3 mb-3" />
+                      <Skeleton className="h-6 w-full mb-3" />
+                      <Skeleton className="h-4 w-full mb-2" />
+                      <Skeleton className="h-4 w-3/4" />
+                    </CardContent>
+                  </Card>
+                ))
+              ) : featuredArticles.map((article) => (
                 <Card key={article.id} className="overflow-hidden hover-elevate transition-all duration-300 group">
                   <div className="aspect-video bg-muted relative">
                     <img 
@@ -259,7 +322,18 @@ export default function Insights() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredArticles.map((article) => (
+            {showLoading ? (
+              Array.from({ length: 6 }).map((_, i) => (
+                <Card key={i} className="overflow-hidden">
+                  <Skeleton className="aspect-video" />
+                  <CardContent className="p-6">
+                    <Skeleton className="h-3 w-1/2 mb-3" />
+                    <Skeleton className="h-5 w-full mb-2" />
+                    <Skeleton className="h-4 w-3/4" />
+                  </CardContent>
+                </Card>
+              ))
+            ) : filteredArticles.map((article) => (
               <Card key={article.id} className="overflow-hidden hover-elevate transition-all duration-300 group">
                 <div className="aspect-video bg-muted relative">
                   <img 

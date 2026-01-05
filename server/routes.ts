@@ -4980,28 +4980,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Publishing, editing, and deleting posts
   // ============================================
 
+  // Validation schema for creating posts
+  const createPostSchema = z.object({
+    title: z.string().min(1, "Title is required").max(500),
+    slug: z.string().min(1, "Slug is required").max(200).regex(/^[a-z0-9-]+$/, "Slug must be lowercase alphanumeric with hyphens"),
+    excerpt: z.string().min(1, "Excerpt is required").max(1000),
+    content: z.string().min(1, "Content is required"),
+    coverImageUrl: z.string().url().optional().nullable(),
+    category: z.string().min(1, "Category is required"),
+    author: z.string().min(1, "Author is required"),
+    isFeatured: z.boolean().optional().default(false),
+    status: z.enum(["draft", "published"]).optional().default("draft"),
+    readTime: z.string().optional().nullable(),
+    publishedAt: z.coerce.date().optional().nullable(),
+  });
+
+  // Validation schema for updating posts
+  const updatePostSchema = createPostSchema.partial();
+
   // GET /api/posts - Fetch published posts (for public display)
   app.get("/api/posts", async (req: Request, res: Response) => {
     try {
       const requestId = (req as any).requestId;
-      const { category, featured, all } = req.query;
+      const { category, featured } = req.query;
 
-      console.log(`📰 Fetching posts [${requestId}]:`, { category, featured, all });
+      console.log(`📰 Fetching posts [${requestId}]:`, { category, featured });
 
-      let posts;
-      if (all === "true") {
-        posts = await storage.listAllPosts();
-      } else {
-        posts = await storage.listPublishedPosts({
-          category: category as string | undefined,
-          featured: featured === "true" ? true : undefined,
-        });
-      }
+      const posts = await storage.listPublishedPosts({
+        category: category as string | undefined,
+        featured: featured === "true" ? true : undefined,
+      });
 
       res.json({ success: true, posts });
     } catch (error: any) {
       const requestId = (req as any).requestId;
       console.error(`❌ Error fetching posts [${requestId}]:`, error.message);
+      res.status(500).json({
+        error: "Failed to fetch posts",
+        message: error.message,
+        requestId,
+      });
+    }
+  });
+
+  // GET /api/posts/all - Admin endpoint to fetch all posts including drafts
+  app.get("/api/posts/all", async (req: Request, res: Response) => {
+    try {
+      const requestId = (req as any).requestId;
+      console.log(`📰 Fetching all posts including drafts [${requestId}]`);
+      
+      const posts = await storage.listAllPosts();
+      res.json({ success: true, posts });
+    } catch (error: any) {
+      const requestId = (req as any).requestId;
+      console.error(`❌ Error fetching all posts [${requestId}]:`, error.message);
       res.status(500).json({
         error: "Failed to fetch posts",
         message: error.message,
@@ -5042,22 +5074,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/posts", async (req: Request, res: Response) => {
     try {
       const requestId = (req as any).requestId;
-      const postData = req.body;
+
+      // Validate request body with Zod
+      const parseResult = createPostSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        const errors = parseResult.error.flatten();
+        console.error(`❌ Validation error [${requestId}]:`, errors);
+        return res.status(400).json({
+          error: "Validation failed",
+          message: "Invalid post data",
+          details: errors.fieldErrors,
+          requestId,
+        });
+      }
+
+      const postData = parseResult.data;
 
       console.log(`📝 Creating new post [${requestId}]:`, {
         title: postData.title,
         slug: postData.slug,
         status: postData.status,
       });
-
-      // Validate required fields
-      if (!postData.title || !postData.slug || !postData.content || !postData.excerpt || !postData.category || !postData.author) {
-        return res.status(400).json({
-          error: "Missing required fields",
-          message: "title, slug, content, excerpt, category, and author are required",
-          requestId,
-        });
-      }
 
       // Check for duplicate slug
       const existingPost = await storage.getPostBySlug(postData.slug);
@@ -5098,7 +5135,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const requestId = (req as any).requestId;
       const { id } = req.params;
-      const updates = req.body;
+
+      // Validate request body with Zod
+      const parseResult = updatePostSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        const errors = parseResult.error.flatten();
+        console.error(`❌ Validation error [${requestId}]:`, errors);
+        return res.status(400).json({
+          error: "Validation failed",
+          message: "Invalid post data",
+          details: errors.fieldErrors,
+          requestId,
+        });
+      }
+
+      const updates = parseResult.data;
 
       console.log(`✏️ Updating post [${requestId}]: ${id}`);
 
