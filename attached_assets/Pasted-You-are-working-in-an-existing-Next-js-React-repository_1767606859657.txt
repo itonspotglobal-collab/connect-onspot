@@ -1,0 +1,121 @@
+You are working in an existing Next.js / React repository.
+
+There is:
+
+A public Insights page (insight.tsx)
+
+An admin page (/admin/insights)
+
+A database-backed posts table already created
+
+The public Insights page currently displays sample/static blog posts.
+
+Goal
+
+Ensure that all existing sample posts appear in the Admin Insights page by migrating them into the database and making the database the single source of truth.
+
+Requirements
+1. Migrate Existing Sample Posts
+
+Locate the existing hardcoded/sample posts used by insight.tsx
+
+Convert these posts into database records
+
+Insert them into the posts table as:
+
+status = published
+
+Preserve:
+
+title
+
+slug
+
+excerpt
+
+content (if available)
+
+cover image URL
+
+category
+
+featured flag
+
+published date
+
+Implement this as:
+
+A one-time seed script, OR
+
+A safe initialization step that:
+
+Checks if posts already exist
+
+Does NOT create duplicates
+
+2. Admin Insights Page Behavior
+
+/admin/insights must fetch ALL posts from the database:
+
+drafts
+
+published
+
+featured and non-featured
+
+The admin page must display the migrated sample posts automatically after seeding.
+
+3. Public Insights Page Behavior
+
+Update insight.tsx to:
+
+Fetch posts from the database only
+
+Display:
+
+Featured posts (is_featured = true)
+
+Published posts only (status = published)
+
+Remove or disable static/mock post data.
+
+4. Data Safety
+
+Ensure seeding logic:
+
+Does not run repeatedly in production
+
+Uses slug uniqueness to prevent duplicates
+
+Add comments clearly marking seed logic
+
+Constraints
+
+Do NOT change existing UI styles or layout
+
+Do NOT add authentication yet
+
+Follow existing repo conventions
+
+Deliverables
+
+Seeded database containing existing sample posts
+
+Admin page showing all posts
+
+Public Insights page fully powered by the database
+
+Clear comments explaining the migration and future maintenance
+
+Start by identifying the sample posts used by insight.tsx and implementing a safe migration into the database.
+
+Best Practice (Strong Recommendation)
+
+Add a comment like this in the seed file:
+
+// NOTE:
+// This seed migrates legacy static Insight posts into the database.
+// Safe to remove once production content is fully managed via admin UI.
+
+
+This prevents future confusion.

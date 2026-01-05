@@ -234,6 +234,13 @@ app.use((req, res, next) => {
   const { siteCrawlerService } = await import('./services/siteCrawlerService');
   siteCrawlerService.startCronJob();
   
+  // Seed posts from legacy static content to database
+  // NOTE: This migration is idempotent - uses slug uniqueness to prevent duplicates
+  // Safe to remove once production content is fully managed via admin UI
+  const { seedPosts } = await import('./seeds/seedPosts');
+  const { storage } = await import('./storage');
+  await seedPosts(storage);
+  
   const server = await registerRoutes(app);
 
   // Enhanced global error handler with Sentry integration

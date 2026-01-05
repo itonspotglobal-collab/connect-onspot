@@ -61,68 +61,8 @@ function mapPostToArticle(post: Post): ArticleDisplay {
   };
 }
 
-const fallbackArticles: ArticleDisplay[] = [
-  {
-    id: "1",
-    title: "Leveraging Ghana's Tech Talent and the World-Class Customer Service of the Philippines",
-    excerpt: "Discover how combining Ghana's emerging tech capabilities with the Philippines' proven customer service excellence creates unbeatable outsourcing solutions.",
-    author: "OnSpot Team",
-    date: "Oct 15, 2024",
-    readTime: "5 min read",
-    likes: 24,
-    category: "Global Outsourcing",
-    featured: false,
-    image: "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=400&h=250&fit=crop&crop=faces"
-  },
-  {
-    id: "2",
-    title: "Ghana's Software Development Capabilities: An Untapped Goldmine for Outsourcing",
-    excerpt: "Explore Ghana's rapidly growing tech ecosystem and how it's becoming a premier destination for software development outsourcing.",
-    author: "Tech Research Team",
-    date: "Oct 14, 2024",
-    readTime: "4 min read",
-    likes: 18,
-    category: "Technology",
-    featured: false,
-    image: "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=400&h=250&fit=crop&crop=faces"
-  },
-  {
-    id: "3",
-    title: "It's in the Culture: Why the Philippines is the Gold Standard in Global Customer Service",
-    excerpt: "The Philippines has this deep understanding of Western expectations because of its historical ties to America and strong cultural alignment with Western business practices.",
-    author: "Nur Laminero",
-    date: "Oct 12, 2024",
-    readTime: "4 min read",
-    likes: 45,
-    category: "Customer Service",
-    featured: true,
-    image: "https://images.unsplash.com/photo-1600298881974-6be191ceeda1?w=400&h=250&fit=crop&crop=faces"
-  },
-  {
-    id: "4",
-    title: "Latest Updates in Outsourcing: A 2024 Perspective",
-    excerpt: "As the global market continuously shifts, outsourcing trends have adapted to align with modern business demands. Here's what's shaping the industry.",
-    author: "Renier Macalino",
-    date: "Oct 11, 2024",
-    readTime: "3 min read",
-    likes: 32,
-    category: "Industry Trends",
-    featured: true,
-    image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=250&fit=crop&crop=faces"
-  },
-  {
-    id: "5",
-    title: "Process Efficiency: The Foundation of Exceptional Customer Service",
-    excerpt: "Learn how streamlined processes and efficient workflows create the backbone of outstanding customer service delivery.",
-    author: "Operations Team",
-    date: "Oct 10, 2024",
-    readTime: "6 min read",
-    likes: 28,
-    category: "Process Optimization",
-    featured: false,
-    image: "https://images.unsplash.com/photo-1553484771-371a605b060b?w=400&h=250&fit=crop&crop=faces"
-  }
-];
+// NOTE: Legacy static posts have been migrated to the database via server/seeds/seedPosts.ts
+// The database is now the single source of truth for all blog posts.
 
 const contentChannels = [
   {
@@ -168,11 +108,13 @@ export default function Insights() {
     "Process Optimization"
   ];
 
+  // Database is the single source of truth - no fallback to static content
   const articles: ArticleDisplay[] = postsResponse?.success && postsResponse.posts?.length 
     ? postsResponse.posts.map(mapPostToArticle)
-    : fallbackArticles;
+    : [];
   
-  const showLoading = isLoading && !postsResponse;
+  const showLoading = isLoading;
+  const hasNoArticles = !isLoading && articles.length === 0;
 
   const featuredArticles = articles.filter(article => article.featured);
   const filteredArticles = selectedCategory === "All Articles" 
