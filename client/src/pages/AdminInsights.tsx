@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -154,28 +154,46 @@ export default function AdminInsights() {
 
   const openEditDialog = (post: Post) => {
     setEditingPost(post);
-    setFormData({
-      title: post.title,
-      slug: post.slug,
-      excerpt: post.excerpt,
-      content: post.content || "",
-      coverImageUrl: post.coverImageUrl || "",
-      category: post.category,
-      author: post.author,
-      isFeatured: post.isFeatured ?? false,
-      status: post.status as "draft" | "published",
-    });
   };
 
   const closeEditDialog = () => {
     setEditingPost(null);
-    setFormData(defaultFormData);
   };
+
+  // Form state isolation: Initialize form data only when modal opens to prevent
+  // controlled inputs from resetting on every render. This ensures typing is smooth.
+  useEffect(() => {
+    if (isCreateDialogOpen) {
+      setFormData(defaultFormData);
+    }
+  }, [isCreateDialogOpen]);
+
+  useEffect(() => {
+    if (editingPost) {
+      setFormData({
+        title: editingPost.title,
+        slug: editingPost.slug,
+        excerpt: editingPost.excerpt,
+        content: editingPost.content || "",
+        coverImageUrl: editingPost.coverImageUrl || "",
+        category: editingPost.category,
+        author: editingPost.author,
+        isFeatured: editingPost.isFeatured ?? false,
+        status: editingPost.status as "draft" | "published",
+      });
+    }
+  }, [editingPost]);
 
   const posts = postsResponse?.posts || [];
 
-  const PostForm = ({ onSubmit, isEditing = false }: { onSubmit: (e: React.FormEvent) => void; isEditing?: boolean }) => (
-    <form onSubmit={onSubmit} className="space-y-4">
+  // Helper to update form fields with immutable state updates
+  const updateField = <K extends keyof PostFormData>(field: K, value: PostFormData[K]) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Render form fields inline to avoid component remounting issues
+  const renderFormFields = (isEditing: boolean) => (
+    <>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="title">Title *</Label>
@@ -184,11 +202,12 @@ export default function AdminInsights() {
             data-testid="input-post-title"
             value={formData.title}
             onChange={(e) => {
-              setFormData({
-                ...formData,
-                title: e.target.value,
-                slug: isEditing ? formData.slug : generateSlug(e.target.value),
-              });
+              const newTitle = e.target.value;
+              setFormData(prev => ({
+                ...prev,
+                title: newTitle,
+                slug: isEditing ? prev.slug : generateSlug(newTitle),
+              }));
             }}
             required
           />
@@ -199,7 +218,7 @@ export default function AdminInsights() {
             id="slug"
             data-testid="input-post-slug"
             value={formData.slug}
-            onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+            onChange={(e) => updateField("slug", e.target.value)}
             required
           />
         </div>
@@ -211,7 +230,7 @@ export default function AdminInsights() {
           id="excerpt"
           data-testid="input-post-excerpt"
           value={formData.excerpt}
-          onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
+          onChange={(e) => updateField("excerpt", e.target.value)}
           rows={2}
           required
         />
@@ -223,7 +242,7 @@ export default function AdminInsights() {
           id="content"
           data-testid="input-post-content"
           value={formData.content}
-          onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+          onChange={(e) => updateField("content", e.target.value)}
           rows={6}
         />
       </div>
@@ -235,7 +254,7 @@ export default function AdminInsights() {
             id="coverImageUrl"
             data-testid="input-post-cover-image"
             value={formData.coverImageUrl}
-            onChange={(e) => setFormData({ ...formData, coverImageUrl: e.target.value })}
+            onChange={(e) => updateField("coverImageUrl", e.target.value)}
             placeholder="https://..."
           />
         </div>
@@ -245,7 +264,7 @@ export default function AdminInsights() {
             id="author"
             data-testid="input-post-author"
             value={formData.author}
-            onChange={(e) => setFormData({ ...formData, author: e.target.value })}
+            onChange={(e) => updateField("author", e.target.value)}
           />
         </div>
       </div>
@@ -255,7 +274,7 @@ export default function AdminInsights() {
           <Label htmlFor="category">Category</Label>
           <Select
             value={formData.category}
-            onValueChange={(value) => setFormData({ ...formData, category: value })}
+            onValueChange={(value) => updateField("category", value)}
           >
             <SelectTrigger data-testid="select-post-category">
               <SelectValue />
@@ -271,7 +290,7 @@ export default function AdminInsights() {
           <Label htmlFor="status">Status</Label>
           <Select
             value={formData.status}
-            onValueChange={(value) => setFormData({ ...formData, status: value as "draft" | "published" })}
+            onValueChange={(value) => updateField("status", value as "draft" | "published")}
           >
             <SelectTrigger data-testid="select-post-status">
               <SelectValue />
@@ -289,24 +308,11 @@ export default function AdminInsights() {
           id="isFeatured"
           data-testid="switch-post-featured"
           checked={formData.isFeatured}
-          onCheckedChange={(checked) => setFormData({ ...formData, isFeatured: checked })}
+          onCheckedChange={(checked) => updateField("isFeatured", checked)}
         />
         <Label htmlFor="isFeatured">Featured Post</Label>
       </div>
-
-      <DialogFooter>
-        <DialogClose asChild>
-          <Button type="button" variant="outline" data-testid="button-cancel">Cancel</Button>
-        </DialogClose>
-        <Button 
-          type="submit" 
-          data-testid="button-submit-post"
-          disabled={createMutation.isPending || updateMutation.isPending}
-        >
-          {createMutation.isPending || updateMutation.isPending ? "Saving..." : isEditing ? "Update Post" : "Create Post"}
-        </Button>
-      </DialogFooter>
-    </form>
+    </>
   );
 
   return (
@@ -327,7 +333,7 @@ export default function AdminInsights() {
 
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button data-testid="button-create-post" onClick={() => setFormData(defaultFormData)}>
+              <Button data-testid="button-create-post">
                 <Plus className="h-4 w-4 mr-2" />
                 Create New Post
               </Button>
@@ -336,7 +342,21 @@ export default function AdminInsights() {
               <DialogHeader>
                 <DialogTitle>Create New Post</DialogTitle>
               </DialogHeader>
-              <PostForm onSubmit={handleCreateSubmit} />
+              <form onSubmit={handleCreateSubmit} className="space-y-4">
+                {renderFormFields(false)}
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button type="button" variant="outline" data-testid="button-cancel">Cancel</Button>
+                  </DialogClose>
+                  <Button 
+                    type="submit" 
+                    data-testid="button-submit-post"
+                    disabled={createMutation.isPending}
+                  >
+                    {createMutation.isPending ? "Saving..." : "Create Post"}
+                  </Button>
+                </DialogFooter>
+              </form>
             </DialogContent>
           </Dialog>
         </div>
@@ -431,7 +451,21 @@ export default function AdminInsights() {
                           <DialogHeader>
                             <DialogTitle>Edit Post</DialogTitle>
                           </DialogHeader>
-                          <PostForm onSubmit={handleEditSubmit} isEditing />
+                          <form onSubmit={handleEditSubmit} className="space-y-4">
+                            {renderFormFields(true)}
+                            <DialogFooter>
+                              <DialogClose asChild>
+                                <Button type="button" variant="outline" data-testid="button-cancel">Cancel</Button>
+                              </DialogClose>
+                              <Button 
+                                type="submit" 
+                                data-testid="button-submit-post"
+                                disabled={updateMutation.isPending}
+                              >
+                                {updateMutation.isPending ? "Saving..." : "Update Post"}
+                              </Button>
+                            </DialogFooter>
+                          </form>
                         </DialogContent>
                       </Dialog>
 
