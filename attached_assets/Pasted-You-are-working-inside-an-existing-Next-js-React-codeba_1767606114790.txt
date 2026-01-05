@@ -1,0 +1,152 @@
+You are working inside an existing Next.js / React codebase.
+
+There is an existing page named insight.tsx that renders the public Insights / Blog page.
+
+Do NOT change the existing visual layout or styling of insight.tsx.
+
+Goal
+
+Add a dedicated Admin page that allows admins to Publish, Edit, and Delete news/blog posts that appear on the Insights page.
+
+This admin page will be used temporarily without authentication until the login system is complete.
+
+Admin Page Requirements
+
+Create a New Admin Route
+
+Add a new page:
+
+/admin/insights
+
+This page is not public-facing and is assumed to be trusted access for now.
+
+Admin Capabilities
+The admin page must allow:
+
+Create (publish) a new post
+
+Edit an existing post
+
+Delete a post
+
+Toggle whether a post is featured
+
+Set post status:
+
+draft
+
+published
+
+Admin UI (Simple, Functional)
+
+Do NOT replicate the public Insights UI.
+
+Use a simple form-based layout:
+
+Post list/table
+
+“Create New Post” button
+
+Edit/Delete actions per row
+
+This UI is internal and does not need visual polish.
+
+Database
+
+Add a Database Layer
+
+Use PostgreSQL or SQLite (choose what best fits the repo).
+
+Ensure compatibility with both development and production.
+
+Create posts Table
+
+Required fields:
+
+id (primary key)
+
+title
+
+slug (unique)
+
+excerpt
+
+content
+
+cover_image_url
+
+category
+
+author (string for now)
+
+is_featured (boolean)
+
+status (draft | published)
+
+published_at
+
+created_at
+
+updated_at
+
+API / Server Logic
+
+Implement backend logic (API routes or server actions) to support:
+
+GET /api/posts
+
+Returns published posts for the public Insights page
+
+GET /api/admin/posts
+
+Returns all posts (draft + published) for admin use
+
+POST /api/admin/posts
+
+Create a new post
+
+PUT /api/admin/posts/:id
+
+Edit an existing post
+
+DELETE /api/admin/posts/:id
+
+Delete a post
+
+Public Insights Page Integration
+
+Update insight.tsx to:
+
+Fetch posts from the database instead of static/mock data
+
+Display:
+
+Featured posts (is_featured = true)
+
+Published posts only (status = published)
+
+Do NOT modify layout, styles, or visual components.
+
+Constraints
+
+No authentication or authorization logic yet
+
+No UI redesign of the Insights page
+
+Follow existing repo conventions
+
+Use environment variables for DB configuration
+
+Deliverables
+
+Admin page at /admin/insights
+
+Database schema and initialization
+
+API routes for admin + public access
+
+Updated insight.tsx data wiring
+
+Clear comments indicating where auth will be added later
+
+Begin by inspecting the existing repository structure and insight.tsx, then implement the admin page and supporting backend logic.

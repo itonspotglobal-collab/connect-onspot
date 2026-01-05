@@ -4985,18 +4985,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     title: z.string().min(1, "Title is required").max(500),
     slug: z.string().min(1, "Slug is required").max(200).regex(/^[a-z0-9-]+$/, "Slug must be lowercase alphanumeric with hyphens"),
     excerpt: z.string().min(1, "Excerpt is required").max(1000),
-    content: z.string().min(1, "Content is required"),
-    coverImageUrl: z.string().url().optional().nullable(),
+    content: z.string().optional().default(""),
+    coverImageUrl: z.string().optional().nullable(),
     category: z.string().min(1, "Category is required"),
     author: z.string().min(1, "Author is required"),
     isFeatured: z.boolean().optional().default(false),
     status: z.enum(["draft", "published"]).optional().default("draft"),
     readTime: z.string().optional().nullable(),
+    likes: z.number().optional().default(0),
     publishedAt: z.coerce.date().optional().nullable(),
   });
 
-  // Validation schema for updating posts
-  const updatePostSchema = createPostSchema.partial();
+  // Validation schema for updating posts (all fields optional for partial updates)
+  const updatePostSchema = z.object({
+    title: z.string().min(1).max(500).optional(),
+    slug: z.string().min(1).max(200).regex(/^[a-z0-9-]+$/).optional(),
+    excerpt: z.string().min(1).max(1000).optional(),
+    content: z.string().optional(),
+    coverImageUrl: z.string().optional().nullable(),
+    category: z.string().min(1).optional(),
+    author: z.string().min(1).optional(),
+    isFeatured: z.boolean().optional(),
+    status: z.enum(["draft", "published"]).optional(),
+    readTime: z.string().optional().nullable(),
+    likes: z.number().optional(),
+    publishedAt: z.coerce.date().optional().nullable(),
+  });
 
   // GET /api/posts - Fetch published posts (for public display)
   app.get("/api/posts", async (req: Request, res: Response) => {
@@ -5220,6 +5234,181 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       const requestId = (req as any).requestId;
       console.error(`❌ Error deleting post [${requestId}]:`, error.message);
+      res.status(500).json({
+        error: "Failed to delete post",
+        message: error.message,
+        requestId,
+      });
+    }
+  });
+
+  // ============================================================================
+  // ADMIN POSTS ROUTES
+  // TODO: Add authentication middleware when login system is complete
+  // ============================================================================
+
+  // GET /api/admin/posts - Admin endpoint to fetch all posts (draft + published)
+  app.get("/api/admin/posts", async (req: Request, res: Response) => {
+    try {
+      const requestId = (req as any).requestId;
+      console.log(`📰 [ADMIN] Fetching all posts [${requestId}]`);
+      
+      const posts = await storage.listAllPosts();
+      res.json({ success: true, posts });
+    } catch (error: any) {
+      const requestId = (req as any).requestId;
+      console.error(`❌ [ADMIN] Error fetching posts [${requestId}]:`, error.message);
+      res.status(500).json({
+        error: "Failed to fetch posts",
+        message: error.message,
+        requestId,
+      });
+    }
+  });
+
+  // POST /api/admin/posts - Admin create new post
+  app.post("/api/admin/posts", async (req: Request, res: Response) => {
+    try {
+      const requestId = (req as any).requestId;
+
+      const parseResult = createPostSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        const errors = parseResult.error.flatten();
+        console.error(`❌ [ADMIN] Validation error [${requestId}]:`, errors);
+        return res.status(400).json({
+          error: "Validation failed",
+          message: "Invalid post data",
+          details: errors.fieldErrors,
+          requestId,
+        });
+      }
+
+      const postData = parseResult.data;
+
+      console.log(`📝 [ADMIN] Creating new post [${requestId}]:`, {
+        title: postData.title,
+        slug: postData.slug,
+        status: postData.status,
+      });
+
+      const existingPost = await storage.getPostBySlug(postData.slug);
+      if (existingPost) {
+        return res.status(409).json({
+          error: "Slug already exists",
+          message: "A post with this slug already exists",
+          requestId,
+        });
+      }
+
+      if (postData.status === "published" && !postData.publishedAt) {
+        postData.publishedAt = new Date();
+      }
+
+      const newPost = await storage.createPost(postData);
+
+      console.log(`✅ [ADMIN] Post created [${requestId}]:`, {
+        id: newPost.id,
+        slug: newPost.slug,
+      });
+
+      res.status(201).json({ success: true, post: newPost });
+    } catch (error: any) {
+      const requestId = (req as any).requestId;
+      console.error(`❌ [ADMIN] Error creating post [${requestId}]:`, error.message);
+      res.status(500).json({
+        error: "Failed to create post",
+        message: error.message,
+        requestId,
+      });
+    }
+  });
+
+  // PUT /api/admin/posts/:id - Admin update post
+  app.put("/api/admin/posts/:id", async (req: Request, res: Response) => {
+    try {
+      const requestId = (req as any).requestId;
+      const { id } = req.params;
+
+      const parseResult = updatePostSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        const errors = parseResult.error.flatten();
+        console.error(`❌ [ADMIN] Validation error [${requestId}]:`, errors);
+        return res.status(400).json({
+          error: "Validation failed",
+          message: "Invalid post data",
+          details: errors.fieldErrors,
+          requestId,
+        });
+      }
+
+      const updates = parseResult.data;
+
+      console.log(`✏️ [ADMIN] Updating post [${requestId}]: ${id}`);
+
+      const existingPost = await storage.getPost(id);
+      if (!existingPost) {
+        return res.status(404).json({
+          error: "Post not found",
+          requestId,
+        });
+      }
+
+      if (updates.slug && updates.slug !== existingPost.slug) {
+        const slugPost = await storage.getPostBySlug(updates.slug);
+        if (slugPost) {
+          return res.status(409).json({
+            error: "Slug already exists",
+            message: "A post with this slug already exists",
+            requestId,
+          });
+        }
+      }
+
+      if (updates.status === "published" && existingPost.status !== "published" && !updates.publishedAt) {
+        updates.publishedAt = new Date();
+      }
+
+      const updatedPost = await storage.updatePost(id, updates);
+
+      console.log(`✅ [ADMIN] Post updated [${requestId}]:`, {
+        id: updatedPost?.id,
+        slug: updatedPost?.slug,
+      });
+
+      res.json({ success: true, post: updatedPost });
+    } catch (error: any) {
+      const requestId = (req as any).requestId;
+      console.error(`❌ [ADMIN] Error updating post [${requestId}]:`, error.message);
+      res.status(500).json({
+        error: "Failed to update post",
+        message: error.message,
+        requestId,
+      });
+    }
+  });
+
+  // DELETE /api/admin/posts/:id - Admin delete post
+  app.delete("/api/admin/posts/:id", async (req: Request, res: Response) => {
+    try {
+      const requestId = (req as any).requestId;
+      const { id } = req.params;
+
+      console.log(`🗑️ [ADMIN] Deleting post [${requestId}]: ${id}`);
+
+      const deleted = await storage.deletePost(id);
+      if (!deleted) {
+        return res.status(404).json({
+          error: "Post not found",
+          requestId,
+        });
+      }
+
+      console.log(`✅ [ADMIN] Post deleted [${requestId}]: ${id}`);
+
+      res.json({ success: true, message: "Post deleted successfully" });
+    } catch (error: any) {
+      const requestId = (req as any).requestId;
+      console.error(`❌ [ADMIN] Error deleting post [${requestId}]:`, error.message);
       res.status(500).json({
         error: "Failed to delete post",
         message: error.message,
