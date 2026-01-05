@@ -25,12 +25,14 @@ import {
   type Correction, type InsertCorrection,
   type TrainingLog, type InsertTrainingLog,
   type LegalOpsTrial, type InsertLegalOpsTrial,
+  type Post, type InsertPost,
   leadIntakes,
   vanessaLogs,
   feedbacks,
   corrections,
   trainingLogs,
-  legalOpsTrials
+  legalOpsTrials,
+  posts
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
@@ -285,6 +287,15 @@ export interface IStorage {
   createLegalOpsTrial(trial: InsertLegalOpsTrial): Promise<LegalOpsTrial>;
   getLegalOpsTrialByEmail(email: string): Promise<LegalOpsTrial | undefined>;
   getAllLegalOpsTrials(): Promise<LegalOpsTrial[]>;
+
+  // Blog Posts (Insights page)
+  getPost(id: string): Promise<Post | undefined>;
+  getPostBySlug(slug: string): Promise<Post | undefined>;
+  createPost(post: InsertPost): Promise<Post>;
+  updatePost(id: string, updates: Partial<InsertPost>): Promise<Post | undefined>;
+  deletePost(id: string): Promise<boolean>;
+  listPublishedPosts(options?: { category?: string; featured?: boolean }): Promise<Post[]>;
+  listAllPosts(): Promise<Post[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -2242,6 +2253,57 @@ export class MemStorage implements IStorage {
     return Array.from(this.legalOpsTrialsMap.values())
       .sort((a, b) => b.createdAt!.getTime() - a.createdAt!.getTime());
   }
+
+  // Blog Posts stubs (overridden by DbStorage)
+  private postsMap: Map<string, Post> = new Map();
+
+  async getPost(id: string): Promise<Post | undefined> {
+    return this.postsMap.get(id);
+  }
+
+  async getPostBySlug(slug: string): Promise<Post | undefined> {
+    return Array.from(this.postsMap.values()).find((p) => p.slug === slug);
+  }
+
+  async createPost(post: InsertPost): Promise<Post> {
+    const id = randomUUID();
+    const newPost: Post = {
+      id,
+      ...post,
+      likes: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.postsMap.set(id, newPost);
+    return newPost;
+  }
+
+  async updatePost(id: string, updates: Partial<InsertPost>): Promise<Post | undefined> {
+    const post = this.postsMap.get(id);
+    if (!post) return undefined;
+    const updated = { ...post, ...updates, updatedAt: new Date() };
+    this.postsMap.set(id, updated);
+    return updated;
+  }
+
+  async deletePost(id: string): Promise<boolean> {
+    return this.postsMap.delete(id);
+  }
+
+  async listPublishedPosts(options?: { category?: string; featured?: boolean }): Promise<Post[]> {
+    let posts = Array.from(this.postsMap.values()).filter((p) => p.status === "published");
+    if (options?.category) {
+      posts = posts.filter((p) => p.category === options.category);
+    }
+    if (options?.featured !== undefined) {
+      posts = posts.filter((p) => p.isFeatured === options.featured);
+    }
+    return posts.sort((a, b) => (b.publishedAt?.getTime() || 0) - (a.publishedAt?.getTime() || 0));
+  }
+
+  async listAllPosts(): Promise<Post[]> {
+    return Array.from(this.postsMap.values()).sort((a, b) => b.createdAt!.getTime() - a.createdAt!.getTime());
+  }
 }
 
 // DbStorage class: Extends MemStorage but uses PostgreSQL for Vanessa logs
@@ -2458,6 +2520,74 @@ export class DbStorage extends MemStorage {
       .select()
       .from(legalOpsTrials)
       .orderBy(desc(legalOpsTrials.createdAt))
+      .limit(1000);
+  }
+
+  // Blog Posts (Insights page) - CRUD operations
+  async getPost(id: string): Promise<Post | undefined> {
+    const results = await db
+      .select()
+      .from(posts)
+      .where(eq(posts.id, id))
+      .limit(1);
+    return results[0];
+  }
+
+  async getPostBySlug(slug: string): Promise<Post | undefined> {
+    const results = await db
+      .select()
+      .from(posts)
+      .where(eq(posts.slug, slug))
+      .limit(1);
+    return results[0];
+  }
+
+  async createPost(post: InsertPost): Promise<Post> {
+    const [newPost] = await db.insert(posts).values(post).returning();
+    return newPost;
+  }
+
+  async updatePost(id: string, updates: Partial<InsertPost>): Promise<Post | undefined> {
+    const [updatedPost] = await db
+      .update(posts)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(posts.id, id))
+      .returning();
+    return updatedPost;
+  }
+
+  async deletePost(id: string): Promise<boolean> {
+    const result = await db
+      .delete(posts)
+      .where(eq(posts.id, id))
+      .returning();
+    return result.length > 0;
+  }
+
+  async listPublishedPosts(options?: { category?: string; featured?: boolean }): Promise<Post[]> {
+    let query = db
+      .select()
+      .from(posts)
+      .where(eq(posts.status, "published"));
+    
+    const results = await query.orderBy(desc(posts.publishedAt));
+    
+    let filtered = results;
+    if (options?.category) {
+      filtered = filtered.filter(p => p.category === options.category);
+    }
+    if (options?.featured !== undefined) {
+      filtered = filtered.filter(p => p.isFeatured === options.featured);
+    }
+    
+    return filtered;
+  }
+
+  async listAllPosts(): Promise<Post[]> {
+    return await db
+      .select()
+      .from(posts)
+      .orderBy(desc(posts.createdAt))
       .limit(1000);
   }
 }
