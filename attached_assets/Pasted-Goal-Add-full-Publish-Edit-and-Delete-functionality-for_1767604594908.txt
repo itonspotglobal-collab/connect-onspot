@@ -1,0 +1,116 @@
+Goal
+
+Add full Publish, Edit, and Delete functionality for blog/news posts used by insight.tsx.
+
+Functional Requirements
+
+Blog Post Management (CRUD)
+
+Implement the ability to:
+
+Publish a new blog/news post
+
+Edit an existing post
+
+Delete a post
+
+These operations will be triggered programmatically for now (no auth/UI gating yet).
+
+Database
+
+Add a database layer (you may choose PostgreSQL or SQLite if not already present).
+
+Create a posts table usable in both development and production.
+
+Use migrations or schema initialization that runs safely in both environments.
+
+Post Schema
+The posts table must include at least:
+
+id (primary key)
+
+title
+
+slug (unique)
+
+excerpt
+
+content
+
+cover_image_url
+
+category
+
+author
+
+is_featured (boolean)
+
+status (draft | published)
+
+published_at
+
+created_at
+
+updated_at
+
+Featured Posts
+
+Featured posts are not a separate content type.
+
+Use is_featured to control which posts appear in the Featured section of insight.tsx.
+
+insight.tsx should query:
+
+Featured posts
+
+Non-featured published posts
+
+API Layer
+
+Add API routes or server actions for:
+
+POST /api/posts → create post
+
+PUT /api/posts/:id → update post
+
+DELETE /api/posts/:id → delete post
+
+GET /api/posts → fetch published posts
+
+Ensure API responses match what insight.tsx already expects.
+
+No Authentication
+
+Do NOT implement authentication or authorization.
+
+Assume trusted access for now.
+
+Do Not Modify UI
+
+Do NOT replicate or redesign the blog UI.
+
+Do NOT change CSS, layout, or components unless strictly necessary for data wiring.
+
+Only connect insight.tsx to real data instead of static/mock data.
+
+Technical Constraints
+
+Keep changes minimal and well-scoped.
+
+Follow existing project patterns and conventions.
+
+Reuse existing components and utilities where possible.
+
+Use environment variables for DB connection strings.
+
+Deliverables
+
+Database setup and schema
+
+API routes or server logic
+
+Updated data fetching in insight.tsx
+
+Clear comments explaining where publishing, editing, and deleting occur
+
+Start by inspecting the existing repo, especially insight.tsx, and implement the backend and wiring needed to support dynamic blog/news publishing.
