@@ -262,8 +262,12 @@ export default function AdminInsights() {
     }
   }, [isCreateDialogOpen]);
 
+  // Initialize form only once when a new post is selected for editing.
+  // Using editingPost.id as dependency (not the object) prevents re-initialization
+  // when the posts array refetches and creates new object references.
+  const editingPostId = editingPost?.id;
   useEffect(() => {
-    if (editingPost) {
+    if (editingPost && editingPostId) {
       setFormData({
         title: editingPost.title,
         slug: editingPost.slug,
@@ -276,7 +280,7 @@ export default function AdminInsights() {
         status: editingPost.status as "draft" | "published",
       });
     }
-  }, [editingPost]);
+  }, [editingPostId]);
 
   const posts = postsResponse?.posts || [];
 
