@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Pencil, Trash2, Eye, EyeOff, Star, ArrowLeft } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, EyeOff, Star, ArrowLeft, Upload, Loader2, Image as ImageIcon } from "lucide-react";
 import { Link } from "wouter";
 import type { Post } from "@shared/schema";
 
@@ -95,10 +95,72 @@ export default function AdminInsights() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [formData, setFormData] = useState<PostFormData>(defaultFormData);
+  // Image upload state
+  const [isUploading, setIsUploading] = useState(false);
 
   const { data: postsResponse, isLoading } = useQuery<{ success: boolean; posts: Post[] }>({
     queryKey: ["/api/admin/posts"],
   });
+
+  // Upload image to Object Storage and update form with the returned URL
+  const handleImageUpload = async (file: File) => {
+    // Validate file type client-side
+    const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp", "image/avif"];
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload a JPEG, PNG, GIF, WebP, or AVIF image.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please upload an image smaller than 5MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      // Create FormData for multipart upload
+      const uploadData = new FormData();
+      uploadData.append("image", file);
+
+      const response = await fetch("/api/admin/upload-image", {
+        method: "POST",
+        body: uploadData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Upload failed");
+      }
+
+      const result = await response.json();
+
+      // Update form with the uploaded image URL
+      setFormData(prev => ({ ...prev, coverImageUrl: result.url }));
+
+      toast({
+        title: "Image uploaded",
+        description: "Cover image has been uploaded successfully.",
+      });
+    } catch (error: any) {
+      console.error("Image upload failed:", error);
+      toast({
+        title: "Upload failed",
+        description: error.message || "Failed to upload image. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const createMutation = useMutation({
     mutationFn: async (data: PostFormData) => {
@@ -286,32 +348,101 @@ export default function AdminInsights() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1">
-          <Label htmlFor="coverImageUrl">Cover Image URL</Label>
-          <Input
-            id="coverImageUrl"
-            data-testid="input-post-cover-image"
-            value={formData.coverImageUrl}
-            onChange={(e) => updateField("coverImageUrl", e.target.value)}
-            placeholder="https://..."
-          />
-          {/* Soft validation for image URL format */}
-          {formData.coverImageUrl && !isValidImageUrl(formData.coverImageUrl) && (
-            <div className="text-xs text-yellow-600">
-              URL may not be a valid image. Ensure it points to a .jpg, .png, .webp, or similar file.
+      {/* Cover Image Section: Upload + Preview + URL fallback */}
+      <div className="space-y-3">
+        <Label>Cover Image</Label>
+        
+        {/* Image Preview (shows when URL exists) */}
+        {formData.coverImageUrl && (
+          <div className="relative w-full max-w-xs aspect-video bg-muted rounded-md overflow-hidden border">
+            <img 
+              src={formData.coverImageUrl} 
+              alt="Cover preview" 
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                // Hide broken images
+                (e.target as HTMLImageElement).style.display = "none";
+              }}
+            />
+          </div>
+        )}
+        
+        <div className="grid grid-cols-2 gap-4">
+          {/* Upload Button */}
+          <div className="space-y-1">
+            <Label htmlFor="imageUpload" className="text-xs text-muted-foreground">Upload Image</Label>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isUploading}
+                onClick={() => document.getElementById("imageUpload")?.click()}
+                data-testid="button-upload-image"
+                className="flex-1"
+              >
+                {isUploading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload Cover Image
+                  </>
+                )}
+              </Button>
+              {/* Hidden file input */}
+              <input
+                id="imageUpload"
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp,image/avif"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    handleImageUpload(file);
+                    // Reset input so same file can be selected again
+                    e.target.value = "";
+                  }
+                }}
+                data-testid="input-image-file"
+              />
             </div>
-          )}
+            <div className="text-xs text-muted-foreground">
+              Max 5MB. JPEG, PNG, GIF, WebP, AVIF.
+            </div>
+          </div>
+
+          {/* URL Input (fallback for external URLs) */}
+          <div className="space-y-1">
+            <Label htmlFor="coverImageUrl" className="text-xs text-muted-foreground">Or paste URL</Label>
+            <Input
+              id="coverImageUrl"
+              data-testid="input-post-cover-image"
+              value={formData.coverImageUrl}
+              onChange={(e) => updateField("coverImageUrl", e.target.value)}
+              placeholder="https://..."
+            />
+            {formData.coverImageUrl && !isValidImageUrl(formData.coverImageUrl) && (
+              <div className="text-xs text-yellow-600">
+                URL may not be a valid image format.
+              </div>
+            )}
+          </div>
         </div>
-        <div className="space-y-1">
-          <Label htmlFor="author">Author</Label>
-          <Input
-            id="author"
-            data-testid="input-post-author"
-            value={formData.author}
-            onChange={(e) => updateField("author", e.target.value)}
-          />
-        </div>
+      </div>
+
+      {/* Author field */}
+      <div className="space-y-1">
+        <Label htmlFor="author">Author</Label>
+        <Input
+          id="author"
+          data-testid="input-post-author"
+          value={formData.author}
+          onChange={(e) => updateField("author", e.target.value)}
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-4">

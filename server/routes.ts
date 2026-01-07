@@ -5417,6 +5417,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============================================================================
+  // POST /api/admin/upload-image - Upload cover image for blog posts
+  // Uses Replit Object Storage to store images and returns a public URL
+  // 
+  // NOTE: This endpoint is temporarily unauthenticated to match other admin routes.
+  // TODO: Add authentication middleware when login system is complete.
+  // ============================================================================
+  const imageUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB max file size
+    },
+    fileFilter: (_req, file, cb) => {
+      // Validate image file types
+      const allowedMimeTypes = ["image/jpeg", "image/png", "image/gif", "image/webp", "image/avif"];
+      if (allowedMimeTypes.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new Error(`Invalid file type: ${file.mimetype}. Allowed: JPEG, PNG, GIF, WebP, AVIF`));
+      }
+    },
+  });
+
+  app.post("/api/admin/upload-image", imageUpload.single("image"), async (req: Request, res: Response) => {
+    try {
+      const requestId = (req as any).requestId;
+      console.log(`📤 [ADMIN] Image upload request [${requestId}]`);
+
+      // Check if file was uploaded
+      if (!req.file) {
+        return res.status(400).json({
+          error: "No image file provided",
+          message: "Please select an image file to upload",
+          requestId,
+        });
+      }
+
+      const file = req.file;
+      console.log(`📤 [ADMIN] Processing image [${requestId}]:`, {
+        originalName: file.originalname,
+        mimeType: file.mimetype,
+        size: `${(file.size / 1024).toFixed(1)}KB`,
+      });
+
+      // Generate unique filename with original extension
+      const ext = file.originalname.split(".").pop() || "jpg";
+      const uniqueFilename = `cover-${uuidv4()}.${ext}`;
+
+      // Get public directory from Object Storage config
+      const publicPaths = process.env.PUBLIC_OBJECT_SEARCH_PATHS?.split(",") || [];
+      if (publicPaths.length === 0) {
+        throw new Error("PUBLIC_OBJECT_SEARCH_PATHS not configured");
+      }
+
+      // Use the first public path for uploads
+      const publicDir = publicPaths[0].trim();
+      const fullPath = `${publicDir}/blog-images/${uniqueFilename}`;
+
+      // Parse bucket and object path
+      const pathParts = fullPath.split("/").filter(Boolean);
+      const bucketName = pathParts[0];
+      const objectName = pathParts.slice(1).join("/");
+
+      // Upload to Object Storage
+      const bucket = objectStorageClient.bucket(bucketName);
+      const blob = bucket.file(objectName);
+
+      await blob.save(file.buffer, {
+        contentType: file.mimetype,
+        metadata: {
+          originalName: file.originalname,
+          uploadedAt: new Date().toISOString(),
+          // Mark as public for blog post thumbnails
+          "custom:aclPolicy": JSON.stringify({
+            owner: "admin",
+            visibility: "public",
+          }),
+        },
+      });
+
+      // Construct the public URL using the GCS format
+      const publicUrl = `https://storage.googleapis.com/${bucketName}/${objectName}`;
+
+      console.log(`✅ [ADMIN] Image uploaded successfully [${requestId}]:`, {
+        filename: uniqueFilename,
+        url: publicUrl,
+      });
+
+      res.json({
+        success: true,
+        url: publicUrl,
+        filename: uniqueFilename,
+      });
+    } catch (error: any) {
+      const requestId = (req as any).requestId;
+      console.error(`❌ [ADMIN] Image upload failed [${requestId}]:`, error.message);
+      res.status(500).json({
+        error: "Failed to upload image",
+        message: error.message,
+        requestId,
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
