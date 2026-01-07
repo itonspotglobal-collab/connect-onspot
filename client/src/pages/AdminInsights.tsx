@@ -514,7 +514,11 @@ export default function AdminInsights() {
                 Create New Post
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            {/* Stop propagation to prevent clicks on Select triggers from bubbling to backdrop */}
+            <DialogContent 
+              className="max-w-2xl max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
               <DialogHeader>
                 <DialogTitle>Create New Post</DialogTitle>
               </DialogHeader>
@@ -623,7 +627,11 @@ export default function AdminInsights() {
                             <Pencil className="h-4 w-4" />
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                        {/* Stop propagation to prevent clicks on Select triggers from bubbling to backdrop */}
+                        <DialogContent 
+                          className="max-w-2xl max-h-[90vh] overflow-y-auto"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <DialogHeader>
                             <DialogTitle>Edit Post</DialogTitle>
                           </DialogHeader>
