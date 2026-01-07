@@ -58,6 +58,38 @@ function generateSlug(title: string): string {
     .trim();
 }
 
+// Soft validation thresholds - warnings only, don't block publishing
+const VALIDATION_LIMITS = {
+  title: { recommended: 80, max: 120 },
+  excerpt: { recommended: 160, max: 250 },
+};
+
+// Check if URL looks like a valid image
+function isValidImageUrl(url: string): boolean {
+  if (!url) return true; // Empty is okay
+  const trimmed = url.trim().toLowerCase();
+  if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) return false;
+  const imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".avif"];
+  return imageExtensions.some(ext => trimmed.includes(ext)) || trimmed.includes("unsplash") || trimmed.includes("images");
+}
+
+// Helper component for field warnings (soft validation - does NOT block submission)
+function FieldHint({ value, limits, label }: { value: string; limits: { recommended: number; max: number }; label: string }) {
+  const length = value.length;
+  const isWarning = length > limits.recommended && length <= limits.max;
+  const isError = length > limits.max;
+  
+  if (length === 0) return null;
+  
+  return (
+    <div className={`text-xs mt-1 ${isError ? "text-destructive" : isWarning ? "text-yellow-600" : "text-muted-foreground"}`}>
+      {length}/{limits.recommended} chars
+      {isWarning && ` (${label} may be truncated in cards)`}
+      {isError && ` (exceeds recommended max of ${limits.max})`}
+    </div>
+  );
+}
+
 export default function AdminInsights() {
   const { toast } = useToast();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -195,7 +227,7 @@ export default function AdminInsights() {
   const renderFormFields = (isEditing: boolean) => (
     <>
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
+        <div className="space-y-1">
           <Label htmlFor="title">Title *</Label>
           <Input
             id="title"
@@ -211,8 +243,10 @@ export default function AdminInsights() {
             }}
             required
           />
+          {/* Soft validation: warns but does not block publishing */}
+          <FieldHint value={formData.title} limits={VALIDATION_LIMITS.title} label="Title" />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1">
           <Label htmlFor="slug">Slug *</Label>
           <Input
             id="slug"
@@ -224,7 +258,7 @@ export default function AdminInsights() {
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-1">
         <Label htmlFor="excerpt">Excerpt *</Label>
         <Textarea
           id="excerpt"
@@ -234,9 +268,11 @@ export default function AdminInsights() {
           rows={2}
           required
         />
+        {/* Soft validation: warns but does not block publishing */}
+        <FieldHint value={formData.excerpt} limits={VALIDATION_LIMITS.excerpt} label="Excerpt" />
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-1">
         <Label htmlFor="content">Content</Label>
         <Textarea
           id="content"
@@ -245,10 +281,13 @@ export default function AdminInsights() {
           onChange={(e) => updateField("content", e.target.value)}
           rows={6}
         />
+        <div className="text-xs text-muted-foreground">
+          Full content is only shown on the post detail page, not in cards.
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
+        <div className="space-y-1">
           <Label htmlFor="coverImageUrl">Cover Image URL</Label>
           <Input
             id="coverImageUrl"
@@ -257,8 +296,14 @@ export default function AdminInsights() {
             onChange={(e) => updateField("coverImageUrl", e.target.value)}
             placeholder="https://..."
           />
+          {/* Soft validation for image URL format */}
+          {formData.coverImageUrl && !isValidImageUrl(formData.coverImageUrl) && (
+            <div className="text-xs text-yellow-600">
+              URL may not be a valid image. Ensure it points to a .jpg, .png, .webp, or similar file.
+            </div>
+          )}
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1">
           <Label htmlFor="author">Author</Label>
           <Input
             id="author"

@@ -206,34 +206,37 @@ export default function Insights() {
                   </Card>
                 ))
               ) : featuredArticles.map((article) => (
-                <Card key={article.id} className="overflow-hidden hover-elevate transition-all duration-300 group">
-                  <div className="aspect-video bg-muted relative">
+                <Card key={article.id} className="overflow-hidden hover-elevate transition-all duration-300 group flex flex-col">
+                  {/* Defensive image container: fixed 16:9 aspect ratio prevents layout shift */}
+                  <div className="aspect-video bg-muted relative overflow-hidden flex-shrink-0">
                     <img 
                       src={article.image} 
                       alt={article.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
                     />
                     <Badge className="absolute top-4 left-4 bg-primary text-white">
                       Featured
                     </Badge>
                   </div>
-                  <CardContent className="p-6">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-                      <User className="w-4 h-4" />
-                      <span>{article.author}</span>
-                      <Separator orientation="vertical" className="h-4" />
-                      <Calendar className="w-4 h-4" />
-                      <span>{article.date}</span>
-                      <Separator orientation="vertical" className="h-4" />
-                      <span>{article.readTime}</span>
+                  {/* Defensive card content: flex-1 + fixed structure ensures uniform card heights */}
+                  <CardContent className="p-6 flex flex-col flex-1">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3 flex-wrap flex-shrink-0">
+                      <User className="w-4 h-4 flex-shrink-0" />
+                      <span className="truncate">{article.author}</span>
+                      <Separator orientation="vertical" className="h-4 flex-shrink-0" />
+                      <Calendar className="w-4 h-4 flex-shrink-0" />
+                      <span className="truncate">{article.date}</span>
+                      <Separator orientation="vertical" className="h-4 flex-shrink-0" />
+                      <span className="truncate">{article.readTime}</span>
                     </div>
-                    <h4 className="text-xl font-bold mb-3 line-clamp-2 group-hover:text-primary transition-colors">
+                    <h4 className="text-xl font-bold mb-3 line-clamp-2 group-hover:text-primary transition-colors flex-shrink-0">
                       {article.title}
                     </h4>
-                    <p className="text-muted-foreground mb-4 line-clamp-3">
+                    <p className="text-muted-foreground mb-4 line-clamp-3 flex-1">
                       {article.excerpt}
                     </p>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between flex-shrink-0 mt-auto">
                       <Badge variant="secondary">{article.category}</Badge>
                       <div className="flex items-center gap-1 text-sm text-muted-foreground">
                         <Heart className="w-4 h-4" />
@@ -276,12 +279,14 @@ export default function Insights() {
                 </Card>
               ))
             ) : filteredArticles.map((article) => (
-              <Card key={article.id} className="overflow-hidden hover-elevate transition-all duration-300 group">
-                <div className="aspect-video bg-muted relative">
+              <Card key={article.id} className="overflow-hidden hover-elevate transition-all duration-300 group flex flex-col">
+                {/* Defensive image container: fixed 16:9 aspect ratio prevents layout shift */}
+                <div className="aspect-video bg-muted relative overflow-hidden flex-shrink-0">
                   <img 
                     src={article.image} 
                     alt={article.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
                   />
                   {article.featured && (
                     <Badge className="absolute top-4 left-4 bg-[hsl(var(--gold-yellow)/0.9)] text-black">
@@ -289,30 +294,31 @@ export default function Insights() {
                     </Badge>
                   )}
                 </div>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
-                    <User className="w-3 h-3" />
-                    <span>{article.author}</span>
-                    <Separator orientation="vertical" className="h-3" />
-                    <Calendar className="w-3 h-3" />
-                    <span>{article.date}</span>
+                {/* Defensive card content: flex-1 + fixed structure ensures uniform card heights */}
+                <CardContent className="p-6 flex flex-col flex-1">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3 flex-shrink-0">
+                    <User className="w-3 h-3 flex-shrink-0" />
+                    <span className="truncate">{article.author}</span>
+                    <Separator orientation="vertical" className="h-3 flex-shrink-0" />
+                    <Calendar className="w-3 h-3 flex-shrink-0" />
+                    <span className="truncate">{article.date}</span>
                   </div>
-                  <h4 className="text-lg font-bold mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+                  <h4 className="text-lg font-bold mb-2 line-clamp-2 group-hover:text-primary transition-colors flex-shrink-0">
                     {article.title}
                   </h4>
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                  <p className="text-sm text-muted-foreground mb-4 line-clamp-3 flex-1">
                     {article.excerpt}
                   </p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-xs">
+                  <div className="flex items-center justify-between flex-shrink-0 mt-auto">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Badge variant="outline" className="text-xs flex-shrink-0">
                         {article.category}
                       </Badge>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-muted-foreground truncate">
                         {article.readTime}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0">
                       <Heart className="w-3 h-3" />
                       <span>{article.likes}</span>
                     </div>
