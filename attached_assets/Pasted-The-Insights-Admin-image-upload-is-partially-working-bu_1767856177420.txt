@@ -1,0 +1,111 @@
+The Insights Admin image upload is partially working, but uploaded thumbnails are not reflected on the public Insights page.
+
+Publishing works, text updates work, but the thumbnail image remains unchanged after upload.
+
+Goal
+
+Ensure that when an admin uploads a thumbnail image:
+
+The uploaded image URL is saved to the database
+
+The public Insights page renders the updated image
+
+Context
+
+Admin modal supports image upload
+
+Images are stored using Replit Object Storage
+
+Each post has a cover_image_url field
+
+The public Insights page displays thumbnails from the database
+
+Required Fixes
+1. Ensure Upload Updates Form State
+
+After an image is uploaded and a public URL is returned, explicitly update the form state:
+
+setFormData(prev => ({
+  ...prev,
+  cover_image_url: uploadedImageUrl,
+}));
+
+
+The uploaded URL must be stored in formData.cover_image_url.
+
+2. Ensure Update/Create API Payload Includes Image URL
+
+When creating or updating a post, ensure cover_image_url is included in the request payload:
+
+{
+  title,
+  excerpt,
+  content,
+  status,
+  category,
+  author,
+  is_featured,
+  cover_image_url
+}
+
+3. Ensure Backend Persists the Image URL
+
+In the backend create/update handler:
+
+Persist cover_image_url to the database
+
+Do NOT omit it from the update statement
+
+Example:
+
+data: {
+  title,
+  excerpt,
+  content,
+  status,
+  category,
+  author,
+  is_featured,
+  cover_image_url,
+}
+
+4. Ensure Public Insights Page Uses Correct Field
+
+On the public Insights page:
+
+Render thumbnails using post.cover_image_url
+
+Do NOT reference legacy fields such as image, thumbnail, or static mock images
+
+Example:
+
+<img
+  src={post.cover_image_url || DEFAULT_IMAGE}
+  alt={post.title}
+/>
+
+Validation Checklist
+
+After the fix:
+
+Uploading an image updates the preview in Admin
+
+Saving the post persists the image URL
+
+Reloading the page still shows the new image
+
+The public Insights page reflects the new thumbnail
+
+Existing posts without images still show a fallback image
+
+Constraints
+
+Do NOT change public layout or styling
+
+Do NOT change publishing logic
+
+Do NOT change storage provider
+
+Make the minimal fix required to ensure image persistence
+
+Add small comments explaining the image upload → save → render flow.

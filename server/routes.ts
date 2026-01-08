@@ -5343,7 +5343,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const updates = parseResult.data;
 
-      console.log(`✏️ [ADMIN] Updating post [${requestId}]: ${id}`);
+      // Log the full update payload to trace image URL persistence
+      console.log(`✏️ [ADMIN] Updating post [${requestId}]: ${id}`, {
+        coverImageUrl: updates.coverImageUrl,
+        hasImage: !!updates.coverImageUrl,
+        updateFields: Object.keys(updates),
+      });
 
       const existingPost = await storage.getPost(id);
       if (!existingPost) {
