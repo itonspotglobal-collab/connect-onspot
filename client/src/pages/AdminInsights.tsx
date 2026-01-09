@@ -98,8 +98,12 @@ export default function AdminInsights() {
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [formData, setFormData] = useState<PostFormData>(defaultFormData);
-  // Image upload state
+  
+  // Image upload state - DECOUPLED from form data and post mutations
+  // pendingCoverImageUrl holds the uploaded image URL until user explicitly saves
+  // This prevents modal from closing during upload (upload is a pure file operation)
   const [isUploading, setIsUploading] = useState(false);
+  const [pendingCoverImageUrl, setPendingCoverImageUrl] = useState<string | null>(null);
 
   const { data: postsResponse, isLoading } = useQuery<{ success: boolean; posts: Post[] }>({
     queryKey: ["/api/admin/posts"],
@@ -146,19 +150,18 @@ export default function AdminInsights() {
 
       const result = await response.json();
 
-      // Update form with the uploaded image URL (with cache-busting timestamp)
-      // This ensures the browser fetches the new image even if URL structure is similar
+      // Store uploaded image URL in PENDING state only - NOT in formData
+      // This is a pure file operation: upload does NOT trigger post save or modal close
+      // The pending URL is applied to the post payload only when user clicks Save
       const imageUrlWithCacheBust = `${result.url}?v=${Date.now()}`;
-      console.log("[AdminInsights] Image uploaded, updating form with URL:", imageUrlWithCacheBust);
+      console.log("[AdminInsights] Image uploaded to pending state:", imageUrlWithCacheBust);
       
-      // Update form state with new image URL
-      // The modal stays open because isEditDialogOpen is separate from the post data
-      // This ensures the uploaded image persists until user clicks Save or Cancel
-      setFormData(prev => ({ ...prev, coverImageUrl: imageUrlWithCacheBust }));
+      // Set pending URL - this updates preview but does NOT close modal or save post
+      setPendingCoverImageUrl(imageUrlWithCacheBust);
 
       toast({
         title: "Image uploaded",
-        description: "Cover image has been uploaded successfully.",
+        description: "Cover image ready. Click Save to apply changes.",
       });
     } catch (error: any) {
       console.error("Image upload failed:", error);
@@ -181,6 +184,7 @@ export default function AdminInsights() {
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
       setIsCreateDialogOpen(false);
       setFormData(defaultFormData);
+      setPendingCoverImageUrl(null); // Reset pending image on successful save
       toast({ title: "Post created successfully" });
     },
     onError: (error: any) => {
@@ -199,6 +203,7 @@ export default function AdminInsights() {
       setIsEditDialogOpen(false);
       setEditingPostId(null);
       setFormData(defaultFormData);
+      setPendingCoverImageUrl(null); // Reset pending image on successful save
       toast({ title: "Post updated successfully" });
     },
     onError: (error: any) => {
@@ -248,27 +253,34 @@ export default function AdminInsights() {
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Log form data to verify coverImageUrl is included
+    // Apply pending image URL to payload if user uploaded an image
+    // The pending URL is only applied at submit time to keep upload decoupled from save
+    const finalCoverImageUrl = pendingCoverImageUrl ?? formData.coverImageUrl;
+    const payload = { ...formData, coverImageUrl: finalCoverImageUrl };
     console.log("[AdminInsights] Creating post with data:", { 
-      ...formData, 
-      hasCoverImage: !!formData.coverImageUrl 
+      ...payload, 
+      hasCoverImage: !!payload.coverImageUrl,
+      usedPendingImage: !!pendingCoverImageUrl
     });
-    createMutation.mutate(formData);
+    createMutation.mutate(payload);
   };
 
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingPostId) {
-      // Ensure coverImageUrl is always included in update payload (even if empty string)
-      // This allows clearing the image or updating to a new image URL
+      // Apply pending image URL to payload if user uploaded a new image
+      // The pending URL takes precedence over formData.coverImageUrl
+      // This keeps upload decoupled from save - only persisted when user clicks Save
+      const finalCoverImageUrl = pendingCoverImageUrl ?? formData.coverImageUrl;
       const updatePayload: PostFormData = {
         ...formData,
-        coverImageUrl: formData.coverImageUrl, // Explicitly include, never omit
+        coverImageUrl: finalCoverImageUrl,
       };
       console.log("[AdminInsights] Updating post with data:", { 
         id: editingPostId, 
         coverImageUrl: updatePayload.coverImageUrl,
         hasCoverImage: !!updatePayload.coverImageUrl,
+        usedPendingImage: !!pendingCoverImageUrl,
         allFields: Object.keys(updatePayload),
       });
       updateMutation.mutate({ id: editingPostId, data: updatePayload });
@@ -278,6 +290,7 @@ export default function AdminInsights() {
   // Open edit dialog by setting the post ID and opening the dialog
   // These are separate to prevent async operations from closing the dialog
   const openEditDialog = (post: Post) => {
+    setPendingCoverImageUrl(null); // Reset pending image when opening new post
     setEditingPostId(post.id);
     setIsEditDialogOpen(true);
   };
@@ -287,6 +300,7 @@ export default function AdminInsights() {
     setIsEditDialogOpen(false);
     setEditingPostId(null);
     setFormData(defaultFormData);
+    setPendingCoverImageUrl(null); // Discard any pending image on cancel
   };
 
   const posts = postsResponse?.posts || [];
@@ -296,6 +310,7 @@ export default function AdminInsights() {
   useEffect(() => {
     if (isCreateDialogOpen) {
       setFormData(defaultFormData);
+      setPendingCoverImageUrl(null); // Reset pending image for new post
     }
   }, [isCreateDialogOpen]);
 
@@ -390,15 +405,17 @@ export default function AdminInsights() {
         </div>
       </div>
 
-      {/* Cover Image Section: Upload + Preview + URL fallback */}
+      {/* Cover Image Section: Upload + Preview + URL fallback
+          Preview prioritizes pendingCoverImageUrl (newly uploaded) over formData.coverImageUrl (saved)
+          This keeps upload decoupled from save - upload is a pure file operation */}
       <div className="space-y-3">
         <Label>Cover Image</Label>
         
-        {/* Image Preview (shows when URL exists) */}
-        {formData.coverImageUrl && (
+        {/* Image Preview - shows pending upload OR saved URL */}
+        {(pendingCoverImageUrl || formData.coverImageUrl) && (
           <div className="relative w-full max-w-xs aspect-video bg-muted rounded-md overflow-hidden border">
             <img 
-              src={formData.coverImageUrl} 
+              src={pendingCoverImageUrl ?? formData.coverImageUrl} 
               alt="Cover preview" 
               className="w-full h-full object-cover"
               onError={(e) => {
@@ -406,6 +423,12 @@ export default function AdminInsights() {
                 (e.target as HTMLImageElement).style.display = "none";
               }}
             />
+            {/* Indicator when pending image exists but not yet saved */}
+            {pendingCoverImageUrl && (
+              <div className="absolute bottom-1 left-1 bg-yellow-500 text-yellow-950 text-xs px-2 py-0.5 rounded">
+                Pending - click Save to apply
+              </div>
+            )}
           </div>
         )}
         
