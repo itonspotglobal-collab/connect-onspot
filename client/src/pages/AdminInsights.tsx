@@ -93,7 +93,10 @@ function FieldHint({ value, limits, label }: { value: string; limits: { recommen
 export default function AdminInsights() {
   const { toast } = useToast();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [editingPost, setEditingPost] = useState<Post | null>(null);
+  // Use separate state for which post is being edited (ID only) and whether dialog is open
+  // This prevents the dialog from closing unexpectedly during async operations like image upload
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [formData, setFormData] = useState<PostFormData>(defaultFormData);
   // Image upload state
   const [isUploading, setIsUploading] = useState(false);
@@ -148,7 +151,9 @@ export default function AdminInsights() {
       const imageUrlWithCacheBust = `${result.url}?v=${Date.now()}`;
       console.log("[AdminInsights] Image uploaded, updating form with URL:", imageUrlWithCacheBust);
       
-      // Explicitly overwrite the previous coverImageUrl value
+      // Update form state with new image URL
+      // The modal stays open because isEditDialogOpen is separate from the post data
+      // This ensures the uploaded image persists until user clicks Save or Cancel
       setFormData(prev => ({ ...prev, coverImageUrl: imageUrlWithCacheBust }));
 
       toast({
@@ -190,7 +195,9 @@ export default function AdminInsights() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/posts"] });
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
-      setEditingPost(null);
+      // Close dialog and reset form only after successful save
+      setIsEditDialogOpen(false);
+      setEditingPostId(null);
       setFormData(defaultFormData);
       toast({ title: "Post updated successfully" });
     },
@@ -251,7 +258,7 @@ export default function AdminInsights() {
 
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingPost) {
+    if (editingPostId) {
       // Ensure coverImageUrl is always included in update payload (even if empty string)
       // This allows clearing the image or updating to a new image URL
       const updatePayload: PostFormData = {
@@ -259,23 +266,31 @@ export default function AdminInsights() {
         coverImageUrl: formData.coverImageUrl, // Explicitly include, never omit
       };
       console.log("[AdminInsights] Updating post with data:", { 
-        id: editingPost.id, 
+        id: editingPostId, 
         coverImageUrl: updatePayload.coverImageUrl,
         hasCoverImage: !!updatePayload.coverImageUrl,
         allFields: Object.keys(updatePayload),
       });
-      updateMutation.mutate({ id: editingPost.id, data: updatePayload });
+      updateMutation.mutate({ id: editingPostId, data: updatePayload });
     }
   };
 
+  // Open edit dialog by setting the post ID and opening the dialog
+  // These are separate to prevent async operations from closing the dialog
   const openEditDialog = (post: Post) => {
-    setEditingPost(post);
+    setEditingPostId(post.id);
+    setIsEditDialogOpen(true);
   };
 
+  // Close dialog handler - only resets form when dialog is explicitly closed
   const closeEditDialog = () => {
-    setEditingPost(null);
+    setIsEditDialogOpen(false);
+    setEditingPostId(null);
+    setFormData(defaultFormData);
   };
 
+  const posts = postsResponse?.posts || [];
+  
   // Form state isolation: Initialize form data only when modal opens to prevent
   // controlled inputs from resetting on every render. This ensures typing is smooth.
   useEffect(() => {
@@ -284,27 +299,28 @@ export default function AdminInsights() {
     }
   }, [isCreateDialogOpen]);
 
-  // Initialize form only once when a new post is selected for editing.
-  // Using editingPost.id as dependency (not the object) prevents re-initialization
+  // Initialize form only once when a post is selected for editing.
+  // Using editingPostId (not the full post object) as dependency prevents re-initialization
   // when the posts array refetches and creates new object references.
-  const editingPostId = editingPost?.id;
   useEffect(() => {
-    if (editingPost && editingPostId) {
-      setFormData({
-        title: editingPost.title,
-        slug: editingPost.slug,
-        excerpt: editingPost.excerpt,
-        content: editingPost.content || "",
-        coverImageUrl: editingPost.coverImageUrl || "",
-        category: editingPost.category,
-        author: editingPost.author,
-        isFeatured: editingPost.isFeatured ?? false,
-        status: editingPost.status as "draft" | "published",
-      });
+    if (editingPostId && isEditDialogOpen) {
+      // Find the post from the current posts array
+      const postToEdit = posts.find(p => p.id === editingPostId);
+      if (postToEdit) {
+        setFormData({
+          title: postToEdit.title,
+          slug: postToEdit.slug,
+          excerpt: postToEdit.excerpt,
+          content: postToEdit.content || "",
+          coverImageUrl: postToEdit.coverImageUrl || "",
+          category: postToEdit.category,
+          author: postToEdit.author,
+          isFeatured: postToEdit.isFeatured ?? false,
+          status: postToEdit.status as "draft" | "published",
+        });
+      }
     }
-  }, [editingPostId]);
-
-  const posts = postsResponse?.posts || [];
+  }, [editingPostId, isEditDialogOpen]);
 
   // Helper to update form fields with immutable state updates
   const updateField = <K extends keyof PostFormData>(field: K, value: PostFormData[K]) => {
@@ -642,7 +658,7 @@ export default function AdminInsights() {
                         )}
                       </Button>
 
-                      <Dialog open={editingPost?.id === post.id} onOpenChange={(open) => !open && closeEditDialog()}>
+                      <Dialog open={isEditDialogOpen && editingPostId === post.id} onOpenChange={(open) => !open && closeEditDialog()}>
                         <DialogTrigger asChild>
                           <Button
                             variant="ghost"
