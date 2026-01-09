@@ -556,10 +556,19 @@ export default function AdminInsights() {
                 Create New Post
               </Button>
             </DialogTrigger>
-            {/* Stop propagation to prevent clicks on Select triggers from bubbling to backdrop */}
+            {/* Prevent dialog from closing during file picker interaction or async operations.
+                The native file picker triggers focus/pointer events outside the dialog. */}
             <DialogContent 
               className="max-w-2xl max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
+              onPointerDownOutside={(e) => {
+                // Prevent closing when clicking outside (e.g., file picker opens)
+                if (isUploading) e.preventDefault();
+              }}
+              onInteractOutside={(e) => {
+                // Prevent closing on any outside interaction during upload
+                if (isUploading) e.preventDefault();
+              }}
             >
               <DialogHeader>
                 <DialogTitle>Create New Post</DialogTitle>
@@ -669,10 +678,19 @@ export default function AdminInsights() {
                             <Pencil className="h-4 w-4" />
                           </Button>
                         </DialogTrigger>
-                        {/* Stop propagation to prevent clicks on Select triggers from bubbling to backdrop */}
+                        {/* Prevent dialog from closing during file picker interaction or async operations.
+                            The native file picker triggers focus/pointer events outside the dialog. */}
                         <DialogContent 
                           className="max-w-2xl max-h-[90vh] overflow-y-auto"
                           onClick={(e) => e.stopPropagation()}
+                          onPointerDownOutside={(e) => {
+                            // Prevent closing when clicking outside (e.g., file picker opens)
+                            if (isUploading) e.preventDefault();
+                          }}
+                          onInteractOutside={(e) => {
+                            // Prevent closing on any outside interaction during upload
+                            if (isUploading) e.preventDefault();
+                          }}
                         >
                           <DialogHeader>
                             <DialogTitle>Edit Post</DialogTitle>
