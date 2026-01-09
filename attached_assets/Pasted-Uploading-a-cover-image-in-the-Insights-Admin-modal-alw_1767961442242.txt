@@ -1,0 +1,112 @@
+Uploading a cover image in the Insights Admin modal always closes the modal after upload completes, even though no explicit close logic exists.
+
+This happens after the upload finishes and a success toast appears.
+
+Root Cause
+
+The image upload logic is sharing side effects with post save logic, such as:
+
+invalidating/refetching posts
+
+resetting editingPost
+
+reacting to postsResponse changes
+
+This causes the modal to close unintentionally.
+
+Goal
+
+Uploading or replacing a cover image must:
+
+Upload the image to Replit Object Storage
+
+Update formData.cover_image_url
+
+Update the image preview
+
+NOT trigger post refetch
+
+NOT reset editingPost
+
+NOT close the modal
+
+The modal should close only when:
+
+Create Post is clicked
+
+Update Post is clicked
+
+Cancel is clicked
+
+Required Fixes
+1. Separate Image Upload From Post Mutations
+
+Use a dedicated upload handler or mutation for image uploads
+
+Do NOT reuse the post create/update mutation
+
+2. Remove Query Invalidations From Upload
+
+The image upload success handler must NOT:
+
+invalidateQueries(["posts"])
+refetchPosts()
+setEditingPost(null)
+setIsCreateDialogOpen(false)
+
+3. Prevent Modal Auto-Close Effects
+
+Audit all useEffect hooks and ensure none of them close the modal in response to:
+
+post list refetch
+
+upload success
+
+editingPost changes during upload
+
+Example to REMOVE:
+
+useEffect(() => {
+  if (!editingPost) {
+    setIsCreateDialogOpen(false);
+  }
+}, [editingPost]);
+
+4. Keep Image Upload as a Pure State Update
+
+After upload success:
+
+setFormData(prev => ({
+  ...prev,
+  cover_image_url: uploadedImageUrl,
+}));
+toast.success("Image uploaded");
+
+
+Nothing else.
+
+Validation Checklist
+
+After the fix:
+
+Uploading an image keeps the modal open
+
+The image preview updates immediately
+
+Clicking Update Post persists the image
+
+Posts list only refreshes after save
+
+The public Insights page reflects the new thumbnail
+
+Constraints
+
+Do NOT change storage provider
+
+Do NOT auto-save on upload
+
+Do NOT close modal on upload
+
+Make the minimal fix required
+
+Add comments explaining why image upload must not affect modal lifecycle.
