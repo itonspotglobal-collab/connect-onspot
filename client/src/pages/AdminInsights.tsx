@@ -143,8 +143,13 @@ export default function AdminInsights() {
 
       const result = await response.json();
 
-      // Update form with the uploaded image URL
-      setFormData(prev => ({ ...prev, coverImageUrl: result.url }));
+      // Update form with the uploaded image URL (with cache-busting timestamp)
+      // This ensures the browser fetches the new image even if URL structure is similar
+      const imageUrlWithCacheBust = `${result.url}?v=${Date.now()}`;
+      console.log("[AdminInsights] Image uploaded, updating form with URL:", imageUrlWithCacheBust);
+      
+      // Explicitly overwrite the previous coverImageUrl value
+      setFormData(prev => ({ ...prev, coverImageUrl: imageUrlWithCacheBust }));
 
       toast({
         title: "Image uploaded",
@@ -236,13 +241,30 @@ export default function AdminInsights() {
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Log form data to verify coverImageUrl is included
+    console.log("[AdminInsights] Creating post with data:", { 
+      ...formData, 
+      hasCoverImage: !!formData.coverImageUrl 
+    });
     createMutation.mutate(formData);
   };
 
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingPost) {
-      updateMutation.mutate({ id: editingPost.id, data: formData });
+      // Ensure coverImageUrl is always included in update payload (even if empty string)
+      // This allows clearing the image or updating to a new image URL
+      const updatePayload: PostFormData = {
+        ...formData,
+        coverImageUrl: formData.coverImageUrl, // Explicitly include, never omit
+      };
+      console.log("[AdminInsights] Updating post with data:", { 
+        id: editingPost.id, 
+        coverImageUrl: updatePayload.coverImageUrl,
+        hasCoverImage: !!updatePayload.coverImageUrl,
+        allFields: Object.keys(updatePayload),
+      });
+      updateMutation.mutate({ id: editingPost.id, data: updatePayload });
     }
   };
 

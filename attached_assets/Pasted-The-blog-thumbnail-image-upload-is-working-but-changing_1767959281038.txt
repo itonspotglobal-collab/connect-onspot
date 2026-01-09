@@ -1,0 +1,119 @@
+The blog thumbnail image upload is working, but changing/replacing the thumbnail image for an existing post does not update the image shown on the public Insights page.
+
+The new image uploads successfully, but the old thumbnail continues to appear after saving and publishing.
+
+Current Behavior
+
+Image upload succeeds using Replit Object Storage
+
+A new image URL is returned
+
+Admin preview may show the new image
+
+After saving/updating the post, the public Insights page still shows the old thumbnail
+
+Goal
+
+When an admin uploads or replaces a thumbnail image:
+
+The new image URL replaces the old one
+
+The updated URL is persisted to the database
+
+The public Insights page renders the new thumbnail
+
+Required Fixes (All Must Be Verified)
+1. Ensure Image Replacement Updates Form State
+
+When a new image is uploaded for an existing post, explicitly overwrite the previous value:
+
+setFormData(prev => ({
+  ...prev,
+  cover_image_url: newUploadedImageUrl,
+}));
+
+
+Do not append, merge, or ignore the new URL.
+
+2. Ensure Update API Payload Sends the New Image URL
+
+When updating a post, confirm that cover_image_url is always included in the PUT/PATCH payload:
+
+{
+  title,
+  excerpt,
+  content,
+  status,
+  category,
+  author,
+  is_featured,
+  cover_image_url
+}
+
+
+Do NOT omit cover_image_url when updating an existing post.
+
+3. Ensure Backend Update Overwrites Old Image URL
+
+In the backend update handler:
+
+The cover_image_url field must be overwritten with the new value
+
+Do not conditionally skip it
+
+Example:
+
+data: {
+  ...otherFields,
+  cover_image_url,
+}
+
+4. Ensure Public Insights Page Uses the Updated Field
+
+On the public Insights page:
+
+Render thumbnails from post.cover_image_url
+
+Remove any fallback logic that always prefers a default or static image
+
+Example:
+
+<img
+  src={post.cover_image_url || DEFAULT_THUMBNAIL}
+  alt={post.title}
+/>
+
+5. Prevent Browser Caching Issues
+
+If the new image uses the same filename as the old one, append a cache-busting query param:
+
+`${cover_image_url}?v=${updatedAt || Date.now()}`
+
+
+This ensures the browser fetches the new image.
+
+Validation Checklist
+
+After implementing the fix:
+
+Replacing a thumbnail updates the image URL in the database
+
+Reloading the page still shows the new image
+
+The public Insights page reflects the new thumbnail immediately
+
+No layout or styling changes occur
+
+Existing posts without images still show a fallback
+
+Constraints
+
+Do NOT change storage provider (Replit Object Storage)
+
+Do NOT change publishing logic
+
+Do NOT change layout or UI styling
+
+Make the minimal fix required to support image replacement
+
+Add brief inline comments explaining the image replacement flow.
