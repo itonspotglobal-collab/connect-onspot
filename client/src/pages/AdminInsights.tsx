@@ -323,6 +323,122 @@ export default function AdminInsights() {
   const updateDraftField = <K extends keyof PostFormData>(field: K, value: PostFormData[K]) => {
     setDraftPost(prev => prev ? { ...prev, [field]: value } : null);
   };
+  
+  // Render ONLY form fields for EDIT modal (image upload is outside form)
+  // This ensures complete separation between image upload and form submission
+  const renderEditFormFields = () => {
+    if (!draftPost) return null;
+    
+    return (
+      <>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <Label htmlFor="edit-title">Title *</Label>
+            <Input
+              id="edit-title"
+              data-testid="input-post-title"
+              value={draftPost.title}
+              onChange={(e) => setDraftPost(prev => prev ? { ...prev, title: e.target.value } : null)}
+              required
+            />
+            <FieldHint value={draftPost.title} limits={VALIDATION_LIMITS.title} label="Title" />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="edit-slug">Slug *</Label>
+            <Input
+              id="edit-slug"
+              data-testid="input-post-slug"
+              value={draftPost.slug}
+              onChange={(e) => setDraftPost(prev => prev ? { ...prev, slug: e.target.value } : null)}
+              required
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <Label htmlFor="edit-excerpt">Excerpt *</Label>
+          <Textarea
+            id="edit-excerpt"
+            data-testid="input-post-excerpt"
+            value={draftPost.excerpt}
+            onChange={(e) => setDraftPost(prev => prev ? { ...prev, excerpt: e.target.value } : null)}
+            rows={2}
+            required
+          />
+          <FieldHint value={draftPost.excerpt} limits={VALIDATION_LIMITS.excerpt} label="Excerpt" />
+        </div>
+
+        <div className="space-y-1">
+          <Label htmlFor="edit-content">Content</Label>
+          <Textarea
+            id="edit-content"
+            data-testid="input-post-content"
+            value={draftPost.content}
+            onChange={(e) => setDraftPost(prev => prev ? { ...prev, content: e.target.value } : null)}
+            rows={6}
+          />
+          <div className="text-xs text-muted-foreground">
+            Full content is only shown on the post detail page, not in cards.
+          </div>
+        </div>
+
+        {/* Author field */}
+        <div className="space-y-1">
+          <Label htmlFor="edit-author">Author</Label>
+          <Input
+            id="edit-author"
+            data-testid="input-post-author"
+            value={draftPost.author}
+            onChange={(e) => setDraftPost(prev => prev ? { ...prev, author: e.target.value } : null)}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="edit-category">Category</Label>
+            <Select
+              value={draftPost.category}
+              onValueChange={(value) => setDraftPost(prev => prev ? { ...prev, category: value } : null)}
+            >
+              <SelectTrigger data-testid="select-post-category">
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((cat) => (
+                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-status">Status</Label>
+            <Select
+              value={draftPost.status}
+              onValueChange={(value) => setDraftPost(prev => prev ? { ...prev, status: value as "draft" | "published" } : null)}
+            >
+              <SelectTrigger data-testid="select-post-status">
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="published">Published</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Switch
+            id="edit-isFeatured"
+            data-testid="switch-post-featured"
+            checked={draftPost.isFeatured}
+            onCheckedChange={(checked) => setDraftPost(prev => prev ? { ...prev, isFeatured: checked } : null)}
+          />
+          <Label htmlFor="edit-isFeatured">Featured Post</Label>
+        </div>
+      </>
+    );
+  };
 
   // Render form fields - uses the appropriate state based on isEditing flag
   // CREATE mode uses createFormData, EDIT mode uses draftPost
@@ -695,8 +811,98 @@ export default function AdminInsights() {
                           <DialogHeader>
                             <DialogTitle>Edit Post</DialogTitle>
                           </DialogHeader>
+                          
+                          {/* IMAGE UPLOAD - OUTSIDE FORM to prevent any form interactions */}
+                          {draftPost && (
+                            <div className="space-y-3 border-b pb-4">
+                              <Label>Cover Image</Label>
+                              
+                              {/* Image Preview */}
+                              {draftPost.coverImageUrl && (
+                                <div className="relative w-full max-w-xs aspect-video bg-muted rounded-md overflow-hidden border">
+                                  <img 
+                                    src={draftPost.coverImageUrl} 
+                                    alt="Cover preview" 
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).style.display = "none";
+                                    }}
+                                  />
+                                </div>
+                              )}
+                              
+                              <div className="grid grid-cols-2 gap-4">
+                                {/* Upload Button - completely outside form */}
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-muted-foreground">Upload Image</Label>
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      disabled={isUploading}
+                                      onClick={() => {
+                                        const input = document.getElementById(`imageUpload-edit-${post.id}`);
+                                        if (input) input.click();
+                                      }}
+                                      data-testid="button-upload-image"
+                                      className="flex-1"
+                                    >
+                                      {isUploading ? (
+                                        <>
+                                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                          Uploading...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Upload className="w-4 h-4 mr-2" />
+                                          Upload Cover Image
+                                        </>
+                                      )}
+                                    </Button>
+                                    {/* Hidden file input - OUTSIDE FORM, only updates draftPost */}
+                                    <input
+                                      id={`imageUpload-edit-${post.id}`}
+                                      type="file"
+                                      accept="image/jpeg,image/png,image/gif,image/webp,image/avif"
+                                      className="hidden"
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                          handleImageUpload(file, true);
+                                          e.target.value = "";
+                                        }
+                                      }}
+                                      data-testid="input-image-file"
+                                    />
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    Max 5MB. JPEG, PNG, GIF, WebP, AVIF.
+                                  </div>
+                                </div>
+
+                                {/* URL Input - outside form */}
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-muted-foreground">Or paste URL</Label>
+                                  <Input
+                                    data-testid="input-post-cover-image"
+                                    value={draftPost.coverImageUrl}
+                                    onChange={(e) => setDraftPost(prev => prev ? { ...prev, coverImageUrl: e.target.value } : null)}
+                                    placeholder="https://..."
+                                  />
+                                  {draftPost.coverImageUrl && !isValidImageUrl(draftPost.coverImageUrl) && (
+                                    <div className="text-xs text-yellow-600">
+                                      URL may not be a valid image format.
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* FORM - only contains text fields and selects, NO image upload */}
                           <form onSubmit={handleEditSubmit} className="space-y-4">
-                            {renderFormFields(true)}
+                            {renderEditFormFields()}
                             <DialogFooter>
                               <DialogClose asChild>
                                 <Button type="button" variant="outline" data-testid="button-cancel">Cancel</Button>

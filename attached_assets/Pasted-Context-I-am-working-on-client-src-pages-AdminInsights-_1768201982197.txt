@@ -1,0 +1,128 @@
+Context:
+I am working on client/src/pages/AdminInsights.tsx.
+The Edit Post modal has multiple critical issues that must be fixed properly, not patched.
+
+Problems to fix (all are happening now):
+
+Uploading a cover image automatically closes the Edit modal.
+
+Uploaded images succeed but do NOT update the post thumbnail.
+
+Category Select (Radix Select) cannot be changed and always resets to "Industry Trends".
+
+The Edit modal closes whenever the image upload finishes.
+
+🔥 ROOT CAUSE (IMPORTANT)
+
+The image upload logic is inside the same <form> as the submit handler.
+
+The upload success handler is triggering submit logic, refetches, or dialog close.
+
+Radix Select components are uncontrolled (missing value and onValueChange).
+
+cover_image_url is not being written back into formData.
+
+✅ REQUIRED FIXES (DO ALL)
+1️⃣ Restructure the Edit Modal
+
+Move image upload logic OUTSIDE the <form>.
+
+The upload must NEVER:
+
+submit the form
+
+close the dialog
+
+refetch posts
+
+The image upload should ONLY:
+
+upload to Replit Object Storage
+
+return a URL
+
+update formData.cover_image_url
+
+Example structure:
+
+<DialogContent>
+  <ImageUploader
+    value={formData.cover_image_url}
+    onUpload={(url) =>
+      setFormData(prev => ({ ...prev, cover_image_url: url }))
+    }
+  />
+
+  <form onSubmit={handleSubmit}>
+    {/* title, slug, excerpt, content, category, status */}
+  </form>
+</DialogContent>
+
+2️⃣ Fix Category & Status Selects
+
+Radix Select MUST be fully controlled.
+
+Bind both value and onValueChange to formData.
+
+Example:
+
+<Select
+  value={formData.category}
+  onValueChange={(value) =>
+    setFormData(prev => ({ ...prev, category: value }))
+  }
+>
+
+
+Same fix applies to status.
+
+3️⃣ Fix Image Upload Behavior
+
+Uploading an image must:
+
+NOT call handleSubmit
+
+NOT call updatePost
+
+NOT close the dialog
+
+Only update form state:
+
+setFormData(prev => ({
+  ...prev,
+  cover_image_url: uploadedUrl
+}));
+
+4️⃣ Fix Thumbnail Not Updating
+
+Ensure cover_image_url:
+
+is saved on Update Post
+
+is used by the public Insights page cards
+
+Ensure cards reference:
+
+post.cover_image_url || fallbackImage
+
+🧪 ACCEPTANCE CRITERIA
+
+Uploading an image keeps the Edit modal OPEN
+
+Category can be changed and persists
+
+Clicking “Update Post” saves image + category
+
+Public Insights page reflects the new thumbnail
+
+⚠️ DO NOT:
+
+Add hacks
+
+Auto-submit on upload
+
+Close dialog on upload success
+
+Implement the fixes cleanly and refactor if needed.
+
+This is a production CMS fix, not a workaround.
