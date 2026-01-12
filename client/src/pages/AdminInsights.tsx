@@ -117,6 +117,9 @@ export default function AdminInsights() {
 
   const { data: postsResponse, isLoading } = useQuery<{ success: boolean; posts: Post[] }>({
     queryKey: ["/api/admin/posts"],
+    // Disable refetch on window focus to prevent modal from closing
+    // when file picker steals and returns focus
+    refetchOnWindowFocus: false,
   });
 
   // Upload image to Object Storage
