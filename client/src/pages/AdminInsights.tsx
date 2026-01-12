@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -108,6 +108,12 @@ export default function AdminInsights() {
   
   // Upload state - shared between create and edit modes
   const [isUploading, setIsUploading] = useState(false);
+  
+  // File input refs - using refs prevents default form behavior that can close modals
+  // When clicking a file input inside a dialog, the native file picker can trigger
+  // focus/blur events that some dialog implementations interpret as "outside click"
+  const editFileInputRef = useRef<HTMLInputElement>(null);
+  const createFileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: postsResponse, isLoading } = useQuery<{ success: boolean; posts: Post[] }>({
     queryKey: ["/api/admin/posts"],
@@ -841,9 +847,12 @@ export default function AdminInsights() {
                                       variant="outline"
                                       size="sm"
                                       disabled={isUploading}
-                                      onClick={() => {
-                                        const input = document.getElementById(`imageUpload-edit-${post.id}`);
-                                        if (input) input.click();
+                                      onClick={(e) => {
+                                        // Prevent any event bubbling that could trigger form/dialog actions
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        // Use ref to trigger file input - avoids DOM query issues
+                                        editFileInputRef.current?.click();
                                       }}
                                       data-testid="button-upload-image"
                                       className="flex-1"
@@ -860,13 +869,15 @@ export default function AdminInsights() {
                                         </>
                                       )}
                                     </Button>
-                                    {/* Hidden file input - OUTSIDE FORM, only updates draftPost */}
+                                    {/* Hidden file input - OUTSIDE FORM, uses ref to prevent dialog closure */}
                                     <input
-                                      id={`imageUpload-edit-${post.id}`}
+                                      ref={editFileInputRef}
                                       type="file"
                                       accept="image/jpeg,image/png,image/gif,image/webp,image/avif"
                                       className="hidden"
+                                      onClick={(e) => e.stopPropagation()}
                                       onChange={(e) => {
+                                        e.stopPropagation();
                                         const file = e.target.files?.[0];
                                         if (file) {
                                           handleImageUpload(file, true);
