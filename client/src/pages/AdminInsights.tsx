@@ -90,27 +90,33 @@ function FieldHint({ value, limits, label }: { value: string; limits: { recommen
   );
 }
 
+// Draft state for edit modal - fully isolated from parent/query state
+// This prevents modal from closing or resetting during uploads, category changes, or refetches
+type DraftPost = PostFormData & { id: string };
+
 export default function AdminInsights() {
   const { toast } = useToast();
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  // Use separate state for which post is being edited (ID only) and whether dialog is open
-  // This prevents the dialog from closing unexpectedly during async operations like image upload
-  const [editingPostId, setEditingPostId] = useState<string | null>(null);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [formData, setFormData] = useState<PostFormData>(defaultFormData);
   
-  // Image upload state - DECOUPLED from form data and post mutations
-  // pendingCoverImageUrl holds the uploaded image URL until user explicitly saves
-  // This prevents modal from closing during upload (upload is a pure file operation)
+  // CREATE modal state - uses formData for new posts
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [createFormData, setCreateFormData] = useState<PostFormData>(defaultFormData);
+  
+  // EDIT modal state - completely isolated from parent/query state
+  // draftPost is initialized ONCE when opening and NEVER re-synced from queries
+  // This is the structural fix: modal owns its own state, immune to refetches
+  const [draftPost, setDraftPost] = useState<DraftPost | null>(null);
+  
+  // Upload state - shared between create and edit modes
   const [isUploading, setIsUploading] = useState(false);
-  const [pendingCoverImageUrl, setPendingCoverImageUrl] = useState<string | null>(null);
 
   const { data: postsResponse, isLoading } = useQuery<{ success: boolean; posts: Post[] }>({
     queryKey: ["/api/admin/posts"],
   });
 
-  // Upload image to Object Storage and update form with the returned URL
-  const handleImageUpload = async (file: File) => {
+  // Upload image to Object Storage
+  // Updates the appropriate state based on which modal is open (create vs edit)
+  // This is a PURE FILE OPERATION - does NOT trigger save, does NOT close modal
+  const handleImageUpload = async (file: File, isEditMode: boolean) => {
     // Validate file type client-side
     const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp", "image/avif"];
     if (!allowedTypes.includes(file.type)) {
@@ -134,7 +140,6 @@ export default function AdminInsights() {
 
     setIsUploading(true);
     try {
-      // Create FormData for multipart upload
       const uploadData = new FormData();
       uploadData.append("image", file);
 
@@ -149,15 +154,18 @@ export default function AdminInsights() {
       }
 
       const result = await response.json();
-
-      // Store uploaded image URL in PENDING state only - NOT in formData
-      // This is a pure file operation: upload does NOT trigger post save or modal close
-      // The pending URL is applied to the post payload only when user clicks Save
       const imageUrlWithCacheBust = `${result.url}?v=${Date.now()}`;
-      console.log("[AdminInsights] Image uploaded to pending state:", imageUrlWithCacheBust);
+      console.log("[AdminInsights] Image uploaded:", imageUrlWithCacheBust, "isEditMode:", isEditMode);
       
-      // Set pending URL - this updates preview but does NOT close modal or save post
-      setPendingCoverImageUrl(imageUrlWithCacheBust);
+      // Update the correct state based on which modal is open
+      // This keeps upload decoupled from save - image is stored locally until Save is clicked
+      if (isEditMode && draftPost) {
+        // EDIT mode: update draftPost directly (isolated from parent state)
+        setDraftPost(prev => prev ? { ...prev, coverImageUrl: imageUrlWithCacheBust } : null);
+      } else {
+        // CREATE mode: update createFormData
+        setCreateFormData(prev => ({ ...prev, coverImageUrl: imageUrlWithCacheBust }));
+      }
 
       toast({
         title: "Image uploaded",
@@ -183,8 +191,7 @@ export default function AdminInsights() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/posts"] });
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
       setIsCreateDialogOpen(false);
-      setFormData(defaultFormData);
-      setPendingCoverImageUrl(null); // Reset pending image on successful save
+      setCreateFormData(defaultFormData);
       toast({ title: "Post created successfully" });
     },
     onError: (error: any) => {
@@ -199,11 +206,8 @@ export default function AdminInsights() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/posts"] });
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
-      // Close dialog and reset form only after successful save
-      setIsEditDialogOpen(false);
-      setEditingPostId(null);
-      setFormData(defaultFormData);
-      setPendingCoverImageUrl(null); // Reset pending image on successful save
+      // Close dialog and reset draft only after successful save
+      setDraftPost(null);
       toast({ title: "Post updated successfully" });
     },
     onError: (error: any) => {
@@ -253,308 +257,287 @@ export default function AdminInsights() {
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Apply pending image URL to payload if user uploaded an image
-    // The pending URL is only applied at submit time to keep upload decoupled from save
-    const finalCoverImageUrl = pendingCoverImageUrl ?? formData.coverImageUrl;
-    const payload = { ...formData, coverImageUrl: finalCoverImageUrl };
     console.log("[AdminInsights] Creating post with data:", { 
-      ...payload, 
-      hasCoverImage: !!payload.coverImageUrl,
-      usedPendingImage: !!pendingCoverImageUrl
+      ...createFormData, 
+      hasCoverImage: !!createFormData.coverImageUrl
     });
-    createMutation.mutate(payload);
+    createMutation.mutate(createFormData);
   };
 
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingPostId) {
-      // Apply pending image URL to payload if user uploaded a new image
-      // The pending URL takes precedence over formData.coverImageUrl
-      // This keeps upload decoupled from save - only persisted when user clicks Save
-      const finalCoverImageUrl = pendingCoverImageUrl ?? formData.coverImageUrl;
-      const updatePayload: PostFormData = {
-        ...formData,
-        coverImageUrl: finalCoverImageUrl,
-      };
+    if (draftPost) {
+      // Submit the draft directly - it contains all current edits including image uploads
+      const { id, ...payload } = draftPost;
       console.log("[AdminInsights] Updating post with data:", { 
-        id: editingPostId, 
-        coverImageUrl: updatePayload.coverImageUrl,
-        hasCoverImage: !!updatePayload.coverImageUrl,
-        usedPendingImage: !!pendingCoverImageUrl,
-        allFields: Object.keys(updatePayload),
+        id, 
+        coverImageUrl: payload.coverImageUrl,
+        hasCoverImage: !!payload.coverImageUrl,
+        category: payload.category,
       });
-      updateMutation.mutate({ id: editingPostId, data: updatePayload });
+      updateMutation.mutate({ id, data: payload });
     }
   };
 
-  // Open edit dialog by setting the post ID and opening the dialog
-  // These are separate to prevent async operations from closing the dialog
+  // Open edit dialog by creating a DEEP CLONE of the post as draft
+  // This draft is NEVER re-synced from queries - modal owns its own state
   const openEditDialog = (post: Post) => {
-    setPendingCoverImageUrl(null); // Reset pending image when opening new post
-    setEditingPostId(post.id);
-    setIsEditDialogOpen(true);
+    // Create draft with deep clone - this is initialized ONCE and never overwritten
+    setDraftPost({
+      id: post.id,
+      title: post.title,
+      slug: post.slug,
+      excerpt: post.excerpt,
+      content: post.content || "",
+      coverImageUrl: post.coverImageUrl || "",
+      category: post.category,
+      author: post.author,
+      isFeatured: post.isFeatured ?? false,
+      status: post.status as "draft" | "published",
+    });
   };
 
-  // Close dialog handler - only resets form when dialog is explicitly closed
+  // Close edit dialog - discard all changes
   const closeEditDialog = () => {
-    setIsEditDialogOpen(false);
-    setEditingPostId(null);
-    setFormData(defaultFormData);
-    setPendingCoverImageUrl(null); // Discard any pending image on cancel
+    setDraftPost(null);
   };
 
   const posts = postsResponse?.posts || [];
   
-  // Form state isolation: Initialize form data only when modal opens to prevent
-  // controlled inputs from resetting on every render. This ensures typing is smooth.
+  // Initialize create form when dialog opens
   useEffect(() => {
     if (isCreateDialogOpen) {
-      setFormData(defaultFormData);
-      setPendingCoverImageUrl(null); // Reset pending image for new post
+      setCreateFormData(defaultFormData);
     }
   }, [isCreateDialogOpen]);
 
-  // Initialize form only once when a post is selected for editing.
-  // Using editingPostId (not the full post object) as dependency prevents re-initialization
-  // when the posts array refetches and creates new object references.
-  useEffect(() => {
-    if (editingPostId && isEditDialogOpen) {
-      // Find the post from the current posts array
-      const postToEdit = posts.find(p => p.id === editingPostId);
-      if (postToEdit) {
-        setFormData({
-          title: postToEdit.title,
-          slug: postToEdit.slug,
-          excerpt: postToEdit.excerpt,
-          content: postToEdit.content || "",
-          coverImageUrl: postToEdit.coverImageUrl || "",
-          category: postToEdit.category,
-          author: postToEdit.author,
-          isFeatured: postToEdit.isFeatured ?? false,
-          status: postToEdit.status as "draft" | "published",
-        });
-      }
-    }
-  }, [editingPostId, isEditDialogOpen]);
+  // NO useEffect for edit modal - draft is initialized in openEditDialog and never re-synced
+  // This is the key structural fix: edit modal state is immune to query refetches
 
-  // Helper to update form fields with immutable state updates
-  const updateField = <K extends keyof PostFormData>(field: K, value: PostFormData[K]) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  // Helper to update create form fields
+  const updateCreateField = <K extends keyof PostFormData>(field: K, value: PostFormData[K]) => {
+    setCreateFormData(prev => ({ ...prev, [field]: value }));
+  };
+  
+  // Helper to update draft fields (edit mode)
+  const updateDraftField = <K extends keyof PostFormData>(field: K, value: PostFormData[K]) => {
+    setDraftPost(prev => prev ? { ...prev, [field]: value } : null);
   };
 
-  // Render form fields inline to avoid component remounting issues
-  const renderFormFields = (isEditing: boolean) => (
-    <>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1">
-          <Label htmlFor="title">Title *</Label>
-          <Input
-            id="title"
-            data-testid="input-post-title"
-            value={formData.title}
-            onChange={(e) => {
-              const newTitle = e.target.value;
-              setFormData(prev => ({
-                ...prev,
-                title: newTitle,
-                slug: isEditing ? prev.slug : generateSlug(newTitle),
-              }));
-            }}
-            required
-          />
-          {/* Soft validation: warns but does not block publishing */}
-          <FieldHint value={formData.title} limits={VALIDATION_LIMITS.title} label="Title" />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="slug">Slug *</Label>
-          <Input
-            id="slug"
-            data-testid="input-post-slug"
-            value={formData.slug}
-            onChange={(e) => updateField("slug", e.target.value)}
-            required
-          />
-        </div>
-      </div>
-
-      <div className="space-y-1">
-        <Label htmlFor="excerpt">Excerpt *</Label>
-        <Textarea
-          id="excerpt"
-          data-testid="input-post-excerpt"
-          value={formData.excerpt}
-          onChange={(e) => updateField("excerpt", e.target.value)}
-          rows={2}
-          required
-        />
-        {/* Soft validation: warns but does not block publishing */}
-        <FieldHint value={formData.excerpt} limits={VALIDATION_LIMITS.excerpt} label="Excerpt" />
-      </div>
-
-      <div className="space-y-1">
-        <Label htmlFor="content">Content</Label>
-        <Textarea
-          id="content"
-          data-testid="input-post-content"
-          value={formData.content}
-          onChange={(e) => updateField("content", e.target.value)}
-          rows={6}
-        />
-        <div className="text-xs text-muted-foreground">
-          Full content is only shown on the post detail page, not in cards.
-        </div>
-      </div>
-
-      {/* Cover Image Section: Upload + Preview + URL fallback
-          Preview prioritizes pendingCoverImageUrl (newly uploaded) over formData.coverImageUrl (saved)
-          This keeps upload decoupled from save - upload is a pure file operation */}
-      <div className="space-y-3">
-        <Label>Cover Image</Label>
-        
-        {/* Image Preview - shows pending upload OR saved URL */}
-        {(pendingCoverImageUrl || formData.coverImageUrl) && (
-          <div className="relative w-full max-w-xs aspect-video bg-muted rounded-md overflow-hidden border">
-            <img 
-              src={pendingCoverImageUrl ?? formData.coverImageUrl} 
-              alt="Cover preview" 
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                // Hide broken images
-                (e.target as HTMLImageElement).style.display = "none";
-              }}
-            />
-            {/* Indicator when pending image exists but not yet saved */}
-            {pendingCoverImageUrl && (
-              <div className="absolute bottom-1 left-1 bg-yellow-500 text-yellow-950 text-xs px-2 py-0.5 rounded">
-                Pending - click Save to apply
-              </div>
-            )}
-          </div>
-        )}
-        
+  // Render form fields - uses the appropriate state based on isEditing flag
+  // CREATE mode uses createFormData, EDIT mode uses draftPost
+  const renderFormFields = (isEditing: boolean) => {
+    // Get the current form data based on mode
+    const formData = isEditing ? (draftPost || defaultFormData) : createFormData;
+    const updateField = isEditing ? updateDraftField : updateCreateField;
+    
+    // Title change handler needs special logic for auto-slug generation
+    const handleTitleChange = (newTitle: string) => {
+      if (isEditing) {
+        setDraftPost(prev => prev ? { ...prev, title: newTitle } : null);
+      } else {
+        setCreateFormData(prev => ({
+          ...prev,
+          title: newTitle,
+          slug: generateSlug(newTitle),
+        }));
+      }
+    };
+    
+    return (
+      <>
         <div className="grid grid-cols-2 gap-4">
-          {/* Upload Button */}
           <div className="space-y-1">
-            <Label htmlFor="imageUpload" className="text-xs text-muted-foreground">Upload Image</Label>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={isUploading}
-                onClick={() => document.getElementById("imageUpload")?.click()}
-                data-testid="button-upload-image"
-                className="flex-1"
-              >
-                {isUploading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-4 h-4 mr-2" />
-                    Upload Cover Image
-                  </>
-                )}
-              </Button>
-              {/* Hidden file input */}
-              <input
-                id="imageUpload"
-                type="file"
-                accept="image/jpeg,image/png,image/gif,image/webp,image/avif"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    handleImageUpload(file);
-                    // Reset input so same file can be selected again
-                    e.target.value = "";
-                  }
+            <Label htmlFor="title">Title *</Label>
+            <Input
+              id="title"
+              data-testid="input-post-title"
+              value={formData.title}
+              onChange={(e) => handleTitleChange(e.target.value)}
+              required
+            />
+            <FieldHint value={formData.title} limits={VALIDATION_LIMITS.title} label="Title" />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="slug">Slug *</Label>
+            <Input
+              id="slug"
+              data-testid="input-post-slug"
+              value={formData.slug}
+              onChange={(e) => updateField("slug", e.target.value)}
+              required
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <Label htmlFor="excerpt">Excerpt *</Label>
+          <Textarea
+            id="excerpt"
+            data-testid="input-post-excerpt"
+            value={formData.excerpt}
+            onChange={(e) => updateField("excerpt", e.target.value)}
+            rows={2}
+            required
+          />
+          <FieldHint value={formData.excerpt} limits={VALIDATION_LIMITS.excerpt} label="Excerpt" />
+        </div>
+
+        <div className="space-y-1">
+          <Label htmlFor="content">Content</Label>
+          <Textarea
+            id="content"
+            data-testid="input-post-content"
+            value={formData.content}
+            onChange={(e) => updateField("content", e.target.value)}
+            rows={6}
+          />
+          <div className="text-xs text-muted-foreground">
+            Full content is only shown on the post detail page, not in cards.
+          </div>
+        </div>
+
+        {/* Cover Image Section - upload updates local state only, NOT triggering save */}
+        <div className="space-y-3">
+          <Label>Cover Image</Label>
+          
+          {/* Image Preview */}
+          {formData.coverImageUrl && (
+            <div className="relative w-full max-w-xs aspect-video bg-muted rounded-md overflow-hidden border">
+              <img 
+                src={formData.coverImageUrl} 
+                alt="Cover preview" 
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = "none";
                 }}
-                data-testid="input-image-file"
               />
             </div>
-            <div className="text-xs text-muted-foreground">
-              Max 5MB. JPEG, PNG, GIF, WebP, AVIF.
+          )}
+          
+          <div className="grid grid-cols-2 gap-4">
+            {/* Upload Button - type="button" prevents form submit */}
+            <div className="space-y-1">
+              <Label htmlFor={`imageUpload-${isEditing ? 'edit' : 'create'}`} className="text-xs text-muted-foreground">Upload Image</Label>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isUploading}
+                  onClick={() => document.getElementById(`imageUpload-${isEditing ? 'edit' : 'create'}`)?.click()}
+                  data-testid="button-upload-image"
+                  className="flex-1"
+                >
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Upload Cover Image
+                    </>
+                  )}
+                </Button>
+                {/* Hidden file input - type="button" upload handler prevents form submit */}
+                <input
+                  id={`imageUpload-${isEditing ? 'edit' : 'create'}`}
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp,image/avif"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      handleImageUpload(file, isEditing);
+                      e.target.value = "";
+                    }
+                  }}
+                  data-testid="input-image-file"
+                />
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Max 5MB. JPEG, PNG, GIF, WebP, AVIF.
+              </div>
+            </div>
+
+            {/* URL Input */}
+            <div className="space-y-1">
+              <Label htmlFor="coverImageUrl" className="text-xs text-muted-foreground">Or paste URL</Label>
+              <Input
+                id="coverImageUrl"
+                data-testid="input-post-cover-image"
+                value={formData.coverImageUrl}
+                onChange={(e) => updateField("coverImageUrl", e.target.value)}
+                placeholder="https://..."
+              />
+              {formData.coverImageUrl && !isValidImageUrl(formData.coverImageUrl) && (
+                <div className="text-xs text-yellow-600">
+                  URL may not be a valid image format.
+                </div>
+              )}
             </div>
           </div>
+        </div>
 
-          {/* URL Input (fallback for external URLs) */}
-          <div className="space-y-1">
-            <Label htmlFor="coverImageUrl" className="text-xs text-muted-foreground">Or paste URL</Label>
-            <Input
-              id="coverImageUrl"
-              data-testid="input-post-cover-image"
-              value={formData.coverImageUrl}
-              onChange={(e) => updateField("coverImageUrl", e.target.value)}
-              placeholder="https://..."
-            />
-            {formData.coverImageUrl && !isValidImageUrl(formData.coverImageUrl) && (
-              <div className="text-xs text-yellow-600">
-                URL may not be a valid image format.
-              </div>
-            )}
+        {/* Author field */}
+        <div className="space-y-1">
+          <Label htmlFor="author">Author</Label>
+          <Input
+            id="author"
+            data-testid="input-post-author"
+            value={formData.author}
+            onChange={(e) => updateField("author", e.target.value)}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="category">Category</Label>
+            <Select
+              value={formData.category}
+              onValueChange={(value) => updateField("category", value)}
+            >
+              <SelectTrigger data-testid="select-post-category">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((cat) => (
+                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="status">Status</Label>
+            <Select
+              value={formData.status}
+              onValueChange={(value) => updateField("status", value as "draft" | "published")}
+            >
+              <SelectTrigger data-testid="select-post-status">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="published">Published</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
-      </div>
 
-      {/* Author field */}
-      <div className="space-y-1">
-        <Label htmlFor="author">Author</Label>
-        <Input
-          id="author"
-          data-testid="input-post-author"
-          value={formData.author}
-          onChange={(e) => updateField("author", e.target.value)}
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="category">Category</Label>
-          <Select
-            value={formData.category}
-            onValueChange={(value) => updateField("category", value)}
-          >
-            <SelectTrigger data-testid="select-post-category">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map((cat) => (
-                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="flex items-center gap-2">
+          <Switch
+            id="isFeatured"
+            data-testid="switch-post-featured"
+            checked={formData.isFeatured}
+            onCheckedChange={(checked) => updateField("isFeatured", checked)}
+          />
+          <Label htmlFor="isFeatured">Featured Post</Label>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="status">Status</Label>
-          <Select
-            value={formData.status}
-            onValueChange={(value) => updateField("status", value as "draft" | "published")}
-          >
-            <SelectTrigger data-testid="select-post-status">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="published">Published</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <Switch
-          id="isFeatured"
-          data-testid="switch-post-featured"
-          checked={formData.isFeatured}
-          onCheckedChange={(checked) => updateField("isFeatured", checked)}
-        />
-        <Label htmlFor="isFeatured">Featured Post</Label>
-      </div>
-    </>
-  );
+      </>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -687,7 +670,7 @@ export default function AdminInsights() {
                         )}
                       </Button>
 
-                      <Dialog open={isEditDialogOpen && editingPostId === post.id} onOpenChange={(open) => !open && closeEditDialog()}>
+                      <Dialog open={draftPost?.id === post.id} onOpenChange={(open) => !open && closeEditDialog()}>
                         <DialogTrigger asChild>
                           <Button
                             variant="ghost"
