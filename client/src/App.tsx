@@ -50,6 +50,7 @@ import OperationsPlaybook from "@/pages/OperationsPlaybook";
 import SuperhumanProject from "@/pages/SuperhumanProject";
 import LegalOpsLanding from "@/pages/LegalOpsLanding";
 import AdminInsights from "@/pages/AdminInsights";
+import AdminImageUploader from "@/pages/AdminImageUploader";
 
 // Immersive Page Wrapper - Full screen without navigation (for campaigns and reveals)
 function ImmersivePage() {
@@ -122,6 +123,7 @@ function PublicRouter() {
           <Route path="/admin/vanessa-responses" component={VanessaResponses} />
           <Route path="/admin/vanessa-learning" component={VanessaLearningDashboard} />
           <Route path="/admin/insights" component={AdminInsights} />
+          <Route path="/admin/image-uploader" component={AdminImageUploader} />
           {/* Legacy routes for backward compatibility */}
           <Route path="/talent" component={TalentSearch} />
           <Route component={NotFound} />
