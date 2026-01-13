@@ -5557,34 +5557,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       });
 
-      // Make the blob publicly accessible
-      try {
-        await blob.makePublic();
-        console.log(`✅ [ADMIN] Made blob public [${requestId}]`);
-      } catch (makePublicError: any) {
-        console.log(`⚠️ [ADMIN] Could not make blob public (will use proxy) [${requestId}]:`, makePublicError.message);
-      }
-
-      // Construct public URL - try direct GCS first, fallback to proxy
-      const directGcsUrl = `https://storage.googleapis.com/${bucketName}/${objectName}`;
-      
-      // Use our proxy endpoint as the primary URL to ensure accessibility
+      // Use our proxy endpoint for public access (GCS blocks direct public access)
       const proxyUrl = `/public/blog-images/${uniqueFilename}`;
-      
-      // Store both URLs - use proxy for reliability
-      const publicUrl = proxyUrl;
 
       console.log(`✅ [ADMIN] Image uploaded successfully [${requestId}]:`, {
         filename: uniqueFilename,
         proxyUrl,
-        directGcsUrl,
       });
 
       res.json({
         success: true,
-        url: publicUrl,
+        url: proxyUrl,
         filename: uniqueFilename,
-        directUrl: directGcsUrl,
       });
     } catch (error: any) {
       const requestId = (req as any).requestId;

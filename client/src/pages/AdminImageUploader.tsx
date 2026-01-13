@@ -1,196 +1,148 @@
-import { useState, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Upload, Copy, Check, Loader2, Image as ImageIcon, ArrowLeft } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import * as React from "react";
+
+type UploadResponse = {
+  proxyUrl: string;      // e.g. "/public/blog-images/cover-xxxx.png"
+  directGcsUrl?: string; // we IGNORE this
+};
 
 export default function AdminImageUploader() {
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadedUrl, setUploadedUrl] = useState("");
-  const [copied, setCopied] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { toast } = useToast();
+  const [isUploading, setIsUploading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const [imageUrl, setImageUrl] = React.useState<string | null>(null);
+  const [copied, setCopied] = React.useState(false);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Reset state for new upload
-    setUploadedUrl("");
+    setError(null);
     setCopied(false);
-
-    // Validate file size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: "File too large",
-        description: "Please select an image under 5MB",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsUploading(true);
 
     try {
       const formData = new FormData();
       formData.append("image", file);
 
-      const response = await fetch("/api/admin/upload-image", {
+      const res = await fetch("/api/admin/upload-image", {
         method: "POST",
         body: formData,
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Upload failed");
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(
+          `Upload failed (${res.status}): ${text.slice(0, 200) || "Unknown"}`
+        );
       }
 
-      const data = await response.json();
-      
-      // Store the URL directly
-      setUploadedUrl(data.url);
-      
-      toast({
-        title: "Upload successful",
-        description: "Image URL is ready to copy",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Upload failed",
-        description: error.message || "Please try again",
-        variant: "destructive",
-      });
+      const json = (await res.json()) as UploadResponse;
+
+      // IMPORTANT: we ONLY use proxyUrl – never directGcsUrl
+      if (!json.proxyUrl) {
+        throw new Error("Server response missing proxyUrl field");
+      }
+
+      // If proxyUrl is relative ("/public/blog-images/..."), keep it that way.
+      // Browser will request it from our server, which proxies to GCS.
+      setImageUrl(json.proxyUrl);
+    } catch (err: any) {
+      console.error("Image upload error", err);
+      setError(err.message || "Upload failed");
+      setImageUrl(null);
     } finally {
       setIsUploading(false);
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+      // reset the file input so we can choose same file again if we want
+      e.target.value = "";
     }
-  };
+  }
 
-  const handleCopyUrl = async () => {
-    if (!uploadedUrl) return;
-    
+  async function handleCopy() {
+    if (!imageUrl) return;
     try {
-      await navigator.clipboard.writeText(uploadedUrl);
+      await navigator.clipboard.writeText(
+        // In case you want an absolute URL when copying:
+        imageUrl.startsWith("http")
+          ? imageUrl
+          : `${window.location.origin}${imageUrl}`
+      );
       setCopied(true);
-      toast({
-        title: "Copied",
-        description: "URL copied to clipboard",
-      });
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast({
-        title: "Copy failed",
-        description: "Please copy the URL manually",
-        variant: "destructive",
-      });
+    } catch (err) {
+      console.error("Clipboard error", err);
+      setError("Could not copy URL to clipboard");
     }
-  };
-
-  const handleSelectFile = () => {
-    fileInputRef.current?.click();
-  };
+  }
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-2xl mx-auto space-y-6">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => window.close()}
-            title="Close this tab"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">Image Uploader</h1>
-            <p className="text-muted-foreground">
-              Upload images for blog post covers
+    <div className="mx-auto max-w-3xl px-4 py-10">
+      <h1 className="text-2xl font-semibold mb-1">Image Uploader</h1>
+      <p className="text-sm text-neutral-500 mb-6">
+        Upload images for blog post covers.
+      </p>
+
+      <div className="rounded-xl border bg-white p-6 shadow-sm">
+        <h2 className="mb-2 text-lg font-medium">Upload Image</h2>
+        <p className="mb-4 text-xs text-neutral-500">
+          Select an image file (JPEG, PNG, GIF, WebP, AVIF) up to 5MB.
+        </p>
+
+        <label className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 cursor-pointer">
+          {isUploading ? "Uploading..." : "Select Image"}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp,image/avif"
+            className="hidden"
+            onChange={handleFileChange}
+            disabled={isUploading}
+          />
+        </label>
+
+        {error && (
+          <p className="mt-4 text-sm text-red-600">
+            {error}
+          </p>
+        )}
+
+        {/* Preview + URL block */}
+        {imageUrl && (
+          <div className="mt-6 space-y-4">
+            <p className="text-sm font-medium text-neutral-700">
+              Upload complete! Preview:
             </p>
-          </div>
-        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ImageIcon className="h-5 w-5" />
-              Upload Image
-            </CardTitle>
-            <CardDescription>
-              Select an image file (JPEG, PNG, GIF, WebP, AVIF) up to 5MB
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/gif,image/webp,image/avif"
-              onChange={handleFileChange}
-              className="hidden"
-            />
+            <div className="flex justify-center">
+              <img
+                src={imageUrl}
+                alt="Uploaded preview"
+                className="max-h-72 rounded-lg border object-contain"
+              />
+            </div>
 
-            <Button
-              onClick={handleSelectFile}
-              disabled={isUploading}
-              className="w-full"
-              size="lg"
-            >
-              {isUploading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Uploading...
-                </>
-              ) : (
-                <>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Select Image
-                </>
-              )}
-            </Button>
-
-            {uploadedUrl && (
-              <div className="mt-6 space-y-4 text-center">
-                <p className="font-medium">Upload complete!</p>
-
-                <img
-                  src={uploadedUrl}
-                  alt="Uploaded preview"
-                  className="mx-auto rounded-lg max-h-72 border"
+            <div className="space-y-2">
+              <p className="text-xs text-neutral-500">
+                Use this URL in the “Cover Image URL” field when editing a post:
+              </p>
+              <div className="flex items-center gap-2">
+                <input
+                  readOnly
+                  className="w-full rounded-md border px-2 py-1 text-xs font-mono bg-neutral-50"
+                  value={
+                    imageUrl.startsWith("http")
+                      ? imageUrl
+                      : `${window.location.origin}${imageUrl}`
+                  }
                 />
-
-                <div className="bg-muted p-3 rounded-md text-sm break-all">
-                  {uploadedUrl}
-                </div>
-
-                <Button
-                  onClick={handleCopyUrl}
-                  className="mx-auto"
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  className="rounded-md border px-3 py-1 text-xs font-medium hover:bg-neutral-50"
                 >
-                  {copied ? (
-                    <>
-                      <Check className="h-4 w-4 mr-2" />
-                      Copied!
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-4 w-4 mr-2" />
-                      Copy URL
-                    </>
-                  )}
-                </Button>
-
-                <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
-                  <p className="text-sm text-blue-800 dark:text-blue-200">
-                    Paste this URL into the "Cover Image URL" field in the post editor.
-                  </p>
-                </div>
+                  {copied ? "Copied!" : "Copy URL"}
+                </button>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
