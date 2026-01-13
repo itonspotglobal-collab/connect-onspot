@@ -1,0 +1,168 @@
+I want to implement a workaround for the broken inline image upload in the Insights Admin edit/create modal.
+
+The current behavior is:
+
+When I click Upload Cover Image and finish selecting a file,
+the Edit Post modal closes automatically, and the new thumbnail is not applied.
+
+I don’t want to keep trying to fix this inline behavior.
+Instead, I want a simpler, more reliable flow:
+
+🎯 Goal
+
+Remove / disable the inline file upload inside the Edit/Create Post modals.
+
+Add a new “Image Uploader” page where I can:
+
+upload an image from my computer,
+
+get the public URL from Replit Object Storage,
+
+copy that URL.
+
+In the Edit/Create modal, I will:
+
+open the “Image Uploader” page in a new tab,
+
+upload an image there,
+
+copy the URL,
+
+paste it into the “Or paste URL” field.
+
+This is a workaround to unblock me; it does not need to reuse the fragile inline upload flow.
+
+1) Changes in AdminInsights.tsx
+a) In BOTH Create and Edit post dialogs:
+
+Remove or comment out the existing inline upload block that contains:
+
+the “Upload Cover Image” button
+
+the hidden <input type="file" ...> for imageUpload-edit / imageUpload-create
+
+Replace that block with:
+
+A simple text explaining the new flow, for example:
+
+“To upload a cover image, open the Image Uploader in a new tab, upload your image, then paste the URL below.”
+
+A link-style button:
+
+<Button
+  type="button"
+  variant="outline"
+  onClick={() => window.open('/admin/image-uploader', '_blank')}
+>
+  Open Image Uploader
+</Button>
+
+
+Keep the “Or paste URL” input and bind it to formData.coverImageUrl (or equivalent):
+
+<Input
+  id="coverImageUrl"
+  placeholder="https://..."
+  value={formData.coverImageUrl ?? ''}
+  onChange={(e) =>
+    setFormData(prev => ({ ...prev, coverImageUrl: e.target.value }))
+  }
+/>
+
+
+This ensures the dialog no longer interacts with <input type="file"> at all.
+
+2) New Page: /admin/image-uploader
+
+Create a new React page/component, for example:
+
+client/src/pages/AdminImageUploader.tsx
+
+Route: /admin/image-uploader
+
+The page should:
+
+Render a simple layout:
+
+Title: “Image Uploader”
+
+File input:
+
+<input
+  type="file"
+  accept="image/jpeg,image/png,image/gif,image/webp,image/avif"
+  onChange={handleFileChange}
+/>
+
+
+On file select:
+
+Call the existing /api/admin/upload-image endpoint
+
+Show a loading state while uploading
+
+On success, display:
+
+The public URL returned from the API
+
+A “Copy URL” button that copies it to clipboard
+
+A short instruction: “Paste this URL into the ‘Or paste URL’ field in the post editor.”
+
+Example UI after upload:
+
+<div>
+  <p>Upload complete.</p>
+  <code>{url}</code>
+  <Button onClick={() => navigator.clipboard.writeText(url)}>
+    Copy URL
+  </Button>
+</div>
+
+
+Do NOT:
+
+update any post
+
+refetch posts
+
+close or open any Insights modals
+
+This page should be completely standalone.
+
+3) Make Sure Posts Use coverImageUrl
+
+Confirm that the Insights listing & cards use post.coverImageUrl (or the correct field name) for the thumbnail:
+
+<img src={post.coverImageUrl || fallbackImage} alt={post.title} />
+
+
+No changes required if this is already correct.
+
+✅ Acceptance Criteria
+
+Clicking Upload Cover Image inside the Edit/Create modal is no longer possible (button removed or replaced).
+
+There is a new /admin/image-uploader page that:
+
+uploads a file,
+
+returns a URL,
+
+lets me copy that URL.
+
+I can:
+
+open the uploader in a new tab,
+
+upload an image,
+
+copy the URL,
+
+paste it into the modal’s “Or paste URL” field,
+
+click “Update Post” and see the new thumbnail on the Insights page.
+
+The Edit modal never closes automatically as part of the upload flow, because image upload no longer happens inside it.
+
+Please implement this workaround cleanly so that I can rely on URL-based thumbnails and move on to other issues.
