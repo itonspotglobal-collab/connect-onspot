@@ -5567,7 +5567,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         success: true,
-        url: proxyUrl,
+        proxyUrl: proxyUrl,
         filename: uniqueFilename,
       });
     } catch (error: any) {

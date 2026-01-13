@@ -1,0 +1,145 @@
+❗ Critical Bug Fix Required — Do NOT Refactor Unrelated Code
+
+We have a confirmed root problem with the blog image upload flow. Uploads succeed on the backend, but the frontend breaks in multiple ways.
+
+🚨 Current Problems (All Verified)
+
+Edit / Create Post modal closes automatically after image upload
+
+This happens immediately after /api/admin/upload-image returns 200
+
+The modal is a Radix Dialog and is being closed by state updates
+
+Uploading an image should NOT submit the form or close the dialog
+
+Uploaded image never appears in preview
+
+Backend returns { proxyUrl: "/public/blog-images/cover-xxx.png" }
+
+Frontend does not render the image
+
+Preview <img> is either missing or never updated with src
+
+Image uploader page shows “Upload successful” but no image
+
+The URL exists and returns 200 when accessed directly
+
+UI never binds the returned proxyUrl to preview state
+
+Category select sometimes resets or does not persist
+
+Indicates state reset caused by re-render or uncontrolled form logic
+
+✅ Root Causes You Must Fix (Do NOT Ignore)
+1️⃣ Form is submitting when file input changes
+
+The upload button or file input is triggering a submit or state reset.
+
+You must ensure:
+
+File upload does NOT call form.submit()
+
+File upload handler uses event.preventDefault() and event.stopPropagation()
+
+Upload button is type="button" (NOT submit)
+
+2️⃣ Modal is controlled incorrectly
+
+The Radix Dialog open state is being tied to post data updates.
+
+You must:
+
+Decouple modal open state from post object
+
+Keep isEditOpen / isCreateOpen strictly controlled by UI actions
+
+Never close the modal inside onUploadSuccess
+
+3️⃣ Preview state is never set or is reset
+
+The frontend receives proxyUrl but does not store it properly.
+
+You must:
+
+Store the returned URL in a dedicated state:
+
+const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
+
+
+On successful upload:
+
+setCoverImagePreview(response.proxyUrl);
+setFormData(prev => ({
+  ...prev,
+  coverImageUrl: response.proxyUrl
+}));
+
+
+Render preview explicitly:
+
+{coverImagePreview && (
+  <img
+    src={coverImagePreview}
+    alt="Cover preview"
+    className="w-full rounded-md border"
+  />
+)}
+
+4️⃣ Image Uploader page is missing preview binding
+
+The uploader page uploads successfully but never renders the image.
+
+You must:
+
+Bind proxyUrl to state
+
+Render preview immediately after upload
+
+Do NOT rely on toasts alone
+
+🛠 Required Backend Behavior (Already Mostly Correct)
+
+Confirm /api/admin/upload-image returns exactly:
+
+{
+  "filename": "cover-xxx.png",
+  "proxyUrl": "/public/blog-images/cover-xxx.png"
+}
+
+
+No GCS URLs. No redirects.
+
+🚫 Explicit Instructions (Important)
+
+❌ Do NOT refactor unrelated components
+
+❌ Do NOT remove Radix Dialog
+
+❌ Do NOT auto-close modal after upload
+
+❌ Do NOT reload page or reset form
+
+❌ Do NOT introduce new upload systems
+
+✅ Final Expected Behavior
+
+After this fix:
+
+✔ Uploading an image does NOT close the modal
+✔ Uploaded image immediately appears in preview
+✔ Category & other fields remain unchanged
+✔ Clicking Update Post saves the proxy URL
+✔ Blog thumbnail updates correctly on the frontend
+✔ Image uploader page shows preview + copyable URL
+
+🔚 If This Still Fails
+
+If preview still does not render, log and show:
+
+console.log(response)
+
+console.log(coverImagePreview)
+
+Render the raw URL as text under the preview
+
+Proceed step-by-step. Fix the modal first, then preview.
