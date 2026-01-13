@@ -6,9 +6,8 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function AdminImageUploader() {
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+  const [uploadedUrl, setUploadedUrl] = useState("");
   const [copied, setCopied] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -16,10 +15,8 @@ export default function AdminImageUploader() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Show local preview
-    const localPreview = URL.createObjectURL(file);
-    setPreviewUrl(localPreview);
-    setUploadedUrl(null);
+    // Reset state for new upload
+    setUploadedUrl("");
     setCopied(false);
 
     // Validate file size (5MB max)
@@ -50,9 +47,8 @@ export default function AdminImageUploader() {
 
       const data = await response.json();
       
-      // Add cache-busting timestamp
-      const urlWithCacheBust = `${data.url}?v=${Date.now()}`;
-      setUploadedUrl(urlWithCacheBust);
+      // Store the URL directly
+      setUploadedUrl(data.url);
       
       toast({
         title: "Upload successful",
@@ -64,7 +60,6 @@ export default function AdminImageUploader() {
         description: error.message || "Please try again",
         variant: "destructive",
       });
-      setPreviewUrl(null);
     } finally {
       setIsUploading(false);
       // Reset file input
@@ -156,51 +151,42 @@ export default function AdminImageUploader() {
               )}
             </Button>
 
-            {previewUrl && (
-              <div className="space-y-4">
-                <div className="border rounded-lg overflow-hidden">
-                  <img
-                    src={previewUrl}
-                    alt="Preview"
-                    className="w-full h-48 object-cover"
-                  />
+            {uploadedUrl && (
+              <div className="mt-6 space-y-4 text-center">
+                <p className="font-medium">Upload complete!</p>
+
+                <img
+                  src={uploadedUrl}
+                  alt="Uploaded preview"
+                  className="mx-auto rounded-lg max-h-72 border"
+                />
+
+                <div className="bg-muted p-3 rounded-md text-sm break-all">
+                  {uploadedUrl}
                 </div>
 
-                {uploadedUrl && (
-                  <div className="space-y-3">
-                    <div className="p-3 bg-muted rounded-lg">
-                      <p className="text-sm font-medium mb-1">Public URL:</p>
-                      <code className="text-xs break-all block text-muted-foreground">
-                        {uploadedUrl}
-                      </code>
-                    </div>
+                <Button
+                  onClick={handleCopyUrl}
+                  className="mx-auto"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="h-4 w-4 mr-2" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copy URL
+                    </>
+                  )}
+                </Button>
 
-                    <Button
-                      onClick={handleCopyUrl}
-                      variant="outline"
-                      className="w-full"
-                      size="lg"
-                    >
-                      {copied ? (
-                        <>
-                          <Check className="h-4 w-4 mr-2" />
-                          Copied!
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="h-4 w-4 mr-2" />
-                          Copy URL
-                        </>
-                      )}
-                    </Button>
-
-                    <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
-                      <p className="text-sm text-blue-800 dark:text-blue-200">
-                        Paste this URL into the "Cover Image URL" field in the post editor.
-                      </p>
-                    </div>
-                  </div>
-                )}
+                <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <p className="text-sm text-blue-800 dark:text-blue-200">
+                    Paste this URL into the "Cover Image URL" field in the post editor.
+                  </p>
+                </div>
               </div>
             )}
           </CardContent>
