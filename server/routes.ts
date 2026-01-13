@@ -5012,9 +5012,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     publishedAt: z.coerce.date().optional().nullable(),
   });
 
-  // GET /api/public/blog-images/:filename - Serve blog images publicly (no auth required)
+  // GET /public/blog-images/:filename - Serve blog images publicly (no auth required)
   // This proxies images from Object Storage to avoid GCS public access issues
-  app.get("/api/public/blog-images/:filename", async (req: Request, res: Response) => {
+  app.get("/public/blog-images/:filename", async (req: Request, res: Response) => {
     try {
       const { filename } = req.params;
       const requestId = (req as any).requestId || "unknown";
@@ -5569,7 +5569,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const directGcsUrl = `https://storage.googleapis.com/${bucketName}/${objectName}`;
       
       // Use our proxy endpoint as the primary URL to ensure accessibility
-      const proxyUrl = `/api/public/blog-images/${uniqueFilename}`;
+      const proxyUrl = `/public/blog-images/${uniqueFilename}`;
       
       // Store both URLs - use proxy for reliability
       const publicUrl = proxyUrl;
