@@ -1,0 +1,151 @@
+REPLIT, FIX THE FOLLOWING ISSUES COMPLETELY:
+
+1. Edit Post Modal closes automatically after uploading an image
+
+When I choose a file in the Edit Post modal (“Upload Cover Image”), the modal immediately closes as soon as the upload finishes.
+This must never happen.
+Find ALL causes:
+
+any closeDialog()
+
+any setIsEditing(false)
+
+any onSuccess handler that closes the modal
+
+any auto-submit triggered on file input change
+
+any mutation hook that closes dialogs
+
+Radix Dialog behavior triggered incorrectly
+
+Hot reload resetting the state incorrectly
+
+Fix the root cause so the modal stays fully open the entire time.
+DO NOT suppress the modal.
+DO NOT auto-submit forms.
+DO NOT auto-close dialogs.
+
+The modal must only close when the user manually clicks “Update Post” or “Cancel.”
+
+2. Uploaded cover image does not update in the form
+
+The API upload works, but the returned URL is not being written to formData.coverImageUrl.
+
+Fix this fully:
+
+After upload completes, set:
+
+setFormData(prev => ({ ...prev, coverImageUrl: uploadedUrl }));
+
+
+Immediately update the visible input field (#coverImageUrl)
+
+Immediately update the image preview in the modal
+
+The edited post must store the new cover image.
+
+3. Category dropdown does NOT update
+
+Selecting a new category does nothing.
+Fix the Select component:
+
+Ensure onValueChange calls:
+
+setFormData(prev => ({ ...prev, category: value }));
+
+
+Ensure editingPost loads category correctly
+
+Ensure form submission sends updated category in updatePost request
+
+4. Add missing image preview to Admin Image Uploader
+
+After uploading an image in /admin/image-uploader, show:
+
+A thumbnail preview
+
+The final public URL inside a copyable input box
+
+A “Copy URL” button
+
+Ensure this preview renders immediately and reliably, not only after reloads.
+
+5. Fix Google Cloud Storage public URL failures
+
+Right now the uploaded file URL returns:
+
+Anonymous caller does not have storage.objects.get access
+
+
+Fix this by:
+
+ensuring Replit Object Storage URLs use the correct publicly accessible format
+
+NOT using private bucket URLs
+
+ensuring the returned URL ends with /public/...
+
+Example good URL:
+
+https://storage.googleapis.com/replit-obji.../public/blog-images/filename.png
+
+
+Audit the backend to ensure all uploads use the public folder.
+
+6. DO NOT break existing functionality
+
+When fixing this, preserve:
+
+Create Post
+
+Edit Post
+
+Publish toggle
+
+Featured toggle
+
+All post list rendering
+
+Image upload API route
+
+Object Storage write permissions
+
+7. SPECIFIC FILES TO AUDIT & PATCH
+
+You MUST check and fix issues inside:
+
+client/src/pages/AdminInsights.tsx
+
+client/src/components/ui/dialog.tsx
+
+client/src/components/ui/select.tsx
+
+client/src/hooks/useUploadImage.ts (if exists)
+
+Any mutation hooks that update posts
+
+Server route: POST /api/admin/upload-image
+
+Server route: PUT /api/admin/posts/:id
+
+8. DO NOT provide commentary — JUST FIX THE CODE
+
+Apply all code changes directly.
+
+EXPECTED RESULT AFTER FIX
+
+After your patch:
+
+Uploading a cover image keeps the Edit modal open
+
+The new image becomes the active thumbnail in the form
+
+Changing category works instantly
+
+Saving the post correctly persists all fields
+
+Image uploader page shows preview + URL + copy button
+
+Uploaded images load publicly without “AccessDenied” errors
+
+Please apply the fixes now.

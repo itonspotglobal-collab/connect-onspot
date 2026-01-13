@@ -5012,6 +5012,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     publishedAt: z.coerce.date().optional().nullable(),
   });
 
+  // GET /api/public/blog-images/:filename - Serve blog images publicly (no auth required)
+  // This proxies images from Object Storage to avoid GCS public access issues
+  app.get("/api/public/blog-images/:filename", async (req: Request, res: Response) => {
+    try {
+      const { filename } = req.params;
+      const requestId = (req as any).requestId || "unknown";
+      
+      // Security: validate filename format (only allow safe characters)
+      if (!/^cover-[a-f0-9-]+\.(jpg|jpeg|png|gif|webp|avif)$/i.test(filename)) {
+        return res.status(400).json({ error: "Invalid filename format" });
+      }
+
+      // Get public directory from Object Storage config
+      const publicPaths = process.env.PUBLIC_OBJECT_SEARCH_PATHS?.split(",") || [];
+      if (publicPaths.length === 0) {
+        return res.status(500).json({ error: "Object storage not configured" });
+      }
+
+      const publicDir = publicPaths[0].trim();
+      const fullPath = `${publicDir}/blog-images/${filename}`;
+      
+      // Parse bucket and object path
+      const pathParts = fullPath.split("/").filter(Boolean);
+      const bucketName = pathParts[0];
+      const objectName = pathParts.slice(1).join("/");
+
+      const bucket = objectStorageClient.bucket(bucketName);
+      const blob = bucket.file(objectName);
+
+      // Check if file exists
+      const [exists] = await blob.exists();
+      if (!exists) {
+        console.log(`❌ [PUBLIC] Blog image not found [${requestId}]: ${filename}`);
+        return res.status(404).json({ error: "Image not found" });
+      }
+
+      // Get metadata and stream the file
+      const [metadata] = await blob.getMetadata();
+      
+      res.set({
+        "Content-Type": metadata.contentType || "application/octet-stream",
+        "Content-Length": metadata.size?.toString() || "",
+        "Cache-Control": "public, max-age=31536000", // Cache for 1 year
+      });
+
+      const stream = blob.createReadStream();
+      stream.on("error", (err) => {
+        console.error(`❌ [PUBLIC] Stream error [${requestId}]:`, err.message);
+        if (!res.headersSent) {
+          res.status(500).json({ error: "Error streaming file" });
+        }
+      });
+      
+      stream.pipe(res);
+    } catch (error: any) {
+      console.error(`❌ [PUBLIC] Blog image error:`, error.message);
+      res.status(500).json({ error: "Failed to serve image" });
+    }
+  });
+
   // GET /api/posts - Fetch published posts (for public display)
   app.get("/api/posts", async (req: Request, res: Response) => {
     try {
@@ -5494,26 +5554,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         metadata: {
           originalName: file.originalname,
           uploadedAt: new Date().toISOString(),
-          // Mark as public for blog post thumbnails
-          "custom:aclPolicy": JSON.stringify({
-            owner: "admin",
-            visibility: "public",
-          }),
         },
       });
 
-      // Construct the public URL using the GCS format
-      const publicUrl = `https://storage.googleapis.com/${bucketName}/${objectName}`;
+      // Make the blob publicly accessible
+      try {
+        await blob.makePublic();
+        console.log(`✅ [ADMIN] Made blob public [${requestId}]`);
+      } catch (makePublicError: any) {
+        console.log(`⚠️ [ADMIN] Could not make blob public (will use proxy) [${requestId}]:`, makePublicError.message);
+      }
+
+      // Construct public URL - try direct GCS first, fallback to proxy
+      const directGcsUrl = `https://storage.googleapis.com/${bucketName}/${objectName}`;
+      
+      // Use our proxy endpoint as the primary URL to ensure accessibility
+      const proxyUrl = `/api/public/blog-images/${uniqueFilename}`;
+      
+      // Store both URLs - use proxy for reliability
+      const publicUrl = proxyUrl;
 
       console.log(`✅ [ADMIN] Image uploaded successfully [${requestId}]:`, {
         filename: uniqueFilename,
-        url: publicUrl,
+        proxyUrl,
+        directGcsUrl,
       });
 
       res.json({
         success: true,
         url: publicUrl,
         filename: uniqueFilename,
+        directUrl: directGcsUrl,
       });
     } catch (error: any) {
       const requestId = (req as any).requestId;
