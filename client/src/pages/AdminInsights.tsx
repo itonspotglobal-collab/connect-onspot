@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Pencil, Trash2, Eye, EyeOff, Star, ArrowLeft, Upload, Loader2, Image as ImageIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, EyeOff, Star, ArrowLeft, ExternalLink, Image as ImageIcon } from "lucide-react";
 import { Link } from "wouter";
 import type { Post } from "@shared/schema";
 
@@ -106,91 +106,13 @@ export default function AdminInsights() {
   // This is the structural fix: modal owns its own state, immune to refetches
   const [draftPost, setDraftPost] = useState<DraftPost | null>(null);
   
-  // Upload state - shared between create and edit modes
-  const [isUploading, setIsUploading] = useState(false);
-  
-  // File input refs - using refs prevents default form behavior that can close modals
-  // When clicking a file input inside a dialog, the native file picker can trigger
-  // focus/blur events that some dialog implementations interpret as "outside click"
-  const editFileInputRef = useRef<HTMLInputElement>(null);
-  const createFileInputRef = useRef<HTMLInputElement>(null);
+  // Image upload removed from modals - now uses standalone /admin/image-uploader page
+  // This fixes modal closing issues caused by file picker focus/blur events
 
   const { data: postsResponse, isLoading } = useQuery<{ success: boolean; posts: Post[] }>({
     queryKey: ["/api/admin/posts"],
-    // Disable refetch on window focus to prevent modal from closing
-    // when file picker steals and returns focus
     refetchOnWindowFocus: false,
   });
-
-  // Upload image to Object Storage
-  // Updates the appropriate state based on which modal is open (create vs edit)
-  // This is a PURE FILE OPERATION - does NOT trigger save, does NOT close modal
-  const handleImageUpload = async (file: File, isEditMode: boolean) => {
-    // Validate file type client-side
-    const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp", "image/avif"];
-    if (!allowedTypes.includes(file.type)) {
-      toast({
-        title: "Invalid file type",
-        description: "Please upload a JPEG, PNG, GIF, WebP, or AVIF image.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate file size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: "File too large",
-        description: "Please upload an image smaller than 5MB.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsUploading(true);
-    try {
-      const uploadData = new FormData();
-      uploadData.append("image", file);
-
-      const response = await fetch("/api/admin/upload-image", {
-        method: "POST",
-        body: uploadData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Upload failed");
-      }
-
-      const result = await response.json();
-      const imageUrlWithCacheBust = `${result.url}?v=${Date.now()}`;
-      console.log("[AdminInsights] Image uploaded:", imageUrlWithCacheBust, "isEditMode:", isEditMode);
-      
-      // Update the correct state based on which modal is open
-      // This keeps upload decoupled from save - image is stored locally until Save is clicked
-      if (isEditMode && draftPost) {
-        // EDIT mode: update draftPost directly (isolated from parent state)
-        setDraftPost(prev => prev ? { ...prev, coverImageUrl: imageUrlWithCacheBust } : null);
-      } else {
-        // CREATE mode: update createFormData
-        setCreateFormData(prev => ({ ...prev, coverImageUrl: imageUrlWithCacheBust }));
-      }
-
-      toast({
-        title: "Image uploaded",
-        description: "Cover image ready. Click Save to apply changes.",
-      });
-    } catch (error: any) {
-      console.error("Image upload failed:", error);
-      toast({
-        title: "Upload failed",
-        description: error.message || "Failed to upload image. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUploading(false);
-    }
-  };
 
   const createMutation = useMutation({
     mutationFn: async (data: PostFormData) => {
@@ -522,7 +444,7 @@ export default function AdminInsights() {
           </div>
         </div>
 
-        {/* Cover Image Section - upload updates local state only, NOT triggering save */}
+        {/* Cover Image Section - uses URL paste workflow */}
         <div className="space-y-3">
           <Label>Cover Image</Label>
           
@@ -540,56 +462,26 @@ export default function AdminInsights() {
             </div>
           )}
           
-          <div className="grid grid-cols-2 gap-4">
-            {/* Upload Button - type="button" prevents form submit */}
-            <div className="space-y-1">
-              <Label htmlFor={`imageUpload-${isEditing ? 'edit' : 'create'}`} className="text-xs text-muted-foreground">Upload Image</Label>
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={isUploading}
-                  onClick={() => document.getElementById(`imageUpload-${isEditing ? 'edit' : 'create'}`)?.click()}
-                  data-testid="button-upload-image"
-                  className="flex-1"
-                >
-                  {isUploading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Uploading...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="w-4 h-4 mr-2" />
-                      Upload Cover Image
-                    </>
-                  )}
-                </Button>
-                {/* Hidden file input - type="button" upload handler prevents form submit */}
-                <input
-                  id={`imageUpload-${isEditing ? 'edit' : 'create'}`}
-                  type="file"
-                  accept="image/jpeg,image/png,image/gif,image/webp,image/avif"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      handleImageUpload(file, isEditing);
-                      e.target.value = "";
-                    }
-                  }}
-                  data-testid="input-image-file"
-                />
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Max 5MB. JPEG, PNG, GIF, WebP, AVIF.
-              </div>
+          <div className="space-y-3">
+            {/* Image Uploader link */}
+            <div className="p-3 bg-muted/50 rounded-lg space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Upload images in the Image Uploader, then paste the URL below.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => window.open('/admin/image-uploader', '_blank')}
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Open Image Uploader
+              </Button>
             </div>
 
             {/* URL Input */}
             <div className="space-y-1">
-              <Label htmlFor="coverImageUrl" className="text-xs text-muted-foreground">Or paste URL</Label>
+              <Label htmlFor="coverImageUrl" className="text-xs text-muted-foreground">Cover Image URL</Label>
               <Input
                 id="coverImageUrl"
                 data-testid="input-post-cover-image"
@@ -823,7 +715,7 @@ export default function AdminInsights() {
                             <DialogTitle>Edit Post</DialogTitle>
                           </DialogHeader>
                           
-                          {/* IMAGE UPLOAD - OUTSIDE FORM to prevent any form interactions */}
+                          {/* COVER IMAGE - uses URL paste workflow */}
                           {draftPost && (
                             <div className="space-y-3 border-b pb-4">
                               <Label>Cover Image</Label>
@@ -842,64 +734,26 @@ export default function AdminInsights() {
                                 </div>
                               )}
                               
-                              <div className="grid grid-cols-2 gap-4">
-                                {/* Upload Button - completely outside form */}
-                                <div className="space-y-1">
-                                  <Label className="text-xs text-muted-foreground">Upload Image</Label>
-                                  <div className="flex items-center gap-2">
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      disabled={isUploading}
-                                      onClick={(e) => {
-                                        // Prevent any event bubbling that could trigger form/dialog actions
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        // Use ref to trigger file input - avoids DOM query issues
-                                        editFileInputRef.current?.click();
-                                      }}
-                                      data-testid="button-upload-image"
-                                      className="flex-1"
-                                    >
-                                      {isUploading ? (
-                                        <>
-                                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                          Uploading...
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Upload className="w-4 h-4 mr-2" />
-                                          Upload Cover Image
-                                        </>
-                                      )}
-                                    </Button>
-                                    {/* Hidden file input - OUTSIDE FORM, uses ref to prevent dialog closure */}
-                                    <input
-                                      ref={editFileInputRef}
-                                      type="file"
-                                      accept="image/jpeg,image/png,image/gif,image/webp,image/avif"
-                                      className="hidden"
-                                      onClick={(e) => e.stopPropagation()}
-                                      onChange={(e) => {
-                                        e.stopPropagation();
-                                        const file = e.target.files?.[0];
-                                        if (file) {
-                                          handleImageUpload(file, true);
-                                          e.target.value = "";
-                                        }
-                                      }}
-                                      data-testid="input-image-file"
-                                    />
-                                  </div>
-                                  <div className="text-xs text-muted-foreground">
-                                    Max 5MB. JPEG, PNG, GIF, WebP, AVIF.
-                                  </div>
+                              <div className="space-y-3">
+                                {/* Image Uploader link */}
+                                <div className="p-3 bg-muted/50 rounded-lg space-y-2">
+                                  <p className="text-sm text-muted-foreground">
+                                    Upload images in the Image Uploader, then paste the URL below.
+                                  </p>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => window.open('/admin/image-uploader', '_blank')}
+                                  >
+                                    <ExternalLink className="w-4 h-4 mr-2" />
+                                    Open Image Uploader
+                                  </Button>
                                 </div>
 
-                                {/* URL Input - outside form */}
+                                {/* URL Input */}
                                 <div className="space-y-1">
-                                  <Label className="text-xs text-muted-foreground">Or paste URL</Label>
+                                  <Label className="text-xs text-muted-foreground">Cover Image URL</Label>
                                   <Input
                                     data-testid="input-post-cover-image"
                                     value={draftPost.coverImageUrl}
