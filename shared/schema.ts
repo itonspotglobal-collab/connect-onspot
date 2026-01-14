@@ -493,6 +493,7 @@ export const posts = pgTable("posts", {
   author: text("author").notNull(),
   isFeatured: boolean("is_featured").default(false),
   status: text("status").notNull().default("draft"), // draft | published
+  views: integer("views").default(0),
   likes: integer("likes").default(0),
   readTime: text("read_time"),
   publishedAt: timestamp("published_at"),
