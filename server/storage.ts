@@ -2625,7 +2625,7 @@ export class DbStorage extends MemStorage {
   async incrementPostViews(id: string): Promise<number> {
     const [updated] = await db
       .update(posts)
-      .set({ views: sqlOp`COALESCE(${posts.views}, 0) + 1` })
+      .set({ views: sqlOp`COALESCE("views", 0) + 1` })
       .where(eq(posts.id, id))
       .returning({ views: posts.views });
     return updated?.views || 0;
@@ -2634,7 +2634,7 @@ export class DbStorage extends MemStorage {
   async incrementPostLikes(id: string): Promise<number> {
     const [updated] = await db
       .update(posts)
-      .set({ likes: sqlOp`COALESCE(${posts.likes}, 0) + 1` })
+      .set({ likes: sqlOp`COALESCE("likes", 0) + 1` })
       .where(eq(posts.id, id))
       .returning({ likes: posts.likes });
     return updated?.likes || 0;

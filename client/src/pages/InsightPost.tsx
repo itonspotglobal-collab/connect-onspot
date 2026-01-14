@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import type { Post } from "@shared/schema";
 
 export default function InsightPost() {
   const { slug } = useParams<{ slug: string }>();
-  const [hasRecordedView, setHasRecordedView] = useState(false);
+  const viewRecordedRef = useRef<string | null>(null);
   const [localLikes, setLocalLikes] = useState<number | null>(null);
 
   const { data, isLoading, isError } = useQuery<{ success: boolean; post: Post }>({
@@ -27,16 +27,15 @@ export default function InsightPost() {
 
   const viewMutation = useMutation({
     mutationFn: async (postId: string) => {
-      return apiRequest("POST", `/api/posts/${postId}/view`);
+      await apiRequest("POST", `/api/posts/${postId}/view`);
     },
   });
 
   const likeMutation = useMutation({
     mutationFn: async (postId: string) => {
-      const res = await apiRequest("POST", `/api/posts/${postId}/like`);
-      return res.json();
+      return apiRequest("POST", `/api/posts/${postId}/like`);
     },
-    onSuccess: (data) => {
+    onSuccess: (data: { success: boolean; likes: number }) => {
       if (data.success) {
         setLocalLikes(data.likes);
       }
@@ -44,11 +43,11 @@ export default function InsightPost() {
   });
 
   useEffect(() => {
-    if (post && !hasRecordedView) {
+    if (post && viewRecordedRef.current !== post.id) {
+      viewRecordedRef.current = post.id;
       viewMutation.mutate(post.id);
-      setHasRecordedView(true);
     }
-  }, [post, hasRecordedView]);
+  }, [post?.id]);
 
   useEffect(() => {
     if (post && localLikes === null) {

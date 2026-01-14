@@ -19,18 +19,22 @@ import {
   Bell,
   Globe,
   Target,
-  TrendingUp
+  TrendingUp,
+  Eye
 } from "lucide-react";
+import { Link } from "wouter";
 import type { Post } from "@shared/schema";
 
 interface ArticleDisplay {
   id: string;
+  slug: string;
   title: string;
   excerpt: string;
   author: string;
   date: string;
   readTime: string;
   likes: number;
+  views: number;
   category: string;
   featured: boolean;
   image: string;
@@ -47,6 +51,7 @@ function mapPostToArticle(post: Post): ArticleDisplay {
   
   return {
     id: post.id,
+    slug: post.slug,
     title: post.title,
     excerpt: post.excerpt,
     author: post.author,
@@ -55,6 +60,7 @@ function mapPostToArticle(post: Post): ArticleDisplay {
       : new Date(post.createdAt!).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
     readTime: post.readTime || "3 min read",
     likes: post.likes ?? 0,
+    views: post.views ?? 0,
     category: post.category,
     featured: post.isFeatured ?? false,
     image: post.coverImageUrl || placeholderImages[post.category] || "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=400&h=250&fit=crop&crop=faces",
@@ -206,45 +212,51 @@ export default function Insights() {
                   </Card>
                 ))
               ) : featuredArticles.map((article) => (
-                <Card key={article.id} className="overflow-hidden hover-elevate transition-all duration-300 group flex flex-col">
-                  {/* Defensive image container: fixed 16:9 aspect ratio prevents layout shift */}
-                  <div className="aspect-video bg-muted relative overflow-hidden flex-shrink-0">
-                    <img 
-                      src={article.image} 
-                      alt={article.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      loading="lazy"
-                    />
-                    <Badge className="absolute top-4 left-4 bg-primary text-white">
-                      Featured
-                    </Badge>
-                  </div>
-                  {/* Defensive card content: flex-1 + fixed structure ensures uniform card heights */}
-                  <CardContent className="p-6 flex flex-col flex-1">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3 flex-wrap flex-shrink-0">
-                      <User className="w-4 h-4 flex-shrink-0" />
-                      <span className="truncate">{article.author}</span>
-                      <Separator orientation="vertical" className="h-4 flex-shrink-0" />
-                      <Calendar className="w-4 h-4 flex-shrink-0" />
-                      <span className="truncate">{article.date}</span>
-                      <Separator orientation="vertical" className="h-4 flex-shrink-0" />
-                      <span className="truncate">{article.readTime}</span>
+                <Link key={article.id} href={`/insights/${article.slug}`} className="block">
+                  <Card className="overflow-hidden hover-elevate transition-all duration-300 group flex flex-col cursor-pointer h-full">
+                    <div className="aspect-video bg-muted relative overflow-hidden flex-shrink-0">
+                      <img 
+                        src={article.image} 
+                        alt={article.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                      />
+                      <Badge className="absolute top-4 left-4 bg-primary text-white">
+                        Featured
+                      </Badge>
                     </div>
-                    <h4 className="text-xl font-bold mb-3 line-clamp-2 group-hover:text-primary transition-colors flex-shrink-0">
-                      {article.title}
-                    </h4>
-                    <p className="text-muted-foreground mb-4 line-clamp-3 flex-1">
-                      {article.excerpt}
-                    </p>
-                    <div className="flex items-center justify-between flex-shrink-0 mt-auto">
-                      <Badge variant="secondary">{article.category}</Badge>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Heart className="w-4 h-4" />
-                        <span>{article.likes}</span>
+                    <CardContent className="p-6 flex flex-col flex-1">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3 flex-wrap flex-shrink-0">
+                        <User className="w-4 h-4 flex-shrink-0" />
+                        <span className="truncate">{article.author}</span>
+                        <Separator orientation="vertical" className="h-4 flex-shrink-0" />
+                        <Calendar className="w-4 h-4 flex-shrink-0" />
+                        <span className="truncate">{article.date}</span>
+                        <Separator orientation="vertical" className="h-4 flex-shrink-0" />
+                        <span className="truncate">{article.readTime}</span>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                      <h4 className="text-xl font-bold mb-3 line-clamp-2 group-hover:text-primary transition-colors flex-shrink-0">
+                        {article.title}
+                      </h4>
+                      <p className="text-muted-foreground mb-4 line-clamp-3 flex-1">
+                        {article.excerpt}
+                      </p>
+                      <div className="flex items-center justify-between flex-shrink-0 mt-auto">
+                        <Badge variant="secondary">{article.category}</Badge>
+                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Eye className="w-4 h-4" />
+                            <span>{article.views}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Heart className="w-4 h-4" />
+                            <span>{article.likes}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
               ))}
             </div>
           </section>
@@ -279,52 +291,58 @@ export default function Insights() {
                 </Card>
               ))
             ) : filteredArticles.map((article) => (
-              <Card key={article.id} className="overflow-hidden hover-elevate transition-all duration-300 group flex flex-col">
-                {/* Defensive image container: fixed 16:9 aspect ratio prevents layout shift */}
-                <div className="aspect-video bg-muted relative overflow-hidden flex-shrink-0">
-                  <img 
-                    src={article.image} 
-                    alt={article.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    loading="lazy"
-                  />
-                  {article.featured && (
-                    <Badge className="absolute top-4 left-4 bg-[hsl(var(--gold-yellow)/0.9)] text-black">
-                      Featured
-                    </Badge>
-                  )}
-                </div>
-                {/* Defensive card content: flex-1 + fixed structure ensures uniform card heights */}
-                <CardContent className="p-6 flex flex-col flex-1">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3 flex-shrink-0">
-                    <User className="w-3 h-3 flex-shrink-0" />
-                    <span className="truncate">{article.author}</span>
-                    <Separator orientation="vertical" className="h-3 flex-shrink-0" />
-                    <Calendar className="w-3 h-3 flex-shrink-0" />
-                    <span className="truncate">{article.date}</span>
-                  </div>
-                  <h4 className="text-lg font-bold mb-2 line-clamp-2 group-hover:text-primary transition-colors flex-shrink-0">
-                    {article.title}
-                  </h4>
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-3 flex-1">
-                    {article.excerpt}
-                  </p>
-                  <div className="flex items-center justify-between flex-shrink-0 mt-auto">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Badge variant="outline" className="text-xs flex-shrink-0">
-                        {article.category}
+              <Link key={article.id} href={`/insights/${article.slug}`} className="block">
+                <Card className="overflow-hidden hover-elevate transition-all duration-300 group flex flex-col cursor-pointer h-full">
+                  <div className="aspect-video bg-muted relative overflow-hidden flex-shrink-0">
+                    <img 
+                      src={article.image} 
+                      alt={article.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
+                    />
+                    {article.featured && (
+                      <Badge className="absolute top-4 left-4 bg-[hsl(var(--gold-yellow)/0.9)] text-black">
+                        Featured
                       </Badge>
-                      <span className="text-xs text-muted-foreground truncate">
-                        {article.readTime}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0">
-                      <Heart className="w-3 h-3" />
-                      <span>{article.likes}</span>
-                    </div>
+                    )}
                   </div>
-                </CardContent>
-              </Card>
+                  <CardContent className="p-6 flex flex-col flex-1">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3 flex-shrink-0">
+                      <User className="w-3 h-3 flex-shrink-0" />
+                      <span className="truncate">{article.author}</span>
+                      <Separator orientation="vertical" className="h-3 flex-shrink-0" />
+                      <Calendar className="w-3 h-3 flex-shrink-0" />
+                      <span className="truncate">{article.date}</span>
+                    </div>
+                    <h4 className="text-lg font-bold mb-2 line-clamp-2 group-hover:text-primary transition-colors flex-shrink-0">
+                      {article.title}
+                    </h4>
+                    <p className="text-sm text-muted-foreground mb-4 line-clamp-3 flex-1">
+                      {article.excerpt}
+                    </p>
+                    <div className="flex items-center justify-between flex-shrink-0 mt-auto">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Badge variant="outline" className="text-xs flex-shrink-0">
+                          {article.category}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground truncate">
+                          {article.readTime}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground flex-shrink-0">
+                        <div className="flex items-center gap-1">
+                          <Eye className="w-3 h-3" />
+                          <span>{article.views}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Heart className="w-3 h-3" />
+                          <span>{article.likes}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
           </div>
         </section>
