@@ -5178,17 +5178,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const requestId = (req as any).requestId;
       const { id } = req.params;
 
-      const post = await storage.getPost(id);
-      if (!post) {
-        return res.status(404).json({ error: "Post not found", requestId });
-      }
-
-      const updatedPost = await storage.updatePost(id, {
-        views: (post.views || 0) + 1,
-      });
-
-      console.log(`👁 View recorded [${requestId}]: post ${id}, views: ${updatedPost?.views}`);
-      res.json({ success: true, views: updatedPost?.views });
+      const views = await storage.incrementPostViews(id);
+      console.log(`👁 View recorded [${requestId}]: post ${id}, views: ${views}`);
+      res.json({ success: true, views });
     } catch (error: any) {
       const requestId = (req as any).requestId;
       console.error(`❌ Error incrementing views [${requestId}]:`, error.message);
@@ -5202,17 +5194,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const requestId = (req as any).requestId;
       const { id } = req.params;
 
-      const post = await storage.getPost(id);
-      if (!post) {
-        return res.status(404).json({ error: "Post not found", requestId });
-      }
-
-      const updatedPost = await storage.updatePost(id, {
-        likes: (post.likes || 0) + 1,
-      });
-
-      console.log(`❤️ Like recorded [${requestId}]: post ${id}, likes: ${updatedPost?.likes}`);
-      res.json({ success: true, likes: updatedPost?.likes });
+      const likes = await storage.incrementPostLikes(id);
+      console.log(`❤️ Like recorded [${requestId}]: post ${id}, likes: ${likes}`);
+      res.json({ success: true, likes });
     } catch (error: any) {
       const requestId = (req as any).requestId;
       console.error(`❌ Error incrementing likes [${requestId}]:`, error.message);

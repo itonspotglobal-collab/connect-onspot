@@ -296,6 +296,8 @@ export interface IStorage {
   deletePost(id: string): Promise<boolean>;
   listPublishedPosts(options?: { category?: string; featured?: boolean }): Promise<Post[]>;
   listAllPosts(): Promise<Post[]>;
+  incrementPostViews(id: string): Promise<number>;
+  incrementPostLikes(id: string): Promise<number>;
 }
 
 export class MemStorage implements IStorage {
@@ -2280,6 +2282,7 @@ export class MemStorage implements IStorage {
       status: post.status || "draft",
       readTime: post.readTime || null,
       publishedAt: post.publishedAt || null,
+      views: 0,
       likes: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -2313,6 +2316,24 @@ export class MemStorage implements IStorage {
 
   async listAllPosts(): Promise<Post[]> {
     return Array.from(this.postsMap.values()).sort((a, b) => b.createdAt!.getTime() - a.createdAt!.getTime());
+  }
+
+  async incrementPostViews(id: string): Promise<number> {
+    const post = this.postsMap.get(id);
+    if (!post) return 0;
+    const newViews = (post.views || 0) + 1;
+    post.views = newViews;
+    this.postsMap.set(id, post);
+    return newViews;
+  }
+
+  async incrementPostLikes(id: string): Promise<number> {
+    const post = this.postsMap.get(id);
+    if (!post) return 0;
+    const newLikes = (post.likes || 0) + 1;
+    post.likes = newLikes;
+    this.postsMap.set(id, post);
+    return newLikes;
   }
 }
 
@@ -2599,6 +2620,24 @@ export class DbStorage extends MemStorage {
       .from(posts)
       .orderBy(desc(posts.createdAt))
       .limit(1000);
+  }
+
+  async incrementPostViews(id: string): Promise<number> {
+    const [updated] = await db
+      .update(posts)
+      .set({ views: sqlOp`COALESCE(${posts.views}, 0) + 1` })
+      .where(eq(posts.id, id))
+      .returning({ views: posts.views });
+    return updated?.views || 0;
+  }
+
+  async incrementPostLikes(id: string): Promise<number> {
+    const [updated] = await db
+      .update(posts)
+      .set({ likes: sqlOp`COALESCE(${posts.likes}, 0) + 1` })
+      .where(eq(posts.id, id))
+      .returning({ likes: posts.likes });
+    return updated?.likes || 0;
   }
 }
 

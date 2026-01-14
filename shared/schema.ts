@@ -656,6 +656,7 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
 
 export const insertPostSchema = createInsertSchema(posts).omit({
   id: true,
+  views: true,
   likes: true,
   createdAt: true,
   updatedAt: true,

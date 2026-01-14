@@ -33,6 +33,7 @@ import TalentPortal from "@/pages/TalentPortal";
 import HiredTalentPortal from "@/pages/HiredTalentPortal";
 import FindWork from "@/pages/FindWork";
 import Insights from "@/pages/Insights";
+import InsightPost from "@/pages/InsightPost";
 import NotFound from "@/pages/not-found";
 import ComingSoon from "@/pages/ComingSoon";
 import PaymentProtection from "@/pages/PaymentProtection";
@@ -113,6 +114,7 @@ function PublicRouter() {
           <Route path="/why-onspot/value-calculator" component={WhyOnSpotValueCalculator} />
           <Route path="/amazing" component={Amazing} />
           <Route path="/insights" component={Insights} />
+          <Route path="/insights/:slug" component={InsightPost} />
           <Route path="/payment-protection" component={PaymentProtection} />
           <Route path="/client-verification" component={ClientVerification} />
           <Route path="/trust-safety" component={TrustSafety} />
@@ -149,6 +151,7 @@ function ClientRouter() {
           <Route path="/payments" component={() => <div className="p-6">Payments Module - Coming Soon</div>} />
           <Route path="/roi" component={() => <div className="p-6">ROI Analytics Module - Coming Soon</div>} />
           <Route path="/insights" component={Insights} />
+          <Route path="/insights/:slug" component={InsightPost} />
           <Route path="/admin/csv-import" component={() => (
             <AdminProtectedRoute>
               <AdminCSVImport />
