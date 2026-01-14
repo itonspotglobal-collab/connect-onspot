@@ -326,8 +326,12 @@ export default function AdminInsights() {
           <div className="space-y-2">
             <Label htmlFor="edit-category">Category</Label>
             <Select
+              key={`edit-category-${draftPost.category}`}
               value={draftPost.category}
-              onValueChange={(value) => setDraftPost(prev => prev ? { ...prev, category: value } : null)}
+              onValueChange={(value) => {
+                console.log("[AdminInsights] Edit category changed to:", value);
+                setDraftPost(prev => prev ? { ...prev, category: value } : null);
+              }}
             >
               <SelectTrigger data-testid="select-post-category">
                 <SelectValue placeholder="Select category" />
@@ -342,8 +346,12 @@ export default function AdminInsights() {
           <div className="space-y-2">
             <Label htmlFor="edit-status">Status</Label>
             <Select
+              key={`edit-status-${draftPost.status}`}
               value={draftPost.status}
-              onValueChange={(value) => setDraftPost(prev => prev ? { ...prev, status: value as "draft" | "published" } : null)}
+              onValueChange={(value) => {
+                console.log("[AdminInsights] Edit status changed to:", value);
+                setDraftPost(prev => prev ? { ...prev, status: value as "draft" | "published" } : null);
+              }}
             >
               <SelectTrigger data-testid="select-post-status">
                 <SelectValue placeholder="Select status" />
@@ -510,11 +518,15 @@ export default function AdminInsights() {
           <div className="space-y-2">
             <Label htmlFor="category">Category</Label>
             <Select
+              key={`category-${formData.category}`}
               value={formData.category}
-              onValueChange={(value) => updateField("category", value)}
+              onValueChange={(value) => {
+                console.log("[AdminInsights] Category changed to:", value);
+                updateField("category", value);
+              }}
             >
               <SelectTrigger data-testid="select-post-category">
-                <SelectValue />
+                <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent>
                 {categories.map((cat) => (
@@ -526,11 +538,15 @@ export default function AdminInsights() {
           <div className="space-y-2">
             <Label htmlFor="status">Status</Label>
             <Select
+              key={`status-${formData.status}`}
               value={formData.status}
-              onValueChange={(value) => updateField("status", value as "draft" | "published")}
+              onValueChange={(value) => {
+                console.log("[AdminInsights] Status changed to:", value);
+                updateField("status", value as "draft" | "published");
+              }}
             >
               <SelectTrigger data-testid="select-post-status">
-                <SelectValue />
+                <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="draft">Draft</SelectItem>
