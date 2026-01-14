@@ -1,0 +1,105 @@
+You now understand the root cause of the issue:
+
+1) File uploads WORK correctly.
+2) The problem is NOT the upload.
+3) The problem is UI state reset + modal lifecycle + object reference changes.
+4) Replit Object Storage + proxy URLs are correct and should NOT be changed again.
+
+We will NOT attempt to fix the auto-closing modal anymore.
+
+Instead, implement a stable, production-safe workflow as follows:
+
+========================
+REQUIRED CHANGES
+========================
+
+A) IMAGE UPLOADER PAGE
+--------------------------------
+The Image Uploader page is now the SOURCE OF TRUTH.
+
+After upload:
+- Always display:
+  - Image preview (img src)
+  - Final proxy URL (string)
+  - Copy URL button
+
+DO NOT:
+- Auto-clear state
+- Redirect
+- Reload
+- Depend on hot reload
+
+The uploader is DONE and WORKING — do not refactor it further.
+
+------------------------
+
+B) EDIT / CREATE POST MODAL
+--------------------------------
+REMOVE file upload from the Edit/Create Post modal entirely.
+
+Instead:
+- Keep ONLY a text input field:
+  Label: "Cover Image URL"
+- This field must:
+  - Accept a URL pasted from the Image Uploader
+  - Update form state immediately
+  - NOT trigger any upload logic
+  - NOT close the modal
+
+DO NOT:
+- Upload files from inside the modal
+- Trigger save/update on image change
+- Close the modal automatically
+- Re-fetch posts when the image field changes
+
+------------------------
+
+C) FORM STATE RULES (CRITICAL)
+--------------------------------
+Fix form state handling so it is stable:
+
+- The modal open/close state must be controlled ONLY by:
+  isEditDialogOpen / isCreateDialogOpen
+
+- Uploading an image must NEVER:
+  - Call setIsEditDialogOpen(false)
+  - Call resetForm()
+  - Trigger a posts refetch
+  - Depend on editingPost object reference
+
+- The form should initialize ONCE when the modal opens.
+- Do NOT reinitialize form state when posts refetch.
+
+------------------------
+
+D) SAVE LOGIC
+--------------------------------
+When clicking "Save" or "Update Post":
+- Send coverImageUrl exactly as entered
+- Store the PROXY URL (not the GCS URL)
+- Confirm success
+- THEN close the modal
+
+------------------------
+
+E) DISPLAY LOGIC
+--------------------------------
+Blog cards and post pages must:
+- Render the thumbnail using coverImageUrl
+- Gracefully handle missing images
+
+========================
+SUCCESS CRITERIA
+========================
+
+- Upload image → copy URL → paste into post → save → thumbnail updates
+- No modal auto-closing
+- No lost form data
+- No re-fetch loops
+- No hot reload dependency
+- No object storage permission issues
+
+This is a deliberate architectural decision.
+Do NOT attempt to reintroduce upload into the modal.
+
+Proceed with implementation now.

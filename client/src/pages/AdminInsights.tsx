@@ -60,7 +60,6 @@ function generateSlug(title: string): string {
 
 // Soft validation thresholds - warnings only, don't block publishing
 const VALIDATION_LIMITS = {
-  title: { recommended: 80, max: 120 },
   excerpt: { recommended: 160, max: 250 },
 };
 
@@ -272,7 +271,6 @@ export default function AdminInsights() {
               onChange={(e) => setDraftPost(prev => prev ? { ...prev, title: e.target.value } : null)}
               required
             />
-            <FieldHint value={draftPost.title} limits={VALIDATION_LIMITS.title} label="Title" />
           </div>
           <div className="space-y-1">
             <Label htmlFor="edit-slug">Slug *</Label>
@@ -403,7 +401,6 @@ export default function AdminInsights() {
               onChange={(e) => handleTitleChange(e.target.value)}
               required
             />
-            <FieldHint value={formData.title} limits={VALIDATION_LIMITS.title} label="Title" />
           </div>
           <div className="space-y-1">
             <Label htmlFor="slug">Slug *</Label>
