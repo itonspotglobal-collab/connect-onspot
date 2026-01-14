@@ -1,0 +1,95 @@
+I need to fix the Category field in client/src/pages/AdminInsights.tsx.
+
+PROBLEM SUMMARY
+
+The Category dropdown always shows “Industry Trends” only.
+
+No items appear in the dropdown.
+
+I cannot select another category when creating or editing a post.
+
+When I save a post, category does NOT update in the database.
+
+The UI buttons on the public blog page show these categories:
+
+Global Outsourcing
+Technology
+Customer Service
+Industry Trends
+Process Optimization
+
+
+But the admin form does NOT show them.
+
+WHAT I NEED YOU TO FIX
+1. Ensure the categories array is actually used
+
+The file already contains:
+
+const categories = [
+  "Global Outsourcing",
+  "Technology",
+  "Customer Service",
+  "Industry Trends",
+  "Process Optimization",
+];
+
+
+But the <Select> UI is not using this list.
+Fix the <Select> component in the form so that:
+
+a) It renders all 5 options
+b) The selected item updates formData.category
+c) Editing an existing post pre-fills with its saved category
+
+2. Ensure updates are saved to the database
+
+In the PUT /api/admin/posts/:id handler, confirm category is included in updateFields.
+
+If missing, add:
+
+if (category) updateFields.category = category;
+
+3. Fix the Select UI
+
+The current component is likely something like:
+
+<SelectValue placeholder={formData.category} />
+
+
+This causes the dropdown to look “locked”.
+
+You need to update it so it uses:
+
+<SelectValue>
+  {formData.category || "Select category"}
+</SelectValue>
+
+
+And generate each item:
+
+{categories.map((cat) => (
+  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+))}
+
+4. Ensure category updates onChange
+
+Update:
+
+onValueChange={(value) =>
+  setFormData((prev) => ({ ...prev, category: value }))
+}
+
+5. Testing Requirements
+
+After fixing, test that:
+
+Creating a new post lets me choose ANY category.
+
+Editing a post shows its saved category.
+
+Changing the category actually updates in the database.
+
+The public blog list filters correctly by category.
+
+DO NOT modify anything else in the admin UI or backend that is not directly related to categories.
