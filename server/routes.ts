@@ -4984,7 +4984,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const createPostSchema = z.object({
     title: z.string().min(1, "Title is required"),
     slug: z.string().min(1, "Slug is required").max(200).regex(/^[a-z0-9-]+$/, "Slug must be lowercase alphanumeric with hyphens"),
-    excerpt: z.string().min(1, "Excerpt is required").max(1000),
+    excerpt: z.string().min(1, "Excerpt is required"),
     content: z.string().optional().default(""),
     coverImageUrl: z.string().optional().nullable(),
     category: z.string().min(1, "Category is required"),
@@ -5000,7 +5000,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const updatePostSchema = z.object({
     title: z.string().min(1).optional(),
     slug: z.string().min(1).max(200).regex(/^[a-z0-9-]+$/).optional(),
-    excerpt: z.string().min(1).max(1000).optional(),
+    excerpt: z.string().min(1).optional(),
     content: z.string().optional(),
     coverImageUrl: z.string().optional().nullable(),
     category: z.string().min(1).optional(),

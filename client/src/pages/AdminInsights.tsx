@@ -58,11 +58,6 @@ function generateSlug(title: string): string {
     .trim();
 }
 
-// Soft validation thresholds - warnings only, don't block publishing
-const VALIDATION_LIMITS = {
-  excerpt: { recommended: 160, max: 250 },
-};
-
 // Check if URL looks like a valid image
 function isValidImageUrl(url: string): boolean {
   if (!url) return true; // Empty is okay
@@ -70,23 +65,6 @@ function isValidImageUrl(url: string): boolean {
   if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) return false;
   const imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".avif"];
   return imageExtensions.some(ext => trimmed.includes(ext)) || trimmed.includes("unsplash") || trimmed.includes("images");
-}
-
-// Helper component for field warnings (soft validation - does NOT block submission)
-function FieldHint({ value, limits, label }: { value: string; limits: { recommended: number; max: number }; label: string }) {
-  const length = value.length;
-  const isWarning = length > limits.recommended && length <= limits.max;
-  const isError = length > limits.max;
-  
-  if (length === 0) return null;
-  
-  return (
-    <div className={`text-xs mt-1 ${isError ? "text-destructive" : isWarning ? "text-yellow-600" : "text-muted-foreground"}`}>
-      {length}/{limits.recommended} chars
-      {isWarning && ` (${label} may be truncated in cards)`}
-      {isError && ` (exceeds recommended max of ${limits.max})`}
-    </div>
-  );
 }
 
 // Draft state for edit modal - fully isolated from parent/query state
@@ -294,7 +272,6 @@ export default function AdminInsights() {
             rows={2}
             required
           />
-          <FieldHint value={draftPost.excerpt} limits={VALIDATION_LIMITS.excerpt} label="Excerpt" />
         </div>
 
         <div className="space-y-1">
@@ -432,7 +409,6 @@ export default function AdminInsights() {
             rows={2}
             required
           />
-          <FieldHint value={formData.excerpt} limits={VALIDATION_LIMITS.excerpt} label="Excerpt" />
         </div>
 
         <div className="space-y-1">
