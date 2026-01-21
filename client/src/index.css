@@ -2351,3 +2351,128 @@
   animation-timeline: view();
   animation-range: entry 0% cover 25%;
 }
+
+/* Rich Text Editor Styles */
+.rich-text-editor .ql-container {
+  min-height: 200px;
+  font-size: 14px;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+
+.rich-text-editor .ql-toolbar {
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+  background: hsl(var(--muted));
+}
+
+.dark .rich-text-editor .ql-toolbar {
+  background: hsl(var(--muted));
+  border-color: hsl(var(--border));
+}
+
+.dark .rich-text-editor .ql-container {
+  border-color: hsl(var(--border));
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+.dark .rich-text-editor .ql-toolbar button,
+.dark .rich-text-editor .ql-toolbar .ql-picker-label {
+  color: hsl(var(--foreground));
+}
+
+.dark .rich-text-editor .ql-toolbar button:hover,
+.dark .rich-text-editor .ql-toolbar .ql-picker-label:hover {
+  color: hsl(var(--primary));
+}
+
+.dark .rich-text-editor .ql-toolbar button.ql-active,
+.dark .rich-text-editor .ql-toolbar .ql-picker-label.ql-active {
+  color: hsl(var(--primary));
+}
+
+.dark .rich-text-editor .ql-stroke {
+  stroke: hsl(var(--foreground));
+}
+
+.dark .rich-text-editor .ql-fill {
+  fill: hsl(var(--foreground));
+}
+
+.dark .rich-text-editor .ql-picker-options {
+  background: hsl(var(--popover));
+  border-color: hsl(var(--border));
+}
+
+.dark .rich-text-editor .ql-editor.ql-blank::before {
+  color: hsl(var(--muted-foreground));
+}
+
+/* Blog Content Styles - for rendered HTML content */
+.prose img,
+.blog-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  margin: 16px 0;
+}
+
+.blog-content {
+  line-height: 1.8;
+}
+
+.blog-content h1 {
+  font-size: 2em;
+  font-weight: 700;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+
+.blog-content h2 {
+  font-size: 1.5em;
+  font-weight: 600;
+  margin-top: 1.25em;
+  margin-bottom: 0.5em;
+}
+
+.blog-content h3 {
+  font-size: 1.25em;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+
+.blog-content h4 {
+  font-size: 1.1em;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+
+.blog-content p {
+  margin-bottom: 1em;
+}
+
+.blog-content ul,
+.blog-content ol {
+  margin-left: 1.5em;
+  margin-bottom: 1em;
+}
+
+.blog-content li {
+  margin-bottom: 0.5em;
+}
+
+.blog-content a {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+}
+
+.blog-content blockquote {
+  border-left: 4px solid hsl(var(--primary));
+  padding-left: 1em;
+  margin-left: 0;
+  font-style: italic;
+  color: hsl(var(--muted-foreground));
+}

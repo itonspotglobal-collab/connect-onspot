@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Pencil, Trash2, Eye, EyeOff, Star, ArrowLeft, ExternalLink, Image as ImageIcon } from "lucide-react";
 import { Link } from "wouter";
 import type { Post } from "@shared/schema";
+
+const RichTextEditor = lazy(() => import("@/components/RichTextEditor"));
 
 type PostFormData = {
   title: string;
@@ -276,15 +278,15 @@ export default function AdminInsights() {
 
         <div className="space-y-1">
           <Label htmlFor="edit-content">Content</Label>
-          <Textarea
-            id="edit-content"
-            data-testid="input-post-content"
-            value={draftPost.content}
-            onChange={(e) => setDraftPost(prev => prev ? { ...prev, content: e.target.value } : null)}
-            rows={6}
-          />
+          <Suspense fallback={<Skeleton className="h-[200px] w-full" />}>
+            <RichTextEditor
+              value={draftPost.content}
+              onChange={(value) => setDraftPost(prev => prev ? { ...prev, content: value } : null)}
+              placeholder="Write your article content here..."
+            />
+          </Suspense>
           <div className="text-xs text-muted-foreground">
-            Full content is only shown on the post detail page, not in cards.
+            Use the toolbar to add formatting, images, and links.
           </div>
         </div>
 
@@ -413,15 +415,15 @@ export default function AdminInsights() {
 
         <div className="space-y-1">
           <Label htmlFor="content">Content</Label>
-          <Textarea
-            id="content"
-            data-testid="input-post-content"
-            value={formData.content}
-            onChange={(e) => updateField("content", e.target.value)}
-            rows={6}
-          />
+          <Suspense fallback={<Skeleton className="h-[200px] w-full" />}>
+            <RichTextEditor
+              value={formData.content}
+              onChange={(value) => updateField("content", value)}
+              placeholder="Write your article content here..."
+            />
+          </Suspense>
           <div className="text-xs text-muted-foreground">
-            Full content is only shown on the post detail page, not in cards.
+            Use the toolbar to add formatting, images, and links.
           </div>
         </div>
 

@@ -163,9 +163,9 @@ export default function InsightPost() {
             />
           </div>
 
-          <div className="prose prose-lg dark:prose-invert max-w-none mb-8">
+          <div className="prose prose-lg dark:prose-invert max-w-none mb-8 blog-content">
             {post.content ? (
-              <div dangerouslySetInnerHTML={{ __html: post.content.replace(/\n/g, '<br/>') }} />
+              <div dangerouslySetInnerHTML={{ __html: post.content }} />
             ) : (
               <p className="text-muted-foreground">{post.excerpt}</p>
             )}
