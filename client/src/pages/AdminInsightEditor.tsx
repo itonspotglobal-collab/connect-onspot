@@ -262,23 +262,25 @@ export default function AdminInsightEditor() {
             <p className="text-xs text-yellow-600 -mt-6">URL may not be a valid image format.</p>
           )}
 
-          <div className="space-y-2">
-            <Input
+          <div className="mt-8 mb-6 space-y-3">
+            <input
+              type="text"
               id="title"
               value={formData.title}
               onChange={(e) => handleTitleChange(e.target.value)}
-              placeholder="Enter your title..."
-              className="text-3xl font-bold border-0 px-0 focus-visible:ring-0 placeholder:text-muted-foreground/50"
+              placeholder="Add a title..."
+              className="w-full text-[32px] font-semibold leading-tight bg-transparent border-none outline-none placeholder:text-muted-foreground/40 focus:ring-0 focus:outline-none focus:border-b focus:border-muted-foreground/20 transition-colors"
               required
             />
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>/insights/</span>
-              <Input
+              <input
+                type="text"
                 id="slug"
                 value={formData.slug}
                 onChange={(e) => updateField("slug", e.target.value)}
                 placeholder="your-post-slug"
-                className="border-0 px-0 h-auto py-0 focus-visible:ring-0 text-sm flex-1"
+                className="bg-transparent border-none outline-none focus:ring-0 text-sm flex-1"
                 required
               />
             </div>
