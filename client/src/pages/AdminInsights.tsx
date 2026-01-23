@@ -1,128 +1,22 @@
-import { useState, useEffect, lazy, Suspense } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Pencil, Trash2, Eye, EyeOff, Star, ArrowLeft, ExternalLink, Image as ImageIcon } from "lucide-react";
-import { Link } from "wouter";
+import { Plus, Pencil, Trash2, Eye, EyeOff, Star, ArrowLeft } from "lucide-react";
+import { Link, useLocation } from "wouter";
 import type { Post } from "@shared/schema";
-
-const RichTextEditor = lazy(() => import("@/components/RichTextEditor"));
-
-type PostFormData = {
-  title: string;
-  slug: string;
-  excerpt: string;
-  content: string;
-  coverImageUrl: string;
-  category: string;
-  author: string;
-  isFeatured: boolean;
-  status: "draft" | "published";
-};
-
-const defaultFormData: PostFormData = {
-  title: "",
-  slug: "",
-  excerpt: "",
-  content: "",
-  coverImageUrl: "",
-  category: "Industry Trends",
-  author: "OnSpot Team",
-  isFeatured: false,
-  status: "draft",
-};
-
-const categories = [
-  "Global Outsourcing",
-  "Technology",
-  "Customer Service",
-  "Industry Trends",
-  "Process Optimization",
-];
-
-function generateSlug(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .trim();
-}
-
-// Check if URL looks like a valid image
-function isValidImageUrl(url: string): boolean {
-  if (!url) return true; // Empty is okay
-  const trimmed = url.trim().toLowerCase();
-  if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) return false;
-  const imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".avif"];
-  return imageExtensions.some(ext => trimmed.includes(ext)) || trimmed.includes("unsplash") || trimmed.includes("images");
-}
-
-// Draft state for edit modal - fully isolated from parent/query state
-// This prevents modal from closing or resetting during uploads, category changes, or refetches
-type DraftPost = PostFormData & { id: string };
 
 export default function AdminInsights() {
   const { toast } = useToast();
-  
-  // CREATE modal state - uses formData for new posts
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [createFormData, setCreateFormData] = useState<PostFormData>(defaultFormData);
-  
-  // EDIT modal state - completely isolated from parent/query state
-  // draftPost is initialized ONCE when opening and NEVER re-synced from queries
-  // This is the structural fix: modal owns its own state, immune to refetches
-  const [draftPost, setDraftPost] = useState<DraftPost | null>(null);
-  
-  // Image upload removed from modals - now uses standalone /admin/image-uploader page
-  // This fixes modal closing issues caused by file picker focus/blur events
+  const [, setLocation] = useLocation();
 
   const { data: postsResponse, isLoading } = useQuery<{ success: boolean; posts: Post[] }>({
     queryKey: ["/api/admin/posts"],
     refetchOnWindowFocus: false,
-  });
-
-  const createMutation = useMutation({
-    mutationFn: async (data: PostFormData) => {
-      return apiRequest("POST", "/api/admin/posts", data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/posts"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
-      setIsCreateDialogOpen(false);
-      setCreateFormData(defaultFormData);
-      toast({ title: "Post created successfully" });
-    },
-    onError: (error: any) => {
-      toast({ title: "Failed to create post", description: error.message, variant: "destructive" });
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<PostFormData> }) => {
-      return apiRequest("PUT", `/api/admin/posts/${id}`, data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/posts"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
-      // Close dialog and reset draft only after successful save
-      setDraftPost(null);
-      toast({ title: "Post updated successfully" });
-    },
-    onError: (error: any) => {
-      toast({ title: "Failed to update post", description: error.message, variant: "destructive" });
-    },
   });
 
   const deleteMutation = useMutation({
@@ -165,387 +59,7 @@ export default function AdminInsights() {
     },
   });
 
-  const handleCreateSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("[AdminInsights] Creating post with data:", { 
-      ...createFormData, 
-      hasCoverImage: !!createFormData.coverImageUrl
-    });
-    createMutation.mutate(createFormData);
-  };
-
-  const handleEditSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (draftPost) {
-      // Submit the draft directly - it contains all current edits including image uploads
-      const { id, ...payload } = draftPost;
-      console.log("[AdminInsights] Updating post with data:", { 
-        id, 
-        coverImageUrl: payload.coverImageUrl,
-        hasCoverImage: !!payload.coverImageUrl,
-        category: payload.category,
-      });
-      updateMutation.mutate({ id, data: payload });
-    }
-  };
-
-  // Open edit dialog by creating a DEEP CLONE of the post as draft
-  // This draft is NEVER re-synced from queries - modal owns its own state
-  const openEditDialog = (post: Post) => {
-    // Create draft with deep clone - this is initialized ONCE and never overwritten
-    setDraftPost({
-      id: post.id,
-      title: post.title,
-      slug: post.slug,
-      excerpt: post.excerpt,
-      content: post.content || "",
-      coverImageUrl: post.coverImageUrl || "",
-      category: post.category,
-      author: post.author,
-      isFeatured: post.isFeatured ?? false,
-      status: post.status as "draft" | "published",
-    });
-  };
-
-  // Close edit dialog - discard all changes
-  const closeEditDialog = () => {
-    setDraftPost(null);
-  };
-
   const posts = postsResponse?.posts || [];
-  
-  // Initialize create form when dialog opens
-  useEffect(() => {
-    if (isCreateDialogOpen) {
-      setCreateFormData(defaultFormData);
-    }
-  }, [isCreateDialogOpen]);
-
-  // NO useEffect for edit modal - draft is initialized in openEditDialog and never re-synced
-  // This is the key structural fix: edit modal state is immune to query refetches
-
-  // Helper to update create form fields
-  const updateCreateField = <K extends keyof PostFormData>(field: K, value: PostFormData[K]) => {
-    setCreateFormData(prev => ({ ...prev, [field]: value }));
-  };
-  
-  // Helper to update draft fields (edit mode)
-  const updateDraftField = <K extends keyof PostFormData>(field: K, value: PostFormData[K]) => {
-    setDraftPost(prev => prev ? { ...prev, [field]: value } : null);
-  };
-  
-  // Render ONLY form fields for EDIT modal (image upload is outside form)
-  // This ensures complete separation between image upload and form submission
-  const renderEditFormFields = () => {
-    if (!draftPost) return null;
-    
-    return (
-      <>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <Label htmlFor="edit-title">Title *</Label>
-            <Input
-              id="edit-title"
-              data-testid="input-post-title"
-              value={draftPost.title}
-              onChange={(e) => setDraftPost(prev => prev ? { ...prev, title: e.target.value } : null)}
-              required
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="edit-slug">Slug *</Label>
-            <Input
-              id="edit-slug"
-              data-testid="input-post-slug"
-              value={draftPost.slug}
-              onChange={(e) => setDraftPost(prev => prev ? { ...prev, slug: e.target.value } : null)}
-              required
-            />
-          </div>
-        </div>
-
-        <div className="space-y-1">
-          <Label htmlFor="edit-excerpt">Excerpt *</Label>
-          <Textarea
-            id="edit-excerpt"
-            data-testid="input-post-excerpt"
-            value={draftPost.excerpt}
-            onChange={(e) => setDraftPost(prev => prev ? { ...prev, excerpt: e.target.value } : null)}
-            rows={2}
-            required
-          />
-        </div>
-
-        <div className="space-y-1">
-          <Label htmlFor="edit-content">Content</Label>
-          <Suspense fallback={<Skeleton className="h-[200px] w-full" />}>
-            <RichTextEditor
-              value={draftPost.content}
-              onChange={(value) => setDraftPost(prev => prev ? { ...prev, content: value } : null)}
-              placeholder="Write your article content here..."
-            />
-          </Suspense>
-          <div className="text-xs text-muted-foreground">
-            Use the toolbar to add formatting, images, and links.
-          </div>
-        </div>
-
-        {/* Author field */}
-        <div className="space-y-1">
-          <Label htmlFor="edit-author">Author</Label>
-          <Input
-            id="edit-author"
-            data-testid="input-post-author"
-            value={draftPost.author}
-            onChange={(e) => setDraftPost(prev => prev ? { ...prev, author: e.target.value } : null)}
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="edit-category">Category</Label>
-            <Select
-              key={`edit-category-${draftPost.category}`}
-              value={draftPost.category}
-              onValueChange={(value) => {
-                console.log("[AdminInsights] Edit category changed to:", value);
-                setDraftPost(prev => prev ? { ...prev, category: value } : null);
-              }}
-            >
-              <SelectTrigger data-testid="select-post-category">
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="edit-status">Status</Label>
-            <Select
-              key={`edit-status-${draftPost.status}`}
-              value={draftPost.status}
-              onValueChange={(value) => {
-                console.log("[AdminInsights] Edit status changed to:", value);
-                setDraftPost(prev => prev ? { ...prev, status: value as "draft" | "published" } : null);
-              }}
-            >
-              <SelectTrigger data-testid="select-post-status">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="published">Published</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Switch
-            id="edit-isFeatured"
-            data-testid="switch-post-featured"
-            checked={draftPost.isFeatured}
-            onCheckedChange={(checked) => setDraftPost(prev => prev ? { ...prev, isFeatured: checked } : null)}
-          />
-          <Label htmlFor="edit-isFeatured">Featured Post</Label>
-        </div>
-      </>
-    );
-  };
-
-  // Render form fields - uses the appropriate state based on isEditing flag
-  // CREATE mode uses createFormData, EDIT mode uses draftPost
-  const renderFormFields = (isEditing: boolean) => {
-    // Get the current form data based on mode
-    const formData = isEditing ? (draftPost || defaultFormData) : createFormData;
-    const updateField = isEditing ? updateDraftField : updateCreateField;
-    
-    // Title change handler needs special logic for auto-slug generation
-    const handleTitleChange = (newTitle: string) => {
-      if (isEditing) {
-        setDraftPost(prev => prev ? { ...prev, title: newTitle } : null);
-      } else {
-        setCreateFormData(prev => ({
-          ...prev,
-          title: newTitle,
-          slug: generateSlug(newTitle),
-        }));
-      }
-    };
-    
-    return (
-      <>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <Label htmlFor="title">Title *</Label>
-            <Input
-              id="title"
-              data-testid="input-post-title"
-              value={formData.title}
-              onChange={(e) => handleTitleChange(e.target.value)}
-              required
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="slug">Slug *</Label>
-            <Input
-              id="slug"
-              data-testid="input-post-slug"
-              value={formData.slug}
-              onChange={(e) => updateField("slug", e.target.value)}
-              required
-            />
-          </div>
-        </div>
-
-        <div className="space-y-1">
-          <Label htmlFor="excerpt">Excerpt *</Label>
-          <Textarea
-            id="excerpt"
-            data-testid="input-post-excerpt"
-            value={formData.excerpt}
-            onChange={(e) => updateField("excerpt", e.target.value)}
-            rows={2}
-            required
-          />
-        </div>
-
-        <div className="space-y-1">
-          <Label htmlFor="content">Content</Label>
-          <Suspense fallback={<Skeleton className="h-[200px] w-full" />}>
-            <RichTextEditor
-              value={formData.content}
-              onChange={(value) => updateField("content", value)}
-              placeholder="Write your article content here..."
-            />
-          </Suspense>
-          <div className="text-xs text-muted-foreground">
-            Use the toolbar to add formatting, images, and links.
-          </div>
-        </div>
-
-        {/* Cover Image Section - uses URL paste workflow */}
-        <div className="space-y-3">
-          <Label>Cover Image</Label>
-          
-          {/* Image Preview */}
-          {formData.coverImageUrl && (
-            <div className="relative w-full max-w-xs aspect-video bg-muted rounded-md overflow-hidden border">
-              <img 
-                src={formData.coverImageUrl} 
-                alt="Cover preview" 
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = "none";
-                }}
-              />
-            </div>
-          )}
-          
-          <div className="space-y-3">
-            {/* Image Uploader link */}
-            <div className="p-3 bg-muted/50 rounded-lg space-y-2">
-              <p className="text-sm text-muted-foreground">
-                Upload images in the Image Uploader, then paste the URL below.
-              </p>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => window.open('/admin/image-uploader', '_blank')}
-              >
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Open Image Uploader
-              </Button>
-            </div>
-
-            {/* URL Input */}
-            <div className="space-y-1">
-              <Label htmlFor="coverImageUrl" className="text-xs text-muted-foreground">Cover Image URL</Label>
-              <Input
-                id="coverImageUrl"
-                data-testid="input-post-cover-image"
-                value={formData.coverImageUrl}
-                onChange={(e) => updateField("coverImageUrl", e.target.value)}
-                placeholder="https://..."
-              />
-              {formData.coverImageUrl && !isValidImageUrl(formData.coverImageUrl) && (
-                <div className="text-xs text-yellow-600">
-                  URL may not be a valid image format.
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Author field */}
-        <div className="space-y-1">
-          <Label htmlFor="author">Author</Label>
-          <Input
-            id="author"
-            data-testid="input-post-author"
-            value={formData.author}
-            onChange={(e) => updateField("author", e.target.value)}
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="category">Category</Label>
-            <Select
-              key={`category-${formData.category}`}
-              value={formData.category}
-              onValueChange={(value) => {
-                console.log("[AdminInsights] Category changed to:", value);
-                updateField("category", value);
-              }}
-            >
-              <SelectTrigger data-testid="select-post-category">
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="status">Status</Label>
-            <Select
-              key={`status-${formData.status}`}
-              value={formData.status}
-              onValueChange={(value) => {
-                console.log("[AdminInsights] Status changed to:", value);
-                updateField("status", value as "draft" | "published");
-              }}
-            >
-              <SelectTrigger data-testid="select-post-status">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="published">Published</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Switch
-            id="isFeatured"
-            data-testid="switch-post-featured"
-            checked={formData.isFeatured}
-            onCheckedChange={(checked) => updateField("isFeatured", checked)}
-          />
-          <Label htmlFor="isFeatured">Featured Post</Label>
-        </div>
-      </>
-    );
-  };
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -563,45 +77,13 @@ export default function AdminInsights() {
             </div>
           </div>
 
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button data-testid="button-create-post">
-                <Plus className="h-4 w-4 mr-2" />
-                Create New Post
-              </Button>
-            </DialogTrigger>
-            {/* Prevent dialog from closing on outside interactions.
-                Image upload must NOT close the modal - it triggers native file picker which
-                causes focus events outside the dialog. The modal should only close via
-                explicit user action: Cancel or Create Post buttons. */}
-            <DialogContent 
-              className="max-w-2xl max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-              onPointerDownOutside={(e) => e.preventDefault()}
-              onInteractOutside={(e) => e.preventDefault()}
-              onFocusOutside={(e) => e.preventDefault()}
-              onEscapeKeyDown={(e) => e.preventDefault()}
-            >
-              <DialogHeader>
-                <DialogTitle>Create New Post</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleCreateSubmit} className="space-y-4">
-                {renderFormFields(false)}
-                <DialogFooter>
-                  <DialogClose asChild>
-                    <Button type="button" variant="outline" data-testid="button-cancel">Cancel</Button>
-                  </DialogClose>
-                  <Button 
-                    type="submit" 
-                    data-testid="button-submit-post"
-                    disabled={createMutation.isPending}
-                  >
-                    {createMutation.isPending ? "Saving..." : "Create Post"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <Button 
+            data-testid="button-create-post"
+            onClick={() => setLocation("/admin/insights/create")}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Create New Post
+          </Button>
         </div>
 
         <Card>
@@ -679,106 +161,14 @@ export default function AdminInsights() {
                         )}
                       </Button>
 
-                      <Dialog open={draftPost?.id === post.id} onOpenChange={(open) => !open && closeEditDialog()}>
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            data-testid={`button-edit-${post.id}`}
-                            onClick={() => openEditDialog(post)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        </DialogTrigger>
-                        {/* Prevent dialog from closing on outside interactions.
-                            Image upload must NOT close the modal - it triggers native file picker which
-                            causes focus events outside the dialog. The modal should only close via
-                            explicit user action: Cancel or Update Post buttons. */}
-                        <DialogContent 
-                          className="max-w-2xl max-h-[90vh] overflow-y-auto"
-                          onClick={(e) => e.stopPropagation()}
-                          onPointerDownOutside={(e) => e.preventDefault()}
-                          onInteractOutside={(e) => e.preventDefault()}
-                          onFocusOutside={(e) => e.preventDefault()}
-                          onEscapeKeyDown={(e) => e.preventDefault()}
-                        >
-                          <DialogHeader>
-                            <DialogTitle>Edit Post</DialogTitle>
-                          </DialogHeader>
-                          
-                          {/* COVER IMAGE - uses URL paste workflow */}
-                          {draftPost && (
-                            <div className="space-y-3 border-b pb-4">
-                              <Label>Cover Image</Label>
-                              
-                              {/* Image Preview */}
-                              {draftPost.coverImageUrl && (
-                                <div className="relative w-full max-w-xs aspect-video bg-muted rounded-md overflow-hidden border">
-                                  <img 
-                                    src={draftPost.coverImageUrl} 
-                                    alt="Cover preview" 
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                      (e.target as HTMLImageElement).style.display = "none";
-                                    }}
-                                  />
-                                </div>
-                              )}
-                              
-                              <div className="space-y-3">
-                                {/* Image Uploader link */}
-                                <div className="p-3 bg-muted/50 rounded-lg space-y-2">
-                                  <p className="text-sm text-muted-foreground">
-                                    Upload images in the Image Uploader, then paste the URL below.
-                                  </p>
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => window.open('/admin/image-uploader', '_blank')}
-                                  >
-                                    <ExternalLink className="w-4 h-4 mr-2" />
-                                    Open Image Uploader
-                                  </Button>
-                                </div>
-
-                                {/* URL Input */}
-                                <div className="space-y-1">
-                                  <Label className="text-xs text-muted-foreground">Cover Image URL</Label>
-                                  <Input
-                                    data-testid="input-post-cover-image"
-                                    value={draftPost.coverImageUrl}
-                                    onChange={(e) => setDraftPost(prev => prev ? { ...prev, coverImageUrl: e.target.value } : null)}
-                                    placeholder="https://..."
-                                  />
-                                  {draftPost.coverImageUrl && !isValidImageUrl(draftPost.coverImageUrl) && (
-                                    <div className="text-xs text-yellow-600">
-                                      URL may not be a valid image format.
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* FORM - only contains text fields and selects, NO image upload */}
-                          <form onSubmit={handleEditSubmit} className="space-y-4">
-                            {renderEditFormFields()}
-                            <DialogFooter>
-                              <DialogClose asChild>
-                                <Button type="button" variant="outline" data-testid="button-cancel">Cancel</Button>
-                              </DialogClose>
-                              <Button 
-                                type="submit" 
-                                data-testid="button-submit-post"
-                                disabled={updateMutation.isPending}
-                              >
-                                {updateMutation.isPending ? "Saving..." : "Update Post"}
-                              </Button>
-                            </DialogFooter>
-                          </form>
-                        </DialogContent>
-                      </Dialog>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        data-testid={`button-edit-${post.id}`}
+                        onClick={() => setLocation(`/admin/insights/${post.id}/edit`)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
 
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
@@ -798,9 +188,8 @@ export default function AdminInsights() {
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
-                              data-testid="button-confirm-delete"
                               onClick={() => deleteMutation.mutate(post.id)}
                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
@@ -816,11 +205,6 @@ export default function AdminInsights() {
             )}
           </CardContent>
         </Card>
-
-        <div className="mt-6 p-4 bg-muted/50 rounded-lg text-sm text-muted-foreground">
-          <p className="font-medium mb-1">Note: Authentication Required</p>
-          <p>This admin page is temporarily accessible without authentication. TODO: Add authentication middleware when login system is complete.</p>
-        </div>
       </div>
     </div>
   );

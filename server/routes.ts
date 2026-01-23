@@ -5443,6 +5443,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/admin/posts/:id - Admin get single post
+  app.get("/api/admin/posts/:id", async (req: Request, res: Response) => {
+    try {
+      const requestId = (req as any).requestId;
+      const { id } = req.params;
+
+      const post = await storage.getPost(id);
+      if (!post) {
+        return res.status(404).json({
+          success: false,
+          error: "Post not found",
+          requestId,
+        });
+      }
+
+      console.log(`✅ [ADMIN] Fetched post [${requestId}]: ${post.title}`);
+      return res.json({
+        success: true,
+        post,
+        requestId,
+      });
+    } catch (error: any) {
+      const requestId = (req as any).requestId;
+      console.error(`❌ [ADMIN] Error fetching post [${requestId}]:`, error);
+      return res.status(500).json({
+        success: false,
+        error: "Failed to fetch post",
+        message: error.message,
+        requestId,
+      });
+    }
+  });
+
   // PUT /api/admin/posts/:id - Admin update post
   app.put("/api/admin/posts/:id", async (req: Request, res: Response) => {
     try {
