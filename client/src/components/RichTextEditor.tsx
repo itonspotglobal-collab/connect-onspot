@@ -14,6 +14,7 @@ export default function RichTextEditor({ value, onChange, placeholder, linkedInS
     toolbar: [
       [{ header: [1, 2, 3, 4, false] }],
       ["bold", "italic", "underline", "strike"],
+      [{ align: ["", "center", "right", "justify"] }],
       [{ list: "ordered" }, { list: "bullet" }],
       ["link", "image"],
       ["blockquote", "code-block"],
@@ -24,6 +25,7 @@ export default function RichTextEditor({ value, onChange, placeholder, linkedInS
   const formats = [
     "header",
     "bold", "italic", "underline", "strike",
+    "align",
     "list", "bullet",
     "link", "image",
     "blockquote", "code-block",
