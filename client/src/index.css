@@ -2560,3 +2560,40 @@
   font-style: italic;
   color: hsl(var(--muted-foreground));
 }
+
+/* Quill alignment classes for rendered blog content */
+.blog-content .ql-align-justify,
+.prose .ql-align-justify {
+  text-align: justify !important;
+}
+
+.blog-content .ql-align-center,
+.prose .ql-align-center {
+  text-align: center !important;
+}
+
+.blog-content .ql-align-right,
+.prose .ql-align-right {
+  text-align: right !important;
+}
+
+/* Also support inline style text-align */
+.blog-content p[style*="text-align"],
+.prose p[style*="text-align"] {
+  text-align: inherit !important;
+}
+
+.blog-content [style*="text-align: justify"],
+.prose [style*="text-align: justify"] {
+  text-align: justify !important;
+}
+
+.blog-content [style*="text-align: center"],
+.prose [style*="text-align: center"] {
+  text-align: center !important;
+}
+
+.blog-content [style*="text-align: right"],
+.prose [style*="text-align: right"] {
+  text-align: right !important;
+}
