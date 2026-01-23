@@ -2366,6 +2366,50 @@
   background: hsl(var(--muted));
 }
 
+/* LinkedIn-style Editor - Large canvas styling */
+.rich-text-editor.linkedin-style .ql-container {
+  min-height: 70vh;
+  font-size: 18px;
+  line-height: 1.7;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+}
+
+.rich-text-editor.linkedin-style .ql-editor {
+  padding: 24px;
+  font-size: 18px;
+  line-height: 1.7;
+}
+
+.rich-text-editor.linkedin-style .ql-toolbar {
+  border: none;
+  border-bottom: 1px solid hsl(var(--border));
+  border-radius: 0;
+  background: transparent;
+  padding: 12px 0;
+  position: sticky;
+  top: 57px;
+  z-index: 10;
+  background: hsl(var(--background));
+}
+
+.rich-text-editor.linkedin-style .ql-editor.ql-blank::before {
+  font-size: 18px;
+  font-style: normal;
+  color: hsl(var(--muted-foreground));
+}
+
+.dark .rich-text-editor.linkedin-style .ql-toolbar {
+  background: hsl(var(--background));
+  border-color: hsl(var(--border));
+}
+
+.dark .rich-text-editor.linkedin-style .ql-container {
+  border: none;
+  background: transparent;
+}
+
 .dark .rich-text-editor .ql-toolbar {
   background: hsl(var(--muted));
   border-color: hsl(var(--border));

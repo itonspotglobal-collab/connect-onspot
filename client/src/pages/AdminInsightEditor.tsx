@@ -297,14 +297,14 @@ export default function AdminInsightEditor() {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="content">Content</Label>
-            <div className="min-h-[400px]">
-              <Suspense fallback={<Skeleton className="h-[400px] w-full" />}>
+          <div className="flex justify-center w-full">
+            <div className="w-full max-w-3xl">
+              <Suspense fallback={<Skeleton className="h-[70vh] w-full" />}>
                 <RichTextEditor
                   value={formData.content}
                   onChange={(value) => updateField("content", value)}
                   placeholder="Write your article content here..."
+                  linkedInStyle
                 />
               </Suspense>
             </div>

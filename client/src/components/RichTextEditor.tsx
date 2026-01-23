@@ -6,9 +6,10 @@ interface RichTextEditorProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  linkedInStyle?: boolean;
 }
 
-export default function RichTextEditor({ value, onChange, placeholder }: RichTextEditorProps) {
+export default function RichTextEditor({ value, onChange, placeholder, linkedInStyle }: RichTextEditorProps) {
   const modules = useMemo(() => ({
     toolbar: [
       [{ header: [1, 2, 3, 4, false] }],
@@ -29,7 +30,7 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
   ];
 
   return (
-    <div className="rich-text-editor">
+    <div className={`rich-text-editor ${linkedInStyle ? "linkedin-style" : ""}`}>
       <ReactQuill
         theme="snow"
         value={value}
