@@ -34,6 +34,7 @@ import HiredTalentPortal from "@/pages/HiredTalentPortal";
 import FindWork from "@/pages/FindWork";
 import Insights from "@/pages/Insights";
 import InsightPost from "@/pages/InsightPost";
+import Jobs from "@/pages/Jobs";
 import NotFound from "@/pages/not-found";
 import ComingSoon from "@/pages/ComingSoon";
 import PaymentProtection from "@/pages/PaymentProtection";
@@ -116,6 +117,7 @@ function PublicRouter() {
           <Route path="/amazing" component={Amazing} />
           <Route path="/insights" component={Insights} />
           <Route path="/insights/:slug" component={InsightPost} />
+          <Route path="/jobs" component={Jobs} />
           <Route path="/payment-protection" component={PaymentProtection} />
           <Route path="/client-verification" component={ClientVerification} />
           <Route path="/trust-safety" component={TrustSafety} />
