@@ -30,7 +30,8 @@ import {
   Bookmark,
   CheckCircle2,
   Shield,
-  Crown
+  Crown,
+  ChevronDown
 } from "lucide-react";
 import { TrustBadge, ClientVerificationBadge } from "@/components/TrustBadges";
 import { PaymentProtectionBadge } from "@/components/PaymentProtectionBadge";
@@ -85,6 +86,7 @@ export default function FindWork() {
   const [selectedBudget, setSelectedBudget] = useState("all");
   const [selectedJobType, setSelectedJobType] = useState("all");
   const [activeTab, setActiveTab] = useState("browse");
+  const [csrJobExpanded, setCsrJobExpanded] = useState(false);
 
   // Build API query parameters from filter state
   const apiFilters = useMemo(() => {
@@ -437,6 +439,129 @@ export default function FindWork() {
 
             {/* Job Listings */}
             <div className="space-y-4">
+              {/* Customer Service Representative - Expandable Job Card */}
+              <Card 
+                className="hover-elevate transition-all duration-300 cursor-pointer group csr-job-card"
+                onClick={() => setCsrJobExpanded(!csrJobExpanded)}
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center">
+                          <Headphones className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-semibold group-hover:text-primary transition-colors">
+                            Customer Service Representative
+                          </h3>
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <span className="font-medium">OnSpot Global</span>
+                            <CheckCircle2 className="w-4 h-4 text-green-600" />
+                            <div className="flex items-center gap-1">
+                              <Star className="w-3 h-3 text-[hsl(var(--gold-yellow))] fill-current" />
+                              <span className="text-sm">4.9 (127)</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-3">
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-4 h-4" />
+                          <span>Remote (Philippines)</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          <span>Posted today</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Users className="w-4 h-4" />
+                          <span>12 proposals</span>
+                        </div>
+                      </div>
+
+                      <p className="text-muted-foreground mb-4 line-clamp-2">
+                        Join our team as a Customer Service Representative providing exceptional support to our global clients.
+                      </p>
+
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        <Badge variant="secondary" className="text-xs">Customer Support</Badge>
+                        <Badge variant="secondary" className="text-xs">Communication</Badge>
+                        <Badge variant="secondary" className="text-xs">Problem Solving</Badge>
+                        <Badge variant="secondary" className="text-xs">CRM</Badge>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-3 ml-6">
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-green-600">$8-12/hr</div>
+                        <div className="text-sm text-muted-foreground">Hourly rate</div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-green-100 text-green-800">full-time</Badge>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform duration-300 ${csrJobExpanded ? 'rotate-180' : ''}`} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Expandable Details Section */}
+                  <div 
+                    className={`csr-job-details overflow-hidden transition-all duration-300 ${csrJobExpanded ? 'max-h-[600px] opacity-100 mt-4 pt-4 border-t' : 'max-h-0 opacity-0'}`}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="font-semibold mb-2">Job Description</h4>
+                        <p className="text-muted-foreground text-sm">
+                          We are looking for a dedicated Customer Service Representative to join our growing team. You will be the first point of contact for our clients, handling inquiries, resolving issues, and ensuring customer satisfaction across multiple communication channels.
+                        </p>
+                      </div>
+
+                      <div>
+                        <h4 className="font-semibold mb-2">Responsibilities</h4>
+                        <ul className="text-muted-foreground text-sm list-disc list-inside space-y-1">
+                          <li>Respond to customer inquiries via phone, email, and chat</li>
+                          <li>Resolve product or service issues by clarifying complaints</li>
+                          <li>Process orders, forms, and applications</li>
+                          <li>Keep records of customer interactions and transactions</li>
+                          <li>Follow up on customer interactions to ensure satisfaction</li>
+                        </ul>
+                      </div>
+
+                      <div>
+                        <h4 className="font-semibold mb-2">Skills Needed</h4>
+                        <ul className="text-muted-foreground text-sm list-disc list-inside space-y-1">
+                          <li>Excellent verbal and written communication in English</li>
+                          <li>Strong problem-solving abilities</li>
+                          <li>Experience with CRM software (Zendesk, Freshdesk, or similar)</li>
+                          <li>Ability to multitask and manage time effectively</li>
+                          <li>Patient and empathetic demeanor</li>
+                        </ul>
+                      </div>
+
+                      <div>
+                        <h4 className="font-semibold mb-2">Experience Level</h4>
+                        <p className="text-muted-foreground text-sm">
+                          Entry to Mid-Level (1-3 years of customer service experience preferred)
+                        </p>
+                      </div>
+
+                      <div className="pt-4">
+                        <Button className="w-full sm:w-auto" data-testid="button-apply-csr">
+                          Apply Now
+                          <ArrowRight className="w-4 h-4 ml-2" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
               {filteredJobs.map((job) => {
                 const categoryInfo = getCategoryInfo(job.category);
                 
