@@ -668,7 +668,8 @@ export default function FindWork() {
               })}
             </div>
 
-            {!jobsLoading && !jobsError && filteredJobs.length === 0 && (
+            {/* Only show empty state when no jobs AND no CSR card - CSR card is always shown */}
+            {false && !jobsLoading && !jobsError && filteredJobs.length === 0 && (
               <div className="text-center py-12">
                 <div className="w-24 h-24 mx-auto mb-6 bg-muted rounded-full flex items-center justify-center">
                   <Search className="w-12 h-12 text-muted-foreground" />
