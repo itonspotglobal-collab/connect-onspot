@@ -78,8 +78,6 @@ export const jobs = pgTable("jobs", {
   clientId: varchar("client_id").notNull().references(() => users.id),
   title: text("title").notNull(),
   description: text("description").notNull(),
-  company: text("company").default("OnSpot Global"),
-  location: text("location").default("Remote"),
   category: text("category").notNull(),
   contractType: text("contract_type").notNull(), // hourly, fixed
   budget: decimal("budget", { precision: 10, scale: 2 }),

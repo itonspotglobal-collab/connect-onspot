@@ -122,12 +122,7 @@ export default function FindWork() {
   // Fetch real jobs from API instead of using mock data
   const { data: jobsData = [], isLoading: jobsLoading, error: jobsError } = useQuery({
     queryKey: ['/api/jobs/search', apiFilters],
-    enabled: true,
-  });
-
-  // Fetch admin-created jobs from database (open status only)
-  const { data: adminJobsData = [] } = useQuery<any[]>({
-    queryKey: ['/api/admin/jobs'],
+    enabled: true, // Always enabled to show available jobs
   });
 
   // Fetch personalized job matches for authenticated users
@@ -158,8 +153,8 @@ export default function FindWork() {
     return {
       id: apiJob.id,
       title: apiJob.title,
-      company: apiJob.company || `Client ${apiJob.clientId?.slice(0, 8) || 'Unknown'}`,
-      location: apiJob.location || "Remote",
+      company: `Client ${apiJob.clientId.slice(0, 8)}`, // Anonymized for privacy
+      location: "Remote", // Default for now
       type: apiJob.contractType as "full-time" | "part-time" | "contract" | "freelance",
       budget: {
         min: apiJob.hourlyRateMin ? parseFloat(apiJob.hourlyRateMin) : (apiJob.budget ? parseFloat(apiJob.budget) : 0),
@@ -187,21 +182,11 @@ export default function FindWork() {
     };
   }, []);
 
-  // Process the real jobs data and merge with admin-created jobs
+  // Process the real jobs data
   const allJobs: Job[] = useMemo(() => {
-    const apiJobs = (!jobsLoading && !jobsError && jobsData && Array.isArray(jobsData)) 
-      ? jobsData.map(transformApiJob) 
-      : [];
-    
-    const openAdminJobs = (Array.isArray(adminJobsData) ? adminJobsData : [])
-      .filter((j: any) => j.status === "open")
-      .map(transformApiJob);
-    
-    const existingIds = new Set(apiJobs.map(j => j.id));
-    const uniqueAdminJobs = openAdminJobs.filter(j => !existingIds.has(j.id));
-    
-    return [...uniqueAdminJobs, ...apiJobs];
-  }, [jobsData, jobsLoading, jobsError, adminJobsData, transformApiJob]);
+    if (jobsLoading || jobsError || !jobsData) return [];
+    return Array.isArray(jobsData) ? jobsData.map(transformApiJob) : [];
+  }, [jobsData, jobsLoading, jobsError, transformApiJob]);
 
   // Jobs are now filtered on the backend via API parameters
   // Apply only local location filter since it's not in API yet
@@ -448,7 +433,7 @@ export default function FindWork() {
                 </Select>
               </div>
               <div className="flex items-center gap-2 text-muted-foreground">
-                <span className="text-sm">{filteredJobs.length + 1} jobs found</span>
+                <span className="text-sm">{filteredJobs.length} jobs found</span>
               </div>
             </div>
 
@@ -683,7 +668,8 @@ export default function FindWork() {
               })}
             </div>
 
-            {!jobsLoading && !jobsError && filteredJobs.length === 0 && (
+            {/* Only show empty state when no jobs AND no CSR card - CSR card is always shown */}
+            {false && !jobsLoading && !jobsError && filteredJobs.length === 0 && (
               <div className="text-center py-12">
                 <div className="w-24 h-24 mx-auto mb-6 bg-muted rounded-full flex items-center justify-center">
                   <Search className="w-12 h-12 text-muted-foreground" />
