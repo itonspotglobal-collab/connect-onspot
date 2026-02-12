@@ -53,6 +53,7 @@ import LegalOpsLanding from "@/pages/LegalOpsLanding";
 import AdminInsights from "@/pages/AdminInsights";
 import AdminInsightEditor from "@/pages/AdminInsightEditor";
 import AdminImageUploader from "@/pages/AdminImageUploader";
+import AdminPortal from "@/pages/AdminPortal";
 
 // Immersive Page Wrapper - Full screen without navigation (for campaigns and reveals)
 function ImmersivePage() {
@@ -129,6 +130,7 @@ function PublicRouter() {
           <Route path="/admin/insights/create" component={AdminInsightEditor} />
           <Route path="/admin/insights/:id/edit" component={AdminInsightEditor} />
           <Route path="/admin/image-uploader" component={AdminImageUploader} />
+          <Route path="/admin-portal" component={AdminPortal} />
           {/* Legacy routes for backward compatibility */}
           <Route path="/talent" component={TalentSearch} />
           <Route component={NotFound} />

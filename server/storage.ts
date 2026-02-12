@@ -32,7 +32,8 @@ import {
   corrections,
   trainingLogs,
   legalOpsTrials,
-  posts
+  posts,
+  jobs as jobsTable
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
@@ -96,6 +97,7 @@ export interface IStorage {
   getJob(id: string): Promise<Job | undefined>;
   createJob(job: InsertJob): Promise<Job>;
   updateJob(id: string, updates: Partial<InsertJob>): Promise<Job | undefined>;
+  listAllJobs(): Promise<Job[]>;
   searchJobs(filters: {
     category?: string;
     contractType?: string;
@@ -753,6 +755,8 @@ export class MemStorage implements IStorage {
     const job: Job = {
       ...insertJob,
       id,
+      company: insertJob.company ?? "OnSpot Global",
+      location: insertJob.location ?? "Remote",
       budget: insertJob.budget ?? null,
       budgetCurrency: insertJob.budgetCurrency ?? "USD",
       hourlyRateMin: insertJob.hourlyRateMin ?? null,
@@ -765,6 +769,12 @@ export class MemStorage implements IStorage {
     };
     this.jobs.set(id, job);
     return job;
+  }
+
+  async listAllJobs(): Promise<Job[]> {
+    return Array.from(this.jobs.values()).sort((a, b) => 
+      (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0)
+    );
   }
 
   async updateJob(id: string, updates: Partial<InsertJob>): Promise<Job | undefined> {
@@ -2638,6 +2648,42 @@ export class DbStorage extends MemStorage {
       .where(eq(posts.id, id))
       .returning({ likes: posts.likes });
     return updated?.likes || 0;
+  }
+
+  async listAllJobs(): Promise<Job[]> {
+    return await db
+      .select()
+      .from(jobsTable)
+      .orderBy(desc(jobsTable.createdAt));
+  }
+
+  async getJob(id: string): Promise<Job | undefined> {
+    const [job] = await db
+      .select()
+      .from(jobsTable)
+      .where(eq(jobsTable.id, id));
+    return job;
+  }
+
+  async createJob(insertJob: InsertJob): Promise<Job> {
+    const [job] = await db
+      .insert(jobsTable)
+      .values({
+        ...insertJob,
+        company: insertJob.company ?? "OnSpot Global",
+        location: insertJob.location ?? "Remote",
+      })
+      .returning();
+    return job;
+  }
+
+  async updateJob(id: string, updates: Partial<InsertJob>): Promise<Job | undefined> {
+    const [job] = await db
+      .update(jobsTable)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(jobsTable.id, id))
+      .returning();
+    return job;
   }
 }
 
