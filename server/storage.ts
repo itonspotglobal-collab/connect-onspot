@@ -32,7 +32,8 @@ import {
   corrections,
   trainingLogs,
   legalOpsTrials,
-  posts
+  posts,
+  jobs as jobsTable
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
@@ -106,6 +107,7 @@ export interface IStorage {
     status?: string;
   }): Promise<Job[]>;
   listJobsByClient(clientId: string): Promise<Job[]>;
+  listAllJobs(): Promise<Job[]>;
 
   // Job Skills
   getJobSkills(jobId: string): Promise<JobSkill[]>;
@@ -753,6 +755,8 @@ export class MemStorage implements IStorage {
     const job: Job = {
       ...insertJob,
       id,
+      company: insertJob.company ?? "OnSpot Global",
+      location: insertJob.location ?? "Remote",
       budget: insertJob.budget ?? null,
       budgetCurrency: insertJob.budgetCurrency ?? "USD",
       hourlyRateMin: insertJob.hourlyRateMin ?? null,
@@ -765,6 +769,12 @@ export class MemStorage implements IStorage {
     };
     this.jobs.set(id, job);
     return job;
+  }
+
+  async listAllJobs(): Promise<Job[]> {
+    return Array.from(this.jobs.values()).sort((a, b) => 
+      (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0)
+    );
   }
 
   async updateJob(id: string, updates: Partial<InsertJob>): Promise<Job | undefined> {
@@ -2638,6 +2648,107 @@ export class DbStorage extends MemStorage {
       .where(eq(posts.id, id))
       .returning({ likes: posts.likes });
     return updated?.likes || 0;
+  }
+  async getJob(id: string): Promise<Job | undefined> {
+    const [job] = await db
+      .select()
+      .from(jobsTable)
+      .where(eq(jobsTable.id, id))
+      .limit(1);
+    return job || undefined;
+  }
+
+  async createJob(insertJob: InsertJob): Promise<Job> {
+    const [job] = await db.insert(jobsTable).values(insertJob).returning();
+    return job;
+  }
+
+  async updateJob(id: string, updates: Partial<InsertJob>): Promise<Job | undefined> {
+    const [job] = await db
+      .update(jobsTable)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(jobsTable.id, id))
+      .returning();
+    return job || undefined;
+  }
+
+  async listAllJobs(): Promise<Job[]> {
+    return await db
+      .select()
+      .from(jobsTable)
+      .orderBy(desc(jobsTable.createdAt))
+      .limit(500);
+  }
+
+  async listJobsByClient(clientId: string): Promise<Job[]> {
+    return await db
+      .select()
+      .from(jobsTable)
+      .where(eq(jobsTable.clientId, clientId))
+      .orderBy(desc(jobsTable.createdAt));
+  }
+
+  async searchJobsWithSkills(filters: {
+    category?: string;
+    contractType?: string;
+    experienceLevel?: string;
+    minBudget?: number;
+    maxBudget?: number;
+    skills?: string[];
+    status?: string;
+    q?: string;
+  }): Promise<(Job & { skills: string[] })[]> {
+    let allDbJobs = await db
+      .select()
+      .from(jobsTable)
+      .orderBy(desc(jobsTable.createdAt))
+      .limit(500);
+
+    let jobs = allDbJobs;
+
+    if (filters.category) {
+      jobs = jobs.filter(j => j.category === filters.category);
+    }
+    if (filters.contractType) {
+      jobs = jobs.filter(j => j.contractType === filters.contractType);
+    }
+    if (filters.experienceLevel) {
+      jobs = jobs.filter(j => j.experienceLevel === filters.experienceLevel);
+    }
+    if (filters.status) {
+      jobs = jobs.filter(j => j.status === filters.status);
+    }
+    if (filters.minBudget !== undefined) {
+      jobs = jobs.filter(j => j.budget && parseFloat(j.budget) >= filters.minBudget!);
+    }
+    if (filters.maxBudget !== undefined) {
+      jobs = jobs.filter(j => j.budget && parseFloat(j.budget) <= filters.maxBudget!);
+    }
+    if (filters.q) {
+      const q = filters.q.toLowerCase();
+      jobs = jobs.filter(j =>
+        j.title.toLowerCase().includes(q) ||
+        j.description.toLowerCase().includes(q) ||
+        j.category.toLowerCase().includes(q) ||
+        (j.company && j.company.toLowerCase().includes(q))
+      );
+    }
+
+    return jobs.map(job => ({ ...job, skills: [] }));
+  }
+
+  async searchJobs(filters: {
+    category?: string;
+    contractType?: string;
+    experienceLevel?: string;
+    minBudget?: number;
+    maxBudget?: number;
+    skills?: string[];
+    status?: string;
+    q?: string;
+  }): Promise<Job[]> {
+    const enhanced = await this.searchJobsWithSkills(filters);
+    return enhanced.map(({ skills, ...job }) => job);
   }
 }
 

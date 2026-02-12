@@ -3280,6 +3280,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== ADMIN JOBS ====================
+  app.get("/api/admin/jobs", async (req: Request, res: Response) => {
+    try {
+      const allJobs = await storage.listAllJobs();
+      res.json(allJobs);
+    } catch (error) {
+      console.error("Admin jobs list error:", error);
+      res.status(500).json({ error: "Failed to list jobs" });
+    }
+  });
+
+  app.post("/api/admin/jobs", async (req: Request, res: Response) => {
+    try {
+      const body = { ...req.body };
+      body.clientId = "test-user-1";
+      const validated = insertJobSchema.parse(body);
+      const job = await storage.createJob(validated);
+      res.status(201).json(job);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation failed", details: error.errors });
+      }
+      console.error("Admin job create error:", error);
+      res.status(500).json({ error: "Failed to create job" });
+    }
+  });
+
+  app.patch("/api/admin/jobs/:id", async (req: Request, res: Response) => {
+    try {
+      const updates = insertJobSchema.partial().parse(req.body);
+      const job = await storage.updateJob(req.params.id, updates);
+      if (!job) {
+        return res.status(404).json({ error: "Job not found" });
+      }
+      res.json(job);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation failed", details: error.errors });
+      }
+      console.error("Admin job update error:", error);
+      res.status(500).json({ error: "Failed to update job" });
+    }
+  });
+
+  app.patch("/api/admin/jobs/:id/status", async (req: Request, res: Response) => {
+    try {
+      const { status } = req.body;
+      if (!status || !["open", "closed", "cancelled"].includes(status)) {
+        return res.status(400).json({ error: "Invalid status. Must be 'open', 'closed', or 'cancelled'" });
+      }
+      const job = await storage.updateJob(req.params.id, { status });
+      if (!job) {
+        return res.status(404).json({ error: "Job not found" });
+      }
+      res.json(job);
+    } catch (error) {
+      console.error("Admin job status update error:", error);
+      res.status(500).json({ error: "Failed to update job status" });
+    }
+  });
+
+  app.delete("/api/admin/jobs/:id", async (req: Request, res: Response) => {
+    try {
+      const job = await storage.updateJob(req.params.id, { status: "cancelled" });
+      if (!job) {
+        return res.status(404).json({ error: "Job not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Admin job delete error:", error);
+      res.status(500).json({ error: "Failed to delete job" });
+    }
+  });
+
   // ==================== JOB SKILLS ====================
   app.get("/api/jobs/:jobId/skills", async (req, res) => {
     try {
