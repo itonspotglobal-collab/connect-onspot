@@ -88,6 +88,9 @@ export const jobs = pgTable("jobs", {
   hourlyRateMax: decimal("hourly_rate_max", { precision: 8, scale: 2 }),
   duration: text("duration"), // Less than 1 month, 1-3 months, etc.
   experienceLevel: text("experience_level").notNull(), // entry, intermediate, expert
+  responsibilities: text("responsibilities").array(),
+  requirements: text("requirements").array(),
+  skillTags: text("skill_tags").array(),
   status: text("status").notNull().default("open"), // open, in_progress, completed, cancelled
   proposalCount: integer("proposal_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),

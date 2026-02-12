@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ExpandableJobCard } from "@/components/ExpandableJobCard";
 import { 
   Search,
   Filter,
@@ -35,38 +36,6 @@ import {
 import { TrustBadge, ClientVerificationBadge } from "@/components/TrustBadges";
 import { PaymentProtectionBadge } from "@/components/PaymentProtectionBadge";
 import { QualityBadge } from "@/components/QualityIndicators";
-
-interface Job {
-  id: string;
-  title: string;
-  company: string;
-  companyLogo?: string;
-  location: string;
-  type: "full-time" | "part-time" | "contract" | "freelance";
-  budget: {
-    min: number;
-    max: number;
-    type: "hourly" | "fixed";
-    currency: string;
-  };
-  category: string;
-  skills: string[];
-  description: string;
-  requirements: string[];
-  postedAt: string;
-  applicants: number;
-  verified: boolean;
-  urgent: boolean;
-  rating: number;
-  reviewCount: number;
-  paymentProtected?: boolean;
-  verificationLevel?: "basic" | "business" | "enterprise";
-  featured?: boolean;
-  responseTime?: string;
-  hireRate?: number;
-  totalSpent?: number;
-  companySize?: "startup" | "scale-up" | "enterprise" | "fortune-500";
-}
 
 const workCategories = [
   { id: "development", name: "Development & IT", icon: Code, color: "bg-blue-500" },
@@ -135,88 +104,25 @@ export default function FindWork() {
     }
   });
 
-  // Transform API jobs data to match the expected Job interface
-  const transformApiJob = useCallback((apiJob: any): Job => {
-    const now = new Date();
-    const postedDate = apiJob.createdAt ? new Date(apiJob.createdAt) : now;
-    const timeAgo = Math.floor((now.getTime() - postedDate.getTime()) / (1000 * 60 * 60 * 24));
-    
-    let postedAtText = 'Just posted';
-    if (timeAgo === 0) postedAtText = 'Today';
-    else if (timeAgo === 1) postedAtText = '1 day ago';
-    else if (timeAgo < 7) postedAtText = `${timeAgo} days ago`;
-    else if (timeAgo < 30) postedAtText = `${Math.floor(timeAgo / 7)} weeks ago`;
-    else postedAtText = `${Math.floor(timeAgo / 30)} months ago`;
-
-    return {
-      id: apiJob.id,
-      title: apiJob.title,
-      company: apiJob.company || `Client ${apiJob.clientId?.slice(0, 8) || 'Unknown'}`,
-      location: apiJob.location || "Remote",
-      type: apiJob.contractType as "full-time" | "part-time" | "contract" | "freelance",
-      budget: {
-        min: apiJob.hourlyRateMin ? parseFloat(apiJob.hourlyRateMin) : (apiJob.budget ? parseFloat(apiJob.budget) : 0),
-        max: apiJob.hourlyRateMax ? parseFloat(apiJob.hourlyRateMax) : (apiJob.budget ? parseFloat(apiJob.budget) : 0),
-        type: apiJob.contractType === 'hourly' ? 'hourly' : 'fixed',
-        currency: apiJob.budgetCurrency || 'USD'
-      },
-      category: apiJob.category,
-      skills: apiJob.skills || [], // This comes from our enhanced API
-      description: apiJob.description,
-      requirements: apiJob.description ? [apiJob.description.slice(0, 100) + '...'] : [], // Simplified
-      postedAt: postedAtText,
-      applicants: apiJob.proposalCount || 0,
-      verified: true, // Assume verified for now
-      urgent: timeAgo <= 1, // Mark as urgent if posted today/yesterday
-      rating: 4.5, // Default rating
-      reviewCount: Math.floor(Math.random() * 100) + 10, // Random for now
-      paymentProtected: true,
-      verificationLevel: "business" as const,
-      featured: timeAgo <= 2, // Featured if very recent
-      responseTime: "< 24 hours",
-      hireRate: 85,
-      totalSpent: 50000,
-      companySize: "scale-up" as const
-    };
-  }, []);
-
-  // Process the real jobs data
-  const allJobs: Job[] = useMemo(() => {
+  const allJobs: any[] = useMemo(() => {
     if (jobsLoading || jobsError || !jobsData) return [];
-    return Array.isArray(jobsData) ? jobsData.map(transformApiJob) : [];
-  }, [jobsData, jobsLoading, jobsError, transformApiJob]);
+    return Array.isArray(jobsData) ? jobsData : [];
+  }, [jobsData, jobsLoading, jobsError]);
 
-  // Jobs are now filtered on the backend via API parameters
-  // Apply only local location filter since it's not in API yet
   const filteredJobs = useMemo(() => {
-    return allJobs.filter(job => {
+    return allJobs.filter((job: any) => {
+      const loc = (job.location || "").toLowerCase();
       const matchesLocation = selectedLocation === "all" || 
-        (selectedLocation === "remote" && job.location.toLowerCase().includes("remote")) ||
-        (selectedLocation === "us" && (job.location.includes("CA") || job.location.includes("NY")));
-      
+        (selectedLocation === "remote" && loc.includes("remote")) ||
+        (selectedLocation === "us" && (loc.includes("ca") || loc.includes("ny")));
       return matchesLocation;
     });
   }, [allJobs, selectedLocation]);
 
-  // Transform matches data for display
-  const recommendedJobs: Job[] = useMemo(() => {
+  const recommendedJobs: any[] = useMemo(() => {
     if (!matchesData || !Array.isArray(matchesData)) return [];
-    return matchesData.map((match: any) => transformApiJob(match.job));
-  }, [matchesData, transformApiJob]);
-
-  const getJobTypeColor = (type: string) => {
-    switch (type) {
-      case "full-time": return "bg-green-100 text-green-800";
-      case "part-time": return "bg-blue-100 text-blue-800";
-      case "contract": return "bg-purple-100 text-purple-800";
-      case "freelance": return "bg-orange-100 text-orange-800";
-      default: return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getCategoryInfo = (categoryId: string) => {
-    return workCategories.find(cat => cat.id === categoryId) || workCategories[0];
-  };
+    return matchesData.map((match: any) => match.job);
+  }, [matchesData]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -310,74 +216,8 @@ export default function FindWork() {
                 </div>
                 
                 <div className="grid grid-cols-1 gap-4">
-                  {recommendedJobs.slice(0, 2).map((job) => (
-                    <Card key={job.id} className="hover-elevate">
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start gap-3">
-                              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                                {(() => {
-                                  const IconComponent = getCategoryInfo(job.category).icon;
-                                  return IconComponent ? <IconComponent className="w-6 h-6 text-primary" /> : null;
-                                })()}
-                              </div>
-                              
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <h3 className="font-semibold truncate" data-testid={`job-title-${job.id}`}>
-                                    {job.title}
-                                  </h3>
-                                  <Badge className="bg-[hsl(var(--gold-yellow))] text-black text-xs">
-                                    Match
-                                  </Badge>
-                                </div>
-                                
-                                <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-2">
-                                  <span>{job.company}</span>
-                                  <span>•</span>
-                                  <span>{job.location}</span>
-                                  <span>•</span>
-                                  <span>{job.postedAt}</span>
-                                </div>
-
-                                <div className="flex flex-wrap gap-1 mb-2">
-                                  {job.skills.slice(0, 3).map((skill) => (
-                                    <Badge key={skill} variant="outline" className="text-xs">
-                                      {skill}
-                                    </Badge>
-                                  ))}
-                                  {job.skills.length > 3 && (
-                                    <Badge variant="outline" className="text-xs">
-                                      +{job.skills.length - 3} more
-                                    </Badge>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="flex flex-col items-end gap-2 ml-4">
-                            <div className="text-right">
-                              <div className="text-lg font-bold text-green-600">
-                                ${job.budget.type === "hourly" 
-                                  ? `${job.budget.min}-${job.budget.max}/hr` 
-                                  : `${job.budget.min.toLocaleString()}`
-                                }
-                              </div>
-                              <Badge className={`${getJobTypeColor(job.type)} text-xs`}>
-                                {job.type.replace("-", " ")}
-                              </Badge>
-                            </div>
-                            
-                            <Button size="sm" data-testid={`apply-recommended-${job.id}`}>
-                              Apply Now
-                              <ArrowRight className="w-4 h-4 ml-1" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                  {recommendedJobs.slice(0, 2).map((job: any) => (
+                    <ExpandableJobCard key={job.id} job={job} showApply={true} />
                   ))}
                 </div>
                 
@@ -437,110 +277,9 @@ export default function FindWork() {
 
             {/* Job Listings */}
             <div className="space-y-4">
-              {filteredJobs.map((job) => {
-                const categoryInfo = getCategoryInfo(job.category);
-                
-                return (
-                  <Card key={job.id} className="hover-elevate transition-all duration-300 cursor-pointer group">
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className={`w-10 h-10 rounded-lg ${categoryInfo.color} flex items-center justify-center`}>
-                              {(() => {
-                                const IconComponent = categoryInfo.icon;
-                                return <IconComponent className="w-5 h-5 text-white" />;
-                              })()}
-                            </div>
-                            <div>
-                              <h3 className="text-xl font-semibold group-hover:text-primary transition-colors">
-                                {job.title}
-                              </h3>
-                              <div className="flex items-center gap-2 text-muted-foreground">
-                                <span className="font-medium">{job.company}</span>
-                                {job.verified && (
-                                  <CheckCircle2 className="w-4 h-4 text-green-600" />
-                                )}
-                                <div className="flex items-center gap-1">
-                                  <Star className="w-3 h-3 text-[hsl(var(--gold-yellow))] fill-current" />
-                                  <span className="text-sm">{job.rating} ({job.reviewCount})</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-3">
-                            <div className="flex items-center gap-1">
-                              <MapPin className="w-4 h-4" />
-                              <span>{job.location}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Clock className="w-4 h-4" />
-                              <span>{job.postedAt}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Users className="w-4 h-4" />
-                              <span>{job.applicants} proposals</span>
-                            </div>
-                          </div>
-
-                          <p className="text-muted-foreground mb-4 line-clamp-2">
-                            {job.description}
-                          </p>
-
-                          <div className="flex flex-wrap gap-2 mb-4">
-                            {job.skills.slice(0, 5).map((skill) => (
-                              <Badge key={skill} variant="secondary" className="text-xs">
-                                {skill}
-                              </Badge>
-                            ))}
-                            {job.skills.length > 5 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{job.skills.length - 5} more
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col items-end gap-3 ml-6">
-                          <div className="text-right">
-                            <div className="text-2xl font-bold text-green-600">
-                              ${job.budget.type === "hourly" 
-                                ? `${job.budget.min}-${job.budget.max}/hr` 
-                                : `${job.budget.min.toLocaleString()}`
-                              }
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              {job.budget.type === "fixed" ? "Fixed price" : "Hourly rate"}
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center gap-2">
-                            <Badge className={getJobTypeColor(job.type)}>
-                              {job.type.replace("-", " ")}
-                            </Badge>
-                            {job.urgent && (
-                              <Badge variant="destructive" className="text-xs">
-                                Urgent
-                              </Badge>
-                            )}
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm">
-                              <Heart className="w-4 h-4" />
-                            </Button>
-                            <Button size="sm" data-testid={`apply-job-${job.id}`}>
-                              Apply Now
-                              <ArrowRight className="w-4 h-4 ml-1" />
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+              {filteredJobs.map((job: any) => (
+                <ExpandableJobCard key={job.id} job={job} showApply={true} />
+              ))}
             </div>
 
             {!jobsLoading && !jobsError && filteredJobs.length === 0 && (

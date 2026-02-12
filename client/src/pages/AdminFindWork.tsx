@@ -25,11 +25,9 @@ import {
   CheckCircle2,
   XCircle,
   BarChart3,
-  MapPin,
-  DollarSign,
-  Clock
 } from "lucide-react";
 import type { Job } from "@shared/schema";
+import { ExpandableJobCard } from "@/components/ExpandableJobCard";
 
 const defaultFormData = {
   title: "",
@@ -44,6 +42,9 @@ const defaultFormData = {
   budget: "",
   duration: "",
   status: "open",
+  responsibilities: "",
+  requirements: "",
+  skillTags: "",
 };
 
 export default function AdminFindWork() {
@@ -136,6 +137,9 @@ export default function AdminFindWork() {
       budget: job.budget || "",
       duration: job.duration || "",
       status: job.status || "open",
+      responsibilities: Array.isArray(job.responsibilities) ? job.responsibilities.join("\n") : "",
+      requirements: Array.isArray(job.requirements) ? job.requirements.join("\n") : "",
+      skillTags: Array.isArray(job.skillTags) ? job.skillTags.join(", ") : "",
     });
     setShowForm(true);
   };
@@ -159,6 +163,16 @@ export default function AdminFindWork() {
     if (formData.hourlyRateMax) payload.hourlyRateMax = formData.hourlyRateMax;
     if (formData.budget) payload.budget = formData.budget;
     if (formData.duration) payload.duration = formData.duration;
+
+    payload.responsibilities = formData.responsibilities
+      ? formData.responsibilities.split("\n").map((s: string) => s.trim()).filter(Boolean)
+      : [];
+    payload.requirements = formData.requirements
+      ? formData.requirements.split("\n").map((s: string) => s.trim()).filter(Boolean)
+      : [];
+    payload.skillTags = formData.skillTags
+      ? formData.skillTags.split(",").map((s: string) => s.trim()).filter(Boolean)
+      : [];
 
     if (editingJob) {
       updateMutation.mutate({ id: editingJob.id, data: payload });
@@ -364,9 +378,42 @@ export default function AdminFindWork() {
                     id="description"
                     value={formData.description}
                     onChange={(e) => updateField("description", e.target.value)}
-                    placeholder="Describe the job responsibilities, requirements, and what makes this role great..."
-                    className="min-h-[150px]"
+                    placeholder="Brief overview of the role and what makes it great..."
+                    className="min-h-[100px]"
                     required
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="responsibilities">Responsibilities (one per line)</Label>
+                    <Textarea
+                      id="responsibilities"
+                      value={formData.responsibilities}
+                      onChange={(e) => updateField("responsibilities", e.target.value)}
+                      placeholder={"Respond to customer inquiries via phone, email, and chat\nResolve product or service issues\nProcess orders and applications"}
+                      className="min-h-[120px]"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="requirements">Skills Needed (one per line)</Label>
+                    <Textarea
+                      id="requirements"
+                      value={formData.requirements}
+                      onChange={(e) => updateField("requirements", e.target.value)}
+                      placeholder={"Excellent verbal and written communication in English\nStrong problem-solving abilities\nExperience with CRM software"}
+                      className="min-h-[120px]"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="skillTags">Skill Tags (comma-separated)</Label>
+                  <Input
+                    id="skillTags"
+                    value={formData.skillTags}
+                    onChange={(e) => updateField("skillTags", e.target.value)}
+                    placeholder="Customer Support, Communication, Problem Solving, CRM"
                   />
                 </div>
 
@@ -444,105 +491,70 @@ export default function AdminFindWork() {
           ) : (
             <div className="space-y-3">
               {jobs.map((job) => (
-                <Card key={job.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <h3 className="font-semibold text-lg">{job.title}</h3>
-                          <Badge variant={job.status === "open" ? "default" : "secondary"}>
-                            {job.status === "open" ? "Open" : job.status === "closed" ? "Closed" : job.status}
-                          </Badge>
-                          <Badge variant="outline" className="text-xs">{job.category}</Badge>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-2">
-                          <span className="flex items-center gap-1">
-                            <Briefcase className="w-3.5 h-3.5" />
-                            {job.company || "OnSpot Global"}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <MapPin className="w-3.5 h-3.5" />
-                            {job.location || "Remote"}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <DollarSign className="w-3.5 h-3.5" />
-                            {job.hourlyRateMin && job.hourlyRateMax
-                              ? `$${job.hourlyRateMin}-${job.hourlyRateMax}/hr`
-                              : job.budget
-                                ? `$${job.budget}`
-                                : "Rate TBD"}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Users className="w-3.5 h-3.5" />
-                            {job.proposalCount || 0} proposals
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3.5 h-3.5" />
-                            {job.createdAt ? new Date(job.createdAt).toLocaleDateString() : "N/A"}
-                          </span>
-                        </div>
-                        <p className="text-sm text-muted-foreground line-clamp-1">
-                          {job.description}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-2 shrink-0">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            toggleStatusMutation.mutate({
-                              id: job.id,
-                              status: job.status === "open" ? "closed" : "open",
-                            })
-                          }
-                          disabled={toggleStatusMutation.isPending}
-                        >
-                          {job.status === "open" ? (
-                            <>
-                              <EyeOff className="w-4 h-4 mr-1" />
-                              Close
-                            </>
-                          ) : (
-                            <>
-                              <Eye className="w-4 h-4 mr-1" />
-                              Open
-                            </>
-                          )}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => startEditing(job)}
-                        >
-                          <Pencil className="w-4 h-4 mr-1" />
-                          Edit
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="sm">
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Remove job posting?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This will cancel the job posting "{job.title}". It will no longer appear on the Find Work page.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Keep</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => deleteMutation.mutate(job.id)}>
-                                Remove
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
+                <ExpandableJobCard
+                  key={job.id}
+                  job={job}
+                  showApply={false}
+                  adminActions={
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge variant={job.status === "open" ? "default" : "secondary"}>
+                        {job.status === "open" ? "Open" : job.status === "closed" ? "Closed" : job.status}
+                      </Badge>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          toggleStatusMutation.mutate({
+                            id: job.id,
+                            status: job.status === "open" ? "closed" : "open",
+                          })
+                        }
+                        disabled={toggleStatusMutation.isPending}
+                      >
+                        {job.status === "open" ? (
+                          <>
+                            <EyeOff className="w-4 h-4 mr-1" />
+                            Close
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="w-4 h-4 mr-1" />
+                            Open
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => startEditing(job)}
+                      >
+                        <Pencil className="w-4 h-4 mr-1" />
+                        Edit
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Remove job posting?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will cancel the job posting "{job.title}". It will no longer appear on the Find Work page.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Keep</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => deleteMutation.mutate(job.id)}>
+                              Remove
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
-                  </CardContent>
-                </Card>
+                  }
+                />
               ))}
             </div>
           )}
