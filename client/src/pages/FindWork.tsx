@@ -312,7 +312,7 @@ export default function FindWork() {
               {workCategories.map((category) => {
                 const jobsInCategory = allJobs.filter(job => job.category === category.id);
                 const averageBudget = jobsInCategory.length > 0 
-                  ? Math.round(jobsInCategory.reduce((sum, job) => sum + job.budget.min, 0) / jobsInCategory.length)
+                  ? Math.round(jobsInCategory.reduce((sum, job) => sum + (Number(job.budget) || 0), 0) / jobsInCategory.length)
                   : 0;
 
                 return (
