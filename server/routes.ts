@@ -3309,7 +3309,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/admin/jobs/:id", async (req: Request, res: Response) => {
     try {
-      const updates = insertJobSchema.partial().parse(req.body);
+      const { clientId, ...rest } = req.body;
+      const updates = insertJobSchema.partial().parse(rest);
       const job = await storage.updateJob(req.params.id, updates);
       if (!job) {
         return res.status(404).json({ error: "Job not found" });

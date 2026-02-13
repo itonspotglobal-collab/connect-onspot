@@ -37,7 +37,7 @@ import {
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
-import { eq, and, gte, ilike, desc, asc, sql as sqlOp } from "drizzle-orm";
+import { eq, ne, and, gte, ilike, desc, asc, sql as sqlOp } from "drizzle-orm";
 
 // Type for creating user with password
 export interface CreateUserData {
@@ -2676,6 +2676,7 @@ export class DbStorage extends MemStorage {
     return await db
       .select()
       .from(jobsTable)
+      .where(ne(jobsTable.status, "cancelled"))
       .orderBy(desc(jobsTable.createdAt))
       .limit(500);
   }

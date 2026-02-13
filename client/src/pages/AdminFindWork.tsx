@@ -156,8 +156,11 @@ export default function AdminFindWork() {
       experienceLevel: formData.experienceLevel,
       description: formData.description,
       status: formData.status,
-      clientId: "admin-system",
     };
+
+    if (!editingJob) {
+      payload.clientId = "admin-system";
+    }
 
     if (formData.hourlyRateMin) payload.hourlyRateMin = formData.hourlyRateMin;
     if (formData.hourlyRateMax) payload.hourlyRateMax = formData.hourlyRateMax;
