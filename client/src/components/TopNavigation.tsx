@@ -16,7 +16,6 @@ import {
   BarChart3,
   Headphones,
   Globe,
-  Camera,
   FileText,
   Star,
   Info,
@@ -152,6 +151,17 @@ const serviceDetails = {
 
 // Work categories for Find Work mega menu
 const workCategories = {
+  allJobs: {
+    title: "All Jobs",
+    subtitle: "Explore all opportunities",
+    description: "Browse all available job opportunities across every category",
+    icon: Briefcase,
+    specialties: ["All Categories", "All Skill Levels", "All Locations"],
+    demand: "Very High",
+    averageRate: "$8-65/hr",
+    path: "/find-work/all",
+    popular: true,
+  },
   development: {
     title: "Development & IT",
     subtitle: "Build the digital future",
@@ -221,23 +231,6 @@ const workCategories = {
     demand: "High",
     averageRate: "$15-35/hr",
     path: "/find-work/writing",
-    popular: false,
-  },
-  media: {
-    title: "Audio, Video & Animation",
-    subtitle: "Media production",
-    description:
-      "Video editing, animation, audio production, and multimedia content",
-    icon: Camera,
-    specialties: [
-      "Video Editing",
-      "Animation",
-      "Audio Production",
-      "3D Modeling",
-    ],
-    demand: "Medium",
-    averageRate: "$20-50/hr",
-    path: "/find-work/media",
     popular: false,
   },
 };
