@@ -243,6 +243,20 @@ export default function FindWork() {
                 </Button>
               </div>
             </div>
+
+            <div className="mt-6 flex flex-wrap items-center gap-2">
+              <span className="text-white/70 text-sm font-medium">Hot Searches:</span>
+              {["Virtual Assistant", "Customer Support", "IT Administrator", "Graphic Designer", "Content Writer", "Web Developer"].map((term) => (
+                <Badge
+                  key={term}
+                  variant="secondary"
+                  className="cursor-pointer bg-white/15 text-white border-white/20 text-xs"
+                  onClick={() => setSearchQuery(term)}
+                >
+                  {term}
+                </Badge>
+              ))}
+            </div>
           </div>
         </div>
       </div>

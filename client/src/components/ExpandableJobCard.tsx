@@ -19,7 +19,9 @@ import {
   Globe,
   Camera,
   Briefcase,
+  Share2,
 } from "lucide-react";
+import { SiLinkedin, SiFacebook } from "react-icons/si";
 
 const workCategories = [
   {
@@ -297,6 +299,42 @@ export function ExpandableJobCard({
                   <Button variant="outline" size="icon">
                     <Heart className="w-4 h-4" />
                   </Button>
+                  <div className="flex items-center gap-1 ml-auto">
+                    <span className="text-xs text-muted-foreground mr-1">Share:</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => {
+                        const jobUrl = encodeURIComponent(window.location.origin + "/find-work/" + job.id);
+                        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${jobUrl}`, "_blank");
+                      }}
+                    >
+                      <SiLinkedin className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => {
+                        const jobUrl = encodeURIComponent(window.location.origin + "/find-work/" + job.id);
+                        window.open(`https://www.facebook.com/sharer/sharer.php?u=${jobUrl}`, "_blank");
+                      }}
+                    >
+                      <SiFacebook className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => {
+                        const searchTerm = encodeURIComponent(job.title);
+                        window.open(`https://bossjob.ph/jobs?search=${searchTerm}`, "_blank");
+                      }}
+                    >
+                      <Briefcase className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </>
               )}
               {adminActions}
