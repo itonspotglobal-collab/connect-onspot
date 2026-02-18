@@ -1,5 +1,6 @@
-import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ import {
   CheckCircle2,
   Shield,
   Crown,
+  Flame,
 } from "lucide-react";
 import { TrustBadge, ClientVerificationBadge } from "@/components/TrustBadges";
 import { PaymentProtectionBadge } from "@/components/PaymentProtectionBadge";
@@ -90,6 +92,50 @@ export default function FindWork() {
   const [selectedBudget, setSelectedBudget] = useState("all");
   const [selectedJobType, setSelectedJobType] = useState("all");
   const [activeTab, setActiveTab] = useState("browse");
+  const [hotSearchRange, setHotSearchRange] = useState<"daily" | "weekly">("daily");
+
+  const { data: hotSearchData } = useQuery<{ term: string; count: number }[]>({
+    queryKey: ["/api/hot-searches", hotSearchRange],
+    queryFn: async () => {
+      const res = await fetch(`/api/hot-searches?range=${hotSearchRange}`);
+      return res.json();
+    },
+    refetchInterval: 60000,
+  });
+
+  const trackSearchMutation = useMutation({
+    mutationFn: async (term: string) => {
+      await apiRequest("POST", "/api/hot-searches/track", { term });
+    },
+  });
+
+  const handleHotSearchClick = useCallback((term: string) => {
+    setSearchQuery(term);
+    trackSearchMutation.mutate(term);
+  }, [trackSearchMutation]);
+
+  const searchTrackTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (searchTrackTimeout.current) clearTimeout(searchTrackTimeout.current);
+    const trimmed = searchQuery.trim();
+    if (trimmed.length >= 3) {
+      searchTrackTimeout.current = setTimeout(() => {
+        trackSearchMutation.mutate(trimmed);
+      }, 2000);
+    }
+    return () => {
+      if (searchTrackTimeout.current) clearTimeout(searchTrackTimeout.current);
+    };
+  }, [searchQuery]);
+
+  const defaultHotSearches = [
+    { term: "virtual assistant", count: 0 },
+    { term: "customer support", count: 0 },
+    { term: "it administrator", count: 0 },
+    { term: "graphic designer", count: 0 },
+    { term: "web developer", count: 0 },
+  ];
+  const topHotSearches = (hotSearchData && hotSearchData.length > 0) ? hotSearchData : defaultHotSearches;
 
   // Build API query parameters from filter state
   const apiFilters = useMemo(() => {
@@ -245,23 +291,54 @@ export default function FindWork() {
             </div>
 
             <div className="mt-8 bg-white/10 backdrop-blur-sm rounded-xl px-6 py-4 border border-white/15">
-              <div className="flex items-center gap-2 mb-3">
-                <TrendingUp className="w-4 h-4 text-[hsl(var(--gold-yellow))]" />
-                <span className="text-white font-semibold text-sm tracking-wide uppercase">Hot Searches</span>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-[hsl(var(--gold-yellow))]" />
+                  <span className="text-white font-semibold text-sm tracking-wide uppercase">Hot Searches</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`rounded-full text-xs px-3 ${hotSearchRange === "daily" ? "bg-white/25 text-white" : "text-white/60"}`}
+                    onClick={() => setHotSearchRange("daily")}
+                  >
+                    Today
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`rounded-full text-xs px-3 ${hotSearchRange === "weekly" ? "bg-white/25 text-white" : "text-white/60"}`}
+                    onClick={() => setHotSearchRange("weekly")}
+                  >
+                    This Week
+                  </Button>
+                </div>
               </div>
               <div className="flex flex-wrap gap-3">
-                {["Virtual Assistant", "Customer Support", "IT Administrator", "Graphic Designer", "Content Writer", "Web Developer"].map((term) => (
-                  <Button
-                    key={term}
-                    variant="secondary"
-                    size="sm"
-                    className="bg-white/20 text-white border border-white/25 hover:bg-white/30 rounded-full px-4"
-                    onClick={() => setSearchQuery(term)}
-                  >
-                    <Search className="w-3 h-3 mr-1.5 opacity-70" />
-                    {term}
-                  </Button>
-                ))}
+                {topHotSearches.map((item, index) => {
+                  const isTopOne = index === 0;
+                  const displayTerm = item.term.replace(/\b\w/g, c => c.toUpperCase());
+                  return (
+                    <Button
+                      key={item.term}
+                      variant="outline"
+                      size="sm"
+                      className={`rounded-full px-4 border-white/25 text-white ${isTopOne ? "animate-pulse ring-2 ring-orange-400/50" : ""}`}
+                      onClick={() => handleHotSearchClick(displayTerm)}
+                    >
+                      {isTopOne ? (
+                        <Flame className="w-3.5 h-3.5 mr-1.5 text-orange-400" />
+                      ) : (
+                        <Search className="w-3 h-3 mr-1.5 opacity-70" />
+                      )}
+                      {displayTerm}
+                      {item.count > 0 && (
+                        <span className="ml-1.5 text-white/50 text-xs">({item.count})</span>
+                      )}
+                    </Button>
+                  );
+                })}
               </div>
             </div>
           </div>

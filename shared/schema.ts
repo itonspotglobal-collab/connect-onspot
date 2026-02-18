@@ -965,3 +965,19 @@ export const insertLegalOpsTrialSchema = createInsertSchema(legalOpsTrials).omit
 });
 export type InsertLegalOpsTrial = z.infer<typeof insertLegalOpsTrialSchema>;
 export type LegalOpsTrial = typeof legalOpsTrials.$inferSelect;
+
+export const hotSearches = pgTable("hot_searches", {
+  id: serial("id").primaryKey(),
+  term: text("term").notNull(),
+  searchedAt: timestamp("searched_at").defaultNow().notNull(),
+}, (table) => ({
+  termIndex: index("hot_searches_term_idx").on(table.term),
+  searchedAtIndex: index("hot_searches_searched_at_idx").on(table.searchedAt),
+}));
+
+export const insertHotSearchSchema = createInsertSchema(hotSearches).omit({
+  id: true,
+  searchedAt: true,
+});
+export type InsertHotSearch = z.infer<typeof insertHotSearchSchema>;
+export type HotSearch = typeof hotSearches.$inferSelect;

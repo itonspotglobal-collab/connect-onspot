@@ -26,6 +26,7 @@ import {
   type TrainingLog, type InsertTrainingLog,
   type LegalOpsTrial, type InsertLegalOpsTrial,
   type Post, type InsertPost,
+  type HotSearch, type InsertHotSearch,
   leadIntakes,
   vanessaLogs,
   feedbacks,
@@ -33,6 +34,7 @@ import {
   trainingLogs,
   legalOpsTrials,
   posts,
+  hotSearches,
   jobs as jobsTable
 } from "@shared/schema";
 import { randomUUID } from "crypto";
@@ -300,6 +302,10 @@ export interface IStorage {
   listAllPosts(): Promise<Post[]>;
   incrementPostViews(id: string): Promise<number>;
   incrementPostLikes(id: string): Promise<number>;
+
+  // Hot Searches
+  trackHotSearch(term: string): Promise<HotSearch>;
+  getHotSearches(range: "daily" | "weekly"): Promise<{ term: string; count: number }[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -2345,6 +2351,30 @@ export class MemStorage implements IStorage {
     this.postsMap.set(id, post);
     return newLikes;
   }
+
+  // Hot Searches (in-memory stubs, overridden by DbStorage)
+  private hotSearchList: HotSearch[] = [];
+
+  async trackHotSearch(term: string): Promise<HotSearch> {
+    const entry: HotSearch = { id: this.hotSearchList.length + 1, term, searchedAt: new Date() };
+    this.hotSearchList.push(entry);
+    return entry;
+  }
+
+  async getHotSearches(range: "daily" | "weekly"): Promise<{ term: string; count: number }[]> {
+    const rangeMs = range === "daily" ? 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
+    const cutoff = new Date(Date.now() - rangeMs);
+    const filtered = this.hotSearchList.filter(s => s.searchedAt >= cutoff);
+    const counts: Record<string, number> = {};
+    for (const s of filtered) {
+      const key = s.term.toLowerCase();
+      counts[key] = (counts[key] || 0) + 1;
+    }
+    return Object.entries(counts)
+      .map(([term, count]) => ({ term, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+  }
 }
 
 // DbStorage class: Extends MemStorage but uses PostgreSQL for Vanessa logs
@@ -2763,6 +2793,27 @@ export class DbStorage extends MemStorage {
   }): Promise<Job[]> {
     const enhanced = await this.searchJobsWithSkills(filters);
     return enhanced.map(({ skills, ...job }) => job);
+  }
+
+  async trackHotSearch(term: string): Promise<HotSearch> {
+    const [entry] = await db.insert(hotSearches).values({ term: term.toLowerCase() }).returning();
+    return entry;
+  }
+
+  async getHotSearches(range: "daily" | "weekly"): Promise<{ term: string; count: number }[]> {
+    const rangeMs = range === "daily" ? 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
+    const cutoff = new Date(Date.now() - rangeMs);
+    const rows = await db
+      .select({
+        term: hotSearches.term,
+        count: sqlOp<number>`count(*)::int`,
+      })
+      .from(hotSearches)
+      .where(gte(hotSearches.searchedAt, cutoff))
+      .groupBy(hotSearches.term)
+      .orderBy(desc(sqlOp`count(*)`))
+      .limit(5);
+    return rows;
   }
 }
 

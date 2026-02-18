@@ -3189,6 +3189,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== HOT SEARCHES ====================
+  app.post("/api/hot-searches/track", async (req, res) => {
+    try {
+      const { term } = req.body;
+      if (!term || typeof term !== "string") {
+        return res.status(400).json({ error: "Search term is required" });
+      }
+      const entry = await storage.trackHotSearch(term.trim());
+      res.json(entry);
+    } catch (error) {
+      console.error("Track hot search error:", error);
+      res.status(500).json({ error: "Failed to track search" });
+    }
+  });
+
+  app.get("/api/hot-searches", async (req, res) => {
+    try {
+      const range = (req.query.range as string) === "weekly" ? "weekly" : "daily";
+      const results = await storage.getHotSearches(range);
+      res.json(results);
+    } catch (error) {
+      console.error("Get hot searches error:", error);
+      res.status(500).json({ error: "Failed to get hot searches" });
+    }
+  });
+
   // ==================== JOBS ====================
   // Advanced Job Search - Critical for job discovery (must come before :id route)
   app.get("/api/jobs/search", async (req, res) => {
