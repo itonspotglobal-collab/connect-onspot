@@ -169,10 +169,12 @@ export function ExpandableJobCard({ job, adminActions, showApply = true }: Expan
           </div>
 
           <div className="flex flex-col items-end gap-3 ml-6">
-            <div className="text-right">
-              <div className="text-2xl font-bold text-green-600">{rateDisplay}</div>
-              <div className="text-sm text-muted-foreground">{rateLabel}</div>
-            </div>
+            {expanded && (
+              <div className="text-right">
+                <div className="text-2xl font-bold text-green-600">{rateDisplay}</div>
+                <div className="text-sm text-muted-foreground">{rateLabel}</div>
+              </div>
+            )}
 
             <div className="flex items-center gap-2">
               <Badge className={getJobTypeColor(job.contractType)}>
@@ -237,7 +239,7 @@ export function ExpandableJobCard({ job, adminActions, showApply = true }: Expan
             <div className="pt-4 flex items-center gap-3 flex-wrap">
               {showApply && (
                 <>
-                  <Button>
+                  <Button onClick={() => window.open("https://api.leadconnectorhq.com/widget/form/36ljnIgIsA1xoBluXvSK?notrack=true", "_blank")}>
                     Apply Now
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
