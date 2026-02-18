@@ -96,13 +96,13 @@ export function ExpandableJobCard({ job, adminActions, showApply = true }: Expan
 
   const rateDisplay =
     job.hourlyRateMin && job.hourlyRateMax
-      ? `$${job.hourlyRateMin}-${job.hourlyRateMax}/hr`
+      ? `₱${job.hourlyRateMin}-${job.hourlyRateMax}/month`
       : job.budget
-        ? `$${job.budget}`
+        ? `₱${job.budget}`
         : "Rate TBD";
 
   const rateLabel =
-    job.contractType === "fixed" ? "Fixed price" : "Hourly rate";
+    job.contractType === "fixed" ? "Fixed price" : "Monthly rate";
 
   const skills = job.skillTags || [];
   const responsibilities = job.responsibilities || [];
