@@ -22,37 +22,85 @@ import {
 } from "lucide-react";
 
 const workCategories = [
-  { id: "development", name: "Development & IT", icon: Code, color: "bg-blue-500" },
-  { id: "design", name: "Design & Creative", icon: PenTool, color: "bg-purple-500" },
-  { id: "marketing", name: "Sales & Marketing", icon: BarChart3, color: "bg-green-500" },
-  { id: "support", name: "Admin & Support", icon: Headphones, color: "bg-orange-500" },
-  { id: "writing", name: "Writing & Translation", icon: Globe, color: "bg-teal-500" },
-  { id: "media", name: "Audio, Video & Animation", icon: Camera, color: "bg-pink-500" },
-  { id: "admin", name: "Admin & Support", icon: Briefcase, color: "bg-orange-500" },
+  {
+    id: "development",
+    name: "Development & IT",
+    icon: Code,
+    color: "bg-blue-500",
+  },
+  {
+    id: "design",
+    name: "Design & Creative",
+    icon: PenTool,
+    color: "bg-purple-500",
+  },
+  {
+    id: "marketing",
+    name: "Sales & Marketing",
+    icon: BarChart3,
+    color: "bg-green-500",
+  },
+  {
+    id: "support",
+    name: "Admin & Support",
+    icon: Headphones,
+    color: "bg-orange-500",
+  },
+  {
+    id: "writing",
+    name: "Writing & Translation",
+    icon: Globe,
+    color: "bg-teal-500",
+  },
+  {
+    id: "media",
+    name: "Audio, Video & Animation",
+    icon: Camera,
+    color: "bg-pink-500",
+  },
+  {
+    id: "admin",
+    name: "Admin & Support",
+    icon: Briefcase,
+    color: "bg-orange-500",
+  },
 ];
 
 function getCategoryInfo(categoryId: string) {
-  return workCategories.find((cat) => cat.id === categoryId) || workCategories[0];
+  return (
+    workCategories.find((cat) => cat.id === categoryId) || workCategories[0]
+  );
 }
 
 function getJobTypeColor(type: string) {
   switch (type) {
-    case "full-time": return "bg-green-100 text-green-800";
-    case "part-time": return "bg-blue-100 text-blue-800";
-    case "contract": return "bg-purple-100 text-purple-800";
-    case "freelance": return "bg-orange-100 text-orange-800";
-    case "hourly": return "bg-green-100 text-green-800";
-    case "fixed": return "bg-blue-100 text-blue-800";
-    default: return "bg-gray-100 text-gray-800";
+    case "full-time":
+      return "bg-green-100 text-green-800";
+    case "part-time":
+      return "bg-blue-100 text-blue-800";
+    case "contract":
+      return "bg-purple-100 text-purple-800";
+    case "freelance":
+      return "bg-orange-100 text-orange-800";
+    case "hourly":
+      return "bg-green-100 text-green-800";
+    case "fixed":
+      return "bg-blue-100 text-blue-800";
+    default:
+      return "bg-gray-100 text-gray-800";
   }
 }
 
 function formatExperienceLevel(level: string) {
   switch (level) {
-    case "entry": return "Entry Level (0-2 years)";
-    case "intermediate": return "Intermediate (2-5 years)";
-    case "expert": return "Expert (5+ years)";
-    default: return level;
+    case "entry":
+      return "Entry Level (0-2 years)";
+    case "intermediate":
+      return "Intermediate (2-5 years)";
+    case "expert":
+      return "Expert (5+ years)";
+    default:
+      return level;
   }
 }
 
@@ -72,7 +120,6 @@ export interface ExpandableJobCardProps {
     responsibilities?: string[] | null;
     requirements?: string[] | null;
     skillTags?: string[] | null;
-    proposalCount?: number | null;
     createdAt?: string | Date | null;
     status?: string;
   };
@@ -80,19 +127,27 @@ export interface ExpandableJobCardProps {
   showApply?: boolean;
 }
 
-export function ExpandableJobCard({ job, adminActions, showApply = true }: ExpandableJobCardProps) {
+export function ExpandableJobCard({
+  job,
+  adminActions,
+  showApply = true,
+}: ExpandableJobCardProps) {
   const [expanded, setExpanded] = useState(false);
   const categoryInfo = getCategoryInfo(job.category);
   const IconComponent = categoryInfo.icon;
 
   const now = new Date();
   const postedDate = job.createdAt ? new Date(job.createdAt) : now;
-  const timeAgo = Math.floor((now.getTime() - postedDate.getTime()) / (1000 * 60 * 60 * 24));
+  const timeAgo = Math.floor(
+    (now.getTime() - postedDate.getTime()) / (1000 * 60 * 60 * 24),
+  );
   let postedAtText = "Today";
   if (timeAgo === 1) postedAtText = "1 day ago";
   else if (timeAgo > 1 && timeAgo < 7) postedAtText = `${timeAgo} days ago`;
-  else if (timeAgo >= 7 && timeAgo < 30) postedAtText = `${Math.floor(timeAgo / 7)} weeks ago`;
-  else if (timeAgo >= 30) postedAtText = `${Math.floor(timeAgo / 30)} months ago`;
+  else if (timeAgo >= 7 && timeAgo < 30)
+    postedAtText = `${Math.floor(timeAgo / 7)} weeks ago`;
+  else if (timeAgo >= 30)
+    postedAtText = `${Math.floor(timeAgo / 30)} months ago`;
 
   const rateDisplay =
     job.hourlyRateMin && job.hourlyRateMax
@@ -117,7 +172,9 @@ export function ExpandableJobCard({ job, adminActions, showApply = true }: Expan
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <div className={`w-10 h-10 rounded-lg ${categoryInfo.color} flex items-center justify-center`}>
+              <div
+                className={`w-10 h-10 rounded-lg ${categoryInfo.color} flex items-center justify-center`}
+              >
                 <IconComponent className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -125,7 +182,7 @@ export function ExpandableJobCard({ job, adminActions, showApply = true }: Expan
                   {job.title}
                 </h3>
                 <div className="flex items-center gap-2 text-muted-foreground flex-wrap">
-                  <span className="font-medium">{job.company || "OnSpot Global"}</span>
+                  <span className="font-medium">{job.company || "OnSpot"}</span>
                   <CheckCircle2 className="w-4 h-4 text-green-600" />
                   <div className="flex items-center gap-1">
                     <Star className="w-3 h-3 text-[hsl(var(--gold-yellow))] fill-current" />
@@ -143,10 +200,6 @@ export function ExpandableJobCard({ job, adminActions, showApply = true }: Expan
               <div className="flex items-center gap-1">
                 <Clock className="w-4 h-4" />
                 <span>{postedAtText}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Users className="w-4 h-4" />
-                <span>{job.proposalCount || 0} proposals</span>
               </div>
             </div>
 
@@ -171,21 +224,12 @@ export function ExpandableJobCard({ job, adminActions, showApply = true }: Expan
           <div className="flex flex-col items-end gap-3 ml-6">
             {expanded && (
               <div className="text-right">
-                <div className="text-2xl font-bold text-green-600">{rateDisplay}</div>
+                <div className="text-2xl font-bold text-green-600">
+                  {rateDisplay}
+                </div>
                 <div className="text-sm text-muted-foreground">{rateLabel}</div>
               </div>
             )}
-
-            <div className="flex items-center gap-2">
-              <Badge className={getJobTypeColor(job.contractType)}>
-                {job.contractType.replace("-", " ")}
-              </Badge>
-              {timeAgo <= 1 && (
-                <Badge variant="destructive" className="text-xs">
-                  Urgent
-                </Badge>
-              )}
-            </div>
 
             <div className="flex items-center gap-2">
               <ChevronDown
@@ -239,7 +283,14 @@ export function ExpandableJobCard({ job, adminActions, showApply = true }: Expan
             <div className="pt-4 flex items-center gap-3 flex-wrap">
               {showApply && (
                 <>
-                  <Button onClick={() => window.open("https://api.leadconnectorhq.com/widget/form/36ljnIgIsA1xoBluXvSK?notrack=true", "_blank")}>
+                  <Button
+                    onClick={() =>
+                      window.open(
+                        "https://api.leadconnectorhq.com/widget/form/36ljnIgIsA1xoBluXvSK?notrack=true",
+                        "_blank",
+                      )
+                    }
+                  >
                     Apply Now
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
