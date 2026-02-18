@@ -244,18 +244,25 @@ export default function FindWork() {
               </div>
             </div>
 
-            <div className="mt-6 flex flex-wrap items-center gap-2">
-              <span className="text-white/70 text-sm font-medium">Hot Searches:</span>
-              {["Virtual Assistant", "Customer Support", "IT Administrator", "Graphic Designer", "Content Writer", "Web Developer"].map((term) => (
-                <Badge
-                  key={term}
-                  variant="secondary"
-                  className="cursor-pointer bg-white/15 text-white border-white/20 text-xs"
-                  onClick={() => setSearchQuery(term)}
-                >
-                  {term}
-                </Badge>
-              ))}
+            <div className="mt-8 bg-white/10 backdrop-blur-sm rounded-xl px-6 py-4 border border-white/15">
+              <div className="flex items-center gap-2 mb-3">
+                <TrendingUp className="w-4 h-4 text-[hsl(var(--gold-yellow))]" />
+                <span className="text-white font-semibold text-sm tracking-wide uppercase">Hot Searches</span>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                {["Virtual Assistant", "Customer Support", "IT Administrator", "Graphic Designer", "Content Writer", "Web Developer"].map((term) => (
+                  <Button
+                    key={term}
+                    variant="secondary"
+                    size="sm"
+                    className="bg-white/20 text-white border border-white/25 hover:bg-white/30 rounded-full px-4"
+                    onClick={() => setSearchQuery(term)}
+                  >
+                    <Search className="w-3 h-3 mr-1.5 opacity-70" />
+                    {term}
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
         </div>

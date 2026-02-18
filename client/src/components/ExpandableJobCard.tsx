@@ -299,40 +299,44 @@ export function ExpandableJobCard({
                   <Button variant="outline" size="icon">
                     <Heart className="w-4 h-4" />
                   </Button>
-                  <div className="flex items-center gap-1 ml-auto">
-                    <span className="text-xs text-muted-foreground mr-1">Share:</span>
+                  <div className="flex items-center gap-2 ml-auto border-l pl-4 border-border">
+                    <Share2 className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm font-medium text-muted-foreground">Share:</span>
                     <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 rounded-full"
                       onClick={() => {
                         const jobUrl = encodeURIComponent(window.location.origin + "/find-work/" + job.id);
                         window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${jobUrl}`, "_blank");
                       }}
                     >
-                      <SiLinkedin className="w-4 h-4" />
+                      <SiLinkedin className="w-3.5 h-3.5 text-[#0A66C2]" />
+                      LinkedIn
                     </Button>
                     <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 rounded-full"
                       onClick={() => {
                         const jobUrl = encodeURIComponent(window.location.origin + "/find-work/" + job.id);
                         window.open(`https://www.facebook.com/sharer/sharer.php?u=${jobUrl}`, "_blank");
                       }}
                     >
-                      <SiFacebook className="w-4 h-4" />
+                      <SiFacebook className="w-3.5 h-3.5 text-[#1877F2]" />
+                      Facebook
                     </Button>
                     <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 rounded-full"
                       onClick={() => {
                         const searchTerm = encodeURIComponent(job.title);
                         window.open(`https://bossjob.ph/jobs?search=${searchTerm}`, "_blank");
                       }}
                     >
-                      <Briefcase className="w-4 h-4" />
+                      <Briefcase className="w-3.5 h-3.5 text-green-600" />
+                      BossJob
                     </Button>
                   </div>
                 </>
