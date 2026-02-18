@@ -55,6 +55,10 @@ export default function AdminFindWork() {
 
   const { data: jobs = [], isLoading } = useQuery<Job[]>({
     queryKey: ["/api/admin/jobs"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/admin/jobs");
+      return res.json();
+    },
     refetchOnWindowFocus: false,
   });
 

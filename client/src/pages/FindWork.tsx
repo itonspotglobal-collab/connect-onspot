@@ -124,13 +124,19 @@ export default function FindWork() {
   }, [searchQuery, selectedCategory, selectedJobType, selectedBudget]);
 
   // Fetch real jobs from API instead of using mock data
+  const jobsUrl = apiFilters ? `/api/jobs/search?${apiFilters}` : "/api/jobs/search";
   const {
     data: jobsData = [],
     isLoading: jobsLoading,
     error: jobsError,
   } = useQuery({
     queryKey: ["/api/jobs/search", apiFilters],
-    enabled: true, // Always enabled to show available jobs
+    queryFn: async () => {
+      const res = await fetch(jobsUrl, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch jobs");
+      return res.json();
+    },
+    enabled: true,
   });
 
   // Fetch personalized job matches for authenticated users
