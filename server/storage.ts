@@ -2708,7 +2708,20 @@ export class DbStorage extends MemStorage {
     let jobs = allDbJobs;
 
     if (filters.category) {
-      jobs = jobs.filter(j => j.category === filters.category);
+      const cat = filters.category.toLowerCase();
+      const categoryKeywords: Record<string, string[]> = {
+        development: ["development", "dev", "it", "software", "engineer", "programming", "tech", "administrator"],
+        design: ["design", "creative", "ui", "ux", "graphic", "visual"],
+        marketing: ["marketing", "sales", "seo", "social media", "advertising"],
+        support: ["support", "admin", "assistant", "customer service", "operations"],
+        writing: ["writing", "translation", "content", "copywriting", "editor"],
+      };
+      const keywords = categoryKeywords[cat] || [cat];
+      jobs = jobs.filter(j => {
+        if (j.category.toLowerCase() === cat) return true;
+        const title = j.title.toLowerCase();
+        return keywords.some(kw => title.includes(kw));
+      });
     }
     if (filters.contractType) {
       jobs = jobs.filter(j => j.contractType === filters.contractType);
