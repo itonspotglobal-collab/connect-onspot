@@ -20,6 +20,8 @@ import {
   Camera,
   Briefcase,
   Share2,
+  FileText,
+  CalendarDays,
 } from "lucide-react";
 import { SiLinkedin, SiFacebook } from "react-icons/si";
 
@@ -77,20 +79,27 @@ function getCategoryInfo(categoryId: string) {
 function getJobTypeColor(type: string) {
   switch (type) {
     case "full-time":
-      return "bg-green-100 text-green-800";
+      return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300";
     case "part-time":
-      return "bg-blue-100 text-blue-800";
+      return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300";
     case "contract":
-      return "bg-purple-100 text-purple-800";
+      return "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300";
     case "freelance":
-      return "bg-orange-100 text-orange-800";
+      return "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300";
     case "hourly":
-      return "bg-green-100 text-green-800";
+      return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300";
     case "fixed":
-      return "bg-blue-100 text-blue-800";
+      return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300";
     default:
-      return "bg-gray-100 text-gray-800";
+      return "bg-gray-100 text-gray-800 dark:bg-gray-800/30 dark:text-gray-300";
   }
+}
+
+function formatContractType(type: string) {
+  return type
+    .split("-")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join("-");
 }
 
 function formatExperienceLevel(level: string) {
@@ -170,95 +179,120 @@ export function ExpandableJobCard({
       className="hover-elevate transition-all duration-300 cursor-pointer group"
       onClick={() => setExpanded(!expanded)}
     >
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <div
-                className={`w-10 h-10 rounded-lg ${categoryInfo.color} flex items-center justify-center`}
-              >
-                <IconComponent className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h3 className="text-xl font-semibold group-hover:text-primary transition-colors">
-                  {job.title}
-                </h3>
-                <div className="flex items-center gap-2 text-muted-foreground flex-wrap">
-                  <span className="font-medium">{job.company || "OnSpot"}</span>
-                  <CheckCircle2 className="w-4 h-4 text-green-600" />
-                  <div className="flex items-center gap-1">
-                    <Star className="w-3 h-3 text-[hsl(var(--gold-yellow))] fill-current" />
-                    <span className="text-sm">4.9</span>
-                  </div>
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 rounded-t-md px-6 py-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-4 flex-1 min-w-0">
+            <div className="w-11 h-11 rounded-md bg-white/20 flex items-center justify-center flex-shrink-0">
+              <IconComponent className="w-5 h-5 text-white" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-xl font-bold text-white leading-tight truncate">
+                {job.title}
+              </h3>
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                <span className="text-blue-100 font-medium text-sm">{job.company || "OnSpot"}</span>
+                <CheckCircle2 className="w-3.5 h-3.5 text-green-300 flex-shrink-0" />
+                <div className="flex items-center gap-0.5">
+                  <Star className="w-3 h-3 text-yellow-300 fill-current" />
+                  <span className="text-blue-100 text-xs">4.9</span>
                 </div>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-3">
-              <div className="flex items-center gap-1">
-                <MapPin className="w-4 h-4" />
-                <span>{job.location || "Remote"}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Clock className="w-4 h-4" />
-                <span>{postedAtText}</span>
-              </div>
-            </div>
-
-            <p className="text-muted-foreground mb-4 line-clamp-2">
-              {job.description}
-            </p>
-
-            <div className="flex flex-wrap gap-2 mb-4">
-              {skills.slice(0, 5).map((skill) => (
-                <Badge key={skill} variant="secondary" className="text-xs">
-                  {skill}
+                <Badge variant="secondary" className={`text-[10px] ${getJobTypeColor(job.contractType)}`}>
+                  {formatContractType(job.contractType)}
                 </Badge>
-              ))}
-              {skills.length > 5 && (
-                <Badge variant="outline" className="text-xs">
-                  +{skills.length - 5} more
-                </Badge>
-              )}
+              </div>
             </div>
           </div>
 
-          <div className="flex flex-col items-end gap-3 ml-6">
-            {expanded && (
-              <div className="text-right">
-                <div className="text-2xl font-bold text-green-600">
-                  {rateDisplay}
-                </div>
-                <div className="text-sm text-muted-foreground">{rateLabel}</div>
-              </div>
-            )}
+          <div className="flex flex-col items-end gap-2 flex-shrink-0">
+            <div className="text-right">
+              <div className="text-lg font-bold text-white leading-tight">{rateDisplay}</div>
+              <div className="text-blue-200 text-xs">{rateLabel}</div>
+            </div>
+            <ChevronDown
+              className={`w-5 h-5 text-blue-200 transition-transform duration-300 ${expanded ? "rotate-180" : ""}`}
+            />
+          </div>
+        </div>
+      </div>
 
-            <div className="flex items-center gap-2">
-              <ChevronDown
-                className={`w-5 h-5 text-muted-foreground transition-transform duration-300 ${expanded ? "rotate-180" : ""}`}
-              />
+      <CardContent className="p-0">
+        <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-border border-b border-border">
+          <div className="flex items-center gap-2 px-4 py-3">
+            <Briefcase className="w-4 h-4 text-blue-500 flex-shrink-0" />
+            <div className="min-w-0">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Contract</div>
+              <div className="text-sm font-semibold truncate">{formatContractType(job.contractType)}</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 px-4 py-3">
+            <DollarSign className="w-4 h-4 text-green-500 flex-shrink-0" />
+            <div className="min-w-0">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Salary</div>
+              <div className="text-sm font-semibold truncate">{rateDisplay}</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 px-4 py-3">
+            <MapPin className="w-4 h-4 text-purple-500 flex-shrink-0" />
+            <div className="min-w-0">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Location</div>
+              <div className="text-sm font-semibold truncate">{job.location || "Remote"}</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 px-4 py-3">
+            <CalendarDays className="w-4 h-4 text-orange-500 flex-shrink-0" />
+            <div className="min-w-0">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Posted</div>
+              <div className="text-sm font-semibold truncate">{postedAtText}</div>
             </div>
           </div>
         </div>
 
+        <div className="px-6 py-4">
+          <p className="text-muted-foreground text-sm line-clamp-2 leading-relaxed">
+            {job.description}
+          </p>
+
+          <div className="flex flex-wrap gap-1.5 mt-3">
+            {skills.slice(0, 5).map((skill) => (
+              <Badge key={skill} variant="secondary" className="text-xs">
+                {skill}
+              </Badge>
+            ))}
+            {skills.length > 5 && (
+              <Badge variant="outline" className="text-xs">
+                +{skills.length - 5} more
+              </Badge>
+            )}
+          </div>
+        </div>
+
         <div
-          className={`overflow-hidden transition-all duration-300 ${expanded ? "max-h-[800px] opacity-100 mt-4 pt-4 border-t" : "max-h-0 opacity-0"}`}
+          className={`overflow-hidden transition-all duration-300 ${expanded ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"}`}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="space-y-4">
+          <div className="mx-4 mb-4 rounded-md bg-muted/40 dark:bg-muted/20 border border-border p-5 space-y-5">
             <div>
-              <h4 className="font-semibold mb-2">Job Description</h4>
-              <p className="text-muted-foreground text-sm whitespace-pre-line">
+              <div className="flex items-center gap-2 mb-2">
+                <FileText className="w-4 h-4 text-blue-500" />
+                <h4 className="text-sm font-bold uppercase tracking-wide">Job Description</h4>
+              </div>
+              <p className="text-muted-foreground text-sm whitespace-pre-line leading-relaxed pl-6">
                 {job.description}
               </p>
             </div>
 
             {responsibilities.length > 0 && (
               <div>
-                <h4 className="font-semibold mb-2">Responsibilities</h4>
-                <ul className="text-muted-foreground text-sm list-disc list-inside space-y-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle2 className="w-4 h-4 text-green-500" />
+                  <h4 className="text-sm font-bold uppercase tracking-wide">Responsibilities</h4>
+                </div>
+                <ul className="text-muted-foreground text-sm space-y-1.5 pl-6">
                   {responsibilities.map((item, i) => (
-                    <li key={i}>{item}</li>
+                    <li key={i} className="flex items-start gap-2">
+                      <span className="text-blue-500 mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
+                      <span className="leading-relaxed">{item}</span>
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -266,83 +300,92 @@ export function ExpandableJobCard({
 
             {requirements.length > 0 && (
               <div>
-                <h4 className="font-semibold mb-2">Skills Needed</h4>
-                <ul className="text-muted-foreground text-sm list-disc list-inside space-y-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <Star className="w-4 h-4 text-purple-500" />
+                  <h4 className="text-sm font-bold uppercase tracking-wide">Skills Needed</h4>
+                </div>
+                <ul className="text-muted-foreground text-sm space-y-1.5 pl-6">
                   {requirements.map((item, i) => (
-                    <li key={i}>{item}</li>
+                    <li key={i} className="flex items-start gap-2">
+                      <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-purple-500 flex-shrink-0" />
+                      <span className="leading-relaxed">{item}</span>
+                    </li>
                   ))}
                 </ul>
               </div>
             )}
 
             <div>
-              <h4 className="font-semibold mb-2">Experience Level</h4>
-              <p className="text-muted-foreground text-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <Users className="w-4 h-4 text-orange-500" />
+                <h4 className="text-sm font-bold uppercase tracking-wide">Experience Level</h4>
+              </div>
+              <p className="text-muted-foreground text-sm pl-6">
                 {formatExperienceLevel(job.experienceLevel)}
               </p>
             </div>
+          </div>
 
-            <div className="pt-4 flex items-center gap-3 flex-wrap">
-              {showApply && (
-                <>
+          <div className="px-6 pb-5 pt-1 flex items-center gap-3 flex-wrap">
+            {showApply && (
+              <>
+                <Button
+                  onClick={() =>
+                    window.open(
+                      "https://api.leadconnectorhq.com/widget/form/36ljnIgIsA1xoBluXvSK?notrack=true",
+                      "_blank",
+                    )
+                  }
+                >
+                  Apply Now
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+                <Button variant="outline" size="icon">
+                  <Heart className="w-4 h-4" />
+                </Button>
+                <div className="flex items-center gap-2 ml-auto border-l pl-4 border-border">
+                  <Share2 className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium text-muted-foreground">Share:</span>
                   <Button
-                    onClick={() =>
-                      window.open(
-                        "https://api.leadconnectorhq.com/widget/form/36ljnIgIsA1xoBluXvSK?notrack=true",
-                        "_blank",
-                      )
-                    }
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 rounded-full"
+                    onClick={() => {
+                      const jobUrl = encodeURIComponent(window.location.origin + "/find-work/" + job.id);
+                      window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${jobUrl}`, "_blank");
+                    }}
                   >
-                    Apply Now
-                    <ArrowRight className="w-4 h-4 ml-2" />
+                    <SiLinkedin className="w-3.5 h-3.5 text-[#0A66C2]" />
+                    LinkedIn
                   </Button>
-                  <Button variant="outline" size="icon">
-                    <Heart className="w-4 h-4" />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 rounded-full"
+                    onClick={() => {
+                      const jobUrl = encodeURIComponent(window.location.origin + "/find-work/" + job.id);
+                      window.open(`https://www.facebook.com/sharer/sharer.php?u=${jobUrl}`, "_blank");
+                    }}
+                  >
+                    <SiFacebook className="w-3.5 h-3.5 text-[#1877F2]" />
+                    Facebook
                   </Button>
-                  <div className="flex items-center gap-2 ml-auto border-l pl-4 border-border">
-                    <Share2 className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm font-medium text-muted-foreground">Share:</span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-1.5 rounded-full"
-                      onClick={() => {
-                        const jobUrl = encodeURIComponent(window.location.origin + "/find-work/" + job.id);
-                        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${jobUrl}`, "_blank");
-                      }}
-                    >
-                      <SiLinkedin className="w-3.5 h-3.5 text-[#0A66C2]" />
-                      LinkedIn
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-1.5 rounded-full"
-                      onClick={() => {
-                        const jobUrl = encodeURIComponent(window.location.origin + "/find-work/" + job.id);
-                        window.open(`https://www.facebook.com/sharer/sharer.php?u=${jobUrl}`, "_blank");
-                      }}
-                    >
-                      <SiFacebook className="w-3.5 h-3.5 text-[#1877F2]" />
-                      Facebook
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-1.5 rounded-full"
-                      onClick={() => {
-                        const searchTerm = encodeURIComponent(job.title);
-                        window.open(`https://bossjob.ph/jobs?search=${searchTerm}`, "_blank");
-                      }}
-                    >
-                      <Briefcase className="w-3.5 h-3.5 text-green-600" />
-                      BossJob
-                    </Button>
-                  </div>
-                </>
-              )}
-              {adminActions}
-            </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 rounded-full"
+                    onClick={() => {
+                      const searchTerm = encodeURIComponent(job.title);
+                      window.open(`https://bossjob.ph/jobs?search=${searchTerm}`, "_blank");
+                    }}
+                  >
+                    <Briefcase className="w-3.5 h-3.5 text-green-600" />
+                    BossJob
+                  </Button>
+                </div>
+              </>
+            )}
+            {adminActions}
           </div>
         </div>
       </CardContent>

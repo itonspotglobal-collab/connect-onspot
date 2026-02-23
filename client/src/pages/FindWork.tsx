@@ -92,7 +92,9 @@ export default function FindWork() {
   const [selectedBudget, setSelectedBudget] = useState("all");
   const [selectedJobType, setSelectedJobType] = useState("all");
   const [activeTab, setActiveTab] = useState("browse");
-  const [hotSearchRange, setHotSearchRange] = useState<"daily" | "weekly">("daily");
+  const [hotSearchRange, setHotSearchRange] = useState<"daily" | "weekly">(
+    "daily",
+  );
 
   const { data: hotSearchData } = useQuery<{ term: string; count: number }[]>({
     queryKey: ["/api/hot-searches", hotSearchRange],
@@ -109,10 +111,13 @@ export default function FindWork() {
     },
   });
 
-  const handleHotSearchClick = useCallback((term: string) => {
-    setSearchQuery(term);
-    trackSearchMutation.mutate(term);
-  }, [trackSearchMutation]);
+  const handleHotSearchClick = useCallback(
+    (term: string) => {
+      setSearchQuery(term);
+      trackSearchMutation.mutate(term);
+    },
+    [trackSearchMutation],
+  );
 
   const searchTrackTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
@@ -132,10 +137,12 @@ export default function FindWork() {
     { term: "virtual assistant", count: 0 },
     { term: "customer support", count: 0 },
     { term: "it administrator", count: 0 },
-    { term: "graphic designer", count: 0 },
     { term: "web developer", count: 0 },
   ];
-  const topHotSearches = (hotSearchData && hotSearchData.length > 0) ? hotSearchData : defaultHotSearches;
+  const topHotSearches =
+    hotSearchData && hotSearchData.length > 0
+      ? hotSearchData
+      : defaultHotSearches;
 
   // Build API query parameters from filter state
   const apiFilters = useMemo(() => {
@@ -170,7 +177,9 @@ export default function FindWork() {
   }, [searchQuery, selectedCategory, selectedJobType, selectedBudget]);
 
   // Fetch real jobs from API instead of using mock data
-  const jobsUrl = apiFilters ? `/api/jobs/search?${apiFilters}` : "/api/jobs/search";
+  const jobsUrl = apiFilters
+    ? `/api/jobs/search?${apiFilters}`
+    : "/api/jobs/search";
   const {
     data: jobsData = [],
     isLoading: jobsLoading,
@@ -294,7 +303,9 @@ export default function FindWork() {
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <TrendingUp className="w-4 h-4 text-[hsl(var(--gold-yellow))]" />
-                  <span className="text-white font-semibold text-sm tracking-wide uppercase">Hot Searches</span>
+                  <span className="text-white font-semibold text-sm tracking-wide uppercase">
+                    Hot Searches
+                  </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Button
@@ -318,7 +329,9 @@ export default function FindWork() {
               <div className="flex flex-wrap gap-3">
                 {topHotSearches.map((item, index) => {
                   const isTopOne = index === 0;
-                  const displayTerm = item.term.replace(/\b\w/g, c => c.toUpperCase());
+                  const displayTerm = item.term.replace(/\b\w/g, (c) =>
+                    c.toUpperCase(),
+                  );
                   return (
                     <Button
                       key={item.term}
@@ -334,7 +347,9 @@ export default function FindWork() {
                       )}
                       {displayTerm}
                       {item.count > 0 && (
-                        <span className="ml-1.5 text-white/50 text-xs">({item.count})</span>
+                        <span className="ml-1.5 text-white/50 text-xs">
+                          ({item.count})
+                        </span>
                       )}
                     </Button>
                   );
