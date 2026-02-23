@@ -204,10 +204,12 @@ export function ExpandableJobCard({
           </div>
 
           <div className="flex flex-col items-end gap-2 flex-shrink-0">
-            <div className="text-right">
-              <div className="text-lg font-bold text-white leading-tight">{rateDisplay}</div>
-              <div className="text-blue-200 text-xs">{rateLabel}</div>
-            </div>
+            {expanded && (
+              <div className="text-right">
+                <div className="text-lg font-bold text-white leading-tight">{rateDisplay}</div>
+                <div className="text-blue-200 text-xs">{rateLabel}</div>
+              </div>
+            )}
             <ChevronDown
               className={`w-5 h-5 text-blue-200 transition-transform duration-300 ${expanded ? "rotate-180" : ""}`}
             />
@@ -228,7 +230,7 @@ export function ExpandableJobCard({
             <DollarSign className="w-4 h-4 text-green-500 flex-shrink-0" />
             <div className="min-w-0">
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Salary</div>
-              <div className="text-sm font-semibold truncate">{rateDisplay}</div>
+              <div className="text-sm font-semibold truncate">{expanded ? rateDisplay : "Expand to view"}</div>
             </div>
           </div>
           <div className="flex items-center gap-2 px-4 py-3">
