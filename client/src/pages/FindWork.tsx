@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useSearch } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/contexts/AuthContext";
@@ -86,8 +87,10 @@ const workCategories = [
 
 export default function FindWork() {
   const { user } = useAuth();
+  const searchString = useSearch();
+  const urlCategory = new URLSearchParams(searchString).get("category");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState(urlCategory || "all");
   const [selectedLocation, setSelectedLocation] = useState("all");
   const [selectedBudget, setSelectedBudget] = useState("all");
   const [selectedJobType, setSelectedJobType] = useState("all");
@@ -95,6 +98,12 @@ export default function FindWork() {
   const [hotSearchRange, setHotSearchRange] = useState<"daily" | "weekly">(
     "daily",
   );
+
+  useEffect(() => {
+    if (urlCategory) {
+      setSelectedCategory(urlCategory);
+    }
+  }, [urlCategory]);
 
   const { data: hotSearchData } = useQuery<{ term: string; count: number }[]>({
     queryKey: ["/api/hot-searches", hotSearchRange],

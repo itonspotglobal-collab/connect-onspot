@@ -159,7 +159,7 @@ const workCategories = {
     specialties: ["All Categories", "All Skill Levels", "All Locations"],
     demand: "Very High",
     averageRate: "$8-65/hr",
-    path: "/find-work/all",
+    path: "/find-work?category=all",
     popular: true,
   },
   development: {
@@ -170,7 +170,7 @@ const workCategories = {
     specialties: ["Web Development", "Mobile Apps", "AI/ML", "DevOps"],
     demand: "High",
     averageRate: "$35-65/hr",
-    path: "/find-work/development",
+    path: "/find-work?category=development",
     popular: true,
   },
   design: {
@@ -181,7 +181,7 @@ const workCategories = {
     specialties: ["UI/UX Design", "Branding", "Illustration", "Video Editing"],
     demand: "High",
     averageRate: "$25-45/hr",
-    path: "/find-work/design",
+    path: "/find-work?category=design",
     popular: true,
   },
   marketing: {
@@ -197,7 +197,7 @@ const workCategories = {
     ],
     demand: "Very High",
     averageRate: "$20-40/hr",
-    path: "/find-work/marketing",
+    path: "/find-work?category=marketing",
     popular: false,
   },
   support: {
@@ -214,7 +214,7 @@ const workCategories = {
     ],
     demand: "Very High",
     averageRate: "$8-25/hr",
-    path: "/find-work/support",
+    path: "/find-work?category=support",
     popular: false,
   },
   writing: {
@@ -230,7 +230,7 @@ const workCategories = {
     ],
     demand: "High",
     averageRate: "$15-35/hr",
-    path: "/find-work/writing",
+    path: "/find-work?category=writing",
     popular: false,
   },
 };
@@ -663,9 +663,7 @@ export function TopNavigation() {
                   )) ||
                 (hasMegaMenu &&
                   item.categories &&
-                  Object.values(item.categories).some(
-                    (category) => location === category.path,
-                  )) ||
+                  location === "/find-work") ||
                 (hasMegaMenu &&
                   item.whyOnSpot &&
                   Object.values(item.whyOnSpot).some(
