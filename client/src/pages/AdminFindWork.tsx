@@ -303,12 +303,16 @@ export default function AdminFindWork() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="location">Location</Label>
-                    <Input
-                      id="location"
-                      value={formData.location}
-                      onChange={(e) => updateField("location", e.target.value)}
-                      placeholder="Remote (Philippines)"
-                    />
+                    <Select value={formData.location} onValueChange={(v) => updateField("location", v)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Location" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Remote">Remote</SelectItem>
+                        <SelectItem value="Onsite">Onsite</SelectItem>
+                        <SelectItem value="Hybrid">Hybrid</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="category">Category</Label>
