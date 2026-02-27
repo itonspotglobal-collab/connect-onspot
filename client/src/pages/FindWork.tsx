@@ -162,22 +162,23 @@ export default function FindWork() {
     if (selectedJobType !== "all")
       params.append("contractType", selectedJobType);
 
-    // Convert budget range to API parameters
+    // Convert budget range to API parameters (PHP monthly salary)
     if (selectedBudget !== "all") {
       switch (selectedBudget) {
-        case "under-25":
-          params.append("maxBudget", "25");
+        case "entry":
+          params.append("minBudget", "15000");
+          params.append("maxBudget", "30000");
           break;
-        case "25-50":
-          params.append("minBudget", "25");
-          params.append("maxBudget", "50");
+        case "intermediate":
+          params.append("minBudget", "30000");
+          params.append("maxBudget", "60000");
           break;
-        case "50-100":
-          params.append("minBudget", "50");
-          params.append("maxBudget", "100");
+        case "senior":
+          params.append("minBudget", "60000");
+          params.append("maxBudget", "100000");
           break;
-        case "over-100":
-          params.append("minBudget", "100");
+        case "expert":
+          params.append("minBudget", "100000");
           break;
       }
     }
@@ -226,15 +227,33 @@ export default function FindWork() {
 
   const filteredJobs = useMemo(() => {
     return allJobs.filter((job: any) => {
-      const loc = (job.location || "").toLowerCase();
+      const loc = (job.location || "").trim().toLowerCase();
+      const type = (job.contractType || "").trim().toLowerCase();
+      const salary = parseFloat(job.salary || job.budget || "0");
+
       const matchesLocation =
         selectedLocation === "all" ||
         (selectedLocation === "remote" && loc.includes("remote")) ||
-        (selectedLocation === "us" &&
-          (loc.includes("ca") || loc.includes("ny")));
-      return matchesLocation;
+        (selectedLocation === "us" && loc.includes("onsite")) ||
+        (selectedLocation === "international" && loc.includes("hybrid"));
+
+      const matchesType =
+        selectedJobType === "all" ||
+        (selectedJobType === "full-time" && type.includes("full")) ||
+        (selectedJobType === "part-time" && type.includes("part")) ||
+        (selectedJobType === "contract" &&
+          (type.includes("contract") || type.includes("project")));
+
+      const matchesBudget =
+        selectedBudget === "all" ||
+        (selectedBudget === "entry" && salary >= 15000 && salary <= 30000) ||
+        (selectedBudget === "intermediate" && salary > 30000 && salary <= 60000) ||
+        (selectedBudget === "senior" && salary > 60000 && salary <= 100000) ||
+        (selectedBudget === "expert" && salary > 100000);
+
+      return matchesLocation && matchesType && matchesBudget;
     });
-  }, [allJobs, selectedLocation]);
+  }, [allJobs, selectedLocation, selectedJobType, selectedBudget]);
 
   const recommendedJobs: any[] = useMemo(() => {
     if (!matchesData || !Array.isArray(matchesData)) return [];
