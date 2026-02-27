@@ -34,7 +34,7 @@ const defaultFormData = {
   company: "OnSpot Global",
   location: "Remote",
   category: "support",
-  contractType: "hourly",
+  contractType: "full-time",
   experienceLevel: "entry",
   description: "",
   hourlyRateMin: "",
@@ -133,7 +133,7 @@ export default function AdminFindWork() {
       company: job.company || "OnSpot Global",
       location: job.location || "Remote",
       category: job.category || "support",
-      contractType: job.contractType || "hourly",
+      contractType: job.contractType || "full-time",
       experienceLevel: job.experienceLevel || "entry",
       description: job.description || "",
       hourlyRateMin: job.hourlyRateMin || "",
@@ -353,8 +353,6 @@ export default function AdminFindWork() {
                         <SelectValue placeholder="Type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="hourly">Hourly</SelectItem>
-                        <SelectItem value="fixed">Fixed Price</SelectItem>
                         <SelectItem value="full-time">Full-time</SelectItem>
                         <SelectItem value="part-time">Part-time</SelectItem>
                         <SelectItem value="contract">Contract</SelectItem>
