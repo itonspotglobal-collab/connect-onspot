@@ -256,12 +256,12 @@ export function ExpandableJobCard({
 
           <div className="flex flex-wrap gap-1.5 mt-3">
             {skills.slice(0, 5).map((skill) => (
-              <Badge key={skill} variant="secondary" className="text-xs">
+              <Badge key={skill} variant="secondary" className="text-xs whitespace-normal break-words h-auto">
                 {skill}
               </Badge>
             ))}
             {skills.length > 5 && (
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="outline" className="text-xs whitespace-normal break-words h-auto">
                 +{skills.length - 5} more
               </Badge>
             )}
