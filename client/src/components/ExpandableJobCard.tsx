@@ -289,14 +289,21 @@ export function ExpandableJobCard({
                   <CheckCircle2 className="w-4 h-4 text-green-500" />
                   <h4 className="text-sm font-bold uppercase tracking-wide">Responsibilities</h4>
                 </div>
-                <ul className="text-muted-foreground text-sm space-y-1.5 pl-6">
-                  {responsibilities.map((item, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <span className="text-blue-500 mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
-                      <span className="leading-relaxed">{item}</span>
-                    </li>
-                  ))}
-                </ul>
+                {responsibilities.length === 1 && responsibilities[0].trim().startsWith("<") ? (
+                  <div
+                    className="text-muted-foreground text-sm pl-6 prose-sm [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:leading-relaxed [&_li]:my-0.5 [&_strong]:font-semibold"
+                    dangerouslySetInnerHTML={{ __html: responsibilities[0] }}
+                  />
+                ) : (
+                  <ul className="text-muted-foreground text-sm space-y-1.5 pl-6">
+                    {responsibilities.map((item, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <span className="text-blue-500 mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
+                        <span className="leading-relaxed">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             )}
 
@@ -306,14 +313,21 @@ export function ExpandableJobCard({
                   <Star className="w-4 h-4 text-purple-500" />
                   <h4 className="text-sm font-bold uppercase tracking-wide">Skills Needed</h4>
                 </div>
-                <ul className="text-muted-foreground text-sm space-y-1.5 pl-6">
-                  {requirements.map((item, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-purple-500 flex-shrink-0" />
-                      <span className="leading-relaxed">{item}</span>
-                    </li>
-                  ))}
-                </ul>
+                {requirements.length === 1 && requirements[0].trim().startsWith("<") ? (
+                  <div
+                    className="text-muted-foreground text-sm pl-6 prose-sm [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:leading-relaxed [&_li]:my-0.5 [&_strong]:font-semibold"
+                    dangerouslySetInnerHTML={{ __html: requirements[0] }}
+                  />
+                ) : (
+                  <ul className="text-muted-foreground text-sm space-y-1.5 pl-6">
+                    {requirements.map((item, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-purple-500 flex-shrink-0" />
+                        <span className="leading-relaxed">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             )}
 

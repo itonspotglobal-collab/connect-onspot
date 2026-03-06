@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,6 +30,23 @@ import {
 } from "lucide-react";
 import type { Job } from "@shared/schema";
 import { ExpandableJobCard } from "@/components/ExpandableJobCard";
+
+const quillModules = {
+  toolbar: [
+    ["bold"],
+    [{ list: "ordered" }, { list: "bullet" }],
+  ],
+};
+const quillFormats = ["bold", "list", "bullet"];
+
+const toQuillHtml = (arr: string[] | null | undefined): string => {
+  if (!arr || arr.length === 0) return "";
+  if (arr.length === 1 && arr[0].trim().startsWith("<")) return arr[0];
+  return "<ul>" + arr.map((item) => `<li>${item}</li>`).join("") + "</ul>";
+};
+
+const isEmptyQuill = (html: string) =>
+  !html || html === "<p><br></p>" || html.trim() === "";
 
 const defaultFormData = {
   title: "",
@@ -141,8 +160,8 @@ export default function AdminFindWork() {
       budget: job.budget || "",
       duration: job.duration || "",
       status: job.status || "open",
-      responsibilities: Array.isArray(job.responsibilities) ? job.responsibilities.join("\n") : "",
-      requirements: Array.isArray(job.requirements) ? job.requirements.join("\n") : "",
+      responsibilities: toQuillHtml(job.responsibilities as string[]),
+      requirements: toQuillHtml(job.requirements as string[]),
       skillTags: Array.isArray(job.skillTags) ? job.skillTags.join(", ") : "",
     });
     setShowForm(true);
@@ -171,11 +190,11 @@ export default function AdminFindWork() {
     if (formData.budget) payload.budget = formData.budget;
     if (formData.duration) payload.duration = formData.duration;
 
-    payload.responsibilities = formData.responsibilities
-      ? formData.responsibilities.split("\n").map((s: string) => s.trim()).filter(Boolean)
+    payload.responsibilities = !isEmptyQuill(formData.responsibilities)
+      ? [formData.responsibilities]
       : [];
-    payload.requirements = formData.requirements
-      ? formData.requirements.split("\n").map((s: string) => s.trim()).filter(Boolean)
+    payload.requirements = !isEmptyQuill(formData.requirements)
+      ? [formData.requirements]
       : [];
     payload.skillTags = formData.skillTags
       ? formData.skillTags.split(",").map((s: string) => s.trim()).filter(Boolean)
@@ -307,7 +326,7 @@ export default function AdminFindWork() {
                       <SelectTrigger>
                         <SelectValue placeholder="Location" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="max-h-48 overflow-y-auto">
                         <SelectItem value="Remote">Remote</SelectItem>
                         <SelectItem value="Onsite">Onsite</SelectItem>
                         <SelectItem value="Hybrid">Hybrid</SelectItem>
@@ -320,7 +339,7 @@ export default function AdminFindWork() {
                       <SelectTrigger>
                         <SelectValue placeholder="Category" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="max-h-48 overflow-y-auto">
                         <SelectItem value="support">Admin & Support</SelectItem>
                         <SelectItem value="development">Development & IT</SelectItem>
                         <SelectItem value="design">Design & Creative</SelectItem>
@@ -336,7 +355,7 @@ export default function AdminFindWork() {
                       <SelectTrigger>
                         <SelectValue placeholder="Experience Level" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="max-h-48 overflow-y-auto">
                         <SelectItem value="entry">Entry Level</SelectItem>
                         <SelectItem value="intermediate">Intermediate</SelectItem>
                         <SelectItem value="expert">Expert</SelectItem>
@@ -352,7 +371,7 @@ export default function AdminFindWork() {
                       <SelectTrigger>
                         <SelectValue placeholder="Type" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="max-h-48 overflow-y-auto">
                         <SelectItem value="full-time">Full-time</SelectItem>
                         <SelectItem value="part-time">Part-time</SelectItem>
                         <SelectItem value="contract">Contract</SelectItem>
@@ -395,24 +414,32 @@ export default function AdminFindWork() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="responsibilities">Responsibilities (one per line)</Label>
-                    <Textarea
-                      id="responsibilities"
-                      value={formData.responsibilities}
-                      onChange={(e) => updateField("responsibilities", e.target.value)}
-                      placeholder={"Respond to customer inquiries via phone, email, and chat\nResolve product or service issues\nProcess orders and applications"}
-                      className="min-h-[120px]"
-                    />
+                    <Label>Responsibilities</Label>
+                    <div className="rounded-md border border-input bg-background">
+                      <ReactQuill
+                        theme="snow"
+                        value={formData.responsibilities}
+                        onChange={(value) => updateField("responsibilities", value)}
+                        modules={quillModules}
+                        formats={quillFormats}
+                        placeholder="List responsibilities using bullets or numbered list..."
+                        style={{ minHeight: "140px" }}
+                      />
+                    </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="requirements">Skills Needed (one per line)</Label>
-                    <Textarea
-                      id="requirements"
-                      value={formData.requirements}
-                      onChange={(e) => updateField("requirements", e.target.value)}
-                      placeholder={"Excellent verbal and written communication in English\nStrong problem-solving abilities\nExperience with CRM software"}
-                      className="min-h-[120px]"
-                    />
+                    <Label>Skills Needed</Label>
+                    <div className="rounded-md border border-input bg-background">
+                      <ReactQuill
+                        theme="snow"
+                        value={formData.requirements}
+                        onChange={(value) => updateField("requirements", value)}
+                        modules={quillModules}
+                        formats={quillFormats}
+                        placeholder="List required skills using bullets or numbered list..."
+                        style={{ minHeight: "140px" }}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -433,7 +460,7 @@ export default function AdminFindWork() {
                       <SelectTrigger>
                         <SelectValue placeholder="Select duration" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="max-h-48 overflow-y-auto">
                         <SelectItem value="less-than-1-month">Less than 1 month</SelectItem>
                         <SelectItem value="1-3-months">1-3 months</SelectItem>
                         <SelectItem value="3-6-months">3-6 months</SelectItem>
@@ -448,7 +475,7 @@ export default function AdminFindWork() {
                       <SelectTrigger>
                         <SelectValue placeholder="Status" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="max-h-48 overflow-y-auto">
                         <SelectItem value="open">Open</SelectItem>
                         <SelectItem value="closed">Closed</SelectItem>
                       </SelectContent>
