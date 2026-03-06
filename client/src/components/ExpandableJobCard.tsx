@@ -249,22 +249,29 @@ export function ExpandableJobCard({
           </div>
         </div>
 
-        <div className="px-6 py-4">
-          <p className="text-muted-foreground text-sm line-clamp-2 leading-relaxed">
-            {job.description}
-          </p>
+        <div
+          className={`overflow-hidden transition-all duration-300 ${
+            expanded ? "max-h-0 opacity-0 py-0" : "max-h-40 opacity-100"
+          }`}
+          aria-hidden={expanded}
+        >
+          <div className="px-6 py-4">
+            <p className="text-muted-foreground text-sm line-clamp-2 leading-relaxed">
+              {job.description}
+            </p>
 
-          <div className="flex flex-wrap gap-1.5 mt-3">
-            {skills.slice(0, 5).map((skill) => (
-              <Badge key={skill} variant="secondary" className="text-xs whitespace-normal break-words h-auto">
-                {skill}
-              </Badge>
-            ))}
-            {skills.length > 5 && (
-              <Badge variant="outline" className="text-xs whitespace-normal break-words h-auto">
-                +{skills.length - 5} more
-              </Badge>
-            )}
+            <div className="flex flex-wrap gap-1.5 mt-3">
+              {skills.slice(0, 5).map((skill) => (
+                <Badge key={skill} variant="secondary" className="text-xs whitespace-normal break-words h-auto">
+                  {skill}
+                </Badge>
+              ))}
+              {skills.length > 5 && (
+                <Badge variant="outline" className="text-xs whitespace-normal break-words h-auto">
+                  +{skills.length - 5} more
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
 
