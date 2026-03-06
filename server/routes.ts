@@ -50,6 +50,7 @@ import {
   csvTemplateSchema,
   insertDocumentSchema,
   waitlist,
+  users as usersTable,
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -3319,17 +3320,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/admin/jobs", async (req: Request, res: Response) => {
     try {
-      const body = { ...req.body };
-      body.clientId = "test-user-1";
+      // Find an admin user to use as the clientId (avoids FK constraint violation)
+      const adminUsers = await db
+        .select({ id: usersTable.id })
+        .from(usersTable)
+        .where(eq(usersTable.role, "admin"))
+        .limit(1);
+
+      let clientId: string | undefined =
+        adminUsers.length > 0 ? adminUsers[0].id : undefined;
+
+      // Fall back to any existing user if no admin user found
+      if (!clientId) {
+        const anyUser = await db
+          .select({ id: usersTable.id })
+          .from(usersTable)
+          .limit(1);
+        clientId = anyUser.length > 0 ? anyUser[0].id : undefined;
+      }
+
+      if (!clientId) {
+        return res.status(500).json({
+          error: "Job creation failed",
+          message: "No users found in database. At least one user is required to create a job.",
+        });
+      }
+
+      const body = { ...req.body, clientId };
+      console.log("Admin job create - request body:", JSON.stringify(body));
+
       const validated = insertJobSchema.parse(body);
       const job = await storage.createJob(validated);
       res.status(201).json(job);
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof z.ZodError) {
+        console.error("Admin job create - validation error:", error.errors);
         return res.status(400).json({ error: "Validation failed", details: error.errors });
       }
       console.error("Admin job create error:", error);
-      res.status(500).json({ error: "Failed to create job" });
+      res.status(500).json({
+        error: "Job creation failed",
+        message: error.message,
+      });
     }
   });
 
