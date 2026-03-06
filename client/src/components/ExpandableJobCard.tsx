@@ -269,10 +269,11 @@ export function ExpandableJobCard({
         </div>
 
         <div
-          className={`overflow-hidden transition-all duration-300 ${expanded ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"}`}
+          className={`overflow-hidden transition-all duration-300 ${expanded ? "max-h-screen opacity-100" : "max-h-0 opacity-0"}`}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="mx-4 mb-4 rounded-md bg-muted/40 dark:bg-muted/20 border border-border p-5 space-y-5">
+          <div className="mx-4 mb-4 rounded-md bg-muted/40 dark:bg-muted/20 border border-border overflow-hidden">
+          <div className="p-5 space-y-5 max-h-[60vh] overflow-y-auto pb-6">
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <FileText className="w-4 h-4 text-blue-500" />
@@ -340,6 +341,7 @@ export function ExpandableJobCard({
                 {formatExperienceLevel(job.experienceLevel)}
               </p>
             </div>
+          </div>
           </div>
 
           <div className="px-6 pb-5 pt-1 flex items-center gap-3 flex-wrap">
