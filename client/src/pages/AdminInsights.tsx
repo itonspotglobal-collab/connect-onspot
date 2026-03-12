@@ -26,6 +26,7 @@ export default function AdminInsights() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/posts"] });
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/posts/slug"] });
       toast({ title: "Post deleted successfully" });
     },
     onError: (error: any) => {
@@ -40,6 +41,7 @@ export default function AdminInsights() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/posts"] });
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/posts/slug"] });
     },
     onError: (error: any) => {
       toast({ title: "Failed to update featured status", description: error.message, variant: "destructive" });
@@ -53,6 +55,7 @@ export default function AdminInsights() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/posts"] });
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/posts/slug"] });
     },
     onError: (error: any) => {
       toast({ title: "Failed to update status", description: error.message, variant: "destructive" });

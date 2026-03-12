@@ -1,31 +1,71 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  BookOpen, 
-  Coffee, 
-  Youtube, 
-  ExternalLink,
-  Calendar,
-  User,
-  Heart,
-  ArrowRight,
-  Rss,
-  Bell,
-  Globe,
-  Target,
-  TrendingUp,
-  Eye
-} from "lucide-react";
 import { Link } from "wouter";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
+import {
+  User, Calendar, Eye, Heart, Globe, TrendingUp, ExternalLink,
+  Rss, ArrowRight, Bell, BookOpen, Linkedin, Youtube,
+} from "lucide-react";
 import type { Post } from "@shared/schema";
 
-interface ArticleDisplay {
+const categories = [
+  "All Articles",
+  "Global Outsourcing",
+  "Technology",
+  "Customer Service",
+  "Industry Trends",
+  "Process Optimization",
+];
+
+const placeholderImages: Record<string, string> = {
+  "Global Outsourcing": "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=800&h=450&fit=crop",
+  "Technology": "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&h=450&fit=crop",
+  "Customer Service": "https://images.unsplash.com/photo-1600298881974-6be191ceeda1?w=800&h=450&fit=crop",
+  "Industry Trends": "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=450&fit=crop",
+  "Process Optimization": "https://images.unsplash.com/photo-1553484771-371a605b060b?w=800&h=450&fit=crop",
+};
+
+const contentChannels = [
+  {
+    icon: Linkedin,
+    color: "bg-blue-600",
+    title: "LinkedIn Articles",
+    description: "Follow our LinkedIn page for daily outsourcing insights, leadership tips, and industry news from our expert team.",
+    link: "https://www.linkedin.com/company/onspotglobal",
+    buttonText: "Follow on LinkedIn",
+  },
+  {
+    icon: Youtube,
+    color: "bg-red-600",
+    title: "YouTube Channel",
+    description: "Watch in-depth tutorials, case studies, and thought leadership videos on outsourcing best practices.",
+    link: "https://youtube.com/@onspotglobal",
+    buttonText: "Watch on YouTube",
+  },
+  {
+    icon: BookOpen,
+    color: "bg-purple-600",
+    title: "Free Resources",
+    description: "Download our free guides, templates, and whitepapers to accelerate your outsourcing journey.",
+    link: "/resources",
+    buttonText: "Browse Resources",
+  },
+];
+
+function formatDate(date: string | Date | null): string {
+  if (!date) return "";
+  return new Date(date).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+type ArticleItem = {
   id: string;
   slug: string;
   title: string;
@@ -33,230 +73,153 @@ interface ArticleDisplay {
   author: string;
   date: string;
   readTime: string;
-  likes: number;
-  views: number;
   category: string;
-  featured: boolean;
   image: string;
-}
+  views: number;
+  likes: number;
+  featured: boolean;
+};
 
-function mapPostToArticle(post: Post): ArticleDisplay {
-  const placeholderImages: Record<string, string> = {
-    "Global Outsourcing": "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=400&h=250&fit=crop&crop=faces",
-    "Technology": "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=400&h=250&fit=crop&crop=faces",
-    "Customer Service": "https://images.unsplash.com/photo-1600298881974-6be191ceeda1?w=400&h=250&fit=crop&crop=faces",
-    "Industry Trends": "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=250&fit=crop&crop=faces",
-    "Process Optimization": "https://images.unsplash.com/photo-1553484771-371a605b060b?w=400&h=250&fit=crop&crop=faces",
-  };
-  
+function postToArticle(post: Post): ArticleItem {
   return {
     id: post.id,
     slug: post.slug,
     title: post.title,
     excerpt: post.excerpt,
     author: post.author,
-    date: post.publishedAt 
-      ? new Date(post.publishedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-      : new Date(post.createdAt!).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-    readTime: post.readTime || "3 min read",
-    likes: post.likes ?? 0,
-    views: post.views ?? 0,
+    date: formatDate(post.publishedAt || post.createdAt),
+    readTime: post.readTime || "5 min read",
     category: post.category,
+    image: post.coverImageUrl || placeholderImages[post.category] || placeholderImages["Industry Trends"],
+    views: post.views || 0,
+    likes: post.likes || 0,
     featured: post.isFeatured ?? false,
-    image: post.coverImageUrl || placeholderImages[post.category] || "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=400&h=250&fit=crop&crop=faces",
   };
 }
 
-// NOTE: Legacy static posts have been migrated to the database via server/seeds/seedPosts.ts
-// The database is now the single source of truth for all blog posts.
-
-const contentChannels = [
-  {
-    title: "OnSpot Blog",
-    description: "Daily articles about outsourcing, entrepreneurship, careers and other intuitive insights about business. Periodic case studies are also published designed to inspire and guide you on your startup, entrepreneurship, and outsourcing ventures.",
-    icon: BookOpen,
-    link: "#",
-    buttonText: "Visit the blog",
-    color: "bg-primary"
-  },
-  {
-    title: "OnSpot Cafe",
-    description: "Our podcast is coming soon! We are brewing inspiring conversations that are guaranteed to bring unfiltered intuitive contents about outsourcing. We will not only be talking about best practices. We will have real hard conversations about the bad practices in the industry too!",
-    icon: Coffee,
-    link: "#",
-    buttonText: "Coming Soon!",
-    color: "bg-[hsl(var(--gold-yellow)/0.8)]"
-  },
-  {
-    title: "Chief of Tribe",
-    description: "Dive deep into the success stories of entrepreneurs, professionals, and individuals that are sure to inspire and ignite the fire in you to become the best version of yourself. Our goal is to deliver the blueprint to business and outsourcing through this channel.",
-    icon: Youtube,
-    link: "#",
-    buttonText: "View YouTube",
-    color: "bg-red-500"
-  }
-];
-
 export default function Insights() {
-  const [email, setEmail] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All Articles");
 
-  const { data: postsResponse, isLoading, isError } = useQuery<{ success: boolean; posts: Post[] }>({
+  const { data, isLoading } = useQuery<{ success: boolean; posts: Post[] }>({
     queryKey: ["/api/posts"],
+    queryFn: async () => {
+      const res = await fetch("/api/posts", { cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to fetch posts");
+      return res.json();
+    },
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 
-  const categories = [
-    "All Articles",
-    "Global Outsourcing", 
-    "Technology",
-    "Customer Service",
-    "Industry Trends",
-    "Process Optimization"
-  ];
+  const allArticles: ArticleItem[] = (data?.posts || []).map(postToArticle);
+  const featuredArticles = allArticles.filter((a) => a.featured);
+  const filteredArticles =
+    selectedCategory === "All Articles"
+      ? allArticles
+      : allArticles.filter((a) => a.category === selectedCategory);
 
-  // Database is the single source of truth - no fallback to static content
-  const articles: ArticleDisplay[] = postsResponse?.success && postsResponse.posts?.length 
-    ? postsResponse.posts.map(mapPostToArticle)
-    : [];
-  
   const showLoading = isLoading;
-  const hasNoArticles = !isLoading && articles.length === 0;
-
-  const featuredArticles = articles.filter(article => article.featured);
-  const filteredArticles = selectedCategory === "All Articles" 
-    ? articles 
-    : articles.filter(article => article.category === selectedCategory);
-
-  const handleSubscribe = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Handle subscription logic here
-    console.log("Subscribing:", email);
-    setEmail("");
-  };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-primary via-primary/90 to-primary/80 text-white py-24">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-5xl md:text-6xl font-bold mb-6">
-              OnSpot Insights
-            </h1>
-            <div className="space-y-4 mb-8">
-              <h2 className="text-2xl md:text-3xl font-semibold">
-                Cutting Edge Ideas, Radical thoughts
-              </h2>
-              <p className="text-lg md:text-xl text-white/90">
-                Get all the best insights around outsourcing straight to your mailbox daily
-              </p>
-            </div>
-            
-            {/* Newsletter Subscription */}
-            <form onSubmit={handleSubscribe} className="max-w-md mx-auto flex gap-3">
-              <Input
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/70 focus:border-white/40"
-                data-testid="input-email-subscribe"
-              />
-              <Button type="submit" className="bg-white text-primary hover:bg-white/90">
-                <Bell className="w-4 h-4 mr-2" />
-                Subscribe
-              </Button>
-            </form>
-          </div>
-        </div>
-      </section>
+      {/* Hero */}
+      <div className="bg-gradient-to-br from-primary/10 via-background to-background border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+          <Badge variant="secondary" className="mb-4">Insights &amp; Resources</Badge>
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">
+            Outsourcing Intelligence Hub
+          </h1>
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
+            Stay ahead with expert analysis, industry trends, and actionable insights on global outsourcing,
+            BPO services, and workforce optimization.
+          </p>
 
-      <div className="container mx-auto px-4 py-16">
-        {/* Blog Categories */}
-        <section className="mb-12">
-          <h3 className="text-2xl font-bold mb-6">Blog Categories</h3>
-          <div className="flex flex-wrap gap-2 mb-8">
-            {categories.map((category) => (
+          {/* Category filters */}
+          <div className="flex flex-wrap justify-center gap-2">
+            {categories.map((cat) => (
               <Button
-                key={category}
-                variant={selectedCategory === category ? "default" : "outline"}
+                key={cat}
+                variant={selectedCategory === cat ? "default" : "outline"}
                 size="sm"
-                onClick={() => setSelectedCategory(category)}
-                className={selectedCategory === category ? "" : "hover-elevate"}
-                data-testid={`filter-${category.toLowerCase().replace(/\s+/g, "-")}`}
+                onClick={() => setSelectedCategory(cat)}
+                className="rounded-full"
               >
-                {category}
+                {cat}
               </Button>
             ))}
           </div>
-        </section>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
         {/* Featured Articles */}
-        {selectedCategory === "All Articles" && (
+        {featuredArticles.length > 0 && selectedCategory === "All Articles" && (
           <section className="mb-16">
             <div className="flex items-center gap-2 mb-8">
-              <Target className="w-6 h-6 text-primary" />
-              <h3 className="text-2xl font-bold">Featured Posts</h3>
+              <TrendingUp className="w-6 h-6 text-primary" />
+              <h3 className="text-2xl font-bold">Featured Articles</h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {showLoading ? (
-                Array.from({ length: 2 }).map((_, i) => (
+              {(showLoading ? [{} as ArticleItem, {} as ArticleItem] : featuredArticles.slice(0, 2)).map((article, i) => (
+                showLoading ? (
                   <Card key={i} className="overflow-hidden">
                     <Skeleton className="aspect-video" />
                     <CardContent className="p-6">
-                      <Skeleton className="h-4 w-2/3 mb-3" />
-                      <Skeleton className="h-6 w-full mb-3" />
-                      <Skeleton className="h-4 w-full mb-2" />
-                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-3 w-1/3 mb-3" />
+                      <Skeleton className="h-6 w-full mb-2" />
+                      <Skeleton className="h-4 w-3/4 mb-4" />
+                      <Skeleton className="h-4 w-full" />
                     </CardContent>
                   </Card>
-                ))
-              ) : featuredArticles.map((article) => (
-                <Link key={article.id} href={`/insights/${article.slug}`} className="block">
-                  <Card className="overflow-hidden hover-elevate transition-all duration-300 group flex flex-col cursor-pointer h-full">
-                    <div className="aspect-video bg-muted relative overflow-hidden flex-shrink-0">
-                      <img 
-                        src={article.image} 
-                        alt={article.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        loading="lazy"
-                      />
-                      <Badge className="absolute top-4 left-4 bg-primary text-white">
-                        Featured
-                      </Badge>
-                    </div>
-                    <CardContent className="p-6 flex flex-col flex-1">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3 flex-wrap flex-shrink-0">
-                        <User className="w-4 h-4 flex-shrink-0" />
-                        <span className="truncate">{article.author}</span>
-                        <Separator orientation="vertical" className="h-4 flex-shrink-0" />
-                        <Calendar className="w-4 h-4 flex-shrink-0" />
-                        <span className="truncate">{article.date}</span>
-                        <Separator orientation="vertical" className="h-4 flex-shrink-0" />
-                        <span className="truncate">{article.readTime}</span>
+                ) : (
+                  <Link key={article.id} href={`/insights/${article.slug}`} className="block">
+                    <Card className="overflow-hidden hover-elevate transition-all duration-300 group flex flex-col cursor-pointer h-full">
+                      <div className="aspect-video bg-muted relative overflow-hidden flex-shrink-0">
+                        <img
+                          src={article.image}
+                          alt={article.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                        />
+                        <Badge className="absolute top-4 left-4 bg-[hsl(var(--gold-yellow)/0.9)] text-black">
+                          Featured
+                        </Badge>
                       </div>
-                      <h4 className="text-xl font-bold mb-3 line-clamp-2 group-hover:text-primary transition-colors flex-shrink-0">
-                        {article.title}
-                      </h4>
-                      <p className="text-muted-foreground mb-4 line-clamp-3 flex-1">
-                        {article.excerpt}
-                      </p>
-                      <div className="flex items-center justify-between flex-shrink-0 mt-auto">
-                        <Badge variant="secondary">{article.category}</Badge>
-                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Eye className="w-4 h-4" />
-                            <span>{article.views}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Heart className="w-4 h-4" />
-                            <span>{article.likes}</span>
+                      <CardContent className="p-6 flex flex-col flex-1">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3 flex-wrap flex-shrink-0">
+                          <User className="w-4 h-4 flex-shrink-0" />
+                          <span className="truncate">{article.author}</span>
+                          <Separator orientation="vertical" className="h-4 flex-shrink-0" />
+                          <Calendar className="w-4 h-4 flex-shrink-0" />
+                          <span className="truncate">{article.date}</span>
+                          <Separator orientation="vertical" className="h-4 flex-shrink-0" />
+                          <span className="truncate">{article.readTime}</span>
+                        </div>
+                        <h4 className="text-xl font-bold mb-3 line-clamp-2 group-hover:text-primary transition-colors flex-shrink-0">
+                          {article.title}
+                        </h4>
+                        <p className="text-muted-foreground mb-4 line-clamp-3 flex-1">
+                          {article.excerpt}
+                        </p>
+                        <div className="flex items-center justify-between flex-shrink-0 mt-auto">
+                          <Badge variant="secondary">{article.category}</Badge>
+                          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Eye className="w-4 h-4" />
+                              <span>{article.views}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Heart className="w-4 h-4" />
+                              <span>{article.likes}</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                )
               ))}
             </div>
           </section>
@@ -277,7 +240,7 @@ export default function Insights() {
               </p>
             )}
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {showLoading ? (
               Array.from({ length: 6 }).map((_, i) => (
@@ -294,8 +257,8 @@ export default function Insights() {
               <Link key={article.id} href={`/insights/${article.slug}`} className="block">
                 <Card className="overflow-hidden hover-elevate transition-all duration-300 group flex flex-col cursor-pointer h-full">
                   <div className="aspect-video bg-muted relative overflow-hidden flex-shrink-0">
-                    <img 
-                      src={article.image} 
+                    <img
+                      src={article.image}
                       alt={article.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       loading="lazy"
@@ -401,7 +364,7 @@ export default function Insights() {
             <CardContent className="p-12">
               <h3 className="text-3xl font-bold mb-4">Stay Updated</h3>
               <p className="text-white/90 mb-8 max-w-2xl mx-auto">
-                Don't miss out on the latest insights, trends, and strategies in outsourcing. 
+                Don't miss out on the latest insights, trends, and strategies in outsourcing.
                 Join thousands of business leaders who trust OnSpot for cutting-edge industry intelligence.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">

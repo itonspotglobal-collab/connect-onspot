@@ -1,0 +1,59 @@
+The admin panel allows editing posts, but changes made in the admin edit page are not appearing on the public /insights page.
+
+Important context:
+
+The Insights page fetches posts from /api/posts
+
+The admin panel updates posts using PUT /api/admin/posts/:id
+
+React Query is used for data fetching and cache management
+
+The admin mutation already calls invalidateQueries for /api/posts and /api/admin/posts
+
+Problem:
+When I edit a post (for example adjusting text formatting like justified text or updating content), the public Insights page still shows the old version.
+
+Your task is to diagnose and fix the issue across the full stack.
+
+Please do the following:
+
+Inspect the backend route PUT /api/admin/posts/:id and confirm it actually updates all editable fields in the database (especially content, excerpt, title, updatedAt).
+
+Check the /api/posts endpoint and confirm:
+
+it returns the latest database values
+
+it is not returning cached or static data
+
+it properly filters only status = "published" posts.
+
+Verify that the admin edit form actually sends the updated fields in the request body.
+
+Ensure React Query properly refreshes the frontend after updates:
+
+keep queryClient.invalidateQueries({ queryKey: ["/api/posts"] })
+
+add await queryClient.refetchQueries({ queryKey: ["/api/posts"] }) if needed.
+
+Check the Insights page to ensure it is not using stale cached data. If needed update the query to:
+
+useQuery({
+  queryKey: ["/api/posts"],
+  queryFn: async () => {
+    const res = await fetch("/api/posts", { cache: "no-store" });
+    return res.json();
+  },
+  staleTime: 0,
+  refetchOnMount: true,
+});
+
+Confirm the individual post page (/insights/:slug) also refetches updated content.
+
+If formatting like text alignment is stored as HTML, make sure the post content is rendered using:
+
+<div dangerouslySetInnerHTML={{ __html: post.content }} />
+
+Goal:
+After editing a post in /admin/insights/:id/edit, the updated content should immediately appear on the /insights page and on the individual article page without requiring a manual refresh.
+
+Please modify any necessary backend routes, React Query hooks, or rendering logic to ensure the blog reflects updates correctly.
