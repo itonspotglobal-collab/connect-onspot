@@ -2560,3 +2560,59 @@
   font-style: italic;
   color: hsl(var(--muted-foreground));
 }
+
+/* Quill alignment classes rendered in blog content */
+.blog-content .ql-align-justify,
+.blog-content [style*="text-align:justify"],
+.blog-content [style*="text-align: justify"] {
+  text-align: justify !important;
+}
+
+.blog-content .ql-align-center,
+.blog-content [style*="text-align:center"],
+.blog-content [style*="text-align: center"] {
+  text-align: center !important;
+}
+
+.blog-content .ql-align-right,
+.blog-content [style*="text-align:right"],
+.blog-content [style*="text-align: right"] {
+  text-align: right !important;
+}
+
+.blog-content .ql-align-left,
+.blog-content [style*="text-align:left"],
+.blog-content [style*="text-align: left"] {
+  text-align: left !important;
+}
+
+/* Quill lists */
+.blog-content ul.ql-list-disc,
+.blog-content ol.ql-list-ordered {
+  padding-left: 1.5em;
+}
+
+.blog-content .ql-indent-1 { padding-left: 3em; }
+.blog-content .ql-indent-2 { padding-left: 6em; }
+.blog-content .ql-indent-3 { padding-left: 9em; }
+
+/* Quill code blocks */
+.blog-content .ql-code-block-container,
+.blog-content pre.ql-syntax {
+  background: hsl(var(--muted));
+  border-radius: 4px;
+  padding: 1em;
+  overflow-x: auto;
+  font-family: monospace;
+  font-size: 0.9em;
+  margin-bottom: 1em;
+}
+
+.blog-content p,
+.blog-content h1,
+.blog-content h2,
+.blog-content h3,
+.blog-content h4,
+.blog-content li {
+  line-height: 1.8;
+}

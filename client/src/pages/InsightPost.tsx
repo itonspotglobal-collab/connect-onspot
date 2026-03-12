@@ -16,11 +16,14 @@ export default function InsightPost() {
   const { data, isLoading, isError } = useQuery<{ success: boolean; post: Post }>({
     queryKey: ["/api/posts/slug", slug],
     queryFn: async () => {
-      const res = await fetch(`/api/posts/slug/${slug}`);
+      const res = await fetch(`/api/posts/slug/${slug}`, { cache: "no-store" });
       if (!res.ok) throw new Error("Post not found");
       return res.json();
     },
     enabled: !!slug,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 
   const post = data?.post;

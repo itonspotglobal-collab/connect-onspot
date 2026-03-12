@@ -1,0 +1,103 @@
+There is still an issue in updating the published post Changes are not applied in the insight page. Also, The justify text is not working in the published posts in insight page. Make sure all other features are working.
+
+Two issues need to be fixed:
+
+When editing a published post from the admin page, the changes are not reflected on the public /insights page.
+
+Text justification from the editor is not applied when the article is rendered on the public post page.
+
+Please analyze the full project and fix the issue without breaking any existing features.
+
+Tasks:
+
+Fix the update pipeline
+
+Inspect PUT /api/admin/posts/:id
+
+Ensure it updates ALL editable fields including:
+
+title
+
+excerpt
+
+content
+
+category
+
+coverImageUrl
+
+updatedAt
+
+Confirm the database update query actually persists these values.
+
+Ensure the admin edit form sends the updated content
+
+Verify the rich text editor content is included in the request body when saving.
+
+Confirm the correct field (content) is being updated.
+
+Fix React Query caching
+
+After saving a post, ensure the following queries refresh:
+
+queryClient.invalidateQueries({ queryKey: ["/api/admin/posts"] });
+queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+await queryClient.refetchQueries({ queryKey: ["/api/posts"] });
+
+Ensure the Insights page query does not use stale cache.
+
+Ensure /api/posts returns the latest published posts
+
+Confirm it queries the database directly.
+
+Confirm it filters by:
+
+WHERE status = 'published'
+
+Fix content rendering so formatting works
+
+The article page (/insights/:slug) must render the HTML content from the editor.
+
+Update the content rendering to:
+
+<div
+  className="prose max-w-none"
+  dangerouslySetInnerHTML={{ __html: post.content }}
+/>
+
+Enable justified text
+
+Add CSS support for justification:
+
+.prose {
+  text-align: justify;
+}
+
+Ensure editor output like:
+
+<p style="text-align: justify;">
+
+or
+
+<p class="text-justify">
+
+is preserved and not sanitized away.
+
+Verify the following still work
+
+Featured posts
+
+Post categories
+
+Admin edit / delete
+
+Post publishing / draft status
+
+Slug routing /insights/:slug
+
+Likes and views counters
+
+Goal:
+After editing a post in /admin/insights/:id/edit, the updated content (including justified text formatting) should immediately appear on the /insights page and on the individual article page.
+
+If needed, modify backend routes, database queries, React Query settings, or rendering logic to ensure the blog behaves like a proper CMS where updates instantly reflect.
