@@ -110,6 +110,7 @@ export default function AdminInsightEditor() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/posts"] });
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/posts/slug"] });
       toast({ title: "Post created successfully" });
       setLocation("/admin/insights");
     },
@@ -122,9 +123,11 @@ export default function AdminInsightEditor() {
     mutationFn: async ({ id, data }: { id: string; data: Partial<PostFormData> }) => {
       return apiRequest("PUT", `/api/admin/posts/${id}`, data);
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/posts"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/admin/posts/${variables.id}`] });
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/posts/slug"] });
       toast({ title: "Post updated successfully" });
       setLocation("/admin/insights");
     },
