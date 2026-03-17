@@ -896,16 +896,6 @@ export default function Home() {
                       </p>
                     </div>
 
-                    {/* Metric Badge */}
-                    <div className="mt-auto pt-6 border-t border-white/10">
-                      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-violet-500/10 to-blue-500/10 border border-white/10 group-hover:border-white/20 transition-colors duration-500">
-                        <Sparkles className="w-4 h-4 text-violet-500" />
-                        <span className="text-sm font-semibold bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent">
-                          {story.metric}
-                        </span>
-                      </div>
-                    </div>
-
                     {/* Bottom glow line */}
                     <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-violet-500/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
                   </div>

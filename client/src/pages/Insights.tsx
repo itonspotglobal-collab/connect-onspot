@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import {
   User, Calendar, Eye, Heart, Globe, TrendingUp, ExternalLink,
-  Rss, ArrowRight, Bell, BookOpen, Linkedin, Youtube,
+  Rss, ArrowRight, Bell, BookOpen, Linkedin, Youtube, Search,
 } from "lucide-react";
 import type { Post } from "@shared/schema";
 
@@ -99,6 +99,7 @@ function postToArticle(post: Post): ArticleItem {
 
 export default function Insights() {
   const [selectedCategory, setSelectedCategory] = useState("All Articles");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data, isLoading } = useQuery<{ success: boolean; posts: Post[] }>({
     queryKey: ["/api/posts"],
@@ -119,6 +120,13 @@ export default function Insights() {
       ? allArticles
       : allArticles.filter((a) => a.category === selectedCategory);
 
+  const finalArticles = filteredArticles.filter((a) =>
+    [a.title, a.excerpt, a.author]
+      .join(" ")
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase().trim())
+  );
+
   const showLoading = isLoading;
 
   return (
@@ -134,6 +142,20 @@ export default function Insights() {
             Stay ahead with expert analysis, industry trends, and actionable insights on global outsourcing,
             BPO services, and workforce optimization.
           </p>
+
+          {/* Search Bar */}
+          <div className="max-w-xl mx-auto mb-6">
+            <div className="relative">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search insights, topics, or authors..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 rounded-full border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted-foreground transition-shadow"
+              />
+            </div>
+          </div>
 
           {/* Category filters */}
           <div className="flex flex-wrap justify-center gap-2">
@@ -253,7 +275,7 @@ export default function Insights() {
                   </CardContent>
                 </Card>
               ))
-            ) : filteredArticles.map((article) => (
+            ) : finalArticles.map((article) => (
               <Link key={article.id} href={`/insights/${article.slug}`} className="block">
                 <Card className="overflow-hidden hover-elevate transition-all duration-300 group flex flex-col cursor-pointer h-full">
                   <div className="aspect-video bg-muted relative overflow-hidden flex-shrink-0">
@@ -308,6 +330,13 @@ export default function Insights() {
               </Link>
             ))}
           </div>
+
+          {!showLoading && finalArticles.length === 0 && (
+            <div className="text-center py-16 text-muted-foreground">
+              <Search className="w-10 h-10 mx-auto mb-4 opacity-30" />
+              <p className="text-base">No articles found. Try a different keyword or category.</p>
+            </div>
+          )}
         </section>
 
         {/* Content Channels */}
@@ -354,29 +383,6 @@ export default function Insights() {
                 Subscribe to CEO Notes
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
-            </CardContent>
-          </Card>
-        </section>
-
-        {/* Bottom CTA */}
-        <section className="text-center">
-          <Card className="bg-gradient-to-br from-primary via-primary/90 to-primary/80 text-white border-0">
-            <CardContent className="p-12">
-              <h3 className="text-3xl font-bold mb-4">Stay Updated</h3>
-              <p className="text-white/90 mb-8 max-w-2xl mx-auto">
-                Don't miss out on the latest insights, trends, and strategies in outsourcing.
-                Join thousands of business leaders who trust OnSpot for cutting-edge industry intelligence.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
-                <Button size="lg" className="bg-white text-primary hover:bg-white/90 flex-1">
-                  <Rss className="w-4 h-4 mr-2" />
-                  RSS Feed
-                </Button>
-                <Button size="lg" variant="outline" className="border-white/50 text-white hover:bg-white/10 flex-1">
-                  <Bell className="w-4 h-4 mr-2" />
-                  Newsletter
-                </Button>
-              </div>
             </CardContent>
           </Card>
         </section>
