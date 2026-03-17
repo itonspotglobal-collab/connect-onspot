@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   MapPin,
   Clock,
-  DollarSign,
   Star,
   Users,
   ArrowRight,
@@ -227,9 +226,11 @@ export function ExpandableJobCard({
             </div>
           </div>
           <div className="flex items-center gap-2 px-4 py-3">
-            <DollarSign className="w-4 h-4 text-green-500 flex-shrink-0" />
+            <span className="text-green-500 text-sm font-bold flex-shrink-0 leading-none">₱</span>
             <div className="min-w-0">
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Salary</div>
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                {job.contractType === "fixed" ? "Budget" : "Salary"}
+              </div>
               <div className="text-sm font-semibold truncate">{expanded ? rateDisplay : "Expand to view"}</div>
             </div>
           </div>
