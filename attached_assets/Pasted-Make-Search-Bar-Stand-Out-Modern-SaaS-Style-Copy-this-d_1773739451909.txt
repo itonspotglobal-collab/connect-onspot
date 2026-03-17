@@ -1,0 +1,95 @@
+Make Search Bar Stand Out (Modern SaaS Style)
+
+Copy this directly:
+
+💡 Prompt: Enhance Search Bar UI (Make it Stand Out + Premium Look)
+
+I want to improve the design of my search bar in the Insights page to make it more visually prominent and modern, while keeping it clean and professional.
+
+✅ Goals:
+
+Make the search bar stand out from the background
+
+Add subtle color + depth (not too loud)
+
+Maintain responsiveness
+
+Keep consistency with existing design system
+
+Do NOT affect layout or break other components
+
+🔧 Step 1: Wrap Search Bar in Highlight Container
+
+Replace your current search wrapper with this:
+
+{/* Search Bar Highlight Section */}
+<div className="max-w-2xl mx-auto mb-8">
+  <div className="relative p-[1px] rounded-full bg-gradient-to-r from-primary/40 via-primary/20 to-primary/40">
+    
+    <div className="flex items-center bg-background rounded-full px-4 py-3 shadow-sm backdrop-blur">
+      
+      <svg
+        className="w-5 h-5 text-primary/70 mr-3 flex-shrink-0"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        viewBox="0 0 24 24"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M16 10a6 6 0 11-12 0 6 6 0 0112 0z" />
+      </svg>
+
+      <input
+        type="text"
+        placeholder="Search insights, topics, or authors..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        className="w-full bg-transparent text-sm focus:outline-none placeholder:text-muted-foreground"
+      />
+    </div>
+  </div>
+</div>
+🔥 What This Does:
+
+✨ Gradient border → makes it pop
+
+🧊 Glass/blur effect → modern SaaS feel
+
+🌗 Subtle shadow → adds depth
+
+🎯 Still clean, not distracting
+
+🔧 Step 2: Add Focus Interaction (VERY IMPORTANT)
+
+Enhance UX when user clicks:
+
+Update inner div:
+
+<div className="flex items-center bg-background rounded-full px-4 py-3 shadow-sm backdrop-blur transition-all focus-within:ring-2 focus-within:ring-primary/40 focus-within:shadow-md">
+🔧 Step 3: Optional Soft Background Glow (Hero Enhancement)
+
+To make it stand out even more, enhance the hero section:
+
+Find:
+
+<div className="bg-gradient-to-br from-primary/10 via-background to-background border-b">
+
+Replace with:
+
+<div className="bg-gradient-to-br from-primary/10 via-background to-background border-b relative overflow-hidden">
+
+Then ADD this inside it (top or bottom):
+
+<div className="absolute inset-0 pointer-events-none opacity-30">
+  <div className="absolute top-1/2 left-1/2 w-[500px] h-[500px] bg-primary/20 blur-3xl rounded-full -translate-x-1/2 -translate-y-1/2"></div>
+</div>
+🎯 Expected Result:
+
+Search bar becomes a visual focal point
+
+Feels like a core feature, not secondary
+
+Clean + modern (like Notion / Stripe / Linear)
+
+Fully responsive
+
+No layout break

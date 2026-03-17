@@ -132,8 +132,11 @@ export default function Insights() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero */}
-      <div className="bg-gradient-to-br from-primary/10 via-background to-background border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+      <div className="bg-gradient-to-br from-primary/10 via-background to-background border-b relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none opacity-30">
+          <div className="absolute top-1/2 left-1/2 w-[500px] h-[500px] bg-primary/20 blur-3xl rounded-full -translate-x-1/2 -translate-y-1/2" />
+        </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center relative">
           <Badge variant="secondary" className="mb-4">Insights &amp; Resources</Badge>
           <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">
             Outsourcing Intelligence Hub
@@ -144,16 +147,18 @@ export default function Insights() {
           </p>
 
           {/* Search Bar */}
-          <div className="max-w-xl mx-auto mb-6">
-            <div className="relative">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-              <input
-                type="text"
-                placeholder="Search insights, topics, or authors..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-full border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted-foreground transition-shadow"
-              />
+          <div className="max-w-2xl mx-auto mb-8">
+            <div className="relative p-[1px] rounded-full bg-gradient-to-r from-primary/40 via-primary/20 to-primary/40">
+              <div className="flex items-center bg-background rounded-full px-4 py-3 shadow-sm backdrop-blur transition-all focus-within:ring-2 focus-within:ring-primary/40 focus-within:shadow-md">
+                <Search className="w-5 h-5 text-primary/70 mr-3 flex-shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Search insights, topics, or authors..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-transparent text-sm focus:outline-none placeholder:text-muted-foreground"
+                />
+              </div>
             </div>
           </div>
 
