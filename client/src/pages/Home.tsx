@@ -1875,7 +1875,7 @@ export default function Home() {
             </div>
 
             {/* Connect Section */}
-            <div className="md:space-y-6 transition-all duration-300 min-w-0">
+            <div className="md:space-y-6 transition-all duration-300">
               <button
                 onClick={() => toggleFooterSection("connect")}
                 className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left"
@@ -1893,7 +1893,7 @@ export default function Home() {
               </button>
 
               <div
-                className={`space-y-3 min-w-0 transition-all duration-300 md:!opacity-100 md:!max-h-none md:!block ${
+                className={`space-y-3 transition-all duration-300 md:!opacity-100 md:!max-h-none md:!block ${
                   expandedFooterSection === "connect"
                     ? "opacity-100 max-h-96"
                     : "opacity-0 max-h-0 overflow-hidden"
@@ -1908,11 +1908,11 @@ export default function Home() {
               >
                 <a
                   href="mailto:hello@onspotglobal.com"
-                  className="flex items-start justify-center md:justify-start gap-2 min-w-0 text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-300 group"
+                  className="flex items-center justify-center md:justify-start gap-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-300 group"
                   data-testid="footer-email"
                 >
-                  <Mail className="w-5 h-5 shrink-0 mt-0.5 group-hover:scale-110 transition-transform duration-300" />
-                  <span className="break-words whitespace-normal leading-snug min-w-0">
+                  <Mail className="w-5 h-5 flex-shrink-0 group-hover:scale-110 transition-transform duration-300" />
+                  <span className="break-all sm:break-normal">
                     hello@onspotglobal.com
                   </span>
                 </a>
