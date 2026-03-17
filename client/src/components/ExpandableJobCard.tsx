@@ -151,13 +151,16 @@ export function ExpandableJobCard({
   const timeAgo = Math.floor(
     (now.getTime() - postedDate.getTime()) / (1000 * 60 * 60 * 24),
   );
-  let postedAtText = "Today";
-  if (timeAgo === 1) postedAtText = "1 day ago";
-  else if (timeAgo > 1 && timeAgo < 7) postedAtText = `${timeAgo} days ago`;
-  else if (timeAgo >= 7 && timeAgo < 30)
-    postedAtText = `${Math.floor(timeAgo / 7)} weeks ago`;
-  else if (timeAgo >= 30)
-    postedAtText = `${Math.floor(timeAgo / 30)} months ago`;
+  const pluralize = (value: number, unit: string) =>
+    `${value} ${unit}${value === 1 ? "" : "s"} ago`;
+  const getTimeAgoText = (days: number) => {
+    if (days <= 0) return "Today";
+    if (days < 7) return pluralize(days, "day");
+    const weeks = Math.floor(days / 7);
+    if (weeks < 5) return pluralize(weeks, "week");
+    return pluralize(Math.floor(days / 30), "month");
+  };
+  const postedAtText = getTimeAgoText(timeAgo);
 
   const rateDisplay =
     job.hourlyRateMin && job.hourlyRateMax
