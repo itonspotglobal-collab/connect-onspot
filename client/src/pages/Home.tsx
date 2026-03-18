@@ -67,6 +67,7 @@ import RachelCastroPhoto from "@assets/Rachel_Caztro_1773830657668.jpg";
 import AmirSinghPhoto from "@assets/Amir Singh - SEO Specialist_1761134115531.png";
 import JenniferDizonPhoto from "@assets/Jennifer_Dizon_1773830657667.jpg";
 import AndreiLosantoPhoto from "@assets/Andrei_Losanto_1773830657666.jpg";
+import FernandoPhoto from "@assets/Fernando_1773832206009.jpg";
 import FrederickPhoto from "../assets/logos/Frederick.png";
 import AlexPhoto from "../assets/logos/Alex.png";
 import StefanPhoto from "../assets/logos/Stefan.png";
@@ -269,7 +270,7 @@ const transformationStories = [
     transformation: "From constant firefighting to proactive innovation",
     story:
       "I’m extremely happy with the service provided by Onspot Global. Their team is professional, responsive, and reliable—always going above and beyond to make sure everything runs smoothly. The efficiency and consistency they deliver gives me complete confidence, and I truly value the partnership we’ve built.",
-    photo: StefanPhoto,
+    photo: FernandoPhoto,
     metric: "99.9% Uptime",
   },
 ];
