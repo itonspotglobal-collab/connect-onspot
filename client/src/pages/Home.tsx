@@ -247,7 +247,7 @@ const onspotExperience = [
 const transformationStories = [
   {
     name: "Elad Badash",
-    role: "PineTech",
+    role: "CEO/Founder, PineTech",
     transformation: "From 12-hour workdays to automated excellence",
     story:
       "The professionalism and consistency of the OnSpot team. Communication is always clear and easy, and I appreciate how they provide structured updates at the end of each day and every week. This makes it simple for me to understand the scope of work being done and stay aligned",
