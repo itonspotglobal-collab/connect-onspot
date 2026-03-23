@@ -59,14 +59,14 @@ import PinetechLogo from "../assets/logos/Pinetech.png";
 import SafewayLogo from "../assets/logos/Safeway.png";
 import VertexLogo from "../assets/logos/Vertex.png";
 
-import KyleMendezPhoto from "@assets/Kyle_Mendez_1773830657667.jpg";
-import AlexandraLopezPhoto from "@assets/Alexandra_Lopez_1773830657666.jpg";
+import KyleMendezPhoto from "@assets/Kyle_Mendez_1774262612848.jpeg";
+import AlexandraLopezPhoto from "@assets/Alexandra_Lopez_1774262612848.jpg";
 import AndreaPinzonPhoto from "@assets/Andrea_Pinzon_1773830657666.jpeg";
 import ChristopherAlbaPhoto from "@assets/Christopher_Alba_1773830657667.jpg";
 import RachelCastroPhoto from "@assets/Rachel_Caztro_1773830657668.jpg";
 import AmirSinghPhoto from "@assets/Amir Singh - SEO Specialist_1761134115531.png";
-import JenniferDizonPhoto from "@assets/Jennifer_Dizon_1773830657667.jpg";
-import AndreiLosantoPhoto from "@assets/Andrei_Losanto_1773830657666.jpg";
+import JenniferDizonPhoto from "@assets/Jennifer_Dizon_1774262612848.jpg";
+import AndreiLosantoPhoto from "@assets/Andrei_Losanto_1774262612848.jpg";
 import FernandoPhoto from "@assets/Fernando_1773832206009.jpg";
 import FrederickPhoto from "../assets/logos/Frederick.png";
 import AlexPhoto from "../assets/logos/Alex.png";
