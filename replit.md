@@ -42,10 +42,9 @@ Preferred communication style: Simple, everyday language.
 - **Dual SEO + GEO Setup**: Dynamic `HeadSEO` component for US (clients) and Philippines (talent) geo-targeting.
 - **VanessaChat (OpenAI Integration)**: AI-powered virtual assistant using `gpt-4o-mini` with streaming support, knowledge base, two-tier memory system, and self-learning capabilities.
 - **Conversational Admin Training**: Interactive interface for administrators to train Vanessa, including automatic correction detection and knowledge base updates.
-  - **Development Mode**: Authentication bypassed for training routes in development (NODE_ENV !== "production")
-  - **Protected Routes (Dev Bypass)**: `/api/train/chat/stream`, `/api/train/correct`, `/api/site/reindex`
-  - **UI Indicator**: Shows "🔧 Training Mode Active (No Auth Required)" banner in development
-  - **Production Security**: Full JWT authentication required in production environment
+  - **Temporary No-Auth State**: Training routes (`/api/train/chat/stream`, `/api/train/correct`, `/api/site/reindex`) have auth middleware removed in both dev and production until the login system is complete.
+  - **TODO**: Re-add `[authenticateJWT, requireAdmin]` to training routes in `server/routes.ts` and restore `Authorization` header in `TrainingChat.tsx` once login is finished.
+- **VanessaChat Thread Persistence**: `threadId` and conversation `messages` are both persisted to `localStorage` via `VanessaContext`, ensuring one continuous OpenAI thread per browser across page reloads, tab restarts, and browser restarts. Only cleared when user clicks Reset Conversation.
 - **Website Crawler & Navigation Context**: Automated daily crawling of `onspotglobal.com` to provide Vanessa with up-to-date website information and navigation assistance.
 
 ### External Dependencies

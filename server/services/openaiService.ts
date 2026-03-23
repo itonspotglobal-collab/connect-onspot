@@ -241,9 +241,9 @@ export async function* streamWithAssistant(
     if (!currentThreadId) {
       const thread = await client.beta.threads.create();
       currentThreadId = thread.id;
-      console.log(`📝 Created new thread: ${currentThreadId}`);
+      console.log(`🆕 [Vanessa] Creating new OpenAI thread: ${currentThreadId}`);
     } else {
-      console.log(`📝 Reusing thread: ${currentThreadId}`);
+      console.log(`♻️ [Vanessa] Reusing existing OpenAI thread: ${currentThreadId}`);
       // Wait for any active runs to complete before adding new message
       await waitForRunCompletion(client, currentThreadId);
     }

@@ -338,8 +338,14 @@ export function VanessaChat({
               const parsed = JSON.parse(data);
 
               if (parsed.type === "threadId") {
-                console.log(`[VanessaChat] handleTopicSelect ← received threadId from backend: ${parsed.data}`);
-                setThreadId(parsed.data);
+                if (!threadId) {
+                  console.log(`[VanessaChat] handleTopicSelect ← new threadId received from backend: ${parsed.data} (saving to localStorage)`);
+                  setThreadId(parsed.data);
+                } else if (threadId !== parsed.data) {
+                  console.warn(`[VanessaChat] handleTopicSelect ← ⚠️ unexpected threadId mismatch! stored: ${threadId}, received: ${parsed.data} — keeping stored threadId`);
+                } else {
+                  console.log(`[VanessaChat] handleTopicSelect ← threadId confirmed: ${parsed.data}`);
+                }
               } else if (parsed.type === "content") {
                 accumulatedText += parsed.data;
                 setMessages((prev) => {
@@ -555,9 +561,14 @@ export function VanessaChat({
               const parsed = JSON.parse(data);
 
               if (parsed.type === "threadId") {
-                // Save thread ID for conversation continuity
-                console.log(`[VanessaChat] handleSendMessage ← received threadId from backend: ${parsed.data}`);
-                setThreadId(parsed.data);
+                if (!threadId) {
+                  console.log(`[VanessaChat] handleSendMessage ← new threadId received from backend: ${parsed.data} (saving to localStorage)`);
+                  setThreadId(parsed.data);
+                } else if (threadId !== parsed.data) {
+                  console.warn(`[VanessaChat] handleSendMessage ← ⚠️ unexpected threadId mismatch! stored: ${threadId}, received: ${parsed.data} — keeping stored threadId`);
+                } else {
+                  console.log(`[VanessaChat] handleSendMessage ← threadId confirmed: ${parsed.data}`);
+                }
               } else if (parsed.type === "content") {
                 // Accumulate content
                 accumulatedText += parsed.data;
