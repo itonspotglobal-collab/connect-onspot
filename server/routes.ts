@@ -1644,15 +1644,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     validateRequest(
       z.object({
         message: z.string().min(1, "Message is required"),
+        threadId: z.string().optional(), // Reuse the training thread across sends
       }),
     ),
     async (req: any, res) => {
       try {
-        const { message } = req.body;
+        const { message, threadId: incomingThreadId } = req.body;
         const adminId = req.user?.id || 1; // Use default admin ID in development
 
-        console.log(`🎓 ${process.env.NODE_ENV === "production" ? "Admin" : "DEV"} training chat from ${adminId}: "${message.substring(0, 50)}..."`);
-
+        if (incomingThreadId) {
+          console.log(`🎓 [TrainingChat] Reusing training thread: ${incomingThreadId} | message: "${message.substring(0, 50)}..."`);
+        } else {
+          console.log(`🎓 [TrainingChat] Creating new training thread | message: "${message.substring(0, 50)}..."`);
+        }
 
         // Set up SSE headers
         res.setHeader("Content-Type", "text/event-stream");
@@ -1662,13 +1666,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let fullResponse = "";
 
         try {
-          // Stream response from OpenAI with training context
-          for await (const chunk of streamWithAssistant(
-            message,
-            undefined // No threadId for training mode - each is independent
-          )) {
-            // Only process content chunks (ignore threadId, done, memory chunks)
-            if (chunk.type === "content") {
+          // Stream response from OpenAI — pass threadId so the same training session
+          // stays in one OpenAI thread and appears as one conversation in /admin/vanessa-responses
+          for await (const chunk of streamWithAssistant(message, incomingThreadId)) {
+            if (chunk.type === "threadId") {
+              // Forward the threadId to the frontend so it can reuse it on the next send
+              res.write(`data: ${JSON.stringify({ type: "threadId", threadId: chunk.data })}\n\n`);
+            } else if (chunk.type === "content") {
               fullResponse += chunk.data;
               res.write(`data: ${JSON.stringify({ text: chunk.data })}\n\n`);
             }

@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
@@ -14,6 +13,11 @@ type Message = {
   topic?: string;
 };
 
+// sessionStorage key for training thread — persists across remounts within the same tab session.
+// Clear it only when the admin explicitly starts a fresh training session.
+// TODO: When admin auth is complete, tie this to the authenticated admin's session instead.
+const TRAINING_THREAD_KEY = "vanessa_training_thread_id";
+
 export default function TrainingChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -21,7 +25,18 @@ export default function TrainingChat() {
   const [isStreaming, setIsStreaming] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-  // TODO: Remove this once the admin login/auth system is complete and auth is re-enabled on training routes.
+
+  // useRef so the mutationFn always reads the latest threadId without closure staleness.
+  // Initialized from sessionStorage so remounts within the same tab don't break the thread.
+  const trainingThreadIdRef = useRef<string | null>(
+    (() => {
+      try {
+        return sessionStorage.getItem(TRAINING_THREAD_KEY);
+      } catch {
+        return null;
+      }
+    })()
+  );
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -46,6 +61,11 @@ export default function TrainingChat() {
         setIsStreaming(true);
         setStreamedResponse("");
 
+        const currentThreadId = trainingThreadIdRef.current;
+        console.log(
+          `[TrainingChat] Sending "${userMessage.substring(0, 40)}" | threadId: ${currentThreadId || "none (new training thread)"}`
+        );
+
         // TODO: Restore token-based auth once the admin login/auth system is complete.
         // Temporarily sending requests without Authorization header in all environments.
         const headers: Record<string, string> = {
@@ -56,7 +76,11 @@ export default function TrainingChat() {
           method: "POST",
           headers,
           credentials: "include",
-          body: JSON.stringify({ message: userMessage }),
+          body: JSON.stringify({
+            message: userMessage,
+            // Always include current threadId so the backend reuses the same OpenAI thread
+            ...(currentThreadId ? { threadId: currentThreadId } : {}),
+          }),
           signal: abortController.signal,
         });
 
@@ -94,7 +118,21 @@ export default function TrainingChat() {
               }
               try {
                 const parsed = JSON.parse(data);
-                if (parsed.text) {
+
+                if (parsed.type === "threadId") {
+                  // Backend returned the OpenAI thread ID for this training session
+                  if (!trainingThreadIdRef.current) {
+                    console.log(`[TrainingChat] New training threadId received: ${parsed.threadId} — saving to sessionStorage`);
+                    trainingThreadIdRef.current = parsed.threadId;
+                    try {
+                      sessionStorage.setItem(TRAINING_THREAD_KEY, parsed.threadId);
+                    } catch {
+                      // Continue silently if sessionStorage is unavailable
+                    }
+                  } else {
+                    console.log(`[TrainingChat] Training threadId confirmed: ${trainingThreadIdRef.current}`);
+                  }
+                } else if (parsed.text) {
                   fullResponse += parsed.text;
                   setStreamedResponse(fullResponse);
                 }
@@ -115,7 +153,6 @@ export default function TrainingChat() {
           console.log("Request aborted");
         } else {
           console.error("Error streaming response:", error);
-          // Display the specific error message to the user
           const errorMessage = error.message || "Sorry, I encountered an error. Please try again.";
           setMessages((prev) => [
             ...prev,
