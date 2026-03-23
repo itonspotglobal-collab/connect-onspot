@@ -38,6 +38,8 @@ export function VanessaChat({
     isMinimized,
     setIsMinimized,
     resetConversation,
+    threadId,       // OpenAI thread ID — lives in context + sessionStorage for persistence
+    setThreadId,
   } = useVanessa();
 
   // Local state for input and streaming
@@ -46,7 +48,6 @@ export function VanessaChat({
   const [userHasTyped, setUserHasTyped] = useState(false);
   const [isPinnedToBottom, setIsPinnedToBottom] = useState(true);
   const [showNewMessageChip, setShowNewMessageChip] = useState(false);
-  const [threadId, setThreadId] = useState<string | null>(null); // OpenAI thread ID
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const scrollAnimationFrameRef = useRef<number | null>(null);
@@ -54,6 +55,13 @@ export function VanessaChat({
   const hasInitializedRef = useRef(false);
   const footerRef = useRef<HTMLDivElement>(null);
   const [footerHeight, setFooterHeight] = useState(0);
+
+  // Safeguard: warn if conversation exists but threadId was somehow lost
+  useEffect(() => {
+    if (messages.length > 0 && !threadId) {
+      console.warn("[VanessaChat] ⚠️ Messages exist but threadId is missing — next message will start a new thread.");
+    }
+  }, [messages.length, threadId]);
 
   const openingMessages = useRef([
     {
@@ -287,6 +295,8 @@ export function VanessaChat({
         },
       ]);
 
+      console.log(`[VanessaChat] handleTopicSelect → sending "${userMessage.substring(0, 40)}" | threadId: ${threadId || "none (new thread)"}`);
+
       const body = JSON.stringify({
         message: userMessage,
         threadId: threadId || undefined,
@@ -328,6 +338,7 @@ export function VanessaChat({
               const parsed = JSON.parse(data);
 
               if (parsed.type === "threadId") {
+                console.log(`[VanessaChat] handleTopicSelect ← received threadId from backend: ${parsed.data}`);
                 setThreadId(parsed.data);
               } else if (parsed.type === "content") {
                 accumulatedText += parsed.data;
@@ -495,7 +506,9 @@ export function VanessaChat({
         },
       ]);
 
-      // Create request body
+      // Create request body — always reuse existing threadId if available
+      console.log(`[VanessaChat] handleSendMessage → sending "${userMessage.substring(0, 40)}" | threadId: ${threadId || "none (new thread)"}`);
+
       const body = JSON.stringify({
         message: userMessage,
         threadId: threadId || undefined,
@@ -543,6 +556,7 @@ export function VanessaChat({
 
               if (parsed.type === "threadId") {
                 // Save thread ID for conversation continuity
+                console.log(`[VanessaChat] handleSendMessage ← received threadId from backend: ${parsed.data}`);
                 setThreadId(parsed.data);
               } else if (parsed.type === "content") {
                 // Accumulate content
