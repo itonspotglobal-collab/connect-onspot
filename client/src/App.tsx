@@ -124,13 +124,6 @@ function PublicRouter() {
           <Route path="/investors" component={InvestorsCorner} />
           <Route path="/powerapp" component={Powerapp} />
           <Route path="/operations-playbook" component={OperationsPlaybook} />
-          <Route path="/admin/vanessa-responses" component={VanessaResponses} />
-          <Route path="/admin/vanessa-learning" component={VanessaLearningDashboard} />
-          <Route path="/admin/insights" component={AdminInsights} />
-          <Route path="/admin/insights/create" component={AdminInsightEditor} />
-          <Route path="/admin/insights/:id/edit" component={AdminInsightEditor} />
-          <Route path="/admin/find-work" component={AdminFindWork} />
-          <Route path="/admin/image-uploader" component={AdminImageUploader} />
           {/* Legacy routes for backward compatibility */}
           <Route path="/talent" component={TalentSearch} />
           <Route component={NotFound} />
@@ -198,6 +191,31 @@ function TalentRouter() {
   );
 }
 
+// Admin Routes (protected by admin authentication)
+function AdminRouter() {
+  return (
+    <AdminProtectedRoute>
+      <div className="min-h-screen bg-background">
+        <TopNavigation />
+        <main>
+          <Switch>
+            <Route path="/admin/vanessa-responses" component={VanessaResponses} />
+            <Route path="/admin/vanessa-learning" component={VanessaLearningDashboard} />
+            <Route path="/admin/insights" component={AdminInsights} />
+            <Route path="/admin/insights/create" component={AdminInsightEditor} />
+            <Route path="/admin/insights/:id/edit" component={AdminInsightEditor} />
+            <Route path="/admin/find-work" component={AdminFindWork} />
+            <Route path="/admin/image-uploader" component={AdminImageUploader} />
+            <Route path="/admin/csv-import" component={AdminCSVImport} />
+            <Route path="/admin/dashboard" component={AdminDashboard} />
+            <Route component={NotFound} />
+          </Switch>
+        </main>
+      </div>
+    </AdminProtectedRoute>
+  );
+}
+
 function AppContent() {
   const { isAuthenticated, isLoading, user } = useAuth();
   
@@ -243,9 +261,18 @@ function AppContent() {
       <Route path="/talent" component={PublicRouter} />
       <Route path="/operations-playbook" component={PublicRouter} />
       <Route path="/powerapp" component={PublicRouter} />
-      <Route path="/admin/vanessa-responses" component={PublicRouter} />
-      <Route path="/admin/vanessa-learning" component={PublicRouter} />
-      
+
+      {/* Admin Protected Routes */}
+      <Route path="/admin/vanessa-responses" component={AdminRouter} />
+      <Route path="/admin/vanessa-learning" component={AdminRouter} />
+      <Route path="/admin/insights" component={AdminRouter} />
+      <Route path="/admin/insights/create" component={AdminRouter} />
+      <Route path="/admin/insights/:id/edit" component={AdminRouter} />
+      <Route path="/admin/find-work" component={AdminRouter} />
+      <Route path="/admin/image-uploader" component={AdminRouter} />
+      <Route path="/admin/csv-import" component={AdminRouter} />
+      <Route path="/admin/dashboard" component={AdminRouter} />
+
       {/* Client Protected Routes */}
       <Route path="/dashboard" component={ClientRouter} />
       <Route path="/projects" component={ClientRouter} />

@@ -276,3 +276,15 @@ Correct statement: No,  highlight the 4p and delivery framework. Refer to the si
 Topic: when
 Vanessa should say: "when asked on how a day to day operation works at OnSpot, you should highlight 4Ps and Delivery framework."
 === End Correction ===
+
+
+=== Admin Training Update (2026-03-18T14:21:29.503Z) ===
+Topic: able
+Correct statement: be able to crawl in All Jobs, see what jobs are open and available.
+=== End Update ===
+
+
+=== Admin Training Update (2026-03-18T14:41:52.073Z) ===
+Topic: able
+Correct statement: be able to crawl in insights page since it's already available now.
+=== End Update ===

@@ -1,0 +1,48 @@
+Fix the issue where https://onspotglobal.com/admin/vanessa-responses is publicly accessible, but its training actions fail in production with “Authentication required. Please log in as an admin.”
+
+Context:
+- This is in the connect-onspot project.
+- The page /admin/vanessa-responses is currently exposed in the frontend as a public route.
+- But the backend training endpoints are protected in production:
+  - POST /api/train/chat/stream
+  - POST /api/train/correct
+- The frontend TrainingChat.tsx also checks for localStorage token in production and throws:
+  “Authentication required. Please log in as an admin.”
+- I do NOT want public users to access this unfinished admin page yet.
+
+Goal:
+Protect the admin Vanessa pages properly instead of exposing them publicly.
+
+Please do the following:
+1. In client/src/App.tsx:
+   - Remove /admin/vanessa-responses and /admin/vanessa-learning from the public routes.
+   - Wrap them with AdminProtectedRoute instead.
+   - Make sure they are only reachable by authenticated admin users.
+
+2. Check whether other /admin routes are also publicly exposed in App.tsx.
+   - Move them behind AdminProtectedRoute if needed, especially:
+     - /admin/insights
+     - /admin/insights/create
+     - /admin/insights/:id/edit
+     - /admin/find-work
+     - /admin/image-uploader
+
+3. Keep the backend production protection in server/routes.ts for:
+   - /api/train/chat/stream
+   - /api/train/correct
+   because these should remain admin-only.
+
+4. In client/src/pages/TrainingChat.tsx:
+   - Do not change the admin-only behavior.
+   - Keep production requiring auth.
+   - Clean up any messaging if needed so it matches the protected-route behavior.
+
+5. After making changes, summarize:
+   - what routes were changed
+   - why the bug happened
+   - why the fix works
+
+Important:
+- Do not remove backend auth protection.
+- Do not make the training endpoints public.
+- Prefer the safest fix: hide/protect unfinished admin pages until the full admin auth flow is complete.
