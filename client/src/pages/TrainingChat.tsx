@@ -21,7 +21,7 @@ export default function TrainingChat() {
   const [isStreaming, setIsStreaming] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const isDevelopment = import.meta.env.MODE === "development";
+  // TODO: Remove this once the admin login/auth system is complete and auth is re-enabled on training routes.
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -158,23 +158,14 @@ export default function TrainingChat() {
         </p>
       </div>
 
+      {/* TODO: Replace this banner and re-enable admin auth once the login system is complete. */}
       <Alert className="mx-4 mt-4">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          {isDevelopment ? (
-            <>
-              <strong>🔧 Training Mode Active (No Auth Required)</strong>
-              <br />
-              Development mode: All training features enabled without authentication.
-            </>
-          ) : (
-            <>
-              <strong>Admin Training Mode</strong>
-              <br />
-              Your corrections will be automatically detected and saved to Vanessa's memory.
-              Use phrases like "actually", "the correct answer is", or "you should" to correct Vanessa.
-            </>
-          )}
+          <strong>Training Mode Active (Temporary: No Auth Required while login is under development)</strong>
+          <br />
+          Your corrections will be automatically detected and saved to Vanessa's memory.
+          Use phrases like "actually", "the correct answer is", or "you should" to correct Vanessa.
         </AlertDescription>
       </Alert>
 

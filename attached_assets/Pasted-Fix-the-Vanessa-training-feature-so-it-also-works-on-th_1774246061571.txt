@@ -1,0 +1,47 @@
+Fix the Vanessa training feature so it also works on the published production site while our login/auth system is still unfinished.
+
+Problem:
+- In development/Replit preview, Train Vanessa works.
+- After publishing to production, it fails with:
+  “Authentication required. Please log in as an admin.”
+- For now, I want Vanessa training to work without authentication in both development and production until the login system is finished.
+
+Please update the code carefully:
+
+1. In client/src/pages/TrainingChat.tsx:
+   - Remove the logic that only bypasses auth in development:
+     const isDevelopment = import.meta.env.MODE === "development";
+   - Remove the production-only token requirement that throws:
+     “Authentication required. Please log in as an admin.”
+   - Allow requests to /api/train/chat/stream without requiring localStorage token for now.
+   - Keep the UI banner accurate. Replace “Admin Training Mode” / dev-only messaging with a temporary message like:
+     “Training Mode Active (Temporary: No Auth Required while login is under development).”
+
+2. In server/routes.ts:
+   - Find the middleware setup for:
+     - POST /api/train/chat/stream
+     - POST /api/train/correct
+   - It currently likely does something like:
+     const trainChatStreamMiddleware = process.env.NODE_ENV === "production"
+       ? [authenticateJWT, requireAdmin]
+       : [];
+   - Temporarily remove auth enforcement for these Vanessa training endpoints in both development and production.
+   - Make them accessible without authenticateJWT and requireAdmin for now.
+
+3. Add TODO comments in both frontend and backend:
+   - State clearly that this is temporary
+   - State that admin auth must be restored once the login system is complete
+
+4. Do not change unrelated auth logic.
+   - Only change the Vanessa training flow that is blocking production right now.
+
+5. After changes, summarize:
+   - which files were changed
+   - which production-only auth checks were removed
+   - why it worked in development but failed after publishing
+   - what needs to be re-enabled later
+
+Important:
+- This is a temporary workaround only.
+- Keep the Vanessa Responses page accessible publicly for now.
+- Do not refactor unrelated routes.
