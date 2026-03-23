@@ -864,8 +864,8 @@ export default function Home() {
                     <div className="flex items-center gap-4 mb-6">
                       <div className="relative w-14 h-14 lg:w-16 lg:h-16 rounded-full overflow-hidden border-2 border-white/20 group-hover:border-white/40 transition-colors duration-500">
                         {/* Default avatar — always rendered underneath */}
-                        <div className="absolute inset-0 flex items-center justify-center bg-white/10">
-                          <User className="w-7 h-7 lg:w-8 lg:h-8 text-white/50" />
+                        <div className="absolute inset-0 flex items-center justify-center bg-slate-500/40">
+                          <User className="w-7 h-7 lg:w-8 lg:h-8 text-slate-100/90" />
                         </div>
                         {/* Real photo rendered on top; hidden on error */}
                         {story.photo && (
@@ -932,8 +932,8 @@ export default function Home() {
                       <div className="flex items-center gap-3 mb-5">
                         <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-white/20">
                           {/* Default avatar — always rendered underneath */}
-                          <div className="absolute inset-0 flex items-center justify-center bg-white/10">
-                            <User className="w-6 h-6 text-white/50" />
+                          <div className="absolute inset-0 flex items-center justify-center bg-slate-500/40">
+                            <User className="w-6 h-6 text-slate-100/90" />
                           </div>
                           {/* Real photo rendered on top; hidden on error */}
                           {story.photo && (
