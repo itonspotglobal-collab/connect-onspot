@@ -124,6 +124,9 @@ function PublicRouter() {
           <Route path="/investors" component={InvestorsCorner} />
           <Route path="/powerapp" component={Powerapp} />
           <Route path="/operations-playbook" component={OperationsPlaybook} />
+          {/* TODO: Re-protect with AdminProtectedRoute once admin login system is complete */}
+          <Route path="/admin/vanessa-responses" component={VanessaResponses} />
+          <Route path="/admin/vanessa-learning" component={VanessaLearningDashboard} />
           {/* Legacy routes for backward compatibility */}
           <Route path="/talent" component={TalentSearch} />
           <Route component={NotFound} />
@@ -263,8 +266,9 @@ function AppContent() {
       <Route path="/powerapp" component={PublicRouter} />
 
       {/* Admin Protected Routes */}
-      <Route path="/admin/vanessa-responses" component={AdminRouter} />
-      <Route path="/admin/vanessa-learning" component={AdminRouter} />
+      {/* TODO: Move vanessa routes back to AdminRouter once admin login system is complete */}
+      <Route path="/admin/vanessa-responses" component={PublicRouter} />
+      <Route path="/admin/vanessa-learning" component={PublicRouter} />
       <Route path="/admin/insights" component={AdminRouter} />
       <Route path="/admin/insights/create" component={AdminRouter} />
       <Route path="/admin/insights/:id/edit" component={AdminRouter} />

@@ -1556,10 +1556,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/train/correct - Submit admin correction for Vanessa training (admin only)
-  // In development mode, bypass authentication for easier testing
-  const trainCorrectMiddleware = process.env.NODE_ENV === "production" 
-    ? [authenticateJWT, requireAdmin]
-    : [];
+  // TODO: Re-enable [authenticateJWT, requireAdmin] once the admin login system is complete.
+  // Auth temporarily removed so Vanessa training works without a login flow in production.
+  const trainCorrectMiddleware: any[] = [];
   
   app.post(
     "/api/train/correct",
@@ -1635,10 +1634,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // POST /api/train/chat/stream - Stream conversational training with Vanessa (admin only)
-  // In development mode, bypass authentication for easier testing
-  const trainChatStreamMiddleware = process.env.NODE_ENV === "production"
-    ? [authenticateJWT, requireAdmin]
-    : [];
+  // TODO: Re-enable [authenticateJWT, requireAdmin] once the admin login system is complete.
+  // Auth temporarily removed so Vanessa training works without a login flow in production.
+  const trainChatStreamMiddleware: any[] = [];
   
   app.post(
     "/api/train/chat/stream",
