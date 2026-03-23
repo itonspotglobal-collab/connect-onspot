@@ -1,0 +1,50 @@
+Update the client-facing Home.tsx testimonials/cards so that if a person does not have a real photo yet, the UI uses a default avatar image instead of the temporary/placeholder person photo.
+
+Context:
+- This is for the client part in Home.tsx
+- I do not yet have actual photos for:
+  - Elad Badash
+  - Eric M.
+- Those current images were only temporary alternatives
+- If no real photo exists, I want a default avatar image like the attached sample (generic profile icon)
+
+Please make the change cleanly and safely:
+
+1. Find the testimonial / transformation stories section in Home.tsx
+   - Specifically the cards for Elad Badash, Eric M., and Fernando C.
+
+2. Replace the temporary photos for people who do not have actual real photos yet
+   - Elad Badash → use default avatar
+   - Eric M. → use default avatar
+   - Keep Fernando C. photo as-is if that one is an actual image we want to keep
+
+3. Add a reusable fallback pattern
+   - Prefer a simple approach like:
+     - each testimonial item can have `image?: string | null`
+     - if image is missing/null/empty, render a default avatar image
+   - Do not hardcode this only for Elad and Eric if a cleaner reusable fallback can be implemented
+
+4. Add or reuse a default avatar asset
+   - If there is already a generic avatar asset in the project, use it
+   - Otherwise add a simple default avatar image asset and reference it
+   - The fallback should visually match the clean neutral look of the sample image
+
+5. Make sure the avatar styling remains consistent
+   - same size
+   - same circular crop
+   - same spacing/alignment in the testimonial cards
+   - no layout shift
+
+6. If the app uses an <img> tag, add a defensive fallback too
+   - For example, if an image fails to load, switch to the default avatar with `onError`
+   - This helps even if an image path is broken later
+
+7. After updating, summarize:
+   - which file(s) were changed
+   - how the fallback works
+   - which testimonial entries now use the default avatar
+
+Important:
+- Do not redesign the section
+- Only update the image handling so missing/unavailable profile photos use a default avatar
+- Keep the current styling and layout intact

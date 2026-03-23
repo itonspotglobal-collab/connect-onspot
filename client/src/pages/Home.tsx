@@ -33,6 +33,7 @@ import {
   ChevronDown,
   Settings,
   Layers,
+  User,
 } from "lucide-react";
 import {
   SiAmazon,
@@ -68,9 +69,6 @@ import AmirSinghPhoto from "@assets/Amir_Singh_1774264095055.jpg";
 import JenniferDizonPhoto from "@assets/Jennifer_Dizon_1774262612848.jpg";
 import AndreiLosantoPhoto from "@assets/Andrei_Losanto_1774262612848.jpg";
 import FernandoPhoto from "@assets/Fernando_1773832206009.jpg";
-import FrederickPhoto from "../assets/logos/Frederick.png";
-import AlexPhoto from "../assets/logos/Alex.png";
-import StefanPhoto from "../assets/logos/Stefan.png";
 
 import favicon from "../assets/logos/favic.png";
 import MicrosoftLogo from "../assets/logos/microsoft.logo.png";
@@ -252,7 +250,7 @@ const transformationStories = [
     transformation: "From 12-hour workdays to automated excellence",
     story:
       "The professionalism and consistency of the OnSpot team. Communication is always clear and easy, and I appreciate how they provide structured updates at the end of each day and every week. This makes it simple for me to understand the scope of work being done and stay aligned",
-    photo: FrederickPhoto,
+    photo: null,
     metric: "2x Revenue",
   },
   {
@@ -261,7 +259,7 @@ const transformationStories = [
     transformation: "From scattered processes to seamless orchestration",
     story:
       "I’ve worked with several outsourcing companies, but none delivered like On-Spot Global. Shane and Ria helped me build my team, stayed involved, and ensured success. Communication’s great, savings exceeded expectations, and I finally feel like I’m working with a true partner.",
-    photo: AlexPhoto,
+    photo: null,
     metric: "85% Faster",
   },
   {
@@ -865,11 +863,19 @@ export default function Home() {
                     {/* Profile */}
                     <div className="flex items-center gap-4 mb-6">
                       <div className="relative w-14 h-14 lg:w-16 lg:h-16 rounded-full overflow-hidden border-2 border-white/20 group-hover:border-white/40 transition-colors duration-500">
-                        <img
-                          src={story.photo}
-                          alt={story.name}
-                          className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
-                        />
+                        {/* Default avatar — always rendered underneath */}
+                        <div className="absolute inset-0 flex items-center justify-center bg-white/10">
+                          <User className="w-7 h-7 lg:w-8 lg:h-8 text-white/50" />
+                        </div>
+                        {/* Real photo rendered on top; hidden on error */}
+                        {story.photo && (
+                          <img
+                            src={story.photo}
+                            alt={story.name}
+                            className="absolute inset-0 w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
+                            onError={(e) => { e.currentTarget.style.display = "none"; }}
+                          />
+                        )}
                         {/* Photo glow */}
                         <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 to-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
                       </div>
@@ -925,11 +931,19 @@ export default function Home() {
                       {/* Profile */}
                       <div className="flex items-center gap-3 mb-5">
                         <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-white/20">
-                          <img
-                            src={story.photo}
-                            alt={story.name}
-                            className="w-full h-full object-cover"
-                          />
+                          {/* Default avatar — always rendered underneath */}
+                          <div className="absolute inset-0 flex items-center justify-center bg-white/10">
+                            <User className="w-6 h-6 text-white/50" />
+                          </div>
+                          {/* Real photo rendered on top; hidden on error */}
+                          {story.photo && (
+                            <img
+                              src={story.photo}
+                              alt={story.name}
+                              className="absolute inset-0 w-full h-full object-cover"
+                              onError={(e) => { e.currentTarget.style.display = "none"; }}
+                            />
+                          )}
                         </div>
                         <div className="flex-1">
                           <p className="font-semibold text-sm">{story.name}</p>
