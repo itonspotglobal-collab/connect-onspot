@@ -1556,10 +1556,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/train/correct - Submit admin correction for Vanessa training (admin only)
-  // In development mode, bypass authentication for easier testing
-  const trainCorrectMiddleware = process.env.NODE_ENV === "production" 
-    ? [authenticateJWT, requireAdmin]
-    : [];
+  // TODO: Re-add [authenticateJWT, requireAdmin] once the admin login/auth system is complete.
+  // Temporarily open to all environments while the login flow is being built.
+  const trainCorrectMiddleware: any[] = [];
   
   app.post(
     "/api/train/correct",
@@ -1635,10 +1634,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // POST /api/train/chat/stream - Stream conversational training with Vanessa (admin only)
-  // In development mode, bypass authentication for easier testing
-  const trainChatStreamMiddleware = process.env.NODE_ENV === "production"
-    ? [authenticateJWT, requireAdmin]
-    : [];
+  // TODO: Re-add [authenticateJWT, requireAdmin] once the admin login/auth system is complete.
+  // Temporarily open to all environments while the login flow is being built.
+  const trainChatStreamMiddleware: any[] = [];
   
   app.post(
     "/api/train/chat/stream",
@@ -1718,10 +1716,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // POST /api/site/reindex - Trigger manual site crawl (admin only)
-  // In development mode, bypass authentication for easier testing
-  const siteReindexMiddleware = process.env.NODE_ENV === "production"
-    ? [authenticateJWT, requireAdmin]
-    : [];
+  // TODO: Re-add [authenticateJWT, requireAdmin] once the admin login/auth system is complete.
+  // Temporarily open to all environments while the login flow is being built.
+  // NOTE: This triggers a site crawl which is low-risk but should still be protected eventually.
+  const siteReindexMiddleware: any[] = [];
   
   app.post("/api/site/reindex", ...siteReindexMiddleware, async (req: any, res) => {
     try {

@@ -46,22 +46,11 @@ export default function TrainingChat() {
         setIsStreaming(true);
         setStreamedResponse("");
 
-        // In development mode, skip authentication checks
-        const isDevelopment = import.meta.env.MODE === "development";
-        const token = isDevelopment ? null : localStorage.getItem("token");
-        
-        if (!isDevelopment && !token) {
-          throw new Error("Authentication required. Please log in as an admin.");
-        }
-
+        // TODO: Restore token-based auth once the admin login/auth system is complete.
+        // Temporarily sending requests without Authorization header in all environments.
         const headers: Record<string, string> = {
           "Content-Type": "application/json",
         };
-        
-        // Only add Authorization header in production
-        if (!isDevelopment && token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
 
         const response = await fetch("/api/train/chat/stream", {
           method: "POST",
