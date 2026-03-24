@@ -245,7 +245,7 @@ const onspotExperience = [
 
 const transformationStories = [
   {
-    name: "Elad Badash",
+    name: "Elad B.",
     role: "CEO/Founder, PineTech",
     transformation: "From 12-hour workdays to automated excellence",
     story:
@@ -873,7 +873,9 @@ export default function Home() {
                             src={story.photo}
                             alt={story.name}
                             className="absolute inset-0 w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
-                            onError={(e) => { e.currentTarget.style.display = "none"; }}
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
+                            }}
                           />
                         )}
                         {/* Photo glow */}
@@ -941,7 +943,9 @@ export default function Home() {
                               src={story.photo}
                               alt={story.name}
                               className="absolute inset-0 w-full h-full object-cover"
-                              onError={(e) => { e.currentTarget.style.display = "none"; }}
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                              }}
                             />
                           )}
                         </div>
