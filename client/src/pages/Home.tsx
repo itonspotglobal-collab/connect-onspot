@@ -60,14 +60,14 @@ import PinetechLogo from "../assets/logos/Pinetech.png";
 import SafewayLogo from "../assets/logos/Safeway.png";
 import VertexLogo from "../assets/logos/Vertex.png";
 
-import KyleMendezPhoto from "@assets/Kyle_Mendez_1774262612848.jpeg";
-import AlexandraLopezPhoto from "@assets/Alexandra_Lopez_1774262612848.jpg";
+import KyleMendezPhoto from "@assets/Kyle_Mendez_1774430604161.jpeg";
+import AlexandraLopezPhoto from "@assets/Alexandra_Lopez_1774430604160.jpg";
 import AndreaPinzonPhoto from "@assets/Andrea_Pinzon_1774264095055.jpeg";
 import ChristopherAlbaPhoto from "@assets/Christopher_Alba_1774264095055.jpg";
 import RachelCastroPhoto from "@assets/Rachel_Caztro_1774264095056.jpg";
 import AmirSinghPhoto from "@assets/Amir_Singh_1774264095055.jpg";
-import JenniferDizonPhoto from "@assets/Jennifer_Dizon_1774262612848.jpg";
-import AndreiLosantoPhoto from "@assets/Andrei_Losanto_1774262612848.jpg";
+import JenniferDizonPhoto from "@assets/Jennifer_Dizon_1774430604160.jpg";
+import AndreiLosantoPhoto from "@assets/Andrei_Losanto_1774430604160.jpg";
 import FernandoPhoto from "@assets/Fernando_1773832206009.jpg";
 
 import favicon from "../assets/logos/favic.png";
