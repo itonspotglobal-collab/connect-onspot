@@ -1,0 +1,47 @@
+Update my React + TypeScript job card UI.
+
+I want to change `ExpandableJobCard.tsx` from a dropdown/expandable card into a popup modal that opens when the user clicks the job card or a “View Details” button.
+
+Requirements:
+1. Replace the current dropdown/expand behavior with a modal popup.
+2. The popup must be closable:
+   - add an X close button at the top-right
+   - close when clicking outside the modal
+   - close when pressing the Escape key
+3. Show full job details inside the popup.
+4. Generate a shareable link for the specific job offer.
+   - use a job-specific URL if available
+   - otherwise build it from `window.location.origin` + the job id or slug
+5. Add sharing actions inside the popup:
+   - Copy Link button
+   - Native device share using the Web Share API when supported
+   - Quick share buttons/links for platforms like LinkedIn, Facebook, X/Twitter
+6. Structure the code cleanly:
+   - keep `ExpandableJobCard.tsx` as the trigger/card
+   - create a reusable modal component if needed
+   - create helper functions for share URLs if needed
+7. Keep the existing styling theme as much as possible.
+8. Make sure the popup is responsive on desktop and mobile.
+9. Add proper TypeScript types.
+10. Preserve current job data rendering and avoid breaking existing props.
+
+Implementation details:
+- Use React hooks (`useState`, `useEffect`) for modal open/close behavior.
+- Prevent background scroll when the modal is open.
+- Include accessible markup:
+  - `role="dialog"`
+  - `aria-modal="true"`
+  - close button with accessible label
+- Add fallback behavior if `navigator.share` is not supported.
+- Copy Link should use `navigator.clipboard.writeText()` with fallback handling.
+- For share URLs:
+  - LinkedIn: `https://www.linkedin.com/sharing/share-offsite/?url=...`
+  - Facebook: `https://www.facebook.com/sharer/sharer.php?u=...`
+  - X/Twitter: `https://twitter.com/intent/tweet?url=...&text=...`
+
+Please:
+1. Refactor `ExpandableJobCard.tsx`
+2. Create any new components/utilities needed
+3. Show me the final code
+4. Explain where each new file should go
+5. Keep the code production-ready and easy to maintain
