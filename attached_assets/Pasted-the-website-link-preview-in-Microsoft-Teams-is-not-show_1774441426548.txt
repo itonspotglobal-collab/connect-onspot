@@ -1,0 +1,58 @@
+the website link preview in Microsoft Teams is not showing the preview image. Teams only shows the title, description, and a gray placeholder icon instead of my intended image. 
+
+Please fix this issue for the page:
+
+https://onspotglobal.com/find-work?category=all
+
+What I need:
+1. Ensure the page has proper Open Graph and Twitter meta tags rendered in the initial HTML <head>, not injected only after JavaScript loads.
+
+Add or verify these tags:
+
+<meta property="og:title" content="OnSpot – The Superhuman Outsourcing System" />
+<meta property="og:description" content="The first integrator system that simplifies outsourcing management with Apple-inspired design and powerful features." />
+<meta property="og:image" content="https://onspotglobal.com/path-to-heart-image.jpg" />
+<meta property="og:image:secure_url" content="https://onspotglobal.com/path-to-heart-image.jpg" />
+<meta property="og:image:type" content="image/jpeg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:url" content="https://onspotglobal.com/find-work?category=all" />
+<meta property="og:type" content="website" />
+
+Also add:
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="OnSpot – The Superhuman Outsourcing System" />
+<meta name="twitter:description" content="The first integrator system that simplifies outsourcing management with Apple-inspired design and powerful features." />
+<meta name="twitter:image" content="https://onspotglobal.com/path-to-heart-image.jpg" />
+
+2. Make sure the image:
+- uses a full HTTPS URL
+- is publicly accessible without login
+- returns HTTP 200
+- is a real JPG or PNG file
+- is at least 1200x630
+- is not blocked by robots.txt, hotlink protection, firewall, or user-agent filtering
+
+3. If this is a React SPA, make sure metadata is server-rendered or pre-rendered because Microsoft Teams link previews may not execute client-side JavaScript before scraping metadata.
+
+4. If this is Next.js, use next/head or the metadata API so the OG tags are present in the server response.
+
+5. If this is React without SSR, suggest the best fix:
+- server-side rendering
+- pre-rendering
+- or backend-generated HTML meta tags for shared pages
+
+6. Check for common problems:
+- relative image URL instead of absolute URL
+- image path returning 404
+- image blocked by CORS/security rules
+- duplicate or conflicting og:image tags
+- meta tags added only after hydration
+
+7. Show me the exact code changes needed for:
+- plain HTML
+- React
+- Next.js
+
+Goal:
+When this link is pasted into Microsoft Teams, it should display the correct preview image instead of the gray placeholder.

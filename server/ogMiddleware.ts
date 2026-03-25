@@ -1,26 +1,56 @@
 import { Request, Response, NextFunction } from "express";
 
 const SOCIAL_BOT_PATTERNS = [
+  // Facebook / Instagram / Messenger
   "facebookexternalhit",
   "facebot",
+  "facebookplatform",
+  // Twitter / X
   "twitterbot",
+  // Slack
   "slackbot",
   "slack-imgproxy",
+  // Microsoft Teams (SkypeUriPreview is the Teams/Skype link-preview crawler)
+  "skypeuripreview",
+  "skype",
+  "microsoftbot",
+  "msnbot",
+  "bingbot",
+  "bingpreview",
+  "microsoft",
+  // WhatsApp
   "whatsapp",
+  // Discord
   "discordbot",
+  // LinkedIn
   "linkedinbot",
+  // Telegram
   "telegrambot",
+  // Pinterest
   "pinterest",
+  // iMessage / Apple
+  "applebot",
+  "icloud",
+  // Google (Chat, Search preview)
+  "googlebot",
+  "google-inspectiontool",
+  "developers.google.com/+/web/snippet",
+  // Other link-preview services
   "rogerbot",
   "ia_archiver",
   "embedly",
   "outbrain",
   "quora link preview",
   "showyoubot",
-  "outbrain",
   "w3c_validator",
-  "applebot",
-  "developers.google.com/+/web/snippet",
+  "vkshare",
+  "xing-contenttabreceiver",
+  "redditbot",
+  "flipboard",
+  "tumblr",
+  "bitlybot",
+  "semrushbot",
+  "preview",
 ];
 
 function isSocialBot(req: Request): boolean {
@@ -48,8 +78,9 @@ const SITE = "https://onspotglobal.com";
 
 function resolveOGMeta(pathname: string, query: Record<string, string>): OGMeta {
   if (pathname.startsWith("/find-work")) {
-    const cat = query.category && query.category !== "all" ? query.category : null;
-    const catLabel = cat ? ` – ${cat.charAt(0).toUpperCase() + cat.slice(1)}` : "";
+    const cat = query.category || null;
+    const isAllCat = !cat || cat === "all";
+    const catLabel = !isAllCat ? ` – ${cat!.charAt(0).toUpperCase() + cat!.slice(1)}` : "";
     const url = cat
       ? `${SITE}/find-work?category=${encodeURIComponent(cat)}`
       : `${SITE}/find-work`;
