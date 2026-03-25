@@ -7,6 +7,7 @@ import path from "path";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { setupAuth } from "./replitAuth";
+import { ogMiddleware } from "./ogMiddleware";
 
 // Extend Request interface to include requestId
 declare global {
@@ -306,6 +307,11 @@ app.use((req, res, next) => {
   const publicPath = path.resolve(import.meta.dirname, "..", "public");
   app.use(express.static(publicPath));
   console.log(`📁 Serving static files from: ${publicPath}`);
+
+  // Social media crawler middleware — intercepts known bots before Vite/static catch-all
+  // and serves a lightweight HTML page with correct Open Graph tags per route.
+  // Regular browsers pass through untouched.
+  app.use(ogMiddleware);
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
