@@ -2688,6 +2688,15 @@ export class DbStorage extends MemStorage {
     return job || undefined;
   }
 
+  async getJobWithSkills(jobId: string): Promise<(Job & { skills: string[] }) | undefined> {
+    const job = await this.getJob(jobId);
+    if (!job) return undefined;
+    return {
+      ...job,
+      skills: (job.skillTags as string[]) || [],
+    };
+  }
+
   async createJob(insertJob: InsertJob): Promise<Job> {
     const [job] = await db.insert(jobsTable).values(insertJob).returning();
     return job;

@@ -1,0 +1,73 @@
+Please adjust my React + TypeScript job modal and job details routing.
+
+I already changed `ExpandableJobCard.tsx` into a popup modal and added sharing, but I need 2 fixes:
+
+FIX 1: Make the popup wider
+- Increase the modal width for better readability on desktop
+- Keep it responsive on tablet and mobile
+- Suggested behavior:
+  - desktop: wider max width (around 900px to 1100px)
+  - tablet/mobile: still fit the screen with proper padding
+- Keep the current styling theme
+
+FIX 2: Shared job link opens "Job not found" even though the job exists
+Current problem:
+- When I share a job link and open it directly, the page says "Job not found"
+- But the job does exist and is already posted
+- Opening from the jobs list/modal works
+
+Please fix the route/details logic so the shared link opens the specific existing job correctly.
+
+What to check and fix:
+1. Verify the shared link uses the correct unique identifier
+   - use either `job.id` or `job.slug`
+   - do not mix id in one place and slug in another
+   - example:
+     `const shareUrl = ${window.location.origin}/jobs/${job.slug || job.id}`
+
+2. Verify the route matches the identifier being shared
+   - example route:
+     `/jobs/:jobIdentifier`
+
+3. In the job details page:
+   - read the route param with `useParams()`
+   - fetch or find the exact job using that same identifier
+   - support direct page loads, not only navigation from the jobs list
+   - do not rely only on in-memory state from the jobs page
+
+4. If the jobs list is loaded asynchronously:
+   - wait for loading to finish before showing "Job not found"
+   - only show "Job not found" after the fetch/search has completed
+
+5. If there is a backend/API endpoint for single job retrieval:
+   - use it to fetch the specific job by id or slug
+   - preferred:
+     `GET /jobs/:id` or `GET /jobs/slug/:slug`
+   - if no single endpoint exists, fetch jobs safely and match the correct one after load
+
+6. Add debugging protection:
+   - normalize values before comparison
+   - compare strings consistently
+   - handle numeric/string id mismatch
+   - handle URL encoding for slugs
+
+7. Preserve existing styling and current functionality
+
+Please update:
+- `ExpandableJobCard.tsx`
+- route definitions
+- job details page/component
+- any job fetching utility if needed
+
+Important implementation details:
+- Use the same exact identifier for:
+  - share link generation
+  - route param
+  - job lookup/fetch
+- Add loading state before showing "Job not found"
+- Make the modal wider, cleaner, and easier to read
+
+Please show me:
+1. the updated code
+2. which files changed
+3. a short explanation of why "Job not found" happened

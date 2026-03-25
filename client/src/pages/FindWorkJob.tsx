@@ -21,6 +21,7 @@ interface JobWithSkills {
   responsibilities?: string[] | null;
   requirements?: string[] | null;
   skillTags?: string[] | null;
+  skills?: string[] | null;
   createdAt?: string | Date | null;
   status?: string;
 }
@@ -29,18 +30,25 @@ export default function FindWorkJob() {
   const params = useParams<{ jobId: string }>();
   const [, navigate] = useLocation();
   const [modalOpen, setModalOpen] = useState(false);
-  const jobId = params.jobId;
+  const jobId = params?.jobId ?? "";
 
-  const { data: job, isLoading, isError } = useQuery<JobWithSkills>({
+  // Use the standard query pattern — default fetcher joins the key array with "/"
+  // so ["/api/jobs", jobId] → fetches /api/jobs/<jobId>
+  const { data: rawJob, isLoading, isError } = useQuery<JobWithSkills>({
     queryKey: ["/api/jobs", jobId],
-    queryFn: async () => {
-      const res = await fetch(`/api/jobs/${jobId}`);
-      if (!res.ok) throw new Error("Job not found");
-      return res.json();
-    },
     enabled: !!jobId,
-    retry: false,
   });
+
+  // Normalize: the single-job endpoint returns `skills`, search returns `skillTags`.
+  // Merge both so JobDetailModal's `job.skillTags` always has data.
+  const job: JobWithSkills | undefined = rawJob
+    ? {
+        ...rawJob,
+        skillTags: rawJob.skillTags?.length
+          ? rawJob.skillTags
+          : (rawJob.skills as string[] | null | undefined) ?? null,
+      }
+    : undefined;
 
   useEffect(() => {
     if (job) setModalOpen(true);
@@ -63,7 +71,7 @@ export default function FindWorkJob() {
           </div>
         )}
 
-        {isError && (
+        {!isLoading && isError && (
           <div className="flex flex-col items-center gap-4 text-center max-w-sm">
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
               <Briefcase className="w-8 h-8 text-muted-foreground" />
@@ -83,7 +91,7 @@ export default function FindWorkJob() {
 
         {!isLoading && !isError && !job && (
           <div className="flex flex-col items-center gap-4 text-center max-w-sm">
-            <p className="text-sm text-muted-foreground">No job data available.</p>
+            <p className="text-sm text-muted-foreground">No job data found.</p>
             <Button variant="outline" onClick={() => navigate("/find-work")}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Browse all jobs
@@ -91,7 +99,7 @@ export default function FindWorkJob() {
           </div>
         )}
 
-        {!isLoading && !isError && job && !modalOpen && (
+        {!isLoading && job && !modalOpen && (
           <Button variant="outline" onClick={() => navigate("/find-work")}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to all jobs

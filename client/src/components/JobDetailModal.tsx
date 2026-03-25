@@ -175,7 +175,7 @@ export function JobDetailModal({
       />
 
       {/* Modal panel */}
-      <div className="relative z-10 w-full max-w-2xl max-h-[90vh] flex flex-col rounded-xl overflow-hidden shadow-2xl bg-background border border-border">
+      <div className="relative z-10 w-full max-w-4xl max-h-[90vh] flex flex-col rounded-xl overflow-hidden shadow-2xl bg-background border border-border">
 
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 px-6 py-5 flex-shrink-0">
