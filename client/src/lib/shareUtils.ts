@@ -1,5 +1,5 @@
 export function buildJobUrl(jobId: string): string {
-  return `${window.location.origin}/find-work/${jobId}`;
+  return `${window.location.origin}/find-work/job/${jobId}`;
 }
 
 export function buildLinkedInShareUrl(jobUrl: string): string {

@@ -32,6 +32,7 @@ import GetHired from "@/pages/GetHired";
 import TalentPortal from "@/pages/TalentPortal";
 import HiredTalentPortal from "@/pages/HiredTalentPortal";
 import FindWork from "@/pages/FindWork";
+import FindWorkJob from "@/pages/FindWorkJob";
 import Insights from "@/pages/Insights";
 import InsightPost from "@/pages/InsightPost";
 import NotFound from "@/pages/not-found";
@@ -99,6 +100,7 @@ function PublicRouter() {
           }} />
           <Route path="/hire-talent" component={TalentSearch} />
           <Route path="/find-work" component={FindWork} />
+          <Route path="/find-work/job/:jobId" component={FindWorkJob} />
           <Route path="/find-work/:category" component={FindWork} />
           <Route path="/get-hired" component={() => {
             // Allow both authenticated and non-authenticated access to GetHired
@@ -171,6 +173,7 @@ function ClientRouter() {
           {/* Public routes accessible from client dashboard */}
           <Route path="/hire-talent" component={TalentSearch} />
           <Route path="/find-work" component={FindWork} />
+          <Route path="/find-work/job/:jobId" component={FindWorkJob} />
           <Route path="/find-work/:category" component={FindWork} />
           <Route component={NotFound} />
         </Switch>
@@ -229,6 +232,7 @@ function AppContent() {
       <Route path="/" component={PublicRouter} />
       <Route path="/hire-talent" component={PublicRouter} />
       <Route path="/find-work" component={PublicRouter} />
+      <Route path="/find-work/job/:jobId" component={PublicRouter} />
       <Route path="/find-work/:category" component={PublicRouter} />
       <Route path="/get-hired" component={PublicRouter} />
       <Route path="/why-onspot" component={PublicRouter} />
