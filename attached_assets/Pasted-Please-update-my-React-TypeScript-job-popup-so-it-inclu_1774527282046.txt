@@ -1,0 +1,53 @@
+Please update my React + TypeScript job popup so it includes a new button labeled `Find out more`.
+
+Goal:
+- Add a `Find out more` button inside the new popup/modal
+- This button should redirect the user to `FindWorkJob.tsx`
+- The destination page should show the specific job position details, not the general jobs list
+
+Please implement the following:
+
+1. Add a new `Find out more` button in the popup/modal UI
+- Place it near the existing action buttons in the popup footer/action area
+- Keep the styling consistent with the current design
+- Make it clear and easy to click on desktop and mobile
+
+2. Route the button to the specific job details page
+- The button should navigate to the dedicated job page handled by `FindWorkJob.tsx`
+- Use the same job-specific identifier already used for share links and direct job routes
+- Example:
+  - `/jobs/:jobIdentifier`
+- Do not send users to the generic jobs listing page
+
+3. Ensure `FindWorkJob.tsx` loads the correct job
+- It should read the route param
+- It should fetch or find the matching job by the same identifier used in the popup link
+- It should support direct page loads from shared links and button clicks
+- Show loading state before showing not found
+
+4. Keep identifiers consistent
+- Use the same exact field across:
+  - popup redirect
+  - share links
+  - route definition
+  - `FindWorkJob.tsx` lookup
+- Preferred:
+  - `job.slug || job.id`
+
+5. Preserve existing popup actions
+- Keep current buttons like Open / Preview / Copy Link / Apply / Close if they already exist
+- Just add `Find out more` without breaking existing functionality
+
+6. TypeScript + cleanup
+- Add proper types
+- Clean up any duplicated navigation logic by using a reusable helper if needed
+
+7. Show me:
+- updated `ExpandableJobCard.tsx`
+- updated route configuration if needed
+- updated `FindWorkJob.tsx`
+- any helper changes
+
+Important:
+- The `Find out more` button must open the dedicated job details page for that exact job
+- It must not redirect to the page showing all job openings

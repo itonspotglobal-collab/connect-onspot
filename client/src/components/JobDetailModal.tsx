@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -21,6 +22,7 @@ import {
   CalendarDays,
   Copy,
   Check,
+  BookOpen,
 } from "lucide-react";
 import { SiLinkedin, SiFacebook, SiX } from "react-icons/si";
 import {
@@ -103,6 +105,7 @@ export function JobDetailModal({
   adminActions,
   showApply = true,
 }: JobDetailModalProps) {
+  const [, navigate] = useLocation();
   const [copied, setCopied] = useState(false);
   const [canNativeShare] = useState(() => !!navigator.share);
 
@@ -417,6 +420,19 @@ export function JobDetailModal({
               </Button>
             </>
           )}
+
+          {/* Find out more — navigates to the full dedicated job page */}
+          <Button
+            variant="outline"
+            onClick={() => {
+              onClose();
+              navigate(`/jobs/${job.id}`);
+            }}
+          >
+            <BookOpen className="w-4 h-4 mr-2" />
+            Find out more
+          </Button>
+
           {adminActions && <div className="ml-auto">{adminActions}</div>}
           <Button variant="ghost" size="sm" onClick={onClose} className="ml-auto">
             Close
