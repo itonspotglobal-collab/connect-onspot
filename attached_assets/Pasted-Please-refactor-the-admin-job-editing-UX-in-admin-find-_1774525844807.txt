@@ -1,0 +1,96 @@
+Please refactor the admin job editing UX in `admin/find-work` so that editing a job posting happens in a popup/modal instead of the current inline form on the page.
+
+Current problem:
+- Editing a job posting is currently displayed inline on the admin page
+- We already implemented popup/modal behavior on the public job side
+- I want the admin editing experience to also use a popup for smoother and easier access
+
+Goal:
+- When clicking Edit on a job posting, open a popup modal with the full job edit form
+- Remove or stop using the large inline edit section on the admin page
+- Keep the editing experience clean, responsive, and easy to use
+
+Please implement the following:
+
+1. Move the edit job posting form into a modal/popup
+- Clicking the Edit action/button on a job card/list item should open a modal
+- The modal should preload the selected job’s current data
+- The modal should contain the full editable form that is currently shown inline
+
+2. Modal behavior
+- Add an X close button
+- Close on outside click
+- Close on Escape key
+- Prevent background scroll while open
+- Make the modal scrollable internally if the form is long
+- Make the modal wider for readability on desktop while still responsive on mobile/tablet
+
+3. Remove inline editing section from the admin page
+- The page should no longer permanently show the large edit form at the top or middle of the page
+- The main admin page should focus on:
+  - stats/cards
+  - job list
+  - add new job button
+  - job actions
+
+4. Keep all current form fields and editing functionality
+- Preserve the current edit fields such as:
+  - job title
+  - company
+  - location
+  - category
+  - experience level
+  - contract type
+  - description
+  - responsibilities
+  - skills needed / requirements
+  - skill tags
+  - duration
+  - status
+  - and any other existing fields
+- Preserve validation and update/save behavior
+
+5. Reuse form logic where possible
+- If possible, extract the job form into a reusable component
+- Example:
+  - `JobPostingForm.tsx`
+  - `EditJobModal.tsx`
+- Avoid duplicating form logic between add and edit flows
+
+6. Improve admin UX
+- The edit modal should clearly show:
+  - a title like “Edit Job Posting”
+  - Save/Update button
+  - Cancel button
+- The selected job card should still remain visible in the background behind the modal
+- After successful update:
+  - close the modal automatically or keep it open with success feedback
+  - refresh/update the job list immediately
+
+7. Keep compatibility with current public job features
+- Ensure editing still supports all fields needed for:
+  - public `Findwork.tsx`
+  - `ExpandableJobCard.tsx`
+  - dedicated role page
+  - share links and job-specific routes
+- If fields like slug, badges, overview, responsibilities, requirements, benefits, or application instructions are already used publicly, include them in admin editing as well
+
+8. Maintain styling/theme
+- Keep the current design system and existing visual style
+- Make the modal polished and production-ready
+
+9. TypeScript + cleanup
+- Keep proper TypeScript typings
+- Remove obsolete inline-edit state/markup if no longer needed
+- Clean up unused imports and duplicated code
+
+Please update:
+- `admin/find-work` page/component
+- any job form component
+- any modal component needed
+
+Please provide:
+1. the full updated code
+2. new files created
+3. changed files
+4. a short explanation of the new admin edit flow
