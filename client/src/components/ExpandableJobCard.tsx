@@ -16,14 +16,12 @@ import {
   Briefcase,
   CalendarDays,
   ArrowRight,
-  ExternalLink,
 } from "lucide-react";
 import { JobDetailModal } from "@/components/JobDetailModal";
 import {
   getTimeAgo,
   getJobBadges,
   formatContractType,
-  buildRateDisplay,
 } from "@/lib/jobUtils";
 
 const CATEGORY_MAP = [
@@ -91,7 +89,6 @@ export function ExpandableJobCard({
 
   const categoryInfo = getCategoryInfo(job.category);
   const IconComponent = categoryInfo.icon;
-  const rateDisplay = buildRateDisplay(job);
   const timeAgo = getTimeAgo(job.createdAt);
   const badges = getJobBadges(job);
   const skills = job.skillTags || [];
@@ -147,20 +144,12 @@ export function ExpandableJobCard({
                 </div>
               </div>
             </div>
-            <div className="flex-shrink-0 text-right">
-              <div className="text-base font-bold text-white leading-tight">
-                {rateDisplay}
-              </div>
-              <div className="text-blue-200 text-xs mt-0.5">
-                {job.contractType === "fixed" ? "Fixed price" : "Monthly rate"}
-              </div>
-            </div>
           </div>
         </div>
 
         <CardContent className="p-0">
-          {/* Stat bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-border border-b border-border">
+          {/* Stat bar: Contract | Location | Posted */}
+          <div className="grid grid-cols-3 divide-x divide-border border-b border-border">
             <div className="flex items-center gap-2 px-4 py-3">
               <Briefcase className="w-4 h-4 text-blue-500 flex-shrink-0" />
               <div className="min-w-0">
@@ -170,17 +159,6 @@ export function ExpandableJobCard({
                 <div className="text-sm font-semibold truncate">
                   {formatContractType(job.contractType)}
                 </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 px-4 py-3">
-              <span className="text-green-500 text-sm font-bold flex-shrink-0 leading-none">
-                ₱
-              </span>
-              <div className="min-w-0">
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-                  {job.contractType === "fixed" ? "Budget" : "Salary"}
-                </div>
-                <div className="text-sm font-semibold truncate">{rateDisplay}</div>
               </div>
             </div>
             <div className="flex items-center gap-2 px-4 py-3">
