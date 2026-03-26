@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { sortJobs, SORT_OPTIONS, type SortOption } from "@/lib/jobUtils";
 import { useSearch } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -98,6 +99,13 @@ export default function FindWork() {
   const [hotSearchRange, setHotSearchRange] = useState<"daily" | "weekly">(
     "daily",
   );
+  const [sortBy, setSortBy] = useState<SortOption>("recently-posted");
+  // 24-hour tick so relative timestamps stay fresh even if the tab is left open
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 24 * 60 * 60 * 1000);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     if (urlCategory) {
@@ -253,7 +261,13 @@ export default function FindWork() {
 
       return matchesLocation && matchesType && matchesBudget;
     });
-  }, [allJobs, selectedLocation, selectedJobType, selectedBudget]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allJobs, selectedLocation, selectedJobType, selectedBudget, tick]);
+
+  const sortedJobs = useMemo(
+    () => sortJobs(filteredJobs, sortBy),
+    [filteredJobs, sortBy]
+  );
 
   const recommendedJobs: any[] = useMemo(() => {
     if (!matchesData || !Array.isArray(matchesData)) return [];
@@ -490,29 +504,45 @@ export default function FindWork() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <span className="text-sm">
-                  {filteredJobs.length} jobs found
+              <div className="flex items-center gap-3">
+                <Select
+                  value={sortBy}
+                  onValueChange={(v) => setSortBy(v as SortOption)}
+                >
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SORT_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <span className="text-sm text-muted-foreground whitespace-nowrap">
+                  {sortedJobs.length} job{sortedJobs.length !== 1 ? "s" : ""}
                 </span>
               </div>
             </div>
 
             {/* Job Listings */}
             <div className="space-y-4">
-              {filteredJobs.map((job: any) => (
+              {sortedJobs.map((job: any) => (
                 <ExpandableJobCard key={job.id} job={job} showApply={true} />
               ))}
             </div>
 
-            {!jobsLoading && !jobsError && filteredJobs.length === 0 && (
+            {!jobsLoading && !jobsError && sortedJobs.length === 0 && (
               <div className="text-center py-12">
                 <div className="w-24 h-24 mx-auto mb-6 bg-muted rounded-full flex items-center justify-center">
                   <Search className="w-12 h-12 text-muted-foreground" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">No jobs found</h3>
                 <p className="text-muted-foreground max-w-md mx-auto">
-                  Try adjusting your search criteria or browse different
-                  categories to find opportunities that match your skills.
+                  {filteredJobs.length > 0
+                    ? `No jobs match the "${SORT_OPTIONS.find((o) => o.value === sortBy)?.label}" sort filter. Try switching the sort option.`
+                    : "Try adjusting your search criteria or browse different categories to find opportunities that match your skills."}
                 </p>
                 <Button
                   onClick={() => {
@@ -520,6 +550,7 @@ export default function FindWork() {
                     setSelectedCategory("all");
                     setSelectedLocation("all");
                     setSelectedJobType("all");
+                    setSortBy("recently-posted");
                   }}
                   className="mt-4"
                 >

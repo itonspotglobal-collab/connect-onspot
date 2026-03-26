@@ -1,0 +1,208 @@
+Please improve my careers/jobs pages in my React + TypeScript app, especially `Findwork.tsx` and `ExpandableJobCard.tsx`.
+
+I want to implement the following careers page improvements in a clean, production-ready way while preserving the current design theme as much as possible.
+
+FILES TO UPDATE
+- `Findwork.tsx`
+- `ExpandableJobCard.tsx`
+- routing files if needed
+- create new reusable components/utilities if needed
+
+==================================================
+A. JOB LISTINGS ENHANCEMENTS
+==================================================
+
+1. Increase active job visibility
+- Improve the job listings UI so more active job postings can be shown clearly and attractively
+- Keep cards readable and responsive
+- Do not overcrowd the layout
+
+2. Auto-refresh posting timestamps every 24 hours
+- Make job posting timestamps appear active and recent
+- Refresh/update the displayed “posted X days ago” value automatically at least every 24 hours
+- Do this safely and predictably
+- If timestamps come from backend data, calculate the relative time on the frontend from the posted date
+- Avoid fake backend mutations unless necessary
+- The UI should always recalculate relative time correctly when the page loads and at a 24-hour interval
+
+3. Replace current hover interaction with a clear “Apply” button
+- Remove reliance on hover-only interactions
+- Each job card should have a visible and clear `Apply` button
+- The button should be easy to find on desktop and mobile
+
+4. Each Apply button should redirect to a dedicated role page
+- Clicking Apply should go to a dedicated page for that specific job role
+- Use a route like:
+  - `/jobs/:jobIdentifier`
+- The identifier should consistently use either `slug` or `id`
+- Do not mix `id` in one place and `slug` in another
+
+==================================================
+B. DEDICATED ROLE PAGES
+==================================================
+
+Create a separate page for each job role.
+
+Each dedicated role page should include:
+- role overview
+- responsibilities
+- requirements
+- benefits
+- application instructions
+- a clear CTA button: `Apply Now`
+
+Role page requirements:
+- Must support direct access from a shared link
+- Must not depend only on in-memory state from the jobs list page
+- Should fetch/find the specific role correctly from the route param
+- Show loading state before showing “Job not found”
+- Handle invalid job ids/slugs gracefully
+
+If useful, keep the modal in `ExpandableJobCard.tsx` for preview, but the main `Apply` CTA should go to the dedicated role page.
+
+==================================================
+C. SORTING & FILTERING SYSTEM
+==================================================
+
+Add a “Sort By” or filtering system to `Findwork.tsx` with these categories:
+
+- Most Applied Jobs
+- Top Remote Roles
+- In-Demand Roles
+- Urgently Hiring
+- Recently Posted
+- Featured Jobs
+
+Implementation notes:
+- Create a clean filter/sort UI
+- Make it responsive and easy to use
+- Use reusable config/data structures instead of hardcoding logic everywhere
+- If backend values do not yet exist for some categories, add safe frontend fallback logic based on available job fields
+- For example:
+  - `Recently Posted` => sort by posted date descending
+  - `Top Remote Roles` => filter jobs with remote/hybrid indicators
+  - `Urgently Hiring` => filter jobs with urgent badge/flag
+  - `Featured Jobs` => filter featured flag
+  - `Most Applied Jobs` => sort by application count if available
+  - `In-Demand Roles` => use a flag or keyword/category if available
+- Clearly mark places where backend support may later improve the logic
+
+==================================================
+D. JOB BADGES
+==================================================
+
+Add visual badges on job cards and dedicated role pages for:
+- Urgently Hiring
+- Top Paying
+- Multiple Slots Open
+
+Badge requirements:
+- Badges should be visually distinct but aligned with the current design
+- Only show badges when the underlying job data qualifies
+- Make the badge system reusable and easy to extend
+- Create helper logic to determine which badges appear for a job
+
+==================================================
+UX / UI IMPROVEMENTS
+==================================================
+
+1. Make the job popup/modal in `ExpandableJobCard.tsx` wider
+- Increase modal width for better readability on desktop
+- Keep it responsive on smaller screens
+- Suggested max width around 960px to 1100px
+- Maintain clean spacing and readable content layout
+
+2. Keep the popup closable
+- close button
+- outside click
+- Escape key
+
+3. Keep share functionality
+- Copy Link
+- Native share if supported
+- social share links
+- make sure shared links always point to the dedicated specific role page, not the general jobs listing page
+
+==================================================
+ROUTING / LINKING REQUIREMENTS
+==================================================
+
+1. Keep a jobs listing page:
+- `/jobs`
+
+2. Add a dedicated job detail page:
+- `/jobs/:jobIdentifier`
+
+3. Ensure the share link and Apply button both use the same exact identifier:
+- preferred:
+  `job.slug || job.id`
+
+4. Fix direct-link loading issues
+- When a shared link is opened directly, the correct existing job should load
+- Do not show “Job not found” before data has finished loading
+- Normalize ids/slugs before comparison
+- Handle string/number mismatches
+- Handle URL encoding
+
+==================================================
+TECHNICAL REQUIREMENTS
+==================================================
+
+- Use React + TypeScript
+- Preserve existing props and styling as much as possible
+- Use reusable helper functions and components where appropriate
+- Add proper TypeScript typings
+- Keep code easy to maintain
+- Avoid breaking the current jobs experience
+- Prevent duplicated logic between cards, modal, and dedicated role page
+
+Suggested reusable files if needed:
+- `JobDetailsPage.tsx`
+- `JobBadge.tsx`
+- `JobFilters.tsx`
+- `shareUtils.ts`
+- `jobUtils.ts`
+
+==================================================
+PLEASE IMPLEMENT THE FOLLOWING
+==================================================
+
+1. Update `Findwork.tsx`
+   - add sorting/filtering
+   - improve listings layout
+   - add visible Apply button
+   - support badges
+
+2. Update `ExpandableJobCard.tsx`
+   - widen modal
+   - keep close/share behavior
+   - ensure share link points to `/jobs/:jobIdentifier`
+   - add visible Apply button that redirects to the dedicated role page
+
+3. Add a dedicated job details page
+   - route-based job loading
+   - loading state
+   - graceful not-found handling
+   - sections for overview, responsibilities, requirements, benefits, and instructions
+   - Apply Now CTA
+
+4. Update route configuration
+   - `/jobs`
+   - `/jobs/:jobIdentifier`
+
+5. Create any helper/components needed
+   - filter config
+   - badge logic
+   - share link generation
+   - relative timestamp formatting
+
+==================================================
+EXPECTED OUTPUT
+==================================================
+
+Please provide:
+1. the full updated code
+2. all new files created
+3. which existing files changed
+4. a short explanation of the architecture
+5. notes for any backend fields that are assumed or optional

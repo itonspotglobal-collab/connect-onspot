@@ -1,5 +1,6 @@
+// All job share links use /jobs/:id — the canonical dedicated role page
 export function buildJobUrl(jobId: string): string {
-  return `${window.location.origin}/find-work/job/${jobId}`;
+  return `${window.location.origin}/jobs/${jobId}`;
 }
 
 export function buildLinkedInShareUrl(jobUrl: string): string {

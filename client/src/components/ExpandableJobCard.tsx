@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,10 +16,17 @@ import {
   Briefcase,
   CalendarDays,
   ArrowRight,
+  ExternalLink,
 } from "lucide-react";
 import { JobDetailModal } from "@/components/JobDetailModal";
+import {
+  getTimeAgo,
+  getJobBadges,
+  formatContractType,
+  buildRateDisplay,
+} from "@/lib/jobUtils";
 
-const workCategories = [
+const CATEGORY_MAP = [
   { id: "development", name: "Development & IT", icon: Code, color: "bg-blue-500" },
   { id: "design", name: "Design & Creative", icon: PenTool, color: "bg-purple-500" },
   { id: "marketing", name: "Sales & Marketing", icon: BarChart3, color: "bg-green-500" },
@@ -29,44 +37,46 @@ const workCategories = [
 ];
 
 function getCategoryInfo(categoryId: string) {
-  return workCategories.find((cat) => cat.id === categoryId) || workCategories[0];
+  return CATEGORY_MAP.find((c) => c.id === categoryId) || CATEGORY_MAP[0];
 }
 
 function getJobTypeColor(type: string) {
   switch (type) {
-    case "full-time": return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300";
-    case "part-time": return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300";
-    case "contract": return "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300";
-    case "freelance": return "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300";
-    case "hourly": return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300";
-    case "fixed": return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300";
-    default: return "bg-gray-100 text-gray-800 dark:bg-gray-800/30 dark:text-gray-300";
+    case "full-time":
+      return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300";
+    case "part-time":
+      return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300";
+    case "contract":
+      return "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300";
+    case "freelance":
+      return "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300";
+    default:
+      return "bg-gray-100 text-gray-800 dark:bg-gray-800/30 dark:text-gray-300";
   }
 }
 
-function formatContractType(type: string) {
-  return type.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join("-");
+export interface JobShape {
+  id: string;
+  title: string;
+  company?: string | null;
+  location?: string | null;
+  category: string;
+  contractType: string;
+  experienceLevel: string;
+  description: string;
+  budget?: string | null;
+  hourlyRateMin?: string | null;
+  hourlyRateMax?: string | null;
+  responsibilities?: string[] | null;
+  requirements?: string[] | null;
+  skillTags?: string[] | null;
+  createdAt?: string | Date | null;
+  status?: string;
+  proposalCount?: number | null;
 }
 
 export interface ExpandableJobCardProps {
-  job: {
-    id: string;
-    title: string;
-    company?: string | null;
-    location?: string | null;
-    category: string;
-    contractType: string;
-    experienceLevel: string;
-    description: string;
-    budget?: string | null;
-    hourlyRateMin?: string | null;
-    hourlyRateMax?: string | null;
-    responsibilities?: string[] | null;
-    requirements?: string[] | null;
-    skillTags?: string[] | null;
-    createdAt?: string | Date | null;
-    status?: string;
-  };
+  job: JobShape;
   adminActions?: React.ReactNode;
   showApply?: boolean;
 }
@@ -77,29 +87,19 @@ export function ExpandableJobCard({
   showApply = true,
 }: ExpandableJobCardProps) {
   const [modalOpen, setModalOpen] = useState(false);
+  const [, navigate] = useLocation();
 
   const categoryInfo = getCategoryInfo(job.category);
   const IconComponent = categoryInfo.icon;
-
-  const now = new Date();
-  const postedDate = job.createdAt ? new Date(job.createdAt) : now;
-  const timeAgo = Math.floor((now.getTime() - postedDate.getTime()) / (1000 * 60 * 60 * 24));
-  const getTimeAgoText = (days: number) => {
-    if (days <= 0) return "Today";
-    if (days < 7) return `${days} day${days === 1 ? "" : "s"} ago`;
-    const weeks = Math.floor(days / 7);
-    if (weeks < 5) return `${weeks} week${weeks === 1 ? "" : "s"} ago`;
-    return `${Math.floor(days / 30)} month${Math.floor(days / 30) === 1 ? "" : "s"} ago`;
-  };
-
-  const rateDisplay =
-    job.hourlyRateMin && job.hourlyRateMax
-      ? `₱${job.hourlyRateMin}–${job.hourlyRateMax}/month`
-      : job.budget
-        ? `₱${job.budget}`
-        : "Rate TBD";
-
+  const rateDisplay = buildRateDisplay(job);
+  const timeAgo = getTimeAgo(job.createdAt);
+  const badges = getJobBadges(job);
   const skills = job.skillTags || [];
+
+  function handleApply(e: React.MouseEvent) {
+    e.stopPropagation();
+    navigate(`/jobs/${job.id}`);
+  }
 
   return (
     <>
@@ -114,23 +114,43 @@ export function ExpandableJobCard({
               <div className="w-11 h-11 rounded-md bg-white/20 flex items-center justify-center flex-shrink-0">
                 <IconComponent className="w-5 h-5 text-white" />
               </div>
-              <div className="min-w-0">
-                <h3 className="text-xl font-bold text-white leading-tight truncate">{job.title}</h3>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                  <h3 className="text-xl font-bold text-white leading-tight truncate">
+                    {job.title}
+                  </h3>
+                  {/* Badges in the header */}
+                  {badges.map((b) => (
+                    <span
+                      key={b.key}
+                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${b.className}`}
+                    >
+                      {b.label}
+                    </span>
+                  ))}
+                </div>
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <span className="text-blue-100 font-medium text-sm">{job.company || "OnSpot"}</span>
+                  <span className="text-blue-100 font-medium text-sm">
+                    {job.company || "OnSpot"}
+                  </span>
                   <CheckCircle2 className="w-3.5 h-3.5 text-green-300 flex-shrink-0" />
                   <div className="flex items-center gap-0.5">
                     <Star className="w-3 h-3 text-yellow-300 fill-current" />
                     <span className="text-blue-100 text-xs">4.9</span>
                   </div>
-                  <Badge variant="secondary" className={`text-[10px] ${getJobTypeColor(job.contractType)}`}>
+                  <Badge
+                    variant="secondary"
+                    className={`text-[10px] ${getJobTypeColor(job.contractType)}`}
+                  >
                     {formatContractType(job.contractType)}
                   </Badge>
                 </div>
               </div>
             </div>
             <div className="flex-shrink-0 text-right">
-              <div className="text-base font-bold text-white leading-tight">{rateDisplay}</div>
+              <div className="text-base font-bold text-white leading-tight">
+                {rateDisplay}
+              </div>
               <div className="text-blue-200 text-xs mt-0.5">
                 {job.contractType === "fixed" ? "Fixed price" : "Monthly rate"}
               </div>
@@ -144,12 +164,18 @@ export function ExpandableJobCard({
             <div className="flex items-center gap-2 px-4 py-3">
               <Briefcase className="w-4 h-4 text-blue-500 flex-shrink-0" />
               <div className="min-w-0">
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Contract</div>
-                <div className="text-sm font-semibold truncate">{formatContractType(job.contractType)}</div>
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                  Contract
+                </div>
+                <div className="text-sm font-semibold truncate">
+                  {formatContractType(job.contractType)}
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-2 px-4 py-3">
-              <span className="text-green-500 text-sm font-bold flex-shrink-0 leading-none">₱</span>
+              <span className="text-green-500 text-sm font-bold flex-shrink-0 leading-none">
+                ₱
+              </span>
               <div className="min-w-0">
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
                   {job.contractType === "fixed" ? "Budget" : "Salary"}
@@ -160,15 +186,21 @@ export function ExpandableJobCard({
             <div className="flex items-center gap-2 px-4 py-3">
               <MapPin className="w-4 h-4 text-purple-500 flex-shrink-0" />
               <div className="min-w-0">
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Location</div>
-                <div className="text-sm font-semibold truncate">{job.location || "Remote"}</div>
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                  Location
+                </div>
+                <div className="text-sm font-semibold truncate">
+                  {job.location || "Remote"}
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-2 px-4 py-3">
               <CalendarDays className="w-4 h-4 text-orange-500 flex-shrink-0" />
               <div className="min-w-0">
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Posted</div>
-                <div className="text-sm font-semibold truncate">{getTimeAgoText(timeAgo)}</div>
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                  Posted
+                </div>
+                <div className="text-sm font-semibold truncate">{timeAgo}</div>
               </div>
             </div>
           </div>
@@ -178,28 +210,49 @@ export function ExpandableJobCard({
             <p className="text-muted-foreground text-sm line-clamp-2 leading-relaxed">
               {job.description}
             </p>
+
             {skills.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-3">
                 {skills.slice(0, 5).map((skill) => (
-                  <Badge key={skill} variant="secondary" className="text-xs h-auto whitespace-normal break-words">
+                  <Badge
+                    key={skill}
+                    variant="secondary"
+                    className="text-xs h-auto whitespace-normal break-words"
+                  >
                     {skill}
                   </Badge>
                 ))}
                 {skills.length > 5 && (
-                  <Badge variant="outline" className="text-xs h-auto whitespace-normal break-words">
+                  <Badge
+                    variant="outline"
+                    className="text-xs h-auto whitespace-normal break-words"
+                  >
                     +{skills.length - 5} more
                   </Badge>
                 )}
               </div>
             )}
-            <div className="mt-4 flex items-center justify-between gap-3">
-              <Button
-                size="sm"
-                onClick={(e) => { e.stopPropagation(); setModalOpen(true); }}
-              >
-                View Details
-                <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
-              </Button>
+
+            {/* Action row */}
+            <div className="mt-4 flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setModalOpen(true);
+                  }}
+                >
+                  View Details
+                </Button>
+                {showApply && (
+                  <Button size="sm" onClick={handleApply}>
+                    Apply Now
+                    <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                  </Button>
+                )}
+              </div>
               {adminActions && (
                 <div onClick={(e) => e.stopPropagation()}>{adminActions}</div>
               )}

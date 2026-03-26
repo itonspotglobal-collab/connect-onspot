@@ -77,7 +77,20 @@ const IMAGE = "https://onspotglobal.com/heart.png";
 const SITE = "https://onspotglobal.com";
 
 function resolveOGMeta(pathname: string, query: Record<string, string>): OGMeta {
-  if (pathname.startsWith("/find-work")) {
+  if (pathname.startsWith("/jobs") || pathname.startsWith("/find-work")) {
+    // For /jobs/:id or /find-work/job/:id — dedicated role page
+    const isRolePage =
+      /^\/jobs\/[^/]+$/.test(pathname) ||
+      /^\/find-work\/job\/[^/]+$/.test(pathname);
+    if (isRolePage) {
+      return {
+        title: "Job Opening | OnSpot Global",
+        description:
+          "View this role and apply now. OnSpot connects top Philippine talent with global clients — remote jobs in support, development, design, and more.",
+        image: IMAGE,
+        url: `${SITE}${pathname}`,
+      };
+    }
     const cat = query.category || null;
     const isAllCat = !cat || cat === "all";
     const catLabel = !isAllCat ? ` – ${cat!.charAt(0).toUpperCase() + cat!.slice(1)}` : "";
