@@ -1,0 +1,74 @@
+Update the `insights.tsx` page with the following UI and content structure changes.
+
+Goal:
+Improve content discovery and article preview presentation on the Insights page.
+
+Changes to implement:
+
+1. Add category navigation buttons below the main header
+Create a sub-header navigation section with these category buttons/tabs:
+- View All
+- CEO Insights
+- Talent Insights
+- Industry Insights
+- Learning Centre
+- Podcast Videos
+
+Requirements:
+- The category buttons should be clearly visible and easy to click
+- Highlight the active category
+- Clicking a category should filter the displayed content accordingly
+- Keep the styling clean, modern, and consistent with the existing page design
+- Make the layout responsive for desktop and mobile
+
+2. Update the “View All” category structure
+When “View All” is selected, group the content into two sections:
+- Latest Articles
+- Latest Podcast Episodes
+
+Requirements:
+- Show section headings for both groups
+- Display article-related content under “Latest Articles”
+- Display podcast-related content under “Latest Podcast Episodes”
+- Preserve responsive spacing and alignment
+
+3. Redesign the article card / thumbnail preview
+Each article card should display:
+- Author name
+  - Must be clickable
+  - Must link to the author bio page
+- Date posted
+- Article title
+- Short synopsis / preview
+- Estimated read time (example: “5 min read”)
+
+Requirements:
+- Make the card visually polished and readable
+- Ensure good spacing, hierarchy, and typography
+- Title should be prominent
+- Author/date/read-time metadata should be easy to scan
+- Synopsis should be truncated cleanly if needed
+- Keep hover states subtle and professional
+- Preserve accessibility best practices
+
+4. Content behavior
+- Articles should appear in their matching categories
+- Podcast episodes should appear in Podcast Videos
+- “View All” should combine both articles and podcast content, grouped by the two section headers above
+- Make sure filtering logic is easy to maintain
+
+5. Code quality expectations
+- Keep the code modular and readable
+- Reuse existing components where possible
+- If needed, extract reusable components for:
+  - category navigation
+  - article card
+  - podcast section
+- Do not break existing functionality
+- Keep TypeScript types clean and explicit
+
+6. Final output
+After making the changes:
+- summarize what was updated
+- list any new components created
+- mention any assumptions made for missing data fields such as author bio link or read time
