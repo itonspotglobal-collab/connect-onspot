@@ -1,0 +1,55 @@
+Please review whether changes made in the public careers pages (`Findwork.tsx`, `ExpandableJobCard.tsx`, dedicated role pages) also require corresponding updates in the admin job management page, especially `admin/find-work`.
+
+I want the admin side to stay aligned with the public careers/job listing features.
+
+Please do the following:
+
+1. Review the public job-related fields currently used by:
+- `Findwork.tsx`
+- `ExpandableJobCard.tsx`
+- dedicated role/job details page
+- share links and route generation
+
+2. Check whether `admin/find-work` supports creating/editing all required fields.
+
+3. If missing, update `admin/find-work` so admins can manage the fields needed by the public page, including where applicable:
+- job title
+- company
+- location
+- work setup (remote/hybrid/on-site)
+- contract type
+- slug or unique shareable identifier
+- posted date
+- active/published status
+- featured flag
+- urgent hiring flag
+- top paying flag
+- multiple slots open flag
+- responsibilities
+- requirements
+- benefits
+- application instructions
+- overview/description
+- application count or metadata if needed for sorting
+- any tag/category fields used for filters
+
+4. Keep field names consistent between admin and public pages.
+- Do not use one field name in admin and a different one in public unless mapped clearly.
+- Normalize the data model if needed.
+
+5. Ensure the admin form validates required fields for dedicated role pages.
+- especially slug/id, title, overview, responsibilities, requirements, and apply instructions if required
+
+6. Ensure jobs created/updated in admin render correctly on:
+- jobs listing page
+- job cards
+- dedicated role page
+- shared links
+
+7. Remove or make optional any fields no longer shown publicly, such as salary in the job card summary, while preserving them only where still needed.
+
+8. Show me:
+- what changes are needed in `admin/find-work`
+- which fields are shared between admin and public pages
+- the updated code
+- any suggested data model cleanup
