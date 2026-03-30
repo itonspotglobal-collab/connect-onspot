@@ -364,7 +364,7 @@ export default function FindWorkJob() {
                 <div className="flex items-center gap-2 mb-3">
                   <Lightbulb className="w-5 h-5 text-amber-500" />
                   <h2 className="text-base font-bold uppercase tracking-wide">
-                    Why Join OnSpot Global
+                    Why Join OnSpot
                   </h2>
                 </div>
                 <ul className="space-y-2">
@@ -379,6 +379,38 @@ export default function FindWorkJob() {
                       <span className="mt-2 w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0" />
                       <span className="text-muted-foreground leading-relaxed">
                         {benefit}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Cultural Fit */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Users className="w-5 h-5 text-violet-500" />
+                  <h2 className="text-base font-bold uppercase tracking-wide">
+                    Cultural Fit
+                  </h2>
+                </div>
+                <p className="text-muted-foreground leading-relaxed mb-3">
+                  At OnSpot, we prioritize a unique blend of creativity, innovation, and collaboration. We seek individuals who are:
+                </p>
+                <ul className="space-y-2">
+                  {[
+                    "Passionate about our company's mission and values.",
+                    "Entrepreneurial-minded and willing to take risks.",
+                    "Collaborative and team-oriented.",
+                    "Adaptable and able to handle the fast-paced and often unpredictable nature of a startup environment.",
+                    "Maintain a positive attitude and persevere through setbacks.",
+                    "Demonstrate the ability to bounce back from challenges and maintain a strong work ethic.",
+                    "Embrace and adapt to rapid changes and evolving processes within a startup environment.",
+                    "Able to adapt to changing client needs and requirements.",
+                  ].map((item, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <span className="mt-2 w-1.5 h-1.5 rounded-full bg-violet-500 flex-shrink-0" />
+                      <span className="text-muted-foreground leading-relaxed">
+                        {item}
                       </span>
                     </li>
                   ))}

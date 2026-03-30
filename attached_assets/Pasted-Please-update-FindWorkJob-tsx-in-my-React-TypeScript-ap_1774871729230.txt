@@ -1,0 +1,52 @@
+Please update `FindWorkJob.tsx` in my React + TypeScript app.
+
+Important:
+- Do NOT replace the existing section content
+- ADD a new section titled `CULTURAL FIT`
+- Also rename the existing heading `WHY JOIN ONSPOT GLOBAL` to `WHY JOIN ONSPOT`
+- Remove the word `GLOBAL` only from that heading
+- Keep the existing “Why Join OnSpot” content
+- Then add the new `CULTURAL FIT` section below it
+
+Required changes:
+
+1. Update the existing heading
+- Change:
+  `WHY JOIN ONSPOT GLOBAL`
+- To:
+  `WHY JOIN ONSPOT`
+
+2. Keep the existing “Why Join OnSpot” section and its current bullet points/content
+
+3. Add a new section titled:
+- `CULTURAL FIT`
+
+4. Add this intro text under `CULTURAL FIT`:
+- `At OnSpot, we prioritize a unique blend of creativity, innovation, and collaboration. We seek individuals who are:`
+
+5. Add these bullet points under the intro:
+- Passionate about our company's mission and values.
+- Entrepreneurial-minded and willing to take risks.
+- Collaborative and team-oriented.
+- Adaptable and able to handle the fast-paced and often unpredictable nature of a startup environment.
+- Maintain a positive attitude and persevere through setbacks.
+- Demonstrate the ability to bounce back from challenges and maintain a strong work ethic.
+- Embrace and adapt to rapid changes and evolving processes within a startup environment.
+- Able to adapt to changing client needs and requirements.
+
+Layout requirements:
+- Keep the current page design and spacing consistent
+- Place `CULTURAL FIT` near the existing “Why Join OnSpot” section
+- Make it look like a natural content section of the job details page
+- Ensure it is responsive on desktop and mobile
+
+Implementation notes:
+- Do not remove the current “Why Join OnSpot” list
+- Only rename its heading to remove `GLOBAL`
+- Then append the new `CULTURAL FIT` section after it
+- Keep icons/section styling consistent with the rest of the page
+
+Please provide:
+1. updated `FindWorkJob.tsx`
+2. any related component/style changes
+3. a short explanation of what was added vs renamed
