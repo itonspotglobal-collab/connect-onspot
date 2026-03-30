@@ -1,0 +1,44 @@
+Please fix the excess white line / blank strip showing above the green hero section and under the top navigation in my React + TypeScript app.
+
+Issue:
+- There is an unwanted white/light strip between the fixed/sticky top navigation and the page content/hero section.
+- It appears on the job details page (`FindWorkJob.tsx`) and may be related to the top navigation layout, spacer divs, duplicated nav height offsets, or margin/padding at the top of the page.
+
+Please inspect and fix the cause, not just hide it visually.
+
+What to check:
+1. `TopNavigation` component
+   - look for extra spacer divs using something like `height: var(--nav-h)`
+   - check if there are duplicate nav placeholders/rendered spacing elements
+   - check fixed/sticky nav wrappers and background layers
+   - check for duplicate top offsets in desktop and mobile nav containers
+
+2. `App.tsx` or layout wrapper
+   - check if the page layout adds an extra top spacer under the navbar
+   - remove any duplicate `pt-*`, `mt-*`, or `height: var(--nav-h)` compensation
+
+3. `FindWorkJob.tsx`
+   - inspect the top-level wrapper and hero section
+   - remove unnecessary top margin/padding if the navbar already reserves space
+   - ensure the hero starts directly below the nav without an extra white band
+
+4. Global styles
+   - inspect `body`, `main`, root layout wrappers, and page containers
+   - check for top background color differences revealing a gap
+   - verify no default margin/padding is causing the line
+
+5. Fixed header offset logic
+   - make sure navbar height compensation is applied only once
+   - if using a spacer for fixed nav, it should exist in only one place
+
+Expected result:
+- no extra white/light strip under the top navigation
+- the hero/banner section should start cleanly right below the navbar
+- fix should work on desktop and mobile
+- do not break current navigation behavior
+
+Please provide:
+1. the root cause
+2. the updated code
+3. which files were changed
+4. a brief explanation of why the gap happened

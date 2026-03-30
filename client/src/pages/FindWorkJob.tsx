@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { TopNavigation } from "@/components/TopNavigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -143,37 +142,31 @@ export default function FindWorkJob() {
   // ─── Loading state ──────────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <>
-        <TopNavigation />
-        <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
-          <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
-          <p className="text-muted-foreground text-sm">Loading job details…</p>
-        </div>
-      </>
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
+        <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
+        <p className="text-muted-foreground text-sm">Loading job details…</p>
+      </div>
     );
   }
 
   // ─── Error / Not found ──────────────────────────────────────────────────────
   if (isError || (!isLoading && !job)) {
     return (
-      <>
-        <TopNavigation />
-        <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6 px-4">
-          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
-            <Briefcase className="w-8 h-8 text-muted-foreground" />
-          </div>
-          <div className="text-center max-w-sm">
-            <h2 className="text-xl font-semibold mb-2">Job not found</h2>
-            <p className="text-sm text-muted-foreground">
-              This listing may have been removed or the link is invalid.
-            </p>
-          </div>
-          <Button onClick={() => navigate("/find-work")}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Browse all jobs
-          </Button>
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6 px-4">
+        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+          <Briefcase className="w-8 h-8 text-muted-foreground" />
         </div>
-      </>
+        <div className="text-center max-w-sm">
+          <h2 className="text-xl font-semibold mb-2">Job not found</h2>
+          <p className="text-sm text-muted-foreground">
+            This listing may have been removed or the link is invalid.
+          </p>
+        </div>
+        <Button onClick={() => navigate("/find-work")}>
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Browse all jobs
+        </Button>
+      </div>
     );
   }
 
@@ -181,10 +174,7 @@ export default function FindWorkJob() {
 
   // ─── Full dedicated page ────────────────────────────────────────────────────
   return (
-    <>
-      <TopNavigation />
-
-      <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
 
         {/* Hero / Header */}
         <div className={`bg-gradient-to-r ${categoryInfo.color} dark:opacity-90`}>
@@ -595,6 +585,5 @@ export default function FindWorkJob() {
         {/* Bottom padding for sticky bar on mobile */}
         <div className="h-20 lg:hidden" />
       </div>
-    </>
   );
 }
