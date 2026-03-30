@@ -1,490 +1,644 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { 
-  Users, 
-  DollarSign, 
-  Clock, 
-  Target, 
-  CheckCircle2, 
-  Star,
-  Globe,
-  TrendingUp,
-  Shield,
-  Zap,
-  Award,
-  Building,
-  Phone,
-  Mail,
-  Code,
-  Heart,
-  Briefcase,
-  Quote,
-  Sparkles,
-  ArrowRight
-} from "lucide-react";
+import { useState } from "react";
+import { ArrowRight, ChevronDown, ChevronUp, CheckCircle2 } from "lucide-react";
+
+// ─── Data ─────────────────────────────────────────────────────────────────────
+
+const proofStats = [
+  { value: "500+",   label: "resources deployed" },
+  { value: "50,000+", label: "vetted talent pool" },
+  { value: "100+",   label: "SOPs and systems built" },
+  { value: "$50M+",  label: "estimated value delivered" },
+];
+
+const leaders = [
+  {
+    name: "Nur Laminero",
+    role: "CEO",
+    initials: "NL",
+    desc: "Turns growth vision into systems, structure, and execution that scale.",
+  },
+  {
+    name: "Jake Wainberg",
+    role: "Founder & President",
+    initials: "JW",
+    desc: "Built OnSpot from real entrepreneurial pain points while scaling businesses in New York.",
+  },
+  {
+    name: "Alon Ben Eli",
+    role: "Co-Founder",
+    initials: "AB",
+    desc: "Helps shape long-range strategy, positioning, and global growth.",
+  },
+  {
+    name: "Shane Limiac",
+    role: "Head of Delivery",
+    initials: "SL",
+    desc: "Leads execution and ensures the client experience translates into measurable results.",
+  },
+  {
+    name: "Mark Apostol",
+    role: "Head of People & Administration",
+    initials: "MA",
+    desc: "Builds the people systems and culture that power high-performance delivery.",
+  },
+];
+
+const coreValues = [
+  {
+    title: "People First",
+    body: "Everything begins with people. We do not build systems at the expense of humanity — we build systems that elevate it. When our people feel seen, supported, and empowered, they do their best work.",
+    highlight: "People happiness drives client success.",
+  },
+  {
+    title: "Beat Yesterday",
+    body: "We are never finished. We chase progress daily — small improvements, better decisions, sharper execution. The standard is not perfection. The standard is growth.",
+    highlight: "Progress is our baseline.",
+  },
+  {
+    title: "Fast-Fast-Fast",
+    body: "Speed is a competitive advantage. We move with urgency, but never chaos. Fast execution, clear thinking, and decisive action define how we operate.",
+    highlight: "Speed with precision.",
+  },
+  {
+    title: "Integrity Matters",
+    body: "We do what is right, especially when it is difficult. Trust is earned in consistency, transparency, and accountability. We protect it at all costs.",
+    highlight: "Trust is our currency.",
+  },
+  {
+    title: "Extreme Ownership",
+    body: "We do not pass problems. We own them. Every outcome, every challenge, every result is ours to solve. This is how we move fast and build trust.",
+    highlight: "No excuses. Only solutions.",
+  },
+  {
+    title: "We Are Intrapreneurs",
+    body: "We think like builders inside the company. We take initiative, create opportunities, and act like owners — because this is how great companies are built.",
+    highlight: "Think like an owner. Act like a founder.",
+  },
+];
+
+const peoplePrinciples = [
+  "A people-first leadership style that treats team members as partners, not resources.",
+  "A culture of ownership and accountability where problems are solved, not passed.",
+  "A team built for long-term trust, not short-term churn — our retention reflects that.",
+  "A workplace where client success and employee growth move together, not in opposition.",
+];
+
+const dayInTheLife = [
+  {
+    time: "08:30",
+    title: "The day starts with clarity",
+    body: "Teams begin with focus. Priorities are clear, leaders are accessible, and everyone knows what winning looks like for the day.",
+  },
+  {
+    time: "10:00",
+    title: "Collaboration feels natural",
+    body: "People check in, solve issues quickly, and move with shared responsibility. There is urgency, but there is also trust.",
+  },
+  {
+    time: "13:00",
+    title: "Clients feel the culture",
+    body: "The way we work internally shows up externally. Care, accountability, responsiveness, and pride in the work are part of the client experience.",
+  },
+  {
+    time: "15:30",
+    title: "Improvement is part of the job",
+    body: "At OnSpot, people are encouraged to think, suggest, refine, and improve. We do not just follow process. We help make it better.",
+  },
+  {
+    time: "18:00",
+    title: "Growth is personal too",
+    body: "A day at OnSpot is not only about productivity. It is also about becoming better — as a teammate, a leader, and a builder of something meaningful.",
+  },
+];
+
+const processSteps = [
+  {
+    step: "01",
+    title: "Book a strategy call",
+    body: "We understand your goals, growth bottlenecks, and where support can create the biggest leverage.",
+  },
+  {
+    step: "02",
+    title: "Design the right model",
+    body: "We shape the right team, structure, and support system for your stage of business.",
+  },
+  {
+    step: "03",
+    title: "Launch with confidence",
+    body: "We build and operationalize the team so you can move faster with less drag.",
+  },
+];
+
+const services = [
+  {
+    label: "Managed Services",
+    eyebrow: "Done-for-you execution",
+    copy: "A fully managed operating layer — AI-first infrastructure, premium offshore talent, and active operational management in one integrated system.",
+    href: "/services/managed",
+  },
+  {
+    label: "Resourced Services",
+    eyebrow: "Talent infrastructure",
+    copy: "Dedicated people, flexible structure, and fast deployment — scale execution with precision while keeping control of the function.",
+    href: "/services/resourced",
+  },
+  {
+    label: "Human Virtual Assistant",
+    eyebrow: "AI-enhanced support",
+    copy: "Real people. Trained systems. AI-enhanced productivity that gives founders and operators back the one resource that matters most: focus.",
+    href: "/services/human-virtual-assistant",
+  },
+  {
+    label: "Enterprise Services",
+    eyebrow: "Large-scale operating model",
+    copy: "Strategy, operating design, delivery teams, AI systems, and governance combined into one scalable enterprise model.",
+    href: "/services/enterprise",
+  },
+];
+
+const faqs = [
+  {
+    q: "Who is OnSpot for?",
+    a: "OnSpot is for founders, operators, and growth-stage companies that want to scale without building bloated internal teams or getting trapped in operational complexity.",
+  },
+  {
+    q: "What makes OnSpot different from traditional outsourcing?",
+    a: "We do not just provide people. We provide culture, structure, management rhythm, and a system designed to help people perform at a high level over time. The difference is a managed operating layer, not just manpower.",
+  },
+  {
+    q: "Why does culture matter so much here?",
+    a: "Because great delivery starts with great people. We believe people happiness drives client success, and that belief shapes how we hire, lead, support, and grow our Tribe.",
+  },
+];
+
+const galleryPlaceholders = ["Leadership Lifestyle", "Founder Energy", "Life Outside Work", "Built to Live"];
+const cultureGallery = ["Culture Photo", "Team Lifestyle", "Offsite Moment", "Happy Tribe"];
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function WhyOnSpotAbout() {
-  const serviceModels = [
-    {
-      name: "RESOURCED",
-      subtitle: "You Manage",
-      pricing: "Dependent on Role + $200 for onsite",
-      forWho: "Founders who want cost savings and direct control",
-      features: [
-        "Flat FTE rate - Best-in-class hires",
-        "Dedicated account manager",
-        "Standard support"
-      ],
-      outcome: "💸 Lower costs, more control—but you handle performance",
-      scaleRange: "1-20 FTE",
-      variant: "outline" as const
-    },
-    {
-      name: "MANAGED",
-      subtitle: "We Manage Everything",
-      pricing: "Dependent on Role + $200 for onsite",
-      forWho: "Growth-focused leaders who want KPIs delivered without micro-managing",
-      features: [
-        "✅ Everything in Resourced plus:",
-        "Dedicated team manager",
-        "We run your day-to-day ops",
-        "Process building & 24/7 support",
-        "Engagement & response management",
-        "Follow-up strategy implementation",
-        "KPI accountability"
-      ],
-      outcome: "⚡ Hands-off growth: predictable KPIs, faster scale, less stress",
-      scaleRange: "5-50 FTE",
-      variant: "default" as const,
-      featured: true
-    },
-    {
-      name: "ENTERPRISE",
-      subtitle: "Custom at Scale",
-      pricing: "Custom Quote",
-      forWho: "Enterprises scaling 50+ FTEs with full customization",
-      features: [
-        "🚀 Everything in Managed plus:",
-        "1,000+ FTE capacity",
-        "Enterprise-level processes & reporting",
-        "Dedicated campaign team",
-        "Custom integrations"
-      ],
-      outcome: "🏢 Enterprise-grade scalability with full customization",
-      scaleRange: ">50 FTE",
-      variant: "outline" as const
-    }
-  ];
-
-  const painPoints = [
-    {
-      icon: Users,
-      title: "Drowning in admin and back-office work",
-      description: "Endless admin and back-office tasks drain time, kill focus, and slow growth.",
-      solution: "Unlock 8X growth potential",
-      solutionDesc: "Unlock 8X growth potential with dedicated teams that free you to scale smarter and faster."
-    },
-    {
-      icon: DollarSign,
-      title: "Burned out team, rising cost",
-      description: "Overloaded staff juggling multiple roles leads to burnout, lower productivity, and rising costs.",
-      solution: "Up to 70% cost savings",
-      solutionDesc: "Cut payroll expenses by up to 70% while boosting efficiency and output."
-    },
-    {
-      icon: Clock,
-      title: "Growth stalled by hiring bottlenecks",
-      description: "Hiring bottlenecks stall growth, delay scaling, and drive up costs.",
-      solution: "Scale a team in 21 days",
-      solutionDesc: "Access to 50k+ pre-vetted talent pool across the Philippines."
-    }
-  ];
-
-  const commonRoles = [
-    { category: "Customer Support", icon: Phone, color: "bg-primary/10 text-primary" },
-    { category: "Technical Support", icon: Code, color: "bg-muted text-muted-foreground" },
-    { category: "Back-office Support", icon: Briefcase, color: "bg-primary/15 text-primary" },
-    { category: "Data Entry Service", icon: Target, color: "bg-[hsl(var(--gold-yellow))]/15 text-[hsl(var(--gold-yellow))]" },
-    { category: "Virtual Assistant", icon: Users, color: "bg-muted text-muted-foreground" },
-    { category: "Sales Support", icon: TrendingUp, color: "bg-[hsl(var(--gold-yellow))]/20 text-[hsl(var(--gold-yellow))]" }
-  ];
-
-  const stats = [
-    { value: "500+", label: "Resources deployed to support clients business operations" },
-    { value: "85", label: "Clients served across various industries and service models" },
-    { value: "$50M", label: "Estimated value delivered to our clients since 2021" },
-    { value: "100+", label: "Standard Operating Procedures built for clients" },
-    { value: "75%", label: "Client net promoter score" },
-    { value: "85%", label: "Employee net promoter score" },
-    { value: "15", label: "Startup businesses founded by our leadership team" },
-    { value: "120+", label: "Leadership team years of experience in outsourcing" }
-  ];
-
-  const philippinesAdvantages = [
-    { value: "70%", label: "labor costs savings vs US/Europe/Aus" },
-    { value: "90m", label: "fluent english speakers" },
-    { value: "1.8m", label: "BPO employees nationwide" },
-    { value: "1m", label: "annual college graduates" },
-    { value: "$39b", label: "annual outsourcing revenue" },
-    { value: "92%", label: "Filipinos aligned to western culture" }
-  ];
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
-      {/* Hero Section */}
-      <section className="relative py-32 px-4 text-center overflow-hidden bg-gradient-to-br from-primary via-primary/90 to-primary/80">
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-          <div className="absolute top-1/3 left-1/4 w-2 h-32 bg-white/20 rounded-full rotate-12 animate-pulse delay-500"></div>
-          <div className="absolute bottom-1/3 right-1/4 w-2 h-24 bg-white/20 rounded-full -rotate-12 animate-pulse delay-700"></div>
-          <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:80px_80px]" />
-        </div>
-        
-        <div className="relative z-10 max-w-6xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-6 py-3 bg-white/20 backdrop-blur-sm rounded-full text-white/90 text-sm font-medium mb-8">
-            <Sparkles className="w-4 h-4" />
-            Built by entrepreneurs, for entrepreneurs
-          </div>
-          
-          <h1 className="text-6xl md:text-8xl font-bold tracking-tight mb-8 text-white">
-            Making Outsourcing
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[hsl(var(--gold-yellow))] to-[hsl(45_100%_55%)]">
-              Effortless
-            </span>
-          </h1>
-          
-          <p className="text-xl md:text-2xl text-white/90 mb-8 max-w-4xl mx-auto leading-relaxed font-light">
-            We deliver premium, done-for-you teams that cut costs by up to 70%, 
-            unlock your time, and fuel 8X business growth.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
-            <Button size="lg" className="text-lg px-10 py-6 bg-white text-primary hover:bg-white/90 shadow-2xl" data-testid="button-get-started">
-              Get Started Today
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
-            <Button variant="outline" size="lg" className="text-lg px-10 py-6 border-white/50 text-white hover:bg-white/10 backdrop-blur-sm">
-              Watch Our Story
-            </Button>
-          </div>
-          
-          {/* Hero Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
-            <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-white mb-2">70%</div>
-              <div className="text-white/80 text-sm">Cost Savings</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-white mb-2">8X</div>
-              <div className="text-white/80 text-sm">Growth Potential</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-white mb-2">500+</div>
-              <div className="text-white/80 text-sm">Team Members</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-white mb-2">85</div>
-              <div className="text-white/80 text-sm">Happy Clients</div>
-            </div>
-          </div>
-        </div>
-      </section>
+    <div className="min-h-screen bg-white text-slate-950">
 
-      {/* Leadership Quote */}
-      <section className="py-16 px-4 bg-muted/30">
-        <div className="max-w-4xl mx-auto text-center">
-          <blockquote className="text-2xl md:text-3xl font-medium text-muted-foreground mb-6">
-            "Very few business tools have the power to fundamentally transform an organization - 
-            <span className="text-primary font-semibold"> Outsourcing is one of them.</span>"
-          </blockquote>
-          <footer className="text-lg">
-            <strong className="text-foreground">Michael F. Corbett</strong>
-            <span className="text-muted-foreground"> - IAOP Founder and Chairman</span>
-          </footer>
-        </div>
-      </section>
-
-      {/* Service Models */}
-      <section className="py-32 px-4 relative overflow-hidden bg-gradient-to-b from-background via-muted/30 to-background">
-        {/* Background Elements */}
-        <div className="absolute inset-0">
-          <div className="absolute top-32 left-10 w-32 h-32 bg-primary/5 rounded-full blur-2xl animate-pulse"></div>
-          <div className="absolute bottom-32 right-10 w-40 h-40 bg-[hsl(var(--gold-yellow))]/10 rounded-full blur-2xl animate-pulse delay-1000"></div>
-          <div className="absolute inset-0 bg-grid-black/[0.01] bg-[size:60px_60px]"></div>
-        </div>
-        
-        <div className="relative z-10 max-w-7xl mx-auto">
-          <div className="text-center mb-20">
-            <div className="inline-flex items-center gap-2 px-6 py-3 bg-primary/10 backdrop-blur-sm rounded-full text-primary text-sm font-medium mb-6">
-              <Target className="w-4 h-4" />
-              Service Models
+      {/* ── Sticky Header ──────────────────────────────────────────────────── */}
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-800/60 bg-slate-950/90 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#474ead] text-sm font-semibold text-white shadow-sm">
+              O
             </div>
-            <h2 className="text-5xl md:text-6xl font-bold mb-6">
-              Built for <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-[hsl(var(--gold-yellow))]">
-              Scale</span>, Not Stress
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Choose the level of support that fuels your vision and accelerates your growth
+            <span className="text-sm font-semibold tracking-[0.2em] text-white">ONSPOT</span>
+          </div>
+
+          <nav className="hidden items-center gap-6 lg:flex">
+            {[
+              { label: "Our Story",   href: "#the-why" },
+              { label: "Our People",  href: "#the-who" },
+              { label: "Our Culture", href: "#culture" },
+              { label: "Our Systems", href: "#process" },
+              { label: "Services",    href: "#services" },
+            ].map((link) => (
+              <a key={link.label} href={link.href}
+                className="text-sm text-slate-300 transition hover:text-white">
+                {link.label}
+              </a>
+            ))}
+          </nav>
+
+          <a
+            href="#contact"
+            className="rounded-full bg-[#474ead] px-5 py-2 text-sm font-semibold text-white transition hover:scale-[1.02] hover:bg-[#5b63d6]"
+          >
+            Book a Strategy Call
+          </a>
+        </div>
+      </header>
+
+      {/* ── Hero ───────────────────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden bg-slate-950 px-6 pb-24 pt-36 text-white lg:px-8 lg:pb-32 lg:pt-44">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(71,78,173,0.26),transparent_28%),radial-gradient(circle_at_80%_20%,rgba(142,147,255,0.18),transparent_24%),linear-gradient(to_bottom,rgba(15,23,42,1),rgba(2,6,23,1))]" />
+
+        <div className="relative mx-auto grid max-w-7xl gap-16 lg:grid-cols-12">
+          {/* Left — headline + CTAs */}
+          <div className="lg:col-span-7">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.3em] text-slate-300">
+              AI First. Humans When It Matters.
+            </div>
+            <h1 className="text-[clamp(2.6rem,6vw,5.6rem)] font-semibold leading-[0.94] tracking-tight">
+              Built by people{" "}
+              <span className="block bg-gradient-to-r from-white via-[#e4e7ff] to-[#8e93ff] bg-clip-text text-transparent">
+                who understand the weight of growth.
+              </span>
+            </h1>
+            <p className="mt-8 max-w-2xl text-lg leading-8 text-slate-300">
+              OnSpot exists because scaling a business should not mean drowning in hiring, management, and
+              operational drag. AI should handle what can be systemized, and humans should step in where
+              judgment, care, and leadership matter most. When the right people are supported by the right
+              culture and the right intelligence layer, businesses grow better.
             </p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            {serviceModels.map((model, index) => (
-              <Card 
-                key={model.name} 
-                className={`relative overflow-hidden border-none shadow-2xl hover-elevate transition-all duration-500 group ${
-                  model.featured 
-                    ? 'scale-105 transform' 
-                    : 'hover:scale-105'
-                }`}
-                data-testid={`service-model-${model.name.toLowerCase()}`}
+
+            <div className="mt-10 flex flex-wrap gap-4">
+              <button className="rounded-full bg-[#474ead] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#474ead]/25 transition hover:scale-[1.02] hover:bg-[#5b63d6]">
+                Talk to OnSpot
+              </button>
+              <a
+                href="#the-who"
+                className="rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
               >
-                {/* Background Gradient */}
-                <div className={`absolute inset-0 ${
-                  model.featured
-                    ? 'bg-gradient-to-br from-primary/20 via-primary/10 to-[hsl(var(--gold-yellow))]/10'
-                    : index === 0
-                    ? 'bg-gradient-to-br from-primary/15 via-primary/8 to-primary/5'
-                    : 'bg-gradient-to-br from-muted/20 via-muted/10 to-foreground/5'
-                }`}></div>
-                
-                {model.featured && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
-                    <Badge className="bg-gradient-to-r from-[hsl(var(--gold-yellow))] to-[hsl(45_100%_55%)] text-[hsl(var(--gold-yellow-foreground))] shadow-lg px-4 py-2 text-sm font-bold">
-                      <Star className="w-4 h-4 mr-1" />
-                      BEST VALUE
-                    </Badge>
-                  </div>
-                )}
-                <CardHeader className="relative text-center pb-4 pt-8">
-                  <div className={`w-16 h-16 mx-auto mb-6 rounded-full flex items-center justify-center ${
-                    model.featured
-                      ? 'bg-gradient-to-br from-primary to-[hsl(var(--gold-yellow))]'
-                      : index === 0
-                      ? 'bg-gradient-to-br from-primary to-primary/80'
-                      : 'bg-gradient-to-br from-foreground to-muted-foreground'
-                  } shadow-xl`}>
-                    {model.featured ? (
-                      <Zap className="w-8 h-8 text-white" />
-                    ) : index === 0 ? (
-                      <Users className="w-8 h-8 text-white" />
-                    ) : (
-                      <Building className="w-8 h-8 text-white" />
-                    )}
-                  </div>
-                  <CardTitle className="text-3xl font-bold mb-2">{model.name}</CardTitle>
-                  <p className="text-muted-foreground text-lg">{model.subtitle}</p>
-                  <div className="mt-4 p-3 bg-white/60 backdrop-blur-sm rounded-lg">
-                    <p className="text-lg font-semibold text-primary">{model.pricing}</p>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div>
-                    <h4 className="font-semibold mb-2">Who It's For</h4>
-                    <p className="text-sm text-muted-foreground">{model.forWho}</p>
-                  </div>
-                  
-                  <div>
-                    <h4 className="font-semibold mb-3">What You Get</h4>
-                    <ul className="space-y-2">
-                      {model.features.map((feature, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm">
-                          <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  
-                  <div>
-                    <h4 className="font-semibold mb-2">Outcome</h4>
-                    <p className="text-sm font-medium text-primary">{model.outcome}</p>
-                  </div>
-                  
-                  <div className="pt-4 border-t">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Scale Range</span>
-                      <Badge variant="outline">{model.scaleRange}</Badge>
-                    </div>
-                  </div>
-                  
-                  <Button 
-                    variant={model.variant} 
-                    className="w-full"
-                    data-testid={`button-choose-${model.name.toLowerCase()}`}
-                  >
-                    Choose {model.name}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* From Chaos to Breakthroughs */}
-      <section className="py-20 px-4 bg-muted/50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">From Chaos to Breakthroughs</h2>
-            <p className="text-xl text-muted-foreground">
-              Transform your biggest pain points into growth opportunities
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            {painPoints.map((point, index) => (
-              <Card key={index} className="hover-elevate" data-testid={`pain-point-${index}`}>
-                <CardContent className="p-8 text-center">
-                  <div className="w-16 h-16 mx-auto mb-6 bg-muted rounded-full flex items-center justify-center">
-                    <point.icon className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                  <h3 className="text-xl font-bold mb-4 text-foreground">{point.title}</h3>
-                  <p className="text-muted-foreground mb-8">{point.description}</p>
-                  
-                  <div className="border-t pt-6">
-                    <div className="w-16 h-16 mx-auto mb-4 bg-[hsl(var(--gold-yellow))]/20 rounded-full flex items-center justify-center">
-                      <TrendingUp className="w-8 h-8 text-[hsl(var(--gold-yellow))]" />
-                    </div>
-                    <h4 className="text-lg font-bold mb-3 text-primary">{point.solution}</h4>
-                    <p className="text-sm text-muted-foreground">{point.solutionDesc}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Leadership Team */}
-      <section className="py-32 px-4 relative overflow-hidden">
-        {/* Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-muted/30 via-background to-muted/50">
-          <div className="absolute top-20 right-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-20 left-20 w-64 h-64 bg-[hsl(var(--gold-yellow))]/10 rounded-full blur-3xl"></div>
-        </div>
-        
-        <div className="relative z-10 max-w-7xl mx-auto">
-          <div className="text-center mb-20">
-            <div className="inline-flex items-center gap-2 px-6 py-3 bg-primary/10 backdrop-blur-sm rounded-full text-primary text-sm font-medium mb-6">
-              <Users className="w-4 h-4" />
-              Meet Our Leadership
+                Meet the Leadership Team
+              </a>
             </div>
-            <h2 className="text-5xl md:text-6xl font-bold mb-6">Visionaries Behind OnSpot</h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Two entrepreneurs who turned their outsourcing struggles into solutions for businesses worldwide
-            </p>
           </div>
-          
-          <div className="grid md:grid-cols-2 gap-16 items-center">
-            {/* Jake Wainberg - President */}
-            <Card className="relative overflow-hidden border-none shadow-2xl hover-elevate transition-all duration-500 group">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-muted/10"></div>
-              <CardContent className="relative p-12">
-                <div className="flex flex-col items-center text-center">
-                  <div className="relative mb-8">
-                    <Avatar className="w-32 h-32 border-4 border-white shadow-xl">
-                      <AvatarImage src="" alt="Jake Wainberg" />
-                      <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-white text-2xl font-bold">
-                        JW
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-[hsl(var(--gold-yellow))] rounded-full flex items-center justify-center">
-                      <Award className="w-4 h-4 text-[hsl(var(--gold-yellow-foreground))]" />
-                    </div>
+
+          {/* Right — stats card */}
+          <div className="flex items-start lg:col-span-5 lg:pt-4">
+            <div className="w-full rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+              <div className="text-xs uppercase tracking-[0.3em] text-slate-400">At a glance</div>
+              <div className="mt-5 grid gap-3">
+                {proofStats.map((stat) => (
+                  <div
+                    key={stat.label}
+                    className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4"
+                  >
+                    <div className="text-3xl font-semibold text-white">{stat.value}</div>
+                    <div className="mt-1 text-sm leading-6 text-slate-300">{stat.label}</div>
                   </div>
-                  
-                  <div className="mb-6">
-                    <h3 className="text-2xl font-bold text-foreground mb-2">Jake Wainberg</h3>
-                    <p className="text-primary font-semibold text-lg">Founder & President</p>
-                    <div className="flex items-center justify-center gap-2 mt-2 text-sm text-muted-foreground">
-                      <Building className="w-4 h-4" />
-                      <span>New York, USA</span>
-                    </div>
-                  </div>
-                  
-                  <div className="relative">
-                    <Quote className="w-8 h-8 text-primary/30 absolute -top-4 -left-4" />
-                    <blockquote className="text-lg text-muted-foreground leading-relaxed italic">
-                      "We understand your struggle with operational costs because we've been there. 
-                      To grow our New York businesses, we created OnSpot, and its success led our 
-                      friends to join us in outsourcing their people needs."
-                    </blockquote>
-                  </div>
-                  
-                  <div className="mt-8 p-4 bg-white/50 rounded-lg">
-                    <div className="grid grid-cols-2 gap-4 text-center">
-                      <div>
-                        <div className="text-2xl font-bold text-primary">15+</div>
-                        <div className="text-xs text-muted-foreground">Years Experience</div>
-                      </div>
-                      <div>
-                        <div className="text-2xl font-bold text-primary">10+</div>
-                        <div className="text-xs text-muted-foreground">Businesses Founded</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            {/* Nur Laminero - CEO */}
-            <Card className="relative overflow-hidden border-none shadow-2xl hover-elevate transition-all duration-500 group">
-              <div className="absolute inset-0 bg-gradient-to-br from-muted/15 via-foreground/5 to-primary/5"></div>
-              <CardContent className="relative p-12">
-                <div className="flex flex-col items-center text-center">
-                  <div className="relative mb-8">
-                    <Avatar className="w-32 h-32 border-4 border-white shadow-xl">
-                      <AvatarImage src="" alt="Nur Laminero" />
-                      <AvatarFallback className="bg-gradient-to-br from-muted-foreground to-foreground text-white text-2xl font-bold">
-                        NL
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                      <Star className="w-4 h-4 text-white" />
-                    </div>
-                  </div>
-                  
-                  <div className="mb-6">
-                    <h3 className="text-2xl font-bold text-foreground mb-2">Nur Laminero</h3>
-                    <p className="text-primary font-semibold text-lg">Chief Executive Officer</p>
-                    <div className="flex items-center justify-center gap-2 mt-2 text-sm text-muted-foreground">
-                      <Globe className="w-4 h-4" />
-                      <span>Manila, Philippines</span>
-                    </div>
-                  </div>
-                  
-                  <div className="relative">
-                    <Quote className="w-8 h-8 text-primary/30 absolute -top-4 -left-4" />
-                    <blockquote className="text-lg text-muted-foreground leading-relaxed italic">
-                      "With two decades in outsourcing, I've seen what works and what doesn't. 
-                      OnSpot combines the best practices with genuine care for both our clients 
-                      and our Filipino talent community."
-                    </blockquote>
-                  </div>
-                  
-                  <div className="mt-8 p-4 bg-white/50 rounded-lg">
-                    <div className="grid grid-cols-2 gap-4 text-center">
-                      <div>
-                        <div className="text-2xl font-bold text-primary">20+</div>
-                        <div className="text-xs text-muted-foreground">Years Experience</div>
-                      </div>
-                      <div>
-                        <div className="text-2xl font-bold text-primary">500+</div>
-                        <div className="text-xs text-muted-foreground">Teams Built</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </section>
+
+      {/* ── Our Story / The Why ────────────────────────────────────────────── */}
+      <section id="the-why" className="mx-auto max-w-7xl px-6 py-24 lg:px-8 lg:py-32">
+        <div className="grid gap-14 lg:grid-cols-12 lg:gap-10">
+          <div className="lg:col-span-4">
+            <div className="sticky top-28">
+              <div className="text-sm font-semibold uppercase tracking-[0.28em] text-[#474ead]">The Why</div>
+              <h2 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+                OnSpot started from a real problem.
+              </h2>
+            </div>
+          </div>
+
+          <div className="lg:col-span-8">
+            <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-8 sm:p-10 lg:p-14">
+              <p className="text-2xl leading-[1.45] tracking-tight text-slate-900 sm:text-3xl">
+                Our founders were building businesses and ran into the same wall most operators eventually hit:
+                growth was possible, but operations were becoming the bottleneck.
+              </p>
+              <div className="mt-8 space-y-6 text-lg leading-8 text-slate-600">
+                <p>
+                  Hiring took too long. Costs kept rising. Teams became harder to manage. Founder time was
+                  being consumed by work that should have been systemized.
+                </p>
+                <p>
+                  So instead of accepting that as normal, they built a better way. What began as an internal
+                  solution became a company built to help other businesses scale with more clarity, better
+                  people, and less friction.
+                </p>
+                <p>
+                  That is why OnSpot exists. Not to be another outsourcing provider, but to become a trusted
+                  growth partner for businesses that need more than manpower. They need intelligence that
+                  removes drag, people who can lead and execute, and a support system that makes both work
+                  as one.
+                </p>
+              </div>
+              <a
+                href="#services"
+                className="mt-10 inline-flex items-center gap-2 rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:scale-[1.02]"
+              >
+                Explore How We Can Help
+                <ArrowRight className="h-4 w-4" />
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Leadership / The Who ───────────────────────────────────────────── */}
+      <section id="the-who" className="bg-white py-24 lg:py-32">
+        {/* Gallery row */}
+        <div className="mx-auto mb-16 max-w-7xl px-6 lg:px-8">
+          <div className="grid grid-cols-2 gap-4 md:flex md:h-56 md:gap-4">
+            {galleryPlaceholders.map((item) => (
+              <div
+                key={item}
+                className="group relative overflow-hidden rounded-2xl transition-all duration-700 ease-out aspect-[4/3] md:h-56 md:flex-[1] md:min-w-0 md:hover:flex-[2.4]"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-300 to-slate-400 transition-transform duration-1000 group-hover:scale-110" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.28),transparent_28%)] opacity-60 transition duration-700 group-hover:opacity-90" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-70 transition duration-700 group-hover:opacity-100" />
+                <div className="absolute bottom-4 left-4 text-xs font-semibold uppercase tracking-[0.18em] text-white/70 opacity-0 transition duration-500 group-hover:opacity-100">
+                  {item}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Leadership cards */}
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="mb-12">
+            <div className="text-sm font-semibold uppercase tracking-[0.28em] text-[#474ead]">The Who</div>
+            <h2 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+              The people who built OnSpot.
+            </h2>
+            <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-600">
+              A team that combines entrepreneurial instinct, operational depth, and genuine care for the
+              people who power the work.
+            </p>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            {leaders.map((leader) => (
+              <div
+                key={leader.name}
+                className="group rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#474ead]/25 hover:shadow-xl"
+              >
+                {/* Avatar placeholder */}
+                <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#474ead]/10 text-base font-bold text-[#474ead] transition group-hover:scale-105">
+                  {leader.initials}
+                </div>
+                <div className="text-base font-semibold text-slate-950">{leader.name}</div>
+                <div className="mt-0.5 text-xs font-semibold uppercase tracking-[0.14em] text-[#474ead]">
+                  {leader.role}
+                </div>
+                <p className="mt-3 text-sm leading-6 text-slate-600">{leader.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Culture Section ─────────────────────────────────────────────────── */}
+      <section id="culture" className="border-y border-slate-200 bg-[#f5f8ff] py-24 lg:py-32">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          {/* Culture gallery */}
+          <div className="mb-16 grid grid-cols-2 gap-4 sm:grid-cols-4">
+            {cultureGallery.map((item) => (
+              <div
+                key={item}
+                className="group relative overflow-hidden rounded-2xl aspect-[4/3]"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-200 to-slate-300 transition-transform duration-700 group-hover:scale-105" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 transition duration-500 group-hover:opacity-100" />
+                <div className="absolute bottom-3 left-3 text-xs font-semibold uppercase tracking-[0.16em] text-white opacity-0 transition duration-500 group-hover:opacity-100">
+                  {item}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mb-14 max-w-3xl">
+            <div className="text-sm font-semibold uppercase tracking-[0.28em] text-[#474ead]">Our Culture</div>
+            <h2 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+              Culture is not decoration here. It is the engine.
+            </h2>
+            <p className="mt-5 text-lg leading-8 text-slate-600">
+              The "Happy Tribe" philosophy is built on a simple truth: when people feel valued, trusted, and
+              empowered, they bring their best. That is when clients notice the difference.
+            </p>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            {coreValues.map((value) => (
+              <div
+                key={value.title}
+                className="rounded-[1.75rem] border border-white bg-white p-6 shadow-[0_10px_34px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+              >
+                <h3 className="text-xl font-semibold text-slate-950">{value.title}</h3>
+                <p className="mt-3 text-sm leading-7 text-slate-600">{value.body}</p>
+                <div className="mt-5 rounded-2xl border border-[#474ead]/15 bg-[#474ead]/5 px-4 py-3 text-sm font-semibold text-[#474ead]">
+                  {value.highlight}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Our People / Internal Philosophy ───────────────────────────────── */}
+      <section className="mx-auto max-w-7xl px-6 py-24 lg:px-8 lg:py-32">
+        <div className="grid gap-14 lg:grid-cols-2 lg:gap-20">
+          <div>
+            <div className="text-sm font-semibold uppercase tracking-[0.28em] text-[#474ead]">Our People</div>
+            <h2 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+              Great client work starts with how people are treated internally.
+            </h2>
+            <p className="mt-5 text-lg leading-8 text-slate-600">
+              OnSpot is not just an outsourcing company. It is a team that believes the quality of a
+              client's experience is a direct reflection of how the people delivering it are supported,
+              developed, and led.
+            </p>
+          </div>
+
+          <div className="flex flex-col justify-center gap-4">
+            {peoplePrinciples.map((principle, i) => (
+              <div
+                key={i}
+                className="flex items-start gap-4 rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm"
+              >
+                <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-[#474ead]/10">
+                  <CheckCircle2 className="h-4 w-4 text-[#474ead]" />
+                </div>
+                <p className="text-base leading-7 text-slate-700">{principle}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Day in the Life ─────────────────────────────────────────────────── */}
+      <section className="border-y border-slate-200 bg-white py-24 lg:py-32">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="mb-14 max-w-3xl">
+            <div className="text-sm font-semibold uppercase tracking-[0.28em] text-[#474ead]">A Day at OnSpot</div>
+            <h2 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+              What a typical day looks like inside the Tribe.
+            </h2>
+          </div>
+
+          <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
+            {/* Timeline */}
+            <div className="relative">
+              <div className="absolute left-[1.75rem] top-0 h-full w-px bg-slate-200" aria-hidden="true" />
+              <div className="space-y-8">
+                {dayInTheLife.map((entry) => (
+                  <div key={entry.time} className="relative flex gap-6">
+                    <div className="relative flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl border border-white bg-[#474ead]/10 text-xs font-bold text-[#474ead] shadow-sm z-10">
+                      {entry.time}
+                    </div>
+                    <div className="pb-2 pt-3">
+                      <div className="text-base font-semibold text-slate-950">{entry.title}</div>
+                      <p className="mt-1.5 text-sm leading-7 text-slate-600">{entry.body}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Visual placeholder grid */}
+            <div className="grid grid-cols-2 gap-4 self-start">
+              {["Work + Life", "Deep Work", "Team Flow", "Client Energy"].map((label) => (
+                <div key={label} className="group relative aspect-square overflow-hidden rounded-2xl">
+                  <div className="absolute inset-0 bg-gradient-to-br from-slate-200 to-indigo-100 transition-transform duration-700 group-hover:scale-105" />
+                  <div className="absolute inset-0 flex items-end p-4">
+                    <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 opacity-0 transition duration-500 group-hover:opacity-100">
+                      {label}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Process Section ─────────────────────────────────────────────────── */}
+      <section id="process" className="bg-[linear-gradient(180deg,_#eef7ff_0%,_#f5f8ff_100%)] py-24 lg:py-32">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="mb-14 max-w-3xl">
+            <div className="text-sm font-semibold uppercase tracking-[0.28em] text-[#474ead]">How OnSpot Works</div>
+            <h2 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+              Three steps from conversation to execution.
+            </h2>
+            <p className="mt-5 text-lg leading-8 text-slate-600">
+              We keep the process simple on purpose — complexity belongs in the solution, not the journey to get there.
+            </p>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-3">
+            {processSteps.map((item) => (
+              <div
+                key={item.step}
+                className="rounded-[1.75rem] border border-white bg-white/90 p-8 shadow-[0_12px_34px_rgba(15,23,42,0.06)] backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+              >
+                <div className="text-xs font-semibold uppercase tracking-[0.2em] text-[#474ead]">
+                  Step {item.step}
+                </div>
+                <h3 className="mt-4 text-2xl font-semibold text-slate-950">{item.title}</h3>
+                <p className="mt-3 text-sm leading-7 text-slate-600">{item.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Services Hub ────────────────────────────────────────────────────── */}
+      <section id="services" className="border-t border-slate-200 bg-white py-24 lg:py-32">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="mb-14 max-w-3xl">
+            <div className="text-sm font-semibold uppercase tracking-[0.28em] text-[#474ead]">Our Service Models</div>
+            <h2 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+              Explore Our Service Models
+            </h2>
+            <p className="mt-5 text-lg leading-8 text-slate-600">
+              Every organization is different. We built four distinct service models so the right level of
+              support meets the right stage of growth.
+            </p>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+            {services.map((service) => (
+              <a
+                key={service.label}
+                href={service.href}
+                className="group flex flex-col rounded-[1.75rem] border border-slate-200 bg-[linear-gradient(180deg,_#ffffff_0%,_#f8fbff_100%)] p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#474ead]/30 hover:shadow-xl"
+              >
+                <div className="text-xs font-semibold uppercase tracking-[0.2em] text-[#474ead]">
+                  {service.eyebrow}
+                </div>
+                <h3 className="mt-3 text-xl font-semibold text-slate-950">{service.label}</h3>
+                <p className="mt-3 flex-1 text-sm leading-7 text-slate-600">{service.copy}</p>
+                <div className="mt-6 flex items-center gap-2 text-sm font-semibold text-[#474ead] transition-all group-hover:gap-3">
+                  Explore Service
+                  <ArrowRight className="h-4 w-4" />
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── FAQ ─────────────────────────────────────────────────────────────── */}
+      <section className="border-y border-slate-200 bg-[#f5f8ff] py-24 lg:py-32">
+        <div className="mx-auto max-w-4xl px-6 lg:px-8">
+          <div className="mb-14">
+            <div className="text-sm font-semibold uppercase tracking-[0.28em] text-[#474ead]">Questions</div>
+            <h2 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+              Common questions about OnSpot.
+            </h2>
+          </div>
+
+          <div className="space-y-4">
+            {faqs.map((faq, index) => {
+              const isOpen = openFaq === index;
+              return (
+                <div
+                  key={index}
+                  className="rounded-[1.75rem] border border-slate-200 bg-white shadow-sm transition-all duration-200"
+                >
+                  <button
+                    onClick={() => setOpenFaq(isOpen ? null : index)}
+                    className="flex w-full items-center justify-between gap-6 px-7 py-6 text-left"
+                  >
+                    <span className="text-lg font-semibold text-slate-950">{faq.q}</span>
+                    <span className="flex-shrink-0 rounded-xl border border-slate-200 p-1.5 text-slate-400 transition hover:border-[#474ead]/30 hover:text-[#474ead]">
+                      {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </span>
+                  </button>
+                  {isOpen && (
+                    <div className="border-t border-slate-100 px-7 pb-7 pt-5 text-base leading-8 text-slate-600">
+                      {faq.a}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Final CTA ───────────────────────────────────────────────────────── */}
+      <section
+        id="contact"
+        className="relative overflow-hidden bg-slate-950 px-6 py-28 text-white lg:px-8 lg:py-36"
+      >
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(71,78,173,0.3),transparent_28%),radial-gradient(circle_at_75%_70%,rgba(142,147,255,0.15),transparent_24%)]" />
+        <div className="relative mx-auto max-w-4xl text-center">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.3em] text-slate-300">
+            Ready to scale?
+          </div>
+          <h2 className="text-[clamp(2rem,5vw,4.5rem)] font-semibold leading-[0.96] tracking-tight">
+            The right people.{" "}
+            <span className="bg-gradient-to-r from-white via-[#e4e7ff] to-[#8e93ff] bg-clip-text text-transparent">
+              The right systems.
+            </span>
+            <br />
+            The right way to scale.
+          </h2>
+          <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-300">
+            Whether you are building your first outsourced team or transforming an enterprise operation,
+            OnSpot is built to move with you.
+          </p>
+          <div className="mt-10 flex flex-wrap justify-center gap-4">
+            <button className="rounded-full bg-[#474ead] px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-[#474ead]/25 transition hover:scale-[1.02] hover:bg-[#5b63d6]">
+              Book a Strategy Call
+            </button>
+            <a
+              href="#services"
+              className="rounded-full border border-white/15 bg-white/5 px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-white/10"
+            >
+              Explore Our Services
+            </a>
+          </div>
+        </div>
+      </section>
+
     </div>
   );
 }

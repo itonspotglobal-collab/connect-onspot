@@ -1,0 +1,358 @@
+Resourced Services
+export default function ResourcedServicesPage() {
+  const capabilities = [
+    {
+      title: "Dedicated Teams",
+      text: "Build embedded teams aligned to your workflows, tools, and culture — from customer support to revenue operations.",
+    },
+    {
+      title: "Specialized Talent",
+      text: "Access operators, analysts, coordinators, recruiters, assistants, and functional specialists who plug directly into your business.",
+    },
+    {
+      title: "Flexible Scaling",
+      text: "Ramp headcount up or down with speed without rebuilding internal systems every time demand shifts.",
+    },
+    {
+      title: "Operational Control",
+      text: "You keep strategic direction and day-to-day priorities while OnSpot powers sourcing, enablement, and delivery continuity.",
+    },
+  ];
+ 
+  const models = [
+    {
+      name: "Embedded Support",
+      desc: "Talent that works inside your workflows, systems, and leadership rhythm.",
+      bullets: ["Customer support", "Executive support", "Back-office ops", "Admin coordination"],
+    },
+    {
+      name: "Functional Pods",
+      desc: "Small specialist teams built around a core function or growth objective.",
+      bullets: ["Recruiting", "Sales support", "Finance ops", "QA and compliance"],
+    },
+    {
+      name: "Scale Bench",
+      desc: "Ready-to-ramp talent structure for businesses preparing for launch, expansion, or seasonal spikes.",
+      bullets: ["Fast onboarding", "Hiring velocity", "Shift coverage", "Ramp planning"],
+    },
+  ];
+ 
+  const roles = [
+    "Customer Support Representatives",
+    "Executive Assistants",
+    "Recruiters and Sourcers",
+    "Sales Development Support",
+    "Operations Coordinators",
+    "Finance and Billing Specialists",
+    "Quality Assurance Associates",
+    "Project and Account Support",
+  ];
+ 
+  const process = [
+    {
+      step: "01",
+      title: "Design the role",
+      text: "We define scope, success metrics, shift structure, communication model, and capability fit based on your operating needs.",
+    },
+    {
+      step: "02",
+      title: "Source and qualify",
+      text: "We recruit, screen, and shortlist talent against your workflow requirements, quality bar, and cultural expectations.",
+    },
+    {
+      step: "03",
+      title: "Enable and launch",
+      text: "We support onboarding, documentation, and operating readiness so your team starts with speed and clarity.",
+    },
+    {
+      step: "04",
+      title: "Stabilize and scale",
+      text: "As the team matures, we help maintain continuity, expand capacity, and improve consistency over time.",
+    },
+  ];
+ 
+  const compare = [
+    ["Primary value", "Outcome ownership", "Talent capacity and execution support"],
+    ["Operating model", "OnSpot runs the function", "Your team leads the function"],
+    ["Best for", "Standardized recurring operations", "Teams needing flexible embedded talent"],
+    ["Control", "More delegated", "More direct client control"],
+    ["Scalability", "Process-led scaling", "Headcount-led scaling"],
+  ];
+ 
+  return (
+<div className="min-h-screen bg-[#f5f8ff] text-slate-900">
+<section className="relative overflow-hidden border-b border-slate-200 bg-[radial-gradient(circle_at_top_left,_rgba(71,78,173,0.14),_transparent_34%),radial-gradient(circle_at_top_right,_rgba(14,165,233,0.16),_transparent_30%),linear-gradient(180deg,_#ffffff_0%,_#f5f8ff_100%)]">
+<div className="absolute inset-0 opacity-40">
+<div className="absolute left-0 top-16 h-72 w-72 rounded-full bg-cyan-200/40 blur-3xl" />
+<div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-indigo-200/40 blur-3xl" />
+</div>
+ 
+        <div className="relative mx-auto grid max-w-7xl gap-14 px-6 py-20 lg:grid-cols-[1.1fr_.9fr] lg:px-10 lg:py-24">
+<div>
+<div className="mb-6 inline-flex items-center rounded-full border border-cyan-200 bg-white/80 px-4 py-2 text-sm font-medium text-cyan-700 shadow-sm backdrop-blur">
+              Resourced Services
+</div>
+<h1 className="max-w-4xl text-5xl font-semibold leading-[1.02] tracking-tight text-slate-950 md:text-6xl">
+              Talent infrastructure that expands your capacity without slowing your business down.
+</h1>
+<p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600 md:text-xl">
+              Resourced Services gives you dedicated people, flexible structure, and fast deployment — so you can scale execution with precision while keeping control of the function.
+</p>
+ 
+            <div className="mt-10 flex flex-wrap gap-4">
+<button className="rounded-2xl bg-[#474ead] px-6 py-3 text-sm font-medium text-white shadow-lg shadow-indigo-200 transition-transform duration-300 hover:-translate-y-0.5">
+                Explore Resourcing Models
+</button>
+<button className="rounded-2xl border border-slate-300 bg-white px-6 py-3 text-sm font-medium text-slate-700 transition-all duration-300 hover:border-cyan-300 hover:text-cyan-700">
+                See Roles We Build
+</button>
+</div>
+ 
+            <div className="mt-12 grid gap-4 sm:grid-cols-3">
+              {[
+                ["Fast", "Deployment-ready talent structure"],
+                ["Flexible", "Scale by role, team, or shift"],
+                ["Embedded", "Built around your workflow"],
+              ].map(([title, text]) => (
+<div key={title} className="rounded-3xl border border-white/70 bg-white/80 p-5 shadow-[0_10px_40px_rgba(15,23,42,0.06)] backdrop-blur">
+<div className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-700">{title}</div>
+<div className="mt-2 text-sm leading-6 text-slate-600">{text}</div>
+</div>
+              ))}
+</div>
+</div>
+ 
+          <div className="flex items-center">
+<div className="w-full rounded-[2rem] border border-white/70 bg-white/90 p-6 shadow-[0_18px_60px_rgba(71,78,173,0.14)] backdrop-blur">
+<div className="rounded-[1.75rem] bg-[linear-gradient(135deg,_#0f172a_0%,_#1e3a8a_35%,_#0ea5e9_100%)] p-7 text-white">
+<div className="text-sm font-medium text-cyan-100">How Resourced Services works</div>
+<div className="mt-3 text-3xl font-semibold leading-tight">
+                  You lead the mission. We build the talent engine behind it.
+</div>
+<div className="mt-6 grid gap-4">
+                  {[
+                    "Dedicated talent matched to your operating needs",
+                    "Structured onboarding and deployment support",
+                    "Scalable team design for evolving demand",
+                    "Consistent delivery continuity through OnSpot infrastructure",
+                  ].map((item) => (
+<div key={item} className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur-sm">
+<div className="mt-1 h-2.5 w-2.5 rounded-full bg-cyan-300" />
+<p className="text-sm leading-6 text-cyan-50">{item}</p>
+</div>
+                  ))}
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+ 
+      <section className="mx-auto max-w-7xl px-6 py-20 lg:px-10">
+<div className="mb-10 flex items-end justify-between gap-6">
+<div>
+<div className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-700">Why companies use it</div>
+<h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 md:text-4xl">
+              More control than outsourcing. More leverage than hiring one by one.
+</h2>
+</div>
+<div className="hidden max-w-md text-sm leading-7 text-slate-500 lg:block">
+            This model is ideal for organizations that want dedicated execution power while keeping priorities, process design, and leadership direction in-house.
+</div>
+</div>
+ 
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+          {capabilities.map((item) => (
+<div key={item.title} className="group rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-cyan-200 hover:shadow-xl">
+<div className="mb-5 inline-flex rounded-2xl bg-cyan-50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-700">
+                Capability
+</div>
+<h3 className="text-xl font-semibold text-slate-900">{item.title}</h3>
+<p className="mt-3 text-sm leading-7 text-slate-600">{item.text}</p>
+</div>
+          ))}
+</div>
+</section>
+ 
+      <section className="border-y border-slate-200 bg-white">
+<div className="mx-auto max-w-7xl px-6 py-20 lg:px-10">
+<div className="grid gap-12 lg:grid-cols-[1fr_1.15fr]">
+<div>
+<div className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-700">Resourcing models</div>
+<h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 md:text-4xl">
+                Built to match how your business actually operates.
+</h2>
+<p className="mt-5 max-w-xl text-base leading-8 text-slate-600">
+                Whether you need one embedded role or a multi-seat team, we design the structure around your workflows, management style, and growth stage.
+</p>
+</div>
+ 
+            <div className="grid gap-5">
+              {models.map((model) => (
+<div key={model.name} className="rounded-[1.75rem] border border-slate-200 bg-[linear-gradient(180deg,_#ffffff_0%,_#f8fbff_100%)] p-6 shadow-sm">
+<div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+<div>
+<h3 className="text-2xl font-semibold text-slate-950">{model.name}</h3>
+<p className="mt-2 max-w-xl text-sm leading-7 text-slate-600">{model.desc}</p>
+</div>
+<div className="rounded-2xl bg-slate-900 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200">
+                      Modular
+</div>
+</div>
+<div className="mt-6 flex flex-wrap gap-3">
+                    {model.bullets.map((bullet) => (
+<span key={bullet} className="rounded-full border border-cyan-100 bg-cyan-50 px-4 py-2 text-sm text-cyan-800">
+                        {bullet}
+</span>
+                    ))}
+</div>
+</div>
+              ))}
+</div>
+</div>
+</div>
+</section>
+ 
+      <section className="mx-auto max-w-7xl px-6 py-20 lg:px-10">
+<div className="grid gap-12 lg:grid-cols-[.95fr_1.05fr]">
+<div>
+<div className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-700">Example roles</div>
+<h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 md:text-4xl">
+              Roles we commonly build for growth-stage and scaled teams.
+</h2>
+<p className="mt-5 max-w-lg text-base leading-8 text-slate-600">
+              We can support a wide range of operator, coordinator, assistant, and specialist roles — structured around the way your business already works.
+</p>
+</div>
+ 
+          <div className="grid gap-4 sm:grid-cols-2">
+            {roles.map((role, index) => (
+<div key={role} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:border-cyan-200 hover:shadow-lg">
+<div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Role {index + 1}</div>
+<div className="mt-3 text-base font-medium text-slate-900">{role}</div>
+</div>
+            ))}
+</div>
+</div>
+</section>
+ 
+      <section className="bg-[linear-gradient(180deg,_#eef7ff_0%,_#f5f8ff_100%)] border-y border-slate-200">
+<div className="mx-auto max-w-7xl px-6 py-20 lg:px-10">
+<div className="mb-12 max-w-3xl">
+<div className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-700">Operating process</div>
+<h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 md:text-4xl">
+              A structured path from role design to stable execution.
+</h2>
+</div>
+ 
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            {process.map((item) => (
+<div key={item.step} className="rounded-[1.75rem] border border-white bg-white/90 p-6 shadow-[0_12px_34px_rgba(15,23,42,0.06)] backdrop-blur">
+<div className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-700">Step {item.step}</div>
+<h3 className="mt-4 text-xl font-semibold text-slate-950">{item.title}</h3>
+<p className="mt-3 text-sm leading-7 text-slate-600">{item.text}</p>
+</div>
+            ))}
+</div>
+</div>
+</section>
+ 
+      <section className="mx-auto max-w-7xl px-6 py-20 lg:px-10">
+<div className="grid gap-12 lg:grid-cols-[.9fr_1.1fr]">
+<div>
+<div className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-700">Service distinction</div>
+<h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 md:text-4xl">
+              Managed Services and Resourced Services — same brand, different operating value.
+</h2>
+<p className="mt-5 max-w-lg text-base leading-8 text-slate-600">
+              Managed Services is for companies that want OnSpot to run a function. Resourced Services is for companies that want dedicated talent and flexible capacity while keeping direct ownership of the work.
+</p>
+</div>
+ 
+          <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+<div className="grid grid-cols-3 border-b border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700">
+<div className="p-4">Dimension</div>
+<div className="border-l border-slate-200 p-4">Managed</div>
+<div className="border-l border-slate-200 p-4">Resourced</div>
+</div>
+            {compare.map((row) => (
+<div key={row[0]} className="grid grid-cols-3 text-sm text-slate-600">
+<div className="border-b border-slate-200 p-4 font-medium text-slate-900">{row[0]}</div>
+<div className="border-b border-l border-slate-200 p-4">{row[1]}</div>
+<div className="border-b border-l border-slate-200 p-4">{row[2]}</div>
+</div>
+            ))}
+</div>
+</div>
+</section>
+ 
+      <section className="px-6 pb-20 lg:px-10">
+<div className="mx-auto max-w-7xl overflow-hidden rounded-[2.25rem] border border-slate-200 bg-[linear-gradient(135deg,_#0f172a_0%,_#172554_40%,_#0ea5e9_100%)] p-8 text-white shadow-[0_20px_70px_rgba(14,165,233,0.2)] md:p-10">
+<div className="grid gap-10 lg:grid-cols-[1.1fr_.9fr] lg:items-end">
+<div>
+<div className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-200">OnSpot Resourced Services</div>
+<h2 className="mt-4 max-w-3xl text-3xl font-semibold tracking-tight md:text-4xl">
+                Build flexible execution capacity without losing visibility, speed, or control.
+</h2>
+<p className="mt-5 max-w-2xl text-base leading-8 text-cyan-50/90">
+                For teams that need dedicated people — not just a vendor, and not the drag of hiring everything alone.
+</p>
+</div>
+<div className="grid gap-4 sm:grid-cols-2">
+              {[
+                "Dedicated talent",
+                "Embedded workflows",
+                "Rapid deployment",
+                "Scalable structure",
+              ].map((item) => (
+<div key={item} className="rounded-[1.5rem] border border-white/15 bg-white/10 p-4 text-sm font-medium text-cyan-50 backdrop-blur-sm">
+                  {item}
+</div>
+              ))}
+</div>
+</div>
+</div>
+</section>
+ 
+      <section className="px-6 pb-24 lg:px-10">
+<div className="mx-auto max-w-7xl rounded-[2.5rem] border border-cyan-100 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.22),_transparent_30%),linear-gradient(135deg,_#474ead_0%,_#2563eb_45%,_#06b6d4_100%)] p-8 text-white shadow-[0_24px_80px_rgba(37,99,235,0.28)] md:p-12">
+<div className="grid gap-10 lg:grid-cols-[1.15fr_.85fr] lg:items-end">
+<div>
+<div className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-100/90">
+                Ready to build with OnSpot
+</div>
+<h2 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight md:text-5xl">
+                Build your next team faster — with the structure, quality, and flexibility to scale right.
+</h2>
+<p className="mt-5 max-w-2xl text-base leading-8 text-white/85 md:text-lg">
+                Whether you need one critical hire or a fully embedded team, OnSpot helps you deploy resourced capacity with clarity, speed, and brand-level execution.
+</p>
+</div>
+ 
+            <div className="grid gap-4 sm:grid-cols-2">
+<button className="rounded-2xl bg-white px-6 py-4 text-sm font-semibold text-[#474ead] shadow-lg shadow-black/10 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl">
+                Book a Strategy Call
+</button>
+<button className="rounded-2xl border border-white/25 bg-white/10 px-6 py-4 text-sm font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:bg-white/15">
+                Explore Resourcing Models
+</button>
+</div>
+</div>
+ 
+          <div className="mt-10 grid gap-4 border-t border-white/15 pt-8 sm:grid-cols-3">
+            {[
+              ["Dedicated talent", "Roles built around your workflow and management style"],
+              ["Fast deployment", "Structured hiring and onboarding support from day one"],
+              ["Scalable model", "Expand by seat, pod, or function as demand evolves"],
+            ].map(([title, text]) => (
+<div key={title} className="rounded-[1.5rem] border border-white/12 bg-white/10 p-5 backdrop-blur-sm">
+<div className="text-sm font-semibold text-white">{title}</div>
+<div className="mt-2 text-sm leading-6 text-white/75">{text}</div>
+</div>
+            ))}
+</div>
+</div>
+</section>
+</div>
+  );
+}

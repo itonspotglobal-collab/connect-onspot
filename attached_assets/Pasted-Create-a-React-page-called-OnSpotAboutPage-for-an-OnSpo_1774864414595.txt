@@ -1,0 +1,162 @@
+Create a React page called `OnSpotAboutPage` for an OnSpot website, using the same premium, modern, high-conversion style as these existing branch pages:
+- Managed Services
+- Resourced Services
+- Human Virtual Assistant
+- Enterprise Services
+
+Important:
+- Use React functional component style
+- Use Tailwind CSS for styling
+- Match the same visual language, spacing, rounded corners, gradients, premium SaaS layout, and section flow as the existing pages
+- Use a clean, premium, executive-level design
+- Use OnSpot brand colors, especially `#474EAD`, with white, slate, and subtle gradient accents
+- Make it fully responsive
+- Keep the code production-ready and organized
+- Export default function `OnSpotAboutPage()`
+
+Page goal:
+This is the main About Page for OnSpot. It should introduce the company, explain the story, values, people, and culture, and also guide users to the 4 branch pages:
+1. Manage Services Page
+2. Resourced Services Page
+3. Human Virtual Assistant Page
+4. Enterprise Services Page
+
+Build the page with these sections:
+
+1. Sticky Header / Top Navigation
+- OnSpot logo on the left
+- Nav links: Our Story, Our People, Our Culture, Our Systems, Services
+- CTA button: “Book a Strategy Call”
+- Header should feel similar to the existing dark premium nav style
+
+2. Hero Section
+- Large premium headline
+- Suggested angle:
+  “Built by people who understand the weight of growth.”
+- Supporting paragraph explaining OnSpot’s belief:
+  AI should handle what can be systemized, humans should step in where judgment, care, and leadership matter most.
+- Two CTA buttons:
+  - “Talk to OnSpot”
+  - “Meet the Leadership Team”
+- On the right side, create a stats card with proof metrics like:
+  - 500+ resources deployed
+  - 50,000+ vetted talent pool
+  - 100+ SOPs and systems built
+  - $50M+ estimated value delivered
+
+3. Our Story / The Why Section
+- Explain that OnSpot started from a real operator problem:
+  hiring was slow, costs were rising, founder time was being consumed, and operations became the bottleneck
+- Position OnSpot as not just outsourcing, but a growth partner
+- Add one CTA button like “Explore How We Can Help”
+
+4. Leadership / The Who Section
+- Introduce leadership team cards
+- Include sample leaders:
+  - Nur Laminero — CEO
+  - Jake Wainberg — Founder & President
+  - Alon Ben Eli — Co-Founder
+  - Shane Limiac — Head of Delivery
+  - Mark Apostol — Head of People & Administration
+- Each card should have:
+  - Placeholder portrait area
+  - Name
+  - Role
+  - Short description
+- Above or around this section, include a premium lifestyle-style visual gallery with hover interaction placeholders
+
+5. Company Culture Section
+- Headline around:
+  “Culture is not decoration here. It is the engine.”
+- Explain the “Happy Tribe” philosophy
+- Add a grid of core values cards with these values:
+  - People First
+  - Beat Yesterday
+  - Fast-Fast-Fast
+  - Integrity Matters
+  - Extreme Ownership
+  - We Are Intrapreneurs
+- Each card should include title, body text, and a short highlighted line
+
+6. Our People / Internal Philosophy Section
+- Explain that great client work starts with how people are treated internally
+- Add a clean list/grid of principles like:
+  - A people-first leadership style
+  - A culture of ownership and accountability
+  - A team built for long-term trust, not short-term churn
+  - A workplace where client success and employee growth move together
+
+7. Day in the Life / Experience Section
+- Build a timeline or stacked cards section showing “A day at OnSpot”
+- Include time-based entries like:
+  - 08:30 — The day starts with clarity
+  - 10:00 — Collaboration feels natural
+  - 13:00 — Clients feel the culture
+  - 15:30 — Improvement is part of the job
+  - 18:00 — Growth is personal too
+- Add visual placeholder cards beside or above the timeline
+
+8. Process / How OnSpot Works Section
+- Show a 3-step process:
+  - Book a strategy call
+  - Design the right model
+  - Launch with confidence
+- Use premium card layout matching the style of the other pages
+
+9. Services Hub Section
+- This section is very important
+- Add a section title like:
+  “Explore Our Service Models”
+- Create 4 premium service cards that link to branch pages:
+  - Managed Services Page
+  - Resourced Services Page
+  - Human Virtual Assistant Page
+  - Enterprise Services Page
+- Each card should include:
+  - Service title
+  - Short positioning copy
+  - Small category label
+  - CTA text like “Explore Service”
+- Make the cards visually consistent with the branch page style
+- Use placeholder hrefs or route paths like:
+  - `/managed-services`
+  - `/resourced-services`
+  - `/human-virtual-assistant`
+  - `/enterprise-services`
+
+10. FAQ Section
+- Add 3 FAQs:
+  - Who is OnSpot for?
+  - What makes OnSpot different from traditional outsourcing?
+  - Why does culture matter so much here?
+- Use a clean accordion or expandable card UI
+
+11. Final CTA Section
+- Strong closing message
+- Something like:
+  “The right people. The right systems. The right way to scale.”
+- Include buttons:
+  - “Book a Strategy Call”
+  - “Explore Our Services”
+
+Design requirements:
+- Use alternating section backgrounds like white, slate-50, and dark premium sections where appropriate
+- Rounded containers should be large and modern like `rounded-[2rem]`
+- Use soft borders, gradients, hover transitions, subtle shadows, and polished spacing
+- The page should feel like it belongs in the same system as the Managed Services, Resourced Services, Human Virtual Assistant, and Enterprise Services pages
+- Avoid generic bootstrap-like layout
+- Make it feel premium and high-end
+
+Technical requirements:
+- Use arrays + `.map()` for cards, values, leaders, process steps, FAQs, and service links
+- Keep data definitions at the top of the component
+- No backend logic
+- No external API calls
+- Use placeholder divs for images if needed
+- Keep the JSX clean and readable
+- Export the full component in one file
+
+Output:
+- Return the complete React component code only
+- Do not explain the code
+- Do not wrap in markdown unless necessary

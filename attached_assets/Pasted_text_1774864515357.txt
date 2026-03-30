@@ -1,0 +1,579 @@
+Onspot About Page:
+
+export default function OnSpotAboutPage() {
+  const proofStats = [
+    { value: '500+', label: 'resources deployed' },
+    { value: '50,000+', label: 'vetted talent pool' },
+    { value: '100+', label: 'SOPs and systems built' },
+    { value: '$50M+', label: 'estimated value delivered' },
+  ];
+
+
+
+  const coreValues = [
+    {
+      title: 'People First',
+      body: 'Everything begins with people. We do not build systems at the expense of humanity — we build systems that elevate it. When our people feel seen, supported, and empowered, they do their best work. And when they do their best work, our clients win.',
+      highlight: 'People happiness drives client success.',
+    },
+    {
+      title: 'Beat Yesterday',
+      body: 'We are never finished. We chase progress daily — small improvements, better decisions, sharper execution. The standard is not perfection. The standard is growth.',
+      highlight: 'Progress is our baseline.',
+    },
+    {
+      title: 'Fast-Fast-Fast',
+      body: 'Speed is a competitive advantage. We move with urgency, but never chaos. Fast execution, clear thinking, and decisive action define how we operate.',
+      highlight: 'Speed with precision.',
+    },
+    {
+      title: 'Integrity Matters',
+      body: 'We do what is right, especially when it is difficult. Trust is earned in consistency, transparency, and accountability. We protect it at all costs.',
+      highlight: 'Trust is our currency.',
+    },
+    {
+      title: 'Extreme Ownership',
+      body: 'We do not pass problems. We own them. Every outcome, every challenge, every result is ours to solve. This is how we move fast and build trust.',
+      highlight: 'No excuses. Only solutions.',
+    },
+    {
+      title: 'We Are Intrapreneurs',
+      body: 'We think like builders inside the company. We take initiative, create opportunities, and act like owners — because this is how great companies are built.',
+      highlight: 'Think like an owner. Act like a founder.',
+    },
+  ];
+
+
+
+  const leaders = [
+    {
+      name: 'Nur Laminero',
+      role: 'CEO',
+      desc: 'Turns growth vision into systems, structure, and execution that scale.',
+    },
+    {
+      name: 'Jake Wainberg',
+      role: 'Founder & President',
+      desc: 'Built OnSpot from real entrepreneurial pain points while scaling businesses in New York.',
+    },
+    {
+      name: 'Alon Ben Eli',
+      role: 'Co-Founder',
+      desc: 'Helps shape long-range strategy, positioning, and global growth.',
+    },
+    {
+      name: 'Shane Limiac',
+      role: 'Head of Delivery',
+      desc: 'Leads execution and ensures the client experience translates into measurable results.',
+    },
+    {
+      name: 'Mark Apostol',
+      role: 'Head of People & Administration',
+      desc: 'Builds the people systems and culture that power high-performance delivery.',
+    },
+  ];
+
+
+
+  const processSteps = [
+    {
+      step: '01',
+      title: 'Book a strategy call',
+      body: 'We understand your goals, growth bottlenecks, and where support can create the biggest leverage.',
+    },
+    {
+      step: '02',
+      title: 'Design the right model',
+      body: 'We shape the right team, structure, and support system for your stage of business.',
+    },
+    {
+      step: '03',
+      title: 'Launch with confidence',
+      body: 'We build and operationalize the team so you can move faster with less drag.',
+    },
+  ];
+
+
+
+  const faqs = [
+    {
+      q: 'Who is OnSpot for?',
+      a: 'OnSpot is for founders, operators, and growth-stage companies that want to scale without building bloated internal teams or getting trapped in operational complexity.',
+    },
+    {
+      q: 'What makes OnSpot different from traditional outsourcing?',
+      a: 'We do not just provide people. We provide culture, structure, management rhythm, and a system designed to help people perform at a high level over time.',
+    },
+    {
+      q: 'Why does culture matter so much here?',
+      a: 'Because great delivery starts with great people. We believe people happiness drives client success, and that belief shapes how we hire, lead, support, and grow our Tribe.',
+    },
+  ];
+
+
+
+  const dayInTheLife = [
+    {
+      time: '08:30',
+      title: 'The day starts with clarity',
+      body: 'Teams begin with focus. Priorities are clear, leaders are accessible, and everyone knows what winning looks like for the day.',
+    },
+    {
+      time: '10:00',
+      title: 'Collaboration feels natural',
+      body: 'People check in, solve issues quickly, and move with shared responsibility. There is urgency, but there is also trust.',
+    },
+    {
+      time: '13:00',
+      title: 'Clients feel the culture',
+      body: 'The way we work internally shows up externally. Care, accountability, responsiveness, and pride in the work are part of the client experience.',
+    },
+    {
+      time: '15:30',
+      title: 'Improvement is part of the job',
+      body: 'At OnSpot, people are encouraged to think, suggest, refine, and improve. We do not just follow process. We help make it better.',
+    },
+    {
+      time: '18:00',
+      title: 'Growth is personal too',
+      body: 'A day at OnSpot is not only about productivity. It is also about becoming better — as a teammate, a leader, and a builder of something meaningful.',
+    },
+  ];
+
+
+
+  const culturePhotos = ['Culture Photo', 'Team Lifestyle', 'Offsite Moment', 'Happy Tribe'];
+  const leaderLifestyle = ['Leadership Lifestyle', 'Founder Energy', 'Life Outside Work', 'Built to Live'];
+  const dayVisuals = ['Work + Life', 'Deep Work', 'Team Flow', 'Client Energy', 'Lifestyle'];
+
+
+
+  return (
+<div className="min-h-screen bg-white text-slate-950">
+<header className="fixed inset-x-0 top-0 z-50 border-b border-slate-800/60 bg-slate-950/85 backdrop-blur-xl">
+<div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
+<div className="flex items-center gap-3">
+<div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#474ead] text-sm font-semibold text-white shadow-sm">
+              O
+</div>
+<div className="text-sm font-semibold tracking-[0.2em] text-white">ONSPOT</div>
+</div>
+
+
+
+          <nav className="hidden items-center gap-6 lg:flex">
+<a href="#the-why" className="text-sm text-slate-300 transition hover:text-white">Our Story</a>
+<a href="#the-who" className="text-sm text-slate-300 transition hover:text-white">Our People</a>
+<a href="#culture" className="text-sm text-slate-300 transition hover:text-white">Our Culture</a>
+<a href="#what-we-built" className="text-sm text-slate-300 transition hover:text-white">Our Systems</a>
+</nav>
+
+
+
+          <button className="rounded-full bg-[#474ead] px-4 py-2 text-sm font-semibold text-white transition hover:scale-[1.02] hover:bg-[#5b63d6]">
+            Book a Strategy Call
+</button>
+</div>
+</header>
+
+
+
+      <section className="relative overflow-hidden bg-slate-950 px-6 pb-24 pt-32 text-white lg:px-8 lg:pb-32 lg:pt-40">
+<div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(71,78,173,0.26),transparent_28%),radial-gradient(circle_at_80%_20%,rgba(142,147,255,0.18),transparent_24%),linear-gradient(to_bottom,rgba(15,23,42,1),rgba(2,6,23,1))]" />
+
+
+
+        <div className="relative mx-auto grid max-w-7xl gap-16 lg:grid-cols-12">
+<div className="lg:col-span-8">
+<div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.3em] text-slate-300">
+              AI First. Humans When It Matters.
+</div>
+<h1 className="max-w-[12ch] text-[clamp(2.5rem,6vw,6rem)] font-semibold leading-[0.92] tracking-tight sm:max-w-[11ch] lg:max-w-[10ch]">
+              Built by people
+<span className="block bg-gradient-to-r from-white via-[#e4e7ff] to-[#8e93ff] bg-clip-text text-transparent">
+                who understand the weight of growth.
+</span>
+</h1>
+<p className="mt-8 max-w-3xl text-lg leading-8 text-slate-300 sm:text-xl">
+              OnSpot exists because scaling a business should not mean drowning in hiring, management, and operational drag. We built a company around a simple belief: AI should handle what can be systemized, and humans should step in where judgment, care, and leadership matter most. When the right people are supported by the right culture and the right intelligence layer, businesses grow better.
+</p>
+
+
+
+            <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+<button className="rounded-full bg-[#474ead] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#474ead]/20 transition hover:scale-[1.02] hover:bg-[#5b63d6]">
+                Talk to OnSpot
+</button>
+<button className="rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
+                Meet the Leadership Team
+</button>
+</div>
+</div>
+
+
+
+          <div className="lg:col-span-4">
+<div className="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+<div className="text-xs uppercase tracking-[0.3em] text-slate-400">At a glance</div>
+<div className="mt-5 grid gap-3">
+                {proofStats.map((stat) => (
+<div key={stat.label} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+<div className="text-2xl font-semibold text-white">{stat.value}</div>
+<div className="mt-1 text-sm leading-6 text-slate-300">{stat.label}</div>
+</div>
+                ))}
+</div>
+</div>
+</div>
+</div>
+</section>
+
+
+
+      <section id="the-why" className="mx-auto max-w-7xl px-6 py-24 lg:px-8 lg:py-32">
+<div className="grid gap-14 lg:grid-cols-12 lg:gap-10">
+<div className="lg:col-span-4">
+<div className="sticky top-28">
+<div className="text-sm font-medium uppercase tracking-[0.28em] text-[#474ead]">The Why</div>
+<h2 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+                OnSpot started from a real problem.
+</h2>
+</div>
+</div>
+<div className="lg:col-span-8">
+<div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-8 sm:p-10 lg:p-14">
+<p className="text-2xl leading-[1.45] tracking-tight text-slate-900 sm:text-3xl">
+                Our founders were building businesses and ran into the same wall most operators eventually hit: growth was possible, but operations were becoming the bottleneck.
+</p>
+<div className="mt-8 space-y-6 text-lg leading-8 text-slate-600">
+<p>Hiring took too long. Costs kept rising. Teams became harder to manage. Founder time was being consumed by work that should have been systemized.</p>
+<p>So instead of accepting that as normal, they built a better way. What began as an internal solution became a company built to help other businesses scale with more clarity, better people, and less friction.</p>
+<p>That is why OnSpot exists. Not to be another outsourcing provider, but to become a trusted growth partner for businesses that need more than manpower. They need intelligence that removes drag, people who can lead and execute, and a support system that makes both work as one.</p>
+</div>
+<button className="mt-8 rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:scale-[1.02]">
+                Explore How We Can Help
+</button>
+</div>
+</div>
+</div>
+</section>
+
+
+
+      <section id="the-who" className="bg-white py-24 lg:py-32">
+<div className="mx-auto mb-16 max-w-7xl px-6 lg:px-8">
+<div className="grid grid-cols-2 gap-4 md:flex md:h-56 md:gap-4">
+            {leaderLifestyle.map((item) => (
+<div
+                key={item}
+                className="group relative overflow-hidden rounded-2xl transition-all duration-700 ease-out aspect-[4/3] md:h-56 md:flex-[1] md:min-w-0 md:hover:flex-[2.4]"
+>
+<div className="absolute inset-0 bg-gradient-to-br from-slate-300 to-slate-400 transition-transform duration-1000 group-hover:scale-110" />
+<div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.28),transparent_28%)] opacity-60 transition duration-700 group-hover:opacity-90" />
+<div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-70 transition duration-700 group-hover:opacity-100" />
+<div className="absolute -inset-x-8 top-0 h-24 -translate-y-full bg-white/20 blur-2xl transition duration-1000 group-hover:translate-y-24" />
+<div className="absolute inset-0 ring-1 ring-white/10 ring-inset transition duration-500 group-hover:ring-white/20" />
+<div className="absolute bottom-4 left-4 right-4 translate-y-3 text-white opacity-0 transition duration-700 group-hover:translate-y-0 group-hover:opacity-100">
+<div className="text-sm font-semibold tracking-wide">{item}</div>
+<div className="mt-1 text-xs text-white/75">Life at OnSpot</div>
+</div>
+</div>
+            ))}
+</div>
+</div>
+
+
+
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+<div className="max-w-3xl">
+<div className="text-sm font-medium uppercase tracking-[0.28em] text-[#474ead]">The Who</div>
+<h2 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 sm:text-6xl">
+              The people behind OnSpot are the story.
+</h2>
+<p className="mt-6 text-lg leading-8 text-slate-600">
+              OnSpot is led by builders, operators, and people leaders who understand both the pressure of growth and the responsibility of building a company people are proud to belong to.
+</p>
+</div>
+
+
+
+          <div className="mt-16 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {leaders.map((leader) => (
+<div key={leader.name} className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+<div className="aspect-[4/5] rounded-[1.5rem] bg-gradient-to-br from-[#f5f6ff] to-slate-200" />
+<div className="mt-6 text-2xl font-semibold text-slate-950">{leader.name}</div>
+<div className="mt-1 text-sm font-medium uppercase tracking-[0.25em] text-slate-500">{leader.role}</div>
+<p className="mt-4 text-base leading-7 text-slate-600">{leader.desc}</p>
+</div>
+            ))}
+</div>
+</div>
+</section>
+
+
+
+      <section id="culture" className="bg-slate-50 py-24 lg:py-32">
+<div className="mx-auto mb-16 max-w-7xl px-6 lg:px-8">
+<div className="grid grid-cols-2 gap-4 md:flex md:h-52 md:gap-4">
+            {culturePhotos.map((item) => (
+<div
+                key={item}
+                className="group relative overflow-hidden rounded-2xl transition-all duration-700 ease-out aspect-square md:h-52 md:flex-[1] md:min-w-0 md:hover:flex-[2.1]"
+>
+<div className="absolute inset-0 bg-gradient-to-br from-slate-300 to-slate-400 transition-transform duration-1000 group-hover:scale-110" />
+<div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(255,255,255,0.24),transparent_30%)] opacity-70 transition duration-700 group-hover:opacity-100" />
+<div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-70 transition duration-700 group-hover:opacity-100" />
+<div className="absolute -inset-x-8 top-0 h-20 -translate-y-full bg-white/20 blur-2xl transition duration-1000 group-hover:translate-y-20" />
+<div className="absolute inset-0 ring-1 ring-white/10 ring-inset transition duration-500 group-hover:ring-white/20" />
+<div className="absolute bottom-4 left-4 right-4 translate-y-3 text-white opacity-0 transition duration-700 group-hover:translate-y-0 group-hover:opacity-100">
+<div className="text-sm font-semibold tracking-wide">{item}</div>
+<div className="mt-1 text-xs text-white/75">Happy Tribe</div>
+</div>
+</div>
+            ))}
+</div>
+</div>
+
+
+
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+<div className="grid gap-10 lg:grid-cols-12 lg:items-start">
+<div className="lg:col-span-5">
+<div className="text-sm font-medium uppercase tracking-[0.28em] text-[#474ead]">Company Culture</div>
+<h2 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+                Culture is not decoration here. It is the engine.
+</h2>
+<p className="mt-6 text-lg leading-8 text-slate-600">
+                We call it the Happy Tribe. It is our belief that people happiness drives client success. That belief shows up in how we hire, how we lead, how we communicate, and how we grow together. Even as we become more AI-first, we remain deeply human where it matters most.
+</p>
+<p className="mt-6 text-base leading-7 text-slate-600">
+                We do not want a company where people simply complete tasks. We want a company where people take ownership, feel proud of the mission, and build long-term careers while helping clients win.
+</p>
+</div>
+
+
+
+            <div className="lg:col-span-7">
+<div className="rounded-[2rem] border border-slate-200 bg-white p-6 sm:p-8">
+<div className="mb-6 text-sm font-medium uppercase tracking-[0.28em] text-[#474ead]">Core Values</div>
+<div className="grid gap-5 sm:grid-cols-2">
+                  {coreValues.map((value) => (
+<div key={value.title} className="group rounded-[1.75rem] border border-[#dfe2ff] bg-gradient-to-br from-[#f5f6ff] via-white to-white p-6 transition hover:-translate-y-1 hover:shadow-lg">
+<div className="text-xs font-semibold uppercase tracking-[0.3em] text-[#474ead]">Core Value</div>
+<h3 className="mt-3 text-xl font-semibold text-slate-950">{value.title}</h3>
+<p className="mt-3 text-sm leading-6 text-slate-600">{value.body}</p>
+<div className="mt-5 text-sm font-semibold text-[#474ead]">{value.highlight}</div>
+</div>
+                  ))}
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+
+
+      <section className="mx-auto max-w-7xl px-6 py-24 lg:px-8 lg:py-32">
+<div className="grid gap-8 lg:grid-cols-2">
+<div className="rounded-[2rem] border border-slate-200 bg-white p-8 sm:p-10">
+<div className="text-sm font-medium uppercase tracking-[0.28em] text-[#474ead]">Our People</div>
+<h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+              We believe great client work starts with how people are treated inside the company.
+</h2>
+<p className="mt-6 text-lg leading-8 text-slate-600">
+              OnSpot is built around the idea that high performance and people care can co-exist. We invest in the Tribe, create room for growth, and build an environment where people can contribute at a high level with pride and stability.
+</p>
+</div>
+
+
+
+          <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-8 sm:p-10">
+<div className="text-sm font-medium uppercase tracking-[0.28em] text-[#474ead]">What that means</div>
+<div className="mt-6 grid gap-3">
+              {[
+                'A people-first leadership style',
+                'A culture of ownership and accountability',
+                'A team built for long-term trust, not short-term churn',
+                'A workplace where client success and employee growth move together',
+              ].map((item) => (
+<div key={item} className="rounded-[1.25rem] bg-white px-5 py-4 text-base text-slate-700">
+                  {item}
+</div>
+              ))}
+</div>
+</div>
+</div>
+</section>
+
+
+
+      <section id="day-in-the-life" className="bg-white py-24 lg:py-32">
+<div className="mx-auto mb-16 max-w-7xl px-6 lg:px-8">
+<div className="grid grid-cols-2 gap-4 md:flex md:h-40 md:gap-4">
+            {dayVisuals.map((item) => (
+<div
+                key={item}
+                className="group relative overflow-hidden rounded-2xl transition-all duration-700 ease-out aspect-square md:h-40 md:flex-[1] md:min-w-0 md:hover:flex-[1.8]"
+>
+<div className="absolute inset-0 bg-gradient-to-br from-slate-300 to-slate-400 transition-transform duration-1000 group-hover:scale-110" />
+<div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.22),transparent_28%)] opacity-60 transition duration-700 group-hover:opacity-90" />
+<div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-70 transition duration-700 group-hover:opacity-100" />
+<div className="absolute -inset-x-8 top-0 h-16 -translate-y-full bg-white/20 blur-2xl transition duration-1000 group-hover:translate-y-16" />
+<div className="absolute inset-0 ring-1 ring-white/10 ring-inset transition duration-500 group-hover:ring-white/20" />
+<div className="absolute bottom-3 left-3 right-3 translate-y-3 text-white opacity-0 transition duration-700 group-hover:translate-y-0 group-hover:opacity-100">
+<div className="text-xs font-semibold tracking-wide">{item}</div>
+</div>
+</div>
+            ))}
+</div>
+</div>
+
+
+
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+<div className="grid gap-12 lg:grid-cols-12 lg:items-start">
+<div className="lg:col-span-4">
+<div className="sticky top-28">
+<div className="text-sm font-medium uppercase tracking-[0.28em] text-[#474ead]">Day in the Life at OnSpot</div>
+<h2 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+                  What it feels like to build inside the Tribe.
+</h2>
+<p className="mt-6 text-lg leading-8 text-slate-600">
+                  Behind the systems, metrics, and delivery is a very human rhythm: AI handling repeatable work in the background, and people showing up with ownership, supporting one another, and doing work that matters.
+</p>
+</div>
+</div>
+
+
+
+            <div className="lg:col-span-8">
+<div className="grid gap-5">
+                {dayInTheLife.map((item) => (
+<div key={item.time} className="grid gap-4 rounded-[1.75rem] border border-slate-200 bg-slate-50 p-6 sm:grid-cols-[110px_1fr] sm:items-start sm:p-8">
+<div className="text-sm font-semibold uppercase tracking-[0.28em] text-[#474ead]">{item.time}</div>
+<div>
+<h3 className="text-2xl font-semibold text-slate-950">{item.title}</h3>
+<p className="mt-3 text-base leading-7 text-slate-600">{item.body}</p>
+</div>
+</div>
+                ))}
+</div>
+
+
+
+              <div className="mt-8 rounded-[2rem] border border-[#dfe2ff] bg-gradient-to-br from-[#f5f6ff] via-white to-white p-8 sm:p-10">
+<div className="text-sm font-medium uppercase tracking-[0.28em] text-[#474ead]">The feeling</div>
+<p className="mt-4 text-2xl leading-[1.5] tracking-tight text-slate-900 sm:text-3xl">
+                  Ambitious, fast-moving, people-first, and deeply committed to doing meaningful work well.
+</p>
+<p className="mt-5 text-base leading-7 text-slate-600">
+                  That is what a day inside OnSpot is meant to feel like. Not chaotic. Not mechanical. But sharp, alive, and built around people who care about the mission and about each other.
+</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+
+
+      <section id="what-we-built" className="bg-slate-950 py-24 text-white lg:py-32">
+<div className="mx-auto max-w-7xl px-6 lg:px-8">
+<div className="max-w-3xl">
+<div className="text-sm font-medium uppercase tracking-[0.28em] text-[#7c82ff]">One System. Your Unfair Advantage.</div>
+<h2 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
+              AI first. Humans when it matters.
+</h2>
+<p className="mt-6 text-lg leading-8 text-slate-300">
+              What makes OnSpot powerful starts with the people and the culture. But what makes it unfair is the system around them: AI where speed, automation, and consistency matter most; humans where judgment, trust, and leadership create the difference.
+</p>
+</div>
+
+
+
+          <div className="mt-16 grid gap-6 lg:grid-cols-2">
+<div className="rounded-[2rem] border border-white/10 bg-white/5 p-8">
+<h3 className="text-2xl font-semibold">AI + Human Operating System</h3>
+<p className="mt-4 text-base leading-7 text-slate-300">
+                One intelligent operating layer designed to remove repetitive drag, sharpen execution, and let human talent focus on the moments that actually move the business forward.
+</p>
+</div>
+<div className="rounded-[2rem] border border-white/10 bg-white/5 p-8">
+<h3 className="text-2xl font-semibold">One system. Your unfair advantage.</h3>
+<p className="mt-4 text-base leading-7 text-slate-300">
+                We combine AI-first workflows, human expertise, and operational discipline into one system that helps clients scale with more speed, better judgment, and less friction.
+</p>
+</div>
+</div>
+
+
+
+          <div className="mt-12 grid gap-6 lg:grid-cols-3">
+            {processSteps.map((item) => (
+<div key={item.step} className="rounded-[2rem] border border-white/10 bg-white/5 p-8">
+<div className="text-sm font-semibold text-[#7c82ff]">{item.step}</div>
+<h3 className="mt-4 text-2xl font-semibold text-white">{item.title}</h3>
+<p className="mt-4 text-base leading-7 text-slate-300">{item.body}</p>
+</div>
+            ))}
+</div>
+</div>
+</section>
+
+
+
+      <section id="faq" className="mx-auto max-w-7xl px-6 py-24 lg:px-8 lg:py-32">
+<div className="grid gap-10 lg:grid-cols-12">
+<div className="lg:col-span-4">
+<div className="sticky top-28">
+<div className="text-sm font-medium uppercase tracking-[0.28em] text-[#474ead]">FAQ</div>
+<h2 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+                A few good questions.
+</h2>
+</div>
+</div>
+<div className="lg:col-span-8">
+<div className="space-y-4">
+              {faqs.map((item) => (
+<div key={item.q} className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-6 sm:p-8">
+<h3 className="text-xl font-semibold text-slate-950">{item.q}</h3>
+<p className="mt-3 text-base leading-7 text-slate-600">{item.a}</p>
+</div>
+              ))}
+</div>
+</div>
+</div>
+</section>
+
+
+
+      <section className="mx-auto max-w-7xl px-6 pb-24 lg:px-8 lg:pb-32">
+<div className="rounded-[2.75rem] bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 px-8 py-16 text-white sm:px-12 lg:px-16">
+<div className="max-w-4xl">
+<h2 className="text-4xl font-semibold leading-tight tracking-tight sm:text-6xl">
+              Built for people who are serious about growth.
+</h2>
+<p className="mt-6 text-lg leading-8 text-slate-300">
+              OnSpot is not just a service. It is a way to build — with clarity, with leverage, and with the right balance between intelligence and human judgment. We believe the future belongs to companies that can move fast without losing quality, scale without losing culture, and grow without losing control.
+</p>
+<p className="mt-6 text-lg leading-8 text-slate-300">
+              That is what we are building. And if you are building something that matters, you should not have to do it alone.
+</p>
+</div>
+
+
+
+          <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+<button className="rounded-full bg-[#474ead] px-6 py-3 text-sm font-semibold text-white transition hover:scale-[1.02] hover:bg-[#5b63d6]">
+              Talk to OnSpot
+</button>
+<button className="rounded-full border border-white/20 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
+              Explore Our Approach
+</button>
+</div>
+</div>
+</section>
+</div>
+  );
+}
