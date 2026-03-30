@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { ArrowRight, ChevronDown, ChevronUp, CheckCircle2 } from "lucide-react";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -185,12 +186,12 @@ export default function WhyOnSpotAbout() {
       {/* ── Sticky Header ──────────────────────────────────────────────────── */}
       <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-800/60 bg-slate-950/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
-          <div className="flex items-center gap-3">
+          <Link to="/" className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#474ead] text-sm font-semibold text-white shadow-sm">
               O
             </div>
             <span className="text-sm font-semibold tracking-[0.2em] text-white">ONSPOT</span>
-          </div>
+          </Link>
 
           <nav className="hidden items-center gap-6 lg:flex">
             {[

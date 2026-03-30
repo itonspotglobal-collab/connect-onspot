@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -78,10 +78,12 @@ function LegalOpsImmersive() {
 // Public Routes - Always available regardless of authentication
 function PublicRouter() {
   const { isAuthenticated, user } = useAuth();
-  
+  const [location] = useLocation();
+  const hideTopNav = location === "/why-onspot/about";
+
   return (
     <div className="min-h-screen bg-background">
-      <TopNavigation />
+      {!hideTopNav && <TopNavigation />}
       <main>
         <Switch>
           <Route path="/" component={() => {
