@@ -5,42 +5,43 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
 import {
-  User, Calendar, Clock, Eye, Heart, Globe, TrendingUp,
+  User, Calendar, Clock, Eye, Globe, TrendingUp,
   ExternalLink, Rss, ArrowRight, BookOpen, Linkedin, Youtube,
-  Search, PlayCircle, Mic, LayoutGrid,
+  Search, PlayCircle, Mic, LayoutGrid, Users, Briefcase,
 } from "lucide-react";
 import type { Post } from "@shared/schema";
 
-// ─── Navigation categories ─────────────────────────────────────────────────────
+// ─── Navigation categories ────────────────────────────────────────────────────
 const NAV_CATEGORIES = [
-  { id: "View All",         label: "View All",         icon: LayoutGrid },
-  { id: "CEO Insights",     label: "CEO Insights",     icon: Rss },
-  { id: "Talent Insights",  label: "Talent Insights",  icon: User },
-  { id: "Industry Insights",label: "Industry Insights",icon: Globe },
-  { id: "Learning Centre",  label: "Learning Centre",  icon: BookOpen },
-  { id: "Podcast Videos",   label: "Podcast Videos",   icon: Mic },
+  { id: "View All",         label: "View All",         icon: LayoutGrid  },
+  { id: "CEO Insights",     label: "CEO Insights",     icon: Rss         },
+  { id: "Talent Insights",  label: "Talent Insights",  icon: User        },
+  { id: "Client Insights",  label: "Client Insights",  icon: Briefcase   },
+  { id: "Industry Insights",label: "Industry Insights",icon: Globe       },
+  { id: "Learning Centre",  label: "Learning Centre",  icon: BookOpen    },
+  { id: "Podcast Videos",   label: "Podcast Videos",   icon: Mic         },
 ] as const;
 
 type NavCategoryId = (typeof NAV_CATEGORIES)[number]["id"];
 
 // ─── Cover image fallbacks by category ────────────────────────────────────────
 const COVER_IMAGES: Record<string, string> = {
-  "CEO Insights":      "https://images.unsplash.com/photo-1549923746-c502d488b3ea?w=800&h=450&fit=crop",
-  "Talent Insights":   "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&h=450&fit=crop",
-  "Industry Insights": "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=450&fit=crop",
-  "Global Outsourcing":"https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=800&h=450&fit=crop",
-  "Technology":        "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&h=450&fit=crop",
-  "Customer Service":  "https://images.unsplash.com/photo-1600298881974-6be191ceeda1?w=800&h=450&fit=crop",
-  "Industry Trends":   "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=450&fit=crop",
+  "CEO Insights":       "https://images.unsplash.com/photo-1549923746-c502d488b3ea?w=800&h=450&fit=crop",
+  "Talent Insights":    "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&h=450&fit=crop",
+  "Client Insights":    "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&h=450&fit=crop",
+  "Industry Insights":  "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=450&fit=crop",
+  "Global Outsourcing": "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=800&h=450&fit=crop",
+  "Technology":         "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&h=450&fit=crop",
+  "Customer Service":   "https://images.unsplash.com/photo-1600298881974-6be191ceeda1?w=800&h=450&fit=crop",
+  "Industry Trends":    "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=450&fit=crop",
   "Process Optimization":"https://images.unsplash.com/photo-1553484771-371a605b060b?w=800&h=450&fit=crop",
-  "Learning Centre":   "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=450&fit=crop",
-  "Podcast Videos":    "https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=800&h=450&fit=crop",
+  "Learning Centre":    "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=450&fit=crop",
+  "Podcast Videos":     "https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=800&h=450&fit=crop",
 };
 const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=450&fit=crop";
 
-// ─── Content channels sidebar ─────────────────────────────────────────────────
+// ─── Content channels ─────────────────────────────────────────────────────────
 const contentChannels = [
   {
     icon: Linkedin,
@@ -71,7 +72,7 @@ const contentChannels = [
   },
 ];
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 function formatDate(date: string | Date | null): string {
   if (!date) return "";
   return new Date(date).toLocaleDateString("en-US", {
@@ -86,6 +87,14 @@ function isPodcast(category: string): boolean {
     category === "Podcast Videos" ||
     category.toLowerCase().includes("podcast")
   );
+}
+
+/** Returns 1–2 uppercase initials from an author name. Fallback: "?" */
+function getInitials(name: string): string {
+  const parts = (name || "").trim().split(/\s+/);
+  if (parts.length === 0 || !parts[0]) return "?";
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -111,7 +120,7 @@ function postToArticle(post: Post): ArticleItem {
     slug: post.slug,
     title: post.title,
     excerpt: post.excerpt,
-    author: post.author,
+    author: post.author || "OnSpot Team",
     date: formatDate(post.publishedAt || post.createdAt),
     readTime: post.readTime || "5 min read",
     category: post.category,
@@ -130,6 +139,7 @@ function postToArticle(post: Post): ArticleItem {
 function ArticleCard({ article }: { article: ArticleItem }) {
   const [, navigate] = useLocation();
   const authorHref = `/insights?author=${encodeURIComponent(article.author)}`;
+  const initials = getInitials(article.author);
 
   return (
     <Card
@@ -143,136 +153,185 @@ function ArticleCard({ article }: { article: ArticleItem }) {
           alt={article.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           loading="lazy"
+          width={800}
+          height={450}
         />
-        {article.featured && (
-          <Badge className="absolute top-3 left-3 bg-[hsl(var(--gold-yellow)/0.9)] text-black text-[10px]">
-            Featured
+        {/* Category badge over image */}
+        <div className="absolute bottom-0 left-0 right-0 px-4 py-2 bg-gradient-to-t from-black/70 to-transparent flex items-end justify-between">
+          <Badge
+            variant="secondary"
+            className="text-[10px] uppercase tracking-wider bg-white/20 text-white border-white/30 backdrop-blur-sm"
+          >
+            {article.category}
           </Badge>
-        )}
+          {article.featured && (
+            <Badge className="text-[10px] bg-amber-400 text-black border-0">
+              Featured
+            </Badge>
+          )}
+        </div>
       </div>
 
       <CardContent className="p-5 flex flex-col flex-1 gap-3">
-        {/* Category + read time */}
-        <div className="flex items-center justify-between gap-2">
-          <Badge variant="outline" className="text-[10px] uppercase tracking-wider truncate max-w-[60%]">
-            {article.category}
-          </Badge>
-          <span className="flex items-center gap-1 text-[11px] text-muted-foreground flex-shrink-0">
-            <Clock className="w-3 h-3" />
-            {article.readTime}
-          </span>
-        </div>
-
-        {/* Title */}
+        {/* Title — most prominent element */}
         <h4 className="text-base font-bold leading-snug line-clamp-2 group-hover:text-primary transition-colors">
           {article.title}
         </h4>
 
-        {/* Excerpt */}
-        <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed flex-1">
-          {article.excerpt}
+        {/* Synopsis / excerpt — secondary */}
+        <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed flex-1">
+          {article.excerpt || "Read the full article for insights and analysis."}
         </p>
 
-        {/* Author + date */}
-        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-auto pt-1 border-t border-border/60 flex-wrap">
-          <a
-            href={authorHref}
-            onClick={(e) => e.stopPropagation()}
-            className="font-medium text-foreground hover:text-primary transition-colors underline-offset-2 hover:underline flex items-center gap-1"
-          >
-            <User className="w-3 h-3" />
-            {article.author}
-          </a>
-          <span className="text-border">·</span>
-          <span className="flex items-center gap-1">
-            <Calendar className="w-3 h-3" />
-            {article.date}
-          </span>
-          <span className="ml-auto flex items-center gap-2">
-            <span className="flex items-center gap-0.5">
-              <Eye className="w-3 h-3" />
-              {article.views}
+        {/* Divider */}
+        <div className="border-t border-border/60 pt-3 mt-auto">
+          {/* Author row */}
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            {/* Author with avatar initial */}
+            <a
+              href={authorHref}
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-2 group/author min-w-0"
+              title={`Articles by ${article.author}`}
+            >
+              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/15 text-primary text-[10px] font-bold flex items-center justify-center">
+                {initials}
+              </span>
+              <span className="text-xs font-semibold text-foreground group-hover/author:text-primary transition-colors truncate underline-offset-2 group-hover/author:underline">
+                {article.author}
+              </span>
+            </a>
+
+            {/* Read time */}
+            <span className="flex items-center gap-1 text-[11px] text-muted-foreground flex-shrink-0">
+              <Clock className="w-3 h-3" />
+              {article.readTime}
             </span>
-          </span>
+          </div>
+
+          {/* Date + views */}
+          <div className="flex items-center gap-3 mt-1.5 text-[11px] text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              {article.date}
+            </span>
+            {article.views > 0 && (
+              <span className="flex items-center gap-1 ml-auto">
+                <Eye className="w-3 h-3" />
+                {article.views.toLocaleString()}
+              </span>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>
   );
 }
 
-// ─── PodcastCard ─────────────────────────────────────────────────────────────
+// ─── PodcastCard ──────────────────────────────────────────────────────────────
 function PodcastCard({ article }: { article: ArticleItem }) {
   const [, navigate] = useLocation();
   const authorHref = `/insights?author=${encodeURIComponent(article.author)}`;
+  const initials = getInitials(article.author);
 
   return (
     <Card
-      className="overflow-hidden hover-elevate transition-all duration-300 group cursor-pointer flex flex-col sm:flex-row h-full"
+      className="overflow-hidden hover-elevate transition-all duration-300 group cursor-pointer"
       onClick={() => navigate(`/insights/${article.slug}`)}
     >
-      {/* Thumbnail */}
-      <div className="sm:w-40 flex-shrink-0 bg-muted relative overflow-hidden aspect-video sm:aspect-auto">
-        <img
-          src={article.image}
-          alt={article.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          loading="lazy"
-        />
-        <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-          <PlayCircle className="w-10 h-10 text-white/90 drop-shadow" />
+      <div className="flex flex-col sm:flex-row">
+        {/* Thumbnail */}
+        <div className="sm:w-44 flex-shrink-0 bg-muted relative overflow-hidden aspect-video sm:aspect-auto">
+          <img
+            src={article.image}
+            alt={article.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            loading="lazy"
+            width={176}
+            height={120}
+          />
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+            <div className="w-11 h-11 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/40">
+              <PlayCircle className="w-6 h-6 text-white" />
+            </div>
+          </div>
         </div>
-      </div>
 
-      <CardContent className="p-4 flex flex-col flex-1 gap-2 min-w-0">
-        <Badge variant="secondary" className="text-[10px] uppercase tracking-wider self-start">
-          Podcast
-        </Badge>
-        <h4 className="text-sm font-bold line-clamp-2 group-hover:text-primary transition-colors leading-snug">
-          {article.title}
-        </h4>
-        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed flex-1">
-          {article.excerpt}
-        </p>
-        <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
-          <a
-            href={authorHref}
-            onClick={(e) => e.stopPropagation()}
-            className="font-medium text-foreground hover:text-primary transition-colors underline-offset-2 hover:underline"
-          >
-            {article.author}
-          </a>
-          <span className="text-border">·</span>
-          <span>{article.date}</span>
-          <span className="text-border">·</span>
-          <span className="flex items-center gap-1">
-            <Clock className="w-3 h-3" />
-            {article.readTime}
-          </span>
-        </div>
-      </CardContent>
+        <CardContent className="p-4 flex flex-col flex-1 gap-2 min-w-0">
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="text-[10px] uppercase tracking-wider self-start">
+              Podcast
+            </Badge>
+            {article.featured && (
+              <Badge className="text-[10px] bg-amber-400 text-black border-0">
+                Featured
+              </Badge>
+            )}
+          </div>
+
+          {/* Title */}
+          <h4 className="text-sm font-bold line-clamp-2 group-hover:text-primary transition-colors leading-snug">
+            {article.title}
+          </h4>
+
+          {/* Synopsis */}
+          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed flex-1">
+            {article.excerpt || "Listen to this episode for expert conversations."}
+          </p>
+
+          {/* Meta row */}
+          <div className="flex items-center gap-2 flex-wrap mt-auto pt-2 border-t border-border/60">
+            <a
+              href={authorHref}
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1.5 group/author"
+              title={`Episodes by ${article.author}`}
+            >
+              <span className="w-5 h-5 rounded-full bg-primary/15 text-primary text-[9px] font-bold flex items-center justify-center flex-shrink-0">
+                {initials}
+              </span>
+              <span className="text-xs font-semibold text-foreground group-hover/author:text-primary transition-colors underline-offset-2 group-hover/author:underline">
+                {article.author}
+              </span>
+            </a>
+            <span className="text-border text-xs">·</span>
+            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              {article.date}
+            </span>
+            <span className="text-border text-xs">·</span>
+            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {article.readTime}
+            </span>
+          </div>
+        </CardContent>
+      </div>
     </Card>
   );
 }
 
-// ─── ArticleCardSkeleton ──────────────────────────────────────────────────────
+// ─── ArticleCardSkeleton ───────────────────────────────────────────────────────
 function ArticleCardSkeleton() {
   return (
     <Card className="overflow-hidden flex flex-col">
       <Skeleton className="aspect-video" />
       <CardContent className="p-5 flex flex-col gap-3">
-        <div className="flex justify-between">
-          <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-5 w-full" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-3/4" />
+        <div className="border-t border-border/60 pt-3 mt-1 flex items-center justify-between">
+          <Skeleton className="h-5 w-28" />
           <Skeleton className="h-4 w-16" />
         </div>
-        <Skeleton className="h-5 w-full" />
-        <Skeleton className="h-4 w-3/4" />
-        <Skeleton className="h-4 w-1/2 mt-auto" />
+        <Skeleton className="h-3 w-24 mt-0.5" />
       </CardContent>
     </Card>
   );
 }
 
-// ─── CategoryNav ─────────────────────────────────────────────────────────────
+// ─── CategoryNav ──────────────────────────────────────────────────────────────
+// Sticky below the fixed TopNavigation using var(--nav-h)
 function CategoryNav({
   selected,
   onSelect,
@@ -281,9 +340,12 @@ function CategoryNav({
   onSelect: (id: NavCategoryId) => void;
 }) {
   return (
-    <div className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-40">
+    <div
+      className="border-b border-border bg-background/95 backdrop-blur-sm sticky z-40"
+      style={{ top: "var(--nav-h)" }}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-0 overflow-x-auto scrollbar-hide -mb-px">
+        <div className="flex items-center overflow-x-auto scrollbar-hide -mb-px gap-0">
           {NAV_CATEGORIES.map(({ id, label, icon: Icon }) => {
             const active = selected === id;
             return (
@@ -311,7 +373,7 @@ function CategoryNav({
   );
 }
 
-// ─── Section heading ──────────────────────────────────────────────────────────
+// ─── SectionHeading ───────────────────────────────────────────────────────────
 function SectionHeading({
   icon: Icon,
   title,
@@ -337,19 +399,18 @@ function SectionHeading({
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function Insights() {
   const [location] = useLocation();
-  const [selectedCategory, setSelectedCategory] =
-    useState<NavCategoryId>("View All");
+  const [selectedCategory, setSelectedCategory] = useState<NavCategoryId>("View All");
   const [searchQuery, setSearchQuery] = useState("");
   const [authorFilter, setAuthorFilter] = useState("");
 
-  // Read ?author= from the URL on mount
+  // Read ?author= from the URL on mount / navigation
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const a = params.get("author");
     if (a) setAuthorFilter(decodeURIComponent(a));
   }, [location]);
 
-  // ─── Data fetching ─────────────────────────────────────────────────────────
+  // ─── Data fetching ──────────────────────────────────────────────────────────
   const { data, isLoading } = useQuery<{ success: boolean; posts: Post[] }>({
     queryKey: ["/api/posts"],
     queryFn: async () => {
@@ -364,7 +425,7 @@ export default function Insights() {
 
   const allArticles: ArticleItem[] = (data?.posts || []).map(postToArticle);
 
-  // ─── Filtered sets ────────────────────────────────────────────────────────
+  // ─── Filter helpers ─────────────────────────────────────────────────────────
   const applySearch = (items: ArticleItem[]) =>
     items.filter((a) => {
       const matchesSearch = [a.title, a.excerpt, a.author]
@@ -377,16 +438,12 @@ export default function Insights() {
       return matchesSearch && matchesAuthor;
     });
 
-  // Articles that are NOT podcasts
-  const latestArticles = applySearch(
-    allArticles.filter((a) => !a.isEpisode)
-  );
-  // Articles that ARE podcasts
-  const latestEpisodes = applySearch(
-    allArticles.filter((a) => a.isEpisode)
-  );
+  // Non-podcast articles
+  const latestArticles = applySearch(allArticles.filter((a) => !a.isEpisode));
+  // Podcast episodes
+  const latestEpisodes = applySearch(allArticles.filter((a) => a.isEpisode));
 
-  // For specific categories
+  // Articles for a specific non-"View All" category
   const categoryArticles = applySearch(
     selectedCategory === "Podcast Videos"
       ? allArticles.filter((a) => a.isEpisode)
@@ -402,7 +459,7 @@ export default function Insights() {
       ? latestArticles.length === 0 && latestEpisodes.length === 0
       : categoryArticles.length === 0;
 
-  // ─── Render ───────────────────────────────────────────────────────────────
+  // ─── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-background">
 
@@ -424,7 +481,7 @@ export default function Insights() {
             optimization.
           </p>
 
-          {/* Search */}
+          {/* Search bar */}
           <div className="max-w-2xl mx-auto mb-4">
             <div className="relative p-[1px] rounded-full bg-gradient-to-r from-primary/40 via-primary/20 to-primary/40">
               <div className="flex items-center bg-background rounded-full px-4 py-3 shadow-sm backdrop-blur transition-all focus-within:ring-2 focus-within:ring-primary/40 focus-within:shadow-md">
@@ -444,7 +501,7 @@ export default function Insights() {
           {authorFilter && (
             <div className="flex justify-center mt-2">
               <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs px-3 py-1.5 font-medium">
-                <User className="w-3 h-3" />
+                <Users className="w-3 h-3" />
                 Articles by {authorFilter}
                 <button
                   onClick={() => setAuthorFilter("")}
@@ -459,7 +516,7 @@ export default function Insights() {
         </div>
       </div>
 
-      {/* ── Category navigation (sticky) ──────────────────────────────────── */}
+      {/* ── Category navigation (sticky under TopNavigation) ─────────────── */}
       <CategoryNav
         selected={selectedCategory}
         onSelect={(id) => {
@@ -468,10 +525,10 @@ export default function Insights() {
         }}
       />
 
-      {/* ── Content ───────────────────────────────────────────────────────── */}
+      {/* ── Main content area ─────────────────────────────────────────────── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
-        {/* Empty / no results */}
+        {/* Empty / no results state */}
         {!isLoading && isEmpty && (
           <div className="text-center py-20 text-muted-foreground">
             <Search className="w-10 h-10 mx-auto mb-4 opacity-30" />
@@ -484,11 +541,11 @@ export default function Insights() {
           </div>
         )}
 
-        {/* ── VIEW ALL ──────────────────────────────────────────────────── */}
+        {/* ── VIEW ALL: Featured + Articles + Podcasts ─────────────────────── */}
         {selectedCategory === "View All" && (
           <>
-            {/* Featured */}
-            {!isLoading && featuredArticles.length > 0 && (
+            {/* Featured articles (only when not filtering by search/author) */}
+            {!isLoading && featuredArticles.length > 0 && !searchQuery && !authorFilter && (
               <section className="mb-14">
                 <SectionHeading icon={TrendingUp} title="Featured Articles" />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -499,12 +556,12 @@ export default function Insights() {
               </section>
             )}
 
-            {/* Latest Articles */}
+            {/* Latest Articles section */}
             <section className="mb-14">
               <SectionHeading
                 icon={Globe}
                 title="Latest Articles"
-                subtitle="Updated daily with curated insights on outsourcing, business, and workforce management."
+                subtitle="Updated regularly with curated insights on outsourcing, business, and workforce management."
               />
               {isLoading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -519,13 +576,16 @@ export default function Insights() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">
-                  No articles published yet.
-                </p>
+                <Card className="border-dashed">
+                  <CardContent className="p-8 text-center text-muted-foreground">
+                    <Globe className="w-8 h-8 mx-auto mb-3 opacity-30" />
+                    <p className="text-sm">No articles published yet.</p>
+                  </CardContent>
+                </Card>
               )}
             </section>
 
-            {/* Latest Podcast Episodes */}
+            {/* Latest Podcast Episodes section */}
             <section className="mb-14">
               <SectionHeading
                 icon={Mic}
@@ -535,13 +595,15 @@ export default function Insights() {
               {isLoading ? (
                 <div className="space-y-4">
                   {Array.from({ length: 3 }).map((_, i) => (
-                    <Card key={i} className="flex">
-                      <Skeleton className="w-40 h-28 flex-shrink-0" />
-                      <CardContent className="flex-1 p-4 space-y-2">
-                        <Skeleton className="h-3 w-16" />
-                        <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-3 w-1/2" />
-                      </CardContent>
+                    <Card key={i}>
+                      <div className="flex">
+                        <Skeleton className="w-44 h-28 flex-shrink-0" />
+                        <CardContent className="flex-1 p-4 space-y-2">
+                          <Skeleton className="h-3 w-16" />
+                          <Skeleton className="h-4 w-3/4" />
+                          <Skeleton className="h-3 w-1/2" />
+                        </CardContent>
+                      </div>
                     </Card>
                   ))}
                 </div>
@@ -563,7 +625,7 @@ export default function Insights() {
           </>
         )}
 
-        {/* ── PODCAST VIDEOS category ───────────────────────────────────── */}
+        {/* ── PODCAST VIDEOS category ──────────────────────────────────────── */}
         {selectedCategory === "Podcast Videos" && !isLoading && (
           <section className="mb-14">
             <SectionHeading
@@ -588,34 +650,39 @@ export default function Insights() {
           </section>
         )}
 
-        {/* ── SPECIFIC ARTICLE CATEGORIES ───────────────────────────────── */}
-        {selectedCategory !== "View All" &&
-          selectedCategory !== "Podcast Videos" && (
-            <section className="mb-14">
-              <SectionHeading
-                icon={
-                  NAV_CATEGORIES.find((c) => c.id === selectedCategory)?.icon ??
-                  Globe
-                }
-                title={selectedCategory}
-              />
-              {isLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <ArticleCardSkeleton key={i} />
-                  ))}
-                </div>
-              ) : categoryArticles.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {categoryArticles.map((article) => (
-                    <ArticleCard key={article.id} article={article} />
-                  ))}
-                </div>
-              ) : null}
-            </section>
-          )}
+        {/* ── SPECIFIC ARTICLE CATEGORIES (CEO, Talent, Client, Industry, Learning) */}
+        {selectedCategory !== "View All" && selectedCategory !== "Podcast Videos" && (
+          <section className="mb-14">
+            <SectionHeading
+              icon={
+                NAV_CATEGORIES.find((c) => c.id === selectedCategory)?.icon ?? Globe
+              }
+              title={selectedCategory}
+            />
+            {isLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <ArticleCardSkeleton key={i} />
+                ))}
+              </div>
+            ) : categoryArticles.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {categoryArticles.map((article) => (
+                  <ArticleCard key={article.id} article={article} />
+                ))}
+              </div>
+            ) : (
+              <Card className="border-dashed">
+                <CardContent className="p-8 text-center text-muted-foreground">
+                  <Search className="w-8 h-8 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">No {selectedCategory} articles yet. Check back soon.</p>
+                </CardContent>
+              </Card>
+            )}
+          </section>
+        )}
 
-        {/* ── Content Channels ──────────────────────────────────────────── */}
+        {/* ── Content Channels ─────────────────────────────────────────────── */}
         <section className="mb-14">
           <SectionHeading icon={TrendingUp} title="Our Content Channels" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -650,7 +717,7 @@ export default function Insights() {
           </div>
         </section>
 
-        {/* ── Daily CEO Notes CTA ───────────────────────────────────────── */}
+        {/* ── CEO Notes CTA ────────────────────────────────────────────────── */}
         <section className="mb-10">
           <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
             <CardContent className="p-8 text-center">

@@ -1,0 +1,69 @@
+Please update the Insights / Articles page with the following enhancements.
+
+Goal:
+Improve content discovery, organization, and article preview design on the Insight Page.
+
+Requirements:
+
+1. Category Navigation
+Add a sub-header navigation section with category buttons/tabs for:
+- View All
+- CEO Insights
+- Talent Insights
+- Industry Insights
+- Client Insights
+- Learning Centre
+- Podcast Videos
+
+Behavior:
+- Buttons should be clearly visible under the main page header.
+- Active category should be visually highlighted.
+- Clicking a category filters the displayed content accordingly.
+- “View All” should show all content.
+
+2. “View All” Structure
+Within the “View All” tab, organize the content into 2 grouped sections:
+- Latest Articles
+- Latest Podcast Episodes
+
+Behavior:
+- These two sections should have clear headings.
+- Articles and podcast episodes should be displayed separately under their respective groups.
+- Keep the layout clean and easy to scan.
+
+3. Article Card / Thumbnail Design
+Update each content card/article preview to display:
+- Author name
+  - Author name must be clickable
+  - Clicking it should link to the author bio page
+- Date posted
+- Article title
+- Short synopsis / preview
+- Estimated read time (example: “5 min read”)
+
+Design expectations:
+- Cards should look modern, clean, and readable.
+- Maintain consistent spacing and alignment.
+- Make title visually prominent.
+- Metadata (author, date, read time) should be easy to identify but secondary to title.
+- Synopsis should be short and neatly truncated if too long.
+- Ensure the design works well on desktop and mobile.
+
+Implementation notes:
+- Reuse existing styling/components where possible.
+- Keep the code modular and maintainable.
+- If category data is dynamic, make filtering data-driven.
+- If podcast entries use a slightly different schema, still make them fit neatly into the grouped layout.
+- Add fallback handling for missing author, synopsis, or read time values.
+
+Suggested deliverables:
+- Updated Insights page UI
+- Category filter logic
+- “View All” grouped layout
+- Updated article/podcast card component
+- Clean responsive styling
+
+Also:
+- Preserve existing functionality unless it conflicts with the new requirements.
+- Refactor only where necessary.
+- Add comments where helpful for key logic sections.
