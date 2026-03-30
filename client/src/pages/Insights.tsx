@@ -341,7 +341,7 @@ function CategoryNav({
 }) {
   return (
     <div
-      className="border-b border-border bg-background/95 backdrop-blur-sm sticky z-40"
+      className="sticky z-40 bg-background/80 backdrop-blur-[8px]"
       style={{ top: "var(--nav-h)" }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
