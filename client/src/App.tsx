@@ -55,6 +55,10 @@ import AdminInsights from "@/pages/AdminInsights";
 import AdminInsightEditor from "@/pages/AdminInsightEditor";
 import AdminImageUploader from "@/pages/AdminImageUploader";
 import AdminFindWork from "@/pages/AdminFindWork";
+import ManagedServicesPage from "@/pages/ManagedServicesPage";
+import ResourcedServicesPage from "@/pages/ResourcedServicesPage";
+import EnterpriseServicesPage from "@/pages/EnterpriseServicesPage";
+import HumanVirtualAssistantPage from "@/pages/HumanVirtualAssistantPage";
 
 // Immersive Page Wrapper - Full screen without navigation (for campaigns and reveals)
 function ImmersivePage() {
@@ -219,12 +223,13 @@ function AppContent() {
       <Route path="/affiliate-marketing" component={ImmersivePage} />
       <Route path="/bpo-partner" component={ImmersivePage} />
       
-      {/* Service Routes - Also immersive */}
+      {/* Service Routes */}
       <Route path="/services/ai-assistant" component={ImmersivePage} />
-      <Route path="/services/managed" component={ImmersivePage} />
-      <Route path="/services/resourced" component={ImmersivePage} />
-      <Route path="/services/enterprise" component={ImmersivePage} />
-      <Route path="/services/human-va" component={ImmersivePage} />
+      <Route path="/services/managed" component={ManagedServicesPage} />
+      <Route path="/services/resourced" component={ResourcedServicesPage} />
+      <Route path="/services/enterprise" component={EnterpriseServicesPage} />
+      <Route path="/services/human-va" component={HumanVirtualAssistantPage} />
+      <Route path="/services/human-virtual-assistant" component={HumanVirtualAssistantPage} />
       
       {/* Superhuman Project - Immersive cinematic experience */}
       <Route path="/superhuman" component={SuperhumanImmersive} />

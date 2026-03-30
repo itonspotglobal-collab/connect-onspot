@@ -1,0 +1,482 @@
+import { useMemo, useState } from "react";
+
+export default function ManagedServicesPage() {
+  const [openCaseStudy, setOpenCaseStudy] = useState<string | null>(null);
+  const [activeCapability, setActiveCapability] = useState("customer-experience");
+  const [activeFAQ, setActiveFAQ] = useState(0);
+  const [teamSize, setTeamSize] = useState(5);
+  const [complexity, setComplexity] = useState("mid");
+  const [activeHeroCard, setActiveHeroCard] = useState(0);
+  const [activeProofMetric, setActiveProofMetric] = useState(1);
+
+  const brand = { primary: "#474EAD", primarySoft: "#6A71D9", primaryLight: "#B8BEFF" };
+
+  const heroCards = [
+    { title: "AI first", copy: "Systemize repetitive work first.", detail: "We build the workflow before scaling the labor so the machine works before more people enter it." },
+    { title: "Human judgment", copy: "Escalate what requires care and nuance.", detail: "Judgment-heavy moments stay human. That is how speed and trust coexist inside a managed system." },
+    { title: "One system", copy: "One accountable execution layer.", detail: "This is not staffing alone. It is a managed operating layer with accountability, systems, and leadership built in." },
+  ];
+
+  const pillars = [
+    { title: "AI-First Delivery System", description: "We architect the workflow first—documented SOPs, automations, QA loops, dashboards, and AI copilots—before we scale headcount." },
+    { title: "Managed Outcomes, Not Just Hires", description: "We do more than place people. We run the operation with performance governance, leadership oversight, and execution discipline built in." },
+    { title: "Humans When It Matters", description: "The repetitive work gets systemized. The judgment-heavy moments stay human. That is how speed and quality coexist." },
+    { title: "Built for Operators", description: "Designed for founders and growth leaders who want leverage, predictability, and a partner that can execute inside the business—not beside it." },
+  ];
+
+  const capabilityGroups = [
+    {
+      id: "customer-experience", label: "Customer Experience",
+      title: "CX systems that feel premium at scale",
+      description: "Build a reliable customer-facing operation with structured workflows, fast response times, QA coverage, and performance visibility.",
+      functions: ["Customer support operations", "Escalation management", "Ticket QA and SLA governance", "Help desk playbooks"],
+      outcome: "Reduce response time, improve CSAT, and create a support engine that scales without chaos.",
+    },
+    {
+      id: "back-office", label: "Back Office",
+      title: "Back-office operations that stop slowing the business down",
+      description: "Take repetitive internal workflows off your core team and run them with process discipline, accountability, and cleaner execution.",
+      functions: ["Back-office processing", "Finance and admin support", "Data entry and workflow coordination", "Documentation and compliance support"],
+      outcome: "Lower founder drag, cleaner internal execution, and tighter operational control.",
+    },
+    {
+      id: "growth-ops", label: "Growth Operations",
+      title: "Execution support for revenue and growth teams",
+      description: "Support acquisition, lead flow, sales admin, and post-sale workflows with a systemized managed pod.",
+      functions: ["Sales support and lead operations", "Recruitment coordination", "Executive assistance", "Custom managed workflows"],
+      outcome: "Increase team leverage and free senior operators to focus on high-value decisions.",
+    },
+  ];
+
+  const operatingModel = [
+    { step: "01", title: "Diagnose the Work", copy: "We audit the workflow, identify friction, define SLAs, and map where AI, automation, and human talent should each play." },
+    { step: "02", title: "Build the System", copy: "We create the operating rhythm—playbooks, scripts, automations, QA standards, reporting logic, and management structure." },
+    { step: "03", title: "Deploy the Team", copy: "We recruit and activate the right specialists, then onboard them into a system that is already designed for scale." },
+    { step: "04", title: "Run and Improve", copy: "We manage performance continuously with reviews, optimization cycles, quality control, and strategic oversight." },
+  ];
+
+  const outcomes = [
+    "Less founder drag", "Faster execution across repetitive workflows", "Better visibility and accountability",
+    "Lower operating cost without lowering standards", "A more scalable business infrastructure", "A partner that can build and run the machine",
+  ];
+
+  const proofMetrics = [
+    { label: "Response Time", value: "↓ 38%", copy: "Structured support workflows, SLA coverage, and QA loops reduce lag and inconsistency fast." },
+    { label: "Conversion Lift", value: "↑ 22%", copy: "Marketplace and growth pods gain cleaner follow-through, tighter coordination, and fewer dropped opportunities." },
+    { label: "Cost per Ticket", value: "↓ 31%", copy: "When the workflow is architected correctly, cost drops without quality breaking." },
+  ];
+
+  const differentiators = [
+    { title: "Traditional Outsourcing", points: ["Sells headcount", "You manage the system", "Fragmented tools and accountability", "Reactive reporting"] },
+    { title: "OnSpot Managed Services", points: ["Delivers a managed operating system", "We build the workflow around the team", "AI, automation, governance, and talent in one motion", "Structured performance visibility from day one"], highlight: true },
+  ];
+
+  const setupExamples = [
+    {
+      title: "Lean Pod", detail: "3 FTE + system", range: "$6,000 – $18,000 / month", proof: "Early-stage SaaS · Support + Ops",
+      tags: ["Pre-Seed SaaS · 25K users", "Support-led growth", "↓ response time by 38%"],
+    },
+    {
+      title: "Growth Pod", detail: "5 FTE + system", range: "$10,000 – $30,000 / month", proof: "Marketplace · CX + Driver Ops",
+      tags: ["Marketplace · 18K monthly bookings", "Driver + CX ops", "↑ conversion by 22%"],
+      caseStudy: {
+        intro: "A regional marketplace struggling with driver supply and booking conversion partnered with OnSpot to build a dedicated CX + Driver Operations pod. We redesigned their allocation workflow, implemented SOPs, and introduced performance tracking.",
+        result: "Result: Booking conversion increased by 22%, driver acceptance stabilized, and operational response time dropped significantly within 6 weeks.",
+      },
+    },
+    {
+      title: "Scale Pod", detail: "8–10 FTE + system", range: "$16,000 – $50,000+ / month", proof: "E-commerce · Full Back Office + CX",
+      tags: ["E-commerce · 8-figure GMV", "Full back-office ops", "↓ cost per ticket by 31%"],
+    },
+  ];
+
+  const faqs = [
+    { q: "Is this just staffing with a nicer label?", a: "No. Staffing gives you people. Managed Services gives you people, workflow design, operating rhythm, reporting, quality control, and active management." },
+    { q: "Can you start with one function first?", a: "Yes. Many clients begin with one workflow or one pod, then expand once the operating system proves itself." },
+    { q: "Do you work with AI and automation too?", a: "Yes. We design where AI should do the repetitive work and where human judgment should remain. That balance is part of the service." },
+    { q: "How do you price engagements?", a: "We usually price with a per-FTE layer plus a platform and management layer based on the complexity of the workflow and level of ownership required." },
+  ];
+
+  const capability = capabilityGroups.find((item) => item.id === activeCapability) || capabilityGroups[0];
+
+  const calculator = useMemo(() => {
+    const ranges: Record<string, { low: number; high: number; mgmt: number }> = {
+      junior: { low: 1800, high: 2600, mgmt: 1500 },
+      mid: { low: 2600, high: 3800, mgmt: 2500 },
+      senior: { low: 3800, high: 5000, mgmt: 4000 },
+    };
+    const selected = ranges[complexity];
+    return { low: (selected.low * teamSize + selected.mgmt).toLocaleString(), high: (selected.high * teamSize + selected.mgmt).toLocaleString() };
+  }, [teamSize, complexity]);
+
+  return (
+    <div className="min-h-screen text-white" style={{ background: "radial-gradient(circle at top left, rgba(106,113,217,0.22), transparent 24%), radial-gradient(circle at top right, rgba(71,78,173,0.18), transparent 22%), linear-gradient(180deg, #0B102F 0%, #0A0F2C 45%, #090D24 100%)" }}>
+
+      {/* Hero */}
+      <section className="relative overflow-hidden border-b border-white/10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(106,113,217,0.24),transparent_20%),radial-gradient(circle_at_85%_16%,rgba(71,78,173,0.18),transparent_18%)]" />
+        <div className="relative mx-auto max-w-7xl px-6 py-20 md:px-10 md:py-28">
+          <div className="grid gap-12 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
+            <div>
+              <div className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium tracking-wide text-white/80">
+                Managed Services
+              </div>
+              <h1 className="mt-6 max-w-4xl text-5xl font-semibold leading-[0.95] tracking-tight md:text-7xl">
+                Your operation,
+                <span className="block bg-[linear-gradient(135deg,#FFFFFF_0%,#B8BEFF_45%,#6A71D9_100%)] bg-clip-text text-transparent">
+                  run like a system.
+                </span>
+              </h1>
+              <p className="mt-6 max-w-2xl text-lg leading-8 text-white/72 md:text-xl">
+                OnSpot Managed Services gives you a done-for-you execution engine — AI-first infrastructure, premium offshore talent, and active operational management in one integrated system.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-4">
+                <a href="#contact" className="rounded-2xl px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(71,78,173,0.38)] transition hover:-translate-y-0.5" style={{ background: "linear-gradient(135deg, #6A71D9 0%, #474EAD 100%)" }}>
+                  Build My Managed Team
+                </a>
+                <a href="#investment" className="rounded-2xl border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
+                  Explore Pricing
+                </a>
+              </div>
+              <div className="mt-10 grid max-w-3xl gap-4 sm:grid-cols-3">
+                {heroCards.map((item, index) => (
+                  <button key={item.title} type="button"
+                    onMouseEnter={() => setActiveHeroCard(index)}
+                    onClick={() => setActiveHeroCard(index)}
+                    className={`rounded-2xl border p-4 text-left backdrop-blur transition ${activeHeroCard === index ? "border-[#6A71D9]/40 bg-[linear-gradient(135deg,rgba(106,113,217,0.18),rgba(255,255,255,0.05))]" : "border-white/10 bg-white/5 hover:-translate-y-1 hover:bg-white/10"}`}
+                  >
+                    <div className="text-sm font-medium text-white">{item.title}</div>
+                    <div className="mt-2 text-sm leading-6 text-white/60">{item.copy}</div>
+                  </button>
+                ))}
+              </div>
+              <div className="mt-4 max-w-xl rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4 text-sm leading-7 text-white/68">
+                {heroCards[activeHeroCard].detail}
+              </div>
+            </div>
+
+            <div className="relative">
+              <div className="absolute -inset-6 rounded-[2rem] blur-3xl" style={{ background: "rgba(71,78,173,0.34)" }} />
+              <div className="relative rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 shadow-2xl backdrop-blur-xl">
+                <div className="rounded-[1.5rem] border border-white/10 bg-[linear-gradient(180deg,rgba(24,31,82,0.92),rgba(15,20,52,0.92))] p-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-white/50">Managed command layer</p>
+                      <p className="mt-1 text-2xl font-semibold">Execution Engine</p>
+                    </div>
+                    <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-[#C6CAFF]">AI + Human Ops</div>
+                  </div>
+                  <div className="mt-6 space-y-4">
+                    {[["Workflow Design", "SOPs · playbooks · automations"], ["Team Deployment", "Specialists activated into the system"], ["Performance Control", "QA · reporting · leadership oversight"]].map(([title, subtitle]) => (
+                      <div key={title} className="rounded-2xl border border-white/10 bg-white/5 p-4 transition hover:bg-white/10">
+                        <div className="text-sm font-medium text-white">{title}</div>
+                        <div className="mt-1 text-sm text-white/55">{subtitle}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-5 rounded-2xl border border-white/10 p-4" style={{ background: "linear-gradient(135deg, rgba(106,113,217,0.20), rgba(255,255,255,0.04))" }}>
+                    <p className="text-sm text-white/60">What you buy is not just labor.</p>
+                    <p className="mt-2 text-lg font-medium text-white">You buy leverage, speed, control, and a system that scales.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Why this exists */}
+      <section className="mx-auto max-w-7xl px-6 py-20 md:px-10">
+        <div className="max-w-3xl">
+          <p className="text-sm font-medium uppercase tracking-[0.22em] text-[#9EA6FF]">Why this exists</p>
+          <h2 className="mt-4 text-3xl font-semibold tracking-tight md:text-5xl">
+            Most companies do not need more people.
+            <span className="block text-white/60">They need a better operating system.</span>
+          </h2>
+          <p className="mt-6 text-lg leading-8 text-white/72">
+            Hiring without structure creates drag. Tools without ownership create chaos. OnSpot Managed Services closes that gap by combining process design, managed execution, and elite offshore talent into one accountable delivery model.
+          </p>
+        </div>
+        <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+          {pillars.map((pillar) => (
+            <div key={pillar.title} className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.20)] backdrop-blur-xl transition duration-300 hover:-translate-y-2 hover:bg-white/[0.07]">
+              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
+                <div className="h-3 w-3 rounded-full" style={{ backgroundColor: brand.primarySoft }} />
+              </div>
+              <h3 className="text-xl font-semibold">{pillar.title}</h3>
+              <p className="mt-3 text-sm leading-7 text-white/65">{pillar.description}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Operating Model */}
+      <section id="model" className="border-y border-white/10 bg-white/[0.03]">
+        <div className="mx-auto max-w-7xl px-6 py-20 md:px-10">
+          <div className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr]">
+            <div>
+              <p className="text-sm font-medium uppercase tracking-[0.22em] text-[#9EA6FF]">Operating model</p>
+              <h2 className="mt-4 text-3xl font-semibold tracking-tight md:text-5xl">
+                We build the machine,
+                <span className="block text-white/60">then we run it with you.</span>
+              </h2>
+              <p className="mt-6 max-w-xl text-lg leading-8 text-white/72">
+                Our managed services model is designed to remove owner dependency, clean up execution, and create a reliable system for growth.
+              </p>
+            </div>
+            <div className="space-y-4">
+              {operatingModel.map((item) => (
+                <div key={item.step} className="grid w-full gap-5 rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(23,31,82,0.90),rgba(14,19,46,0.92))] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.22)] transition duration-300 hover:-translate-y-1 md:grid-cols-[90px_1fr] md:items-start">
+                  <div className="text-4xl font-semibold tracking-tight text-[#8E95FF]">{item.step}</div>
+                  <div>
+                    <h3 className="text-xl font-semibold">{item.title}</h3>
+                    <p className="mt-2 text-sm leading-7 text-white/65">{item.copy}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Capabilities */}
+      <section id="capabilities" className="mx-auto max-w-7xl px-6 py-20 md:px-10">
+        <div className="grid gap-12 lg:grid-cols-[0.75fr_1.25fr]">
+          <div>
+            <p className="text-sm font-medium uppercase tracking-[0.22em] text-[#9EA6FF]">Interactive capabilities</p>
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight md:text-5xl">Explore the functions we can manage.</h2>
+            <p className="mt-6 text-lg leading-8 text-white/72">Switch between pods to see how the managed system changes depending on the function you want to scale.</p>
+            <div className="mt-8 space-y-3">
+              {capabilityGroups.map((item) => {
+                const isActive = activeCapability === item.id;
+                return (
+                  <button key={item.id} type="button" onClick={() => setActiveCapability(item.id)}
+                    className={`w-full rounded-2xl border px-4 py-4 text-left transition ${isActive ? "border-[#6A71D9]/50 bg-[linear-gradient(135deg,rgba(106,113,217,0.20),rgba(255,255,255,0.04))] shadow-[0_18px_40px_rgba(71,78,173,0.18)]" : "border-white/10 bg-white/[0.04] hover:bg-white/[0.07]"}`}
+                  >
+                    <div className="text-sm font-medium text-white">{item.label}</div>
+                    <div className="mt-1 text-sm text-white/55">{item.functions[0]} + more</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(23,31,82,0.90),rgba(14,19,46,0.92))] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.22)] md:p-8">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-[#C6CAFF]">{capability.label}</div>
+              <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/60">Managed pod design</div>
+            </div>
+            <h3 className="mt-5 text-2xl font-semibold md:text-4xl">{capability.title}</h3>
+            <p className="mt-4 max-w-2xl text-base leading-8 text-white/72">{capability.description}</p>
+            <div className="mt-8 grid gap-3 sm:grid-cols-2">
+              {capability.functions.map((item) => (
+                <div key={item} className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4 text-sm text-white/80 transition hover:bg-white/[0.07]">{item}</div>
+              ))}
+            </div>
+            <div className="mt-8 rounded-2xl border border-white/10 bg-[rgba(18,26,69,0.72)] p-5">
+              <div className="text-xs uppercase tracking-[0.2em] text-[#9EA6FF]">Expected outcome</div>
+              <p className="mt-3 text-sm leading-7 text-white/78">{capability.outcome}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Outcomes + Why OnSpot */}
+      <section className="mx-auto max-w-7xl px-6 py-20 md:px-10">
+        <div className="grid gap-12 lg:grid-cols-2">
+          <div>
+            <p className="text-sm font-medium uppercase tracking-[0.22em] text-[#9EA6FF]">The real outcome</p>
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight md:text-5xl">What this unlocks for your business</h2>
+            <div className="mt-8 space-y-3">
+              {outcomes.map((item) => (
+                <div key={item} className="flex items-start gap-3 rounded-2xl border border-white/10 bg-[rgba(18,26,69,0.72)] px-4 py-4 transition hover:bg-[rgba(18,26,69,0.88)]">
+                  <div className="mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: brand.primarySoft }} />
+                  <p className="text-sm leading-7 text-white/78">{item}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-8 rounded-[1.75rem] border border-white/10 bg-[rgba(18,26,69,0.72)] p-6">
+              <div className="text-xs uppercase tracking-[0.18em] text-[#9EA6FF]">Interactive proof</div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                {proofMetrics.map((metric, index) => (
+                  <button key={metric.label} type="button" onClick={() => setActiveProofMetric(index)}
+                    className={`rounded-2xl border p-4 text-left transition ${activeProofMetric === index ? "border-[#6A71D9]/40 bg-[linear-gradient(135deg,rgba(106,113,217,0.16),rgba(255,255,255,0.04))]" : "border-white/10 bg-white/[0.03] hover:bg-white/[0.05]"}`}
+                  >
+                    <div className="text-[11px] uppercase tracking-[0.16em] text-white/45">{metric.label}</div>
+                    <div className="mt-2 text-2xl font-semibold text-[#B8BEFF]">{metric.value}</div>
+                  </button>
+                ))}
+              </div>
+              <p className="mt-4 text-sm leading-7 text-white/68">{proofMetrics[activeProofMetric].copy}</p>
+            </div>
+          </div>
+          <div className="rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.20)] md:p-8">
+            <p className="text-sm font-medium uppercase tracking-[0.22em] text-[#9EA6FF]">Why OnSpot</p>
+            <h3 className="mt-4 text-2xl font-semibold md:text-4xl">This is not outsourcing as usual.</h3>
+            <div className="mt-8 grid gap-4">
+              {differentiators.map((cardItem) => (
+                <div key={cardItem.title} className={`rounded-[1.5rem] border p-6 ${cardItem.highlight ? "border-[#6A71D9]/40 bg-[linear-gradient(180deg,rgba(71,78,173,0.26),rgba(255,255,255,0.03))]" : "border-white/10 bg-white/[0.04]"}`}>
+                  <div className="text-xl font-semibold">{cardItem.title}</div>
+                  <div className="mt-4 space-y-2">
+                    {cardItem.points.map((point) => (
+                      <div key={point} className="rounded-xl border border-white/10 bg-black/10 px-4 py-3 text-sm text-white/75">{point}</div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Investment Calculator */}
+      <section id="investment" className="mx-auto max-w-7xl px-6 py-20 md:px-10">
+        <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
+          <div>
+            <p className="text-sm font-medium uppercase tracking-[0.22em] text-[#9EA6FF]">Interactive investment</p>
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight md:text-5xl">
+              Built for serious operators.
+              <span className="block text-white/60">Priced for real outcomes.</span>
+            </h2>
+            <p className="mt-6 max-w-xl text-lg leading-8 text-white/72">
+              Use the estimator below to get a directional sense of how a managed pod can be structured before you move into a custom design conversation.
+            </p>
+            <div className="mt-8 rounded-[1.75rem] border border-white/10 p-6 shadow-[0_24px_60px_rgba(0,0,0,0.22)]" style={{ background: "linear-gradient(180deg, rgba(23,31,82,0.92), rgba(12,17,49,0.92))" }}>
+              <div className="grid gap-6 md:grid-cols-2">
+                <div>
+                  <div className="text-xs uppercase tracking-[0.2em] text-[#9EA6FF]">Team size</div>
+                  <div className="mt-3 flex items-center justify-between text-sm text-white/65">
+                    <span>2 FTE</span>
+                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-white">{teamSize} FTE</span>
+                    <span>12 FTE</span>
+                  </div>
+                  <input type="range" min="2" max="12" value={teamSize} onChange={(e) => setTeamSize(Number(e.target.value))} className="mt-4 w-full accent-[#6A71D9]" />
+                </div>
+                <div>
+                  <div className="text-xs uppercase tracking-[0.2em] text-[#9EA6FF]">Complexity</div>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                    {[["junior", "Lean"], ["mid", "Core"], ["senior", "Advanced"]].map(([value, label]) => (
+                      <button key={value} type="button" onClick={() => setComplexity(value)}
+                        className={`rounded-xl border px-4 py-3 text-sm transition ${complexity === value ? "border-[#6A71D9]/50 bg-[linear-gradient(135deg,rgba(106,113,217,0.20),rgba(255,255,255,0.04))] text-white" : "border-white/10 bg-white/[0.04] text-white/70 hover:bg-white/[0.07]"}`}
+                      >{label}</button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-8 rounded-[1.5rem] border border-[#6A71D9]/30 p-5" style={{ background: "linear-gradient(135deg, rgba(106,113,217,0.18), rgba(255,255,255,0.03))" }}>
+                <div className="text-sm text-white/60">Directional monthly estimate</div>
+                <div className="mt-2 text-3xl font-semibold text-[#B8BEFF]">${calculator.low} – ${calculator.high}</div>
+                <div className="mt-3 text-sm leading-7 text-white/70">Includes estimated FTE investment plus a representative management and operating layer. Final scope is customized.</div>
+              </div>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <a href="#contact" className="rounded-2xl px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(71,78,173,0.35)]" style={{ background: "linear-gradient(135deg, #6A71D9 0%, #474EAD 100%)" }}>Talk to OnSpot</a>
+              </div>
+            </div>
+          </div>
+          <div className="space-y-5">
+            <div className="rounded-[1.75rem] border border-white/10 bg-[rgba(18,26,69,0.72)] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.22)]">
+              <p className="text-sm text-white/55">Typical client setups</p>
+              <div className="mt-5 space-y-4">
+                {setupExamples.map((item) => (
+                  <div key={item.title} className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition hover:bg-white/[0.06]">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <div className="text-sm text-white/50">{item.title}</div>
+                        <div className="mt-1 text-lg font-semibold">{item.detail}</div>
+                      </div>
+                      <div className="text-sm font-medium text-[#B8BEFF]">{item.range}</div>
+                    </div>
+                    <div className="mt-4 rounded-xl border border-white/10 bg-[rgba(18,26,69,0.72)] p-3">
+                      <div className="text-xs text-white/50">Example use case</div>
+                      <div className="mt-1 text-sm text-white/80">{item.proof}</div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {item.tags.map((tag) => (
+                          <div key={tag} className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] text-white/65">{tag}</div>
+                        ))}
+                      </div>
+                    </div>
+                    {item.caseStudy && (
+                      <div className="mt-4">
+                        <button type="button" onClick={() => setOpenCaseStudy(openCaseStudy === item.title ? null : item.title)}
+                          className="w-full rounded-xl border border-[#6A71D9]/40 p-4 text-left transition hover:bg-white/[0.03]"
+                          style={{ background: "linear-gradient(135deg, rgba(106,113,217,0.14), rgba(255,255,255,0.03))" }}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-[#B8BEFF]">View Case Study</span>
+                            <span className="text-xs text-white/60">{openCaseStudy === item.title ? "−" : "+"}</span>
+                          </div>
+                        </button>
+                        <div className={`grid overflow-hidden transition-all duration-300 ease-out ${openCaseStudy === item.title ? "mt-2 grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
+                          <div className="overflow-hidden">
+                            <div className="rounded-xl border border-white/10 bg-[rgba(18,26,69,0.86)] p-4">
+                              <div className="text-sm leading-6 text-white/80">{item.caseStudy.intro}</div>
+                              <div className="mt-3 text-sm text-white/70">{item.caseStudy.result}</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section id="faq" className="border-y border-white/10 bg-[rgba(12,17,49,0.72)]">
+        <div className="mx-auto max-w-7xl px-6 py-20 md:px-10">
+          <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr]">
+            <div>
+              <p className="text-sm font-medium uppercase tracking-[0.22em] text-[#9EA6FF]">FAQ</p>
+              <h2 className="mt-4 text-3xl font-semibold tracking-tight md:text-5xl">Questions serious buyers usually ask.</h2>
+              <p className="mt-6 text-lg leading-8 text-white/72">Expand each item to understand how the model works before booking a strategy conversation.</p>
+            </div>
+            <div className="space-y-4">
+              {faqs.map((item, index) => {
+                const isOpen = activeFAQ === index;
+                return (
+                  <div key={item.q} className="rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-2">
+                    <button type="button" onClick={() => setActiveFAQ(isOpen ? -1 : index)} className="flex w-full items-center justify-between rounded-[1.1rem] px-4 py-4 text-left">
+                      <span className="pr-4 text-base font-medium text-white">{item.q}</span>
+                      <span className="text-xl text-[#B8BEFF]">{isOpen ? "−" : "+"}</span>
+                    </button>
+                    <div className={`grid overflow-hidden transition-all duration-300 ease-out ${isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
+                      <div className="overflow-hidden px-4 pb-4 text-sm leading-7 text-white/68">{item.a}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="mx-auto max-w-7xl px-6 py-20 md:px-10">
+        <div id="contact" className="rounded-[2rem] border border-white/10 p-8 shadow-[0_24px_80px_rgba(0,0,0,0.28)] md:p-12" style={{ background: "radial-gradient(circle at top left, rgba(106,113,217,0.20), transparent 24%), linear-gradient(180deg, rgba(23,31,82,0.92), rgba(12,17,49,0.92))" }}>
+          <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
+            <div>
+              <p className="text-sm font-medium uppercase tracking-[0.22em] text-[#9EA6FF]">For companies that want leverage</p>
+              <h2 className="mt-4 max-w-3xl text-3xl font-semibold tracking-tight md:text-5xl">
+                Stop buying disconnected labor.
+                <span className="block">Start building a real execution engine.</span>
+              </h2>
+              <p className="mt-6 max-w-2xl text-lg leading-8 text-white/72">
+                OnSpot Managed Services is for operators who want more than staffing. You want systems, leadership, accountability, and an AI-first operating layer that makes growth less chaotic.
+              </p>
+            </div>
+            <div className="rounded-[1.75rem] border border-white/10 bg-[rgba(18,26,69,0.72)] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.22)]">
+              <div className="text-sm text-white/55">Next step</div>
+              <div className="mt-2 text-2xl font-semibold">Design your managed services model</div>
+              <p className="mt-3 text-sm leading-7 text-white/65">We will map the function, architect the workflow, and show you what the managed model can look like inside your business.</p>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <a href="#" className="rounded-2xl px-5 py-3 text-center text-sm font-semibold text-white shadow-[0_18px_40px_rgba(71,78,173,0.35)] transition hover:-translate-y-0.5" style={{ background: "linear-gradient(135deg, #6A71D9 0%, #474EAD 100%)" }}>Book a Strategy Call</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}

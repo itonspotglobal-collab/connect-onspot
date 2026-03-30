@@ -1,0 +1,480 @@
+import { useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import {
+  Calendar, CheckCircle2, ChevronRight, Clock3, Database,
+  Headphones, Inbox, Layers3, Mail, Plane, Search,
+  ShieldCheck, Sparkles, Target, UserRound, Workflow, Zap,
+  ArrowRight, BarChart3, BriefcaseBusiness, MessagesSquare,
+} from "lucide-react";
+
+export default function HumanVirtualAssistantPage() {
+  const capabilityTabs = [
+    {
+      id: "admin", label: "Admin & Operations", icon: Inbox,
+      title: "Operational calm for the work that keeps everything moving.",
+      description: "Delegate the recurring work that clutters your day and drains strategic focus.",
+      tasks: ["Inbox management", "Calendar scheduling", "Data entry and reporting", "Document preparation and formatting"],
+    },
+    {
+      id: "sales", label: "Sales Support", icon: Target,
+      title: "Support your pipeline without hiring a full back office team.",
+      description: "Keep leads warm, systems updated, and your CRM clean so selling stays sharp.",
+      tasks: ["Lead qualification", "CRM updates", "Follow-up coordination", "Pipeline tracking"],
+    },
+    {
+      id: "executive", label: "Executive Support", icon: BriefcaseBusiness,
+      title: "A true extension of the way high-performers operate.",
+      description: "From travel logistics to executive prep, your assistant protects your attention.",
+      tasks: ["Travel planning", "Meeting preparation", "Inbox prioritization", "Personal task handling"],
+    },
+    {
+      id: "growth", label: "Growth Tasks", icon: Search,
+      title: "Research, preparation, and momentum for forward-moving teams.",
+      description: "Create space for better decisions by handing off the groundwork with structure.",
+      tasks: ["Research and market scanning", "Competitor tracking", "List building", "Outreach preparation"],
+    },
+  ];
+
+  const featureCards = [
+    { icon: UserRound, title: "Dedicated Assistant", body: "A real person aligned to your workflow, priorities, and working style." },
+    { icon: Sparkles, title: "AI-Augmented Execution", body: "Human judgment with AI-assisted speed, organization, and throughput." },
+    { icon: ShieldCheck, title: "Managed by OnSpot", body: "Oversight, quality control, continuity, and support beyond the individual assistant." },
+    { icon: Workflow, title: "Fits Your Stack", body: "Works with Gmail, Slack, Notion, CRMs, docs, spreadsheets, and more." },
+  ];
+
+  const steps = [
+    { number: "01", title: "Define Your Needs", body: "We map recurring tasks, priorities, workflows, and working preferences." },
+    { number: "02", title: "Match & Deploy", body: "We assign a trained assistant aligned with your role, pace, and task profile." },
+    { number: "03", title: "Integrate & Start", body: "Your assistant plugs into your tools and begins structured execution fast." },
+    { number: "04", title: "Optimize Weekly", body: "We improve processes, handoff quality, prioritization, and output over time." },
+  ];
+
+  const comparisonRows = [
+    ["Task-based help", "System-based execution"],
+    ["Little to no oversight", "Managed delivery model"],
+    ["Quality varies widely", "Structured output and standards"],
+    ["Hard to scale", "Expandable as needs grow"],
+  ];
+
+  const pricingTiers = [
+    { title: "Starter", subtitle: "Lean support for core recurring work", bullets: ["Part-time assistant", "Core admin coverage", "Light workflow setup"] },
+    { title: "Growth", subtitle: "The sweet spot for founders and operators", bullets: ["Dedicated assistant", "Cross-functional support", "Broader execution coverage"], featured: true },
+    { title: "Scale", subtitle: "Deeper operational leverage", bullets: ["Full-time support model", "Priority workflows", "More advanced task complexity"] },
+  ];
+
+  const [activeTab, setActiveTab] = useState(capabilityTabs[0].id);
+  const [hoursPerWeek, setHoursPerWeek] = useState(15);
+  const [hourlyValue, setHourlyValue] = useState(2500);
+  const [tasksDelegated, setTasksDelegated] = useState(65);
+
+  const activeTabData = capabilityTabs.find((tab) => tab.id === activeTab) || capabilityTabs[0];
+  const ActiveTabIcon = activeTabData.icon;
+
+  const annualRecoveredValue = useMemo(() => {
+    const recoveredHours = hoursPerWeek * (tasksDelegated / 100);
+    return recoveredHours * hourlyValue * 52;
+  }, [hoursPerWeek, hourlyValue, tasksDelegated]);
+
+  const monthlyRecoveredHours = useMemo(() => {
+    return Math.round(hoursPerWeek * 4.33 * (tasksDelegated / 100));
+  }, [hoursPerWeek, tasksDelegated]);
+
+  const userCurrency = "PHP";
+  const userLocale = "en-PH";
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat(userLocale, { style: "currency", currency: userCurrency, maximumFractionDigits: 0 }).format(value);
+
+  return (
+    <div className="min-h-screen bg-[#f6f7fb] text-slate-900">
+      <style>{`
+        .hva-grain { background-image: radial-gradient(circle at 20% 20%, rgba(71, 78, 173, 0.12), transparent 28%), radial-gradient(circle at 80% 10%, rgba(114, 89, 255, 0.10), transparent 26%), radial-gradient(circle at 50% 80%, rgba(71, 78, 173, 0.08), transparent 30%); }
+        .hva-shadow { box-shadow: 0 20px 60px rgba(25, 27, 62, 0.08); }
+        .hero-grid { background-image: linear-gradient(rgba(71,78,173,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(71,78,173,0.06) 1px, transparent 1px); background-size: 32px 32px; }
+      `}</style>
+
+      {/* Hero */}
+      <section className="relative overflow-hidden border-b border-slate-200 bg-white">
+        <div className="absolute inset-0 hero-grid opacity-60" />
+        <div className="absolute inset-0 hva-grain" />
+        <div className="relative mx-auto grid max-w-7xl gap-10 px-6 py-20 lg:grid-cols-[1.15fr_0.85fr] lg:px-10 lg:py-28">
+          <div className="max-w-3xl">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }}
+              className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#474ead]/15 bg-[#474ead]/5 px-4 py-2 text-sm font-medium text-[#474ead]">
+              <Sparkles className="h-4 w-4" /> Human Virtual Assistant
+            </motion.div>
+            <motion.h1 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.05 }}
+              className="max-w-4xl text-5xl font-semibold tracking-tight text-slate-950 md:text-6xl lg:text-7xl">
+              A Human Assistant That <span className="text-[#474ead]">Thinks, Acts,</span> and Delivers.
+            </motion.h1>
+            <motion.p initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}
+              className="mt-6 max-w-2xl text-lg leading-8 text-slate-600 md:text-xl">
+              Not just task execution. Real people. Trained systems. AI-enhanced productivity that gives founders,
+              operators, and teams back the one resource that matters most: focus.
+            </motion.p>
+            <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.15 }}
+              className="mt-10 flex flex-col gap-4 sm:flex-row">
+              <button className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#474ead] px-6 py-4 text-sm font-semibold text-white shadow-lg shadow-[#474ead]/20 transition hover:-translate-y-0.5 hover:bg-[#3e459d]">
+                Get Your Assistant <ArrowRight className="h-4 w-4" />
+              </button>
+              <button className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-6 py-4 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-[#474ead]/30 hover:text-[#474ead]">
+                See How It Works <ChevronRight className="h-4 w-4" />
+              </button>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
+              className="mt-12 grid max-w-2xl gap-4 sm:grid-cols-3">
+              {[["Real human support", "Dedicated assistant model"], ["AI-enhanced workflows", "Faster and more structured execution"], ["Managed by OnSpot", "Oversight, continuity, and control"]].map(([title, body]) => (
+                <div key={title} className="rounded-2xl border border-white/80 bg-white/80 p-4 backdrop-blur-sm hva-shadow">
+                  <div className="text-sm font-semibold text-slate-900">{title}</div>
+                  <div className="mt-1 text-sm leading-6 text-slate-600">{body}</div>
+                </div>
+              ))}
+            </motion.div>
+          </div>
+
+          <motion.div initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.7, delay: 0.15 }} className="relative">
+            <div className="relative overflow-hidden rounded-[32px] border border-[#474ead]/10 bg-slate-950 p-5 text-white hva-shadow">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(122,130,255,0.35),_transparent_36%),radial-gradient(circle_at_bottom_right,_rgba(71,78,173,0.3),_transparent_34%)]" />
+              <div className="relative">
+                <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur">
+                  <div>
+                    <div className="text-xs uppercase tracking-[0.22em] text-white/60">Assistant Dashboard</div>
+                    <div className="mt-1 text-lg font-medium">Daily Execution Flow</div>
+                  </div>
+                  <div className="rounded-full bg-emerald-400/15 px-3 py-1 text-xs font-medium text-emerald-300">Live</div>
+                </div>
+                <div className="mt-5 space-y-3">
+                  {[
+                    { icon: Mail, title: "Inbox triage complete", meta: "42 emails categorized" },
+                    { icon: Calendar, title: "Calendar optimized", meta: "6 meetings reorganized" },
+                    { icon: Database, title: "CRM updated", meta: "18 records cleaned" },
+                    { icon: Plane, title: "Travel logistics prepared", meta: "Itinerary + booking options ready" },
+                  ].map((item, idx) => {
+                    const Icon = item.icon;
+                    return (
+                      <motion.div key={item.title} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: 0.25 + idx * 0.1 }}
+                        className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-4 backdrop-blur">
+                        <div className="rounded-2xl bg-white/10 p-3"><Icon className="h-5 w-5" /></div>
+                        <div className="flex-1">
+                          <div className="font-medium text-white">{item.title}</div>
+                          <div className="text-sm text-white/65">{item.meta}</div>
+                        </div>
+                        <CheckCircle2 className="h-5 w-5 text-emerald-300" />
+                      </motion.div>
+                    );
+                  })}
+                </div>
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                    <div className="text-xs uppercase tracking-[0.18em] text-white/50">Response Time</div>
+                    <div className="mt-2 text-3xl font-semibold">Fast</div>
+                    <div className="mt-1 text-sm text-white/65">AI-assisted, human-reviewed execution.</div>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                    <div className="text-xs uppercase tracking-[0.18em] text-white/50">Coverage</div>
+                    <div className="mt-2 text-3xl font-semibold">Broad</div>
+                    <div className="mt-1 text-sm text-white/65">Admin, executive support, sales, and ops.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Problem: You're Doing Work You Shouldn't */}
+      <section className="mx-auto max-w-7xl px-6 py-20 lg:px-10">
+        <div className="grid gap-16 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#474ead]/10 bg-white px-4 py-2 text-sm font-medium text-[#474ead]">
+              <Clock3 className="h-4 w-4" /> The bottleneck is bandwidth
+            </div>
+            <h2 className="mt-5 text-3xl font-semibold tracking-tight text-slate-950 md:text-5xl">
+              You're Doing Work You Shouldn't Be Doing.
+            </h2>
+            <p className="mt-5 max-w-xl text-lg leading-8 text-slate-600">
+              Admin work steals your energy. Follow-ups slip. Your calendar controls you. Your day gets consumed by tasks that matter, but should not depend on you.
+            </p>
+            <p className="mt-4 text-lg leading-8 text-slate-900">You do not need more time. You need a system that protects it.</p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {[
+              { title: "Inbox overload", body: "Messages keep coming, but priorities are harder to protect.", icon: Mail },
+              { title: "Calendar chaos", body: "Your week fills itself before strategy has a chance to breathe.", icon: Calendar },
+              { title: "Execution drag", body: "Low-value tasks quietly slow high-value decisions.", icon: Layers3 },
+              { title: "Follow-up leakage", body: "Important actions slip when no one owns the rhythm.", icon: MessagesSquare },
+            ].map((item, i) => {
+              const Icon = item.icon;
+              return (
+                <motion.div key={item.title} initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.35 }} transition={{ duration: 0.4, delay: i * 0.06 }}
+                  className="rounded-3xl border border-slate-200 bg-white p-6 hva-shadow">
+                  <div className="inline-flex rounded-2xl bg-[#474ead]/5 p-3 text-[#474ead]"><Icon className="h-5 w-5" /></div>
+                  <div className="mt-4 text-lg font-semibold text-slate-950">{item.title}</div>
+                  <div className="mt-2 text-sm leading-6 text-slate-600">{item.body}</div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Solution: Feature Cards */}
+      <section className="border-y border-slate-200 bg-white">
+        <div className="mx-auto max-w-7xl px-6 py-20 lg:px-10">
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#474ead]/10 bg-[#474ead]/5 px-4 py-2 text-sm font-medium text-[#474ead]">
+              <Zap className="h-4 w-4" /> The solution
+            </div>
+            <h2 className="mt-5 text-3xl font-semibold tracking-tight text-slate-950 md:text-5xl">
+              A Dedicated Human Assistant. Powered by Systems.
+            </h2>
+            <p className="mt-5 text-lg leading-8 text-slate-600">
+              This is not a random freelancer. Not generic support. This is a structured assistant model combining human execution, AI leverage, and OnSpot delivery standards.
+            </p>
+          </div>
+          <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            {featureCards.map((card, i) => {
+              const Icon = card.icon;
+              return (
+                <motion.div key={card.title} initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.45, delay: i * 0.08 }} whileHover={{ y: -6 }}
+                  className="rounded-3xl border border-slate-200 bg-[#fbfbfe] p-6 hva-shadow">
+                  <div className="inline-flex rounded-2xl bg-[#474ead] p-3 text-white"><Icon className="h-5 w-5" /></div>
+                  <h3 className="mt-5 text-lg font-semibold text-slate-950">{card.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">{card.body}</p>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Capability Tabs */}
+      <section className="mx-auto max-w-7xl px-6 py-20 lg:px-10">
+        <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#474ead]/10 bg-white px-4 py-2 text-sm font-medium text-[#474ead]">
+              <Headphones className="h-4 w-4" /> What they can do
+            </div>
+            <h2 className="mt-5 text-3xl font-semibold tracking-tight text-slate-950 md:text-5xl">If It's Repeatable, It's Delegatable.</h2>
+            <p className="mt-5 max-w-xl text-lg leading-8 text-slate-600">
+              Your assistant can handle recurring tasks across admin, executive support, sales support, and growth prep. You focus on decisions. We handle execution.
+            </p>
+            <div className="mt-8 space-y-3">
+              {capabilityTabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                    className={`flex w-full items-center justify-between rounded-2xl border px-4 py-4 text-left transition ${isActive ? "border-[#474ead] bg-[#474ead] text-white shadow-lg shadow-[#474ead]/15" : "border-slate-200 bg-white text-slate-700 hover:border-[#474ead]/30 hover:text-[#474ead]"}`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`rounded-xl p-2 ${isActive ? "bg-white/15" : "bg-[#474ead]/5 text-[#474ead]"}`}><Icon className="h-4 w-4" /></div>
+                      <span className="font-medium">{tab.label}</span>
+                    </div>
+                    <ChevronRight className={`h-4 w-4 ${isActive ? "opacity-100" : "opacity-45"}`} />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <motion.div key={activeTabData.id} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28 }}
+            className="rounded-[32px] border border-slate-200 bg-white p-8 hva-shadow">
+            <div className="inline-flex rounded-2xl bg-[#474ead]/5 p-3 text-[#474ead]"><ActiveTabIcon className="h-6 w-6" /></div>
+            <h3 className="mt-5 text-2xl font-semibold text-slate-950">{activeTabData.title}</h3>
+            <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">{activeTabData.description}</p>
+            <div className="mt-8 grid gap-4 sm:grid-cols-2">
+              {activeTabData.tasks.map((task, i) => (
+                <motion.div key={task} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: i * 0.05 }}
+                  className="rounded-2xl border border-slate-200 bg-[#fafafe] p-5">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 rounded-full bg-emerald-500/10 p-1.5 text-emerald-600"><CheckCircle2 className="h-4 w-4" /></div>
+                    <div className="text-sm font-medium leading-6 text-slate-800">{task}</div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Steps: How it works */}
+      <section className="border-y border-slate-200 bg-white">
+        <div className="mx-auto max-w-7xl px-6 py-20 lg:px-10">
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#474ead]/10 bg-[#474ead]/5 px-4 py-2 text-sm font-medium text-[#474ead]">
+              <Layers3 className="h-4 w-4" /> How it works
+            </div>
+            <h2 className="mt-5 text-3xl font-semibold tracking-tight text-slate-950 md:text-5xl">Simple. Structured. Scalable.</h2>
+          </div>
+          <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            {steps.map((step, i) => (
+              <motion.div key={step.number} initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.45, delay: i * 0.07 }}
+                className="rounded-3xl border border-slate-200 bg-[#fbfbfe] p-6 hva-shadow">
+                <div className="text-sm font-semibold tracking-[0.22em] text-[#474ead]">{step.number}</div>
+                <div className="mt-4 text-xl font-semibold text-slate-950">{step.title}</div>
+                <div className="mt-2 text-sm leading-6 text-slate-600">{step.body}</div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Comparison Table */}
+      <section className="mx-auto max-w-7xl px-6 py-20 lg:px-10">
+        <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#474ead]/10 bg-white px-4 py-2 text-sm font-medium text-[#474ead]">
+              <BarChart3 className="h-4 w-4" /> Why it is different
+            </div>
+            <h2 className="mt-5 text-3xl font-semibold tracking-tight text-slate-950 md:text-5xl">Not Just a VA. An Operating Layer.</h2>
+            <p className="mt-5 max-w-xl text-lg leading-8 text-slate-600">The difference is not only who does the work. It is how the work gets managed, standardized, and improved.</p>
+          </div>
+          <div className="overflow-hidden rounded-[32px] border border-slate-200 bg-white hva-shadow">
+            <div className="grid grid-cols-2 border-b border-slate-200 bg-[#f7f8fd]">
+              <div className="px-6 py-5 text-sm font-semibold text-slate-500">Traditional VA</div>
+              <div className="border-l border-slate-200 px-6 py-5 text-sm font-semibold text-[#474ead]">OnSpot Human Assistant</div>
+            </div>
+            {comparisonRows.map((row) => (
+              <div key={row[0]} className="grid grid-cols-2 border-b border-slate-100 last:border-b-0">
+                <div className="px-6 py-5 text-sm leading-6 text-slate-600">{row[0]}</div>
+                <div className="border-l border-slate-100 px-6 py-5 text-sm font-medium leading-6 text-slate-900">{row[1]}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ROI Calculator */}
+      <section className="border-y border-slate-200 bg-white">
+        <div className="mx-auto max-w-7xl px-6 py-20 lg:px-10">
+          <div className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#474ead]/10 bg-[#474ead]/5 px-4 py-2 text-sm font-medium text-[#474ead]">
+                <Zap className="h-4 w-4" /> ROI calculator
+              </div>
+              <h2 className="mt-5 text-3xl font-semibold tracking-tight text-slate-950 md:text-5xl">See What Recovered Time Is Worth.</h2>
+              <p className="mt-5 max-w-xl text-lg leading-8 text-slate-600">
+                A Human Virtual Assistant is not just support. It is leverage. Estimate the annual value of the time you can reclaim.
+              </p>
+            </div>
+            <div className="rounded-[32px] border border-slate-200 bg-[#fbfbfe] p-8 hva-shadow">
+              <div className="space-y-7">
+                <div>
+                  <div className="flex items-center justify-between text-sm font-medium text-slate-700">
+                    <span>Hours you spend weekly on delegatable work</span>
+                    <span className="text-[#474ead]">{hoursPerWeek} hrs</span>
+                  </div>
+                  <input type="range" min="5" max="40" step="1" value={hoursPerWeek} onChange={(e) => setHoursPerWeek(Number(e.target.value))} className="mt-3 w-full accent-[#474ead]" />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between text-sm font-medium text-slate-700">
+                    <span>Your estimated hourly value</span>
+                    <span className="text-[#474ead]">{formatCurrency(hourlyValue)}</span>
+                  </div>
+                  <input type="range" min="500" max="10000" step="250" value={hourlyValue} onChange={(e) => setHourlyValue(Number(e.target.value))} className="mt-3 w-full accent-[#474ead]" />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between text-sm font-medium text-slate-700">
+                    <span>Percent of those tasks you can realistically delegate</span>
+                    <span className="text-[#474ead]">{tasksDelegated}%</span>
+                  </div>
+                  <input type="range" min="20" max="100" step="5" value={tasksDelegated} onChange={(e) => setTasksDelegated(Number(e.target.value))} className="mt-3 w-full accent-[#474ead]" />
+                </div>
+              </div>
+              <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                <div className="rounded-3xl bg-white p-6 shadow-sm">
+                  <div className="text-sm font-medium text-slate-500">Monthly hours recovered</div>
+                  <div className="mt-3 text-4xl font-semibold tracking-tight text-slate-950">{monthlyRecoveredHours}</div>
+                  <div className="mt-2 text-sm leading-6 text-slate-600">Hours that can go back into selling, leading, or thinking.</div>
+                </div>
+                <div className="rounded-3xl bg-[#474ead] p-6 text-white shadow-lg shadow-[#474ead]/20">
+                  <div className="text-sm font-medium text-white/70">Estimated annual value recovered ({userCurrency})</div>
+                  <div className="mt-3 text-3xl font-semibold tracking-tight">{formatCurrency(annualRecoveredValue)}</div>
+                  <div className="mt-2 text-sm leading-6 text-white/75">A simple view of the leverage hidden inside delegated execution.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Tiers */}
+      <section className="mx-auto max-w-7xl px-6 py-20 lg:px-10">
+        <div className="grid gap-6 lg:grid-cols-3">
+          {pricingTiers.map((tier, i) => (
+            <motion.div key={tier.title} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.45, delay: i * 0.07 }} whileHover={{ y: -6 }}
+              className={`rounded-[30px] border p-7 hva-shadow ${tier.featured ? "border-[#474ead] bg-[#474ead] text-white" : "border-slate-200 bg-white text-slate-900"}`}>
+              <div className={`text-sm font-medium ${tier.featured ? "text-white/70" : "text-slate-500"}`}>Flexible structure</div>
+              <div className="mt-3 text-2xl font-semibold">{tier.title}</div>
+              <div className={`mt-2 text-sm leading-6 ${tier.featured ? "text-white/80" : "text-slate-600"}`}>{tier.subtitle}</div>
+              <div className="mt-6 space-y-3">
+                {tier.bullets.map((bullet) => (
+                  <div key={bullet} className="flex items-start gap-3">
+                    <div className={`mt-0.5 rounded-full p-1.5 ${tier.featured ? "bg-white/15" : "bg-[#474ead]/5 text-[#474ead]"}`}><CheckCircle2 className="h-4 w-4" /></div>
+                    <div className={`text-sm leading-6 ${tier.featured ? "text-white/90" : "text-slate-700"}`}>{bullet}</div>
+                  </div>
+                ))}
+              </div>
+              <button className={`mt-8 inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold transition ${tier.featured ? "bg-white text-[#474ead] hover:-translate-y-0.5" : "bg-[#474ead] text-white hover:-translate-y-0.5"}`}>
+                Get Custom Plan <ArrowRight className="h-4 w-4" />
+              </button>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* People Section */}
+      <section className="border-y border-slate-200 bg-white">
+        <div className="mx-auto max-w-7xl px-6 py-20 lg:px-10">
+          <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#474ead]/10 bg-[#474ead]/5 px-4 py-2 text-sm font-medium text-[#474ead]">
+                <UserRound className="h-4 w-4" /> Real people. Real accountability.
+              </div>
+              <h2 className="mt-5 text-3xl font-semibold tracking-tight text-slate-950 md:text-5xl">Built by People Who Understand Performance.</h2>
+              <p className="mt-5 text-lg leading-8 text-slate-600">
+                Professionally trained assistants. English-proficient, globally competitive talent. Supported by OnSpot systems, leadership, and a culture of execution.
+              </p>
+              <p className="mt-4 text-lg leading-8 text-slate-900">Our people are not just efficient. They are disciplined, driven, and built to operate inside serious businesses.</p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {["Culture and ownership", "Professional polish", "Calm, responsive communication", "Execution-first mindset"].map((label) => (
+                <motion.div key={label} whileHover={{ scale: 1.02 }}
+                  className="group relative aspect-[4/5] overflow-hidden rounded-[28px] border border-slate-200 bg-slate-100 hva-shadow">
+                  <div className="absolute inset-0 bg-[linear-gradient(160deg,rgba(71,78,173,0.18),rgba(255,255,255,0.04)),radial-gradient(circle_at_top,rgba(255,255,255,0.45),transparent_35%),linear-gradient(135deg,#d9ddf7,#f3f4fa_55%,#e7e9f8)] transition duration-500 group-hover:scale-105" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/55 via-slate-950/10 to-transparent" />
+                  <div className="absolute bottom-0 p-5 text-white">
+                    <div className="text-xs uppercase tracking-[0.22em] text-white/65">OnSpot talent</div>
+                    <div className="mt-2 text-lg font-semibold">{label}</div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Editorial Close */}
+      <section className="mx-auto max-w-6xl px-6 py-24 text-center lg:px-10">
+        <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.35 }} transition={{ duration: 0.5 }} className="mx-auto max-w-4xl">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#474ead]/10 bg-white px-4 py-2 text-sm font-medium text-[#474ead]">
+            <Sparkles className="h-4 w-4" /> The highest-leverage decision you'll make this year
+          </div>
+          <h2 className="mt-6 text-4xl font-semibold tracking-tight text-slate-950 md:text-6xl">
+            The Highest ROI Decision You'll Make This Year.
+          </h2>
+          <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-slate-600 md:text-xl">
+            Every high-performer eventually discovers the same truth: the bottleneck is not effort. It is bandwidth.
+            A Human Virtual Assistant is not a cost center. It is the operating system that unlocks everything else.
+          </p>
+          <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <button className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#474ead] px-6 py-4 text-sm font-semibold text-white shadow-lg shadow-[#474ead]/20 transition hover:-translate-y-0.5 hover:bg-[#3e459d]">
+              Start with One Assistant <ArrowRight className="h-4 w-4" />
+            </button>
+            <button className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-6 py-4 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-[#474ead]/30 hover:text-[#474ead]">
+              Book a Discovery Call <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </motion.div>
+      </section>
+    </div>
+  );
+}

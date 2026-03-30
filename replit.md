@@ -32,6 +32,12 @@ Preferred communication style: Simple, everyday language.
 - **User Roles**: Multi-role system (client, talent, admin).
 - **Profile Management**: 1:1 user-profile relationship.
 
+#### Service Pages
+- **Managed Services** (`/services/managed`): Dark theme, interactive capability tabs, proof metrics slider, pricing calculator with team size/complexity controls, case study accordion, FAQ.
+- **Resourced Services** (`/services/resourced`): Light theme with cyan accents, capability cards, resourcing models, example roles, process steps, comparison table, dual CTA sections.
+- **Enterprise Services** (`/services/enterprise`): Light theme with indigo accents, 3-layer offerings (strategic/execution/performance), full service comparison table (Enterprise vs Managed vs Resourced), engagement phase cards, dark CTA.
+- **Human Virtual Assistant** (`/services/human-va` and `/services/human-virtual-assistant`): Light theme with framer-motion animations, capability tabs, ROI calculator (PHP currency), pricing tiers, comparison table, people gallery.
+
 #### UI/UX Decisions
 - **Modal Spacing**: Fixed modal overlap with navigation for consistent responsiveness.
 - **Core Web Vitals Optimization**: Implemented preload hints, image dimensioning, and code splitting for performance.
