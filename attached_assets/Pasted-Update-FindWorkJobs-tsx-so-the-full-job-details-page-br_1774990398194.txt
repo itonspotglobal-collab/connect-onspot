@@ -1,0 +1,121 @@
+Update `FindWorkJobs.tsx` so the full job details page brings back the missing section labels and includes Cultural Fit, following the old setup structure.
+
+Problem to fix
+On the current `FindWorkJobs.tsx` page, these section labels are missing or not rendering like the old setup:
+- Job Description
+- Responsibilities
+- Skills Needed
+
+Also:
+- Cultural Fit is not shown at all
+
+I want the full job details page to visually and structurally match the older detailed job-posting layout more closely, while still fitting the current OnSpot design language.
+
+What to change
+
+1. Restore visible section labels
+Make sure these section titles are explicitly rendered and styled as proper labeled sections:
+- `JOB DESCRIPTION`
+- `RESPONSIBILITIES`
+- `SKILLS NEEDED`
+- `CULTURAL FIT`
+
+These labels should not be implied only by icons or spacing. They must be visible text headings like the old setup.
+
+2. Follow the old detailed layout structure
+The section order on `FindWorkJobs.tsx` should be:
+
+- Job Description
+- Responsibilities
+- Skills Needed
+- Cultural Fit
+- Tags / related chips if applicable
+
+If another section such as Experience Level exists, it can remain, but the four sections above must be clearly present.
+
+3. Add Cultural Fit section
+Render a Cultural Fit section using job data.
+If the current shared job data does not yet include a `culturalFit` field, add it.
+
+Suggested data shape:
+{
+  ...
+  description: "...",
+  responsibilities: ["...", "..."],
+  qualifications: ["...", "..."],
+  culturalFit: [
+    "Thrives in a fast-paced remote environment",
+    "Communicates proactively with clients and teammates",
+    "Takes ownership and follows through on deliverables"
+  ]
+}
+
+If the page currently uses `qualifications`, you may map that to `Skills Needed`, but do not remove the visible `Skills Needed` label.
+
+4. Rendering rules
+Use clear rendering for each section:
+
+- Job Description:
+  - paragraph text block
+- Responsibilities:
+  - bullet list
+- Skills Needed:
+  - bullet list
+- Cultural Fit:
+  - bullet list or labeled chips, whichever matches the page best
+
+5. Match the old setup visually
+Style the section labels similar to the older job details modal/page:
+- uppercase or semi-uppercase heading style
+- small icon at the left if already used in the current page
+- visible spacing above each section
+- divider lines between sections where appropriate
+
+The labels should feel like:
+- clearly separated content blocks
+- easy to scan
+- more structured than the current version
+
+6. Preserve current design language
+Keep the current OnSpot styling, including:
+- current color palette
+- current typography family
+- current spacing rhythm
+- current soft borders/dividers
+- current light/dark mode compatibility if already supported
+
+Do not redesign the page from scratch.
+Only restore the missing content structure and labels.
+
+7. Data wiring
+Make sure the full job page reads these sections from the shared job source used by:
+- `AdminFindWork.tsx`
+- `FindWork.tsx`
+- `FindWorkJobs.tsx`
+
+If needed, extend the shared jobs data so each job supports:
+- `description`
+- `responsibilities`
+- `qualifications` or `skillsNeeded`
+- `culturalFit`
+- `tags`
+
+8. Backward-compatible mapping
+If older data uses a different field name:
+- map `qualifications` -> `Skills Needed`
+- map any old culture/team-fit style data -> `Cultural Fit`
+
+Do not leave sections blank if there is usable fallback data.
+
+9. Output expectation
+Return updated code for:
+- `FindWorkJobs.tsx`
+- shared job data typing/shape if needed
+- section rendering so labels appear correctly
+- Cultural Fit section wiring
+
+10. Important constraints
+- Do not remove the current page
+- Do not redesign the whole layout
+- Do not hide section titles behind icons only
+- Make the page feel closer to the old readable structured job detail view

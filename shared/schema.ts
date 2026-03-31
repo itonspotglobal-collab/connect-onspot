@@ -91,6 +91,7 @@ export const jobs = pgTable("jobs", {
   responsibilities: text("responsibilities").array(),
   requirements: text("requirements").array(),
   skillTags: text("skill_tags").array(),
+  culturalFit: text("cultural_fit").array(),
   status: text("status").notNull().default("open"), // open, in_progress, completed, cancelled
   proposalCount: integer("proposal_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),

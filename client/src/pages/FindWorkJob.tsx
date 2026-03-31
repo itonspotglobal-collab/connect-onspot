@@ -60,6 +60,13 @@ const roles = [
       "Access to OnSpot career development programs",
       "Remote-first work setup with equipment allowance",
     ],
+    culturalFit: [
+      "Thrives in a fast-paced, high-trust environment with minimal supervision",
+      "Communicates proactively — you flag issues before they become problems",
+      "Discreet and professional when handling sensitive executive information",
+      "Comfortable working US night shift hours (Pacific or Eastern time)",
+      "Values long-term partnerships and takes ownership of outcomes",
+    ],
   },
   {
     id: 2,
@@ -107,6 +114,13 @@ const roles = [
       "Mentorship from OnSpot's global CS leadership team",
       "Remote-first with home office setup support",
     ],
+    culturalFit: [
+      "Client-first mindset — you measure success by client outcomes, not activity",
+      "Proactive communicator who surfaces risks before they escalate",
+      "Thrives in collaborative environments that span multiple time zones",
+      "Comfortable working US night shift hours",
+      "Long-term relationship builder, not a transactional thinker",
+    ],
   },
   {
     id: 3,
@@ -152,6 +166,13 @@ const roles = [
       "Paid leave and Philippine public holiday observance",
       "Access to premium marketing tool subscriptions",
       "Remote-first with flexible scheduling",
+    ],
+    culturalFit: [
+      "Analytically curious — you love testing, iterating, and improving",
+      "Self-directed and comfortable owning campaigns end-to-end",
+      "Collaborative with creative and client teams across time zones",
+      "Stays current with digital marketing trends and platform changes",
+      "Flexible communicator who adapts to AU/UK client culture",
     ],
   },
   {
@@ -200,6 +221,13 @@ const roles = [
       "Ongoing CPD support for accounting certifications",
       "Remote work with structured day-shift schedule",
     ],
+    culturalFit: [
+      "Detail-oriented and methodical — you catch errors before anyone else does",
+      "Trustworthy with confidential financial data and client records",
+      "Consistent and reliable — deadlines are non-negotiable",
+      "Comfortable in day-shift schedules aligned to US/AU business hours",
+      "Values accuracy and process discipline over shortcuts",
+    ],
   },
   {
     id: 5,
@@ -245,6 +273,13 @@ const roles = [
       "13th month pay and performance incentives",
       "Career path to Tier 3 specialist or team lead roles",
       "Remote-first with equipment support",
+    ],
+    culturalFit: [
+      "Calm under pressure — you solve problems, not panic about them",
+      "Patient and empathetic communicator with non-technical end users",
+      "Adaptable to rotating shifts and varying workload volumes",
+      "Documents processes clearly so the whole team benefits",
+      "Genuinely curious about how technology works under the hood",
     ],
   },
   {
@@ -294,6 +329,13 @@ const roles = [
       "Sales career path to AE or sales management roles",
       "Remote-first with dedicated SDR coaching and playbooks",
     ],
+    culturalFit: [
+      "Competitive and driven — you thrive on hitting and exceeding targets",
+      "Resilient and coachable — rejection doesn't slow you down for long",
+      "Comfortable working US night shift hours",
+      "Organized and disciplined with CRM hygiene and follow-up",
+      "Team player who shares playbooks and celebrates wins together",
+    ],
   },
 ];
 
@@ -330,12 +372,48 @@ function Section({
   );
 }
 
+/** True when a string contains rich HTML from the Quill editor */
+function isHtml(str: string) {
+  return str.trimStart().startsWith("<");
+}
+
+/** Renders a section body that may be either plain-text bullets or rich HTML */
+function SectionBody({ items, bulletColor }: { items: string[]; bulletColor: string }) {
+  if (items.length === 0) return null;
+  if (items.length === 1 && isHtml(items[0])) {
+    return (
+      <div
+        className="prose prose-slate max-w-none text-[15px] leading-7 dark:prose-invert"
+        dangerouslySetInnerHTML={{ __html: items[0] }}
+      />
+    );
+  }
+  return (
+    <ul className="space-y-3">
+      {items.map((item, i) => (
+        <BulletRow key={i} text={item} color={bulletColor} />
+      ))}
+    </ul>
+  );
+}
+
+const CULTURAL_FIT_DEFAULTS = [
+  "Thrives in a fast-paced, fully remote environment",
+  "Communicates proactively with clients and team members",
+  "Takes ownership and follows through on every deliverable",
+  "Comfortable working US business hours (night shift PH)",
+  "Values long-term partnerships over short-term engagements",
+];
+
 function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => void }) {
   const pay = buildRateDisplay(job);
   const badges = getJobBadges(job);
   const timeAgo = getTimeAgo(job.createdAt);
   const responsibilities = (job.responsibilities ?? []) as string[];
-  const requirements = (job.requirements ?? []) as string[];
+  const requirements    = (job.requirements    ?? []) as string[];
+  const culturalFit     = ((job.culturalFit     ?? []) as string[]).length > 0
+    ? (job.culturalFit as string[])
+    : CULTURAL_FIT_DEFAULTS;
   const tags = (job.skillTags ?? []) as string[];
 
   return (
@@ -396,42 +474,72 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
       </motion.div>
 
       {/* Body */}
-      <div className="mx-auto max-w-4xl px-6 py-12 md:px-12 lg:px-16">
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15, duration: 0.4 }}
+        className="mx-auto max-w-4xl"
+      >
+
+        {/* Job Description */}
         {job.description && (
-          <Section title="Overview" icon={<Globe2 className="h-4 w-4 text-[#474ead]" />}>
-            <p className="leading-7 text-slate-600 dark:text-slate-300">{job.description}</p>
+          <Section
+            icon={<Globe2 className="h-4 w-4 text-indigo-500" />}
+            iconBg="bg-indigo-50 dark:bg-indigo-900/30"
+            label="Job Description"
+          >
+            <p className="text-[15px] leading-8 text-slate-600 dark:text-slate-300">{job.description}</p>
           </Section>
         )}
 
+        {/* Responsibilities */}
         {responsibilities.length > 0 && (
-          <Section title="Responsibilities" icon={<ListChecks className="h-4 w-4 text-[#474ead]" />}>
-            <ul className="space-y-2.5">
-              {responsibilities.map((r, i) => (
-                <li key={i} className="flex gap-2.5 text-slate-600 dark:text-slate-300">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#474ead]" /> {r}
-                </li>
-              ))}
-            </ul>
+          <Section
+            icon={<ListChecks className="h-4 w-4 text-blue-500" />}
+            iconBg="bg-blue-50 dark:bg-blue-900/30"
+            label="Responsibilities"
+          >
+            <SectionBody items={responsibilities} bulletColor="bg-blue-400" />
           </Section>
         )}
 
+        {/* Skills Needed */}
         {requirements.length > 0 && (
-          <Section title="Qualifications" icon={<Award className="h-4 w-4 text-[#474ead]" />}>
-            <ul className="space-y-2.5">
-              {requirements.map((r, i) => (
-                <li key={i} className="flex gap-2.5 text-slate-600 dark:text-slate-300">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#474ead]" /> {r}
-                </li>
-              ))}
-            </ul>
+          <Section
+            icon={<CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+            iconBg="bg-emerald-50 dark:bg-emerald-900/30"
+            label="Skills Needed"
+          >
+            <SectionBody items={requirements} bulletColor="bg-emerald-500" />
           </Section>
         )}
 
+        {/* Cultural Fit */}
+        <Section
+          icon={<Sparkles className="h-4 w-4 text-[#474ead]" />}
+          iconBg="bg-[#474ead]/10 dark:bg-[#474ead]/20"
+          label="Cultural Fit"
+        >
+          <ul className="space-y-3">
+            {culturalFit.map((item, i) => (
+              <BulletRow key={i} text={item} color="bg-[#474ead]" />
+            ))}
+          </ul>
+        </Section>
+
+        {/* Skills & Tags */}
         {tags.length > 0 && (
-          <Section title="Skills & Tags" icon={<Tag className="h-4 w-4 text-[#474ead]" />}>
+          <Section
+            icon={<Tag className="h-4 w-4 text-slate-400" />}
+            iconBg="bg-slate-100 dark:bg-white/[0.06]"
+            label="Skills & Tags"
+          >
             <div className="flex flex-wrap gap-2">
               {tags.map((tag) => (
-                <span key={tag} className="rounded-full border border-slate-200/70 bg-slate-50 px-3 py-1 text-sm text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
+                <span
+                  key={tag}
+                  className="rounded-full border border-slate-200 bg-slate-50 px-4 py-1.5 text-sm font-medium text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300"
+                >
                   {tag}
                 </span>
               ))}
@@ -440,16 +548,23 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
         )}
 
         {/* Bottom CTA */}
-        <div className="mt-12 rounded-3xl border border-[#474ead]/15 bg-[#474ead]/[0.04] p-8 text-center">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-[#474ead]">Ready to join?</p>
-          <h2 className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">Apply before this role fills.</h2>
-          <p className="mt-2 mb-6 text-slate-500">Takes under 30 seconds. Our team will reach out within 3 business days.</p>
-          <Button className="rounded-full bg-[#474ead] px-10 text-white shadow-[0_8px_32px_rgba(71,78,173,0.25)] hover:bg-[#3d439c]"
-            onClick={() => window.open(APPLY_URL, "_blank", "noopener,noreferrer")}>
-            Apply Now <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
+        <div className="border-t border-slate-100 px-6 py-12 text-center dark:border-white/[0.08] md:px-12 lg:px-16">
+          <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-[#474ead]">Ready to join?</p>
+          <h2 className="mb-3 text-2xl font-bold text-slate-900 dark:text-white">Apply before this role fills.</h2>
+          <p className="mb-8 text-slate-500">Takes under 30 seconds. Our team will reach out within 3 business days.</p>
+          <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <Button
+              className="rounded-full bg-[#474ead] px-10 py-2.5 text-white shadow-[0_8px_32px_rgba(71,78,173,0.25)] hover:bg-[#3d439c]"
+              onClick={() => window.open(APPLY_URL, "_blank", "noopener,noreferrer")}
+            >
+              Apply Now <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+            <Button variant="outline" className="rounded-full px-6" onClick={() => navigate("/find-work/jobs")}>
+              <ArrowLeft className="mr-2 h-4 w-4" /> View all roles
+            </Button>
+          </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
@@ -648,6 +763,19 @@ export default function FindWorkJob() {
           <ul className="space-y-3">
             {role.qualifications.map((item, i) => (
               <BulletRow key={i} text={item} color="bg-emerald-500" />
+            ))}
+          </ul>
+        </Section>
+
+        {/* Cultural Fit */}
+        <Section
+          icon={<Sparkles className="h-4 w-4 text-[#474ead]" />}
+          iconBg="bg-[#474ead]/10 dark:bg-[#474ead]/20"
+          label="Cultural Fit"
+        >
+          <ul className="space-y-3">
+            {role.culturalFit.map((item, i) => (
+              <BulletRow key={i} text={item} color="bg-[#474ead]" />
             ))}
           </ul>
         </Section>
