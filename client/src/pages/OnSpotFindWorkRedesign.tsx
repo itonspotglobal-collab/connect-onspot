@@ -1,15 +1,14 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search, Sparkles, BriefcaseBusiness, Clock3, Globe2,
-  ChevronRight, Star, ArrowRight, BadgeCheck,
-  Zap, DollarSign, Brain, TrendingUp, Plus, Minus,
+  ChevronRight, Star, BadgeCheck, DollarSign, Brain,
+  TrendingUp, Plus, Minus, X, CheckCircle2, Gift,
+  ListChecks, Award, ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { JobDetailModal } from "@/components/JobDetailModal";
 
 // ─── Extended role type ───────────────────────────────────────────────────────
 
@@ -33,7 +32,7 @@ interface Role {
   benefits: string[];
 }
 
-// ─── Roles data (extended with full posting content) ─────────────────────────
+// ─── Roles data ───────────────────────────────────────────────────────────────
 
 const roles: Role[] = [
   {
@@ -50,7 +49,7 @@ const roles: Role[] = [
     why: "Strong fit for admin-heavy, client-facing candidates.",
     tags: ["Remote", "Growth path", "Premium client"],
     description:
-      "We're looking for a sharp, proactive Executive Virtual Assistant to support a US-based founder scaling their business. You'll manage communications, scheduling, research, and special projects, acting as the connective tissue that keeps things moving. This is a high-trust role with real ownership and visible impact — ideal for someone who wants more than task execution.",
+      "We're looking for a sharp, proactive Executive Virtual Assistant to support a US-based founder scaling their business. You'll manage communications, scheduling, research, and special projects — acting as the connective tissue that keeps things moving. This is a high-trust role with real ownership and visible impact, ideal for someone who wants more than task execution.",
     responsibilities: [
       "Manage the founder's inbox, calendar, and scheduling across time zones",
       "Coordinate meetings, prepare agendas, and take minutes",
@@ -61,11 +60,11 @@ const roles: Role[] = [
       "Track key deadlines and flag action items proactively",
     ],
     requirements: [
-      "2+ years of experience as a VA, EA, or senior admin support role",
+      "2+ years as a VA, EA, or senior admin support role",
       "Excellent written and verbal English communication",
       "Proficient with Google Workspace, Notion, Slack, or similar tools",
       "Strong time management and attention to detail",
-      "Ability to work night shift (PH time) aligned with US business hours",
+      "Ability to work night shift aligned with US business hours",
       "High degree of discretion and professionalism",
     ],
     niceToHaves: [
@@ -95,7 +94,7 @@ const roles: Role[] = [
     why: "Great for strong communicators with service experience.",
     tags: ["Remote", "Training provided", "High volume"],
     description:
-      "A fast-growing US ecommerce brand is looking for a dedicated Customer Support Specialist to handle inbound queries, resolve order issues, and deliver an exceptional customer experience. You'll be part of a structured support team with clear processes, escalation paths, and regular coaching. This is a great opportunity for someone who thrives in high-volume, people-first environments.",
+      "A fast-growing US ecommerce brand is looking for a dedicated Customer Support Specialist to handle inbound queries, resolve order issues, and deliver an exceptional customer experience. You'll be part of a structured support team with clear processes, escalation paths, and regular coaching — great for someone who thrives in high-volume, people-first environments.",
     responsibilities: [
       "Respond to customer inquiries via email, chat, and ticketing systems",
       "Resolve order issues including refunds, replacements, and delivery disputes",
@@ -108,7 +107,7 @@ const roles: Role[] = [
       "1+ year in customer service, support, or BPO environment",
       "Strong English written communication skills",
       "Experience with Zendesk, Freshdesk, or similar helpdesk tools",
-      "Ability to work US night shift hours from the Philippines",
+      "Ability to work US night shift hours",
       "Fast typing speed with high accuracy",
       "Empathetic and patient under pressure",
     ],
@@ -183,7 +182,7 @@ const roles: Role[] = [
     why: "Best for confident communicators who like targets.",
     tags: ["Commission upside", "Remote", "B2B"],
     description:
-      "A high-growth B2B company based in the US is looking for a motivated Sales Development Representative (SDR) to drive top-of-funnel pipeline through outbound prospecting, cold outreach, and qualification. This role offers a base plus commission structure, making it one of the best-paying opportunities for strong communicators in the Philippines who want to build a career in B2B sales.",
+      "A high-growth B2B company based in the US is looking for a motivated Sales Development Representative (SDR) to drive top-of-funnel pipeline through outbound prospecting, cold outreach, and qualification. This role offers base plus commission, making it one of the best-paying opportunities for strong communicators in the Philippines who want to build a career in B2B sales.",
     responsibilities: [
       "Execute outbound prospecting via cold calls, emails, and LinkedIn",
       "Qualify inbound leads against defined ICP criteria",
@@ -207,7 +206,7 @@ const roles: Role[] = [
     ],
     benefits: [
       "Base salary: $1,100–$1,500 USD/month",
-      "Uncapped performance commission — total OTE up to $2,000+",
+      "Uncapped commission — total OTE up to $2,000+",
       "Remote work, night shift",
       "Sales training and career development in B2B",
       "Regular team incentives and recognition programs",
@@ -251,7 +250,7 @@ const roles: Role[] = [
     ],
     benefits: [
       "Monthly salary: $850–$1,300 USD",
-      "Flexible schedule — aligned with UK timezone but with some flexibility",
+      "Flexible schedule — some UK timezone alignment",
       "Work with a forward-thinking creative brand",
       "Portfolio-worthy work in a modern brand environment",
       "Remote, long-term engagement",
@@ -271,7 +270,7 @@ const roles: Role[] = [
     why: "Excellent for detail-driven candidates who thrive on structure.",
     tags: ["Remote", "Process-driven", "Cross-functional"],
     description:
-      "An Australian company with a multi-functional remote team is looking for an Operations Coordinator to manage workflows, track deliverables, and keep cross-functional projects on schedule. You'll be the operational backbone — the person who makes sure nothing falls through the cracks. This is ideal for detail-driven professionals who love systems, structure, and cross-team coordination.",
+      "An Australian company with a multi-functional remote team is looking for an Operations Coordinator to manage workflows, track deliverables, and keep cross-functional projects on schedule. You'll be the operational backbone — making sure nothing falls through the cracks. Ideal for detail-driven professionals who love systems, structure, and cross-team coordination.",
     responsibilities: [
       "Coordinate project timelines, milestones, and deliverables across teams",
       "Maintain and improve internal SOPs and documentation",
@@ -303,34 +302,19 @@ const roles: Role[] = [
   },
 ];
 
-// ─── Static data (unchanged) ──────────────────────────────────────────────────
+// ─── Static data ──────────────────────────────────────────────────────────────
 
 const trustStats = [
-  { label: "Candidates placed", value: "1,200+" },
+  { label: "Candidates placed",    value: "1,200+" },
   { label: "Typical monthly roles", value: "$800–$2,500" },
   { label: "Global client markets", value: "US · AU · UK" },
-  { label: "Hiring speed", value: "3–10 days" },
+  { label: "Hiring speed",          value: "3–10 days" },
 ];
 
 const stories = [
-  {
-    name: "Maria",
-    role: "Virtual Assistant",
-    quote: "I went from routine admin work to supporting a premium global client with better pay and clearer growth.",
-    outcome: "From ₱25K to ₱85K/month",
-  },
-  {
-    name: "Paolo",
-    role: "Customer Support Specialist",
-    quote: "The process felt faster and more human. I got matched to a role that actually fit my schedule and strengths.",
-    outcome: "Hired in 5 days",
-  },
-  {
-    name: "Andrea",
-    role: "Bookkeeping Assistant",
-    quote: "What stood out was the quality of opportunities. It didn't feel like random applications anymore.",
-    outcome: "Moved into an AU role",
-  },
+  { name: "Maria",  role: "Virtual Assistant",           quote: "I went from routine admin work to supporting a premium global client with better pay and clearer growth.", outcome: "From ₱25K to ₱85K/month" },
+  { name: "Paolo",  role: "Customer Support Specialist",  quote: "The process felt faster and more human. I got matched to a role that actually fit my schedule and strengths.", outcome: "Hired in 5 days" },
+  { name: "Andrea", role: "Bookkeeping Assistant",        quote: "What stood out was the quality of opportunities. It didn't feel like random applications anymore.", outcome: "Moved into an AU role" },
 ];
 
 const prompts = [
@@ -354,48 +338,260 @@ const ctaSteps = [
   "Stay visible for active hiring teams",
 ];
 
-// ─── Adapter: map our Role shape → JobDetailModal's expected job shape ────────
+const APPLY_URL = "https://api.leadconnectorhq.com/widget/form/36ljnIgIsA1xoBluXvSK?notrack=true";
 
-function categoryId(cat: string): string {
-  const map: Record<string, string> = {
-    Admin: "admin",
-    Support: "support",
-    Finance: "admin",
-    Sales: "marketing",
-    Marketing: "marketing",
-    Operations: "admin",
-  };
-  return map[cat] ?? "admin";
+// ─── ReadMore helper ──────────────────────────────────────────────────────────
+
+function ReadMore({ text, limit = 220 }: { text: string; limit?: number }) {
+  const [expanded, setExpanded] = useState(false);
+  const short = text.length > limit;
+  const display = short && !expanded ? text.slice(0, limit).trimEnd() + "…" : text;
+  return (
+    <span>
+      {display}
+      {short && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="ml-1.5 text-primary font-semibold underline-offset-2 hover:underline text-xs"
+        >
+          {expanded ? "Show less" : "Read more"}
+        </button>
+      )}
+    </span>
+  );
 }
 
-function roleToJob(role: Role) {
-  return {
-    id: String(role.id),
-    title: role.title,
-    company: "OnSpot Global",
-    location: "Remote (Philippines)",
-    category: categoryId(role.category),
-    contractType: "full-time",
-    experienceLevel: "intermediate",
-    description: role.description,
-    budget: null,
-    hourlyRateMin: null,
-    hourlyRateMax: null,
-    responsibilities: role.responsibilities,
-    requirements: [
-      ...role.requirements,
-      ...(role.niceToHaves.length ? ["Nice to have: " + role.niceToHaves.join(", ")] : []),
-    ],
-    skillTags: [
-      role.category,
-      role.market,
-      role.shift,
-      ...role.tags,
-      ...role.benefits.slice(0, 2),
-    ],
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    status: "open",
-  };
+// ─── BulletList with read-more collapse ──────────────────────────────────────
+
+function BulletList({ items, accent }: { items: string[]; accent: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const LIMIT = 4;
+  const visible = expanded ? items : items.slice(0, LIMIT);
+  const hasMore = items.length > LIMIT;
+  return (
+    <div>
+      <ul className="space-y-2">
+        {visible.map((item, i) => (
+          <li key={i} className="flex items-start gap-2.5 text-sm leading-6 text-stone-700">
+            <span className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${accent}`} />
+            {item}
+          </li>
+        ))}
+      </ul>
+      {hasMore && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="mt-3 text-xs font-semibold text-primary underline-offset-2 hover:underline"
+        >
+          {expanded ? `Show fewer` : `Show ${items.length - LIMIT} more`}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ─── Role Detail Modal ────────────────────────────────────────────────────────
+
+function RoleDetailModal({ role, onClose }: { role: Role; onClose: () => void }) {
+  // Scroll lock + Escape key
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4 md:p-6"
+      aria-modal="true"
+      role="dialog"
+      aria-label={role.title}
+    >
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+
+      {/* Modal panel */}
+      <motion.div
+        initial={{ opacity: 0, y: 32, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 20, scale: 0.98 }}
+        transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
+        className="relative z-10 flex w-full max-w-3xl flex-col overflow-hidden rounded-t-3xl bg-white shadow-[0_32px_80px_rgba(0,0,0,0.28)] sm:rounded-3xl"
+        style={{ maxHeight: "92vh" }}
+      >
+        {/* ── Header ── */}
+        <div className="relative shrink-0 overflow-hidden bg-[#1C1917] px-6 pb-6 pt-6">
+          {/* Glow */}
+          <div className="pointer-events-none absolute -top-16 right-0 h-56 w-56 rounded-full bg-primary/25 blur-[80px]" />
+
+          {/* Close */}
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white/60 transition hover:bg-white/20 hover:text-white"
+          >
+            <X className="h-4 w-4" />
+          </button>
+
+          {/* Badges row */}
+          <div className="relative mb-4 flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-primary px-3 py-1 text-[11px] font-bold text-white">
+              {role.demand}
+            </span>
+            <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] text-white/70">
+              {role.speed}
+            </span>
+            <span className="ml-auto rounded-full bg-emerald-500/20 px-3 py-1 text-[11px] font-bold text-emerald-400">
+              {role.fit}% match
+            </span>
+          </div>
+
+          {/* Title */}
+          <div className="relative">
+            <h2 className="text-2xl font-black leading-tight text-white md:text-3xl">
+              {role.title}
+            </h2>
+            <p className="mt-1.5 text-sm text-stone-400">{role.hook}</p>
+          </div>
+
+          {/* Meta chips */}
+          <div className="relative mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {[
+              { Icon: DollarSign,      label: "Monthly pay", value: role.pay      },
+              { Icon: Clock3,          label: "Schedule",    value: role.shift    },
+              { Icon: Globe2,          label: "Market",      value: role.market   },
+              { Icon: BriefcaseBusiness, label: "Category",  value: role.category },
+            ].map(({ Icon, label, value }) => (
+              <div key={label} className="rounded-xl bg-white/[0.07] p-3">
+                <div className="flex items-center gap-1.5 text-[10px] text-white/40">
+                  <Icon className="h-3 w-3" />{label}
+                </div>
+                <div className="mt-1 text-xs font-bold text-white">{value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Scrollable body ── */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="space-y-0 divide-y divide-stone-100">
+
+            {/* Why you're a fit */}
+            <div className="bg-primary/[0.04] px-6 py-5">
+              <div className="flex items-start gap-3">
+                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <div>
+                  <p className="mb-1 text-xs font-bold uppercase tracking-widest text-primary">Why you're a fit</p>
+                  <p className="text-sm leading-6 text-stone-700">{role.why}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* About this role */}
+            <div className="px-6 py-5">
+              <div className="mb-3 flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-stone-100 text-stone-600">
+                  <Sparkles className="h-3.5 w-3.5" />
+                </div>
+                <h3 className="text-sm font-bold text-stone-900">About this role</h3>
+              </div>
+              <p className="text-sm leading-7 text-stone-600">
+                <ReadMore text={role.description} limit={260} />
+              </p>
+            </div>
+
+            {/* Responsibilities */}
+            <div className="px-6 py-5">
+              <div className="mb-3 flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-stone-100 text-stone-600">
+                  <ListChecks className="h-3.5 w-3.5" />
+                </div>
+                <h3 className="text-sm font-bold text-stone-900">Responsibilities</h3>
+              </div>
+              <BulletList items={role.responsibilities} accent="bg-primary/70" />
+            </div>
+
+            {/* Requirements */}
+            <div className="px-6 py-5">
+              <div className="mb-3 flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-stone-100 text-stone-600">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                </div>
+                <h3 className="text-sm font-bold text-stone-900">Requirements</h3>
+              </div>
+              <BulletList items={role.requirements} accent="bg-emerald-500" />
+            </div>
+
+            {/* Nice to have */}
+            {role.niceToHaves.length > 0 && (
+              <div className="px-6 py-5">
+                <div className="mb-3 flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-stone-100 text-stone-600">
+                    <Award className="h-3.5 w-3.5" />
+                  </div>
+                  <h3 className="text-sm font-bold text-stone-900">Nice to have</h3>
+                </div>
+                <BulletList items={role.niceToHaves} accent="bg-amber-400" />
+              </div>
+            )}
+
+            {/* Benefits */}
+            <div className="px-6 py-5">
+              <div className="mb-3 flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-stone-100 text-stone-600">
+                  <Gift className="h-3.5 w-3.5" />
+                </div>
+                <h3 className="text-sm font-bold text-stone-900">Benefits & perks</h3>
+              </div>
+              <BulletList items={role.benefits} accent="bg-purple-400" />
+            </div>
+
+            {/* Tags */}
+            <div className="px-6 py-5">
+              <p className="mb-3 text-xs font-bold uppercase tracking-widest text-stone-400">Tags</p>
+              <div className="flex flex-wrap gap-2">
+                {role.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium text-stone-700"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Footer ── */}
+        <div className="shrink-0 border-t border-stone-100 bg-white px-6 py-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              className="rounded-xl px-7"
+              onClick={() => window.open(APPLY_URL, "_blank")}
+            >
+              Apply Now <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+            <Button variant="outline" className="rounded-xl" onClick={onClose}>
+              Close
+            </Button>
+            <p className="ml-auto hidden text-xs text-stone-400 sm:block">
+              OnSpot Global · Remote · {role.market}
+            </p>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
 }
 
 // ─── Accordion-style role row ─────────────────────────────────────────────────
@@ -421,22 +617,19 @@ function RoleRow({
       transition={{ duration: 0.3, delay: index * 0.05 }}
       className={`border-b border-stone-200 transition-colors duration-200 ${isOpen ? "bg-stone-100" : "hover:bg-stone-50"}`}
     >
-      {/* Row header — always visible */}
+      {/* Row header */}
       <button
         onClick={onToggle}
         className="flex w-full items-center gap-4 px-6 py-5 text-left md:px-8"
       >
-        {/* Index number */}
         <span className="w-6 shrink-0 text-xs font-bold text-stone-400">
           {String(index + 1).padStart(2, "0")}
         </span>
 
-        {/* Match badge */}
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-primary/20 bg-primary/5 text-xs font-black text-primary">
           {role.fit}%
         </div>
 
-        {/* Title + hook */}
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-baseline gap-2">
             <span className="text-base font-bold text-stone-900 md:text-lg">{role.title}</span>
@@ -450,13 +643,11 @@ function RoleRow({
           </div>
         </div>
 
-        {/* Pay */}
         <div className="hidden shrink-0 text-right md:block">
           <div className="text-xs text-stone-400">Monthly pay</div>
           <div className="text-sm font-bold text-stone-900">{role.pay}</div>
         </div>
 
-        {/* Toggle icon */}
         <div className="ml-2 shrink-0 text-stone-400">
           {isOpen ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
         </div>
@@ -474,11 +665,10 @@ function RoleRow({
           >
             <div className="border-t border-stone-200 px-6 pb-6 pt-5 md:px-8">
               <div className="grid gap-6 md:grid-cols-[1fr_280px]">
-                {/* Left — summary */}
+                {/* Left */}
                 <div>
                   <p className="text-sm text-stone-500 md:hidden mb-4">{role.hook}</p>
 
-                  {/* Meta grid */}
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     {[
                       { Icon: DollarSign,      l: "Monthly pay", v: role.pay      },
@@ -495,7 +685,6 @@ function RoleRow({
                     ))}
                   </div>
 
-                  {/* Why fit */}
                   <div className="mt-4 flex items-start gap-2 rounded-xl bg-primary/5 px-4 py-3">
                     <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                     <p className="text-sm leading-6 text-stone-700">
@@ -509,13 +698,9 @@ function RoleRow({
                     {role.description}
                   </p>
 
-                  {/* Tags */}
                   <div className="mt-4 flex flex-wrap gap-1.5">
                     {role.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full border border-stone-200 bg-white px-3 py-1 text-xs text-stone-600"
-                      >
+                      <span key={tag} className="rounded-full border border-stone-200 bg-white px-3 py-1 text-xs text-stone-600">
                         {tag}
                       </span>
                     ))}
@@ -534,12 +719,7 @@ function RoleRow({
 
                   <Button
                     className="w-full rounded-xl"
-                    onClick={() =>
-                      window.open(
-                        "https://api.leadconnectorhq.com/widget/form/36ljnIgIsA1xoBluXvSK?notrack=true",
-                        "_blank",
-                      )
-                    }
+                    onClick={() => window.open(APPLY_URL, "_blank")}
                   >
                     Apply in 30 seconds
                   </Button>
@@ -551,7 +731,7 @@ function RoleRow({
                     }}
                     className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-stone-50 py-2.5 text-sm font-medium text-stone-600 transition hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
                   >
-                    View full job details <ChevronRight className="h-4 w-4" />
+                    View full details <ChevronRight className="h-4 w-4" />
                   </button>
                 </div>
               </div>
@@ -563,24 +743,8 @@ function RoleRow({
   );
 }
 
-// ─── StatPill (retained) ──────────────────────────────────────────────────────
-function StatPill({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
-  return (
-    <div className="rounded-full border border-white/15 bg-white/70 px-4 py-3 backdrop-blur dark:bg-white/5">
-      <div className="flex items-center gap-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary">
-          <Icon className="h-4 w-4" />
-        </div>
-        <div>
-          <div className="text-xs text-slate-500">{label}</div>
-          <div className="text-sm font-semibold text-slate-900 dark:text-white">{value}</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ─── Main component ───────────────────────────────────────────────────────────
+
 export default function OnSpotFindWorkRedesign() {
   const [query, setQuery] = useState("Virtual assistant, night shift, $900+");
   const [schedule, setSchedule] = useState("All schedules");
@@ -600,8 +764,7 @@ export default function OnSpotFindWorkRedesign() {
 
   function handleCloseModal() {
     setModalOpen(false);
-    // Brief delay so close animation plays before clearing data
-    setTimeout(() => setSelectedRole(null), 200);
+    setTimeout(() => setSelectedRole(null), 250);
   }
 
   // Filtering logic (unchanged)
@@ -629,31 +792,22 @@ export default function OnSpotFindWorkRedesign() {
   return (
     <div className="min-h-screen bg-[#F7F4EF] text-stone-900">
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          JOB DETAIL MODAL — rendered at top level so it's always in DOM
-      ═══════════════════════════════════════════════════════════════════ */}
-      {selectedRole && (
-        <JobDetailModal
-          job={roleToJob(selectedRole)}
-          open={modalOpen}
-          onClose={handleCloseModal}
-          showApply={true}
-        />
-      )}
+      {/* ── Modal (portal-style at top of tree) ── */}
+      <AnimatePresence>
+        {modalOpen && selectedRole && (
+          <RoleDetailModal role={selectedRole} onClose={handleCloseModal} />
+        )}
+      </AnimatePresence>
 
       {/* ════════════════════════════════════════════════════════════════════
-          HERO — centered, full-viewport, typographic
+          HERO
       ════════════════════════════════════════════════════════════════════ */}
       <section className="relative flex min-h-[92vh] flex-col items-center justify-center overflow-hidden bg-[#1C1917] px-6 text-center md:px-8">
-        {/* Warm ambient glow */}
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(71,78,173,0.35),transparent)]" />
         <div className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 h-64 w-3/4 rounded-full bg-primary/10 blur-[100px]" />
-
-        {/* Subtle horizontal rule */}
         <div className="pointer-events-none absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-white/[0.04]" />
 
         <div className="relative max-w-5xl">
-          {/* Eyebrow */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -667,7 +821,6 @@ export default function OnSpotFindWorkRedesign() {
             <div className="h-px w-10 bg-primary/60" />
           </motion.div>
 
-          {/* Headline */}
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -690,7 +843,6 @@ export default function OnSpotFindWorkRedesign() {
             Get matched to premium remote opportunities across admin, support, finance, sales, marketing, and operations. Faster, smarter, and more human than a typical job board.
           </motion.p>
 
-          {/* Search bar */}
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
@@ -709,7 +861,6 @@ export default function OnSpotFindWorkRedesign() {
             </Button>
           </motion.div>
 
-          {/* Prompt chips */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -728,7 +879,6 @@ export default function OnSpotFindWorkRedesign() {
           </motion.div>
         </div>
 
-        {/* Stats row — bottom of hero */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -743,7 +893,6 @@ export default function OnSpotFindWorkRedesign() {
           ))}
         </motion.div>
 
-        {/* Scroll cue */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -758,7 +907,7 @@ export default function OnSpotFindWorkRedesign() {
       </section>
 
       {/* ════════════════════════════════════════════════════════════════════
-          PROFILE STRENGTH — warm cream band
+          PROFILE STRENGTH
       ════════════════════════════════════════════════════════════════════ */}
       <div className="border-b border-stone-200 bg-white">
         <div className="mx-auto max-w-7xl px-6 py-4 md:px-8">
@@ -777,10 +926,9 @@ export default function OnSpotFindWorkRedesign() {
       </div>
 
       {/* ════════════════════════════════════════════════════════════════════
-          ROLES — filter tabs + accordion rows
+          ROLES
       ════════════════════════════════════════════════════════════════════ */}
       <section className="mx-auto max-w-7xl px-0 py-16 md:py-24">
-        {/* Section header */}
         <div className="mb-10 px-6 md:px-8">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
@@ -802,9 +950,9 @@ export default function OnSpotFindWorkRedesign() {
           {/* Filter tabs */}
           <div className="mt-8 flex flex-wrap gap-6">
             {[
-              { label: "Earn",     options: ["Any pay", "$800+", "$1,000+", "$1,500+"],                                                    state: earning,  set: setEarning  },
-              { label: "Schedule", options: ["All schedules", "Day shift", "Night shift", "Flexible"],                                     state: schedule, set: setSchedule },
-              { label: "Type",     options: ["All work", "Admin", "Support", "Finance", "Sales", "Marketing", "Operations"],               state: kind,     set: setKind     },
+              { label: "Earn",     options: ["Any pay", "$800+", "$1,000+", "$1,500+"],                                              state: earning,  set: setEarning  },
+              { label: "Schedule", options: ["All schedules", "Day shift", "Night shift", "Flexible"],                               state: schedule, set: setSchedule },
+              { label: "Type",     options: ["All work", "Admin", "Support", "Finance", "Sales", "Marketing", "Operations"],        state: kind,     set: setKind     },
             ].map((group) => (
               <div key={group.label} className="flex items-center gap-2">
                 <span className="text-xs font-bold text-stone-400">{group.label}</span>
@@ -828,7 +976,6 @@ export default function OnSpotFindWorkRedesign() {
           </div>
         </div>
 
-        {/* Accordion role list */}
         <div className="border-t border-stone-200">
           <AnimatePresence>
             {filteredRoles.length === 0 ? (
@@ -853,16 +1000,13 @@ export default function OnSpotFindWorkRedesign() {
       </section>
 
       {/* ════════════════════════════════════════════════════════════════════
-          WHY ONSPOT — staggered feature blocks, alternating layout
+          WHY ONSPOT
       ════════════════════════════════════════════════════════════════════ */}
       <section className="border-t border-stone-200 bg-white">
         <div className="mx-auto max-w-7xl px-6 py-16 md:px-8 md:py-24">
-          {/* Header */}
           <div className="mb-16 grid gap-6 md:grid-cols-2">
             <div>
-              <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-stone-400">
-                Why OnSpot
-              </p>
+              <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-stone-400">Why OnSpot</p>
               <h2 className="text-4xl font-black leading-tight tracking-tight text-stone-950 md:text-5xl">
                 More than listings.<br />Better matching.<br />Better outcomes.
               </h2>
@@ -874,7 +1018,6 @@ export default function OnSpotFindWorkRedesign() {
             </div>
           </div>
 
-          {/* Alternating staggered feature blocks */}
           <div className="space-y-5">
             {whyFeatures.map((item, i) => (
               <motion.div
@@ -882,27 +1025,18 @@ export default function OnSpotFindWorkRedesign() {
                 initial={{ opacity: 0, x: i % 2 === 0 ? -16 : 16 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.08, duration: 0.4 }}
-                className={`flex items-center gap-8 rounded-2xl border border-stone-100 bg-stone-50 p-6 md:p-8 ${
-                  i % 2 !== 0 ? "md:flex-row-reverse" : ""
-                }`}
+                className={`flex items-center gap-8 rounded-2xl border border-stone-100 bg-stone-50 p-6 md:p-8 ${i % 2 !== 0 ? "md:flex-row-reverse" : ""}`}
               >
-                {/* Icon + number */}
                 <div className="flex shrink-0 flex-col items-center gap-3">
                   <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-stone-950 text-white">
                     <item.icon className="h-6 w-6" />
                   </div>
-                  <span className="text-xs font-black text-stone-300">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
+                  <span className="text-xs font-black text-stone-300">{String(i + 1).padStart(2, "0")}</span>
                 </div>
-
-                {/* Content */}
                 <div className="flex-1">
                   <h3 className="text-xl font-black text-stone-950">{item.title}</h3>
                   <p className="mt-2 text-stone-500 leading-6">{item.copy}</p>
                 </div>
-
-                {/* Right accent bar */}
                 <div className="hidden w-1.5 self-stretch rounded-full bg-primary/20 md:block" />
               </motion.div>
             ))}
@@ -911,14 +1045,12 @@ export default function OnSpotFindWorkRedesign() {
       </section>
 
       {/* ════════════════════════════════════════════════════════════════════
-          STORIES — editorial, outcome-forward
+          STORIES
       ════════════════════════════════════════════════════════════════════ */}
       <section className="border-t border-stone-200 bg-[#F7F4EF]">
         <div className="mx-auto max-w-7xl px-6 py-16 md:px-8 md:py-24">
           <div className="mb-12">
-            <p className="mb-2 text-xs font-bold uppercase tracking-[0.25em] text-stone-400">
-              Proof it works
-            </p>
+            <p className="mb-2 text-xs font-bold uppercase tracking-[0.25em] text-stone-400">Proof it works</p>
             <h2 className="text-4xl font-black tracking-tight text-stone-950 md:text-5xl">
               Applicant stories that<br className="hidden md:block" /> create trust instantly.
             </h2>
@@ -934,18 +1066,13 @@ export default function OnSpotFindWorkRedesign() {
                 transition={{ delay: i * 0.1, duration: 0.4 }}
                 className="flex flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white"
               >
-                {/* Outcome header */}
                 <div className="bg-stone-950 px-6 py-5">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-stone-500">Outcome</p>
                   <p className="mt-1 text-xl font-black text-white leading-tight">{story.outcome}</p>
                 </div>
-
-                {/* Quote body */}
                 <div className="flex flex-1 flex-col gap-5 p-6">
                   <div className="flex gap-0.5 text-primary">
-                    {[0,1,2,3,4].map((s) => (
-                      <Star key={s} className="h-4 w-4 fill-current" />
-                    ))}
+                    {[0,1,2,3,4].map((s) => <Star key={s} className="h-4 w-4 fill-current" />)}
                   </div>
                   <p className="flex-1 text-base leading-8 text-stone-700">"{story.quote}"</p>
                   <div className="flex items-center gap-3 border-t border-stone-100 pt-4">
@@ -965,14 +1092,12 @@ export default function OnSpotFindWorkRedesign() {
       </section>
 
       {/* ════════════════════════════════════════════════════════════════════
-          CTA — editorial full-bleed, warm on dark
+          CTA
       ════════════════════════════════════════════════════════════════════ */}
       <section className="border-t border-stone-200 bg-white">
         <div className="mx-auto max-w-7xl px-6 py-16 md:px-8 md:py-20">
           <div className="overflow-hidden rounded-3xl bg-[#1C1917]">
             <div className="grid lg:grid-cols-[1.1fr_0.9fr]">
-
-              {/* Left — headline + CTAs */}
               <div className="relative overflow-hidden px-8 py-14 md:px-14 md:py-16">
                 <div className="pointer-events-none absolute -top-20 -right-20 h-80 w-80 rounded-full bg-primary/20 blur-[100px]" />
                 <div className="relative">
@@ -1000,11 +1125,8 @@ export default function OnSpotFindWorkRedesign() {
                 </div>
               </div>
 
-              {/* Right — numbered steps */}
               <div className="border-t border-white/5 bg-[#252220] px-8 py-14 md:border-l md:border-t-0 md:px-10 md:py-16">
-                <p className="mb-8 text-[10px] font-bold uppercase tracking-[0.3em] text-stone-500">
-                  How it works
-                </p>
+                <p className="mb-8 text-[10px] font-bold uppercase tracking-[0.3em] text-stone-500">How it works</p>
                 <div className="space-y-6">
                   {ctaSteps.map((step, i) => (
                     <div key={step} className="flex items-start gap-4">
@@ -1016,7 +1138,6 @@ export default function OnSpotFindWorkRedesign() {
                   ))}
                 </div>
               </div>
-
             </div>
           </div>
         </div>

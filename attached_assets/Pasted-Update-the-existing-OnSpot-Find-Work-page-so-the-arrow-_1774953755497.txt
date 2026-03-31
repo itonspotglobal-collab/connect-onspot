@@ -1,0 +1,74 @@
+Update the existing OnSpot Find Work page so the arrow/View Details trigger in each job preview card opens the project’s existing popup/modal component. Do not create a brand-new popup pattern. Reuse the current popup code already in the project, but restyle its layout and content to match the new Find Work redesign.
+
+What to change
+- When the right-arrow icon / View Details trigger is clicked on a job card, open a popup.
+- The popup should display a detailed job posting for the selected role.
+- Keep the current page design, spacing, cards, colors, rounded corners, shadows, typography, and motion consistent with the redesigned Find Work screen.
+- Do not change the overall page structure outside of wiring the popup behavior.
+
+Implementation requirements
+- Reuse the existing popup/modal component from the project.
+- Reuse the existing read more / expand-collapse feature already available in the project for long content sections.
+- Update the current job card / preview card so it passes the clicked role into the popup.
+- Keep the Apply button behavior separate from the popup trigger unless the existing implementation already combines them.
+- Make the popup feel like a natural extension of the redesigned UI.
+
+Popup content structure
+The popup should show a full detailed job layout for the selected role with:
+- Job title
+- Match percentage badge
+- Pay
+- Schedule
+- Market / client
+- Category
+- Hiring urgency / demand badge
+- Hiring speed
+- Intro / hook
+- Full description
+- Key responsibilities
+- Required qualifications
+- Preferred / nice-to-have skills
+- Benefits / perks
+- Tags / badges
+- “Why you’re a fit” section
+- CTA buttons such as Apply Now and Close
+
+Data updates
+Extend the existing roles array to support detailed popup content using fields like:
+- description
+- responsibilities
+- requirements
+- niceToHaves
+- benefits
+
+Use realistic placeholder copy for each job while keeping the existing sample jobs and current data structure intact.
+
+React/state requirements
+- Add selectedRole state
+- Add modal open/close state
+- Wire the arrow icon click handler to open the popup with the correct role
+- Pass selectedRole into the existing popup component
+- Use the project’s existing read more behavior for long description-based sections
+
+Design requirements
+- Match the current OnSpot visual language exactly
+- Keep the same purple accent theme
+- Keep dark mode compatibility
+- Keep responsive behavior
+- Preserve rounded-3xl / rounded-[32px]-style surfaces and existing shadow rhythm
+- Use subtle framer-motion transitions only if already consistent with the page
+- The popup layout should look premium, clean, and aligned with the current redesign
+
+Code expectations
+Return updated code for:
+- extended roles data
+- updated job preview / job card click handling
+- popup integration inside OnSpotFindWorkRedesign
+- restyled existing popup content layout to match the new design
+- any small helper component for read more sections if needed
+
+Important constraints
+- Do not remove existing sections like live preview, smart match input, filters, stories, and CTA blocks
+- Do not redesign the page from scratch
+- Only enhance the current implementation so clicking the arrow opens a detailed popup
+- Reuse existing popup and read more code from the project and only adapt the design/layout to match the new page
