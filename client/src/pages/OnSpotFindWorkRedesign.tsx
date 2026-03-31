@@ -4,7 +4,7 @@ import {
   Search, Sparkles, BriefcaseBusiness, Clock3, Globe2,
   ChevronRight, Star, ArrowRight, BadgeCheck, Filter,
   Zap, DollarSign, Building2, CheckCircle2, Users, Brain,
-  TrendingUp,
+  TrendingUp, Plus, Minus,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -137,26 +137,10 @@ const prompts = [
 ];
 
 const whyFeatures = [
-  {
-    icon: Brain,
-    title: "Smart matching",
-    copy: "Surface better-fit roles first instead of forcing endless browsing.",
-  },
-  {
-    icon: DollarSign,
-    title: "Premium remote roles",
-    copy: "Highlight compensation clearly so applicants instantly see quality.",
-  },
-  {
-    icon: TrendingUp,
-    title: "Faster hiring momentum",
-    copy: "Show urgency, speed-to-hire, and profile strength to increase action.",
-  },
-  {
-    icon: BadgeCheck,
-    title: "Trust by design",
-    copy: "Use fit reasoning, hiring signals, and outcomes to build confidence.",
-  },
+  { icon: Brain,      title: "Smart matching",          copy: "Surface better-fit roles first instead of forcing endless browsing." },
+  { icon: DollarSign, title: "Premium remote roles",    copy: "Highlight compensation clearly so applicants instantly see quality." },
+  { icon: TrendingUp, title: "Faster hiring momentum",  copy: "Show urgency, speed-to-hire, and profile strength to increase action." },
+  { icon: BadgeCheck, title: "Trust by design",         copy: "Use fit reasoning, hiring signals, and outcomes to build confidence." },
 ];
 
 const ctaSteps = [
@@ -166,7 +150,7 @@ const ctaSteps = [
   "Stay visible for active hiring teams",
 ];
 
-// ─── StatPill (kept, used in hero right panel) ───────────────────────────────
+// ─── StatPill (retained, used below hero) ────────────────────────────────────
 function StatPill({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
   return (
     <div className="rounded-full border border-white/15 bg-white/70 px-4 py-3 backdrop-blur dark:bg-white/5">
@@ -183,212 +167,139 @@ function StatPill({ icon: Icon, label, value }: { icon: React.ElementType; label
   );
 }
 
-// ─── Featured role card (first result, full-width, elevated) ─────────────────
-function FeaturedRoleCard({ role }: { role: typeof roles[number] }) {
-  return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-950 via-[#1e2057] to-slate-900 p-8 text-white shadow-[0_32px_80px_rgba(71,78,173,0.22)] md:p-10">
-        {/* Ambient glow */}
-        <div className="pointer-events-none absolute -top-32 -right-32 h-80 w-80 rounded-full bg-primary/30 blur-[100px]" />
-        <div className="pointer-events-none absolute bottom-0 left-0 h-48 w-48 rounded-full bg-primary/10 blur-[80px]" />
-
-        <div className="relative grid gap-8 md:grid-cols-[1fr_auto]">
-          {/* Left content */}
-          <div>
-            <div className="mb-5 flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-primary px-3 py-1 text-xs font-semibold text-white">
-                {role.demand}
-              </span>
-              <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs text-white/80">
-                {role.speed}
-              </span>
-              <span className="ml-auto rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-bold text-emerald-400">
-                Top match
-              </span>
-            </div>
-
-            <h3 className="text-3xl font-black leading-tight tracking-tight md:text-4xl">
-              {role.title}
-            </h3>
-            <p className="mt-2 text-lg text-white/60">{role.hook}</p>
-
-            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {[
-                { Icon: DollarSign, v: role.pay,    l: "Pay" },
-                { Icon: Clock3,     v: role.shift,  l: "Schedule" },
-                { Icon: Globe2,     v: role.market, l: "Market" },
-                { Icon: BriefcaseBusiness, v: role.category, l: "Type" },
-              ].map(({ Icon, v, l }) => (
-                <div key={l} className="rounded-xl bg-white/[0.07] p-3">
-                  <div className="flex items-center gap-1.5 text-[11px] text-white/50">
-                    <Icon className="h-3 w-3" />{l}
-                  </div>
-                  <div className="mt-1 text-sm font-bold">{v}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-5 rounded-xl border border-white/10 bg-white/[0.05] p-4">
-              <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-white/70">
-                <Sparkles className="h-3.5 w-3.5 text-primary" />
-                Why you're a fit
-              </div>
-              <p className="text-sm leading-6 text-white/80">{role.why}</p>
-            </div>
-
-            <div className="mt-5 flex flex-wrap gap-2">
-              {role.tags.map((tag) => (
-                <span key={tag} className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/60">
-                  {tag}
-                </span>
-              ))}
-            </div>
-
-            <div className="mt-6 flex flex-wrap items-center gap-3">
-              <Button className="rounded-full bg-white px-6 text-slate-900 hover:bg-white/90">
-                Apply in 30 seconds
-              </Button>
-              <button className="inline-flex items-center gap-1.5 text-sm font-medium text-white/60 transition hover:text-white">
-                View details <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Right: match dial */}
-          <div className="flex flex-col items-center justify-center gap-2 md:w-36">
-            <div className="relative flex h-28 w-28 items-center justify-center rounded-full border-4 border-primary/30 bg-primary/10">
-              <div
-                className="absolute inset-0 rounded-full"
-                style={{
-                  background: `conic-gradient(hsl(var(--primary)) ${role.fit * 3.6}deg, transparent 0deg)`,
-                  opacity: 0.3,
-                }}
-              />
-              <div className="relative text-center">
-                <div className="text-3xl font-black text-white">{role.fit}</div>
-                <div className="text-[10px] font-bold uppercase tracking-widest text-white/50">% fit</div>
-              </div>
-            </div>
-            <p className="text-center text-xs text-white/40 max-w-[6rem]">Your highest match</p>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-// ─── Secondary role card ──────────────────────────────────────────────────────
-function SecondaryRoleCard({ role, index }: { role: typeof roles[number]; index: number }) {
-  return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, delay: index * 0.07 }}
-    >
-      <div className="group h-full rounded-2xl border border-slate-200 bg-white p-6 transition-all duration-300 hover:border-primary/30 hover:shadow-[0_8px_40px_rgba(71,78,173,0.12)]">
-        {/* Header */}
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div>
-            <div className="mb-2 flex flex-wrap gap-1.5">
-              <Badge className="rounded-full bg-primary px-3 py-1 text-white">
-                {role.demand}
-              </Badge>
-              <Badge variant="secondary" className="rounded-full">
-                {role.speed}
-              </Badge>
-            </div>
-            <h3 className="text-lg font-bold leading-snug text-slate-900">{role.title}</h3>
-            <p className="mt-1 text-sm text-slate-500">{role.hook}</p>
-          </div>
-          {/* Match score */}
-          <div className="shrink-0 rounded-xl border border-primary/15 bg-primary/5 px-3 py-2 text-center">
-            <div className="text-[10px] font-bold uppercase tracking-widest text-primary">Match</div>
-            <div className="text-2xl font-black text-slate-900">{role.fit}%</div>
-          </div>
-        </div>
-
-        {/* Stats row */}
-        <div className="mb-4 grid grid-cols-2 gap-2">
-          {[
-            { Icon: DollarSign, v: role.pay,    l: "Monthly pay" },
-            { Icon: Clock3,     v: role.shift,  l: "Schedule" },
-            { Icon: Globe2,     v: role.market, l: "Market" },
-            { Icon: BriefcaseBusiness, v: role.category, l: "Category" },
-          ].map(({ Icon, v, l }) => (
-            <div key={l} className="rounded-xl bg-slate-50 p-3">
-              <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
-                <Icon className="h-3.5 w-3.5" />{l}
-              </div>
-              <div className="mt-1 text-sm font-semibold text-slate-800">{v}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Why fit */}
-        <div className="mb-4 rounded-xl border border-slate-100 bg-slate-50 p-3">
-          <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-            <Sparkles className="h-3.5 w-3.5 text-primary" />
-            Why you're a fit
-          </div>
-          <p className="text-xs leading-5 text-slate-500">{role.why}</p>
-        </div>
-
-        <div className="mb-4 flex flex-wrap gap-1.5">
-          {role.tags.map((tag) => (
-            <span key={tag} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">
-              {tag}
-            </span>
-          ))}
-        </div>
-
-        <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
-          <Button size="sm" className="rounded-full px-5">
-            Apply in 30 seconds
-          </Button>
-          <button className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-400 transition hover:text-primary">
-            View details <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-// ─── Inline filter chip bar ───────────────────────────────────────────────────
-function FilterChipGroup({
-  label,
-  options,
-  value,
-  onChange,
-}: {
-  label: string;
-  options: string[];
-  value: string;
-  onChange: (v: string) => void;
+// ─── Accordion-style role row ─────────────────────────────────────────────────
+function RoleRow({ role, index, isOpen, onToggle }: {
+  role: typeof roles[number];
+  index: number;
+  isOpen: boolean;
+  onToggle: () => void;
 }) {
   return (
-    <div className="flex items-center gap-2">
-      <span className="shrink-0 text-xs font-semibold text-slate-400">{label}</span>
-      {options.map((opt) => (
-        <button
-          key={opt}
-          onClick={() => onChange(opt)}
-          className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-150 ${
-            value === opt
-              ? "bg-primary text-white shadow-sm"
-              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-          }`}
-        >
-          {opt}
-        </button>
-      ))}
-    </div>
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: index * 0.05 }}
+      className={`border-b border-stone-200 transition-colors duration-200 ${isOpen ? "bg-stone-100" : "hover:bg-stone-50"}`}
+    >
+      {/* Row header — always visible */}
+      <button
+        onClick={onToggle}
+        className="flex w-full items-center gap-4 px-6 py-5 text-left md:px-8"
+      >
+        {/* Index number */}
+        <span className="w-6 shrink-0 text-xs font-bold text-stone-400">
+          {String(index + 1).padStart(2, "0")}
+        </span>
+
+        {/* Match arc */}
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-primary/20 bg-primary/5 text-xs font-black text-primary">
+          {role.fit}%
+        </div>
+
+        {/* Title + hook */}
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-baseline gap-2">
+            <span className="text-base font-bold text-stone-900 md:text-lg">{role.title}</span>
+            <span className="hidden text-sm text-stone-400 md:inline">— {role.hook}</span>
+          </div>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+              {role.demand}
+            </span>
+            <span className="text-xs text-stone-400">{role.speed}</span>
+          </div>
+        </div>
+
+        {/* Pay */}
+        <div className="hidden shrink-0 text-right md:block">
+          <div className="text-xs text-stone-400">Monthly pay</div>
+          <div className="text-sm font-bold text-stone-900">{role.pay}</div>
+        </div>
+
+        {/* Toggle icon */}
+        <div className="ml-2 shrink-0 text-stone-400">
+          {isOpen ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+        </div>
+      </button>
+
+      {/* Expanded panel */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.28, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-stone-200 px-6 pb-6 pt-5 md:px-8">
+              <div className="grid gap-6 md:grid-cols-[1fr_280px]">
+                {/* Left */}
+                <div>
+                  <p className="text-sm text-stone-500 md:hidden mb-4">{role.hook}</p>
+
+                  {/* Meta grid */}
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    {[
+                      { Icon: DollarSign, l: "Monthly pay",  v: role.pay      },
+                      { Icon: Clock3,     l: "Schedule",     v: role.shift    },
+                      { Icon: Globe2,     l: "Market",       v: role.market   },
+                      { Icon: BriefcaseBusiness, l: "Category", v: role.category },
+                    ].map(({ Icon, l, v }) => (
+                      <div key={l} className="rounded-xl border border-stone-200 bg-white p-3">
+                        <div className="flex items-center gap-1.5 text-[11px] text-stone-400">
+                          <Icon className="h-3 w-3" />{l}
+                        </div>
+                        <div className="mt-1 text-sm font-bold text-stone-900">{v}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Why fit */}
+                  <div className="mt-4 flex items-start gap-2 rounded-xl bg-primary/5 px-4 py-3">
+                    <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                    <p className="text-sm leading-6 text-stone-700">
+                      <span className="font-semibold text-stone-900">Why you're a fit: </span>
+                      {role.why}
+                    </p>
+                  </div>
+
+                  {/* Tags */}
+                  <div className="mt-4 flex flex-wrap gap-1.5">
+                    {role.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="rounded-full border border-stone-200 bg-white px-3 py-1 text-xs text-stone-600"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Right: CTA panel */}
+                <div className="flex flex-col gap-4 rounded-2xl border border-stone-200 bg-white p-5">
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-stone-400">
+                      Match score
+                    </div>
+                    <div className="mt-1 text-4xl font-black text-primary">{role.fit}%</div>
+                    <Progress value={role.fit} className="mt-2 h-1.5" />
+                  </div>
+                  <Button className="w-full rounded-xl">
+                    Apply in 30 seconds
+                  </Button>
+                  <button className="flex w-full items-center justify-center gap-1.5 text-sm text-stone-400 transition hover:text-stone-900">
+                    View details <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }
 
@@ -399,6 +310,7 @@ export default function OnSpotFindWorkRedesign() {
   const [earning, setEarning] = useState("Any pay");
   const [kind, setKind] = useState("All work");
   const [profileStrength] = useState(68);
+  const [openRoleId, setOpenRoleId] = useState<number | null>(1);
 
   // Filtering logic (unchanged)
   const filteredRoles = useMemo(() => {
@@ -411,7 +323,6 @@ export default function OnSpotFindWorkRedesign() {
         (earning === "$800+" && /\$(\d+)/.test(role.pay)) ||
         (earning === "$1,000+" && parseInt(role.pay.match(/\$(\d+)/)?.[1] || "0", 10) >= 1000) ||
         (earning === "$1,500+" && parseInt(role.pay.match(/\$(\d+)/)?.[1] || "0", 10) >= 1500);
-
       const queryPass =
         !q ||
         role.title.toLowerCase().includes(q) ||
@@ -419,351 +330,332 @@ export default function OnSpotFindWorkRedesign() {
         role.market.toLowerCase().includes(q) ||
         role.shift.toLowerCase().includes(q) ||
         role.hook.toLowerCase().includes(q);
-
       return schedulePass && kindPass && earningPass && queryPass;
     });
   }, [query, schedule, earning, kind]);
 
-  const [featured, ...secondary] = filteredRoles;
-
   return (
-    <div className="min-h-screen bg-[#FAFAF9] text-slate-900">
+    <div className="min-h-screen bg-[#F7F4EF] text-stone-900">
 
       {/* ════════════════════════════════════════════════════════════════════
-          HERO — split-screen: dark left / layered right
+          HERO — centered, full-viewport, typographic
       ════════════════════════════════════════════════════════════════════ */}
-      <section className="grid min-h-[90vh] lg:grid-cols-[1fr_440px] xl:grid-cols-[1fr_520px]">
+      <section className="relative flex min-h-[92vh] flex-col items-center justify-center overflow-hidden bg-[#1C1917] px-6 text-center md:px-8">
+        {/* Warm ambient glow */}
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(71,78,173,0.35),transparent)]" />
+        <div className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 h-64 w-3/4 rounded-full bg-primary/10 blur-[100px]" />
 
-        {/* Left: deep indigo hero pane */}
-        <div className="relative flex flex-col justify-between overflow-hidden bg-[#0d0f2e] px-8 py-14 md:px-14 md:py-20">
-          {/* Layered gradients */}
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(71,78,173,0.45),transparent_55%)]" />
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(99,102,241,0.2),transparent_50%)]" />
-          {/* Dot grid */}
-          <div
-            className="pointer-events-none absolute inset-0 opacity-[0.06]"
-            style={{
-              backgroundImage: "radial-gradient(circle, #fff 1px, transparent 1px)",
-              backgroundSize: "28px 28px",
-            }}
-          />
+        {/* Subtle horizontal rule */}
+        <div className="pointer-events-none absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-white/[0.04]" />
 
-          {/* Content */}
-          <div className="relative">
-            <motion.div
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-semibold text-white/70 backdrop-blur"
-            >
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+        <div className="relative max-w-5xl">
+          {/* Eyebrow */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="mb-8 flex items-center justify-center gap-3"
+          >
+            <div className="h-px w-10 bg-primary/60" />
+            <span className="text-xs font-bold uppercase tracking-[0.3em] text-primary/80">
               Find work with global companies hiring now
-            </motion.div>
+            </span>
+            <div className="h-px w-10 bg-primary/60" />
+          </motion.div>
 
-            <motion.h1
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.06 }}
-              className="max-w-xl text-5xl font-black leading-[1.04] tracking-tight text-white md:text-6xl xl:text-7xl"
-            >
-              Find work that pays well —
-              <span className="block text-primary"> and moves you forward.</span>
-            </motion.h1>
+          {/* Headline */}
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, delay: 0.06 }}
+            className="text-5xl font-black leading-[1.02] tracking-tight text-white md:text-7xl xl:text-8xl"
+          >
+            Find work that
+            <br />
+            <span className="text-primary">pays well</span> — and
+            <br />
+            moves you forward.
+          </motion.h1>
 
-            <motion.p
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.12 }}
-              className="mt-6 max-w-lg text-base leading-8 text-slate-400"
-            >
-              Get matched to premium remote opportunities across admin, support, finance, sales, marketing, and operations. Faster, smarter, and more human than a typical job board.
-            </motion.p>
+          <motion.p
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.14 }}
+            className="mx-auto mt-7 max-w-2xl text-base leading-8 text-stone-400 md:text-lg"
+          >
+            Get matched to premium remote opportunities across admin, support, finance, sales, marketing, and operations. Faster, smarter, and more human than a typical job board.
+          </motion.p>
 
-            {/* Intelligent match assistant input */}
-            <motion.div
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.18 }}
-              className="mt-10"
-            >
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.25em] text-primary/80">
-                Match assistant
-              </p>
-              <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-4 backdrop-blur ring-0 transition-all focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20">
-                <Sparkles className="h-5 w-5 shrink-0 text-primary" />
-                <Input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  className="h-auto flex-1 border-0 bg-transparent p-0 text-base text-white shadow-none placeholder:text-slate-500 focus-visible:ring-0"
-                  placeholder="Tell us what kind of work you're looking for…"
-                />
-              </div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {prompts.map((prompt) => (
-                  <button
-                    key={prompt}
-                    onClick={() => setQuery(prompt)}
-                    className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-slate-400 transition hover:border-primary/30 hover:text-white"
-                  >
-                    {prompt}
-                  </button>
-                ))}
-              </div>
-              <div className="mt-6 flex flex-wrap gap-3">
-                <Button className="rounded-full px-7">
-                  Find My Best Matches
-                </Button>
-                <Button
-                  variant="outline"
-                  className="rounded-full border-white/10 bg-white/5 px-6 text-white hover:bg-white/10 hover:text-white"
-                >
-                  Browse Roles
-                </Button>
-              </div>
-            </motion.div>
-          </div>
+          {/* Search bar — full width, minimal */}
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="mx-auto mt-10 flex max-w-3xl items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-4 backdrop-blur-sm transition-all focus-within:border-primary/40 focus-within:bg-white/[0.08]"
+          >
+            <Search className="h-5 w-5 shrink-0 text-stone-500" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="h-auto flex-1 border-0 bg-transparent p-0 text-base text-white shadow-none placeholder:text-stone-600 focus-visible:ring-0 md:text-lg"
+              placeholder="Tell us what kind of work you're looking for…"
+            />
+            <Button className="shrink-0 rounded-xl px-6">
+              Find My Best Matches
+            </Button>
+          </motion.div>
 
-          {/* Profile strength at bottom */}
+          {/* Prompt chips */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.4, duration: 0.5 }}
-            className="relative mt-14 rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur"
+            transition={{ delay: 0.28, duration: 0.4 }}
+            className="mt-4 flex flex-wrap justify-center gap-2"
           >
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-sm font-semibold text-white">Complete your profile to unlock better matches</p>
-              <span className="text-xl font-black text-primary">{profileStrength}%</span>
-            </div>
-            <Progress value={profileStrength} className="h-1.5 bg-white/10" />
-            <p className="mt-2 text-xs text-slate-500">Add your resume, work history, and preferred schedule to improve match quality.</p>
+            {prompts.map((prompt) => (
+              <button
+                key={prompt}
+                onClick={() => setQuery(prompt)}
+                className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-stone-400 transition hover:border-primary/30 hover:text-white"
+              >
+                {prompt}
+              </button>
+            ))}
           </motion.div>
         </div>
 
-        {/* Right: elevated trust panel */}
-        <div className="flex flex-col justify-center gap-6 bg-white px-8 py-14 md:px-10 lg:border-l lg:border-slate-100">
-          <div>
-            <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400">
-              Live preview
-            </p>
-            <h2 className="text-2xl font-black text-slate-900">Your best opportunities</h2>
-            <Badge className="mt-2 rounded-full bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/10">
-              12 matches found
-            </Badge>
-          </div>
+        {/* Stats row — bottom of hero */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.36, duration: 0.45 }}
+          className="relative mt-16 grid w-full max-w-4xl grid-cols-2 divide-x divide-white/10 border-t border-white/10 md:grid-cols-4"
+        >
+          {[
+            { label: "Candidates placed",    value: "1,200+" },
+            { label: "Typical monthly roles", value: "$800–$2,500" },
+            { label: "Global client markets", value: "US · AU · UK" },
+            { label: "Hiring speed",          value: "3–10 days" },
+          ].map(({ label, value }) => (
+            <div key={label} className="flex flex-col items-center gap-1 px-4 py-6 text-center">
+              <span className="text-2xl font-black text-white md:text-3xl">{value}</span>
+              <span className="text-[11px] text-stone-500">{label}</span>
+            </div>
+          ))}
+        </motion.div>
 
-          {/* Mini role previews */}
-          <div className="space-y-3">
-            {roles.slice(0, 3).map((role, i) => (
-              <motion.div
-                key={role.id}
-                initial={{ opacity: 0, x: 16 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3 + i * 0.1, duration: 0.4 }}
-                className="flex items-start gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4 transition hover:border-primary/20 hover:bg-primary/[0.02]"
-              >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-sm font-black text-primary">
-                  {role.fit}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-bold text-slate-900 leading-tight">{role.title}</p>
-                  <p className="mt-0.5 text-xs text-slate-500">{role.pay} · {role.market}</p>
-                  <p className="mt-1 text-xs text-slate-400 leading-5">{role.why}</p>
-                </div>
-                <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-slate-300" />
-              </motion.div>
-            ))}
+        {/* Scroll cue */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+          className="absolute bottom-6 left-1/2 -translate-x-1/2"
+        >
+          <div className="flex flex-col items-center gap-1.5">
+            <div className="h-8 w-px bg-gradient-to-b from-transparent to-white/20" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-white/20">Discover</span>
           </div>
-
-          {/* Stats woven in */}
-          <div className="grid grid-cols-2 gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4">
-            {[
-              { icon: Users,      label: "Placed",  value: "1,200+" },
-              { icon: DollarSign, label: "Pay range", value: "$800–$2.5K" },
-              { icon: Globe2,     label: "Markets",  value: "US · AU · UK" },
-              { icon: Zap,        label: "Speed",    value: "3–10 days" },
-            ].map(({ icon: Icon, label, value }) => (
-              <div key={label} className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Icon className="h-3.5 w-3.5" />
-                </div>
-                <div>
-                  <p className="text-[10px] text-slate-400">{label}</p>
-                  <p className="text-sm font-bold text-slate-900">{value}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* ════════════════════════════════════════════════════════════════════
-          FILTER BAR — productized horizontal, sticky-style
+          PROFILE STRENGTH — warm cream band
       ════════════════════════════════════════════════════════════════════ */}
-      <div className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur-md">
-        <div className="mx-auto max-w-7xl overflow-x-auto px-6 md:px-8">
-          <div className="flex items-center gap-6 py-3">
-            <span className="shrink-0 text-sm font-bold text-slate-800">Filter:</span>
-            <div className="flex flex-wrap gap-x-6 gap-y-2">
-              <FilterChipGroup
-                label="Earn"
-                options={["Any pay", "$800+", "$1,000+", "$1,500+"]}
-                value={earning}
-                onChange={setEarning}
-              />
-              <FilterChipGroup
-                label="Schedule"
-                options={["All schedules", "Day shift", "Night shift", "Flexible"]}
-                value={schedule}
-                onChange={setSchedule}
-              />
-              <FilterChipGroup
-                label="Type"
-                options={["All work", "Admin", "Support", "Finance", "Sales", "Marketing", "Operations"]}
-                value={kind}
-                onChange={setKind}
-              />
+      <div className="border-b border-stone-200 bg-white">
+        <div className="mx-auto max-w-7xl px-6 py-4 md:px-8">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-1 items-center gap-4">
+              <p className="text-sm font-bold text-stone-800">Profile strength</p>
+              <div className="flex-1 max-w-48">
+                <Progress value={profileStrength} className="h-1.5" />
+              </div>
+              <span className="text-sm font-black text-primary">{profileStrength}%</span>
             </div>
-            <span className="ml-auto shrink-0 text-sm text-slate-400">
-              {filteredRoles.length} role{filteredRoles.length !== 1 ? "s" : ""}
-            </span>
+            <p className="text-xs text-stone-400">Complete your profile to unlock better matches</p>
+            <Button variant="outline" size="sm" className="rounded-lg">Browse Roles</Button>
           </div>
         </div>
       </div>
 
       {/* ════════════════════════════════════════════════════════════════════
-          ROLES — featured first, then 2-col secondary grid
+          ROLES — filter tabs + accordion rows
       ════════════════════════════════════════════════════════════════════ */}
-      <section className="mx-auto max-w-7xl px-6 py-14 md:px-8 md:py-20">
-        <div className="mb-8">
-          <p className="mb-1 text-xs font-bold uppercase tracking-[0.25em] text-slate-400">
-            Top matches for you
-          </p>
-          <h2 className="text-3xl font-black tracking-tight text-slate-950 md:text-4xl">
-            Roles that feel more like opportunities.
-          </h2>
-          <p className="mt-2 max-w-2xl text-slate-500">
-            Designed to reduce random scrolling and help applicants focus on roles that fit their pay goals, schedule, and strengths.
-          </p>
-        </div>
-
-        <AnimatePresence mode="wait">
-          {filteredRoles.length === 0 ? (
-            <motion.div
-              key="empty"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="rounded-2xl border border-dashed border-slate-300 bg-white p-14 text-center"
-            >
-              <Search className="mx-auto mb-3 h-8 w-8 text-slate-300" />
-              <p className="text-sm text-slate-500">No roles match your filters. Try adjusting your search.</p>
-            </motion.div>
-          ) : (
-            <motion.div key="results" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              {/* Featured top match */}
-              {featured && <FeaturedRoleCard role={featured} />}
-
-              {/* Secondary grid */}
-              {secondary.length > 0 && (
-                <div className="mt-5 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                  {secondary.map((role, i) => (
-                    <SecondaryRoleCard key={role.id} role={role} index={i} />
-                  ))}
-                </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </section>
-
-      {/* ════════════════════════════════════════════════════════════════════
-          WHY ONSPOT — horizontal numbered timeline, product narrative
-      ════════════════════════════════════════════════════════════════════ */}
-      <section className="bg-white">
-        <div className="mx-auto max-w-7xl px-6 py-14 md:px-8 md:py-24">
-          {/* Header */}
-          <div className="mb-14 max-w-2xl">
-            <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-primary">
-              Why OnSpot
-            </p>
-            <h2 className="text-4xl font-black leading-tight tracking-tight text-slate-950 md:text-5xl">
-              More than listings.<br />Better matching. Better outcomes.
-            </h2>
-            <p className="mt-4 text-slate-500">
-              This page is built for applicants, not for recruiters. The experience is designed to feel guided, high-trust, and momentum-driven from first click to application.
+      <section className="mx-auto max-w-7xl px-0 py-16 md:py-24">
+        {/* Section header */}
+        <div className="mb-10 px-6 md:px-8">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.25em] text-stone-400">
+                Top matches for you
+              </p>
+              <h2 className="text-4xl font-black tracking-tight text-stone-950 md:text-5xl">
+                Roles that feel more<br className="hidden md:block" /> like opportunities.
+              </h2>
+              <p className="mt-3 max-w-lg text-stone-500">
+                Designed to reduce random scrolling and help applicants focus on roles that fit their pay goals, schedule, and strengths.
+              </p>
+            </div>
+            <p className="text-sm font-semibold text-stone-400">
+              {filteredRoles.length} role{filteredRoles.length !== 1 ? "s" : ""} found
             </p>
           </div>
 
-          {/* Feature timeline */}
-          <div className="relative grid gap-10 md:grid-cols-2 lg:grid-cols-4">
-            {/* Connector line */}
-            <div className="absolute left-0 top-6 hidden h-px w-full bg-slate-100 lg:block" />
-
-            {whyFeatures.map((item, i) => (
-              <div key={item.title} className="relative">
-                {/* Step number */}
-                <div className="relative z-10 mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-slate-950 text-sm font-black text-white shadow-[0_0_0_4px_#FAFAF9,0_0_0_6px_#e2e8f0]">
-                  {String(i + 1).padStart(2, "0")}
+          {/* Filter tabs */}
+          <div className="mt-8 flex flex-wrap gap-6">
+            {[
+              { label: "Earn", options: ["Any pay", "$800+", "$1,000+", "$1,500+"],      state: earning,   set: setEarning },
+              { label: "Schedule", options: ["All schedules", "Day shift", "Night shift", "Flexible"], state: schedule, set: setSchedule },
+              { label: "Type", options: ["All work", "Admin", "Support", "Finance", "Sales", "Marketing", "Operations"], state: kind, set: setKind },
+            ].map((group) => (
+              <div key={group.label} className="flex items-center gap-2">
+                <span className="text-xs font-bold text-stone-400">{group.label}</span>
+                <div className="flex flex-wrap gap-1">
+                  {group.options.map((opt) => (
+                    <button
+                      key={opt}
+                      onClick={() => group.set(opt)}
+                      className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-all duration-150 ${
+                        group.state === opt
+                          ? "bg-stone-900 text-white"
+                          : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
                 </div>
-                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <item.icon className="h-5 w-5" />
-                </div>
-                <h3 className="text-lg font-black text-slate-900">{item.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-500">{item.copy}</p>
               </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Accordion role list */}
+        <div className="border-t border-stone-200">
+          <AnimatePresence>
+            {filteredRoles.length === 0 ? (
+              <div className="px-6 py-14 text-center md:px-8">
+                <Search className="mx-auto mb-3 h-8 w-8 text-stone-300" />
+                <p className="text-sm text-stone-400">No roles match your filters. Try adjusting your search.</p>
+              </div>
+            ) : (
+              filteredRoles.map((role, i) => (
+                <RoleRow
+                  key={role.id}
+                  role={role}
+                  index={i}
+                  isOpen={openRoleId === role.id}
+                  onToggle={() => setOpenRoleId(openRoleId === role.id ? null : role.id)}
+                />
+              ))
+            )}
+          </AnimatePresence>
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════════════════════════════
+          WHY ONSPOT — staggered feature blocks, alternating layout
+      ════════════════════════════════════════════════════════════════════ */}
+      <section className="border-t border-stone-200 bg-white">
+        <div className="mx-auto max-w-7xl px-6 py-16 md:px-8 md:py-24">
+          {/* Header */}
+          <div className="mb-16 grid gap-6 md:grid-cols-2">
+            <div>
+              <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-stone-400">
+                Why OnSpot
+              </p>
+              <h2 className="text-4xl font-black leading-tight tracking-tight text-stone-950 md:text-5xl">
+                More than listings.<br />Better matching.<br />Better outcomes.
+              </h2>
+            </div>
+            <div className="flex items-end">
+              <p className="text-stone-500 leading-7">
+                This page is built for applicants, not for recruiters. The experience is designed to feel guided, high-trust, and momentum-driven from first click to application.
+              </p>
+            </div>
+          </div>
+
+          {/* Alternating staggered feature blocks */}
+          <div className="space-y-5">
+            {whyFeatures.map((item, i) => (
+              <motion.div
+                key={item.title}
+                initial={{ opacity: 0, x: i % 2 === 0 ? -16 : 16 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.08, duration: 0.4 }}
+                className={`flex items-center gap-8 rounded-2xl border border-stone-100 bg-stone-50 p-6 md:p-8 ${
+                  i % 2 !== 0 ? "md:flex-row-reverse" : ""
+                }`}
+              >
+                {/* Icon + number */}
+                <div className="flex shrink-0 flex-col items-center gap-3">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-stone-950 text-white">
+                    <item.icon className="h-6 w-6" />
+                  </div>
+                  <span className="text-xs font-black text-stone-300">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1">
+                  <h3 className="text-xl font-black text-stone-950">{item.title}</h3>
+                  <p className="mt-2 text-stone-500 leading-6">{item.copy}</p>
+                </div>
+
+                {/* Right accent bar */}
+                <div className="hidden w-1.5 self-stretch rounded-full bg-primary/20 md:block" />
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
       {/* ════════════════════════════════════════════════════════════════════
-          STORIES — case-study layout, outcome-forward
+          STORIES — large editorial, outcome-forward with warm accents
       ════════════════════════════════════════════════════════════════════ */}
-      <section className="border-t border-slate-100 bg-[#FAFAF9]">
-        <div className="mx-auto max-w-7xl px-6 py-14 md:px-8 md:py-24">
+      <section className="border-t border-stone-200 bg-[#F7F4EF]">
+        <div className="mx-auto max-w-7xl px-6 py-16 md:px-8 md:py-24">
           <div className="mb-12">
-            <p className="mb-2 text-xs font-bold uppercase tracking-[0.25em] text-slate-400">
+            <p className="mb-2 text-xs font-bold uppercase tracking-[0.25em] text-stone-400">
               Proof it works
             </p>
-            <h2 className="text-4xl font-black tracking-tight text-slate-950 md:text-5xl">
-              Applicant stories that create trust instantly.
+            <h2 className="text-4xl font-black tracking-tight text-stone-950 md:text-5xl">
+              Applicant stories that<br className="hidden md:block" /> create trust instantly.
             </h2>
-            <p className="mt-2 text-sm text-slate-400">Use real placement stories here once approved.</p>
+            <p className="mt-2 text-sm text-stone-400">Use real placement stories here once approved.</p>
           </div>
 
-          <div className="grid gap-0 divide-y divide-slate-200 md:divide-y-0 lg:grid-cols-3 lg:divide-x">
+          <div className="grid gap-5 lg:grid-cols-3">
             {stories.map((story, i) => (
               <motion.div
                 key={story.name}
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1, duration: 0.4 }}
-                className="flex flex-col gap-5 px-0 py-8 md:py-0 lg:px-10 first:lg:pl-0 last:lg:pr-0"
+                className="flex flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white"
               >
-                {/* Outcome as hero number */}
-                <div className="rounded-2xl bg-slate-950 p-5 text-white">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Outcome</p>
-                  <p className="mt-1 text-2xl font-black leading-tight">{story.outcome}</p>
+                {/* Outcome header — warm dark */}
+                <div className="bg-stone-950 px-6 py-5">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-stone-500">Outcome</p>
+                  <p className="mt-1 text-xl font-black text-white leading-tight">{story.outcome}</p>
                 </div>
 
-                {/* Stars */}
-                <div className="flex gap-0.5 text-primary">
-                  {[0,1,2,3,4].map((s) => (
-                    <Star key={s} className="h-4 w-4 fill-current" />
-                  ))}
-                </div>
-
-                {/* Quote */}
-                <p className="flex-1 text-base leading-8 text-slate-700">"{story.quote}"</p>
-
-                {/* Attribution */}
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-black text-primary">
-                    {story.name[0]}
+                {/* Quote body */}
+                <div className="flex flex-1 flex-col gap-5 p-6">
+                  <div className="flex gap-0.5 text-primary">
+                    {[0,1,2,3,4].map((s) => (
+                      <Star key={s} className="h-4 w-4 fill-current" />
+                    ))}
                   </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-900">{story.name}</p>
-                    <p className="text-xs text-slate-400">{story.role}</p>
+                  <p className="flex-1 text-base leading-8 text-stone-700">"{story.quote}"</p>
+                  <div className="flex items-center gap-3 border-t border-stone-100 pt-4">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-black text-primary">
+                      {story.name[0]}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-stone-900">{story.name}</p>
+                      <p className="text-xs text-stone-400">{story.role}</p>
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -773,55 +665,58 @@ export default function OnSpotFindWorkRedesign() {
       </section>
 
       {/* ════════════════════════════════════════════════════════════════════
-          CTA — immersive, full-bleed with checklist + gradient
+          CTA — editorial full-bleed, warm on dark
       ════════════════════════════════════════════════════════════════════ */}
-      <section className="border-t border-slate-100 bg-white">
-        <div className="mx-auto max-w-7xl px-6 py-14 md:px-8 md:py-20">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0d0f2e] via-[#1c1f5a] to-[#0d0f2e] px-8 py-16 text-white md:px-16 md:py-20">
-            {/* Glows */}
-            <div className="pointer-events-none absolute -top-24 left-1/3 h-96 w-96 rounded-full bg-primary/30 blur-[120px]" />
-            <div className="pointer-events-none absolute -bottom-16 right-0 h-64 w-64 rounded-full bg-indigo-600/20 blur-[80px]" />
+      <section className="border-t border-stone-200 bg-white">
+        <div className="mx-auto max-w-7xl px-6 py-16 md:px-8 md:py-20">
+          <div className="overflow-hidden rounded-3xl bg-[#1C1917]">
+            <div className="grid lg:grid-cols-[1.1fr_0.9fr]">
 
-            <div className="relative grid gap-14 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-              {/* Left */}
-              <div>
-                <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm text-white/60">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                  Roles fill fast
-                </div>
-                <h2 className="text-4xl font-black leading-tight tracking-tight md:text-5xl xl:text-6xl">
-                  Your next opportunity is already here. Take the step.
-                </h2>
-                <p className="mt-5 max-w-lg text-base leading-8 text-white/60">
-                  New roles are added regularly. Strong applicants move faster. Start with a quick application, then complete your profile to improve your match quality.
-                </p>
-                <div className="mt-8 flex flex-wrap gap-3">
-                  <Button className="rounded-full bg-white px-8 text-slate-900 hover:bg-white/90">
-                    Start Matching
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="rounded-full border-white/15 bg-white/5 px-8 text-white hover:bg-white/10 hover:text-white"
-                  >
-                    Upload Resume
-                  </Button>
+              {/* Left — headline + CTAs */}
+              <div className="relative overflow-hidden px-8 py-14 md:px-14 md:py-16">
+                <div className="pointer-events-none absolute -top-20 -right-20 h-80 w-80 rounded-full bg-primary/20 blur-[100px]" />
+                <div className="relative">
+                  <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm text-stone-400">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                    Roles fill fast
+                  </div>
+                  <h2 className="max-w-md text-4xl font-black leading-tight text-white md:text-5xl">
+                    Your next opportunity is already here. Take the step.
+                  </h2>
+                  <p className="mt-5 max-w-md text-stone-400 leading-7">
+                    New roles are added regularly. Strong applicants move faster. Start with a quick application, then complete your profile to improve your match quality.
+                  </p>
+                  <div className="mt-8 flex flex-wrap gap-3">
+                    <Button className="rounded-xl bg-white px-8 text-stone-900 hover:bg-white/90">
+                      Start Matching
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="rounded-xl border-white/15 bg-white/5 px-8 text-white hover:bg-white/10 hover:text-white"
+                    >
+                      Upload Resume
+                    </Button>
+                  </div>
                 </div>
               </div>
 
-              {/* Right: numbered checklist */}
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur">
-                <p className="mb-5 text-xs font-bold uppercase tracking-[0.25em] text-white/40">How it works</p>
-                <div className="space-y-4">
+              {/* Right — numbered steps, warm accent bg */}
+              <div className="border-t border-white/5 bg-[#252220] px-8 py-14 md:border-l md:border-t-0 md:px-10 md:py-16">
+                <p className="mb-8 text-[10px] font-bold uppercase tracking-[0.3em] text-stone-500">
+                  How it works
+                </p>
+                <div className="space-y-6">
                   {ctaSteps.map((step, i) => (
                     <div key={step} className="flex items-start gap-4">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-primary/40 bg-primary/15 text-xs font-black text-primary">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-xs font-black text-primary">
                         {i + 1}
                       </div>
-                      <p className="pt-1 text-sm leading-6 text-white/80">{step}</p>
+                      <p className="pt-1 text-sm leading-6 text-stone-300">{step}</p>
                     </div>
                   ))}
                 </div>
               </div>
+
             </div>
           </div>
         </div>
