@@ -2,19 +2,40 @@ import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search, Sparkles, BriefcaseBusiness, Clock3, Globe2,
-  ChevronRight, Star, ArrowRight, BadgeCheck, Filter,
-  Zap, DollarSign, Building2, CheckCircle2, Users, Brain,
-  TrendingUp, Plus, Minus,
+  ChevronRight, Star, ArrowRight, BadgeCheck,
+  Zap, DollarSign, Brain, TrendingUp, Plus, Minus,
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { JobDetailModal } from "@/components/JobDetailModal";
 
-// ─── Data (unchanged) ────────────────────────────────────────────────────────
+// ─── Extended role type ───────────────────────────────────────────────────────
 
-const roles = [
+interface Role {
+  id: number;
+  title: string;
+  pay: string;
+  shift: string;
+  market: string;
+  category: string;
+  demand: string;
+  speed: string;
+  fit: number;
+  hook: string;
+  why: string;
+  tags: string[];
+  description: string;
+  responsibilities: string[];
+  requirements: string[];
+  niceToHaves: string[];
+  benefits: string[];
+}
+
+// ─── Roles data (extended with full posting content) ─────────────────────────
+
+const roles: Role[] = [
   {
     id: 1,
     title: "Executive Virtual Assistant",
@@ -28,6 +49,37 @@ const roles = [
     hook: "Support a fast-moving founder and become a key operator.",
     why: "Strong fit for admin-heavy, client-facing candidates.",
     tags: ["Remote", "Growth path", "Premium client"],
+    description:
+      "We're looking for a sharp, proactive Executive Virtual Assistant to support a US-based founder scaling their business. You'll manage communications, scheduling, research, and special projects, acting as the connective tissue that keeps things moving. This is a high-trust role with real ownership and visible impact — ideal for someone who wants more than task execution.",
+    responsibilities: [
+      "Manage the founder's inbox, calendar, and scheduling across time zones",
+      "Coordinate meetings, prepare agendas, and take minutes",
+      "Conduct research and compile reports for decision-making",
+      "Handle travel arrangements, bookings, and itineraries",
+      "Manage CRM updates, follow-ups, and priority communications",
+      "Draft and proofread emails, proposals, and presentations",
+      "Track key deadlines and flag action items proactively",
+    ],
+    requirements: [
+      "2+ years of experience as a VA, EA, or senior admin support role",
+      "Excellent written and verbal English communication",
+      "Proficient with Google Workspace, Notion, Slack, or similar tools",
+      "Strong time management and attention to detail",
+      "Ability to work night shift (PH time) aligned with US business hours",
+      "High degree of discretion and professionalism",
+    ],
+    niceToHaves: [
+      "Experience supporting C-suite or founders in a startup environment",
+      "Familiarity with CRM tools like HubSpot or GoHighLevel",
+      "Experience with project management tools like Asana or ClickUp",
+    ],
+    benefits: [
+      "Competitive monthly salary: $900–$1,400 USD",
+      "100% remote — work from anywhere in the Philippines",
+      "Long-term engagement with a growth-oriented client",
+      "Career development support and performance reviews",
+      "Paid leave and Philippine public holiday recognition",
+    ],
   },
   {
     id: 2,
@@ -42,6 +94,36 @@ const roles = [
     hook: "Join a scaling ecommerce brand with structured training.",
     why: "Great for strong communicators with service experience.",
     tags: ["Remote", "Training provided", "High volume"],
+    description:
+      "A fast-growing US ecommerce brand is looking for a dedicated Customer Support Specialist to handle inbound queries, resolve order issues, and deliver an exceptional customer experience. You'll be part of a structured support team with clear processes, escalation paths, and regular coaching. This is a great opportunity for someone who thrives in high-volume, people-first environments.",
+    responsibilities: [
+      "Respond to customer inquiries via email, chat, and ticketing systems",
+      "Resolve order issues including refunds, replacements, and delivery disputes",
+      "Maintain accurate case records in the CRM",
+      "Identify recurring issues and escalate to the team lead",
+      "Meet and exceed CSAT, response time, and resolution rate KPIs",
+      "Collaborate with fulfillment and logistics teams on order investigations",
+    ],
+    requirements: [
+      "1+ year in customer service, support, or BPO environment",
+      "Strong English written communication skills",
+      "Experience with Zendesk, Freshdesk, or similar helpdesk tools",
+      "Ability to work US night shift hours from the Philippines",
+      "Fast typing speed with high accuracy",
+      "Empathetic and patient under pressure",
+    ],
+    niceToHaves: [
+      "Experience with ecommerce brands (Shopify, Amazon, etc.)",
+      "Familiarity with Gorgias or Re:amaze",
+      "Live chat or phone support experience",
+    ],
+    benefits: [
+      "Monthly salary: $800–$1,200 USD",
+      "Structured onboarding and continuous training",
+      "Remote work setup",
+      "Performance bonuses for top CSAT scores",
+      "Career pathway into senior support or team lead roles",
+    ],
   },
   {
     id: 3,
@@ -56,6 +138,36 @@ const roles = [
     hook: "Own reconciliations and reporting for a stable global business.",
     why: "Strong match for organized candidates with finance exposure.",
     tags: ["Remote", "Stable team", "Career track"],
+    description:
+      "A well-established Australian business is seeking an experienced Bookkeeper to manage day-to-day financial records, reconciliations, and reporting. You'll work closely with the finance lead and have clear ownership of your accounts. This is a stable, long-term engagement with above-market pay for candidates with solid accounting foundations.",
+    responsibilities: [
+      "Perform daily bank reconciliations and transaction coding",
+      "Manage accounts payable and receivable processes",
+      "Prepare weekly and monthly financial reports",
+      "Assist with payroll processing and superannuation compliance",
+      "Maintain accurate records in Xero or MYOB",
+      "Coordinate with the external accountant during year-end processes",
+    ],
+    requirements: [
+      "2+ years of bookkeeping or accounting assistant experience",
+      "Proficiency with Xero, MYOB, or QuickBooks",
+      "Strong attention to detail and numerical accuracy",
+      "Understanding of Australian GST and BAS reporting preferred",
+      "Ability to work AU-aligned day shift hours",
+      "Excellent communication for remote coordination",
+    ],
+    niceToHaves: [
+      "CPA or accounting degree/diploma",
+      "Experience working with AU-based clients",
+      "Familiarity with Australian payroll standards",
+    ],
+    benefits: [
+      "Above-market salary: $1,000–$1,800 USD/month",
+      "Stable, long-term engagement",
+      "Day shift — aligned with Australian Eastern Time",
+      "Professional development support",
+      "Paid leave and a structured review cycle",
+    ],
   },
   {
     id: 4,
@@ -70,6 +182,36 @@ const roles = [
     hook: "Book meetings, drive pipeline, and earn in a performance culture.",
     why: "Best for confident communicators who like targets.",
     tags: ["Commission upside", "Remote", "B2B"],
+    description:
+      "A high-growth B2B company based in the US is looking for a motivated Sales Development Representative (SDR) to drive top-of-funnel pipeline through outbound prospecting, cold outreach, and qualification. This role offers a base plus commission structure, making it one of the best-paying opportunities for strong communicators in the Philippines who want to build a career in B2B sales.",
+    responsibilities: [
+      "Execute outbound prospecting via cold calls, emails, and LinkedIn",
+      "Qualify inbound leads against defined ICP criteria",
+      "Book discovery calls for Account Executives",
+      "Maintain accurate activity logs in the CRM (Salesforce or HubSpot)",
+      "Meet and exceed monthly meeting booked targets",
+      "Research target accounts and personalize outreach messaging",
+    ],
+    requirements: [
+      "1+ year in B2B sales, telemarketing, or appointment setting",
+      "Confident, clear spoken and written English",
+      "Comfortable with cold calling and rejection",
+      "Familiarity with CRM tools (Salesforce, HubSpot)",
+      "Goal-oriented mindset with demonstrated target achievement",
+      "Ability to work US business hours (night shift in PH)",
+    ],
+    niceToHaves: [
+      "SaaS or technology sales experience",
+      "Familiarity with sales engagement tools like Outreach or Apollo",
+      "Experience with structured sales methodologies (SPIN, MEDDIC)",
+    ],
+    benefits: [
+      "Base salary: $1,100–$1,500 USD/month",
+      "Uncapped performance commission — total OTE up to $2,000+",
+      "Remote work, night shift",
+      "Sales training and career development in B2B",
+      "Regular team incentives and recognition programs",
+    ],
   },
   {
     id: 5,
@@ -84,6 +226,36 @@ const roles = [
     hook: "Create content systems for a modern digital brand.",
     why: "Great fit for organized creatives with execution skills.",
     tags: ["Remote", "Portfolio builder", "Flexible"],
+    description:
+      "A UK-based digital brand is looking for a Content & Social Media Assistant to support their growing content operation. You'll help produce, schedule, and track content across LinkedIn, Instagram, and other channels — working closely with the marketing lead to build consistent, high-quality output. This is a great portfolio-building role for organized creatives who love content systems.",
+    responsibilities: [
+      "Create and schedule content for LinkedIn, Instagram, and Facebook",
+      "Draft captions, carousels, and short-form written content",
+      "Repurpose long-form content (blogs, videos) into social assets",
+      "Manage a content calendar and maintain publishing consistency",
+      "Track engagement metrics and prepare monthly performance reports",
+      "Assist with basic graphic design using Canva or Adobe Express",
+    ],
+    requirements: [
+      "1+ year in social media management, content creation, or digital marketing",
+      "Strong written English with a clear, engaging voice",
+      "Proficiency with Canva and scheduling tools like Buffer or Later",
+      "Understanding of social media best practices across platforms",
+      "Organized, proactive, and able to work independently",
+      "Portfolio of past content or examples",
+    ],
+    niceToHaves: [
+      "Experience with UK brands or audiences",
+      "Basic video editing skills (CapCut, Premiere Rush)",
+      "Familiarity with SEO content principles",
+    ],
+    benefits: [
+      "Monthly salary: $850–$1,300 USD",
+      "Flexible schedule — aligned with UK timezone but with some flexibility",
+      "Work with a forward-thinking creative brand",
+      "Portfolio-worthy work in a modern brand environment",
+      "Remote, long-term engagement",
+    ],
   },
   {
     id: 6,
@@ -98,8 +270,40 @@ const roles = [
     hook: "Keep projects, people, and systems moving without chaos.",
     why: "Excellent for detail-driven candidates who thrive on structure.",
     tags: ["Remote", "Process-driven", "Cross-functional"],
+    description:
+      "An Australian company with a multi-functional remote team is looking for an Operations Coordinator to manage workflows, track deliverables, and keep cross-functional projects on schedule. You'll be the operational backbone — the person who makes sure nothing falls through the cracks. This is ideal for detail-driven professionals who love systems, structure, and cross-team coordination.",
+    responsibilities: [
+      "Coordinate project timelines, milestones, and deliverables across teams",
+      "Maintain and improve internal SOPs and documentation",
+      "Manage team task boards in ClickUp, Asana, or Monday.com",
+      "Prepare status updates and operational reports for leadership",
+      "Identify bottlenecks and propose process improvements",
+      "Assist with onboarding coordination for new team members",
+    ],
+    requirements: [
+      "2+ years in operations, project coordination, or similar role",
+      "Experience with project management tools (ClickUp, Asana, Notion)",
+      "Excellent organizational and prioritization skills",
+      "Clear written communication for async, remote environments",
+      "Ability to work AU-aligned day shift hours",
+      "Proven ability to manage multiple workstreams simultaneously",
+    ],
+    niceToHaves: [
+      "Experience with process documentation and SOP creation",
+      "Familiarity with remote-first team cultures",
+      "PMP, CAPM, or similar project management certification",
+    ],
+    benefits: [
+      "Monthly salary: $1,000–$1,500 USD",
+      "Day shift — AU time zone aligned",
+      "Stable, long-term remote engagement",
+      "High-visibility role with access to leadership",
+      "Opportunities to grow into a senior ops or team lead role",
+    ],
   },
 ];
+
+// ─── Static data (unchanged) ──────────────────────────────────────────────────
 
 const trustStats = [
   { label: "Candidates placed", value: "1,200+" },
@@ -137,10 +341,10 @@ const prompts = [
 ];
 
 const whyFeatures = [
-  { icon: Brain,      title: "Smart matching",          copy: "Surface better-fit roles first instead of forcing endless browsing." },
-  { icon: DollarSign, title: "Premium remote roles",    copy: "Highlight compensation clearly so applicants instantly see quality." },
-  { icon: TrendingUp, title: "Faster hiring momentum",  copy: "Show urgency, speed-to-hire, and profile strength to increase action." },
-  { icon: BadgeCheck, title: "Trust by design",         copy: "Use fit reasoning, hiring signals, and outcomes to build confidence." },
+  { icon: Brain,      title: "Smart matching",         copy: "Surface better-fit roles first instead of forcing endless browsing." },
+  { icon: DollarSign, title: "Premium remote roles",   copy: "Highlight compensation clearly so applicants instantly see quality." },
+  { icon: TrendingUp, title: "Faster hiring momentum", copy: "Show urgency, speed-to-hire, and profile strength to increase action." },
+  { icon: BadgeCheck, title: "Trust by design",        copy: "Use fit reasoning, hiring signals, and outcomes to build confidence." },
 ];
 
 const ctaSteps = [
@@ -150,29 +354,64 @@ const ctaSteps = [
   "Stay visible for active hiring teams",
 ];
 
-// ─── StatPill (retained, used below hero) ────────────────────────────────────
-function StatPill({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
-  return (
-    <div className="rounded-full border border-white/15 bg-white/70 px-4 py-3 backdrop-blur dark:bg-white/5">
-      <div className="flex items-center gap-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary">
-          <Icon className="h-4 w-4" />
-        </div>
-        <div>
-          <div className="text-xs text-slate-500">{label}</div>
-          <div className="text-sm font-semibold text-slate-900 dark:text-white">{value}</div>
-        </div>
-      </div>
-    </div>
-  );
+// ─── Adapter: map our Role shape → JobDetailModal's expected job shape ────────
+
+function categoryId(cat: string): string {
+  const map: Record<string, string> = {
+    Admin: "admin",
+    Support: "support",
+    Finance: "admin",
+    Sales: "marketing",
+    Marketing: "marketing",
+    Operations: "admin",
+  };
+  return map[cat] ?? "admin";
+}
+
+function roleToJob(role: Role) {
+  return {
+    id: String(role.id),
+    title: role.title,
+    company: "OnSpot Global",
+    location: "Remote (Philippines)",
+    category: categoryId(role.category),
+    contractType: "full-time",
+    experienceLevel: "intermediate",
+    description: role.description,
+    budget: null,
+    hourlyRateMin: null,
+    hourlyRateMax: null,
+    responsibilities: role.responsibilities,
+    requirements: [
+      ...role.requirements,
+      ...(role.niceToHaves.length ? ["Nice to have: " + role.niceToHaves.join(", ")] : []),
+    ],
+    skillTags: [
+      role.category,
+      role.market,
+      role.shift,
+      ...role.tags,
+      ...role.benefits.slice(0, 2),
+    ],
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+    status: "open",
+  };
 }
 
 // ─── Accordion-style role row ─────────────────────────────────────────────────
-function RoleRow({ role, index, isOpen, onToggle }: {
-  role: typeof roles[number];
+
+function RoleRow({
+  role,
+  index,
+  isOpen,
+  onToggle,
+  onViewDetails,
+}: {
+  role: Role;
   index: number;
   isOpen: boolean;
   onToggle: () => void;
+  onViewDetails: (role: Role) => void;
 }) {
   return (
     <motion.div
@@ -192,7 +431,7 @@ function RoleRow({ role, index, isOpen, onToggle }: {
           {String(index + 1).padStart(2, "0")}
         </span>
 
-        {/* Match arc */}
+        {/* Match badge */}
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-primary/20 bg-primary/5 text-xs font-black text-primary">
           {role.fit}%
         </div>
@@ -235,17 +474,17 @@ function RoleRow({ role, index, isOpen, onToggle }: {
           >
             <div className="border-t border-stone-200 px-6 pb-6 pt-5 md:px-8">
               <div className="grid gap-6 md:grid-cols-[1fr_280px]">
-                {/* Left */}
+                {/* Left — summary */}
                 <div>
                   <p className="text-sm text-stone-500 md:hidden mb-4">{role.hook}</p>
 
                   {/* Meta grid */}
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     {[
-                      { Icon: DollarSign, l: "Monthly pay",  v: role.pay      },
-                      { Icon: Clock3,     l: "Schedule",     v: role.shift    },
-                      { Icon: Globe2,     l: "Market",       v: role.market   },
-                      { Icon: BriefcaseBusiness, l: "Category", v: role.category },
+                      { Icon: DollarSign,      l: "Monthly pay", v: role.pay      },
+                      { Icon: Clock3,          l: "Schedule",    v: role.shift    },
+                      { Icon: Globe2,          l: "Market",      v: role.market   },
+                      { Icon: BriefcaseBusiness, l: "Category",  v: role.category },
                     ].map(({ Icon, l, v }) => (
                       <div key={l} className="rounded-xl border border-stone-200 bg-white p-3">
                         <div className="flex items-center gap-1.5 text-[11px] text-stone-400">
@@ -265,6 +504,11 @@ function RoleRow({ role, index, isOpen, onToggle }: {
                     </p>
                   </div>
 
+                  {/* Description preview */}
+                  <p className="mt-4 line-clamp-2 text-sm leading-6 text-stone-500">
+                    {role.description}
+                  </p>
+
                   {/* Tags */}
                   <div className="mt-4 flex flex-wrap gap-1.5">
                     {role.tags.map((tag) => (
@@ -278,7 +522,7 @@ function RoleRow({ role, index, isOpen, onToggle }: {
                   </div>
                 </div>
 
-                {/* Right: CTA panel */}
+                {/* Right — CTA panel */}
                 <div className="flex flex-col gap-4 rounded-2xl border border-stone-200 bg-white p-5">
                   <div>
                     <div className="text-[10px] font-bold uppercase tracking-widest text-stone-400">
@@ -287,11 +531,27 @@ function RoleRow({ role, index, isOpen, onToggle }: {
                     <div className="mt-1 text-4xl font-black text-primary">{role.fit}%</div>
                     <Progress value={role.fit} className="mt-2 h-1.5" />
                   </div>
-                  <Button className="w-full rounded-xl">
+
+                  <Button
+                    className="w-full rounded-xl"
+                    onClick={() =>
+                      window.open(
+                        "https://api.leadconnectorhq.com/widget/form/36ljnIgIsA1xoBluXvSK?notrack=true",
+                        "_blank",
+                      )
+                    }
+                  >
                     Apply in 30 seconds
                   </Button>
-                  <button className="flex w-full items-center justify-center gap-1.5 text-sm text-stone-400 transition hover:text-stone-900">
-                    View details <ChevronRight className="h-4 w-4" />
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onViewDetails(role);
+                    }}
+                    className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-stone-50 py-2.5 text-sm font-medium text-stone-600 transition hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
+                  >
+                    View full job details <ChevronRight className="h-4 w-4" />
                   </button>
                 </div>
               </div>
@@ -303,6 +563,23 @@ function RoleRow({ role, index, isOpen, onToggle }: {
   );
 }
 
+// ─── StatPill (retained) ──────────────────────────────────────────────────────
+function StatPill({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
+  return (
+    <div className="rounded-full border border-white/15 bg-white/70 px-4 py-3 backdrop-blur dark:bg-white/5">
+      <div className="flex items-center gap-3">
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <Icon className="h-4 w-4" />
+        </div>
+        <div>
+          <div className="text-xs text-slate-500">{label}</div>
+          <div className="text-sm font-semibold text-slate-900 dark:text-white">{value}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function OnSpotFindWorkRedesign() {
   const [query, setQuery] = useState("Virtual assistant, night shift, $900+");
@@ -311,6 +588,21 @@ export default function OnSpotFindWorkRedesign() {
   const [kind, setKind] = useState("All work");
   const [profileStrength] = useState(68);
   const [openRoleId, setOpenRoleId] = useState<number | null>(1);
+
+  // Modal state
+  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  function handleViewDetails(role: Role) {
+    setSelectedRole(role);
+    setModalOpen(true);
+  }
+
+  function handleCloseModal() {
+    setModalOpen(false);
+    // Brief delay so close animation plays before clearing data
+    setTimeout(() => setSelectedRole(null), 200);
+  }
 
   // Filtering logic (unchanged)
   const filteredRoles = useMemo(() => {
@@ -336,6 +628,18 @@ export default function OnSpotFindWorkRedesign() {
 
   return (
     <div className="min-h-screen bg-[#F7F4EF] text-stone-900">
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          JOB DETAIL MODAL — rendered at top level so it's always in DOM
+      ═══════════════════════════════════════════════════════════════════ */}
+      {selectedRole && (
+        <JobDetailModal
+          job={roleToJob(selectedRole)}
+          open={modalOpen}
+          onClose={handleCloseModal}
+          showApply={true}
+        />
+      )}
 
       {/* ════════════════════════════════════════════════════════════════════
           HERO — centered, full-viewport, typographic
@@ -386,7 +690,7 @@ export default function OnSpotFindWorkRedesign() {
             Get matched to premium remote opportunities across admin, support, finance, sales, marketing, and operations. Faster, smarter, and more human than a typical job board.
           </motion.p>
 
-          {/* Search bar — full width, minimal */}
+          {/* Search bar */}
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
@@ -431,12 +735,7 @@ export default function OnSpotFindWorkRedesign() {
           transition={{ delay: 0.36, duration: 0.45 }}
           className="relative mt-16 grid w-full max-w-4xl grid-cols-2 divide-x divide-white/10 border-t border-white/10 md:grid-cols-4"
         >
-          {[
-            { label: "Candidates placed",    value: "1,200+" },
-            { label: "Typical monthly roles", value: "$800–$2,500" },
-            { label: "Global client markets", value: "US · AU · UK" },
-            { label: "Hiring speed",          value: "3–10 days" },
-          ].map(({ label, value }) => (
+          {trustStats.map(({ label, value }) => (
             <div key={label} className="flex flex-col items-center gap-1 px-4 py-6 text-center">
               <span className="text-2xl font-black text-white md:text-3xl">{value}</span>
               <span className="text-[11px] text-stone-500">{label}</span>
@@ -503,9 +802,9 @@ export default function OnSpotFindWorkRedesign() {
           {/* Filter tabs */}
           <div className="mt-8 flex flex-wrap gap-6">
             {[
-              { label: "Earn", options: ["Any pay", "$800+", "$1,000+", "$1,500+"],      state: earning,   set: setEarning },
-              { label: "Schedule", options: ["All schedules", "Day shift", "Night shift", "Flexible"], state: schedule, set: setSchedule },
-              { label: "Type", options: ["All work", "Admin", "Support", "Finance", "Sales", "Marketing", "Operations"], state: kind, set: setKind },
+              { label: "Earn",     options: ["Any pay", "$800+", "$1,000+", "$1,500+"],                                                    state: earning,  set: setEarning  },
+              { label: "Schedule", options: ["All schedules", "Day shift", "Night shift", "Flexible"],                                     state: schedule, set: setSchedule },
+              { label: "Type",     options: ["All work", "Admin", "Support", "Finance", "Sales", "Marketing", "Operations"],               state: kind,     set: setKind     },
             ].map((group) => (
               <div key={group.label} className="flex items-center gap-2">
                 <span className="text-xs font-bold text-stone-400">{group.label}</span>
@@ -545,6 +844,7 @@ export default function OnSpotFindWorkRedesign() {
                   index={i}
                   isOpen={openRoleId === role.id}
                   onToggle={() => setOpenRoleId(openRoleId === role.id ? null : role.id)}
+                  onViewDetails={handleViewDetails}
                 />
               ))
             )}
@@ -611,7 +911,7 @@ export default function OnSpotFindWorkRedesign() {
       </section>
 
       {/* ════════════════════════════════════════════════════════════════════
-          STORIES — large editorial, outcome-forward with warm accents
+          STORIES — editorial, outcome-forward
       ════════════════════════════════════════════════════════════════════ */}
       <section className="border-t border-stone-200 bg-[#F7F4EF]">
         <div className="mx-auto max-w-7xl px-6 py-16 md:px-8 md:py-24">
@@ -634,7 +934,7 @@ export default function OnSpotFindWorkRedesign() {
                 transition={{ delay: i * 0.1, duration: 0.4 }}
                 className="flex flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white"
               >
-                {/* Outcome header — warm dark */}
+                {/* Outcome header */}
                 <div className="bg-stone-950 px-6 py-5">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-stone-500">Outcome</p>
                   <p className="mt-1 text-xl font-black text-white leading-tight">{story.outcome}</p>
@@ -700,7 +1000,7 @@ export default function OnSpotFindWorkRedesign() {
                 </div>
               </div>
 
-              {/* Right — numbered steps, warm accent bg */}
+              {/* Right — numbered steps */}
               <div className="border-t border-white/5 bg-[#252220] px-8 py-14 md:border-l md:border-t-0 md:px-10 md:py-16">
                 <p className="mb-8 text-[10px] font-bold uppercase tracking-[0.3em] text-stone-500">
                   How it works

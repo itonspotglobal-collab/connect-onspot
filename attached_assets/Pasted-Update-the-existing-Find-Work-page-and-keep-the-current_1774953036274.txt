@@ -1,0 +1,115 @@
+Update the existing Find Work page and keep the current OnSpot design system, spacing, colors, rounded cards, typography, and layout structure. Reuse the existing motion, popup/modal, and read more functionality already present in the codebase. Do not redesign from scratch.
+
+Goal:
+Make every job posting card open a popup modal when clicked on “View details” or the main card CTA area. The popup must feel native to the current page design and match the existing layout, styling, and interaction patterns.
+
+Requirements:
+1. Reuse existing code
+- Reuse the current popup/modal component already used elsewhere in the project.
+- Reuse the existing read more / expand-collapse feature for long job descriptions, qualifications, responsibilities, and benefits.
+- Reuse existing button, badge, card, and motion components.
+- Keep the current card layout and overall page section structure intact.
+
+2. Job card behavior
+- Each job card should have:
+  - Apply button
+  - View Details trigger
+  - Fit/match badge
+  - Summary snippet
+- Clicking “View details” should open the popup.
+- Optionally allow clicking the card body to open the popup too, except for the Apply button.
+- The Apply button should keep its current behavior and not trigger the modal unless already intended in the existing code.
+
+3. Popup/modal content
+Inside the popup, show a complete job posting using the selected role data:
+- Job title
+- Match percentage
+- Monthly pay
+- Schedule
+- Market/client type
+- Category
+- Hiring speed / demand badge
+- Short hook/introduction
+- Full job description
+- Responsibilities
+- Requirements / qualifications
+- Nice-to-have skills
+- Benefits / perks
+- Tags
+- Strong fit explanation
+- CTA buttons such as Apply Now and Close
+
+4. Read more behavior
+- If description sections are long, use the existing read more feature.
+- Apply read more to:
+  - Job description
+  - Responsibilities
+  - Requirements
+  - Benefits
+- Keep the interaction clean and consistent with current UI patterns.
+
+5. Data structure
+Extend the existing roles array so each role includes fields like:
+- description
+- responsibilities
+- requirements
+- niceToHaves
+- benefits
+- applicationSteps (optional)
+Use realistic placeholder content for each role while preserving the current sample data already shown on the page.
+
+Example shape:
+{
+  id: 1,
+  title: "Executive Virtual Assistant",
+  pay: "$900–$1,400/mo",
+  shift: "Night shift",
+  market: "US client",
+  category: "Admin",
+  demand: "High demand",
+  speed: "Quick hire",
+  fit: 92,
+  hook: "Support a fast-moving founder and become a key operator.",
+  why: "Strong fit for admin-heavy, client-facing candidates.",
+  tags: ["Remote", "Growth path", "Premium client"],
+  description: "...",
+  responsibilities: ["...", "..."],
+  requirements: ["...", "..."],
+  niceToHaves: ["...", "..."],
+  benefits: ["...", "..."]
+}
+
+6. State management
+Add local state for:
+- selectedRole
+- modal open/close state
+- expanded read more sections if needed
+Use clean React patterns with minimal disruption to the existing component structure.
+
+7. UX and design constraints
+- Follow the current visual design exactly.
+- Keep rounded corners, shadows, spacing rhythm, and dark/light support consistent.
+- Use the same purple accent theme already on the page.
+- Maintain responsive behavior for mobile, tablet, and desktop.
+- Animate popup entrance subtly using the existing motion approach.
+- Do not introduce a different design language.
+
+8. Implementation details
+- Update the JobCard component to accept an onViewDetails prop.
+- Create or wire a JobDetailsModal component using the existing popup implementation.
+- Pass the clicked role into the modal.
+- Render list sections elegantly with existing UI primitives.
+- Ensure keyboard and accessibility basics still work: close button, escape handling if already supported by existing popup component, focus-safe interaction.
+
+9. Output expectation
+Provide the updated React code for:
+- extended roles data
+- updated JobCard
+- modal integration in OnSpotFindWorkRedesign
+- any small helper component needed for reusable read more sections
+
+Important:
+- Do not remove the existing live preview, stats, filter chips, story cards, or CTA sections.
+- Do not replace the current layout with a new one.
+- Only enhance the existing implementation so job postings support popup details using the project’s existing popup and read more features.
+- Keep the result production-ready and aligned with the current code style.
