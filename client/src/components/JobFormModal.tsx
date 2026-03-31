@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/select";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
-import { Plus, Pencil, Star, Zap, Layers } from "lucide-react";
+import { Plus, Pencil, Star, Zap, Layers, Sparkles } from "lucide-react";
 import type { Job } from "@shared/schema";
 import { getJobBadges } from "@/lib/jobUtils";
 
@@ -67,6 +67,7 @@ export const defaultFormData = {
   responsibilities: "",
   requirements: "",
   skillTags: "",
+  culturalFit: "",
 };
 
 export type JobFormData = typeof defaultFormData;
@@ -91,6 +92,7 @@ export function jobToFormData(job: Job): JobFormData {
     skillTags: Array.isArray(job.skillTags)
       ? (job.skillTags as string[]).join(", ")
       : "",
+    culturalFit: toQuillHtml(job.culturalFit as string[]),
   };
 }
 
@@ -111,7 +113,6 @@ export function JobFormModal({ open, onClose, job, onSuccess }: JobFormModalProp
   const [formData, setFormData] = useState<JobFormData>(defaultFormData);
   const [errors, setErrors] = useState<Partial<Record<keyof JobFormData, string>>>({});
 
-  // Seed / reset form whenever the modal opens or the target job changes
   useEffect(() => {
     if (open) {
       setFormData(job ? jobToFormData(job) : defaultFormData);
@@ -211,6 +212,9 @@ export function JobFormModal({ open, onClose, job, onSuccess }: JobFormModalProp
       : [];
     payload.skillTags = formData.skillTags
       ? formData.skillTags.split(",").map((s) => s.trim()).filter(Boolean)
+      : [];
+    payload.culturalFit = !isEmptyQuill(formData.culturalFit)
+      ? [formData.culturalFit]
       : [];
 
     if (isEditing && job) {
@@ -444,7 +448,6 @@ export function JobFormModal({ open, onClose, job, onSuccess }: JobFormModalProp
               ))}
             </div>
 
-            {/* Live badge preview */}
             {previewBadges.length > 0 && (
               <div className="mt-4 p-3 rounded-md bg-muted/40 border border-border">
                 <p className="text-xs font-medium text-muted-foreground mb-2">
@@ -555,6 +558,43 @@ export function JobFormModal({ open, onClose, job, onSuccess }: JobFormModalProp
             </div>
           </div>
 
+          <Separator />
+
+          {/* ── Section 4: Cultural Fit ────────────────────────────────────── */}
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Sparkles className="w-4 h-4 text-[#474ead]" />
+              <p className="text-[11px] font-bold uppercase tracking-widest text-[#474ead]">
+                Cultural Fit
+              </p>
+            </div>
+            <p className="text-xs text-muted-foreground mb-4">
+              Describe the personality traits, work habits, and values that make someone a great fit for this role. Shown on the dedicated job page.
+            </p>
+            <div className="space-y-2">
+              <Label>
+                Cultural Fit Bullets
+                <span className="ml-1 text-[10px] text-muted-foreground font-normal">
+                  (dedicated page — use bullet list for best results)
+                </span>
+              </Label>
+              <div className="rounded-md border border-input bg-background">
+                <ReactQuill
+                  theme="snow"
+                  value={formData.culturalFit}
+                  onChange={(v) => updateField("culturalFit", v)}
+                  modules={quillModules}
+                  formats={quillFormats}
+                  placeholder="e.g. Thrives in a fast-paced remote environment&#10;Communicates proactively with clients..."
+                  style={{ minHeight: "130px" }}
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                If left empty, a set of default cultural values will be shown on the public page.
+              </p>
+            </div>
+          </div>
+
           {/* ── Sticky footer with actions ───────────────────────────────────── */}
           <div className="sticky bottom-0 -mx-6 -mb-6 bg-background border-t border-border px-6 py-4 flex items-center gap-3">
             <Button type="submit" disabled={isPending}>
@@ -569,7 +609,7 @@ export function JobFormModal({ open, onClose, job, onSuccess }: JobFormModalProp
             </Button>
             {isEditing && job && (
               <a
-                href={`/jobs/${job.id}`}
+                href={`/find-work/job/${job.id}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="ml-auto text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground transition-colors"

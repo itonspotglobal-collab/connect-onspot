@@ -76,6 +76,12 @@ Preferred communication style: Simple, everyday language.
 #### CRM Integration
 - **GoHighLevel (GHL)**: Automated lead management with contact and opportunity creation.
 
+#### Job Board (`/find-work`, `/find-work/jobs`, `/find-work/job/:jobId`, `/admin/find-work`)
+- **Schema**: `jobs` table includes `culturalFit: text("cultural_fit").array()` (added to DB via `db:push`).
+- **Public detail page** (`FindWorkJob.tsx`): Shows Job Description → Responsibilities → Skills Needed → Cultural Fit → Skills & Tags sections; DB jobs use `DbJobDetail` with `SectionBody` (handles Quill HTML); static roles 1–6 each have `culturalFit` arrays.
+- **Admin page** (`AdminFindWork.tsx`): Redesigned with dark navy hero header matching the `FindWork.tsx` visual language; stat pills, branded job rows, full CRUD; `JobFormModal.tsx` includes a Cultural Fit Quill editor (Section 4).
+- **Data flow**: `culturalFit` saved from admin form → stored in DB → surfaced on the public full-job page; empty value falls back to `CULTURAL_FIT_DEFAULTS` in `FindWorkJob.tsx`.
+
 #### Chatbot Integration
 - **VanessaChat (OpenAI Assistant API)**: AI virtual assistant with custom knowledge base, self-learning, and conversational training.
 - **Lindy.ai**: Embedded AI chatbot for customer support (pending whitelisting).
