@@ -1,0 +1,62 @@
+Redesign the Find Work page (`findwork.tsx`) so it no longer feels like a typical job board. Keep the exact same content, text, data, state, logic, and behavior from the provided code, but transform the page into a premium, guided opportunity-discovery experience.
+
+Core goal:
+- Make the page feel like a curated career-matching product, not a list of job cards.
+- The redesign should look dramatically different from the current version at first glance.
+- Change the visual system, layout treatment, hierarchy, card structure, section presentation, spacing rhythm, and overall emotional tone.
+
+Do NOT change:
+- Any copy/text
+- Any arrays or data values
+- Any filtering logic
+- Any useState / useMemo behavior
+- Any role matching behavior
+- Any prompts
+- Any story content
+- Any trust stats content
+- Any button labels
+- Any section order
+- The main component name: `OnSpotFindWorkRedesign`
+- The fact that this is frontend-only React code
+
+Keep these technical constraints:
+- React + TypeScript/TSX
+- Keep `framer-motion`
+- Keep `lucide-react`
+- Keep shadcn/ui components where already used (`Card`, `CardContent`, `Button`, `Input`, `Badge`, `Progress`)
+- Use Tailwind CSS
+- Output one complete `findwork.tsx` file only
+- No explanation, no markdown, no comments outside code
+
+Design direction:
+- Editorial landing page + premium talent marketplace
+- Distinctly not a conventional job board
+- Strong narrative hero section
+- More immersive and intentional section transitions
+- More unique composition instead of repeated generic cards
+- Use asymmetric layout where helpful
+- Create a guided “discover your fit” feel
+- Use stronger typography hierarchy
+- Make the top roles section feel curated, not grid-only and generic
+- Use visual storytelling, premium surfaces, layered gradients, refined shadows, and more polished containers
+- The page should feel more like a high-end product experience than a listings page
+
+Specific redesign guidance:
+- Hero should feel like a premium opportunity gateway, not a search header
+- Search area should feel more like an intelligent match assistant
+- Trust stats should be integrated more elegantly into the page instead of feeling like standard pills
+- The “Top matches” section should feel curated and high-value, not like basic listing cards
+- Filters should look more intentional and productized
+- The “Why OnSpot” section should feel like a product value narrative, not just feature cards
+- The stories section should feel more premium and emotional
+- The final CTA should feel elevated and conversion-focused
+
+Important:
+- Since the current page is already polished, do NOT make only minor Tailwind changes.
+- Produce a visibly different redesign with a new layout language.
+- Preserve functionality exactly, but significantly change how the experience looks.
+
+Output:
+- One full TSX file
+- Ready to paste into Replit
+- Code only
