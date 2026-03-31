@@ -1,0 +1,74 @@
+Update the current OnSpot Find Work page so all salary displays use Philippine Peso (₱) instead of US Dollar ($), while keeping the existing design, spacing, typography, layout, and behavior unchanged.
+
+What to change
+1. Replace all visible dollar-based salary text with peso-based salary text.
+2. Keep the current UI and component structure exactly the same.
+3. Do not redesign the page. Only update salary-related content and any filter labels that currently depend on dollar values.
+
+Specific updates needed
+
+A. Roles data
+Update the `roles` array so each `pay` value uses peso monthly ranges instead of dollar ranges.
+
+Use these sample replacements:
+- Executive Virtual Assistant → `₱50,000–₱78,000/mo`
+- Customer Support Specialist → `₱45,000–₱67,000/mo`
+- Bookkeeper / Accounting Assistant → `₱56,000–₱100,000/mo`
+- Sales Development Representative → `₱62,000–₱112,000/mo`
+- Content & Social Media Assistant → `₱48,000–₱73,000/mo`
+- Operations Coordinator → `₱56,000–₱84,000/mo`
+
+B. Stats section
+Update:
+- `Typical monthly roles` from `$800–$2,500` to `₱45,000–₱140,000/mo`
+
+C. Prompt chips / smart input examples
+Replace dollar-based prompt text with peso-based prompt text.
+Example:
+- `Virtual assistant, night shift, $900+`
+should become
+- `Virtual assistant, night shift, ₱50,000+`
+
+Also update any similar example chips that still imply dollar-based salary values.
+
+D. Earning filter options
+Update the earning filter options from:
+- `Any pay`
+- `$800+`
+- `$1,000+`
+- `$1,500+`
+
+to peso-based values, for example:
+- `Any pay`
+- `₱45,000+`
+- `₱60,000+`
+- `₱85,000+`
+
+E. Filter logic
+Update the earning filter logic so it correctly parses and compares peso values from strings like:
+- `₱50,000–₱78,000/mo`
+
+Make sure filtering still works correctly after changing the currency format.
+You may create a small helper function to extract the minimum salary number from the peso range string.
+
+Suggested helper behavior:
+- strip `₱`, commas, and `/mo`
+- get the first numeric value from the range
+- compare it against the selected earning threshold
+
+F. Live preview and cards
+Make sure the live preview cards, top match cards, and any salary text shown elsewhere all display peso values consistently.
+
+Important constraints
+- Keep the popup logic untouched unless salary text appears there too; if so, convert it to peso there as well.
+- Do not alter the visual design.
+- Do not change non-salary behavior.
+- Keep the code clean and production-ready.
+
+Output expectation
+Return the updated React code with:
+- peso salary values in the data
+- updated prompt text
+- updated stats text
+- updated earning filter labels
+- corrected earning filter logic for peso-formatted salary strings

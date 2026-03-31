@@ -16,7 +16,7 @@ interface Role {
   id: number;
   title: string;
   salaryPhp: string;
-  pay: string; // kept for filter logic
+  pay: string; // peso value — used for filter parsing
   shift: string;
   market: string;
   category: string;
@@ -41,7 +41,7 @@ const roles: Role[] = [
     id: 1,
     title: "Executive Virtual Assistant",
     salaryPhp: "₱50,000–₱78,000 / month",
-    pay: "$900–$1,400/mo",
+    pay: "₱50,000–₱78,000/mo",
     shift: "Night shift",
     market: "US client",
     category: "Admin",
@@ -89,7 +89,7 @@ const roles: Role[] = [
     id: 2,
     title: "Customer Support Specialist",
     salaryPhp: "₱45,000–₱67,000 / month",
-    pay: "$800–$1,200/mo",
+    pay: "₱45,000–₱67,000/mo",
     shift: "Night shift",
     market: "US client",
     category: "Support",
@@ -136,7 +136,7 @@ const roles: Role[] = [
     id: 3,
     title: "Bookkeeper / Accounting Assistant",
     salaryPhp: "₱56,000–₱101,000 / month",
-    pay: "$1,000–$1,800/mo",
+    pay: "₱56,000–₱100,000/mo",
     shift: "Day shift",
     market: "AU client",
     category: "Finance",
@@ -183,7 +183,7 @@ const roles: Role[] = [
     id: 4,
     title: "Sales Development Representative",
     salaryPhp: "₱62,000–₱112,000 / month",
-    pay: "$1,100–$2,000/mo",
+    pay: "₱62,000–₱112,000/mo",
     shift: "Night shift",
     market: "US client",
     category: "Sales",
@@ -230,7 +230,7 @@ const roles: Role[] = [
     id: 5,
     title: "Content & Social Media Assistant",
     salaryPhp: "₱48,000–₱73,000 / month",
-    pay: "$850–$1,300/mo",
+    pay: "₱48,000–₱73,000/mo",
     shift: "Flexible",
     market: "UK client",
     category: "Marketing",
@@ -277,7 +277,7 @@ const roles: Role[] = [
     id: 6,
     title: "Operations Coordinator",
     salaryPhp: "₱56,000–₱84,000 / month",
-    pay: "$1,000–$1,500/mo",
+    pay: "₱56,000–₱84,000/mo",
     shift: "Day shift",
     market: "AU client",
     category: "Operations",
@@ -359,6 +359,13 @@ const ctaSteps = [
 ];
 
 const APPLY_URL = "https://api.leadconnectorhq.com/widget/form/36ljnIgIsA1xoBluXvSK?notrack=true";
+
+// Extracts the minimum peso value from a salary string like "₱50,000–₱78,000/mo"
+function parseMinPhp(salaryStr: string): number {
+  const cleaned = salaryStr.replace(/[₱,\/mo\s]/g, "");
+  const match = cleaned.match(/\d+/);
+  return match ? parseInt(match[0], 10) : 0;
+}
 
 // ─── ReadMore helper ──────────────────────────────────────────────────────────
 
@@ -799,11 +806,12 @@ export default function OnSpotFindWorkRedesign() {
       const q = query.toLowerCase();
       const schedulePass = schedule === "All schedules" || role.shift === schedule;
       const kindPass = kind === "All work" || role.category === kind;
+      const minPay = parseMinPhp(role.salaryPhp);
       const earningPass =
         earning === "Any pay" ||
-        (earning === "$800+" && /\$(\d+)/.test(role.pay)) ||
-        (earning === "$1,000+" && parseInt(role.pay.match(/\$(\d+)/)?.[1] || "0", 10) >= 1000) ||
-        (earning === "$1,500+" && parseInt(role.pay.match(/\$(\d+)/)?.[1] || "0", 10) >= 1500);
+        (earning === "₱45,000+" && minPay >= 45000) ||
+        (earning === "₱60,000+" && minPay >= 60000) ||
+        (earning === "₱85,000+" && minPay >= 85000);
       const queryPass =
         !q ||
         role.title.toLowerCase().includes(q) ||
@@ -1015,7 +1023,7 @@ export default function OnSpotFindWorkRedesign() {
 
           <div className="mt-8 flex flex-wrap gap-6">
             {[
-              { label: "Earn",     options: ["Any pay", "$800+", "$1,000+", "$1,500+"],                                              state: earning,  set: setEarning  },
+              { label: "Earn",     options: ["Any pay", "₱45,000+", "₱60,000+", "₱85,000+"],                                     state: earning,  set: setEarning  },
               { label: "Schedule", options: ["All schedules", "Day shift", "Night shift", "Flexible"],                               state: schedule, set: setSchedule },
               { label: "Type",     options: ["All work", "Admin", "Support", "Finance", "Sales", "Marketing", "Operations"],        state: kind,     set: setKind     },
             ].map((group) => (
