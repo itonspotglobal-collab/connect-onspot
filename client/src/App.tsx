@@ -59,6 +59,7 @@ import ManagedServicesPage from "@/pages/ManagedServicesPage";
 import ResourcedServicesPage from "@/pages/ResourcedServicesPage";
 import EnterpriseServicesPage from "@/pages/EnterpriseServicesPage";
 import HumanVirtualAssistantPage from "@/pages/HumanVirtualAssistantPage";
+import HireTalentPage from "@/pages/HireTalentPage";
 
 // Immersive Page Wrapper - Full screen without navigation (for campaigns and reveals)
 function ImmersivePage() {
@@ -104,7 +105,7 @@ function PublicRouter() {
             }
             return <Home />;
           }} />
-          <Route path="/hire-talent" component={TalentSearch} />
+          <Route path="/hire-talent" component={HireTalentPage} />
           <Route path="/find-work" component={FindWork} />
           <Route path="/find-work/job/:jobId" component={FindWorkJob} />
           <Route path="/find-work/:category" component={FindWork} />
@@ -179,7 +180,7 @@ function ClientRouter() {
           )} />
           <Route path="/settings" component={ProfileSettings} />
           {/* Public routes accessible from client dashboard */}
-          <Route path="/hire-talent" component={TalentSearch} />
+          <Route path="/hire-talent" component={HireTalentPage} />
           <Route path="/find-work" component={FindWork} />
           <Route path="/find-work/job/:jobId" component={FindWorkJob} />
           <Route path="/find-work/:category" component={FindWork} />

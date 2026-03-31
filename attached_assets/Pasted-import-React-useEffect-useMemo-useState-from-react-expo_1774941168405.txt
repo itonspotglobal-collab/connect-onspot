@@ -1,0 +1,651 @@
+import React, { useEffect, useMemo, useState } from "react";
+ 
+export default function HireTalentPage() {
+  const categories = [
+    "Executive Assistants",
+    "Customer Support",
+    "Sales Development",
+    "Marketing",
+    "Operations",
+    "Bookkeeping",
+    "Design",
+    "Recruitment",
+  ];
+ 
+  const talent = [
+    {
+      name: "Executive Assistant",
+      family: "Executive Assistants",
+      summary: "Inbox, calendar, travel, and daily operations support for fast-moving founders and teams.",
+      seniority: "Mid",
+      coverage: "Full-time",
+      tools: ["Google Workspace", "Notion", "Slack"],
+      industry: ["SaaS", "Agency", "E-commerce"],
+      problemTags: ["calendar", "inbox", "admin", "coordination", "founder support"],
+    },
+    {
+      name: "Customer Support Specialist",
+      family: "Customer Support",
+      summary: "Voice, chat, and email support with strong empathy and structured customer handling.",
+      seniority: "Mid",
+      coverage: "Full-time",
+      tools: ["Zendesk", "Intercom", "Gorgias"],
+      industry: ["E-commerce", "Fintech", "SaaS"],
+      problemTags: ["support", "tickets", "chat", "email", "customer service"],
+    },
+    {
+      name: "Sales Development Representative",
+      family: "Sales Development",
+      summary: "Lead generation, prospecting, pipeline follow-up, and CRM discipline for growth teams.",
+      seniority: "Mid",
+      coverage: "Full-time",
+      tools: ["HubSpot", "Apollo", "Salesforce"],
+      industry: ["SaaS", "Agency", "B2B Services"],
+      problemTags: ["leads", "pipeline", "outbound", "prospecting", "crm"],
+    },
+    {
+      name: "Operations Coordinator",
+      family: "Operations",
+      summary: "Back-office execution, workflow coordination, SOP support, and process reliability.",
+      seniority: "Mid",
+      coverage: "Full-time",
+      tools: ["Airtable", "ClickUp", "Sheets"],
+      industry: ["Logistics", "Agency", "Healthcare"],
+      problemTags: ["process", "operations", "sops", "coordination", "admin"],
+    },
+    {
+      name: "Bookkeeper",
+      family: "Bookkeeping",
+      summary: "Monthly reconciliation, AP/AR support, reporting prep, and cleaner financial visibility.",
+      seniority: "Senior",
+      coverage: "Part-time",
+      tools: ["Xero", "QuickBooks", "Excel"],
+      industry: ["E-commerce", "Professional Services", "Real Estate"],
+      problemTags: ["reconciliation", "books", "finance", "ap", "ar"],
+    },
+    {
+      name: "Creative Designer",
+      family: "Design",
+      summary: "Ads, social creatives, decks, and brand assets built for fast-moving teams.",
+      seniority: "Mid",
+      coverage: "Project-based",
+      tools: ["Figma", "Adobe CC", "Canva"],
+      industry: ["E-commerce", "Agency", "Media"],
+      problemTags: ["creative", "design", "branding", "ads", "social"],
+    },
+  ];
+ 
+  const defaultSuggested = [
+    "I need someone to manage my inbox and calendar daily",
+    "Handle customer support for my e-commerce store",
+    "Build and manage my outbound sales pipeline",
+    "Keep my books clean and ready every month",
+  ];
+ 
+  const categorySuggestedMap = {
+    "Executive Assistants": [
+      "I need help managing my inbox and calendar",
+      "I want someone to organize my daily priorities",
+    ],
+    "Customer Support": [
+      "Handle customer chats and emails for my store",
+      "Improve response time and customer satisfaction",
+    ],
+    "Sales Development": [
+      "Generate and qualify leads for my business",
+      "Build a consistent outbound pipeline",
+    ],
+    Marketing: [
+      "Execute my marketing campaigns and reporting",
+      "Manage social content and scheduling",
+    ],
+    Operations: [
+      "Fix and organize my internal workflows",
+      "Help me build scalable processes",
+    ],
+    Bookkeeping: [
+      "Keep my finances clean and reconciled monthly",
+      "Manage my books and financial reports",
+    ],
+    Design: [
+      "Create ads and visuals that convert",
+      "Design assets for my brand and campaigns",
+    ],
+    Recruitment: [
+      "Help me hire and screen candidates fast",
+      "Build a pipeline of qualified talent",
+    ],
+  };
+ 
+  const allCoverage = ["All", "Full-time", "Part-time", "Project-based"];
+  const allSeniority = ["All", "Junior", "Mid", "Senior"];
+ 
+  const [query, setQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState("All");
+  const [coverage, setCoverage] = useState("All");
+  const [seniority, setSeniority] = useState("All");
+  const [clickedSuggestions, setClickedSuggestions] = useState({});
+  const [previewReady, setPreviewReady] = useState(false);
+  const [shortlistGenerated, setShortlistGenerated] = useState(false);
+ 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const saved = window.localStorage.getItem("onspot-hire-talent-suggestion-clicks");
+      if (saved) setClickedSuggestions(JSON.parse(saved));
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+ 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(
+        "onspot-hire-talent-suggestion-clicks",
+        JSON.stringify(clickedSuggestions)
+      );
+    } catch (e) {
+      // ignore
+    }
+  }, [clickedSuggestions]);
+ 
+  useEffect(() => {
+    if (!query && coverage === "All" && seniority === "All" && activeCategory === "All") {
+      setPreviewReady(false);
+      return;
+    }
+    setPreviewReady(false);
+    const timer = window.setTimeout(() => setPreviewReady(true), 650);
+    return () => window.clearTimeout(timer);
+  }, [query, coverage, seniority, activeCategory]);
+ 
+  const searchTokens = query.toLowerCase().trim();
+  const isSearching =
+    query.length > 0 || activeCategory !== "All" || coverage !== "All" || seniority !== "All";
+ 
+  const suggestedSearches = useMemo(() => {
+    let base = defaultSuggested;
+    if (activeCategory !== "All" && categorySuggestedMap[activeCategory]) {
+      base = categorySuggestedMap[activeCategory];
+    }
+    if (query) {
+      const filtered = base.filter((item) => item.toLowerCase().includes(query.toLowerCase()));
+      if (filtered.length) base = filtered;
+    }
+    return [...base].sort((a, b) => {
+      const diff = (clickedSuggestions[b] || 0) - (clickedSuggestions[a] || 0);
+      return diff !== 0 ? diff : a.localeCompare(b);
+    });
+  }, [activeCategory, query, clickedSuggestions]);
+ 
+  const filteredTalent = useMemo(() => {
+    return talent.filter((item) => {
+      const matchesQuery =
+        !searchTokens ||
+        item.name.toLowerCase().includes(searchTokens) ||
+        item.family.toLowerCase().includes(searchTokens) ||
+        item.summary.toLowerCase().includes(searchTokens) ||
+        item.problemTags.some((tag) => tag.includes(searchTokens)) ||
+        item.industry.some((ind) => ind.toLowerCase().includes(searchTokens)) ||
+        item.tools.some((tool) => tool.toLowerCase().includes(searchTokens));
+ 
+      const matchesCategory = activeCategory === "All" || item.family === activeCategory;
+      const matchesCoverage = coverage === "All" || item.coverage === coverage;
+      const matchesSeniority = seniority === "All" || item.seniority === seniority;
+ 
+      return matchesQuery && matchesCategory && matchesCoverage && matchesSeniority;
+    });
+  }, [searchTokens, activeCategory, coverage, seniority, talent]);
+ 
+  const topMatches = filteredTalent.slice(0, 3);
+  const moreMatches = filteredTalent.slice(3);
+ 
+  const clearFilters = () => {
+    setQuery("");
+    setActiveCategory("All");
+    setCoverage("All");
+    setSeniority("All");
+    setShortlistGenerated(false);
+  };
+ 
+  const handleSuggestionClick = (value) => {
+    setQuery(value);
+    setClickedSuggestions((prev) => ({ ...prev, [value]: (prev[value] || 0) + 1 }));
+    setShortlistGenerated(false);
+  };
+ 
+  const assistantLabel = useMemo(() => {
+    const lower = query.toLowerCase();
+    if (lower.includes("support")) return "a Customer Support Specialist";
+    if (lower.includes("sales") || lower.includes("pipeline") || lower.includes("lead")) return "a Sales Development Representative";
+    if (lower.includes("book") || lower.includes("reconciliation") || lower.includes("finance")) return "a Bookkeeper";
+    if (lower.includes("calendar") || lower.includes("inbox") || lower.includes("assistant")) return "an Executive Assistant";
+    return "the right talent";
+  }, [query]);
+ 
+  return (
+<div className="min-h-screen bg-[#f6f7fb] text-slate-900">
+<section className="relative overflow-hidden border-b border-slate-200 bg-white">
+<div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(71,78,173,0.12),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(71,78,173,0.08),transparent_30%)]" />
+<div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#474ead]/25 to-transparent" />
+ 
+        <div className="relative mx-auto max-w-5xl px-6 py-20 text-center lg:px-8 lg:py-24">
+<div className="inline-flex items-center rounded-full border border-[#474ead]/20 bg-[#474ead]/5 px-4 py-2 text-sm font-medium text-[#474ead] shadow-sm">
+            Hire Talent
+</div>
+ 
+          <h1 className="mx-auto mt-6 max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 md:text-5xl lg:text-6xl">
+            Hire the right talent. Fast.
+</h1>
+ 
+          <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-slate-600 md:text-lg">
+            Tell us what you need or request a shortlist. We’ll help you move from search to hire, quickly and confidently.
+</p>
+ 
+          <div className="mx-auto mt-10 max-w-3xl rounded-[28px] border border-slate-200 bg-white/90 p-3 shadow-[0_20px_80px_rgba(15,23,42,0.08)] backdrop-blur">
+<div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4 text-left">
+<div className="flex items-start gap-3">
+<div className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white shadow-sm">
+<svg viewBox="0 0 24 24" className="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" strokeWidth="1.8">
+<path d="M21 21l-4.35-4.35" />
+<circle cx="11" cy="11" r="6" />
+</svg>
+</div>
+<textarea
+                  value={query}
+                  onChange={(e) => {
+                    setQuery(e.target.value);
+                    setShortlistGenerated(false);
+                  }}
+                  rows={2}
+                  className="min-h-[72px] flex-1 resize-none bg-transparent text-sm leading-7 text-slate-800 outline-none placeholder:text-slate-400"
+                  placeholder="Tell us what you need... e.g. I need someone to handle customer support for my e-commerce store"
+                />
+<button className="self-end rounded-2xl bg-[#474ead] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#474ead]/20 transition hover:-translate-y-0.5">
+                  Find talent
+</button>
+</div>
+ 
+              {!query && (
+<div className="mt-4 flex flex-wrap gap-2">
+                  {[
+                    "Manage my inbox and calendar",
+                    "Customer support for e-commerce",
+                    "Outbound sales support",
+                    "Monthly bookkeeping",
+                  ].map((item) => (
+<button
+                      key={item}
+                      onClick={() => handleSuggestionClick(item)}
+                      className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-[#474ead]/25 hover:text-[#474ead]"
+>
+                      {item}
+</button>
+                  ))}
+</div>
+              )}
+</div>
+</div>
+ 
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+<button className="rounded-2xl bg-[#474ead] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[#474ead]/20 transition hover:-translate-y-0.5">
+              Hire talent now
+</button>
+<button className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-900/20 transition hover:-translate-y-0.5">
+              Request a shortlist
+</button>
+</div>
+ 
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-slate-500">
+<span>No long forms</span>
+<span className="hidden h-1 w-1 rounded-full bg-slate-300 sm:block" />
+<span>Shortlist-ready talent</span>
+<span className="hidden h-1 w-1 rounded-full bg-slate-300 sm:block" />
+<span>Built for fast hiring decisions</span>
+</div>
+</div>
+</section>
+ 
+      <section className="mx-auto max-w-7xl px-6 py-24 lg:px-8">
+<div className="mx-auto max-w-3xl text-center">
+<div className="text-sm font-semibold uppercase tracking-[0.18em] text-[#474ead]">How it works</div>
+<h2 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 md:text-5xl">
+            Go from need to hire in three simple steps.
+</h2>
+<p className="mt-5 text-lg leading-8 text-slate-600">
+            From the moment you search to the moment you shortlist, the experience is designed to help you act quickly and hire with confidence.
+</p>
+</div>
+ 
+        <div className="mt-16 grid gap-10 lg:grid-cols-3">
+          {[
+            ["01", "Tell us who you need", "Start with the role, skill, or outcome you need. You can search by job title or describe the business problem you want solved."],
+            ["02", "Review your best matches", "See high-fit talent based on your search so you can evaluate the strongest options quickly, without wasting time on low-fit profiles."],
+            ["03", "Shortlist and hire with confidence", "Move from search to shortlist with clarity, then take the next step toward hiring with speed and confidence."],
+          ].map(([num, title, body]) => (
+<div key={num} className="rounded-[28px] border border-slate-200 bg-white p-8 shadow-[0_20px_60px_rgba(15,23,42,0.06)] transition hover:-translate-y-1 hover:shadow-lg">
+<div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#474ead]/10 text-lg font-bold text-[#474ead]">
+                {num}
+</div>
+<h3 className="mt-6 text-xl font-semibold text-slate-900">{title}</h3>
+<p className="mt-3 text-sm leading-7 text-slate-600">{body}</p>
+</div>
+          ))}
+</div>
+</section>
+ 
+      <section className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
+<div className="mb-16 rounded-[30px] border border-slate-200 bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.06)] lg:p-8">
+<div className="flex flex-col gap-6 border-b border-slate-200 pb-6 md:flex-row md:items-end md:justify-between">
+<div>
+<div className="text-sm font-semibold uppercase tracking-[0.18em] text-[#474ead]">Top matches</div>
+<h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 md:text-4xl">
+                Top talent ready for your next hire.
+</h2>
+</div>
+<div className="flex items-center gap-4">
+<p className="max-w-xl text-sm leading-7 text-slate-600">
+                {filteredTalent.length} result{filteredTalent.length === 1 ? "" : "s"} based on your current search and filters.
+</p>
+              {isSearching && (
+<button onClick={clearFilters} className="shrink-0 text-sm font-semibold text-[#474ead]">
+                  Clear
+</button>
+              )}
+</div>
+</div>
+ 
+          {query && (
+<div className="mb-6 mt-6 space-y-3">
+<div className="rounded-2xl border border-[#474ead]/20 bg-[#474ead]/5 px-4 py-3 text-sm text-[#474ead]">
+<span className="font-semibold">Got it.</span> You’re looking for {assistantLabel}.
+<span className="text-slate-600"> Showing best matches for your needs.</span>
+</div>
+ 
+              <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm shadow-sm">
+<div className="font-medium text-slate-800">Let’s refine this quickly:</div>
+ 
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {[
+                    "Full-time",
+                    "Part-time",
+                    "Project-based",
+                  ].map((item) => (
+<button
+                      key={item}
+                      onClick={() => setCoverage(item)}
+                      className={`rounded-full border px-3 py-1 text-xs ${
+                        coverage === item
+                          ? "border-[#474ead]/30 bg-[#474ead]/8 text-[#474ead]"
+                          : "border-slate-200 bg-slate-50 text-slate-600 hover:border-[#474ead]/30 hover:text-[#474ead]"
+                      }`}
+>
+                      {item}
+</button>
+                  ))}
+</div>
+ 
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {[
+                    "Junior",
+                    "Mid",
+                    "Senior",
+                  ].map((item) => (
+<button
+                      key={item}
+                      onClick={() => setSeniority(item)}
+                      className={`rounded-full border px-3 py-1 text-xs ${
+                        seniority === item
+                          ? "border-[#474ead]/30 bg-[#474ead]/8 text-[#474ead]"
+                          : "border-slate-200 bg-slate-50 text-slate-600 hover:border-[#474ead]/30 hover:text-[#474ead]"
+                      }`}
+>
+                      {item}
+</button>
+                  ))}
+</div>
+ 
+                <div className="mt-4">
+<div className="text-xs font-medium text-slate-500">When do you need them?</div>
+<div className="mt-2 flex flex-wrap gap-2">
+                    {[
+                      "Immediately",
+                      "Within 2 weeks",
+                      "Flexible",
+                    ].map((item) => (
+<span key={item} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-600">
+                        {item}
+</span>
+                    ))}
+</div>
+</div>
+ 
+                <div className="mt-3">
+<div className="text-xs font-medium text-slate-500">Timezone preference</div>
+<div className="mt-2 flex flex-wrap gap-2">
+                    {[
+                      "US",
+                      "EU",
+                      "APAC",
+                      "Flexible",
+                    ].map((item) => (
+<span key={item} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-600">
+                        {item}
+</span>
+                    ))}
+</div>
+</div>
+ 
+                <div className="mt-4 rounded-xl bg-[#474ead]/5 p-3 text-xs text-[#474ead]">
+                  We can prepare a shortlist based on your inputs.
+</div>
+ 
+                <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+<div className="text-xs text-slate-600">
+<span className="font-medium">Summary:</span> {query || "Your need"}
+                    {coverage !== "All" ? ` • ${coverage}` : ""}
+                    {seniority !== "All" ? ` • ${seniority}` : ""}
+</div>
+<button
+                    onClick={() => setShortlistGenerated(true)}
+                    className="rounded-xl bg-[#474ead] px-4 py-2 text-xs font-semibold text-white shadow-md"
+>
+                    Generate shortlist
+</button>
+</div>
+ 
+                {shortlistGenerated && (
+<div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+<div className="mb-2 flex items-center justify-between">
+<div className="text-xs font-semibold text-slate-500">Sample candidates preview</div>
+<div className="text-[11px] text-slate-400">
+                        {previewReady ? "Preview ready" : "Loading matches..."}
+</div>
+</div>
+ 
+                    {!previewReady ? (
+<div className="space-y-2">
+                        {[0, 1].map((item) => (
+<div key={item} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2">
+<div className="flex items-center gap-2">
+<div className="h-8 w-8 rounded-lg bg-slate-200" />
+<div>
+<div className="h-3 w-28 rounded bg-slate-200" />
+<div className="mt-2 h-2.5 w-16 rounded bg-slate-100" />
+</div>
+</div>
+<div className="h-3 w-10 rounded bg-slate-200" />
+</div>
+                        ))}
+</div>
+                    ) : (
+<div className="space-y-2">
+                        {topMatches.slice(0, 2).map((role) => (
+<div key={role.name} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2 transition hover:border-[#474ead]/20">
+<div className="flex items-center gap-2">
+<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#474ead]/10 text-xs font-semibold text-[#474ead]">
+                                {role.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+</div>
+<div>
+<div className="text-xs font-medium text-slate-800">{role.name}</div>
+<div className="text-[11px] text-slate-500">{role.coverage}</div>
+</div>
+</div>
+<span className="text-[11px] font-medium text-[#474ead]">Match</span>
+</div>
+                        ))}
+</div>
+                    )}
+</div>
+                )}
+</div>
+</div>
+          )}
+ 
+          {topMatches.length > 0 ? (
+<div className="mt-6 grid gap-4 lg:grid-cols-3">
+              {topMatches.map((role) => (
+<div key={role.name} className="rounded-[24px] border border-slate-200 bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md">
+<div className="flex items-start gap-4">
+<div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#474ead]/20 to-[#474ead]/5 font-semibold text-[#474ead]">
+                      {role.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+</div>
+ 
+                    <div className="flex-1">
+<div className="flex items-center justify-between gap-3">
+<div>
+<div className="text-base font-semibold text-slate-900">{role.name}</div>
+<div className="text-xs text-slate-500">{role.family}</div>
+</div>
+<div className="text-right">
+<div className="text-sm font-semibold text-[#474ead]">Available now</div>
+<div className="text-xs text-slate-400">{role.coverage}</div>
+</div>
+</div>
+ 
+                      <p className="mt-2 text-sm leading-6 text-slate-600">{role.summary}</p>
+ 
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {role.tools.slice(0, 3).map((tool) => (
+<span key={tool} className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">
+                            {tool}
+</span>
+                        ))}
+</div>
+ 
+                      <div className="mt-4 flex items-center justify-between">
+<div className="text-xs text-slate-500">Pre-vetted by OnSpot</div>
+<button className="text-sm font-semibold text-[#474ead] hover:underline">
+                          Shortlist
+</button>
+</div>
+</div>
+</div>
+</div>
+              ))}
+</div>
+          ) : (
+<div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm leading-7 text-slate-600">
+              No exact match yet. Try a broader search like “customer support for e-commerce” or remove one filter.
+</div>
+          )}
+</div>
+ 
+        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+<div>
+<div className="text-sm font-semibold uppercase tracking-[0.18em] text-[#474ead]">Suggested searches</div>
+<h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950 md:text-4xl">
+              Start with your hiring need. We’ll guide you to the right talent.
+</h2>
+</div>
+<p className="max-w-2xl text-base leading-8 text-slate-600">
+            Whether you know the exact role or just the outcome you want, begin with a simple search. The experience helps you quickly uncover relevant talent profiles and move toward a stronger shortlist.
+</p>
+</div>
+ 
+        <div className="mt-8 flex flex-wrap gap-3">
+          {suggestedSearches.map((item) => (
+<button
+              key={item}
+              onClick={() => handleSuggestionClick(item)}
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:-translate-y-0.5 hover:border-[#474ead]/30 hover:text-[#474ead]"
+>
+              {item}
+              {(clickedSuggestions[item] || 0) > 0 && (
+<span className="ml-2 rounded-full bg-[#474ead]/8 px-2 py-0.5 text-[11px] font-semibold text-[#474ead]">
+                  {clickedSuggestions[item]}x
+</span>
+              )}
+</button>
+          ))}
+</div>
+</section>
+ 
+      <section className="mx-auto max-w-5xl px-6 py-20 text-center">
+<div className="rounded-[32px] border border-slate-200 bg-gradient-to-br from-white to-[#f8f9fd] p-10 shadow-[0_20px_80px_rgba(15,23,42,0.08)]">
+<h2 className="text-3xl font-semibold text-slate-950 md:text-4xl">
+            Ready to hire the right talent?
+</h2>
+<p className="mt-4 text-base text-slate-600">
+            Tell us what you need and we’ll prepare a shortlist of high-fit candidates for you, so you can move faster and hire with confidence.
+</p>
+<div className="mt-8 flex flex-wrap justify-center gap-4">
+<button className="rounded-2xl bg-[#474ead] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#474ead]/20">
+              Request a shortlist
+</button>
+<button className="rounded-2xl border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-700">
+              Talk to a hiring specialist
+</button>
+</div>
+</div>
+</section>
+ 
+      <section className="border-y border-slate-200 bg-white">
+<div className="mx-auto max-w-7xl px-6 py-20 lg:px-8">
+<div className="grid gap-6 lg:grid-cols-[1.05fr_.95fr]">
+<div className="rounded-[28px] bg-slate-950 p-8 text-white shadow-[0_25px_80px_rgba(15,23,42,0.18)]">
+<div className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white/75">
+                Why this works
+</div>
+<h2 className="mt-5 text-3xl font-semibold tracking-tight md:text-4xl">
+                Everything here is built to help you take action and hire with confidence.
+</h2>
+<div className="mt-8 grid gap-4 sm:grid-cols-2">
+                {[
+                  "Find stronger-fit talent based on what your business actually needs",
+                  "Spend less time screening and more time meeting serious candidates",
+                  "Stay in control with flexible search tools that help you narrow faster",
+                  "Move from search to shortlist faster without unnecessary complexity",
+                ].map((item) => (
+<div key={item} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-sm leading-7 text-white/80">
+                    {item}
+</div>
+                ))}
+</div>
+</div>
+ 
+            <div className="rounded-[28px] border border-slate-200 bg-white p-8">
+<div className="text-sm font-semibold uppercase tracking-[0.18em] text-[#474ead]">Built for hiring action</div>
+<div className="mt-5 space-y-4">
+                {[
+                  "Start with a simple search and get to relevant talent quickly.",
+                  "Use guided suggestions to sharpen what you need and uncover stronger matches.",
+                  "Refine only when needed, so the experience stays fast and focused.",
+                  "Take action on any device with a clean and responsive hiring experience.",
+                ].map((item, i) => (
+<div key={item} className="flex gap-4 rounded-2xl bg-slate-50 px-4 py-4">
+<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#474ead] text-sm font-semibold text-white">
+                      {i + 1}
+</div>
+<p className="text-sm leading-7 text-slate-600">{item}</p>
+</div>
+                ))}
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+  );
+}
