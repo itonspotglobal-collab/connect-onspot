@@ -749,6 +749,9 @@ export default function OnSpotFindWorkRedesign() {
     });
   }, [query, schedule, earning, kind]);
 
+  // First 3 open DB jobs for the live preview — unaffected by search/filter state
+  const previewDbJobs = useMemo(() => dbJobs.filter((j) => j.status === "open").slice(0, 3), [dbJobs]);
+
   const filteredDbJobs = useMemo(() => {
     return dbJobs.filter((job) => {
       if (job.status !== "open") return false;
@@ -837,7 +840,7 @@ export default function OnSpotFindWorkRedesign() {
                   <Button className="rounded-full bg-[#474ead] px-6 text-white hover:bg-[#3d439c]">
                     Find My Best Matches
                   </Button>
-                  <Button variant="outline" className="rounded-full px-6">
+                  <Button variant="outline" className="rounded-full px-6" onClick={() => navigate("/find-work/jobs")}>
                     Browse Roles
                   </Button>
                 </div>
@@ -863,36 +866,59 @@ export default function OnSpotFindWorkRedesign() {
                     <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Live preview</div>
                     <div className="mt-1 text-lg font-semibold">Your best opportunities</div>
                   </div>
-                  <Badge className="rounded-full bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-300">12 matches found</Badge>
+                  <Badge className="rounded-full bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-300">
+                    {dbJobs.filter((j) => j.status === "open").length || roles.length} open roles
+                  </Badge>
                 </div>
 
                 <div className="space-y-3">
-                  {roles.slice(0, 3).map((role, index) => (
-                    <motion.button
-                      key={role.id}
-                      initial={{ opacity: 0, y: 16 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.25 + index * 0.1, duration: 0.35 }}
-                      onClick={() => openModal(role)}
-                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openModal(role); } }}
-                      tabIndex={0}
-                      className="w-full cursor-pointer rounded-3xl border border-slate-200/80 bg-slate-50/80 p-4 text-left transition-all hover:border-[#474ead]/30 hover:shadow-[0_12px_40px_rgba(71,78,173,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#474ead]/30 dark:border-white/10 dark:bg-white/[0.03] dark:hover:border-[#474ead]/40"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold">{role.title}</span>
-                            <span className="rounded-full bg-[#474ead]/10 px-2 py-1 text-[11px] font-medium text-[#474ead]">{role.fit}% match</span>
+                  {/* DB-powered preview (first 3 open jobs); falls back to static roles when DB is empty */}
+                  {(previewDbJobs.length > 0 ? previewDbJobs : roles).slice(0, 3).map((item, index) => {
+                    const isDbJob = previewDbJobs.length > 0;
+                    const job = item as Job;
+                    const role = item as Role;
+
+                    const title  = isDbJob ? job.title  : role.title;
+                    const pay    = isDbJob ? buildRateDisplay(job) : role.pay;
+                    const shift  = isDbJob ? (job.contractType?.replace(/-/g, " ") ?? "Full-time") : role.shift;
+                    const market = isDbJob ? (job.location ?? "Remote") : role.market;
+                    const fit    = isDbJob ? 90 : role.fit;
+                    const why    = isDbJob
+                      ? ((job.description ?? "").slice(0, 90) || "Matching your profile to this open role.")
+                      : role.why;
+
+                    const handleClick = isDbJob
+                      ? () => navigate(`/find-work/job/${job.id}`)
+                      : () => openModal(role);
+
+                    return (
+                      <motion.button
+                        key={isDbJob ? job.id : role.id}
+                        initial={{ opacity: 0, y: 16 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.25 + index * 0.1, duration: 0.35 }}
+                        onClick={handleClick}
+                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClick(); } }}
+                        tabIndex={0}
+                        className="w-full cursor-pointer rounded-3xl border border-slate-200/80 bg-slate-50/80 p-4 text-left transition-all hover:border-[#474ead]/30 hover:shadow-[0_12px_40px_rgba(71,78,173,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#474ead]/30 dark:border-white/10 dark:bg-white/[0.03] dark:hover:border-[#474ead]/40"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-semibold">{title}</span>
+                              <span className="rounded-full bg-[#474ead]/10 px-2 py-1 text-[11px] font-medium text-[#474ead]">{fit}% match</span>
+                            </div>
+                            <div className="mt-1 text-sm text-slate-500">{pay} · {shift} · {market}</div>
+                            <div className="mt-2 flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                              <Sparkles className="h-4 w-4 shrink-0 text-[#474ead]" />
+                              <span className="line-clamp-1">{why}</span>
+                            </div>
                           </div>
-                          <div className="mt-1 text-sm text-slate-500">{role.pay} · {role.shift} · {role.market}</div>
-                          <div className="mt-2 flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                            <Sparkles className="h-4 w-4 shrink-0 text-[#474ead]" /> {role.why}
-                          </div>
+                          <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-slate-400 transition-colors group-hover:text-[#474ead]" />
                         </div>
-                        <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-slate-400 transition-colors group-hover:text-[#474ead]" />
-                      </div>
-                    </motion.button>
-                  ))}
+                      </motion.button>
+                    );
+                  })}
                 </div>
 
                 <div className="mt-4 rounded-3xl bg-[#0f172a] p-5 text-white">

@@ -1,0 +1,82 @@
+Make these two adjustments in `FindWork.tsx` and ensure the data is synced with `admin/find-work`.
+
+Changes needed
+
+1. Fix the “Browse Roles” button
+The `Browse Roles` button in `FindWork.tsx` should redirect to:
+
+`/find-work/jobs`
+
+Implementation requirements:
+- keep the current button styling exactly as it is
+- only add navigation behavior
+- use the project’s router/navigation pattern already used elsewhere
+- if using React Router, use `useNavigate()` or `Link`
+- if using Next/router-style navigation, use the project’s existing route method
+- clicking `Browse Roles` must navigate to `/find-work/jobs`
+
+2. Live Preview must show 3 job openings from `admin/find-work`
+The “Live Preview / Your best opportunities” section in `FindWork.tsx` should no longer use hardcoded preview jobs.
+It must display the first 3 currently available/open job postings coming from the same shared source used by `AdminFindWork.tsx`.
+
+Expected examples based on current admin data:
+- Accounting Manager
+- IT Administrator
+- Virtual Assistant
+
+Implementation requirements:
+- do not hardcode these three in `FindWork.tsx`
+- connect `FindWork.tsx` to the same shared jobs source as `AdminFindWork.tsx`
+- only show jobs that are currently open/available
+- limit live preview to 3 jobs
+- preserve the current card design and popup behavior
+- keep peso formatting and current UI layout
+
+Data sync requirement
+- `FindWork.tsx` and `AdminFindWork.tsx` must read from one shared job source
+- if they still use separate arrays, refactor into a shared file/hook/store such as:
+  - `src/data/findWorkJobs.ts`
+  - or an existing shared service/store
+- the admin page controls which jobs are open/available
+- the public Find Work page should reflect those openings automatically
+
+Filtering for live preview
+Use the shared jobs source and:
+- include only jobs marked as open/published/available
+- take the first 3 results for the live preview section
+
+Suggested example logic:
+- sharedJobs.filter(job => job.status === "open" || job.isOpen || job.isPublished).slice(0, 3)
+
+Map admin fields to FindWork card fields if needed
+If the admin data uses different field names, map them so the existing preview UI still works:
+- title
+- pay
+- shift
+- market
+- category
+- fit
+- why
+- tags
+
+If `fit` or `why` do not exist in admin data:
+- generate safe fallback values without breaking the UI
+- but do not hardcode the entire jobs list in `FindWork.tsx`
+
+Keep these unchanged
+- current design and layout of `FindWork.tsx`
+- current popup behavior on preview click
+- current peso salary display
+- current card spacing, colors, rounded corners, and shadows
+
+Output expectation
+Return updated code for:
+- `FindWork.tsx`
+- shared jobs source wiring
+- any small mapping/helper needed so live preview uses admin job postings
+- navigation fix for `Browse Roles`
+
+Important:
+- Do not leave the preview section using a local hardcoded `roles.slice(0, 3)`
+- It must use the admin/shared jobs source
+- `Browse Roles` must go to `/find-work/jobs`
