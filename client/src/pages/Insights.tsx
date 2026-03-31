@@ -27,19 +27,37 @@ type NavCategoryId = (typeof NAV_CATEGORIES)[number]["id"];
 
 // ─── Cover image fallbacks by category ────────────────────────────────────────
 const COVER_IMAGES: Record<string, string> = {
+  // Canonical new categories
   "CEO Insights":       "https://images.unsplash.com/photo-1549923746-c502d488b3ea?w=800&h=450&fit=crop",
   "Talent Insights":    "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&h=450&fit=crop",
   "Client Insights":    "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&h=450&fit=crop",
   "Industry Insights":  "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=450&fit=crop",
-  "Global Outsourcing": "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=800&h=450&fit=crop",
-  "Technology":         "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&h=450&fit=crop",
-  "Customer Service":   "https://images.unsplash.com/photo-1600298881974-6be191ceeda1?w=800&h=450&fit=crop",
-  "Industry Trends":    "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=450&fit=crop",
-  "Process Optimization":"https://images.unsplash.com/photo-1553484771-371a605b060b?w=800&h=450&fit=crop",
   "Learning Centre":    "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=450&fit=crop",
   "Podcast Videos":     "https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=800&h=450&fit=crop",
+  // Legacy categories (kept as fallbacks while old posts still exist in DB)
+  "Global Outsourcing":  "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=800&h=450&fit=crop",
+  "Technology":          "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&h=450&fit=crop",
+  "Customer Service":    "https://images.unsplash.com/photo-1600298881974-6be191ceeda1?w=800&h=450&fit=crop",
+  "Industry Trends":     "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=450&fit=crop",
+  "Process Optimization":"https://images.unsplash.com/photo-1553484771-371a605b060b?w=800&h=450&fit=crop",
 };
 const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=450&fit=crop";
+
+// ─── Legacy category normalisation ────────────────────────────────────────────
+// Maps old DB category strings → canonical Insights filter tab IDs.
+// Keeps existing seeded posts working without any DB migration.
+const LEGACY_CATEGORY_MAP: Record<string, string> = {
+  "Global Outsourcing":   "Industry Insights",
+  "Industry Trends":      "Industry Insights",
+  "Technology":           "Industry Insights",
+  "Customer Service":     "Client Insights",
+  "Process Optimization": "Learning Centre",
+};
+
+function normalizeCategory(raw: string): string {
+  const trimmed = raw.trim();
+  return LEGACY_CATEGORY_MAP[trimmed] ?? trimmed;
+}
 
 // ─── Content channels ─────────────────────────────────────────────────────────
 const contentChannels = [
@@ -115,6 +133,8 @@ type ArticleItem = {
 };
 
 function postToArticle(post: Post): ArticleItem {
+  // Normalise legacy DB category values to canonical Insights filter tab IDs.
+  const category = normalizeCategory(post.category);
   return {
     id: post.id,
     slug: post.slug,
@@ -123,15 +143,16 @@ function postToArticle(post: Post): ArticleItem {
     author: post.author || "OnSpot Team",
     date: formatDate(post.publishedAt || post.createdAt),
     readTime: post.readTime || "5 min read",
-    category: post.category,
+    category,
     image:
       post.coverImageUrl ||
+      COVER_IMAGES[category] ||
       COVER_IMAGES[post.category] ||
       FALLBACK_IMAGE,
     views: post.views || 0,
     likes: post.likes || 0,
     featured: post.isFeatured ?? false,
-    isEpisode: isPodcast(post.category),
+    isEpisode: isPodcast(category),
   };
 }
 

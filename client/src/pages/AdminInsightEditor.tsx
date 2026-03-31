@@ -33,18 +33,20 @@ const defaultFormData: PostFormData = {
   excerpt: "",
   content: "",
   coverImageUrl: "",
-  category: "Industry Trends",
+  category: "Industry Insights",
   author: "OnSpot Team",
   isFeatured: false,
   status: "draft",
 };
 
+// These values must exactly match the filter tab IDs on the public Insights page.
 const categories = [
-  "Global Outsourcing",
-  "Technology",
-  "Customer Service",
-  "Industry Trends",
-  "Process Optimization",
+  "CEO Insights",
+  "Talent Insights",
+  "Client Insights",
+  "Industry Insights",
+  "Learning Centre",
+  "Podcast Videos",
 ];
 
 function generateSlug(title: string): string {
