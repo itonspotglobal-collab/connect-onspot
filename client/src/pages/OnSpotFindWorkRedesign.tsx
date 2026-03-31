@@ -10,12 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 
-// ─── Extended role type ───────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Role {
   id: number;
   title: string;
-  pay: string;
+  salaryPhp: string;
+  pay: string; // kept for filter logic
   shift: string;
   market: string;
   category: string;
@@ -25,19 +26,21 @@ interface Role {
   hook: string;
   why: string;
   tags: string[];
+  overview: string;
   description: string;
   responsibilities: string[];
-  requirements: string[];
-  niceToHaves: string[];
+  qualifications: string[];
+  preferredSkills: string[];
   benefits: string[];
 }
 
-// ─── Roles data ───────────────────────────────────────────────────────────────
+// ─── Roles ────────────────────────────────────────────────────────────────────
 
 const roles: Role[] = [
   {
     id: 1,
     title: "Executive Virtual Assistant",
+    salaryPhp: "₱50,000–₱78,000 / month",
     pay: "$900–$1,400/mo",
     shift: "Night shift",
     market: "US client",
@@ -46,10 +49,12 @@ const roles: Role[] = [
     speed: "Quick hire",
     fit: 92,
     hook: "Support a fast-moving founder and become a key operator.",
-    why: "Strong fit for admin-heavy, client-facing candidates.",
+    why: "Strong fit for admin-heavy, client-facing candidates who want ownership and growth in a premium client environment.",
     tags: ["Remote", "Growth path", "Premium client"],
+    overview:
+      "A US-based founder scaling their business needs a sharp, proactive Executive VA to be the connective tissue that keeps everything moving — from inbox to special projects.",
     description:
-      "We're looking for a sharp, proactive Executive Virtual Assistant to support a US-based founder scaling their business. You'll manage communications, scheduling, research, and special projects — acting as the connective tissue that keeps things moving. This is a high-trust role with real ownership and visible impact, ideal for someone who wants more than task execution.",
+      "You'll manage communications, scheduling, research, and critical projects that require judgment and trust. This isn't a basic admin role — it's a high-ownership position where you'll interact with clients, vendors, and leadership daily. You'll have visibility across the business and direct impact on how efficiently the founder operates.",
     responsibilities: [
       "Manage the founder's inbox, calendar, and scheduling across time zones",
       "Coordinate meetings, prepare agendas, and take minutes",
@@ -59,7 +64,7 @@ const roles: Role[] = [
       "Draft and proofread emails, proposals, and presentations",
       "Track key deadlines and flag action items proactively",
     ],
-    requirements: [
+    qualifications: [
       "2+ years as a VA, EA, or senior admin support role",
       "Excellent written and verbal English communication",
       "Proficient with Google Workspace, Notion, Slack, or similar tools",
@@ -67,13 +72,13 @@ const roles: Role[] = [
       "Ability to work night shift aligned with US business hours",
       "High degree of discretion and professionalism",
     ],
-    niceToHaves: [
+    preferredSkills: [
       "Experience supporting C-suite or founders in a startup environment",
       "Familiarity with CRM tools like HubSpot or GoHighLevel",
       "Experience with project management tools like Asana or ClickUp",
     ],
     benefits: [
-      "Competitive monthly salary: $900–$1,400 USD",
+      "₱50,000–₱78,000 per month — above-market compensation",
       "100% remote — work from anywhere in the Philippines",
       "Long-term engagement with a growth-oriented client",
       "Career development support and performance reviews",
@@ -83,6 +88,7 @@ const roles: Role[] = [
   {
     id: 2,
     title: "Customer Support Specialist",
+    salaryPhp: "₱45,000–₱67,000 / month",
     pay: "$800–$1,200/mo",
     shift: "Night shift",
     market: "US client",
@@ -91,10 +97,12 @@ const roles: Role[] = [
     speed: "3–5 days",
     fit: 88,
     hook: "Join a scaling ecommerce brand with structured training.",
-    why: "Great for strong communicators with service experience.",
+    why: "Great for strong communicators with service experience who want a well-supported, high-volume role.",
     tags: ["Remote", "Training provided", "High volume"],
+    overview:
+      "A fast-growing US ecommerce brand needs a dedicated Customer Support Specialist for inbound queries, order resolution, and delivering an exceptional customer experience.",
     description:
-      "A fast-growing US ecommerce brand is looking for a dedicated Customer Support Specialist to handle inbound queries, resolve order issues, and deliver an exceptional customer experience. You'll be part of a structured support team with clear processes, escalation paths, and regular coaching — great for someone who thrives in high-volume, people-first environments.",
+      "You'll be part of a structured support team with clear processes, escalation paths, and regular coaching. High-volume but highly organized — great for someone who thrives on people-first work with solid systems behind them. CSAT and resolution speed are the key metrics you'll own.",
     responsibilities: [
       "Respond to customer inquiries via email, chat, and ticketing systems",
       "Resolve order issues including refunds, replacements, and delivery disputes",
@@ -103,7 +111,7 @@ const roles: Role[] = [
       "Meet and exceed CSAT, response time, and resolution rate KPIs",
       "Collaborate with fulfillment and logistics teams on order investigations",
     ],
-    requirements: [
+    qualifications: [
       "1+ year in customer service, support, or BPO environment",
       "Strong English written communication skills",
       "Experience with Zendesk, Freshdesk, or similar helpdesk tools",
@@ -111,13 +119,13 @@ const roles: Role[] = [
       "Fast typing speed with high accuracy",
       "Empathetic and patient under pressure",
     ],
-    niceToHaves: [
+    preferredSkills: [
       "Experience with ecommerce brands (Shopify, Amazon, etc.)",
       "Familiarity with Gorgias or Re:amaze",
       "Live chat or phone support experience",
     ],
     benefits: [
-      "Monthly salary: $800–$1,200 USD",
+      "₱45,000–₱67,000 per month",
       "Structured onboarding and continuous training",
       "Remote work setup",
       "Performance bonuses for top CSAT scores",
@@ -127,6 +135,7 @@ const roles: Role[] = [
   {
     id: 3,
     title: "Bookkeeper / Accounting Assistant",
+    salaryPhp: "₱56,000–₱101,000 / month",
     pay: "$1,000–$1,800/mo",
     shift: "Day shift",
     market: "AU client",
@@ -135,10 +144,12 @@ const roles: Role[] = [
     speed: "Priority role",
     fit: 84,
     hook: "Own reconciliations and reporting for a stable global business.",
-    why: "Strong match for organized candidates with finance exposure.",
+    why: "Strong match for organized candidates with finance exposure who want stability and above-market pay.",
     tags: ["Remote", "Stable team", "Career track"],
+    overview:
+      "A well-established Australian business needs an experienced Bookkeeper to own day-to-day financial records, reconciliations, and reporting with clear accountability.",
     description:
-      "A well-established Australian business is seeking an experienced Bookkeeper to manage day-to-day financial records, reconciliations, and reporting. You'll work closely with the finance lead and have clear ownership of your accounts. This is a stable, long-term engagement with above-market pay for candidates with solid accounting foundations.",
+      "You'll work closely with the finance lead and have full ownership of your accounts. Stable, long-term engagement with above-market compensation for candidates with solid accounting foundations. Day shift means a more normal schedule — a big quality-of-life advantage for the right candidate.",
     responsibilities: [
       "Perform daily bank reconciliations and transaction coding",
       "Manage accounts payable and receivable processes",
@@ -147,7 +158,7 @@ const roles: Role[] = [
       "Maintain accurate records in Xero or MYOB",
       "Coordinate with the external accountant during year-end processes",
     ],
-    requirements: [
+    qualifications: [
       "2+ years of bookkeeping or accounting assistant experience",
       "Proficiency with Xero, MYOB, or QuickBooks",
       "Strong attention to detail and numerical accuracy",
@@ -155,22 +166,23 @@ const roles: Role[] = [
       "Ability to work AU-aligned day shift hours",
       "Excellent communication for remote coordination",
     ],
-    niceToHaves: [
+    preferredSkills: [
       "CPA or accounting degree/diploma",
       "Experience working with AU-based clients",
       "Familiarity with Australian payroll standards",
     ],
     benefits: [
-      "Above-market salary: $1,000–$1,800 USD/month",
-      "Stable, long-term engagement",
-      "Day shift — aligned with Australian Eastern Time",
-      "Professional development support",
-      "Paid leave and a structured review cycle",
+      "₱56,000–₱101,000 per month — above-market pay",
+      "Stable, long-term engagement with a reputable AU business",
+      "Day shift — great work-life balance",
+      "Professional development and structured review cycle",
+      "Paid leave and Philippine public holiday recognition",
     ],
   },
   {
     id: 4,
     title: "Sales Development Representative",
+    salaryPhp: "₱62,000–₱112,000 / month",
     pay: "$1,100–$2,000/mo",
     shift: "Night shift",
     market: "US client",
@@ -179,10 +191,12 @@ const roles: Role[] = [
     speed: "Urgent",
     fit: 86,
     hook: "Book meetings, drive pipeline, and earn in a performance culture.",
-    why: "Best for confident communicators who like targets.",
+    why: "Best for confident communicators who like targets, want commission upside, and are ready for a B2B sales career.",
     tags: ["Commission upside", "Remote", "B2B"],
+    overview:
+      "A high-growth B2B company in the US needs a motivated SDR to drive top-of-funnel pipeline through outbound prospecting, cold outreach, and lead qualification.",
     description:
-      "A high-growth B2B company based in the US is looking for a motivated Sales Development Representative (SDR) to drive top-of-funnel pipeline through outbound prospecting, cold outreach, and qualification. This role offers base plus commission, making it one of the best-paying opportunities for strong communicators in the Philippines who want to build a career in B2B sales.",
+      "This role offers base plus performance commission — making it one of the best-paying opportunities for strong communicators in the Philippines. You'll work in a structured sales environment with clear targets, regular coaching, and real earning potential based on what you close.",
     responsibilities: [
       "Execute outbound prospecting via cold calls, emails, and LinkedIn",
       "Qualify inbound leads against defined ICP criteria",
@@ -191,7 +205,7 @@ const roles: Role[] = [
       "Meet and exceed monthly meeting booked targets",
       "Research target accounts and personalize outreach messaging",
     ],
-    requirements: [
+    qualifications: [
       "1+ year in B2B sales, telemarketing, or appointment setting",
       "Confident, clear spoken and written English",
       "Comfortable with cold calling and rejection",
@@ -199,22 +213,23 @@ const roles: Role[] = [
       "Goal-oriented mindset with demonstrated target achievement",
       "Ability to work US business hours (night shift in PH)",
     ],
-    niceToHaves: [
+    preferredSkills: [
       "SaaS or technology sales experience",
-      "Familiarity with sales engagement tools like Outreach or Apollo",
-      "Experience with structured sales methodologies (SPIN, MEDDIC)",
+      "Familiarity with sales tools like Outreach or Apollo",
+      "Experience with structured methodologies (SPIN, MEDDIC)",
     ],
     benefits: [
-      "Base salary: $1,100–$1,500 USD/month",
-      "Uncapped commission — total OTE up to $2,000+",
+      "Base: ₱62,000–₱84,000/month + uncapped commission",
+      "Total OTE up to ₱112,000/month",
       "Remote work, night shift",
-      "Sales training and career development in B2B",
+      "Sales training and B2B career development",
       "Regular team incentives and recognition programs",
     ],
   },
   {
     id: 5,
     title: "Content & Social Media Assistant",
+    salaryPhp: "₱48,000–₱73,000 / month",
     pay: "$850–$1,300/mo",
     shift: "Flexible",
     market: "UK client",
@@ -223,10 +238,12 @@ const roles: Role[] = [
     speed: "Open now",
     fit: 81,
     hook: "Create content systems for a modern digital brand.",
-    why: "Great fit for organized creatives with execution skills.",
+    why: "Great fit for organized creatives with execution skills who want to build their portfolio with a quality UK brand.",
     tags: ["Remote", "Portfolio builder", "Flexible"],
+    overview:
+      "A UK-based digital brand needs a Content & Social Media Assistant to support their growing content operation — producing, scheduling, and tracking across platforms.",
     description:
-      "A UK-based digital brand is looking for a Content & Social Media Assistant to support their growing content operation. You'll help produce, schedule, and track content across LinkedIn, Instagram, and other channels — working closely with the marketing lead to build consistent, high-quality output. This is a great portfolio-building role for organized creatives who love content systems.",
+      "You'll work closely with the marketing lead to build consistent, high-quality content output across LinkedIn, Instagram, and other key channels. Strong creative direction is provided — your job is to execute it reliably, build efficient content systems, and bring your own ideas when you see opportunities.",
     responsibilities: [
       "Create and schedule content for LinkedIn, Instagram, and Facebook",
       "Draft captions, carousels, and short-form written content",
@@ -235,30 +252,31 @@ const roles: Role[] = [
       "Track engagement metrics and prepare monthly performance reports",
       "Assist with basic graphic design using Canva or Adobe Express",
     ],
-    requirements: [
+    qualifications: [
       "1+ year in social media management, content creation, or digital marketing",
       "Strong written English with a clear, engaging voice",
       "Proficiency with Canva and scheduling tools like Buffer or Later",
-      "Understanding of social media best practices across platforms",
+      "Understanding of social media best practices",
       "Organized, proactive, and able to work independently",
-      "Portfolio of past content or examples",
+      "Portfolio of past content or examples required",
     ],
-    niceToHaves: [
+    preferredSkills: [
       "Experience with UK brands or audiences",
       "Basic video editing skills (CapCut, Premiere Rush)",
       "Familiarity with SEO content principles",
     ],
     benefits: [
-      "Monthly salary: $850–$1,300 USD",
+      "₱48,000–₱73,000 per month",
       "Flexible schedule — some UK timezone alignment",
       "Work with a forward-thinking creative brand",
-      "Portfolio-worthy work in a modern brand environment",
+      "Portfolio-worthy work and brand exposure",
       "Remote, long-term engagement",
     ],
   },
   {
     id: 6,
     title: "Operations Coordinator",
+    salaryPhp: "₱56,000–₱84,000 / month",
     pay: "$1,000–$1,500/mo",
     shift: "Day shift",
     market: "AU client",
@@ -267,10 +285,12 @@ const roles: Role[] = [
     speed: "7 days",
     fit: 79,
     hook: "Keep projects, people, and systems moving without chaos.",
-    why: "Excellent for detail-driven candidates who thrive on structure.",
+    why: "Excellent for detail-driven candidates who thrive on structure and want high-visibility cross-functional work.",
     tags: ["Remote", "Process-driven", "Cross-functional"],
+    overview:
+      "An Australian company with a multi-functional remote team needs an Operations Coordinator to manage workflows, track deliverables, and keep cross-functional projects on schedule.",
     description:
-      "An Australian company with a multi-functional remote team is looking for an Operations Coordinator to manage workflows, track deliverables, and keep cross-functional projects on schedule. You'll be the operational backbone — making sure nothing falls through the cracks. Ideal for detail-driven professionals who love systems, structure, and cross-team coordination.",
+      "You'll be the operational backbone — the person who ensures nothing falls through the cracks. This is a high-visibility role with access to leadership and real influence over how the team functions. Ideal for detail-driven professionals who love systems, structure, and helping teams perform at their best.",
     responsibilities: [
       "Coordinate project timelines, milestones, and deliverables across teams",
       "Maintain and improve internal SOPs and documentation",
@@ -279,7 +299,7 @@ const roles: Role[] = [
       "Identify bottlenecks and propose process improvements",
       "Assist with onboarding coordination for new team members",
     ],
-    requirements: [
+    qualifications: [
       "2+ years in operations, project coordination, or similar role",
       "Experience with project management tools (ClickUp, Asana, Notion)",
       "Excellent organizational and prioritization skills",
@@ -287,13 +307,13 @@ const roles: Role[] = [
       "Ability to work AU-aligned day shift hours",
       "Proven ability to manage multiple workstreams simultaneously",
     ],
-    niceToHaves: [
+    preferredSkills: [
       "Experience with process documentation and SOP creation",
       "Familiarity with remote-first team cultures",
       "PMP, CAPM, or similar project management certification",
     ],
     benefits: [
-      "Monthly salary: $1,000–$1,500 USD",
+      "₱56,000–₱84,000 per month",
       "Day shift — AU time zone aligned",
       "Stable, long-term remote engagement",
       "High-visibility role with access to leadership",
@@ -306,7 +326,7 @@ const roles: Role[] = [
 
 const trustStats = [
   { label: "Candidates placed",    value: "1,200+" },
-  { label: "Typical monthly roles", value: "$800–$2,500" },
+  { label: "Typical monthly roles", value: "₱45K–₱112K" },
   { label: "Global client markets", value: "US · AU · UK" },
   { label: "Hiring speed",          value: "3–10 days" },
 ];
@@ -318,7 +338,7 @@ const stories = [
 ];
 
 const prompts = [
-  "Virtual assistant, night shift, $900+",
+  "Virtual assistant, night shift, ₱50K+",
   "Customer support, remote, US client",
   "Accounting or finance role, day shift",
   "Social media assistant with flexible schedule",
@@ -342,7 +362,7 @@ const APPLY_URL = "https://api.leadconnectorhq.com/widget/form/36ljnIgIsA1xoBluX
 
 // ─── ReadMore helper ──────────────────────────────────────────────────────────
 
-function ReadMore({ text, limit = 220 }: { text: string; limit?: number }) {
+function ReadMore({ text, limit = 240 }: { text: string; limit?: number }) {
   const [expanded, setExpanded] = useState(false);
   const short = text.length > limit;
   const display = short && !expanded ? text.slice(0, limit).trimEnd() + "…" : text;
@@ -352,7 +372,7 @@ function ReadMore({ text, limit = 220 }: { text: string; limit?: number }) {
       {short && (
         <button
           onClick={() => setExpanded(!expanded)}
-          className="ml-1.5 text-primary font-semibold underline-offset-2 hover:underline text-xs"
+          className="ml-1.5 text-xs font-semibold text-primary underline-offset-2 hover:underline"
         >
           {expanded ? "Show less" : "Read more"}
         </button>
@@ -361,19 +381,19 @@ function ReadMore({ text, limit = 220 }: { text: string; limit?: number }) {
   );
 }
 
-// ─── BulletList with read-more collapse ──────────────────────────────────────
+// ─── BulletList with show-more collapse ──────────────────────────────────────
 
-function BulletList({ items, accent }: { items: string[]; accent: string }) {
+function BulletList({ items, accentClass }: { items: string[]; accentClass: string }) {
   const [expanded, setExpanded] = useState(false);
   const LIMIT = 4;
   const visible = expanded ? items : items.slice(0, LIMIT);
   const hasMore = items.length > LIMIT;
   return (
     <div>
-      <ul className="space-y-2">
+      <ul className="space-y-2.5">
         {visible.map((item, i) => (
-          <li key={i} className="flex items-start gap-2.5 text-sm leading-6 text-stone-700">
-            <span className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${accent}`} />
+          <li key={i} className="flex items-start gap-3 text-sm leading-6 text-stone-700">
+            <span className={`mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full ${accentClass}`} />
             {item}
           </li>
         ))}
@@ -383,17 +403,43 @@ function BulletList({ items, accent }: { items: string[]; accent: string }) {
           onClick={() => setExpanded(!expanded)}
           className="mt-3 text-xs font-semibold text-primary underline-offset-2 hover:underline"
         >
-          {expanded ? `Show fewer` : `Show ${items.length - LIMIT} more`}
+          {expanded ? "Show fewer" : `Show ${items.length - LIMIT} more`}
         </button>
       )}
     </div>
   );
 }
 
+// ─── Section block inside modal ───────────────────────────────────────────────
+
+function ModalSection({
+  icon: Icon,
+  title,
+  iconBg,
+  children,
+}: {
+  icon: React.ElementType;
+  title: string;
+  iconBg: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="px-6 py-5 md:px-8">
+      <div className="mb-3 flex items-center gap-2.5">
+        <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${iconBg}`}>
+          <Icon className="h-3.5 w-3.5" />
+        </div>
+        <h3 className="text-sm font-bold uppercase tracking-wide text-stone-800">{title}</h3>
+      </div>
+      {children}
+    </div>
+  );
+}
+
 // ─── Role Detail Modal ────────────────────────────────────────────────────────
+// z-[200] so it clears the top navigation's z-50
 
 function RoleDetailModal({ role, onClose }: { role: Role; onClose: () => void }) {
-  // Scroll lock + Escape key
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -407,47 +453,47 @@ function RoleDetailModal({ role, onClose }: { role: Role; onClose: () => void })
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4 md:p-6"
+      className="fixed inset-0 z-[200] flex items-end justify-center p-0 sm:items-center sm:p-4 md:p-6"
       aria-modal="true"
       role="dialog"
       aria-label={role.title}
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden="true"
       />
 
       {/* Modal panel */}
       <motion.div
-        initial={{ opacity: 0, y: 32, scale: 0.97 }}
+        initial={{ opacity: 0, y: 40, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 20, scale: 0.98 }}
-        transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
-        className="relative z-10 flex w-full max-w-3xl flex-col overflow-hidden rounded-t-3xl bg-white shadow-[0_32px_80px_rgba(0,0,0,0.28)] sm:rounded-3xl"
+        exit={{ opacity: 0, y: 24, scale: 0.98 }}
+        transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
+        className="relative z-10 flex w-full max-w-2xl flex-col overflow-hidden rounded-t-[28px] bg-white shadow-[0_32px_80px_rgba(0,0,0,0.32)] sm:rounded-[28px]"
         style={{ maxHeight: "92vh" }}
       >
-        {/* ── Header ── */}
-        <div className="relative shrink-0 overflow-hidden bg-[#1C1917] px-6 pb-6 pt-6">
-          {/* Glow */}
-          <div className="pointer-events-none absolute -top-16 right-0 h-56 w-56 rounded-full bg-primary/25 blur-[80px]" />
 
-          {/* Close */}
+        {/* ── HEADER ── */}
+        <div className="relative shrink-0 overflow-hidden bg-[#1C1917] px-6 pb-6 pt-5 md:px-8">
+          <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-primary/30 blur-[70px]" />
+
+          {/* Close button */}
           <button
             onClick={onClose}
             aria-label="Close"
-            className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white/60 transition hover:bg-white/20 hover:text-white"
+            className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white/50 transition hover:bg-white/20 hover:text-white"
           >
             <X className="h-4 w-4" />
           </button>
 
-          {/* Badges row */}
+          {/* Demand + speed + match row */}
           <div className="relative mb-4 flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-primary px-3 py-1 text-[11px] font-bold text-white">
               {role.demand}
             </span>
-            <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] text-white/70">
+            <span className="rounded-full border border-white/15 bg-white/[0.08] px-3 py-1 text-[11px] text-white/60">
               {role.speed}
             </span>
             <span className="ml-auto rounded-full bg-emerald-500/20 px-3 py-1 text-[11px] font-bold text-emerald-400">
@@ -455,128 +501,113 @@ function RoleDetailModal({ role, onClose }: { role: Role; onClose: () => void })
             </span>
           </div>
 
-          {/* Title */}
+          {/* Title + hook */}
           <div className="relative">
-            <h2 className="text-2xl font-black leading-tight text-white md:text-3xl">
+            <h2 className="text-2xl font-black leading-tight text-white md:text-[28px]">
               {role.title}
             </h2>
             <p className="mt-1.5 text-sm text-stone-400">{role.hook}</p>
           </div>
 
+          {/* Salary */}
+          <div className="relative mt-4 inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.06] px-4 py-2.5">
+            <DollarSign className="h-4 w-4 text-primary" />
+            <div>
+              <div className="text-[10px] text-white/40">Monthly salary (PHP)</div>
+              <div className="text-sm font-black text-white">{role.salaryPhp}</div>
+            </div>
+          </div>
+
           {/* Meta chips */}
-          <div className="relative mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="relative mt-4 grid grid-cols-3 gap-2">
             {[
-              { Icon: DollarSign,      label: "Monthly pay", value: role.pay      },
-              { Icon: Clock3,          label: "Schedule",    value: role.shift    },
-              { Icon: Globe2,          label: "Market",      value: role.market   },
-              { Icon: BriefcaseBusiness, label: "Category",  value: role.category },
+              { Icon: Clock3,          label: "Schedule",  value: role.shift    },
+              { Icon: Globe2,          label: "Market",    value: role.market   },
+              { Icon: BriefcaseBusiness, label: "Category", value: role.category },
             ].map(({ Icon, label, value }) => (
-              <div key={label} className="rounded-xl bg-white/[0.07] p-3">
-                <div className="flex items-center gap-1.5 text-[10px] text-white/40">
-                  <Icon className="h-3 w-3" />{label}
+              <div key={label} className="rounded-xl bg-white/[0.06] p-2.5">
+                <div className="flex items-center gap-1 text-[10px] text-white/40">
+                  <Icon className="h-2.5 w-2.5" />{label}
                 </div>
-                <div className="mt-1 text-xs font-bold text-white">{value}</div>
+                <div className="mt-1 text-xs font-bold text-white/90">{value}</div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* ── Scrollable body ── */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="space-y-0 divide-y divide-stone-100">
+        {/* ── SCROLLABLE BODY ── */}
+        <div className="flex-1 overflow-y-auto divide-y divide-stone-100">
 
-            {/* Why you're a fit */}
-            <div className="bg-primary/[0.04] px-6 py-5">
-              <div className="flex items-start gap-3">
-                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                <div>
-                  <p className="mb-1 text-xs font-bold uppercase tracking-widest text-primary">Why you're a fit</p>
-                  <p className="text-sm leading-6 text-stone-700">{role.why}</p>
-                </div>
+          {/* Why you're a fit */}
+          <div className="bg-primary/[0.04] px-6 py-5 md:px-8">
+            <div className="flex items-start gap-3">
+              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <div>
+                <p className="mb-1 text-[11px] font-bold uppercase tracking-widest text-primary">
+                  Why you're a fit
+                </p>
+                <p className="text-sm leading-6 text-stone-700">{role.why}</p>
               </div>
             </div>
+          </div>
 
-            {/* About this role */}
-            <div className="px-6 py-5">
-              <div className="mb-3 flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-stone-100 text-stone-600">
-                  <Sparkles className="h-3.5 w-3.5" />
-                </div>
-                <h3 className="text-sm font-bold text-stone-900">About this role</h3>
-              </div>
-              <p className="text-sm leading-7 text-stone-600">
-                <ReadMore text={role.description} limit={260} />
-              </p>
-            </div>
+          {/* Overview */}
+          <ModalSection icon={Sparkles} title="Overview" iconBg="bg-stone-100 text-stone-500">
+            <p className="text-sm leading-7 text-stone-600">
+              <ReadMore text={role.overview} limit={220} />
+            </p>
+          </ModalSection>
 
-            {/* Responsibilities */}
-            <div className="px-6 py-5">
-              <div className="mb-3 flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-stone-100 text-stone-600">
-                  <ListChecks className="h-3.5 w-3.5" />
-                </div>
-                <h3 className="text-sm font-bold text-stone-900">Responsibilities</h3>
-              </div>
-              <BulletList items={role.responsibilities} accent="bg-primary/70" />
-            </div>
+          {/* Full description */}
+          <ModalSection icon={ListChecks} title="About this role" iconBg="bg-indigo-50 text-indigo-500">
+            <p className="text-sm leading-7 text-stone-600">
+              <ReadMore text={role.description} limit={280} />
+            </p>
+          </ModalSection>
 
-            {/* Requirements */}
-            <div className="px-6 py-5">
-              <div className="mb-3 flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-stone-100 text-stone-600">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                </div>
-                <h3 className="text-sm font-bold text-stone-900">Requirements</h3>
-              </div>
-              <BulletList items={role.requirements} accent="bg-emerald-500" />
-            </div>
+          {/* Responsibilities */}
+          <ModalSection icon={ListChecks} title="Responsibilities" iconBg="bg-blue-50 text-blue-500">
+            <BulletList items={role.responsibilities} accentClass="bg-blue-400" />
+          </ModalSection>
 
-            {/* Nice to have */}
-            {role.niceToHaves.length > 0 && (
-              <div className="px-6 py-5">
-                <div className="mb-3 flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-stone-100 text-stone-600">
-                    <Award className="h-3.5 w-3.5" />
-                  </div>
-                  <h3 className="text-sm font-bold text-stone-900">Nice to have</h3>
-                </div>
-                <BulletList items={role.niceToHaves} accent="bg-amber-400" />
-              </div>
-            )}
+          {/* Qualifications */}
+          <ModalSection icon={CheckCircle2} title="Qualifications" iconBg="bg-emerald-50 text-emerald-600">
+            <BulletList items={role.qualifications} accentClass="bg-emerald-500" />
+          </ModalSection>
 
-            {/* Benefits */}
-            <div className="px-6 py-5">
-              <div className="mb-3 flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-stone-100 text-stone-600">
-                  <Gift className="h-3.5 w-3.5" />
-                </div>
-                <h3 className="text-sm font-bold text-stone-900">Benefits & perks</h3>
-              </div>
-              <BulletList items={role.benefits} accent="bg-purple-400" />
-            </div>
+          {/* Preferred skills */}
+          {role.preferredSkills.length > 0 && (
+            <ModalSection icon={Award} title="Preferred skills" iconBg="bg-amber-50 text-amber-500">
+              <BulletList items={role.preferredSkills} accentClass="bg-amber-400" />
+            </ModalSection>
+          )}
 
-            {/* Tags */}
-            <div className="px-6 py-5">
-              <p className="mb-3 text-xs font-bold uppercase tracking-widest text-stone-400">Tags</p>
-              <div className="flex flex-wrap gap-2">
-                {role.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium text-stone-700"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
+          {/* Benefits */}
+          <ModalSection icon={Gift} title="Benefits & perks" iconBg="bg-purple-50 text-purple-500">
+            <BulletList items={role.benefits} accentClass="bg-purple-400" />
+          </ModalSection>
+
+          {/* Tags */}
+          <div className="px-6 py-5 md:px-8">
+            <p className="mb-3 text-[11px] font-bold uppercase tracking-widest text-stone-400">Tags</p>
+            <div className="flex flex-wrap gap-2">
+              {role.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium text-stone-700"
+                >
+                  {tag}
+                </span>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* ── Footer ── */}
-        <div className="shrink-0 border-t border-stone-100 bg-white px-6 py-4">
+        {/* ── FOOTER ── */}
+        <div className="shrink-0 border-t border-stone-100 bg-white px-6 py-4 md:px-8">
           <div className="flex flex-wrap items-center gap-3">
             <Button
-              className="rounded-xl px-7"
+              className="rounded-xl px-6"
               onClick={() => window.open(APPLY_URL, "_blank")}
             >
               Apply Now <ArrowRight className="ml-2 h-4 w-4" />
@@ -584,9 +615,9 @@ function RoleDetailModal({ role, onClose }: { role: Role; onClose: () => void })
             <Button variant="outline" className="rounded-xl" onClick={onClose}>
               Close
             </Button>
-            <p className="ml-auto hidden text-xs text-stone-400 sm:block">
-              OnSpot Global · Remote · {role.market}
-            </p>
+            <span className="ml-auto hidden text-xs text-stone-400 sm:block">
+              OnSpot Global · {role.market}
+            </span>
           </div>
         </div>
       </motion.div>
@@ -615,7 +646,9 @@ function RoleRow({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: index * 0.05 }}
-      className={`border-b border-stone-200 transition-colors duration-200 ${isOpen ? "bg-stone-100" : "hover:bg-stone-50"}`}
+      className={`border-b border-stone-200 transition-colors duration-200 ${
+        isOpen ? "bg-stone-100" : "hover:bg-stone-50"
+      }`}
     >
       {/* Row header */}
       <button
@@ -625,11 +658,9 @@ function RoleRow({
         <span className="w-6 shrink-0 text-xs font-bold text-stone-400">
           {String(index + 1).padStart(2, "0")}
         </span>
-
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-primary/20 bg-primary/5 text-xs font-black text-primary">
           {role.fit}%
         </div>
-
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-baseline gap-2">
             <span className="text-base font-bold text-stone-900 md:text-lg">{role.title}</span>
@@ -642,12 +673,10 @@ function RoleRow({
             <span className="text-xs text-stone-400">{role.speed}</span>
           </div>
         </div>
-
         <div className="hidden shrink-0 text-right md:block">
-          <div className="text-xs text-stone-400">Monthly pay</div>
-          <div className="text-sm font-bold text-stone-900">{role.pay}</div>
+          <div className="text-xs text-stone-400">Monthly salary</div>
+          <div className="text-sm font-bold text-stone-900">{role.salaryPhp}</div>
         </div>
-
         <div className="ml-2 shrink-0 text-stone-400">
           {isOpen ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
         </div>
@@ -664,23 +693,23 @@ function RoleRow({
             className="overflow-hidden"
           >
             <div className="border-t border-stone-200 px-6 pb-6 pt-5 md:px-8">
-              <div className="grid gap-6 md:grid-cols-[1fr_280px]">
-                {/* Left */}
+              <div className="grid gap-6 md:grid-cols-[1fr_264px]">
+                {/* Left — summary */}
                 <div>
-                  <p className="text-sm text-stone-500 md:hidden mb-4">{role.hook}</p>
+                  <p className="mb-4 text-sm text-stone-500 md:hidden">{role.hook}</p>
 
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     {[
-                      { Icon: DollarSign,      l: "Monthly pay", v: role.pay      },
-                      { Icon: Clock3,          l: "Schedule",    v: role.shift    },
-                      { Icon: Globe2,          l: "Market",      v: role.market   },
-                      { Icon: BriefcaseBusiness, l: "Category",  v: role.category },
+                      { Icon: DollarSign,      l: "Monthly salary", v: role.salaryPhp  },
+                      { Icon: Clock3,          l: "Schedule",       v: role.shift      },
+                      { Icon: Globe2,          l: "Market",         v: role.market     },
+                      { Icon: BriefcaseBusiness, l: "Category",     v: role.category   },
                     ].map(({ Icon, l, v }) => (
                       <div key={l} className="rounded-xl border border-stone-200 bg-white p-3">
                         <div className="flex items-center gap-1.5 text-[11px] text-stone-400">
                           <Icon className="h-3 w-3" />{l}
                         </div>
-                        <div className="mt-1 text-sm font-bold text-stone-900">{v}</div>
+                        <div className="mt-1 text-xs font-bold text-stone-900 leading-tight">{v}</div>
                       </div>
                     ))}
                   </div>
@@ -693,10 +722,7 @@ function RoleRow({
                     </p>
                   </div>
 
-                  {/* Description preview */}
-                  <p className="mt-4 line-clamp-2 text-sm leading-6 text-stone-500">
-                    {role.description}
-                  </p>
+                  <p className="mt-4 line-clamp-2 text-sm leading-6 text-stone-500">{role.overview}</p>
 
                   <div className="mt-4 flex flex-wrap gap-1.5">
                     {role.tags.map((tag) => (
@@ -746,7 +772,7 @@ function RoleRow({
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function OnSpotFindWorkRedesign() {
-  const [query, setQuery] = useState("Virtual assistant, night shift, $900+");
+  const [query, setQuery] = useState("Virtual assistant, night shift, ₱50K+");
   const [schedule, setSchedule] = useState("All schedules");
   const [earning, setEarning] = useState("Any pay");
   const [kind, setKind] = useState("All work");
@@ -757,17 +783,17 @@ export default function OnSpotFindWorkRedesign() {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  function handleViewDetails(role: Role) {
+  function openModal(role: Role) {
     setSelectedRole(role);
     setModalOpen(true);
   }
 
-  function handleCloseModal() {
+  function closeModal() {
     setModalOpen(false);
-    setTimeout(() => setSelectedRole(null), 250);
+    setTimeout(() => setSelectedRole(null), 280);
   }
 
-  // Filtering logic (unchanged)
+  // Filter logic (unchanged — uses pay for $ range matching)
   const filteredRoles = useMemo(() => {
     return roles.filter((role) => {
       const q = query.toLowerCase();
@@ -784,7 +810,8 @@ export default function OnSpotFindWorkRedesign() {
         role.category.toLowerCase().includes(q) ||
         role.market.toLowerCase().includes(q) ||
         role.shift.toLowerCase().includes(q) ||
-        role.hook.toLowerCase().includes(q);
+        role.hook.toLowerCase().includes(q) ||
+        role.salaryPhp.toLowerCase().includes(q);
       return schedulePass && kindPass && earningPass && queryPass;
     });
   }, [query, schedule, earning, kind]);
@@ -792,10 +819,10 @@ export default function OnSpotFindWorkRedesign() {
   return (
     <div className="min-h-screen bg-[#F7F4EF] text-stone-900">
 
-      {/* ── Modal (portal-style at top of tree) ── */}
+      {/* Modal — z-[200] so it clears the nav's z-50 */}
       <AnimatePresence>
         {modalOpen && selectedRole && (
-          <RoleDetailModal role={selectedRole} onClose={handleCloseModal} />
+          <RoleDetailModal role={selectedRole} onClose={closeModal} />
         )}
       </AnimatePresence>
 
@@ -879,16 +906,55 @@ export default function OnSpotFindWorkRedesign() {
           </motion.div>
         </div>
 
+        {/* Live preview cards — click arrow to open modal */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.36, duration: 0.45 }}
-          className="relative mt-16 grid w-full max-w-4xl grid-cols-2 divide-x divide-white/10 border-t border-white/10 md:grid-cols-4"
+          transition={{ delay: 0.34, duration: 0.45 }}
+          className="relative mt-14 w-full max-w-3xl"
+        >
+          <p className="mb-3 text-center text-[10px] font-bold uppercase tracking-[0.25em] text-stone-500">
+            Live matches — click any card to view details
+          </p>
+          <div className="grid gap-2">
+            {roles.slice(0, 3).map((role, i) => (
+              <motion.button
+                key={role.id}
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.42 + i * 0.08, duration: 0.35 }}
+                onClick={() => openModal(role)}
+                className="flex w-full items-center gap-4 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 py-3.5 text-left transition hover:border-primary/30 hover:bg-white/[0.08]"
+              >
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-black text-primary">
+                  {role.fit}%
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold text-white leading-tight">{role.title}</p>
+                  <p className="mt-0.5 text-xs text-stone-400">{role.salaryPhp} · {role.market}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="hidden rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary sm:block">
+                    {role.demand}
+                  </span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-stone-500" />
+                </div>
+              </motion.button>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Stats row */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.45 }}
+          className="relative mt-10 grid w-full max-w-4xl grid-cols-2 divide-x divide-white/10 border-t border-white/10 md:grid-cols-4"
         >
           {trustStats.map(({ label, value }) => (
-            <div key={label} className="flex flex-col items-center gap-1 px-4 py-6 text-center">
-              <span className="text-2xl font-black text-white md:text-3xl">{value}</span>
-              <span className="text-[11px] text-stone-500">{label}</span>
+            <div key={label} className="flex flex-col items-center gap-1 px-4 py-5 text-center">
+              <span className="text-xl font-black text-white md:text-2xl">{value}</span>
+              <span className="text-[10px] text-stone-500">{label}</span>
             </div>
           ))}
         </motion.div>
@@ -897,7 +963,7 @@ export default function OnSpotFindWorkRedesign() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
-          className="absolute bottom-6 left-1/2 -translate-x-1/2"
+          className="absolute bottom-5 left-1/2 -translate-x-1/2"
         >
           <div className="flex flex-col items-center gap-1.5">
             <div className="h-8 w-px bg-gradient-to-b from-transparent to-white/20" />
@@ -926,7 +992,7 @@ export default function OnSpotFindWorkRedesign() {
       </div>
 
       {/* ════════════════════════════════════════════════════════════════════
-          ROLES
+          ROLES — filter tabs + accordion rows
       ════════════════════════════════════════════════════════════════════ */}
       <section className="mx-auto max-w-7xl px-0 py-16 md:py-24">
         <div className="mb-10 px-6 md:px-8">
@@ -947,7 +1013,6 @@ export default function OnSpotFindWorkRedesign() {
             </p>
           </div>
 
-          {/* Filter tabs */}
           <div className="mt-8 flex flex-wrap gap-6">
             {[
               { label: "Earn",     options: ["Any pay", "$800+", "$1,000+", "$1,500+"],                                              state: earning,  set: setEarning  },
@@ -991,7 +1056,7 @@ export default function OnSpotFindWorkRedesign() {
                   index={i}
                   isOpen={openRoleId === role.id}
                   onToggle={() => setOpenRoleId(openRoleId === role.id ? null : role.id)}
-                  onViewDetails={handleViewDetails}
+                  onViewDetails={openModal}
                 />
               ))
             )}
@@ -1025,7 +1090,9 @@ export default function OnSpotFindWorkRedesign() {
                 initial={{ opacity: 0, x: i % 2 === 0 ? -16 : 16 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.08, duration: 0.4 }}
-                className={`flex items-center gap-8 rounded-2xl border border-stone-100 bg-stone-50 p-6 md:p-8 ${i % 2 !== 0 ? "md:flex-row-reverse" : ""}`}
+                className={`flex items-center gap-8 rounded-2xl border border-stone-100 bg-stone-50 p-6 md:p-8 ${
+                  i % 2 !== 0 ? "md:flex-row-reverse" : ""
+                }`}
               >
                 <div className="flex shrink-0 flex-col items-center gap-3">
                   <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-stone-950 text-white">
@@ -1124,7 +1191,6 @@ export default function OnSpotFindWorkRedesign() {
                   </div>
                 </div>
               </div>
-
               <div className="border-t border-white/5 bg-[#252220] px-8 py-14 md:border-l md:border-t-0 md:px-10 md:py-16">
                 <p className="mb-8 text-[10px] font-bold uppercase tracking-[0.3em] text-stone-500">How it works</p>
                 <div className="space-y-6">

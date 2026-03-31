@@ -1,0 +1,136 @@
+Use the new Find Work page code as the base, but continue the popup behavior and detailed job-posting structure from the old setup instead of inventing a completely new pattern.
+
+Important direction:
+- Keep the new page layout and styling already implemented.
+- But for the popup behavior, continue the old setup approach that already existed in the project.
+- Reuse the existing popup/modal component and existing logic from the old implementation.
+- Only update the popup design/layout so it visually matches the new Find Work redesign.
+- Do not replace the popup workflow with a new architecture.
+
+Main fixes needed
+1. Popup behavior
+- When the arrow icon in the live preview card is clicked, open the existing popup.
+- When “View details” is clicked in the larger job cards, open the same popup.
+- The popup should receive the selected job/role data from the clicked card.
+- Keep Apply button behavior separate.
+
+2. Continue the old job details structure
+Inside the popup, follow the older detailed-job-posting structure that I originally started with, not a totally new simplified card.
+The popup should feel like a full job post and include:
+- Job title
+- Salary in Philippine Peso (₱), not dollars
+- Job type / category
+- Work schedule
+- Client market
+- Match percentage
+- Hiring urgency / speed
+- Job overview / introduction
+- Full description
+- Responsibilities
+- Qualifications
+- Preferred skills
+- Benefits
+- Why you’re a fit
+- Tags
+- Apply CTA
+- Close CTA
+
+3. Salary conversion / display
+- Replace current dollar salary display with peso salary display across the detailed popup.
+- Prefer peso values directly in the role data instead of computing from dollars at runtime.
+- Update job detail content to use peso-based ranges such as:
+  - ₱50,000–₱78,000 / month
+  - ₱45,000–₱65,000 / month
+- If salary appears in the preview cards or main role cards and the old setup expected pesos there too, align those displays with pesos as well.
+- Keep the formatting consistent and user-friendly.
+
+4. Data structure update
+Extend the existing roles array to support the old detailed popup format. Each role should include fields like:
+- salaryPhp
+- description
+- overview
+- responsibilities
+- qualifications
+- preferredSkills
+- benefits
+- applicationProcess (optional)
+
+Example:
+{
+  id: 1,
+  title: "Executive Virtual Assistant",
+  salaryPhp: "₱50,000–₱78,000 / month",
+  shift: "Night shift",
+  market: "US client",
+  category: "Admin",
+  demand: "High demand",
+  speed: "Quick hire",
+  fit: 92,
+  hook: "Support a fast-moving founder and become a key operator.",
+  why: "Strong fit for admin-heavy, client-facing candidates.",
+  tags: ["Remote", "Growth path", "Premium client"],
+  overview: "...",
+  description: "...",
+  responsibilities: ["...", "..."],
+  qualifications: ["...", "..."],
+  preferredSkills: ["...", "..."],
+  benefits: ["...", "..."]
+}
+
+5. Keep the new page, continue old popup logic
+- Do not redesign the whole page again.
+- Do not remove the new hero, live preview, filters, stories, and CTA sections.
+- Only wire the popup using the previous project structure and adapt its internal layout to match the new UI.
+- If the old popup already has open/close logic, selected item state, overlay, or animation, preserve that pattern.
+
+6. Design/layout for popup
+Restyle the existing popup to match the current page:
+- rounded corners similar to rounded-3xl / rounded-[32px]
+- same purple accent theme (#474ead family)
+- same spacing rhythm
+- same badge styling
+- same soft borders, shadows, and backdrop blur
+- same dark mode support
+- clean responsive layout
+
+Suggested popup layout
+- Header area:
+  - title
+  - fit badge
+  - salary in pesos
+  - shift / market / category row
+  - urgency + speed badges
+- Body:
+  - overview
+  - description
+  - responsibilities
+  - qualifications
+  - preferred skills
+  - benefits
+  - why you’re a fit
+- Footer:
+  - Apply button
+  - Close button
+
+7. Reuse existing read more
+- Reuse the existing read more / show more feature from the old setup for long sections.
+- Apply it to description, responsibilities, qualifications, and benefits when needed.
+
+8. React changes expected
+- Keep selectedRole state
+- Keep modal open/close state
+- Wire both arrow click and View Details click to the same existing popup
+- Update JobCard props as needed
+- Update live preview cards so the arrow is clickable and opens the popup
+
+9. Output expectation
+Return updated React code that:
+- uses the new page code as base
+- restores/continues the old popup workflow
+- updates salary display to pesos
+- expands role data for full job details
+- restyles the popup to match the new page
+- keeps the code clean and production-ready
+
+Important:
+I want to continue what I already started in the old setup, just adapted into the new design. Do not create a completely different popup flow.
