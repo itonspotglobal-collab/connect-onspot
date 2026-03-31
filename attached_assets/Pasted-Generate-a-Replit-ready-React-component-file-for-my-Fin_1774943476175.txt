@@ -1,0 +1,60 @@
+Generate a Replit-ready React component file for my Find Work page based on the provided draft code. Redesign only the UI/visual design. Do not change the content, copy, context, meaning, data, logic, filtering behavior, state behavior, component behavior, or user flow.
+
+Requirements:
+- Keep all existing text exactly the same.
+- Keep all existing arrays, data objects, labels, titles, copy, and section order the same.
+- Keep all existing functionality exactly the same:
+  - search input
+  - prompt chips
+  - earning filter
+  - schedule filter
+  - work type filter
+  - filtered roles rendering
+  - profile strength display
+  - stats pills
+  - applicant stories
+  - CTA section
+- Do not change the page context.
+- Do not remove any sections.
+- Do not rewrite the messaging.
+- Only redesign the look and feel.
+
+Technical requirements:
+- Use React functional components.
+- Keep `useState` and `useMemo`.
+- Keep the main component name exactly: `OnSpotFindWorkRedesign`.
+- Keep support for `framer-motion`.
+- Keep the imported icon usage with `lucide-react`.
+- Keep the existing shadcn/ui component usage (`Card`, `CardContent`, `Button`, `Input`, `Badge`, `Progress`) unless only styling adjustments are needed.
+- Use Tailwind CSS for styling.
+- Output a single complete file ready to paste into Replit.
+- No backend code.
+- No explanations.
+- Output code only.
+
+Design direction:
+- Premium, modern, clean, and high-converting
+- More polished visual hierarchy
+- Stronger hero section
+- Better spacing and section rhythm
+- Elevated cards
+- Subtle gradients
+- Soft shadows
+- Refined rounded corners
+- Responsive on mobile, tablet, and desktop
+- Professional and aspirational for job seekers
+- Keep it visually impressive without changing the underlying content
+
+Important constraints:
+- Do not change any copywriting.
+- Do not change filtering logic.
+- Do not change state variable names unless absolutely necessary.
+- Do not remove `motion` animations.
+- Do not alter role data or story data.
+- Do not simplify the page into fewer sections.
+- Preserve the same frontend behavior while improving only the design.
+
+Output:
+- One complete React component file
+- Ready for Replit
+- Code only
