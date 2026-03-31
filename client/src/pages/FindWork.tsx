@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Sparkles, BriefcaseBusiness, Clock3, Globe2, ChevronRight, Star, ArrowRight, ArrowLeft, BadgeCheck, Filter, Zap, DollarSign, Building2, CheckCircle2, Users, Brain, TrendingUp, X, Gift, Award, ListChecks, Maximize2 } from "lucide-react";
+import { Search, Sparkles, BriefcaseBusiness, Clock3, Globe2, ChevronRight, Star, ArrowRight, BadgeCheck, Filter, Zap, DollarSign, Building2, CheckCircle2, Users, Brain, TrendingUp, X, ListChecks, Maximize2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -335,10 +335,6 @@ function StatPill({ icon: Icon, label, value }) {
 type Role = (typeof roles)[number];
 
 function RoleModal({ role, onClose }: { role: Role; onClose: () => void }) {
-  const [tab, setTab] = useState<"summary" | "full">("summary");
-
-  useEffect(() => { setTab("summary"); }, [role]);
-
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -349,6 +345,10 @@ function RoleModal({ role, onClose }: { role: Role; onClose: () => void }) {
       document.removeEventListener("keydown", onKey);
     };
   }, [onClose]);
+
+  function openFullPage() {
+    window.open(`/find-work/job/${role.id}`, "_blank", "noopener,noreferrer");
+  }
 
   const BulletRow = ({ text, color }: { text: string; color: string }) => (
     <li className="flex items-start gap-3 text-sm leading-6 text-slate-700 dark:text-slate-300">
@@ -375,11 +375,11 @@ function RoleModal({ role, onClose }: { role: Role; onClose: () => void }) {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 24, scale: 0.98 }}
         transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
-        className="relative z-10 flex w-full max-w-2xl flex-col overflow-hidden rounded-t-[28px] bg-white shadow-[0_32px_80px_rgba(0,0,0,0.32)] dark:bg-[#0f172a] sm:rounded-[28px]"
+        className="relative z-10 flex w-[95vw] flex-col overflow-hidden rounded-t-[28px] bg-white shadow-[0_32px_80px_rgba(0,0,0,0.32)] dark:bg-[#0f172a] sm:w-[92vw] sm:rounded-[28px] lg:w-[880px] xl:w-[980px]"
         style={{ maxHeight: "92vh" }}
       >
         {/* ── HEADER ── */}
-        <div className="relative shrink-0 overflow-hidden bg-[#0f172a] px-6 pb-6 pt-5 md:px-8">
+        <div className="relative shrink-0 overflow-hidden bg-[#0f172a] px-6 pb-6 pt-5 md:px-10">
           <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-[#474ead]/30 blur-[70px]" />
 
           <button
@@ -409,13 +409,13 @@ function RoleModal({ role, onClose }: { role: Role; onClose: () => void }) {
             </div>
           </div>
 
-          <div className="relative mt-4 grid grid-cols-3 gap-2">
+          <div className="relative mt-4 grid grid-cols-3 gap-2 sm:grid-cols-3 md:flex md:gap-3">
             {[
               { Icon: Clock3,            label: "Schedule",  value: role.shift    },
               { Icon: Globe2,            label: "Market",    value: role.market   },
               { Icon: BriefcaseBusiness, label: "Category",  value: role.category },
             ].map(({ Icon, label, value }) => (
-              <div key={label} className="rounded-xl bg-white/[0.06] p-2.5">
+              <div key={label} className="rounded-xl bg-white/[0.06] p-2.5 md:flex-1">
                 <div className="flex items-center gap-1 text-[10px] text-white/40">
                   <Icon className="h-2.5 w-2.5" />{label}
                 </div>
@@ -423,200 +423,83 @@ function RoleModal({ role, onClose }: { role: Role; onClose: () => void }) {
               </div>
             ))}
           </div>
-
-          {tab === "full" && (
-            <div className="relative mt-3 flex items-center gap-1.5">
-              <span className="text-[10px] text-white/30">Summary</span>
-              <span className="text-[10px] text-white/20">›</span>
-              <span className="text-[10px] font-semibold text-[#474ead]/80">Full Details</span>
-            </div>
-          )}
         </div>
 
-        {/* ── BODY ── */}
-        <AnimatePresence mode="wait" initial={false}>
-          {tab === "summary" ? (
-            <motion.div
-              key="summary"
-              initial={{ opacity: 0, x: -16 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 16 }}
-              transition={{ duration: 0.22, ease: "easeOut" }}
-              className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-white/10"
-            >
-              {/* Why you're a fit */}
-              <div className="bg-[#474ead]/[0.04] px-6 py-5 md:px-8">
-                <div className="flex items-start gap-3">
-                  <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#474ead]" />
-                  <div>
-                    <p className="mb-1 text-[11px] font-bold uppercase tracking-widest text-[#474ead]">Why you're a fit</p>
-                    <p className="text-sm leading-6 text-slate-700 dark:text-slate-300">{role.why}</p>
-                  </div>
-                </div>
-              </div>
+        {/* ── SCROLLABLE BODY ── */}
+        <div className="flex-1 divide-y divide-slate-100 overflow-y-auto dark:divide-white/10">
 
-              {/* Overview snippet */}
-              <div className="px-6 py-5 md:px-8">
-                <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-slate-400">Overview</p>
-                <p className="line-clamp-3 text-sm leading-7 text-slate-600 dark:text-slate-300">{role.overview}</p>
+          {/* Why you're a fit */}
+          <div className="bg-[#474ead]/[0.04] px-6 py-5 md:px-10">
+            <div className="flex items-start gap-3">
+              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#474ead]" />
+              <div>
+                <p className="mb-1 text-[11px] font-bold uppercase tracking-widest text-[#474ead]">Why you're a fit</p>
+                <p className="text-sm leading-6 text-slate-700 dark:text-slate-300">{role.why}</p>
               </div>
+            </div>
+          </div>
 
-              {/* Responsibilities preview — first 3 */}
-              <div className="px-6 py-5 md:px-8">
-                <div className="mb-3 flex items-center gap-2.5">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-500 dark:bg-blue-900/30">
-                    <ListChecks className="h-3.5 w-3.5" />
-                  </div>
-                  <h3 className="text-sm font-bold uppercase tracking-wide text-slate-800 dark:text-slate-200">Responsibilities</h3>
-                </div>
-                <ul className="space-y-2.5">
-                  {role.responsibilities.slice(0, 3).map((item, i) => (
-                    <BulletRow key={i} text={item} color="bg-blue-400" />
-                  ))}
-                </ul>
-                {role.responsibilities.length > 3 && (
-                  <p className="mt-3 text-xs text-slate-400">+{role.responsibilities.length - 3} more — click Show More to see all</p>
-                )}
-              </div>
+          {/* Overview */}
+          <div className="px-6 py-5 md:px-10">
+            <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-slate-400">Overview</p>
+            <p className="text-sm leading-7 text-slate-600 dark:text-slate-300">{role.overview}</p>
+          </div>
 
-              {/* Qualifications preview — first 3 */}
-              <div className="px-6 py-5 md:px-8">
-                <div className="mb-3 flex items-center gap-2.5">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30">
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                  </div>
-                  <h3 className="text-sm font-bold uppercase tracking-wide text-slate-800 dark:text-slate-200">Qualifications</h3>
-                </div>
-                <ul className="space-y-2.5">
-                  {role.qualifications.slice(0, 3).map((item, i) => (
-                    <BulletRow key={i} text={item} color="bg-emerald-500" />
-                  ))}
-                </ul>
-                {role.qualifications.length > 3 && (
-                  <p className="mt-3 text-xs text-slate-400">+{role.qualifications.length - 3} more — click Show More to see all</p>
-                )}
+          {/* Responsibilities preview — first 3 */}
+          <div className="px-6 py-5 md:px-10">
+            <div className="mb-3 flex items-center gap-2.5">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-500 dark:bg-blue-900/30">
+                <ListChecks className="h-3.5 w-3.5" />
               </div>
+              <h3 className="text-sm font-bold uppercase tracking-wide text-slate-800 dark:text-slate-200">Responsibilities</h3>
+            </div>
+            <ul className="space-y-2.5">
+              {role.responsibilities.slice(0, 3).map((item, i) => (
+                <BulletRow key={i} text={item} color="bg-blue-400" />
+              ))}
+            </ul>
+            {role.responsibilities.length > 3 && (
+              <button onClick={openFullPage} className="mt-3 text-xs font-semibold text-[#474ead] underline-offset-2 hover:underline">
+                +{role.responsibilities.length - 3} more — view full posting
+              </button>
+            )}
+          </div>
 
-              {/* Tags */}
-              <div className="px-6 py-5 md:px-8">
-                <p className="mb-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">Tags</p>
-                <div className="flex flex-wrap gap-2">
-                  {role.tags.map((tag) => (
-                    <span key={tag} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
+          {/* Qualifications preview — first 3 */}
+          <div className="px-6 py-5 md:px-10">
+            <div className="mb-3 flex items-center gap-2.5">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30">
+                <CheckCircle2 className="h-3.5 w-3.5" />
               </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="full"
-              initial={{ opacity: 0, x: 16 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -16 }}
-              transition={{ duration: 0.22, ease: "easeOut" }}
-              className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-white/10"
-            >
-              {/* Why you're a fit */}
-              <div className="bg-[#474ead]/[0.04] px-6 py-5 md:px-8">
-                <div className="flex items-start gap-3">
-                  <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#474ead]" />
-                  <div>
-                    <p className="mb-1 text-[11px] font-bold uppercase tracking-widest text-[#474ead]">Why you're a fit</p>
-                    <p className="text-sm leading-6 text-slate-700 dark:text-slate-300">{role.why}</p>
-                  </div>
-                </div>
-              </div>
+              <h3 className="text-sm font-bold uppercase tracking-wide text-slate-800 dark:text-slate-200">Qualifications</h3>
+            </div>
+            <ul className="space-y-2.5">
+              {role.qualifications.slice(0, 3).map((item, i) => (
+                <BulletRow key={i} text={item} color="bg-emerald-500" />
+              ))}
+            </ul>
+            {role.qualifications.length > 3 && (
+              <button onClick={openFullPage} className="mt-3 text-xs font-semibold text-[#474ead] underline-offset-2 hover:underline">
+                +{role.qualifications.length - 3} more — view full posting
+              </button>
+            )}
+          </div>
 
-              {/* Full overview */}
-              <div className="px-6 py-5 md:px-8">
-                <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-slate-400">Overview</p>
-                <p className="text-sm leading-7 text-slate-600 dark:text-slate-300">{role.overview}</p>
-              </div>
-
-              {/* About this role */}
-              <div className="px-6 py-5 md:px-8">
-                <div className="mb-3 flex items-center gap-2.5">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-500 dark:bg-indigo-900/30">
-                    <ListChecks className="h-3.5 w-3.5" />
-                  </div>
-                  <h3 className="text-sm font-bold uppercase tracking-wide text-slate-800 dark:text-slate-200">About this role</h3>
-                </div>
-                <p className="text-sm leading-7 text-slate-600 dark:text-slate-300">{role.description}</p>
-              </div>
-
-              {/* All responsibilities */}
-              <div className="px-6 py-5 md:px-8">
-                <div className="mb-3 flex items-center gap-2.5">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-500 dark:bg-blue-900/30">
-                    <ListChecks className="h-3.5 w-3.5" />
-                  </div>
-                  <h3 className="text-sm font-bold uppercase tracking-wide text-slate-800 dark:text-slate-200">Responsibilities</h3>
-                </div>
-                <ul className="space-y-2.5">
-                  {role.responsibilities.map((item, i) => <BulletRow key={i} text={item} color="bg-blue-400" />)}
-                </ul>
-              </div>
-
-              {/* All qualifications */}
-              <div className="px-6 py-5 md:px-8">
-                <div className="mb-3 flex items-center gap-2.5">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30">
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                  </div>
-                  <h3 className="text-sm font-bold uppercase tracking-wide text-slate-800 dark:text-slate-200">Qualifications</h3>
-                </div>
-                <ul className="space-y-2.5">
-                  {role.qualifications.map((item, i) => <BulletRow key={i} text={item} color="bg-emerald-500" />)}
-                </ul>
-              </div>
-
-              {/* All preferred skills */}
-              {role.preferredSkills.length > 0 && (
-                <div className="px-6 py-5 md:px-8">
-                  <div className="mb-3 flex items-center gap-2.5">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-amber-500 dark:bg-amber-900/30">
-                      <Award className="h-3.5 w-3.5" />
-                    </div>
-                    <h3 className="text-sm font-bold uppercase tracking-wide text-slate-800 dark:text-slate-200">Preferred skills</h3>
-                  </div>
-                  <ul className="space-y-2.5">
-                    {role.preferredSkills.map((item, i) => <BulletRow key={i} text={item} color="bg-amber-400" />)}
-                  </ul>
-                </div>
-              )}
-
-              {/* All benefits */}
-              <div className="px-6 py-5 md:px-8">
-                <div className="mb-3 flex items-center gap-2.5">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-50 text-purple-500 dark:bg-purple-900/30">
-                    <Gift className="h-3.5 w-3.5" />
-                  </div>
-                  <h3 className="text-sm font-bold uppercase tracking-wide text-slate-800 dark:text-slate-200">Benefits & perks</h3>
-                </div>
-                <ul className="space-y-2.5">
-                  {role.benefits.map((item, i) => <BulletRow key={i} text={item} color="bg-purple-400" />)}
-                </ul>
-              </div>
-
-              {/* Tags */}
-              <div className="px-6 py-5 md:px-8">
-                <p className="mb-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">Tags</p>
-                <div className="flex flex-wrap gap-2">
-                  {role.tags.map((tag) => (
-                    <span key={tag} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+          {/* Tags */}
+          <div className="px-6 py-5 md:px-10">
+            <p className="mb-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">Tags</p>
+            <div className="flex flex-wrap gap-2">
+              {role.tags.map((tag) => (
+                <span key={tag} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
 
         {/* ── FOOTER ── */}
-        <div className="shrink-0 border-t border-slate-100 bg-white px-6 py-4 dark:border-white/10 dark:bg-[#0f172a] md:px-8">
+        <div className="shrink-0 border-t border-slate-100 bg-white px-6 py-4 dark:border-white/10 dark:bg-[#0f172a] md:px-10">
           <div className="flex flex-wrap items-center gap-3">
             <Button
               className="rounded-full bg-[#474ead] px-6 text-white hover:bg-[#3d439c]"
@@ -625,17 +508,10 @@ function RoleModal({ role, onClose }: { role: Role; onClose: () => void }) {
               Apply Now <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
 
-            {tab === "summary" ? (
-              <Button variant="outline" className="rounded-full" onClick={() => setTab("full")}>
-                <Maximize2 className="mr-2 h-4 w-4" />
-                Show More
-              </Button>
-            ) : (
-              <Button variant="outline" className="rounded-full" onClick={() => setTab("summary")}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
-              </Button>
-            )}
+            <Button variant="outline" className="rounded-full" onClick={openFullPage}>
+              <Maximize2 className="mr-2 h-4 w-4" />
+              Show More
+            </Button>
 
             <Button variant="ghost" className="rounded-full" onClick={onClose}>Close</Button>
 

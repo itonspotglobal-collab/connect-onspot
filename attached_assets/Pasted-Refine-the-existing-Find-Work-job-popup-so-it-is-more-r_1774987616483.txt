@@ -1,0 +1,135 @@
+Refine the existing Find Work job popup so it is more readable and properly fitted to the screen, and change the “Show More” action so it opens the dedicated page/component `FindWorkJob.tsx` in a new browser tab.
+
+Important:
+- Keep the current popup design language and content structure.
+- Do not redesign the page.
+- Do not remove the current popup flow.
+- Only improve popup sizing/layout and wire “Show More” to open the dedicated full job page in a new tab.
+
+What to change
+
+1. Increase popup width for readability
+The current popup is too narrow for the amount of content.
+
+Update the popup container so it uses a wider responsive layout, for example:
+- mobile: nearly full width with safe margins
+- tablet: medium-wide
+- desktop: significantly wider for reading
+
+Suggested sizing direction:
+- `w-[95vw] sm:w-[92vw] lg:w-[880px] xl:w-[980px]`
+or equivalent responsive max-width classes
+
+Goal:
+- more horizontal reading space
+- better spacing for sections like Overview, Responsibilities, Qualifications
+- cleaner wrapping of long text
+
+2. Adjust popup height to fit the viewport better
+The popup currently feels cramped vertically and the scroll area is too tight.
+
+Update it so:
+- the popup has a stable viewport-aware height
+- the header and footer remain visible
+- the content/body section scrolls cleanly
+
+Suggested sizing direction:
+- overall popup max height around `90vh` or `92vh`
+- body/content area should scroll independently
+- avoid content being cut off awkwardly
+
+Example structure:
+- modal shell: `max-h-[92vh]`
+- header: fixed within modal
+- content body: `overflow-y-auto`
+- footer: fixed within modal
+
+3. Improve modal internal layout
+Keep the same sections, but make the content easier to read:
+- add more inner padding on desktop
+- give the body more vertical rhythm
+- keep the header compact but readable
+- keep footer actions visible and aligned
+
+Suggested layout structure:
+- Header section
+- Scrollable content section
+- Sticky or fixed footer inside modal
+
+4. Make “Show More” open `FindWorkJob.tsx` in a new tab
+Current desired behavior:
+- clicking `Show More` should open the full job posting page in a new browser tab
+- this page should be the dedicated `FindWorkJob.tsx`
+
+Implementation direction:
+- use the route/page that renders `FindWorkJob.tsx`
+- open it in a new tab with `window.open(url, "_blank", "noopener,noreferrer")`
+
+If routing already exists:
+- navigate to the existing route for `FindWorkJob.tsx`
+- include the selected role id or slug in the URL
+
+Examples:
+- `/find-work/job/3`
+- `/findwork/job/3`
+- `/jobs/3`
+
+Whichever route already maps to `FindWorkJob.tsx`, use that.
+
+If routing is not fully wired yet:
+- create or complete the route that renders `FindWorkJob.tsx`
+- pass the selected role data via:
+  - route param
+  - query param
+  - or lookup from the existing `roles` array by id
+
+5. Show More button behavior
+Update the Show More button so:
+- it does not just switch content inside the popup
+- it opens the dedicated full details page in a new tab
+- it opens the correct job based on the selected role
+
+Expected behavior:
+- user clicks a preview card
+- popup opens
+- user clicks `Show More`
+- new tab opens to the full job page for that exact role
+
+6. Keep popup buttons working
+Footer buttons should behave like this:
+- `Apply Now` → existing apply behavior
+- `Show More` → opens `FindWorkJob.tsx` page in new tab
+- `Close` → closes popup
+
+7. Preserve current style
+Keep:
+- current dark premium popup header
+- current badges
+- current peso salary display
+- current cards and sections
+- current spacing style and rounded corners
+- current overlay and overall visual style
+
+Only improve fit/readability and Show More behavior.
+
+8. Accessibility and UX
+- Keep modal scroll smooth
+- avoid double scrollbars where possible
+- maintain keyboard accessibility
+- ensure the new tab action uses the selected role correctly
+- make the wider popup still responsive on smaller screens
+
+9. Output expectation
+Return updated React code for:
+- popup container sizing
+- modal layout structure
+- scrollable content area
+- footer positioning
+- Show More button logic
+- route/open-new-tab behavior for `FindWorkJob.tsx`
+
+10. Important constraints
+- Do not redesign the page from scratch
+- Do not remove existing popup content sections
+- Do not convert back to dollars
+- Keep everything production-ready and aligned with the current design

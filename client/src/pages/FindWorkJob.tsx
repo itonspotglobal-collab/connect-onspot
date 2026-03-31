@@ -1,589 +1,567 @@
-import { useState } from "react";
 import { useParams, useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { motion } from "framer-motion";
 import {
-  ArrowLeft,
-  Briefcase,
-  Loader2,
-  MapPin,
-  CalendarDays,
-  CheckCircle2,
-  Star,
-  Users,
-  FileText,
-  Share2,
-  Copy,
-  Check,
-  ArrowRight,
-  Heart,
-  Code,
-  PenTool,
-  BarChart3,
-  Headphones,
-  Globe,
-  Camera,
-  ExternalLink,
-  Lightbulb,
-  ClipboardList,
+  ArrowLeft, ArrowRight, Sparkles, Clock3, Globe2,
+  BriefcaseBusiness, DollarSign, ListChecks, CheckCircle2,
+  Award, Gift, Tag, AlertCircle,
 } from "lucide-react";
-import { SiLinkedin, SiFacebook, SiX } from "react-icons/si";
-import {
-  buildJobUrl,
-  buildLinkedInShareUrl,
-  buildFacebookShareUrl,
-  buildTwitterShareUrl,
-  copyToClipboard,
-  shareNative,
-} from "@/lib/shareUtils";
-import {
-  getTimeAgo,
-  getJobBadges,
-  formatContractType,
-  formatExperienceLevel,
-  buildRateDisplay,
-} from "@/lib/jobUtils";
+import { Button } from "@/components/ui/button";
 
-const CATEGORY_MAP = [
-  { id: "development", name: "Development & IT", icon: Code, color: "from-blue-600 to-blue-700" },
-  { id: "design", name: "Design & Creative", icon: PenTool, color: "from-purple-600 to-purple-700" },
-  { id: "marketing", name: "Sales & Marketing", icon: BarChart3, color: "from-green-600 to-green-700" },
-  { id: "support", name: "Admin & Support", icon: Headphones, color: "from-orange-600 to-orange-700" },
-  { id: "writing", name: "Writing & Translation", icon: Globe, color: "from-teal-600 to-teal-700" },
-  { id: "media", name: "Audio, Video & Animation", icon: Camera, color: "from-pink-600 to-pink-700" },
-  { id: "admin", name: "Admin & Support", icon: Briefcase, color: "from-orange-600 to-orange-700" },
+const APPLY_URL = "https://api.leadconnectorhq.com/widget/form/36ljnIgIsA1xoBluXvSK?notrack=true";
+
+const roles = [
+  {
+    id: 1,
+    title: "Executive Virtual Assistant",
+    pay: "₱50,000–₱78,000/mo",
+    shift: "Night shift",
+    market: "US client",
+    category: "Admin",
+    demand: "High demand",
+    speed: "Fills in 14 days",
+    fit: 94,
+    hook: "The backbone of every high-performing executive.",
+    why: "Your background in calendar management, executive coordination, and proactive communication makes you a strong candidate for this high-trust role.",
+    tags: ["Remote", "Night shift", "Admin", "Executive support", "High demand"],
+    overview:
+      "Executive Virtual Assistants at OnSpot Global work directly with C-suite and senior executives across fast-growing US companies. You will be the operational anchor that keeps leaders focused, informed, and efficient — managing everything from scheduling and communications to research and project coordination.",
+    description:
+      "This role requires someone who thrives in ambiguity, can switch contexts rapidly, and builds trust quickly with high-achieving principals. You'll be embedded in fast-paced business environments where attention to detail and discretion are non-negotiable.",
+    responsibilities: [
+      "Manage executive calendars, meetings, and travel logistics across multiple time zones",
+      "Screen and prioritize emails, draft correspondence, and maintain executive inboxes",
+      "Prepare briefing documents, agendas, and follow-up summaries",
+      "Coordinate cross-functional projects and track action items to completion",
+      "Conduct research and compile data-driven reports on request",
+      "Liaise with internal teams, vendors, and external stakeholders on behalf of the executive",
+      "Handle confidential information with absolute discretion",
+    ],
+    qualifications: [
+      "3+ years of experience in an executive assistant or administrative role",
+      "Excellent written and verbal communication skills in English",
+      "Proficiency in Google Workspace, Microsoft 365, Slack, and Zoom",
+      "Strong organizational skills with a track record of managing competing priorities",
+      "Ability to work US night shift (Pacific or Eastern time)",
+      "Stable internet connection with at least 25 Mbps speed",
+    ],
+    preferredSkills: [
+      "Experience supporting founders or C-suite in a US startup environment",
+      "Familiarity with project management tools (Asana, Notion, ClickUp)",
+      "Background in finance, legal, or healthcare executive support",
+    ],
+    benefits: [
+      "Competitive PHP salary paid bi-weekly",
+      "13th month pay and performance bonuses",
+      "HMO coverage after 90 days (principal + 1 dependent)",
+      "Paid time off, holidays, and sick leave",
+      "Access to OnSpot career development programs",
+      "Remote-first work setup with equipment allowance",
+    ],
+  },
+  {
+    id: 2,
+    title: "Customer Success Manager",
+    pay: "₱55,000–₱85,000/mo",
+    shift: "Night shift",
+    market: "US client",
+    category: "Customer success",
+    demand: "Critical hire",
+    speed: "Fills in 10 days",
+    fit: 91,
+    hook: "Turn clients into lifelong brand advocates.",
+    why: "Your ability to build long-term client relationships while driving measurable outcomes aligns precisely with what our US clients need from this high-value role.",
+    tags: ["Remote", "Night shift", "Customer success", "B2B SaaS", "Critical hire"],
+    overview:
+      "Customer Success Managers at OnSpot Global partner with US-based SaaS companies to ensure their clients achieve meaningful outcomes. You act as the primary relationship owner post-sale — driving adoption, reducing churn, and expanding accounts.",
+    description:
+      "You'll work with a portfolio of mid-market and enterprise accounts, conducting regular business reviews, identifying at-risk customers, and collaborating with product and sales teams to deliver value at scale. This is a high-visibility, high-impact role where your work directly affects revenue.",
+    responsibilities: [
+      "Own a portfolio of 20–40 US B2B accounts from onboarding through renewal",
+      "Conduct quarterly business reviews and health check calls",
+      "Build success plans aligned to each client's business objectives",
+      "Monitor product adoption metrics and proactively address churn signals",
+      "Collaborate with sales on expansion and upsell opportunities",
+      "Serve as the voice of the customer internally to product and engineering teams",
+      "Achieve NPS, retention, and expansion revenue targets",
+    ],
+    qualifications: [
+      "3+ years in customer success, account management, or client services (SaaS preferred)",
+      "Excellent English communication skills — written and spoken",
+      "Experience with CRM tools (Salesforce, HubSpot) and CS platforms (Gainsight, ChurnZero)",
+      "Data-driven mindset with ability to interpret usage metrics and present insights",
+      "Availability for US night shift hours",
+    ],
+    preferredSkills: [
+      "Experience with PLG (product-led growth) SaaS environments",
+      "Background in fintech, HR tech, or martech verticals",
+      "Familiarity with Looker, Tableau, or similar analytics tools",
+    ],
+    benefits: [
+      "Competitive PHP salary paid bi-weekly",
+      "Performance bonuses tied to retention and NPS targets",
+      "HMO coverage after 90 days (principal + 1 dependent)",
+      "Paid leave, 13th month pay, and wellness allowance",
+      "Mentorship from OnSpot's global CS leadership team",
+      "Remote-first with home office setup support",
+    ],
+  },
+  {
+    id: 3,
+    title: "Digital Marketing Specialist",
+    pay: "₱45,000–₱72,000/mo",
+    shift: "Flexible / hybrid",
+    market: "AU/UK client",
+    category: "Marketing",
+    demand: "Growing demand",
+    speed: "Fills in 18 days",
+    fit: 88,
+    hook: "Drive campaigns that scale brands globally.",
+    why: "Your performance marketing background and multi-channel expertise put you in a strong position for AU/UK clients scaling digital acquisition.",
+    tags: ["Remote", "Flexible hours", "Marketing", "Paid media", "AU/UK"],
+    overview:
+      "Digital Marketing Specialists at OnSpot Global execute and optimize performance marketing campaigns for AU and UK brands across paid, organic, and social channels. You're not just running ads — you're building growth engines.",
+    description:
+      "You'll work closely with client marketing teams to plan, launch, and iterate campaigns. From Meta and Google Ads to email sequences and SEO content briefs, you bring tactical precision and strategic thinking to every channel you manage.",
+    responsibilities: [
+      "Plan and execute paid media campaigns across Meta, Google, and LinkedIn",
+      "Manage SEO strategy including technical audits, content briefs, and link-building",
+      "Develop and analyze email marketing flows (Klaviyo, Mailchimp, ActiveCampaign)",
+      "Report on campaign performance using GA4, Looker Studio, and platform dashboards",
+      "Collaborate with creative teams on ad copy, landing pages, and A/B tests",
+      "Monitor budgets, ROAS, and CPAs to optimize spend allocation",
+    ],
+    qualifications: [
+      "3+ years in digital marketing with hands-on paid media and SEO experience",
+      "Proficiency in Google Ads, Meta Ads Manager, and at least one email platform",
+      "Strong analytical skills with experience in GA4 and attribution modeling",
+      "Excellent English writing skills — you can write compelling ad copy and reports",
+      "Comfortable working flexible hours across AU/UK time zones",
+    ],
+    preferredSkills: [
+      "Experience in e-commerce or DTC brands targeting AU/UK markets",
+      "Knowledge of CRO and landing page optimization",
+      "Familiarity with HubSpot or other marketing automation platforms",
+    ],
+    benefits: [
+      "Competitive PHP salary paid bi-weekly",
+      "13th month pay and performance bonuses",
+      "HMO coverage after 90 days",
+      "Paid leave and Philippine public holiday observance",
+      "Access to premium marketing tool subscriptions",
+      "Remote-first with flexible scheduling",
+    ],
+  },
+  {
+    id: 4,
+    title: "Bookkeeper / Financial VA",
+    pay: "₱42,000–₱68,000/mo",
+    shift: "Day shift",
+    market: "US/AU client",
+    category: "Finance",
+    demand: "Steady demand",
+    speed: "Fills in 21 days",
+    fit: 86,
+    hook: "Keep the numbers clean — and the business clear.",
+    why: "Your Xero/QuickBooks expertise and detail-oriented approach to financial reporting directly match what US and AU SMBs need in a trusted bookkeeping partner.",
+    tags: ["Remote", "Day shift", "Finance", "Bookkeeping", "Xero/QB"],
+    overview:
+      "Bookkeepers and Financial VAs at OnSpot Global maintain accurate financial records for US and Australian small-to-mid businesses. You ensure month-end closes are clean, reconciliations are timely, and owners always have the numbers they need.",
+    description:
+      "You'll be embedded in the client's finance workflow, owning accounts payable/receivable, bank reconciliations, payroll support, and basic financial reporting. Precision and consistency are your trademarks.",
+    responsibilities: [
+      "Record daily transactions in Xero, QuickBooks, or MYOB",
+      "Perform weekly and monthly bank and credit card reconciliations",
+      "Manage accounts payable and receivable cycles",
+      "Prepare profit & loss statements, balance sheets, and cash flow summaries",
+      "Assist with payroll processing and superannuation (AU) or payroll tax (US)",
+      "Liaise with the client's external accountant or CPA",
+      "Flag discrepancies and resolve variance inquiries",
+    ],
+    qualifications: [
+      "2+ years of bookkeeping or accounting experience",
+      "Proficiency in Xero and/or QuickBooks (certification preferred)",
+      "Understanding of AU GST or US sales tax principles",
+      "High attention to detail and comfort working with large datasets",
+      "Reliable day-shift availability aligned to client time zones",
+    ],
+    preferredSkills: [
+      "Xero Advisor or QuickBooks ProAdvisor certification",
+      "Experience with Dext, Hubdoc, or receipt management tools",
+      "Background in e-commerce, real estate, or professional services bookkeeping",
+    ],
+    benefits: [
+      "Competitive PHP salary paid bi-weekly",
+      "13th month pay",
+      "HMO coverage after 90 days",
+      "Paid leave and sick leave",
+      "Ongoing CPD support for accounting certifications",
+      "Remote work with structured day-shift schedule",
+    ],
+  },
+  {
+    id: 5,
+    title: "Technical Support Specialist",
+    pay: "₱40,000–₱65,000/mo",
+    shift: "Rotating shifts",
+    market: "US/Global client",
+    category: "Tech support",
+    demand: "Always hiring",
+    speed: "Fills in 7 days",
+    fit: 89,
+    hook: "Solve fast. Communicate clearly. Build trust.",
+    why: "Your technical troubleshooting skills and calm customer-facing communication style are exactly what high-volume US tech companies need in a Tier 1–2 support specialist.",
+    tags: ["Remote", "Rotating shifts", "Tech support", "SaaS", "Always hiring"],
+    overview:
+      "Technical Support Specialists at OnSpot Global serve as the front line of support for US and global SaaS, hardware, and tech product companies. You resolve tickets fast, communicate clearly, and escalate intelligently.",
+    description:
+      "You'll handle inbound tickets across email, chat, and phone, diagnosing issues, walking customers through solutions, and documenting cases. You're the customer's trusted guide through every technical challenge they face.",
+    responsibilities: [
+      "Handle Tier 1 and Tier 2 support tickets across email, live chat, and phone",
+      "Diagnose software, hardware, and connectivity issues and guide users to resolution",
+      "Document troubleshooting steps and maintain internal knowledge base articles",
+      "Escalate complex or unresolved issues to engineering or Tier 3 support with full context",
+      "Monitor ticket queues to meet SLA and CSAT targets",
+      "Participate in product feedback loops with the product and engineering teams",
+    ],
+    qualifications: [
+      "2+ years of technical support experience in a SaaS or tech product environment",
+      "Strong written and verbal English communication skills",
+      "Ability to explain technical concepts clearly to non-technical users",
+      "Experience with helpdesk tools (Zendesk, Freshdesk, Intercom)",
+      "Availability for rotating shift schedules including evenings and weekends",
+    ],
+    preferredSkills: [
+      "Experience with API troubleshooting, log analysis, or browser DevTools",
+      "Background in cybersecurity, networking, or cloud platforms (AWS, Azure)",
+      "ITIL Foundation certification",
+    ],
+    benefits: [
+      "Competitive PHP salary paid bi-weekly",
+      "Night differential and shift allowances",
+      "HMO coverage after 90 days (principal + 1 dependent)",
+      "13th month pay and performance incentives",
+      "Career path to Tier 3 specialist or team lead roles",
+      "Remote-first with equipment support",
+    ],
+  },
+  {
+    id: 6,
+    title: "Sales Development Representative",
+    pay: "₱38,000–₱62,000/mo + commission",
+    shift: "Night shift",
+    market: "US client",
+    category: "Sales",
+    demand: "High demand",
+    speed: "Fills in 12 days",
+    fit: 85,
+    hook: "Fill pipelines. Start conversations that convert.",
+    why: "Your outbound prospecting experience and high-energy approach to cold outreach align with what fast-growing US sales teams need to scale their top-of-funnel.",
+    tags: ["Remote", "Night shift", "Sales", "SDR", "Commission", "High demand"],
+    overview:
+      "Sales Development Representatives at OnSpot Global generate qualified pipeline for US B2B companies through outbound prospecting via cold calls, LinkedIn, and email. You're the engine that starts every revenue conversation.",
+    description:
+      "You'll work closely with Account Executives and sales leadership to identify target accounts, personalize outreach sequences, and book high-quality discovery calls. This is a metrics-driven role with real commission upside.",
+    responsibilities: [
+      "Execute multi-channel outbound sequences (email, LinkedIn, cold call) to ICP targets",
+      "Research prospects and personalize outreach to maximize response rates",
+      "Qualify inbound leads from marketing and route them to the appropriate AE",
+      "Book and confirm discovery calls using Calendly or Chili Piper",
+      "Maintain accurate activity logs in Salesforce or HubSpot CRM",
+      "Collaborate with marketing on campaign messaging and ABM lists",
+      "Hit weekly and monthly SQL and meeting-set targets",
+    ],
+    qualifications: [
+      "1–3 years of SDR or outbound sales experience (B2B preferred)",
+      "Strong English communication skills — written and spoken",
+      "Experience with sales engagement tools (Outreach, SalesLoft, Apollo)",
+      "Comfort with cold calling and handling objections",
+      "Availability for US night shift hours",
+      "Self-motivated with a data-driven approach to hitting targets",
+    ],
+    preferredSkills: [
+      "Experience selling into SMB or mid-market in SaaS, fintech, or HR tech",
+      "LinkedIn Sales Navigator proficiency",
+      "Familiarity with account-based marketing (ABM) strategies",
+    ],
+    benefits: [
+      "Base PHP salary + uncapped commission on meetings set",
+      "13th month pay and quarterly performance bonuses",
+      "HMO coverage after 90 days",
+      "Paid leave and Philippine holidays",
+      "Sales career path to AE or sales management roles",
+      "Remote-first with dedicated SDR coaching and playbooks",
+    ],
+  },
 ];
 
-function getCategoryInfo(id: string) {
-  return CATEGORY_MAP.find((c) => c.id === id) || CATEGORY_MAP[0];
+type Role = (typeof roles)[number];
+
+function BulletRow({ text, color }: { text: string; color: string }) {
+  return (
+    <li className="flex items-start gap-3 text-[15px] leading-7 text-slate-700 dark:text-slate-300">
+      <span className={`mt-[11px] h-1.5 w-1.5 shrink-0 rounded-full ${color}`} />
+      {text}
+    </li>
+  );
 }
 
-function getJobTypeColor(type: string) {
-  switch (type) {
-    case "full-time": return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300";
-    case "part-time": return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300";
-    case "contract": return "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300";
-    default: return "bg-gray-100 text-gray-800 dark:bg-gray-800/30 dark:text-gray-300";
-  }
+function Section({
+  icon,
+  iconBg,
+  label,
+  children,
+}: {
+  icon: React.ReactNode;
+  iconBg: string;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="border-t border-slate-100 px-6 py-8 dark:border-white/[0.08] md:px-12 lg:px-16">
+      <div className="mb-5 flex items-center gap-3">
+        <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${iconBg}`}>{icon}</div>
+        <h2 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">{label}</h2>
+      </div>
+      {children}
+    </div>
+  );
 }
-
-interface JobData {
-  id: string;
-  title: string;
-  company?: string | null;
-  location?: string | null;
-  category: string;
-  contractType: string;
-  experienceLevel: string;
-  description: string;
-  budget?: string | null;
-  hourlyRateMin?: string | null;
-  hourlyRateMax?: string | null;
-  responsibilities?: string[] | null;
-  requirements?: string[] | null;
-  skillTags?: string[] | null;
-  skills?: string[] | null;
-  createdAt?: string | Date | null;
-  status?: string;
-  proposalCount?: number | null;
-}
-
-const APPLY_FORM_URL =
-  "https://api.leadconnectorhq.com/widget/form/36ljnIgIsA1xoBluXvSK?notrack=true";
 
 export default function FindWorkJob() {
-  // Works for both /jobs/:jobId and /find-work/job/:jobId
-  const params = useParams<{ jobId?: string; id?: string }>();
-  const jobId = params?.jobId || params?.id || "";
+  const params = useParams<{ jobId: string }>();
   const [, navigate] = useLocation();
-  const [copied, setCopied] = useState(false);
-  const [canNativeShare] = useState(() => !!navigator.share);
 
-  const { data: rawJob, isLoading, isError } = useQuery<JobData>({
-    queryKey: ["/api/jobs", jobId],
-    enabled: !!jobId,
-  });
+  const jobId = parseInt(params.jobId ?? "0", 10);
+  const role: Role | undefined = roles.find((r) => r.id === jobId);
 
-  // Normalize skillTags from either `skills` or `skillTags` depending on which endpoint populated them
-  const job: JobData | undefined = rawJob
-    ? {
-        ...rawJob,
-        skillTags: rawJob.skillTags?.length
-          ? rawJob.skillTags
-          : (rawJob.skills as string[] | null | undefined) ?? null,
-      }
-    : undefined;
-
-  const jobUrl = job ? buildJobUrl(job.id) : "";
-  const rateDisplay = job ? buildRateDisplay(job) : "";
-  const timeAgo = job ? getTimeAgo(job.createdAt) : "";
-  const badges = job ? getJobBadges(job) : [];
-  const skills = job?.skillTags || [];
-  const responsibilities = job?.responsibilities || [];
-  const requirements = job?.requirements || [];
-  const categoryInfo = job ? getCategoryInfo(job.category) : CATEGORY_MAP[0];
-  const IconComponent = categoryInfo.icon;
-
-  async function handleCopyLink() {
-    const ok = await copyToClipboard(jobUrl);
-    if (ok) {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  }
-
-  async function handleNativeShare() {
-    if (!job) return;
-    await shareNative({ title: job.title, url: jobUrl, text: `Check out this job: ${job.title}` });
-  }
-
-  // ─── Loading state ──────────────────────────────────────────────────────────
-  if (isLoading) {
+  if (!role) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
-        <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
-        <p className="text-muted-foreground text-sm">Loading job details…</p>
-      </div>
-    );
-  }
-
-  // ─── Error / Not found ──────────────────────────────────────────────────────
-  if (isError || (!isLoading && !job)) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6 px-4">
-        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
-          <Briefcase className="w-8 h-8 text-muted-foreground" />
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-6 px-6 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 dark:bg-white/[0.06]">
+          <AlertCircle className="h-8 w-8 text-slate-400" />
         </div>
-        <div className="text-center max-w-sm">
-          <h2 className="text-xl font-semibold mb-2">Job not found</h2>
-          <p className="text-sm text-muted-foreground">
-            This listing may have been removed or the link is invalid.
-          </p>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Job not found</h1>
+          <p className="mt-2 text-slate-500">This role may have been filled or removed.</p>
         </div>
-        <Button onClick={() => navigate("/find-work")}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Browse all jobs
+        <Button
+          className="rounded-full bg-[#474ead] px-6 text-white"
+          onClick={() => navigate("/find-work")}
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Find Work
         </Button>
       </div>
     );
   }
 
-  if (!job) return null;
-
-  // ─── Full dedicated page ────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(71,78,173,0.10),transparent_30%),linear-gradient(to_bottom,#f8fafc,white)] dark:bg-[#060816] dark:text-white">
 
-        {/* Hero / Header */}
-        <div className={`bg-gradient-to-r ${categoryInfo.color} dark:opacity-90`}>
-          <div className="container mx-auto px-4 py-8 max-w-5xl">
-            {/* Breadcrumb */}
-            <button
-              onClick={() => navigate("/find-work")}
-              className="flex items-center gap-1.5 text-white/70 hover:text-white text-sm mb-6 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to all jobs
-            </button>
+      {/* ── HERO HEADER ── */}
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: "easeOut" }}
+        className="relative overflow-hidden bg-[#0f172a]"
+      >
+        <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#474ead]/25 blur-[90px]" />
+        <div className="pointer-events-none absolute -left-12 bottom-0 h-48 w-48 rounded-full bg-indigo-600/15 blur-[70px]" />
 
-            <div className="flex items-start gap-5">
-              <div className="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
-                <IconComponent className="w-7 h-7 text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                {/* Badges */}
-                {badges.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-2">
-                    {badges.map((b) => (
-                      <span
-                        key={b.key}
-                        className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold bg-white/20 text-white border border-white/30"
-                      >
-                        {b.label}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                <h1 className="text-2xl sm:text-3xl font-bold text-white leading-tight">
-                  {job.title}
-                </h1>
-                <div className="flex flex-wrap items-center gap-3 mt-2">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-white/90 font-medium text-sm">
-                      {job.company || "OnSpot Global"}
-                    </span>
-                    <CheckCircle2 className="w-4 h-4 text-green-300 flex-shrink-0" />
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Star className="w-3.5 h-3.5 text-yellow-300 fill-current" />
-                    <span className="text-white/80 text-sm">4.9</span>
-                  </div>
-                  <Badge
-                    variant="secondary"
-                    className={`text-[11px] ${getJobTypeColor(job.contractType)}`}
-                  >
-                    {formatContractType(job.contractType)}
-                  </Badge>
-                </div>
-                {/* Key stats in hero */}
-                <div className="flex flex-wrap gap-4 mt-4 text-white/90 text-sm">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-bold text-white text-base">{rateDisplay}</span>
-                    <span className="text-white/60 text-xs">
-                      {job.contractType === "fixed" ? "fixed" : "/month"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4 text-white/70" />
-                    {job.location || "Remote"}
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <CalendarDays className="w-4 h-4 text-white/70" />
-                    Posted {timeAgo}
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Users className="w-4 h-4 text-white/70" />
-                    {formatExperienceLevel(job.experienceLevel)}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <div className="relative mx-auto max-w-4xl px-6 pb-10 pt-8 md:px-12 lg:px-16">
 
-        {/* Content */}
-        <div className="container mx-auto px-4 py-8 max-w-5xl">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-            {/* ── Main column ────────────────────────────────────────────────── */}
-            <div className="lg:col-span-2 space-y-8">
-
-              {/* Skills */}
-              {skills.length > 0 && (
-                <div>
-                  <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground mb-3">
-                    Skills Required
-                  </h2>
-                  <div className="flex flex-wrap gap-2">
-                    {skills.map((skill) => (
-                      <Badge key={skill} variant="secondary" className="text-sm">
-                        {skill}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Role Overview */}
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <FileText className="w-5 h-5 text-blue-500" />
-                  <h2 className="text-base font-bold uppercase tracking-wide">
-                    Role Overview
-                  </h2>
-                </div>
-                <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
-                  {job.description}
-                </p>
-              </div>
-
-              {/* Responsibilities */}
-              {responsibilities.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <ClipboardList className="w-5 h-5 text-green-500" />
-                    <h2 className="text-base font-bold uppercase tracking-wide">
-                      Responsibilities
-                    </h2>
-                  </div>
-                  {responsibilities.length === 1 &&
-                  responsibilities[0].trim().startsWith("<") ? (
-                    <div
-                      className="text-muted-foreground text-sm prose-sm [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:leading-relaxed [&_li]:my-1 [&_strong]:font-semibold"
-                      dangerouslySetInnerHTML={{ __html: responsibilities[0] }}
-                    />
-                  ) : (
-                    <ul className="space-y-2">
-                      {responsibilities.map((item, i) => (
-                        <li key={i} className="flex items-start gap-3">
-                          <span className="mt-2 w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0" />
-                          <span className="text-muted-foreground leading-relaxed">
-                            {item}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              )}
-
-              {/* Requirements */}
-              {requirements.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Star className="w-5 h-5 text-purple-500" />
-                    <h2 className="text-base font-bold uppercase tracking-wide">
-                      Skills & Requirements
-                    </h2>
-                  </div>
-                  {requirements.length === 1 &&
-                  requirements[0].trim().startsWith("<") ? (
-                    <div
-                      className="text-muted-foreground text-sm prose-sm [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:leading-relaxed [&_li]:my-1 [&_strong]:font-semibold"
-                      dangerouslySetInnerHTML={{ __html: requirements[0] }}
-                    />
-                  ) : (
-                    <ul className="space-y-2">
-                      {requirements.map((item, i) => (
-                        <li key={i} className="flex items-start gap-3">
-                          <CheckCircle2 className="mt-0.5 w-4 h-4 text-purple-500 flex-shrink-0" />
-                          <span className="text-muted-foreground leading-relaxed">
-                            {item}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              )}
-
-              {/* Benefits */}
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <Lightbulb className="w-5 h-5 text-amber-500" />
-                  <h2 className="text-base font-bold uppercase tracking-wide">
-                    Why Join OnSpot
-                  </h2>
-                </div>
-                <ul className="space-y-2">
-                  {[
-                    "Competitive salary — paid on time, every time",
-                    "Work with verified international clients",
-                    "Supportive team environment with growth opportunities",
-                    "Remote-friendly setup with flexible scheduling",
-                    "Training and upskilling support provided",
-                  ].map((benefit, i) => (
-                    <li key={i} className="flex items-start gap-3">
-                      <span className="mt-2 w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0" />
-                      <span className="text-muted-foreground leading-relaxed">
-                        {benefit}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Cultural Fit */}
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <Users className="w-5 h-5 text-violet-500" />
-                  <h2 className="text-base font-bold uppercase tracking-wide">
-                    Cultural Fit
-                  </h2>
-                </div>
-                <p className="text-muted-foreground leading-relaxed mb-3">
-                  At OnSpot, we prioritize a unique blend of creativity, innovation, and collaboration. We seek individuals who are:
-                </p>
-                <ul className="space-y-2">
-                  {[
-                    "Passionate about our company's mission and values.",
-                    "Entrepreneurial-minded and willing to take risks.",
-                    "Collaborative and team-oriented.",
-                    "Adaptable and able to handle the fast-paced and often unpredictable nature of a startup environment.",
-                    "Maintain a positive attitude and persevere through setbacks.",
-                    "Demonstrate the ability to bounce back from challenges and maintain a strong work ethic.",
-                    "Embrace and adapt to rapid changes and evolving processes within a startup environment.",
-                    "Able to adapt to changing client needs and requirements.",
-                  ].map((item, i) => (
-                    <li key={i} className="flex items-start gap-3">
-                      <span className="mt-2 w-1.5 h-1.5 rounded-full bg-violet-500 flex-shrink-0" />
-                      <span className="text-muted-foreground leading-relaxed">
-                        {item}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* How to Apply */}
-              <div className="rounded-lg border border-border bg-muted/30 p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <ArrowRight className="w-5 h-5 text-blue-500" />
-                  <h2 className="text-base font-bold uppercase tracking-wide">
-                    How to Apply
-                  </h2>
-                </div>
-                <ol className="space-y-2 text-muted-foreground text-sm">
-                  <li className="flex items-start gap-3">
-                    <span className="font-bold text-foreground w-4 flex-shrink-0">1.</span>
-                    Click the <strong className="text-foreground">Apply Now</strong> button below.
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="font-bold text-foreground w-4 flex-shrink-0">2.</span>
-                    Fill out the application form with your details and experience.
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="font-bold text-foreground w-4 flex-shrink-0">3.</span>
-                    Our team will review your application and contact you within 48 hours.
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="font-bold text-foreground w-4 flex-shrink-0">4.</span>
-                    Qualified candidates proceed to a brief interview and onboarding.
-                  </li>
-                </ol>
-                <Button
-                  className="mt-4 w-full sm:w-auto"
-                  onClick={() => window.open(APPLY_FORM_URL, "_blank")}
-                >
-                  Apply for This Role
-                  <ExternalLink className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
-
-              {/* Share */}
-              <div className="rounded-lg border border-border bg-muted/30 p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <Share2 className="w-4 h-4 text-muted-foreground" />
-                  <h3 className="text-sm font-semibold">Share this job</h3>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" size="sm" className="gap-1.5" onClick={handleCopyLink}>
-                    {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
-                    {copied ? "Copied!" : "Copy Link"}
-                  </Button>
-                  {canNativeShare && (
-                    <Button variant="outline" size="sm" className="gap-1.5" onClick={handleNativeShare}>
-                      <Share2 className="w-3.5 h-3.5" />
-                      Share
-                    </Button>
-                  )}
-                  <Button
-                    variant="outline" size="sm" className="gap-1.5"
-                    onClick={() => window.open(buildLinkedInShareUrl(jobUrl), "_blank")}
-                  >
-                    <SiLinkedin className="w-3.5 h-3.5 text-[#0A66C2]" />
-                    LinkedIn
-                  </Button>
-                  <Button
-                    variant="outline" size="sm" className="gap-1.5"
-                    onClick={() => window.open(buildFacebookShareUrl(jobUrl), "_blank")}
-                  >
-                    <SiFacebook className="w-3.5 h-3.5 text-[#1877F2]" />
-                    Facebook
-                  </Button>
-                  <Button
-                    variant="outline" size="sm" className="gap-1.5"
-                    onClick={() => window.open(buildTwitterShareUrl(jobUrl, job.title), "_blank")}
-                  >
-                    <SiX className="w-3.5 h-3.5" />
-                    X
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {/* ── Sidebar ─────────────────────────────────────────────────────── */}
-            <div className="space-y-5">
-
-              {/* Apply CTA card */}
-              <Card className="border-blue-200 dark:border-blue-800 sticky top-20">
-                <CardContent className="p-5 space-y-4">
-                  <div>
-                    <div className="text-2xl font-bold">{rateDisplay}</div>
-                    <div className="text-muted-foreground text-xs mt-0.5">
-                      {job.contractType === "fixed" ? "Fixed-price project" : "Monthly salary"}
-                    </div>
-                  </div>
-
-                  <Button
-                    className="w-full"
-                    size="lg"
-                    onClick={() => window.open(APPLY_FORM_URL, "_blank")}
-                  >
-                    Apply Now
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-
-                  <Button variant="outline" className="w-full gap-2" size="sm">
-                    <Heart className="w-4 h-4" />
-                    Save for Later
-                  </Button>
-
-                  <div className="pt-1 border-t border-border space-y-3">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Briefcase className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                      <div>
-                        <div className="text-[10px] uppercase text-muted-foreground tracking-wide">Contract</div>
-                        <div className="font-medium">{formatContractType(job.contractType)}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                      <div>
-                        <div className="text-[10px] uppercase text-muted-foreground tracking-wide">Location</div>
-                        <div className="font-medium">{job.location || "Remote"}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Users className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                      <div>
-                        <div className="text-[10px] uppercase text-muted-foreground tracking-wide">Experience</div>
-                        <div className="font-medium">{formatExperienceLevel(job.experienceLevel)}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <CalendarDays className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                      <div>
-                        <div className="text-[10px] uppercase text-muted-foreground tracking-wide">Posted</div>
-                        <div className="font-medium">{timeAgo}</div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Company / platform card */}
-              <Card>
-                <CardContent className="p-5">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                      <CheckCircle2 className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <div className="font-semibold text-sm">
-                        {job.company || "OnSpot Global"}
-                      </div>
-                      <div className="text-xs text-muted-foreground">Verified employer</div>
-                    </div>
-                  </div>
-                  <div className="text-xs text-muted-foreground leading-relaxed">
-                    All roles on OnSpot are from verified clients. Payments are
-                    protected and released through our secure platform.
-                  </div>
-                </CardContent>
-              </Card>
-
-            </div>
-          </div>
-        </div>
-
-        {/* Sticky bottom CTA bar (mobile) */}
-        <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-background border-t border-border px-4 py-3 flex gap-3 z-40">
-          <Button
-            className="flex-1"
-            onClick={() => window.open(APPLY_FORM_URL, "_blank")}
+          {/* Back link */}
+          <button
+            onClick={() => navigate("/find-work")}
+            className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-4 py-1.5 text-xs font-medium text-white/60 transition hover:bg-white/10 hover:text-white"
           >
-            Apply Now
-            <ArrowRight className="w-4 h-4 ml-2" />
-          </Button>
-          <Button variant="outline" size="icon" aria-label="Save job">
-            <Heart className="w-4 h-4" />
-          </Button>
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Back to Find Work
+          </button>
+
+          {/* Badges */}
+          <div className="mb-5 flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-[#474ead] px-3 py-1 text-[11px] font-bold text-white">{role.demand}</span>
+            <span className="rounded-full border border-white/15 bg-white/[0.08] px-3 py-1 text-[11px] text-white/60">{role.speed}</span>
+            <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-[11px] font-bold text-emerald-400">{role.fit}% match</span>
+          </div>
+
+          {/* Title */}
+          <h1 className="text-3xl font-bold leading-tight text-white md:text-4xl lg:text-[42px]">{role.title}</h1>
+          <p className="mt-2 text-base text-slate-400">{role.hook}</p>
+
+          {/* Salary pill */}
+          <div className="mt-6 inline-flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.06] px-5 py-3">
+            <DollarSign className="h-4 w-4 text-[#474ead]" />
+            <div>
+              <div className="text-[10px] text-white/40">Monthly salary (PHP)</div>
+              <div className="text-sm font-bold text-white">{role.pay}</div>
+            </div>
+          </div>
+
+          {/* Meta grid */}
+          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {[
+              { Icon: Clock3,            label: "Schedule",  value: role.shift    },
+              { Icon: Globe2,            label: "Market",    value: role.market   },
+              { Icon: BriefcaseBusiness, label: "Category",  value: role.category },
+            ].map(({ Icon, label, value }) => (
+              <div key={label} className="rounded-xl bg-white/[0.06] px-4 py-3">
+                <div className="flex items-center gap-1.5 text-[10px] text-white/40">
+                  <Icon className="h-3 w-3" />{label}
+                </div>
+                <div className="mt-1 text-sm font-bold text-white/90">{value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* CTA */}
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Button
+              className="rounded-full bg-[#474ead] px-8 py-2.5 text-white"
+              onClick={() => window.open(APPLY_URL, "_blank", "noopener,noreferrer")}
+            >
+              Apply Now <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
         </div>
-        {/* Bottom padding for sticky bar on mobile */}
-        <div className="h-20 lg:hidden" />
-      </div>
+      </motion.div>
+
+      {/* ── BODY SECTIONS ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15, duration: 0.4, ease: "easeOut" }}
+        className="mx-auto max-w-4xl"
+      >
+
+        {/* Why you're a fit */}
+        <div className="bg-[#474ead]/[0.04] px-6 py-8 md:px-12 lg:px-16">
+          <div className="flex items-start gap-4">
+            <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-[#474ead]" />
+            <div>
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-[#474ead]">Why you're a fit</p>
+              <p className="text-[15px] leading-7 text-slate-700 dark:text-slate-300">{role.why}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Overview */}
+        <Section
+          icon={<Globe2 className="h-4 w-4 text-indigo-500" />}
+          iconBg="bg-indigo-50 dark:bg-indigo-900/30"
+          label="Overview"
+        >
+          <p className="text-[15px] leading-8 text-slate-600 dark:text-slate-300">{role.overview}</p>
+        </Section>
+
+        {/* About this role */}
+        <Section
+          icon={<BriefcaseBusiness className="h-4 w-4 text-slate-500" />}
+          iconBg="bg-slate-100 dark:bg-white/[0.06]"
+          label="About this role"
+        >
+          <p className="text-[15px] leading-8 text-slate-600 dark:text-slate-300">{role.description}</p>
+        </Section>
+
+        {/* Responsibilities */}
+        <Section
+          icon={<ListChecks className="h-4 w-4 text-blue-500" />}
+          iconBg="bg-blue-50 dark:bg-blue-900/30"
+          label="Responsibilities"
+        >
+          <ul className="space-y-3">
+            {role.responsibilities.map((item, i) => (
+              <BulletRow key={i} text={item} color="bg-blue-400" />
+            ))}
+          </ul>
+        </Section>
+
+        {/* Qualifications */}
+        <Section
+          icon={<CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+          iconBg="bg-emerald-50 dark:bg-emerald-900/30"
+          label="Qualifications"
+        >
+          <ul className="space-y-3">
+            {role.qualifications.map((item, i) => (
+              <BulletRow key={i} text={item} color="bg-emerald-500" />
+            ))}
+          </ul>
+        </Section>
+
+        {/* Preferred skills */}
+        {role.preferredSkills.length > 0 && (
+          <Section
+            icon={<Award className="h-4 w-4 text-amber-500" />}
+            iconBg="bg-amber-50 dark:bg-amber-900/30"
+            label="Preferred skills (nice to have)"
+          >
+            <ul className="space-y-3">
+              {role.preferredSkills.map((item, i) => (
+                <BulletRow key={i} text={item} color="bg-amber-400" />
+              ))}
+            </ul>
+          </Section>
+        )}
+
+        {/* Benefits */}
+        <Section
+          icon={<Gift className="h-4 w-4 text-purple-500" />}
+          iconBg="bg-purple-50 dark:bg-purple-900/30"
+          label="Benefits & perks"
+        >
+          <ul className="space-y-3">
+            {role.benefits.map((item, i) => (
+              <BulletRow key={i} text={item} color="bg-purple-400" />
+            ))}
+          </ul>
+        </Section>
+
+        {/* Tags */}
+        <Section
+          icon={<Tag className="h-4 w-4 text-slate-400" />}
+          iconBg="bg-slate-100 dark:bg-white/[0.06]"
+          label="Tags"
+        >
+          <div className="flex flex-wrap gap-2">
+            {role.tags.map((tag) => (
+              <span
+                key={tag}
+                className="rounded-full border border-slate-200 bg-slate-50 px-4 py-1.5 text-sm font-medium text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        </Section>
+
+        {/* ── BOTTOM CTA ── */}
+        <div className="border-t border-slate-100 px-6 py-12 text-center dark:border-white/[0.08] md:px-12 lg:px-16">
+          <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-[#474ead]">Ready to apply?</p>
+          <h2 className="mb-3 text-2xl font-bold text-slate-900 dark:text-white">
+            This role fills in {role.speed.replace("Fills in ", "")}
+          </h2>
+          <p className="mb-8 text-slate-500">Don't wait — top candidates are already in the process.</p>
+          <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <Button
+              className="rounded-full bg-[#474ead] px-10 py-2.5 text-white"
+              onClick={() => window.open(APPLY_URL, "_blank", "noopener,noreferrer")}
+            >
+              Apply in 30 seconds <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              className="rounded-full px-6"
+              onClick={() => navigate("/find-work")}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              View all roles
+            </Button>
+          </div>
+          <p className="mt-6 text-xs text-slate-400">OnSpot Global · Philippines · {role.market}</p>
+        </div>
+      </motion.div>
+    </div>
   );
 }
