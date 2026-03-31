@@ -11,7 +11,7 @@ const roles = [
   {
     id: 1,
     title: "Executive Virtual Assistant",
-    pay: "$900–$1,400/mo",
+    pay: "₱50,000–₱78,000/mo",
     shift: "Night shift",
     market: "US client",
     category: "Admin",
@@ -25,7 +25,7 @@ const roles = [
   {
     id: 2,
     title: "Customer Support Specialist",
-    pay: "$800–$1,200/mo",
+    pay: "₱45,000–₱67,000/mo",
     shift: "Night shift",
     market: "US client",
     category: "Support",
@@ -39,7 +39,7 @@ const roles = [
   {
     id: 3,
     title: "Bookkeeper / Accounting Assistant",
-    pay: "$1,000–$1,800/mo",
+    pay: "₱56,000–₱100,000/mo",
     shift: "Day shift",
     market: "AU client",
     category: "Finance",
@@ -53,7 +53,7 @@ const roles = [
   {
     id: 4,
     title: "Sales Development Representative",
-    pay: "$1,100–$2,000/mo",
+    pay: "₱62,000–₱112,000/mo",
     shift: "Night shift",
     market: "US client",
     category: "Sales",
@@ -67,7 +67,7 @@ const roles = [
   {
     id: 5,
     title: "Content & Social Media Assistant",
-    pay: "$850–$1,300/mo",
+    pay: "₱48,000–₱73,000/mo",
     shift: "Flexible",
     market: "UK client",
     category: "Marketing",
@@ -81,7 +81,7 @@ const roles = [
   {
     id: 6,
     title: "Operations Coordinator",
-    pay: "$1,000–$1,500/mo",
+    pay: "₱56,000–₱84,000/mo",
     shift: "Day shift",
     market: "AU client",
     category: "Operations",
@@ -96,7 +96,7 @@ const roles = [
 
 const trustStats = [
   { label: "Candidates placed", value: "1,200+" },
-  { label: "Typical monthly roles", value: "$800–$2,500" },
+  { label: "Typical monthly roles", value: "₱45,000–₱140,000/mo" },
   { label: "Global client markets", value: "US · AU · UK" },
   { label: "Hiring speed", value: "3–10 days" },
 ];
@@ -123,7 +123,7 @@ const stories = [
 ];
 
 const prompts = [
-  "Virtual assistant, night shift, $900+",
+  "Virtual assistant, night shift, ₱50,000+",
   "Customer support, remote, US client",
   "Accounting or finance role, day shift",
   "Social media assistant with flexible schedule",
@@ -219,22 +219,30 @@ function JobCard({ role }) {
 }
 
 export default function OnSpotFindWorkRedesign() {
-  const [query, setQuery] = useState("Virtual assistant, night shift, $900+");
+  const [query, setQuery] = useState("Virtual assistant, night shift, ₱50,000+");
   const [schedule, setSchedule] = useState("All schedules");
   const [earning, setEarning] = useState("Any pay");
   const [kind, setKind] = useState("All work");
   const [profileStrength] = useState(68);
+
+  // Extracts the minimum peso value from strings like "₱50,000–₱78,000/mo"
+  function getMinimumPay(payRange: string): number {
+    const cleaned = payRange.replace(/[₱,\/mo\s]/g, "");
+    const match = cleaned.match(/\d+/);
+    return match ? parseInt(match[0], 10) : 0;
+  }
 
   const filteredRoles = useMemo(() => {
     return roles.filter((role) => {
       const q = query.toLowerCase();
       const schedulePass = schedule === "All schedules" || role.shift === schedule;
       const kindPass = kind === "All work" || role.category === kind;
+      const minPay = getMinimumPay(role.pay);
       const earningPass =
         earning === "Any pay" ||
-        (earning === "$800+" && /\$(\d+)/.test(role.pay)) ||
-        (earning === "$1,000+" && parseInt(role.pay.match(/\$(\d+)/)?.[1] || "0", 10) >= 1000) ||
-        (earning === "$1,500+" && parseInt(role.pay.match(/\$(\d+)/)?.[1] || "0", 10) >= 1500);
+        (earning === "₱45,000+" && minPay >= 45000) ||
+        (earning === "₱60,000+" && minPay >= 60000) ||
+        (earning === "₱85,000+" && minPay >= 85000);
 
       const queryPass =
         !q ||
@@ -311,7 +319,7 @@ export default function OnSpotFindWorkRedesign() {
 
               <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <StatPill icon={Users} label="Candidates placed" value="1,200+" />
-                <StatPill icon={DollarSign} label="Typical roles" value="$800–$2,500/mo" />
+                <StatPill icon={DollarSign} label="Typical roles" value="₱45,000–₱140,000/mo" />
                 <StatPill icon={Globe2} label="Client markets" value="US · AU · UK" />
                 <StatPill icon={Zap} label="Hiring speed" value="3–10 days" />
               </div>
@@ -385,7 +393,7 @@ export default function OnSpotFindWorkRedesign() {
 
           <div className="flex flex-wrap gap-3">
             {[
-              { label: "How much do you want to earn?", value: earning, options: ["Any pay", "$800+", "$1,000+", "$1,500+"] },
+              { label: "How much do you want to earn?", value: earning, options: ["Any pay", "₱45,000+", "₱60,000+", "₱85,000+"] },
               { label: "What schedule works for you?", value: schedule, options: ["All schedules", "Day shift", "Night shift", "Flexible"] },
               { label: "What type of work do you enjoy?", value: kind, options: ["All work", "Admin", "Support", "Finance", "Sales", "Marketing", "Operations"] },
             ].map((group, idx) => (

@@ -1,0 +1,92 @@
+Update the current FindWork.tsx file so all salary-related text and filtering use Philippine Peso (₱) instead of US Dollars ($).
+
+Important:
+- The current code still contains dollar values in `roles`, `trustStats`, `prompts`, the default `query` state, earning filter options, and earning filter logic.
+- I want those replaced properly in code, not just visually.
+- Keep the page design, layout, styling, and behavior unchanged except for salary/currency-related updates.
+
+Make these exact changes:
+
+1. Update `roles` pay values from dollars to pesos
+Replace the existing `pay` strings with these peso values:
+
+- Executive Virtual Assistant → `₱50,000–₱78,000/mo`
+- Customer Support Specialist → `₱45,000–₱67,000/mo`
+- Bookkeeper / Accounting Assistant → `₱56,000–₱100,000/mo`
+- Sales Development Representative → `₱62,000–₱112,000/mo`
+- Content & Social Media Assistant → `₱48,000–₱73,000/mo`
+- Operations Coordinator → `₱56,000–₱84,000/mo`
+
+2. Update `trustStats`
+Change:
+- `"$800–$2,500"`
+to:
+- `₱45,000–₱140,000/mo`
+
+3. Update prompt chips
+Change:
+- `"Virtual assistant, night shift, $900+"`
+to:
+- `"Virtual assistant, night shift, ₱50,000+"`
+
+Keep the other prompt chips, but ensure any salary-related examples use peso formatting.
+
+4. Update default query state
+Change:
+- `useState("Virtual assistant, night shift, $900+")`
+to:
+- `useState("Virtual assistant, night shift, ₱50,000+")`
+
+5. Update earning filter options
+Replace:
+- `Any pay`
+- `$800+`
+- `$1,000+`
+- `$1,500+`
+
+with:
+- `Any pay`
+- `₱45,000+`
+- `₱60,000+`
+- `₱85,000+`
+
+6. Fix earning filter logic
+The current logic still checks dollar values using regex like `/\$(\d+)/`.
+Replace that logic so it works with peso salary strings like:
+- `₱50,000–₱78,000/mo`
+
+Create a helper function, for example:
+- `getMinimumPay(payRange: string): number`
+
+The helper should:
+- remove `₱`, commas, spaces, and `/mo`
+- extract the first numeric value from the range
+- return it as a number
+
+Then update earning filter logic so:
+- `₱45,000+` means minimum pay >= 45000
+- `₱60,000+` means minimum pay >= 60000
+- `₱85,000+` means minimum pay >= 85000
+
+7. Keep visible salary labels the same structurally
+Do not change UI labels like:
+- `Monthly pay`
+Only change the values shown.
+
+8. Check all visible salary displays
+Make sure peso values appear consistently in:
+- live preview cards
+- main job cards
+- stats pills
+- prompt chips
+- filter chips
+- default input/query text
+- any popup/job details area if salary is shown there too
+
+9. Keep everything else unchanged
+- no redesign
+- no component restructuring unless needed for the helper function
+- no changes to animation, spacing, layout, or theme
+- keep production-ready clean code
+
+Return the full updated FindWork.tsx code.
