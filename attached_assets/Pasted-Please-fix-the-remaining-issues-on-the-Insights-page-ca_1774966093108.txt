@@ -1,0 +1,46 @@
+Please fix the remaining issues on the Insights page category filtering and sticky navigation.
+
+Issues to fix:
+
+1. CEO Insights filter is not showing the expected posts
+When “CEO Insights” is selected, blogs/posts authored by Nur Laminero (CEO) are not appearing, even though they should.
+
+Please investigate and fix the filtering logic so that:
+- CEO-related posts are correctly included in the “CEO Insights” category
+- Check whether the issue is caused by:
+  - wrong category mapping
+  - mismatch between category slug/name and filter value
+  - filtering based only on tag/category when CEO posts may rely on author or another field
+  - inconsistent casing or whitespace in category values
+- Normalize values where needed
+- Make the filter logic data-driven and resilient
+- Ensure posts by Nur Laminero appear in CEO Insights if they are intended to belong there
+
+Also:
+- Add fallback/debug-safe logic so category matching does not silently fail due to minor data inconsistencies
+- If needed, support matching against multiple fields such as category, tags, type, or author metadata
+
+2. Sticky category nav overlaps content on scroll
+The sticky sub-header/category nav overlaps the cards/content when scrolling down.
+
+Please fix this so that:
+- The sticky nav does not cover or overlap the content grid/cards
+- Add proper top offset, spacing, z-index, and layout handling
+- Ensure content below accounts for the sticky nav height
+- Sticky behavior should feel smooth and polished
+- It should work correctly across desktop and mobile
+
+Implementation guidance:
+- Review the sticky wrapper and parent layout structure
+- Check whether the nav is using `position: sticky` with missing top spacing or missing reserved space below
+- Prevent overlap by ensuring the section content starts with enough top spacing/margin/padding when sticky is active
+- Use an appropriate z-index, but do not let it visually sit on top of card content in a broken way
+- If there is a global fixed header, make sure the sticky nav top value accounts for that header height
+
+Expected result:
+- “CEO Insights” correctly displays Nur Laminero’s relevant blogs
+- The sticky category nav stays visible on scroll without overlapping article cards
+- Preserve current styling improvements and responsiveness
+- Do not break existing category navigation behavior
+
+Please refactor only where needed and keep the solution clean, maintainable, and data-driven.

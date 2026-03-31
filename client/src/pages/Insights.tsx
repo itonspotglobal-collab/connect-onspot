@@ -341,7 +341,7 @@ function CategoryNav({
 }) {
   return (
     <div
-      className="sticky z-40 bg-background/80 backdrop-blur-[8px]"
+      className="sticky z-40 bg-background border-b border-border/60 shadow-sm"
       style={{ top: "var(--nav-h)" }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -443,12 +443,28 @@ export default function Insights() {
   // Podcast episodes
   const latestEpisodes = applySearch(allArticles.filter((a) => a.isEpisode));
 
+  // ─── CEO Insights: match by category OR by CEO author name ─────────────────
+  // Posts by the CEO are stored under their actual category (e.g. "Industry
+  // Trends"), not under "CEO Insights", so we match on author name as well.
+  const CEO_AUTHORS = ["nur laminero"];
+
+  function matchesCeo(a: ArticleItem): boolean {
+    return (
+      a.category.trim().toLowerCase() === "ceo insights" ||
+      CEO_AUTHORS.some((name) => a.author.trim().toLowerCase().includes(name))
+    );
+  }
+
   // Articles for a specific non-"View All" category
   const categoryArticles = applySearch(
     selectedCategory === "Podcast Videos"
       ? allArticles.filter((a) => a.isEpisode)
+      : selectedCategory === "CEO Insights"
+      ? allArticles.filter((a) => !a.isEpisode && matchesCeo(a))
       : allArticles.filter(
-          (a) => !a.isEpisode && a.category === selectedCategory
+          (a) =>
+            !a.isEpisode &&
+            a.category.trim().toLowerCase() === selectedCategory.trim().toLowerCase()
         )
   );
 
