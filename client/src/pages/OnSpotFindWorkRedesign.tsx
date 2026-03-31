@@ -4,7 +4,7 @@ import {
   Search, Sparkles, BriefcaseBusiness, Clock3, Globe2,
   ChevronRight, Star, BadgeCheck, DollarSign, Brain,
   TrendingUp, Plus, Minus, X, CheckCircle2, Gift,
-  ListChecks, Award, ArrowRight,
+  ListChecks, Award, ArrowRight, ArrowLeft, Maximize2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -445,8 +445,14 @@ function ModalSection({
 
 // ─── Role Detail Modal ────────────────────────────────────────────────────────
 // z-[200] so it clears the top navigation's z-50
+// tab: "summary" = compact highlight view; "full" = complete job posting
 
 function RoleDetailModal({ role, onClose }: { role: Role; onClose: () => void }) {
+  const [tab, setTab] = useState<"summary" | "full">("summary");
+
+  // Reset to summary whenever the role changes
+  useEffect(() => { setTab("summary"); }, [role]);
+
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -482,7 +488,7 @@ function RoleDetailModal({ role, onClose }: { role: Role; onClose: () => void })
         style={{ maxHeight: "92vh" }}
       >
 
-        {/* ── HEADER ── */}
+        {/* ── HEADER (same for both tabs) ── */}
         <div className="relative shrink-0 overflow-hidden bg-[#1C1917] px-6 pb-6 pt-5 md:px-8">
           <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-primary/30 blur-[70px]" />
 
@@ -528,9 +534,9 @@ function RoleDetailModal({ role, onClose }: { role: Role; onClose: () => void })
           {/* Meta chips */}
           <div className="relative mt-4 grid grid-cols-3 gap-2">
             {[
-              { Icon: Clock3,          label: "Schedule",  value: role.shift    },
-              { Icon: Globe2,          label: "Market",    value: role.market   },
-              { Icon: BriefcaseBusiness, label: "Category", value: role.category },
+              { Icon: Clock3,            label: "Schedule",  value: role.shift    },
+              { Icon: Globe2,            label: "Market",    value: role.market   },
+              { Icon: BriefcaseBusiness, label: "Category",  value: role.category },
             ].map(({ Icon, label, value }) => (
               <div key={label} className="rounded-xl bg-white/[0.06] p-2.5">
                 <div className="flex items-center gap-1 text-[10px] text-white/40">
@@ -540,75 +546,201 @@ function RoleDetailModal({ role, onClose }: { role: Role; onClose: () => void })
               </div>
             ))}
           </div>
+
+          {/* Tab breadcrumb */}
+          {tab === "full" && (
+            <div className="relative mt-3 flex items-center gap-1.5">
+              <span className="text-[10px] text-white/30">Summary</span>
+              <span className="text-[10px] text-white/20">›</span>
+              <span className="text-[10px] font-semibold text-primary/80">Full Details</span>
+            </div>
+          )}
         </div>
 
         {/* ── SCROLLABLE BODY ── */}
-        <div className="flex-1 overflow-y-auto divide-y divide-stone-100">
-
-          {/* Why you're a fit */}
-          <div className="bg-primary/[0.04] px-6 py-5 md:px-8">
-            <div className="flex items-start gap-3">
-              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-              <div>
-                <p className="mb-1 text-[11px] font-bold uppercase tracking-widest text-primary">
-                  Why you're a fit
-                </p>
-                <p className="text-sm leading-6 text-stone-700">{role.why}</p>
+        <AnimatePresence mode="wait" initial={false}>
+          {tab === "summary" ? (
+            <motion.div
+              key="summary"
+              initial={{ opacity: 0, x: -16 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 16 }}
+              transition={{ duration: 0.22, ease: "easeOut" }}
+              className="flex-1 overflow-y-auto divide-y divide-stone-100"
+            >
+              {/* Why you're a fit */}
+              <div className="bg-primary/[0.04] px-6 py-5 md:px-8">
+                <div className="flex items-start gap-3">
+                  <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <div>
+                    <p className="mb-1 text-[11px] font-bold uppercase tracking-widest text-primary">
+                      Why you're a fit
+                    </p>
+                    <p className="text-sm leading-6 text-stone-700">{role.why}</p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
 
-          {/* Overview */}
-          <ModalSection icon={Sparkles} title="Overview" iconBg="bg-stone-100 text-stone-500">
-            <p className="text-sm leading-7 text-stone-600">
-              <ReadMore text={role.overview} limit={220} />
-            </p>
-          </ModalSection>
+              {/* Overview snippet */}
+              <div className="px-6 py-5 md:px-8">
+                <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-stone-400">Overview</p>
+                <p className="line-clamp-3 text-sm leading-7 text-stone-600">{role.overview}</p>
+              </div>
 
-          {/* Full description */}
-          <ModalSection icon={ListChecks} title="About this role" iconBg="bg-indigo-50 text-indigo-500">
-            <p className="text-sm leading-7 text-stone-600">
-              <ReadMore text={role.description} limit={280} />
-            </p>
-          </ModalSection>
+              {/* Responsibilities preview — first 3 */}
+              <div className="px-6 py-5 md:px-8">
+                <div className="mb-3 flex items-center gap-2.5">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-500">
+                    <ListChecks className="h-3.5 w-3.5" />
+                  </div>
+                  <h3 className="text-sm font-bold uppercase tracking-wide text-stone-800">Responsibilities</h3>
+                </div>
+                <ul className="space-y-2.5">
+                  {role.responsibilities.slice(0, 3).map((item, i) => (
+                    <li key={i} className="flex items-start gap-3 text-sm leading-6 text-stone-700">
+                      <span className="mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                {role.responsibilities.length > 3 && (
+                  <p className="mt-3 text-xs text-stone-400">
+                    +{role.responsibilities.length - 3} more — click Show More to see all
+                  </p>
+                )}
+              </div>
 
-          {/* Responsibilities */}
-          <ModalSection icon={ListChecks} title="Responsibilities" iconBg="bg-blue-50 text-blue-500">
-            <BulletList items={role.responsibilities} accentClass="bg-blue-400" />
-          </ModalSection>
+              {/* Qualifications preview — first 3 */}
+              <div className="px-6 py-5 md:px-8">
+                <div className="mb-3 flex items-center gap-2.5">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                  </div>
+                  <h3 className="text-sm font-bold uppercase tracking-wide text-stone-800">Qualifications</h3>
+                </div>
+                <ul className="space-y-2.5">
+                  {role.qualifications.slice(0, 3).map((item, i) => (
+                    <li key={i} className="flex items-start gap-3 text-sm leading-6 text-stone-700">
+                      <span className="mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                {role.qualifications.length > 3 && (
+                  <p className="mt-3 text-xs text-stone-400">
+                    +{role.qualifications.length - 3} more — click Show More to see all
+                  </p>
+                )}
+              </div>
 
-          {/* Qualifications */}
-          <ModalSection icon={CheckCircle2} title="Qualifications" iconBg="bg-emerald-50 text-emerald-600">
-            <BulletList items={role.qualifications} accentClass="bg-emerald-500" />
-          </ModalSection>
+              {/* Tags */}
+              <div className="px-6 py-5 md:px-8">
+                <p className="mb-3 text-[11px] font-bold uppercase tracking-widest text-stone-400">Tags</p>
+                <div className="flex flex-wrap gap-2">
+                  {role.tags.map((tag) => (
+                    <span key={tag} className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium text-stone-700">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="full"
+              initial={{ opacity: 0, x: 16 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -16 }}
+              transition={{ duration: 0.22, ease: "easeOut" }}
+              className="flex-1 overflow-y-auto divide-y divide-stone-100"
+            >
+              {/* Why you're a fit */}
+              <div className="bg-primary/[0.04] px-6 py-5 md:px-8">
+                <div className="flex items-start gap-3">
+                  <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <div>
+                    <p className="mb-1 text-[11px] font-bold uppercase tracking-widest text-primary">
+                      Why you're a fit
+                    </p>
+                    <p className="text-sm leading-6 text-stone-700">{role.why}</p>
+                  </div>
+                </div>
+              </div>
 
-          {/* Preferred skills */}
-          {role.preferredSkills.length > 0 && (
-            <ModalSection icon={Award} title="Preferred skills" iconBg="bg-amber-50 text-amber-500">
-              <BulletList items={role.preferredSkills} accentClass="bg-amber-400" />
-            </ModalSection>
+              {/* Overview */}
+              <ModalSection icon={Sparkles} title="Overview" iconBg="bg-stone-100 text-stone-500">
+                <p className="text-sm leading-7 text-stone-600">{role.overview}</p>
+              </ModalSection>
+
+              {/* Full description */}
+              <ModalSection icon={ListChecks} title="About this role" iconBg="bg-indigo-50 text-indigo-500">
+                <p className="text-sm leading-7 text-stone-600">{role.description}</p>
+              </ModalSection>
+
+              {/* All responsibilities */}
+              <ModalSection icon={ListChecks} title="Responsibilities" iconBg="bg-blue-50 text-blue-500">
+                <ul className="space-y-2.5">
+                  {role.responsibilities.map((item, i) => (
+                    <li key={i} className="flex items-start gap-3 text-sm leading-6 text-stone-700">
+                      <span className="mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </ModalSection>
+
+              {/* All qualifications */}
+              <ModalSection icon={CheckCircle2} title="Qualifications" iconBg="bg-emerald-50 text-emerald-600">
+                <ul className="space-y-2.5">
+                  {role.qualifications.map((item, i) => (
+                    <li key={i} className="flex items-start gap-3 text-sm leading-6 text-stone-700">
+                      <span className="mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </ModalSection>
+
+              {/* All preferred skills */}
+              {role.preferredSkills.length > 0 && (
+                <ModalSection icon={Award} title="Preferred skills" iconBg="bg-amber-50 text-amber-500">
+                  <ul className="space-y-2.5">
+                    {role.preferredSkills.map((item, i) => (
+                      <li key={i} className="flex items-start gap-3 text-sm leading-6 text-stone-700">
+                        <span className="mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </ModalSection>
+              )}
+
+              {/* All benefits */}
+              <ModalSection icon={Gift} title="Benefits & perks" iconBg="bg-purple-50 text-purple-500">
+                <ul className="space-y-2.5">
+                  {role.benefits.map((item, i) => (
+                    <li key={i} className="flex items-start gap-3 text-sm leading-6 text-stone-700">
+                      <span className="mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full bg-purple-400" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </ModalSection>
+
+              {/* Tags */}
+              <div className="px-6 py-5 md:px-8">
+                <p className="mb-3 text-[11px] font-bold uppercase tracking-widest text-stone-400">Tags</p>
+                <div className="flex flex-wrap gap-2">
+                  {role.tags.map((tag) => (
+                    <span key={tag} className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium text-stone-700">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
           )}
-
-          {/* Benefits */}
-          <ModalSection icon={Gift} title="Benefits & perks" iconBg="bg-purple-50 text-purple-500">
-            <BulletList items={role.benefits} accentClass="bg-purple-400" />
-          </ModalSection>
-
-          {/* Tags */}
-          <div className="px-6 py-5 md:px-8">
-            <p className="mb-3 text-[11px] font-bold uppercase tracking-widest text-stone-400">Tags</p>
-            <div className="flex flex-wrap gap-2">
-              {role.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium text-stone-700"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
+        </AnimatePresence>
 
         {/* ── FOOTER ── */}
         <div className="shrink-0 border-t border-stone-100 bg-white px-6 py-4 md:px-8">
@@ -619,9 +751,31 @@ function RoleDetailModal({ role, onClose }: { role: Role; onClose: () => void })
             >
               Apply Now <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
-            <Button variant="outline" className="rounded-xl" onClick={onClose}>
+
+            {tab === "summary" ? (
+              <Button
+                variant="outline"
+                className="rounded-xl"
+                onClick={() => setTab("full")}
+              >
+                <Maximize2 className="mr-2 h-4 w-4" />
+                Show More
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                className="rounded-xl"
+                onClick={() => setTab("summary")}
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back
+              </Button>
+            )}
+
+            <Button variant="ghost" className="rounded-xl" onClick={onClose}>
               Close
             </Button>
+
             <span className="ml-auto hidden text-xs text-stone-400 sm:block">
               OnSpot Global · {role.market}
             </span>

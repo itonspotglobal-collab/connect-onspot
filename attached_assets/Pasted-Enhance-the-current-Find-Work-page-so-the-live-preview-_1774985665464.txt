@@ -1,0 +1,156 @@
+Enhance the current Find Work page so the live preview job cards become clickable and open a job details popup, and inside that popup add a “Show More” action that opens a second full job-details view/tab for the complete posting.
+
+Important:
+- Reuse the project’s existing popup/modal code.
+- Reuse the project’s existing job details structure if one already exists.
+- Do not redesign the whole page.
+- Keep the current OnSpot visual style, spacing, rounded cards, colors, shadows, and responsiveness.
+- Keep the current peso salary display.
+
+Main behavior to implement
+
+1. Make the live preview cards clickable
+For each job item inside the “Live Preview / Your best opportunities” panel:
+- Make the entire preview card clickable, or at minimum make the arrow icon and content area clickable.
+- On click, open the existing popup/modal.
+- Pass the clicked role/job into the popup.
+- Add hover and cursor feedback so it clearly feels interactive.
+- Keep the current design intact.
+
+2. Job details popup
+When a preview card is clicked, open a popup that shows a summarized job details layout for the selected role.
+
+The popup should include:
+- Job title
+- Match percentage
+- Salary in pesos
+- Shift / schedule
+- Market / client
+- Category
+- Hiring urgency / demand
+- Hiring speed
+- Short overview / hook
+- Short responsibilities preview
+- Short qualifications preview
+- “Why you’re a fit”
+- Tags
+- CTA buttons:
+  - Apply Now
+  - Show More
+  - Close
+
+3. “Show More” behavior
+Inside the popup, add a “Show More” button that opens another full job posting view.
+
+Preferred implementation:
+- If the project already has tabs/sheets/drawers/full-detail modal patterns, reuse that.
+- If not, open a second tab/panel inside the same popup using local state.
+- The user flow should be:
+  - click preview card
+  - popup opens with summary job details
+  - click “Show More”
+  - switch to a fuller detailed job posting view
+
+4. Full detailed job posting view
+The Show More view should display the complete job posting structure, such as:
+- Job title
+- Salary in pesos
+- Category
+- Schedule
+- Client market
+- Match badge
+- Urgency / speed
+- Full overview
+- Full description
+- Responsibilities
+- Qualifications
+- Preferred skills
+- Benefits
+- Why you’re a fit
+- Tags
+- Apply CTA
+- Back button or Close button
+
+5. Data structure
+Extend the existing `roles` array so every job has enough data for both the popup summary and the full details view.
+
+Add fields like:
+- overview
+- description
+- responsibilities
+- qualifications
+- preferredSkills
+- benefits
+
+Example:
+{
+  id: 1,
+  title: "Executive Virtual Assistant",
+  pay: "₱50,000–₱78,000/mo",
+  shift: "Night shift",
+  market: "US client",
+  category: "Admin",
+  demand: "High demand",
+  speed: "Quick hire",
+  fit: 92,
+  hook: "Support a fast-moving founder and become a key operator.",
+  why: "Strong fit for admin-heavy, client-facing candidates.",
+  tags: ["Remote", "Growth path", "Premium client"],
+  overview: "...",
+  description: "...",
+  responsibilities: ["...", "..."],
+  qualifications: ["...", "..."],
+  preferredSkills: ["...", "..."],
+  benefits: ["...", "..."]
+}
+
+6. State management
+Add state for:
+- selectedRole
+- modal open/close
+- current detail mode/tab, for example:
+  - "summary"
+  - "full"
+
+Expected behavior:
+- Clicking a live preview card sets `selectedRole`
+- Opens popup
+- Default popup mode is summary
+- Clicking “Show More” changes mode to full
+- Clicking Back returns to summary, or Close closes modal
+
+7. UI requirements
+Keep the current design language:
+- same purple accent
+- same rounded cards
+- same light/dark mode support
+- same soft shadows and borders
+- same typography rhythm
+- same premium, clean layout
+
+For the clickable live preview cards:
+- add `cursor-pointer`
+- add subtle hover border/shadow change
+- preserve current structure and motion animation
+
+8. Reuse existing project patterns
+- Reuse the existing popup/modal component already in the project
+- Reuse existing read more / expand functionality if already available
+- Reuse existing button, badge, card, and motion components
+- Do not introduce a completely new popup architecture unless absolutely necessary
+
+9. Code changes expected
+Return updated React code for:
+- extended `roles` data
+- clickable live preview cards
+- popup integration
+- summary job details view
+- full job details / Show More view
+- state wiring in `OnSpotFindWorkRedesign`
+
+10. Important constraints
+- Do not remove any existing sections
+- Do not redesign the page from scratch
+- Do not revert the peso salary update
+- Keep production-ready clean code
+- Make the interaction feel natural and polished
