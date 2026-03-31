@@ -1,0 +1,122 @@
+Make the live preview job cards in the “Your best opportunities” section actually clickable.
+
+Problem:
+Right now the preview cards are only styled as cards, but they are not interactive because the `motion.div` wrapper has no `onClick`, no `cursor-pointer`, and no button/accessibility behavior. I want clicking these cards to open the existing job details popup for the selected role.
+
+What to change
+
+1. Make each live preview card clickable
+In this section:
+
+{roles.slice(0, 3).map((role, index) => (
+  <motion.div ... className="rounded-3xl border ... p-4 ...">
+    ...
+  </motion.div>
+))}
+
+update the preview card so it:
+- opens the existing popup/modal when clicked
+- passes the clicked `role`
+- has `cursor-pointer`
+- has hover/focus feedback
+- supports keyboard accessibility
+
+2. Add click handling
+Use the existing popup flow in the page.
+Add or reuse:
+- `selectedRole`
+- `isModalOpen`
+- `setSelectedRole`
+- `setIsModalOpen`
+
+Expected click handler:
+- set the clicked role as selected
+- open the popup
+- default the popup to the summary/details view
+
+Example behavior:
+- clicking Executive Virtual Assistant preview card opens popup for that role
+- clicking Customer Support Specialist preview card opens popup for that role
+
+3. Add accessibility
+Do one of these properly:
+- either convert the clickable preview container into a `button`
+- or keep `motion.div` but add:
+  - `role="button"`
+  - `tabIndex={0}`
+  - `onClick`
+  - `onKeyDown` for Enter and Space
+
+If keeping `motion.div`, use keyboard support like:
+- Enter opens popup
+- Space opens popup
+
+4. Keep the design intact
+Do not redesign the card.
+Keep:
+- current layout
+- current spacing
+- current colors
+- current fit badge
+- current arrow icon
+- current peso salary display
+
+Only add the interactivity.
+
+5. Add visual interactive feedback
+Add classes like:
+- `cursor-pointer`
+- subtle hover border/shadow change
+- optional focus-visible ring
+
+Example styling direction:
+- keep existing `rounded-3xl border border-slate-200/80 bg-slate-50/80 p-4`
+- add hover/focus states such as:
+  - `transition-all`
+  - `hover:border-[#474ead]/30`
+  - `hover:shadow-[0_12px_40px_rgba(71,78,173,0.10)]`
+  - `focus-visible:outline-none`
+  - `focus-visible:ring-2`
+  - `focus-visible:ring-[#474ead]/30`
+
+6. Keep arrow icon clickable too
+The arrow icon on the right should also trigger the same popup.
+If the whole card is clickable, make sure the arrow still feels like part of that interaction.
+
+7. Show More flow inside popup
+Inside the popup:
+- keep the summary job details first
+- include a `Show More` button
+- clicking `Show More` opens the full job posting view/tab/panel for the same selected role
+
+The full details view should include:
+- title
+- pay in pesos
+- schedule
+- market
+- category
+- fit
+- demand
+- speed
+- overview
+- description
+- responsibilities
+- qualifications
+- preferred skills
+- benefits
+- why you’re a fit
+- tags
+
+8. Expected code changes
+Return updated React code for:
+- clickable live preview cards
+- selected role state wiring
+- popup open/close wiring
+- keyboard accessibility
+- `Show More` flow in the popup if not yet connected
+
+9. Important
+- Reuse the existing popup/modal code already in the project
+- Do not create a completely new popup architecture
+- Do not redesign the page
+- Keep production-ready clean code
