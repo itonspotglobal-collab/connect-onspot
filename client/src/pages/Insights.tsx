@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
@@ -335,14 +335,19 @@ function ArticleCardSkeleton() {
 function CategoryNav({
   selected,
   onSelect,
+  navVisible,
 }: {
   selected: NavCategoryId;
   onSelect: (id: NavCategoryId) => void;
+  navVisible: boolean;
 }) {
   return (
     <div
       className="sticky z-40 bg-background border-b border-border/60 shadow-sm"
-      style={{ top: "var(--nav-h)" }}
+      style={{
+        top: navVisible ? "var(--nav-h)" : "0",
+        transition: "top 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+      }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center overflow-x-auto scrollbar-hide -mb-px gap-0">
@@ -409,6 +414,35 @@ export default function Insights() {
     const a = params.get("author");
     if (a) setAuthorFilter(decodeURIComponent(a));
   }, [location]);
+
+  // ─── Mirror TopNavigation hide-on-scroll so CategoryNav top syncs with it ───
+  const [navVisible, setNavVisible] = useState(true);
+  const lastScrollY = useRef(0);
+  const ticking = useRef(false);
+
+  useEffect(() => {
+    const onScroll = () => {
+      if (ticking.current) return;
+      ticking.current = true;
+      requestAnimationFrame(() => {
+        const y = Math.max(0, window.scrollY);
+        const delta = Math.abs(y - lastScrollY.current);
+        if (delta >= 10) {
+          if (y < 100) {
+            setNavVisible(true);
+          } else if (y > lastScrollY.current && y > 200) {
+            setNavVisible(false);
+          } else if (y < lastScrollY.current) {
+            setNavVisible(true);
+          }
+          lastScrollY.current = y;
+        }
+        ticking.current = false;
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   // ─── Data fetching ──────────────────────────────────────────────────────────
   const { data, isLoading } = useQuery<{ success: boolean; posts: Post[] }>({
@@ -532,13 +566,14 @@ export default function Insights() {
         </div>
       </div>
 
-      {/* ── Category navigation (sticky under TopNavigation) ─────────────── */}
+      {/* ── Category navigation (sticky, synced with TopNavigation scroll) ── */}
       <CategoryNav
         selected={selectedCategory}
         onSelect={(id) => {
           setSelectedCategory(id);
           setAuthorFilter("");
         }}
+        navVisible={navVisible}
       />
 
       {/* ── Main content area ─────────────────────────────────────────────── */}

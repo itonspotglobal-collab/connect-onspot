@@ -1,0 +1,45 @@
+Please fix the sticky behavior of the Insights category filter bar so it matches the main top navigation behavior.
+
+Current problem:
+- The category filter bar stays visible while the main navigation/header disappears
+- This makes the filter bar feel detached from the page structure
+- It also creates overlap and awkward floating behavior over the article cards
+
+Expected behavior:
+- The category filter bar should follow the same scroll/sticky behavior pattern as the main navigation
+- If the main navigation is no longer visible on scroll, the filter bar should not remain floating independently in a broken way
+- The filter bar should feel anchored to the same layout system as the main header/nav
+- No overlap with cards/content at any scroll position
+
+What to fix:
+1. Review the sticky logic for the category/filter bar
+   - Check if it is using `sticky top-40` or another hardcoded top offset
+   - Remove any incorrect top value that causes it to detach from the main header behavior
+   - Make the sticky offset consistent with the actual header/nav height
+
+2. Match the main nav behavior
+   - The filter bar should either:
+     - stick directly beneath the main navigation while that nav is visible, or
+     - scroll away naturally with the page if that is how the main nav behaves
+   - It should not remain floating alone after the nav disappears
+
+3. Fix layout overlap
+   - Prevent the sticky filter bar from covering article cards or section headings
+   - Ensure the content flow accounts for the filter bar height properly
+   - Adjust z-index only as needed
+
+4. Simplify the wrapper styling if needed
+   - Remove heavy sticky container treatment that makes it look like a floating strip
+   - Keep the visual style clean and integrated with the page
+
+Implementation guidance:
+- Inspect the parent containers of both the main navigation and the filter bar
+- Align the filter bar’s sticky context with the correct scroll container
+- Avoid hardcoded offsets unless they exactly match the real header height
+- If the main nav is not sticky, consider removing sticky from the filter bar too
+- If both should be sticky, ensure they stack correctly and disappear/behave together
+
+Goal:
+The Insights category filter bar should behave like part of the site navigation system, not like an independent floating bar.
+
+Please keep the existing category functionality and styling improvements, and only fix the sticky/scroll behavior and overlap issues.
