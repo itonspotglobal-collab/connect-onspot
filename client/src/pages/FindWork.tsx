@@ -1,11 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Sparkles, BriefcaseBusiness, Clock3, Globe2, ChevronRight, Star, ArrowRight, BadgeCheck, Filter, Zap, DollarSign, Building2, CheckCircle2, Users, Brain, TrendingUp, X, ListChecks, Maximize2 } from "lucide-react";
+import { Search, Sparkles, BriefcaseBusiness, Clock3, Globe2, ChevronRight, Star, ArrowRight, BadgeCheck, Filter, Zap, DollarSign, Building2, CheckCircle2, Users, Brain, TrendingUp, X, ListChecks, Maximize2, ChevronDown, MapPin, Layers } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
+import type { Job } from "@shared/schema";
+import { buildRateDisplay, getJobBadges, getTimeAgo } from "@/lib/jobUtils";
 
 const APPLY_URL = "https://api.leadconnectorhq.com/widget/form/36ljnIgIsA1xoBluXvSK?notrack=true";
 
@@ -602,7 +606,90 @@ function JobCard({ role, onViewDetails }: { role: Role; onViewDetails: (r: Role)
   );
 }
 
+function DbJobCard({ job, onNavigate }: { job: Job; onNavigate: (id: string) => void }) {
+  const pay = buildRateDisplay(job);
+  const badges = getJobBadges(job);
+  const timeAgo = getTimeAgo(job.createdAt);
+  const tags = (job.skillTags ?? []).slice(0, 4);
+
+  return (
+    <motion.div layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+      <Card className="group flex h-full flex-col rounded-3xl border-slate-200/70 bg-white/90 transition-all hover:border-[#474ead]/25 hover:shadow-[0_16px_48px_rgba(71,78,173,0.10)] dark:border-white/10 dark:bg-white/[0.03]">
+        <CardContent className="flex flex-1 flex-col p-6">
+          {/* Header */}
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div className="flex-1">
+              <div className="mb-2 flex flex-wrap gap-1.5">
+                {badges.map((b) => (
+                  <span key={b.key} className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${b.className}`}>{b.label}</span>
+                ))}
+                {badges.length === 0 && (
+                  <span className="rounded-full bg-[#474ead]/10 px-2.5 py-0.5 text-[11px] font-semibold text-[#474ead]">Open</span>
+                )}
+              </div>
+              <h3 className="text-lg font-semibold leading-snug text-slate-900 dark:text-white">{job.title}</h3>
+              <p className="mt-0.5 text-sm text-slate-500">{job.company ?? "OnSpot Global"}</p>
+            </div>
+            <span className="shrink-0 text-xs text-slate-400">{timeAgo}</span>
+          </div>
+
+          {/* Meta pills */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-xl bg-slate-50 p-2.5 dark:bg-white/[0.04]">
+              <div className="flex items-center gap-1.5 text-[11px] text-slate-500"><DollarSign className="h-3 w-3" /> Pay</div>
+              <div className="mt-0.5 text-sm font-semibold text-slate-900 dark:text-white">{pay}</div>
+            </div>
+            <div className="rounded-xl bg-slate-50 p-2.5 dark:bg-white/[0.04]">
+              <div className="flex items-center gap-1.5 text-[11px] text-slate-500"><MapPin className="h-3 w-3" /> Location</div>
+              <div className="mt-0.5 text-sm font-semibold text-slate-900 dark:text-white">{job.location ?? "Remote"}</div>
+            </div>
+            <div className="rounded-xl bg-slate-50 p-2.5 dark:bg-white/[0.04]">
+              <div className="flex items-center gap-1.5 text-[11px] text-slate-500"><BriefcaseBusiness className="h-3 w-3" /> Category</div>
+              <div className="mt-0.5 text-sm font-semibold capitalize text-slate-900 dark:text-white">{job.category}</div>
+            </div>
+            <div className="rounded-xl bg-slate-50 p-2.5 dark:bg-white/[0.04]">
+              <div className="flex items-center gap-1.5 text-[11px] text-slate-500"><Layers className="h-3 w-3" /> Type</div>
+              <div className="mt-0.5 text-sm font-semibold capitalize text-slate-900 dark:text-white">{job.contractType?.replace(/-/g, " ") ?? "Full-time"}</div>
+            </div>
+          </div>
+
+          {/* Description excerpt */}
+          {job.description && (
+            <p className="mt-4 line-clamp-2 text-sm leading-6 text-slate-600 dark:text-slate-400">{job.description}</p>
+          )}
+
+          {/* Tags */}
+          {tags.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-1.5">
+              {tags.map((tag) => (
+                <span key={tag} className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700 dark:bg-white/[0.06] dark:text-slate-300">{tag}</span>
+              ))}
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="mt-5 flex items-center justify-between gap-3 pt-1">
+            <Button
+              className="rounded-full bg-[#474ead] px-5 text-white hover:bg-[#3d439c]"
+              onClick={() => window.open(APPLY_URL, "_blank", "noopener,noreferrer")}
+            >
+              Apply in 30 seconds
+            </Button>
+            <button
+              onClick={() => onNavigate(job.id)}
+              className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition-colors hover:text-[#474ead] dark:text-slate-300"
+            >
+              View details <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
 export default function OnSpotFindWorkRedesign() {
+  const [, navigate] = useLocation();
   const [query, setQuery] = useState("Virtual assistant, night shift, ₱50,000+");
   const [schedule, setSchedule] = useState("All schedules");
   const [earning, setEarning] = useState("Any pay");
@@ -610,6 +697,16 @@ export default function OnSpotFindWorkRedesign() {
   const [profileStrength] = useState(68);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const { data: dbJobs = [], isLoading: isJobsLoading } = useQuery<Job[]>({
+    queryKey: ["/api/admin/jobs"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/jobs");
+      if (!res.ok) throw new Error("Failed to fetch jobs");
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
   function openModal(role: Role) {
     setSelectedRole(role);
@@ -651,6 +748,31 @@ export default function OnSpotFindWorkRedesign() {
       return schedulePass && kindPass && earningPass && queryPass;
     });
   }, [query, schedule, earning, kind]);
+
+  const filteredDbJobs = useMemo(() => {
+    return dbJobs.filter((job) => {
+      if (job.status !== "open") return false;
+      const q = query.toLowerCase();
+      const queryPass =
+        !q ||
+        job.title.toLowerCase().includes(q) ||
+        (job.description ?? "").toLowerCase().includes(q) ||
+        (job.category ?? "").toLowerCase().includes(q) ||
+        (job.location ?? "").toLowerCase().includes(q);
+      const kindPass =
+        kind === "All work" ||
+        (job.category ?? "").toLowerCase() === kind.toLowerCase();
+      const earningPass = (() => {
+        if (earning === "Any pay") return true;
+        const max = parseFloat(job.hourlyRateMax ?? job.budget ?? "0");
+        if (earning === "₱45,000+") return max >= 45000;
+        if (earning === "₱60,000+") return max >= 60000;
+        if (earning === "₱85,000+") return max >= 85000;
+        return true;
+      })();
+      return queryPass && kindPass && earningPass;
+    });
+  }, [dbJobs, query, kind, earning]);
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(71,78,173,0.12),transparent_32%),linear-gradient(to_bottom,#f8fafc,white)] text-slate-900 dark:bg-[#060816] dark:text-white">
@@ -834,10 +956,40 @@ export default function OnSpotFindWorkRedesign() {
           </div>
         </div>
 
-        <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
-          {filteredRoles.map((role) => (
-            <JobCard key={role.id} role={role} onViewDetails={openModal} />
-          ))}
+        {/* Job cards — DB-powered when available, static fallback when DB is empty */}
+        {isJobsLoading ? (
+          <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
+            {[1, 2, 3].map((n) => (
+              <div key={n} className="h-64 animate-pulse rounded-3xl bg-slate-100 dark:bg-white/[0.04]" />
+            ))}
+          </div>
+        ) : filteredDbJobs.length > 0 ? (
+          <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
+            {filteredDbJobs.slice(0, 6).map((job) => (
+              <DbJobCard key={job.id} job={job} onNavigate={(id) => navigate(`/find-work/job/${id}`)} />
+            ))}
+          </div>
+        ) : (
+          <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
+            {filteredRoles.map((role) => (
+              <JobCard key={role.id} role={role} onViewDetails={openModal} />
+            ))}
+          </div>
+        )}
+
+        {/* Show More Job Opening CTA */}
+        <div className="mt-10 flex flex-col items-center gap-3 text-center">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            {filteredDbJobs.length > 6
+              ? `Showing 6 of ${filteredDbJobs.length} open roles`
+              : "Explore the full list of available opportunities"}
+          </p>
+          <Button
+            className="rounded-full bg-[#474ead] px-8 py-2.5 text-white shadow-[0_8px_32px_rgba(71,78,173,0.28)] hover:bg-[#3d439c]"
+            onClick={() => navigate("/find-work/jobs")}
+          >
+            Show More Job Opening <ChevronDown className="ml-2 h-4 w-4" />
+          </Button>
         </div>
       </section>
 

@@ -3,9 +3,12 @@ import { motion } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, Sparkles, Clock3, Globe2,
   BriefcaseBusiness, DollarSign, ListChecks, CheckCircle2,
-  Award, Gift, Tag, AlertCircle,
+  Award, Gift, Tag, AlertCircle, MapPin, Layers, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import type { Job } from "@shared/schema";
+import { buildRateDisplay, getJobBadges, getTimeAgo } from "@/lib/jobUtils";
 
 const APPLY_URL = "https://api.leadconnectorhq.com/widget/form/36ljnIgIsA1xoBluXvSK?notrack=true";
 
@@ -327,12 +330,171 @@ function Section({
   );
 }
 
+function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => void }) {
+  const pay = buildRateDisplay(job);
+  const badges = getJobBadges(job);
+  const timeAgo = getTimeAgo(job.createdAt);
+  const responsibilities = (job.responsibilities ?? []) as string[];
+  const requirements = (job.requirements ?? []) as string[];
+  const tags = (job.skillTags ?? []) as string[];
+
+  return (
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(71,78,173,0.10),transparent_30%),linear-gradient(to_bottom,#f8fafc,white)] dark:bg-[#060816] dark:text-white">
+
+      {/* Hero */}
+      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}
+        className="relative overflow-hidden bg-[#0f172a]">
+        <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#474ead]/25 blur-[90px]" />
+        <div className="pointer-events-none absolute -left-12 bottom-0 h-48 w-48 rounded-full bg-indigo-600/15 blur-[70px]" />
+        <div className="relative mx-auto max-w-4xl px-6 pb-10 pt-8 md:px-12 lg:px-16">
+          <button onClick={() => navigate("/find-work/jobs")}
+            className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-4 py-1.5 text-xs font-medium text-white/60 transition hover:bg-white/10 hover:text-white">
+            <ArrowLeft className="h-3.5 w-3.5" /> Back to All Jobs
+          </button>
+
+          <div className="mb-5 flex flex-wrap items-center gap-2">
+            {badges.map((b) => (
+              <span key={b.key} className={`rounded-full px-3 py-1 text-[11px] font-bold ${b.className}`}>{b.label}</span>
+            ))}
+            {badges.length === 0 && (
+              <span className="rounded-full bg-[#474ead] px-3 py-1 text-[11px] font-bold text-white">Open</span>
+            )}
+            <span className="rounded-full border border-white/15 bg-white/[0.08] px-3 py-1 text-[11px] text-white/60">Posted {timeAgo}</span>
+          </div>
+
+          <h1 className="text-3xl font-bold leading-tight text-white md:text-4xl lg:text-[42px]">{job.title}</h1>
+          <p className="mt-2 text-base text-slate-400">{job.company ?? "OnSpot Global"}</p>
+
+          <div className="mt-6 inline-flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.06] px-5 py-3">
+            <DollarSign className="h-4 w-4 text-[#474ead]" />
+            <div>
+              <div className="text-[10px] text-white/40">Compensation (PHP)</div>
+              <div className="text-sm font-bold text-white">{pay}</div>
+            </div>
+          </div>
+
+          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {[
+              { icon: MapPin, label: "Location", value: job.location ?? "Remote" },
+              { icon: BriefcaseBusiness, label: "Category", value: job.category },
+              { icon: Layers, label: "Contract", value: (job.contractType ?? "Full-time").replace(/-/g, " ") },
+            ].map(({ icon: Icon, label, value }) => (
+              <div key={label} className="rounded-xl border border-white/10 bg-white/[0.05] p-3">
+                <div className="flex items-center gap-1.5 text-[10px] text-white/40"><Icon className="h-3 w-3" /> {label}</div>
+                <div className="mt-1 text-sm font-semibold capitalize text-white">{value}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-6 flex gap-3">
+            <Button className="rounded-full bg-[#474ead] px-7 text-white hover:bg-[#3d439c]"
+              onClick={() => window.open(APPLY_URL, "_blank", "noopener,noreferrer")}>
+              Apply in 30 seconds <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Body */}
+      <div className="mx-auto max-w-4xl px-6 py-12 md:px-12 lg:px-16">
+        {job.description && (
+          <Section title="Overview" icon={<Globe2 className="h-4 w-4 text-[#474ead]" />}>
+            <p className="leading-7 text-slate-600 dark:text-slate-300">{job.description}</p>
+          </Section>
+        )}
+
+        {responsibilities.length > 0 && (
+          <Section title="Responsibilities" icon={<ListChecks className="h-4 w-4 text-[#474ead]" />}>
+            <ul className="space-y-2.5">
+              {responsibilities.map((r, i) => (
+                <li key={i} className="flex gap-2.5 text-slate-600 dark:text-slate-300">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#474ead]" /> {r}
+                </li>
+              ))}
+            </ul>
+          </Section>
+        )}
+
+        {requirements.length > 0 && (
+          <Section title="Qualifications" icon={<Award className="h-4 w-4 text-[#474ead]" />}>
+            <ul className="space-y-2.5">
+              {requirements.map((r, i) => (
+                <li key={i} className="flex gap-2.5 text-slate-600 dark:text-slate-300">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#474ead]" /> {r}
+                </li>
+              ))}
+            </ul>
+          </Section>
+        )}
+
+        {tags.length > 0 && (
+          <Section title="Skills & Tags" icon={<Tag className="h-4 w-4 text-[#474ead]" />}>
+            <div className="flex flex-wrap gap-2">
+              {tags.map((tag) => (
+                <span key={tag} className="rounded-full border border-slate-200/70 bg-slate-50 px-3 py-1 text-sm text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {/* Bottom CTA */}
+        <div className="mt-12 rounded-3xl border border-[#474ead]/15 bg-[#474ead]/[0.04] p-8 text-center">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-[#474ead]">Ready to join?</p>
+          <h2 className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">Apply before this role fills.</h2>
+          <p className="mt-2 mb-6 text-slate-500">Takes under 30 seconds. Our team will reach out within 3 business days.</p>
+          <Button className="rounded-full bg-[#474ead] px-10 text-white shadow-[0_8px_32px_rgba(71,78,173,0.25)] hover:bg-[#3d439c]"
+            onClick={() => window.open(APPLY_URL, "_blank", "noopener,noreferrer")}>
+            Apply Now <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function FindWorkJob() {
   const params = useParams<{ jobId: string }>();
   const [, navigate] = useLocation();
 
-  const jobId = parseInt(params.jobId ?? "0", 10);
-  const role: Role | undefined = roles.find((r) => r.id === jobId);
+  const rawId = params.jobId ?? "";
+  const numericId = parseInt(rawId, 10);
+  const isStaticId = !isNaN(numericId) && numericId >= 1 && numericId <= 6 && String(numericId) === rawId;
+
+  // Only fetch from DB for UUID-style IDs
+  const { data: dbJob, isLoading, isError } = useQuery<Job>({
+    queryKey: ["/api/admin/jobs", rawId],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/jobs");
+      if (!res.ok) throw new Error("Failed to fetch jobs");
+      const jobs: Job[] = await res.json();
+      const found = jobs.find((j) => j.id === rawId);
+      if (!found) throw new Error("Job not found");
+      return found;
+    },
+    enabled: !isStaticId && !!rawId,
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  });
+
+  // Loading state for DB jobs
+  if (!isStaticId && isLoading) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
+        <Loader2 className="h-8 w-8 animate-spin text-[#474ead]" />
+        <p className="text-slate-500">Loading role details…</p>
+      </div>
+    );
+  }
+
+  // DB job found — render with DB detail view
+  if (!isStaticId && dbJob) {
+    return <DbJobDetail job={dbJob} navigate={navigate} />;
+  }
+
+  // Static fallback lookup
+  const role: Role | undefined = roles.find((r) => r.id === numericId);
 
   if (!role) {
     return (

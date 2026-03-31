@@ -1,0 +1,175 @@
+Enhance the current FindWork flow so it is connected to AdminFindWork data, and add a new page for viewing all job openings with filters and hot searches.
+
+Main goal
+- `FindWork.tsx` should reflect the available job openings from `AdminFindWork.tsx`
+- Add a button in `FindWork.tsx` called `Show More Job Opening`
+- Clicking that button should open a new page that lists all available job openings
+- The new page should follow the same visual design language and color system as `FindWork.tsx`
+- Keep the current popup flow intact
+
+Important constraints
+- Do not redesign the current FindWork page from scratch
+- Reuse the same purple/blue gradient theme, card shapes, rounded corners, spacing rhythm, soft borders, and typography style already used in `FindWork.tsx`
+- Preserve the current job preview cards and popup behavior
+- Keep peso salary display
+- Make this production-ready
+
+What to implement
+
+1. Connect `FindWork.tsx` with `AdminFindWork.tsx`
+I want the job openings shown in `FindWork.tsx` to come from the same source as the openings managed in `AdminFindWork.tsx`.
+
+Implementation direction:
+- Reuse the same jobs source/state/data structure used by `AdminFindWork.tsx`
+- If `AdminFindWork.tsx` currently has its own local array, extract that shared jobs data into a reusable source such as:
+  - `src/data/findWorkJobs.ts`
+  - or a shared hook/store/context/service
+- Then make both:
+  - `AdminFindWork.tsx`
+  - `FindWork.tsx`
+  consume the same jobs source
+
+Expected result:
+- jobs added/available in AdminFindWork should also appear in FindWork
+- avoid duplicated hardcoded job arrays across pages
+
+2. Add button to `FindWork.tsx`
+Add a visible button somewhere natural in the FindWork page, labeled exactly:
+
+`Show More Job Opening`
+
+Recommended placement:
+- below the live preview card list
+- or near the “Your best opportunities” section
+- or under the main job cards section
+
+Style requirements:
+- follow existing button styles from FindWork
+- keep consistent spacing and rounded pill/button style
+- use current theme colors
+
+Behavior:
+- clicking it should navigate to a new page that displays all job openings
+
+3. Create a new page for all job openings
+Create a dedicated page, for example:
+- `FindWorkAllJobs.tsx`
+or a routed page equivalent in the project
+
+This page should show all available job openings from the same shared data source.
+
+Page requirements
+- same design feel as FindWork
+- clean hero/section heading
+- readable list/grid of job cards
+- same modern polished OnSpot look
+
+4. Add search filters to the new page
+The new page should include filters similar in spirit to the design reference:
+- search input
+- category filter
+- location filter if available in data
+- job type filter if available in data
+- salary range filter
+- sort / recently posted filter if useful
+
+The filters should be functional against the shared jobs data.
+
+Suggested filter state:
+- searchTerm
+- selectedCategory
+- selectedLocation
+- selectedJobType
+- selectedSalaryRange
+- selectedSort
+
+5. Add “Hot Searches” section
+The new page should also include a `Hot Searches` area near the top.
+
+Follow the design direction from the sample:
+- show a section header like `HOT SEARCHES`
+- show clickable chips/buttons for trending searches
+- examples can be based on actual categories or job titles from available data
+
+Example chips:
+- Customer Support
+- Virtual Assistant
+- Bookkeeping
+- Sales
+- Social Media
+- Operations
+
+Behavior:
+- clicking a hot search chip updates the search/filter results
+
+6. Match FindWork design and colors
+The new all-jobs page should visually align with `FindWork.tsx`, including:
+- gradient or premium header treatment if already consistent
+- same typography style
+- same rounded surfaces
+- same subtle shadows
+- same border style
+- same button styling
+- same chip/badge styling
+- same dark/light mode compatibility if applicable
+
+Do not copy a totally different design system.
+Base the page on the existing FindWork look first, then borrow only the layout idea of search + hot searches + filters.
+
+7. Use shared job card design
+For the new all-jobs page:
+- reuse or adapt the existing job card component style from FindWork
+- clicking a job card can either:
+  - open the existing popup, or
+  - navigate to the existing full job page
+Choose the project’s existing best pattern, but keep it consistent
+
+8. Suggested shared data shape
+Make sure the shared job object supports both admin and user-facing pages, for example:
+{
+  id: 1,
+  title: "Executive Virtual Assistant",
+  pay: "₱50,000–₱78,000/mo",
+  shift: "Night shift",
+  market: "US client",
+  category: "Admin",
+  demand: "High demand",
+  speed: "Quick hire",
+  fit: 92,
+  hook: "...",
+  why: "...",
+  tags: ["Remote", "Growth path"],
+  overview: "...",
+  description: "...",
+  responsibilities: ["..."],
+  qualifications: ["..."],
+  preferredSkills: ["..."],
+  benefits: ["..."],
+  location: "Remote",
+  type: "Full-time",
+  postedAt: "2026-04-01"
+}
+
+9. Routing
+Add or wire a route for the new page, for example:
+- `/find-work/jobs`
+or equivalent based on the project router
+
+Button behavior:
+- `Show More Job Opening` in `FindWork.tsx` navigates to that route
+
+10. Output expectation
+Return updated code for:
+- shared jobs data source
+- updated `FindWork.tsx`
+- updated `AdminFindWork.tsx` to consume shared data if needed
+- new all-jobs page
+- filter logic
+- hot searches logic
+- route wiring
+
+Important:
+- keep existing popup behavior working
+- keep the current preview cards
+- keep peso salary formatting
+- make sure the jobs shown in FindWork are driven by the same available jobs used by AdminFindWork
