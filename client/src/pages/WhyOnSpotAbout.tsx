@@ -10,6 +10,10 @@ import galleryLeadership from "@assets/Leadership_Lifestyle_1775042849148.png";
 import galleryFounder    from "@assets/Founder_Energy_1775042849148.png";
 import galleryLife       from "@assets/Life_Outside_Work_1775042849149.png";
 import galleryBuilt      from "@assets/Built_to_Live_1775042849148.png";
+import cultureCulture    from "@assets/Culture_Photo_1775044319871.png";
+import cultureTeam       from "@assets/Team_Lifestyle_1775044319872.png";
+import cultureOffsite    from "@assets/Offsite_Moment_1775044319872.png";
+import cultureHappy      from "@assets/Happy_Tribe_1775044319872.png";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -187,7 +191,12 @@ const galleryPlaceholders = [
   { label: "Life Outside Work",    photo: galleryLife       },
   { label: "Built to Live",        photo: galleryBuilt      },
 ];
-const cultureGallery = ["Culture Photo", "Team Lifestyle", "Offsite Moment", "Happy Tribe"];
+const cultureGallery = [
+  { label: "Culture Photo",   photo: cultureCulture },
+  { label: "Team Lifestyle",  photo: cultureTeam    },
+  { label: "Offsite Moment",  photo: cultureOffsite },
+  { label: "Happy Tribe",     photo: cultureHappy   },
+];
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -412,13 +421,20 @@ export default function WhyOnSpotAbout() {
           <div className="mb-16 grid grid-cols-2 gap-4 sm:grid-cols-4">
             {cultureGallery.map((item) => (
               <div
-                key={item}
+                key={item.label}
                 className="group relative overflow-hidden rounded-2xl aspect-[4/3]"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-200 to-slate-300 transition-transform duration-700 group-hover:scale-105" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 transition duration-500 group-hover:opacity-100" />
-                <div className="absolute bottom-3 left-3 text-xs font-semibold uppercase tracking-[0.16em] text-white opacity-0 transition duration-500 group-hover:opacity-100">
-                  {item}
+                {/* Real photo */}
+                <img
+                  src={item.photo}
+                  alt={item.label}
+                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                />
+                {/* Dark gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                {/* Label */}
+                <div className="absolute bottom-3 left-3 text-xs font-semibold uppercase tracking-[0.16em] text-white/80 opacity-0 transition duration-500 group-hover:opacity-100">
+                  {item.label}
                 </div>
               </div>
             ))}
