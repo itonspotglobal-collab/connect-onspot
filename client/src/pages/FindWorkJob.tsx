@@ -343,8 +343,8 @@ type Role = (typeof roles)[number];
 
 function BulletRow({ text, color }: { text: string; color: string }) {
   return (
-    <li className="flex items-start gap-3 text-[15px] leading-7 text-slate-700 dark:text-slate-300">
-      <span className={`mt-[11px] h-1.5 w-1.5 shrink-0 rounded-full ${color}`} />
+    <li className="flex items-start gap-3 text-base md:text-lg leading-7 md:leading-8 text-slate-700 dark:text-slate-300">
+      <span className={`mt-[13px] h-2 w-2 shrink-0 rounded-full ${color}`} />
       {text}
     </li>
   );
@@ -362,10 +362,10 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="border-t border-slate-100 px-6 py-8 dark:border-white/[0.08] md:px-12 lg:px-16">
-      <div className="mb-5 flex items-center gap-3">
-        <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${iconBg}`}>{icon}</div>
-        <h2 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">{label}</h2>
+    <div className="border-t border-slate-100 px-6 py-10 dark:border-white/[0.08] md:px-12 md:py-12 lg:px-16">
+      <div className="mb-6 flex items-center gap-4">
+        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${iconBg}`}>{icon}</div>
+        <h2 className="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl dark:text-white">{label}</h2>
       </div>
       {children}
     </div>
@@ -383,13 +383,13 @@ function SectionBody({ items, bulletColor }: { items: string[]; bulletColor: str
   if (items.length === 1 && isHtml(items[0])) {
     return (
       <div
-        className="prose prose-slate max-w-none text-[15px] leading-7 dark:prose-invert"
+        className="prose prose-slate max-w-none text-base md:text-lg leading-7 md:leading-8 dark:prose-invert"
         dangerouslySetInnerHTML={{ __html: items[0] }}
       />
     );
   }
   return (
-    <ul className="space-y-3">
+    <ul className="space-y-4">
       {items.map((item, i) => (
         <BulletRow key={i} text={item} color={bulletColor} />
       ))}
@@ -484,18 +484,18 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
         {/* Job Description */}
         {job.description && (
           <Section
-            icon={<Globe2 className="h-4 w-4 text-indigo-500" />}
+            icon={<Globe2 className="h-5 w-5 text-indigo-500" />}
             iconBg="bg-indigo-50 dark:bg-indigo-900/30"
             label="Job Description"
           >
-            <p className="text-[15px] leading-8 text-slate-600 dark:text-slate-300">{job.description}</p>
+            <p className="text-base md:text-lg leading-7 md:leading-8 text-slate-600 dark:text-slate-300">{job.description}</p>
           </Section>
         )}
 
         {/* Responsibilities */}
         {responsibilities.length > 0 && (
           <Section
-            icon={<ListChecks className="h-4 w-4 text-blue-500" />}
+            icon={<ListChecks className="h-5 w-5 text-blue-500" />}
             iconBg="bg-blue-50 dark:bg-blue-900/30"
             label="Responsibilities"
           >
@@ -506,7 +506,7 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
         {/* Skills Needed */}
         {requirements.length > 0 && (
           <Section
-            icon={<CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+            icon={<CheckCircle2 className="h-5 w-5 text-emerald-500" />}
             iconBg="bg-emerald-50 dark:bg-emerald-900/30"
             label="Skills Needed"
           >
@@ -516,11 +516,11 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
 
         {/* Cultural Fit */}
         <Section
-          icon={<Sparkles className="h-4 w-4 text-[#474ead]" />}
+          icon={<Sparkles className="h-5 w-5 text-[#474ead]" />}
           iconBg="bg-[#474ead]/10 dark:bg-[#474ead]/20"
           label="Cultural Fit"
         >
-          <ul className="space-y-3">
+          <ul className="space-y-4">
             {culturalFit.map((item, i) => (
               <BulletRow key={i} text={item} color="bg-[#474ead]" />
             ))}
@@ -530,7 +530,7 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
         {/* Skills & Tags */}
         {tags.length > 0 && (
           <Section
-            icon={<Tag className="h-4 w-4 text-slate-400" />}
+            icon={<Tag className="h-5 w-5 text-slate-400" />}
             iconBg="bg-slate-100 dark:bg-white/[0.06]"
             label="Skills & Tags"
           >
@@ -743,11 +743,11 @@ export default function FindWorkJob() {
 
         {/* Responsibilities */}
         <Section
-          icon={<ListChecks className="h-4 w-4 text-blue-500" />}
+          icon={<ListChecks className="h-5 w-5 text-blue-500" />}
           iconBg="bg-blue-50 dark:bg-blue-900/30"
           label="Responsibilities"
         >
-          <ul className="space-y-3">
+          <ul className="space-y-4">
             {role.responsibilities.map((item, i) => (
               <BulletRow key={i} text={item} color="bg-blue-400" />
             ))}
@@ -756,11 +756,11 @@ export default function FindWorkJob() {
 
         {/* Qualifications */}
         <Section
-          icon={<CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+          icon={<CheckCircle2 className="h-5 w-5 text-emerald-500" />}
           iconBg="bg-emerald-50 dark:bg-emerald-900/30"
           label="Qualifications"
         >
-          <ul className="space-y-3">
+          <ul className="space-y-4">
             {role.qualifications.map((item, i) => (
               <BulletRow key={i} text={item} color="bg-emerald-500" />
             ))}
@@ -769,11 +769,11 @@ export default function FindWorkJob() {
 
         {/* Cultural Fit */}
         <Section
-          icon={<Sparkles className="h-4 w-4 text-[#474ead]" />}
+          icon={<Sparkles className="h-5 w-5 text-[#474ead]" />}
           iconBg="bg-[#474ead]/10 dark:bg-[#474ead]/20"
           label="Cultural Fit"
         >
-          <ul className="space-y-3">
+          <ul className="space-y-4">
             {role.culturalFit.map((item, i) => (
               <BulletRow key={i} text={item} color="bg-[#474ead]" />
             ))}
@@ -783,11 +783,11 @@ export default function FindWorkJob() {
         {/* Preferred skills */}
         {role.preferredSkills.length > 0 && (
           <Section
-            icon={<Award className="h-4 w-4 text-amber-500" />}
+            icon={<Award className="h-5 w-5 text-amber-500" />}
             iconBg="bg-amber-50 dark:bg-amber-900/30"
             label="Preferred skills (nice to have)"
           >
-            <ul className="space-y-3">
+            <ul className="space-y-4">
               {role.preferredSkills.map((item, i) => (
                 <BulletRow key={i} text={item} color="bg-amber-400" />
               ))}
@@ -797,11 +797,11 @@ export default function FindWorkJob() {
 
         {/* Benefits */}
         <Section
-          icon={<Gift className="h-4 w-4 text-purple-500" />}
+          icon={<Gift className="h-5 w-5 text-purple-500" />}
           iconBg="bg-purple-50 dark:bg-purple-900/30"
           label="Benefits & perks"
         >
-          <ul className="space-y-3">
+          <ul className="space-y-4">
             {role.benefits.map((item, i) => (
               <BulletRow key={i} text={item} color="bg-purple-400" />
             ))}
@@ -810,7 +810,7 @@ export default function FindWorkJob() {
 
         {/* Tags */}
         <Section
-          icon={<Tag className="h-4 w-4 text-slate-400" />}
+          icon={<Tag className="h-5 w-5 text-slate-400" />}
           iconBg="bg-slate-100 dark:bg-white/[0.06]"
           label="Tags"
         >
