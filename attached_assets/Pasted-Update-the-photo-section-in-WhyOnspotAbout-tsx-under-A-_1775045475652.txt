@@ -1,0 +1,33 @@
+Update the photo section in WhyOnspotAbout.tsx under A DAY AT ONSPOT / What a typical day looks like inside the Tribe so it keeps the original 2x2 layout and original card positions exactly as before, but adds the same polished hover-expand interaction style used in the other photo sections.
+
+Important:
+
+Do not convert this section into a horizontal row.
+Do not move the cards out of their original 2x2 arrangement.
+Keep the timeline/text content on the left exactly as it is.
+Keep the photo block on the right in the same position and structure as the original layout.
+
+Requirements:
+
+Use the 4 attached local images for the 4 cards.
+Make sure each image is cropped and positioned so the people are clearly visible in the frame.
+Use object-cover plus thoughtful object-position values per image if needed so faces/people are not cut off.
+Keep the cards the same size, spacing, and placement by default.
+Add hover animation so each card expands smoothly when hovered, while still preserving the overall original layout.
+The expansion should feel like the same visual language as the Lifestyle/Value and Culture cards, but adapted to this fixed 2x2 layout.
+Preserve rounded corners, overflow clipping, smooth transitions, and responsive behavior.
+Keep the section polished and premium-looking.
+
+Implementation guidance:
+
+Revert the section back to the original desktop layout with a 2x2 grid of cards on the right.
+Apply hover animation at the card level without changing the base layout structure.
+On hover, a card can scale/expand within its grid area or slightly overlap intelligently, but the section should still visually read as the original 2x2 arrangement.
+Use transition-all duration-700 ease-out or the same timing used elsewhere in the page.
+Add overflow-hidden and keep images inside the rounded card container.
+If needed, use subtle z-index handling so the hovered card expands cleanly above adjacent cards.
+Do not shrink or rearrange the whole section into a different format.
+Prioritize image framing so the people in the photos remain visible and not awkwardly cropped.
+
+Goal:
+Restore the original layout exactly, keep the photos in their original positions, and only enhance the cards with a smooth hover-expand effect that matches the rest of the page’s animation style.

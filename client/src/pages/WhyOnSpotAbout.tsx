@@ -202,10 +202,10 @@ const cultureGallery = [
   { label: "Happy Tribe",     photo: cultureHappy   },
 ];
 const dayVisuals = [
-  { label: "Life + Work",     photo: dayLifeWork     },
-  { label: "Deep Work",       photo: dayDeepWork     },
-  { label: "Team Flow",       photo: dayTeamFlow     },
-  { label: "Client Energy",   photo: dayClientEnergy },
+  { label: "Life + Work",   photo: dayLifeWork,     objectPos: "object-center" },
+  { label: "Deep Work",     photo: dayDeepWork,     objectPos: "object-center" },
+  { label: "Team Flow",     photo: dayTeamFlow,     objectPos: "object-top"    },
+  { label: "Client Energy", photo: dayClientEnergy, objectPos: "object-top"    },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -538,18 +538,18 @@ export default function WhyOnSpotAbout() {
               </div>
             </div>
 
-            {/* Photo cards — expand on hover, matching lifestyle/culture cards */}
-            <div className="grid grid-cols-2 gap-3 self-start lg:flex lg:h-64 lg:gap-3">
+            {/* Photo cards — 2×2 grid with per-card scale hover */}
+            <div className="grid grid-cols-2 gap-3 self-start">
               {dayVisuals.map((item) => (
                 <div
                   key={item.label}
-                  className="group relative overflow-hidden rounded-2xl transition-all duration-700 ease-out aspect-square lg:aspect-auto lg:h-64 lg:flex-[1] lg:min-w-0 lg:hover:flex-[2.4]"
+                  className="group relative overflow-hidden rounded-2xl aspect-square transition-all duration-700 ease-out hover:scale-[1.07] hover:z-10"
                 >
                   {/* Real photo */}
                   <img
                     src={item.photo}
                     alt={item.label}
-                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                    className={`absolute inset-0 h-full w-full object-cover ${item.objectPos} transition-transform duration-1000 group-hover:scale-110`}
                   />
                   {/* Dark gradient overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
