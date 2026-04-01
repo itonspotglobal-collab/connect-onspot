@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { Link } from "wouter";
 import { ArrowRight, ChevronDown, ChevronUp, CheckCircle2 } from "lucide-react";
 import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
 import nurPhoto from "@assets/Nur_1775038610216.png";
 import jakePhoto from "@assets/Jake_1775039278985.png";
-import alonPhoto from "@assets/Alon_1775057715531.png";
+import alonPhoto from "@assets/Alon_1775058113450.png";
 import shanePhoto from "@assets/Shane_1775038610216.png";
 import mackyPhoto from "@assets/Macky_1775038610215.png";
 import galleryLeadership from "@assets/Leadership_Lifestyle_1775042849148.png";
@@ -35,6 +35,7 @@ const leaders = [
     role: "CEO",
     photo: nurPhoto,
     imgPos: "50% 18%",
+    imgWrap: {} as CSSProperties,
     desc: "Turns growth vision into systems, structure, and execution that scale.",
   },
   {
@@ -42,13 +43,18 @@ const leaders = [
     role: "Founder & President",
     photo: jakePhoto,
     imgPos: "50% 22%",
+    imgWrap: {} as CSSProperties,
     desc: "Built OnSpot from real entrepreneurial pain points while scaling businesses in New York.",
   },
   {
     name: "Alon Ben Eli",
     role: "Co-Founder",
     photo: alonPhoto,
-    imgPos: "50% 15%",
+    imgPos: "50% 50%",
+    imgWrap: {
+      transform: "scale(1.55) translateY(-14%)",
+      transformOrigin: "50% 48%",
+    } as CSSProperties,
     desc: "Helps shape long-range strategy, positioning, and global growth.",
   },
   {
@@ -56,6 +62,7 @@ const leaders = [
     role: "Head of Delivery",
     photo: shanePhoto,
     imgPos: "50% 20%",
+    imgWrap: {} as CSSProperties,
     desc: "Leads execution and ensures the client experience translates into measurable results.",
   },
   {
@@ -63,6 +70,7 @@ const leaders = [
     role: "Head of People",
     photo: mackyPhoto,
     imgPos: "50% 18%",
+    imgWrap: {} as CSSProperties,
     desc: "Builds the people systems and culture that power high-performance delivery.",
   },
 ];
@@ -449,12 +457,14 @@ export default function WhyOnSpotAbout() {
               >
                 {/* Portrait photo */}
                 <div className="relative h-64 w-full overflow-hidden bg-slate-100">
-                  <img
-                    src={leader.photo}
-                    alt={leader.name}
-                    style={{ objectPosition: leader.imgPos }}
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
+                  <div className="absolute inset-0" style={leader.imgWrap}>
+                    <img
+                      src={leader.photo}
+                      alt={leader.name}
+                      style={{ objectPosition: leader.imgPos }}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </div>
                   {/* Subtle gradient at bottom to blend into card */}
                   <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white/60 to-transparent" />
                 </div>
