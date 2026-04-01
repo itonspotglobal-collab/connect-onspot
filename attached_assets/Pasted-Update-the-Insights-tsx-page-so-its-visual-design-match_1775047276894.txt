@@ -1,0 +1,119 @@
+Update the `Insights.tsx` page so its visual design matches the UI style of `WhyOnspotAbout`, while keeping the existing `Insights` content, structure, and functionality intact.
+
+### Goal
+
+Restyle `Insights.tsx` to feel consistent with `WhyOnspotAbout` in terms of:
+
+* color palette
+* typography
+* spacing
+* button treatment
+* card styling
+* borders
+* shadows
+* section rhythm
+* overall premium dark brand feel
+
+### Important
+
+Do **not** remove or replace the current `Insights` content.
+Keep:
+
+* posted blogs
+* featured content
+* cards
+* text content
+* links
+* existing page sections
+* current logic and functionality
+
+This is a **design refresh only**, not a content rewrite.
+
+### Design Direction
+
+Use `WhyOnspotAbout` as the visual reference for:
+
+* dark premium background
+* black / near-black base
+* refined branded blue-purple accent
+* soft gradients only where appropriate
+* clean modern typography
+* strong visual hierarchy
+* elegant rounded corners
+* subtle borders and depth
+* polished hover states
+
+### Styling Guidance
+
+Apply the following style direction to `Insights.tsx`:
+
+#### Background
+
+* Use a dark premium background similar to `WhyOnspotAbout`
+* Prefer deep black / charcoal / navy-black tones
+* Avoid light gray or flat white backgrounds
+* Keep the page feeling premium and modern
+
+#### Accent Color
+
+* Match the accent color direction used in `WhyOnspotAbout`
+* If the current blue feels too bright or off-brand, refine it into the same blue-purple family used there
+* Use accent colors sparingly for:
+
+  * highlighted words
+  * buttons
+  * links
+  * active states
+  * small UI emphasis
+
+#### Typography
+
+* Match the font styling and hierarchy of `WhyOnspotAbout`
+* Keep text highly readable on dark backgrounds
+* Headlines should feel bold, modern, and premium
+* Body text should use softer contrast than headings
+* Preserve the existing text content, only improve presentation
+
+#### Cards / Blog Items / Featured Posts
+
+* Restyle blog and featured content cards to align with `WhyOnspotAbout`
+* Use:
+
+  * dark surfaces
+  * subtle border
+  * soft corner radius
+  * gentle shadow or glow
+  * better padding and spacing
+* Improve hover states with subtle transitions
+* Keep content and layout readable and organized
+
+#### Buttons / Links / Chips
+
+* Update buttons and interactive elements to match the `WhyOnspotAbout` design system
+* Use the same rounded style, border treatment, and accent color approach
+* Maintain accessibility and clear affordance
+
+#### Layout / Spacing
+
+* Improve spacing so the page feels more polished and consistent
+* Maintain responsiveness across desktop, tablet, and mobile
+* Keep the existing content order unless minor layout refinements are needed for visual consistency
+
+### Constraints
+
+* Do not change the actual blog data or text
+* Do not remove any features from `Insights.tsx`
+* Do not break routing or functionality
+* Do not introduce unnecessary animations
+* Keep the page responsive
+* Reuse existing components if possible, but update styling to match `WhyOnspotAbout`
+
+### Implementation Preference
+
+* Reuse the same design tokens, class patterns, and visual system from `WhyOnspotAbout`
+* If there are reusable styles or shared UI patterns, apply them consistently
+* Keep the code clean and maintainable
+
+### Deliverable
+
+Return the updated `Insights.tsx` code with the new styling applied, preserving all existing content and behavior while making it visually consistent with `WhyOnspotAbout`.

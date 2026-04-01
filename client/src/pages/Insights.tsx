@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   User, Calendar, Clock, Eye, Globe, TrendingUp,
@@ -14,27 +13,25 @@ import type { Post } from "@shared/schema";
 
 // ─── Navigation categories ────────────────────────────────────────────────────
 const NAV_CATEGORIES = [
-  { id: "View All",         label: "View All",         icon: LayoutGrid  },
-  { id: "CEO Insights",     label: "CEO Insights",     icon: Rss         },
-  { id: "Talent Insights",  label: "Talent Insights",  icon: User        },
-  { id: "Client Insights",  label: "Client Insights",  icon: Briefcase   },
-  { id: "Industry Insights",label: "Industry Insights",icon: Globe       },
-  { id: "Learning Centre",  label: "Learning Centre",  icon: BookOpen    },
-  { id: "Podcast Videos",   label: "Podcast Videos",   icon: Mic         },
+  { id: "View All",          label: "View All",          icon: LayoutGrid },
+  { id: "CEO Insights",      label: "CEO Insights",      icon: Rss        },
+  { id: "Talent Insights",   label: "Talent Insights",   icon: User       },
+  { id: "Client Insights",   label: "Client Insights",   icon: Briefcase  },
+  { id: "Industry Insights", label: "Industry Insights", icon: Globe      },
+  { id: "Learning Centre",   label: "Learning Centre",   icon: BookOpen   },
+  { id: "Podcast Videos",    label: "Podcast Videos",    icon: Mic        },
 ] as const;
 
 type NavCategoryId = (typeof NAV_CATEGORIES)[number]["id"];
 
 // ─── Cover image fallbacks by category ────────────────────────────────────────
 const COVER_IMAGES: Record<string, string> = {
-  // Canonical new categories
-  "CEO Insights":       "https://images.unsplash.com/photo-1549923746-c502d488b3ea?w=800&h=450&fit=crop",
-  "Talent Insights":    "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&h=450&fit=crop",
-  "Client Insights":    "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&h=450&fit=crop",
-  "Industry Insights":  "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=450&fit=crop",
-  "Learning Centre":    "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=450&fit=crop",
-  "Podcast Videos":     "https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=800&h=450&fit=crop",
-  // Legacy categories (kept as fallbacks while old posts still exist in DB)
+  "CEO Insights":        "https://images.unsplash.com/photo-1549923746-c502d488b3ea?w=800&h=450&fit=crop",
+  "Talent Insights":     "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&h=450&fit=crop",
+  "Client Insights":     "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&h=450&fit=crop",
+  "Industry Insights":   "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=450&fit=crop",
+  "Learning Centre":     "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=450&fit=crop",
+  "Podcast Videos":      "https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=800&h=450&fit=crop",
   "Global Outsourcing":  "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=800&h=450&fit=crop",
   "Technology":          "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&h=450&fit=crop",
   "Customer Service":    "https://images.unsplash.com/photo-1600298881974-6be191ceeda1?w=800&h=450&fit=crop",
@@ -44,8 +41,6 @@ const COVER_IMAGES: Record<string, string> = {
 const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=450&fit=crop";
 
 // ─── Legacy category normalisation ────────────────────────────────────────────
-// Maps old DB category strings → canonical Insights filter tab IDs.
-// Keeps existing seeded posts working without any DB migration.
 const LEGACY_CATEGORY_MAP: Record<string, string> = {
   "Global Outsourcing":   "Industry Insights",
   "Industry Trends":      "Industry Insights",
@@ -107,7 +102,6 @@ function isPodcast(category: string): boolean {
   );
 }
 
-/** Returns 1–2 uppercase initials from an author name. Fallback: "?" */
 function getInitials(name: string): string {
   const parts = (name || "").trim().split(/\s+/);
   if (parts.length === 0 || !parts[0]) return "?";
@@ -133,7 +127,6 @@ type ArticleItem = {
 };
 
 function postToArticle(post: Post): ArticleItem {
-  // Normalise legacy DB category values to canonical Insights filter tab IDs.
   const category = normalizeCategory(post.category);
   return {
     id: post.id,
@@ -164,11 +157,11 @@ function ArticleCard({ article }: { article: ArticleItem }) {
 
   return (
     <Card
-      className="overflow-hidden hover-elevate transition-all duration-300 group flex flex-col cursor-pointer h-full"
+      className="overflow-hidden transition-all duration-300 group flex flex-col cursor-pointer h-full bg-slate-900/80 border-white/10 hover-elevate"
       onClick={() => navigate(`/insights/${article.slug}`)}
     >
       {/* Cover image */}
-      <div className="aspect-video bg-muted relative overflow-hidden flex-shrink-0">
+      <div className="aspect-video bg-slate-800 relative overflow-hidden flex-shrink-0">
         <img
           src={article.image}
           alt={article.title}
@@ -177,7 +170,6 @@ function ArticleCard({ article }: { article: ArticleItem }) {
           width={800}
           height={450}
         />
-        {/* Category badge over image */}
         <div className="absolute bottom-0 left-0 right-0 px-4 py-2 bg-gradient-to-t from-black/70 to-transparent flex items-end justify-between">
           <Badge
             variant="secondary"
@@ -194,44 +186,37 @@ function ArticleCard({ article }: { article: ArticleItem }) {
       </div>
 
       <CardContent className="p-5 flex flex-col flex-1 gap-3">
-        {/* Title — most prominent element */}
-        <h4 className="text-base font-bold leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+        <h4 className="text-base font-bold leading-snug line-clamp-2 text-white group-hover:text-[#474ead] transition-colors">
           {article.title}
         </h4>
 
-        {/* Synopsis / excerpt — secondary */}
-        <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed flex-1">
+        <p className="text-sm text-slate-400 line-clamp-3 leading-relaxed flex-1">
           {article.excerpt || "Read the full article for insights and analysis."}
         </p>
 
-        {/* Divider */}
-        <div className="border-t border-border/60 pt-3 mt-auto">
-          {/* Author row */}
+        <div className="border-t border-white/10 pt-3 mt-auto">
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            {/* Author with avatar initial */}
             <a
               href={authorHref}
               onClick={(e) => e.stopPropagation()}
               className="flex items-center gap-2 group/author min-w-0"
               title={`Articles by ${article.author}`}
             >
-              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/15 text-primary text-[10px] font-bold flex items-center justify-center">
+              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#474ead]/20 text-[#474ead] text-[10px] font-bold flex items-center justify-center">
                 {initials}
               </span>
-              <span className="text-xs font-semibold text-foreground group-hover/author:text-primary transition-colors truncate underline-offset-2 group-hover/author:underline">
+              <span className="text-xs font-semibold text-slate-300 group-hover/author:text-[#474ead] transition-colors truncate underline-offset-2 group-hover/author:underline">
                 {article.author}
               </span>
             </a>
 
-            {/* Read time */}
-            <span className="flex items-center gap-1 text-[11px] text-muted-foreground flex-shrink-0">
+            <span className="flex items-center gap-1 text-[11px] text-slate-500 flex-shrink-0">
               <Clock className="w-3 h-3" />
               {article.readTime}
             </span>
           </div>
 
-          {/* Date + views */}
-          <div className="flex items-center gap-3 mt-1.5 text-[11px] text-muted-foreground">
+          <div className="flex items-center gap-3 mt-1.5 text-[11px] text-slate-500">
             <span className="flex items-center gap-1">
               <Calendar className="w-3 h-3" />
               {article.date}
@@ -257,12 +242,12 @@ function PodcastCard({ article }: { article: ArticleItem }) {
 
   return (
     <Card
-      className="overflow-hidden hover-elevate transition-all duration-300 group cursor-pointer"
+      className="overflow-hidden transition-all duration-300 group cursor-pointer bg-slate-900/80 border-white/10 hover-elevate"
       onClick={() => navigate(`/insights/${article.slug}`)}
     >
       <div className="flex flex-col sm:flex-row">
         {/* Thumbnail */}
-        <div className="sm:w-44 flex-shrink-0 bg-muted relative overflow-hidden aspect-video sm:aspect-auto">
+        <div className="sm:w-44 flex-shrink-0 bg-slate-800 relative overflow-hidden aspect-video sm:aspect-auto">
           <img
             src={article.image}
             alt={article.title}
@@ -280,7 +265,10 @@ function PodcastCard({ article }: { article: ArticleItem }) {
 
         <CardContent className="p-4 flex flex-col flex-1 gap-2 min-w-0">
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="text-[10px] uppercase tracking-wider self-start">
+            <Badge
+              variant="secondary"
+              className="text-[10px] uppercase tracking-wider self-start bg-white/10 text-slate-300 border-white/10"
+            >
               Podcast
             </Badge>
             {article.featured && (
@@ -290,38 +278,35 @@ function PodcastCard({ article }: { article: ArticleItem }) {
             )}
           </div>
 
-          {/* Title */}
-          <h4 className="text-sm font-bold line-clamp-2 group-hover:text-primary transition-colors leading-snug">
+          <h4 className="text-sm font-bold line-clamp-2 text-white group-hover:text-[#474ead] transition-colors leading-snug">
             {article.title}
           </h4>
 
-          {/* Synopsis */}
-          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed flex-1">
+          <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed flex-1">
             {article.excerpt || "Listen to this episode for expert conversations."}
           </p>
 
-          {/* Meta row */}
-          <div className="flex items-center gap-2 flex-wrap mt-auto pt-2 border-t border-border/60">
+          <div className="flex items-center gap-2 flex-wrap mt-auto pt-2 border-t border-white/10">
             <a
               href={authorHref}
               onClick={(e) => e.stopPropagation()}
               className="flex items-center gap-1.5 group/author"
               title={`Episodes by ${article.author}`}
             >
-              <span className="w-5 h-5 rounded-full bg-primary/15 text-primary text-[9px] font-bold flex items-center justify-center flex-shrink-0">
+              <span className="w-5 h-5 rounded-full bg-[#474ead]/20 text-[#474ead] text-[9px] font-bold flex items-center justify-center flex-shrink-0">
                 {initials}
               </span>
-              <span className="text-xs font-semibold text-foreground group-hover/author:text-primary transition-colors underline-offset-2 group-hover/author:underline">
+              <span className="text-xs font-semibold text-slate-300 group-hover/author:text-[#474ead] transition-colors underline-offset-2 group-hover/author:underline">
                 {article.author}
               </span>
             </a>
-            <span className="text-border text-xs">·</span>
-            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+            <span className="text-slate-600 text-xs">·</span>
+            <span className="text-[11px] text-slate-500 flex items-center gap-1">
               <Calendar className="w-3 h-3" />
               {article.date}
             </span>
-            <span className="text-border text-xs">·</span>
-            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+            <span className="text-slate-600 text-xs">·</span>
+            <span className="text-[11px] text-slate-500 flex items-center gap-1">
               <Clock className="w-3 h-3" />
               {article.readTime}
             </span>
@@ -335,24 +320,23 @@ function PodcastCard({ article }: { article: ArticleItem }) {
 // ─── ArticleCardSkeleton ───────────────────────────────────────────────────────
 function ArticleCardSkeleton() {
   return (
-    <Card className="overflow-hidden flex flex-col">
-      <Skeleton className="aspect-video" />
+    <Card className="overflow-hidden flex flex-col bg-slate-900/80 border-white/10">
+      <Skeleton className="aspect-video bg-white/10" />
       <CardContent className="p-5 flex flex-col gap-3">
-        <Skeleton className="h-5 w-full" />
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-3/4" />
-        <div className="border-t border-border/60 pt-3 mt-1 flex items-center justify-between">
-          <Skeleton className="h-5 w-28" />
-          <Skeleton className="h-4 w-16" />
+        <Skeleton className="h-5 w-full bg-white/10" />
+        <Skeleton className="h-4 w-full bg-white/10" />
+        <Skeleton className="h-4 w-3/4 bg-white/10" />
+        <div className="border-t border-white/10 pt-3 mt-1 flex items-center justify-between">
+          <Skeleton className="h-5 w-28 bg-white/10" />
+          <Skeleton className="h-4 w-16 bg-white/10" />
         </div>
-        <Skeleton className="h-3 w-24 mt-0.5" />
+        <Skeleton className="h-3 w-24 mt-0.5 bg-white/10" />
       </CardContent>
     </Card>
   );
 }
 
 // ─── CategoryNav ──────────────────────────────────────────────────────────────
-// Sticky below the fixed TopNavigation using var(--nav-h)
 function CategoryNav({
   selected,
   onSelect,
@@ -364,7 +348,7 @@ function CategoryNav({
 }) {
   return (
     <div
-      className="sticky z-40 bg-background border-b border-border/60 shadow-sm"
+      className="sticky z-40 bg-slate-950 border-b border-slate-800"
       style={{
         top: navVisible ? "var(--nav-h)" : "0",
         transition: "top 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -383,8 +367,8 @@ function CategoryNav({
                   border-b-2 transition-all duration-200 flex-shrink-0
                   ${
                     active
-                      ? "border-primary text-primary"
-                      : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+                      ? "border-[#474ead] text-[#474ead]"
+                      : "border-transparent text-slate-400 hover:text-white hover:border-slate-600"
                   }
                 `}
               >
@@ -412,12 +396,22 @@ function SectionHeading({
   return (
     <div className="flex items-start justify-between gap-4 mb-8 flex-wrap">
       <div className="flex items-center gap-2">
-        <Icon className="w-5 h-5 text-primary" />
-        <h2 className="text-2xl font-bold">{title}</h2>
+        <Icon className="w-5 h-5 text-[#474ead]" />
+        <h2 className="text-2xl font-bold text-white">{title}</h2>
       </div>
       {subtitle && (
-        <p className="text-sm text-muted-foreground max-w-md">{subtitle}</p>
+        <p className="text-sm text-slate-400 max-w-md">{subtitle}</p>
       )}
+    </div>
+  );
+}
+
+// ─── Empty state ──────────────────────────────────────────────────────────────
+function EmptyState({ icon: Icon, message }: { icon: React.ElementType; message: string }) {
+  return (
+    <div className="rounded-2xl border border-dashed border-white/10 bg-slate-900/40 p-8 text-center text-slate-400">
+      <Icon className="w-8 h-8 mx-auto mb-3 opacity-30" />
+      <p className="text-sm">{message}</p>
     </div>
   );
 }
@@ -429,14 +423,12 @@ export default function Insights() {
   const [searchQuery, setSearchQuery] = useState("");
   const [authorFilter, setAuthorFilter] = useState("");
 
-  // Read ?author= from the URL on mount / navigation
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const a = params.get("author");
     if (a) setAuthorFilter(decodeURIComponent(a));
   }, [location]);
 
-  // ─── Mirror TopNavigation hide-on-scroll so CategoryNav top syncs with it ───
   const [navVisible, setNavVisible] = useState(true);
   const lastScrollY = useRef(0);
   const ticking = useRef(false);
@@ -465,7 +457,6 @@ export default function Insights() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // ─── Data fetching ──────────────────────────────────────────────────────────
   const { data, isLoading } = useQuery<{ success: boolean; posts: Post[] }>({
     queryKey: ["/api/posts"],
     queryFn: async () => {
@@ -480,7 +471,6 @@ export default function Insights() {
 
   const allArticles: ArticleItem[] = (data?.posts || []).map(postToArticle);
 
-  // ─── Filter helpers ─────────────────────────────────────────────────────────
   const applySearch = (items: ArticleItem[]) =>
     items.filter((a) => {
       const matchesSearch = [a.title, a.excerpt, a.author]
@@ -493,14 +483,9 @@ export default function Insights() {
       return matchesSearch && matchesAuthor;
     });
 
-  // Non-podcast articles
   const latestArticles = applySearch(allArticles.filter((a) => !a.isEpisode));
-  // Podcast episodes
   const latestEpisodes = applySearch(allArticles.filter((a) => a.isEpisode));
 
-  // ─── CEO Insights: match by category OR by CEO author name ─────────────────
-  // Posts by the CEO are stored under their actual category (e.g. "Industry
-  // Trends"), not under "CEO Insights", so we match on author name as well.
   const CEO_AUTHORS = ["nur laminero"];
 
   function matchesCeo(a: ArticleItem): boolean {
@@ -510,7 +495,6 @@ export default function Insights() {
     );
   }
 
-  // Articles for a specific non-"View All" category
   const categoryArticles = applySearch(
     selectedCategory === "Podcast Videos"
       ? allArticles.filter((a) => a.isEpisode)
@@ -532,21 +516,19 @@ export default function Insights() {
 
   // ─── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-950">
 
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
-      <div className="bg-gradient-to-br from-primary/10 via-background to-background border-b relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none opacity-30">
-          <div className="absolute top-1/2 left-1/2 w-[500px] h-[500px] bg-primary/20 blur-3xl rounded-full -translate-x-1/2 -translate-y-1/2" />
-        </div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 text-center relative">
-          <Badge variant="secondary" className="mb-4">
+      <div className="relative overflow-hidden bg-slate-950 border-b border-slate-800">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(71,78,173,0.26),transparent_32%),radial-gradient(circle_at_80%_20%,rgba(142,147,255,0.14),transparent_28%)] pointer-events-none" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center relative">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.3em] text-slate-300">
             Insights &amp; Resources
-          </Badge>
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">
+          </div>
+          <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-white mb-4 leading-tight">
             Outsourcing Intelligence Hub
           </h1>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
+          <p className="text-lg text-slate-300 max-w-3xl mx-auto mb-10 leading-8">
             Stay ahead with expert analysis, industry trends, and actionable
             insights on global outsourcing, BPO services, and workforce
             optimization.
@@ -554,15 +536,15 @@ export default function Insights() {
 
           {/* Search bar */}
           <div className="max-w-2xl mx-auto mb-4">
-            <div className="relative p-[1px] rounded-full bg-gradient-to-r from-primary/40 via-primary/20 to-primary/40">
-              <div className="flex items-center bg-background rounded-full px-4 py-3 shadow-sm backdrop-blur transition-all focus-within:ring-2 focus-within:ring-primary/40 focus-within:shadow-md">
-                <Search className="w-5 h-5 text-primary/70 mr-3 flex-shrink-0" />
+            <div className="relative p-[1px] rounded-full bg-gradient-to-r from-[#474ead]/40 via-[#474ead]/20 to-[#474ead]/40">
+              <div className="flex items-center bg-slate-900 rounded-full px-4 py-3 backdrop-blur transition-all focus-within:ring-2 focus-within:ring-[#474ead]/40">
+                <Search className="w-5 h-5 text-[#474ead]/70 mr-3 flex-shrink-0" />
                 <input
                   type="text"
                   placeholder="Search insights, topics, or authors…"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-transparent text-sm focus:outline-none placeholder:text-muted-foreground"
+                  className="w-full bg-transparent text-sm text-white focus:outline-none placeholder:text-slate-500"
                 />
               </div>
             </div>
@@ -571,12 +553,12 @@ export default function Insights() {
           {/* Active author filter pill */}
           {authorFilter && (
             <div className="flex justify-center mt-2">
-              <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs px-3 py-1.5 font-medium">
+              <span className="inline-flex items-center gap-2 rounded-full bg-[#474ead]/20 border border-[#474ead]/30 text-[#474ead] text-xs px-3 py-1.5 font-medium">
                 <Users className="w-3 h-3" />
                 Articles by {authorFilter}
                 <button
                   onClick={() => setAuthorFilter("")}
-                  className="ml-1 hover:text-foreground transition-colors"
+                  className="ml-1 hover:text-white transition-colors"
                   aria-label="Clear author filter"
                 >
                   ×
@@ -587,7 +569,7 @@ export default function Insights() {
         </div>
       </div>
 
-      {/* ── Category navigation (sticky, synced with TopNavigation scroll) ── */}
+      {/* ── Category navigation ────────────────────────────────────────────── */}
       <CategoryNav
         selected={selectedCategory}
         onSelect={(id) => {
@@ -602,7 +584,7 @@ export default function Insights() {
 
         {/* Empty / no results state */}
         {!isLoading && isEmpty && (
-          <div className="text-center py-20 text-muted-foreground">
+          <div className="text-center py-20 text-slate-400">
             <Search className="w-10 h-10 mx-auto mb-4 opacity-30" />
             <p className="text-base">
               No content found.{" "}
@@ -613,10 +595,10 @@ export default function Insights() {
           </div>
         )}
 
-        {/* ── VIEW ALL: Featured + Articles + Podcasts ─────────────────────── */}
+        {/* ── VIEW ALL: Featured + Articles + Podcasts ──────────────────────── */}
         {selectedCategory === "View All" && (
           <>
-            {/* Featured articles (only when not filtering by search/author) */}
+            {/* Featured articles */}
             {!isLoading && featuredArticles.length > 0 && !searchQuery && !authorFilter && (
               <section className="mb-14">
                 <SectionHeading icon={TrendingUp} title="Featured Articles" />
@@ -628,7 +610,7 @@ export default function Insights() {
               </section>
             )}
 
-            {/* Latest Articles section */}
+            {/* Latest Articles */}
             <section className="mb-14">
               <SectionHeading
                 icon={Globe}
@@ -648,16 +630,11 @@ export default function Insights() {
                   ))}
                 </div>
               ) : (
-                <Card className="border-dashed">
-                  <CardContent className="p-8 text-center text-muted-foreground">
-                    <Globe className="w-8 h-8 mx-auto mb-3 opacity-30" />
-                    <p className="text-sm">No articles published yet.</p>
-                  </CardContent>
-                </Card>
+                <EmptyState icon={Globe} message="No articles published yet." />
               )}
             </section>
 
-            {/* Latest Podcast Episodes section */}
+            {/* Latest Podcast Episodes */}
             <section className="mb-14">
               <SectionHeading
                 icon={Mic}
@@ -667,16 +644,14 @@ export default function Insights() {
               {isLoading ? (
                 <div className="space-y-4">
                   {Array.from({ length: 3 }).map((_, i) => (
-                    <Card key={i}>
-                      <div className="flex">
-                        <Skeleton className="w-44 h-28 flex-shrink-0" />
-                        <CardContent className="flex-1 p-4 space-y-2">
-                          <Skeleton className="h-3 w-16" />
-                          <Skeleton className="h-4 w-3/4" />
-                          <Skeleton className="h-3 w-1/2" />
-                        </CardContent>
+                    <div key={i} className="rounded-2xl border border-white/10 bg-slate-900/80 flex overflow-hidden">
+                      <Skeleton className="w-44 h-28 flex-shrink-0 bg-white/10" />
+                      <div className="flex-1 p-4 space-y-2">
+                        <Skeleton className="h-3 w-16 bg-white/10" />
+                        <Skeleton className="h-4 w-3/4 bg-white/10" />
+                        <Skeleton className="h-3 w-1/2 bg-white/10" />
                       </div>
-                    </Card>
+                    </div>
                   ))}
                 </div>
               ) : latestEpisodes.length > 0 ? (
@@ -686,18 +661,13 @@ export default function Insights() {
                   ))}
                 </div>
               ) : (
-                <Card className="border-dashed">
-                  <CardContent className="p-8 text-center text-muted-foreground">
-                    <Mic className="w-8 h-8 mx-auto mb-3 opacity-30" />
-                    <p className="text-sm">Podcast episodes coming soon.</p>
-                  </CardContent>
-                </Card>
+                <EmptyState icon={Mic} message="Podcast episodes coming soon." />
               )}
             </section>
           </>
         )}
 
-        {/* ── PODCAST VIDEOS category ──────────────────────────────────────── */}
+        {/* ── PODCAST VIDEOS category ───────────────────────────────────────── */}
         {selectedCategory === "Podcast Videos" && !isLoading && (
           <section className="mb-14">
             <SectionHeading
@@ -712,17 +682,12 @@ export default function Insights() {
                 ))}
               </div>
             ) : (
-              <Card className="border-dashed">
-                <CardContent className="p-8 text-center text-muted-foreground">
-                  <Mic className="w-8 h-8 mx-auto mb-3 opacity-30" />
-                  <p className="text-sm">No podcast episodes yet.</p>
-                </CardContent>
-              </Card>
+              <EmptyState icon={Mic} message="No podcast episodes yet." />
             )}
           </section>
         )}
 
-        {/* ── SPECIFIC ARTICLE CATEGORIES (CEO, Talent, Client, Industry, Learning) */}
+        {/* ── SPECIFIC ARTICLE CATEGORIES ───────────────────────────────────── */}
         {selectedCategory !== "View All" && selectedCategory !== "Podcast Videos" && (
           <section className="mb-14">
             <SectionHeading
@@ -744,12 +709,10 @@ export default function Insights() {
                 ))}
               </div>
             ) : (
-              <Card className="border-dashed">
-                <CardContent className="p-8 text-center text-muted-foreground">
-                  <Search className="w-8 h-8 mx-auto mb-3 opacity-30" />
-                  <p className="text-sm">No {selectedCategory} articles yet. Check back soon.</p>
-                </CardContent>
-              </Card>
+              <EmptyState
+                icon={Search}
+                message={`No ${selectedCategory} articles yet. Check back soon.`}
+              />
             )}
           </section>
         )}
@@ -759,55 +722,50 @@ export default function Insights() {
           <SectionHeading icon={TrendingUp} title="Our Content Channels" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {contentChannels.map((channel, index) => (
-              <Card
+              <div
                 key={index}
-                className="text-center hover-elevate transition-all duration-300 group"
+                className="text-center rounded-2xl border border-white/10 bg-slate-900/80 p-8 transition-all duration-300 hover-elevate"
               >
-                <CardContent className="p-8">
-                  <div
-                    className={`w-14 h-14 mx-auto mb-5 rounded-full ${channel.color} flex items-center justify-center`}
-                  >
-                    <channel.icon className="w-7 h-7 text-white" />
-                  </div>
-                  <h4 className="text-lg font-bold mb-3">{channel.title}</h4>
-                  <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-                    {channel.description}
-                  </p>
-                  <Button asChild>
-                    <a
-                      href={channel.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {channel.buttonText}
-                      <ExternalLink className="w-4 h-4 ml-2" />
-                    </a>
-                  </Button>
-                </CardContent>
-              </Card>
+                <div
+                  className={`w-14 h-14 mx-auto mb-5 rounded-2xl ${channel.color} flex items-center justify-center`}
+                >
+                  <channel.icon className="w-7 h-7 text-white" />
+                </div>
+                <h4 className="text-lg font-bold mb-3 text-white">{channel.title}</h4>
+                <p className="text-sm text-slate-400 mb-6 leading-relaxed">
+                  {channel.description}
+                </p>
+                <a
+                  href={channel.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-full bg-[#474ead] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#5b63d6]"
+                >
+                  {channel.buttonText}
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              </div>
             ))}
           </div>
         </section>
 
         {/* ── CEO Notes CTA ────────────────────────────────────────────────── */}
         <section className="mb-10">
-          <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
-            <CardContent className="p-8 text-center">
-              <div className="flex items-center justify-center gap-2 mb-4">
-                <Rss className="w-6 h-6 text-primary" />
-                <h3 className="text-2xl font-bold">Daily Notes from our CEO</h3>
-              </div>
-              <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-                Get exclusive insights and thoughts from our leadership team.
-                Raw, unfiltered perspectives on the future of outsourcing and
-                business growth.
-              </p>
-              <Button size="lg">
-                Subscribe to CEO Notes
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="rounded-2xl border border-[#474ead]/30 bg-gradient-to-r from-[#474ead]/20 via-[#474ead]/10 to-[#8e93ff]/10 p-8 text-center">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <Rss className="w-6 h-6 text-[#474ead]" />
+              <h3 className="text-2xl font-bold text-white">Daily Notes from our CEO</h3>
+            </div>
+            <p className="text-slate-300 mb-6 max-w-2xl mx-auto leading-8">
+              Get exclusive insights and thoughts from our leadership team.
+              Raw, unfiltered perspectives on the future of outsourcing and
+              business growth.
+            </p>
+            <button className="inline-flex items-center gap-2 rounded-full bg-[#474ead] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#474ead]/25 transition hover:scale-[1.02] hover:bg-[#5b63d6]">
+              Subscribe to CEO Notes
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
         </section>
 
       </div>
