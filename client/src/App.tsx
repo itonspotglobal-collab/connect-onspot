@@ -144,6 +144,12 @@ function PublicRouter() {
           <Route path="/admin/insights/:id/edit" component={AdminInsightEditor} />
           <Route path="/admin/find-work" component={AdminFindWork} />
           <Route path="/admin/image-uploader" component={AdminImageUploader} />
+          {/* Service pages — with TopNavigation */}
+          <Route path="/services/managed" component={ManagedServicesPage} />
+          <Route path="/services/resourced" component={ResourcedServicesPage} />
+          <Route path="/services/enterprise" component={EnterpriseServicesPage} />
+          <Route path="/services/human-va" component={HumanVirtualAssistantPage} />
+          <Route path="/services/human-virtual-assistant" component={HumanVirtualAssistantPage} />
           {/* Legacy routes for backward compatibility */}
           <Route path="/talent" component={TalentSearch} />
           <Route component={NotFound} />
@@ -231,11 +237,6 @@ function AppContent() {
       
       {/* Service Routes */}
       <Route path="/services/ai-assistant" component={ImmersivePage} />
-      <Route path="/services/managed" component={ManagedServicesPage} />
-      <Route path="/services/resourced" component={ResourcedServicesPage} />
-      <Route path="/services/enterprise" component={EnterpriseServicesPage} />
-      <Route path="/services/human-va" component={HumanVirtualAssistantPage} />
-      <Route path="/services/human-virtual-assistant" component={HumanVirtualAssistantPage} />
       
       {/* Superhuman Project - Immersive cinematic experience */}
       <Route path="/superhuman" component={SuperhumanImmersive} />
