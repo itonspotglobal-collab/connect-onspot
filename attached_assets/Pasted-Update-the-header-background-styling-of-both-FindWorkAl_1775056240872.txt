@@ -1,0 +1,70 @@
+Update the **header background styling** of both `FindWorkAllJobs.tsx` and `FindWorkJob.tsx` so they match the OnSpot brand color direction.
+
+### Goal
+
+The current header background is **too dark** and feels off-brand.
+I want the header background in both pages to be updated to a more **brand-aligned indigo / blue-violet tone**, consistent with the newer OnSpot visual direction.
+
+### Pages to Update
+
+* `FindWorkAllJobs.tsx`
+* `FindWorkJob.tsx`
+
+### What to Change
+
+Please adjust the **header background only** so it feels closer to the OnSpot brand reference:
+
+* richer indigo / blue-violet
+* less black / less near-black
+* still premium and polished
+* modern SaaS/tech brand feel
+* smooth, refined gradient or solid branded surface if more appropriate
+
+### Visual Direction
+
+Use the same brand color treatment already applied to the updated pages, especially the newer OnSpot hero/header styling:
+
+* blue-violet / indigo base
+* premium branded feel
+* not too dark
+* not neon
+* clean and modern
+* consistent with the rest of the site
+
+### Important
+
+Keep unchanged:
+
+* all content
+* layout
+* logic/functionality
+* search/filter behavior
+* job cards/details
+* responsiveness
+
+This is a **visual color adjustment only** for the header area.
+
+### Styling Guidance
+
+* Replace overly dark header backgrounds with a more brand-aligned indigo/blue-violet tone
+* Use a subtle gradient if it helps match the brand better
+* Maintain strong text readability
+* Make sure nav text, buttons, and any controls still have good contrast
+* Keep the appearance consistent between `FindWorkAllJobs.tsx` and `FindWorkJob.tsx`
+
+### Consistency Requirement
+
+The updated headers should visually align with:
+
+* the newer OnSpot brand styling
+* the updated Insights page direction
+* the premium blue-violet hero/header reference already being used
+
+### Deliverable
+
+Return the updated code for both:
+
+* `FindWorkAllJobs.tsx`
+* `FindWorkJob.tsx`
+
+with their header backgrounds adjusted to match the brand color better, while preserving existing functionality and layout.

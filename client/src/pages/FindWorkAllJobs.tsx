@@ -238,7 +238,7 @@ export default function FindWorkAllJobs() {
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(71,78,173,0.10),transparent_30%),linear-gradient(to_bottom,#f8fafc,white)] text-slate-900 dark:bg-[#060816] dark:text-white">
 
       {/* ── HERO ── */}
-      <div className="relative overflow-hidden border-b border-slate-200/70 bg-[#0f172a] dark:border-white/10">
+      <div className="relative overflow-hidden border-b border-white/10 bg-gradient-to-br from-[#0d0f2d] via-[#141656] to-[#0d0f2d]">
         <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[#474ead]/20 blur-[80px]" />
         <div className="pointer-events-none absolute bottom-0 left-0 h-40 w-40 rounded-full bg-indigo-600/10 blur-[60px]" />
 

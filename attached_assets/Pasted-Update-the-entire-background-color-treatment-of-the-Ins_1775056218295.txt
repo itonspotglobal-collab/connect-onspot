@@ -1,0 +1,89 @@
+Update the **entire background color treatment of the `Insights.tsx` page** so it matches the attached brand reference.
+
+### Goal
+
+The current Insights page background feels **too dark** and no longer matches the OnSpot brand direction.
+
+I want the page background updated to reflect the brand tone from the attached screenshot:
+
+* a **rich indigo / blue-violet gradient**
+* brighter and more brand-aligned than the current near-black background
+* still premium, modern, and polished
+* not too dark, not flat, and not overly neon
+
+### Visual Direction
+
+Use the attached screenshot as the color reference for the page background:
+
+* deep blue-violet / indigo base
+* soft gradient transitions
+* slightly luminous feel
+* premium SaaS/tech brand look
+* clean and modern, while keeping readability strong
+
+### Apply This To
+
+Please update the **whole `Insights.tsx` page background**, including:
+
+* main page background
+* section backgrounds where appropriate
+* background behind Featured Articles
+* background behind Latest Articles
+* any surrounding wrappers that still feel too black or too dark
+
+### Important
+
+Keep the existing:
+
+* content
+* blog cards
+* featured content
+* carousel
+* layout
+* functionality
+
+This is primarily a **background and color system adjustment**, not a content or structure rewrite.
+
+### Styling Guidance
+
+* Replace the current overly dark background with a **brand-aligned indigo/blue-violet gradient**
+* Use a gradient similar to the attached reference:
+
+  * darker near the edges if needed
+  * richer blue-violet across the main surface
+  * smooth transitions, no harsh banding
+* Preserve strong text contrast
+* Cards can remain darker than the page background for hierarchy, but they should still harmonize with the new brand background
+* Avoid pure black dominating the full page
+* Avoid flat gray backgrounds
+* Keep the overall design premium and readable
+
+### Suggested Direction
+
+Use a background treatment similar to:
+
+* deep indigo
+* blue-violet
+* subtle purple-blue glow
+* soft radial and/or linear gradient blend
+
+For example, the page should feel closer to:
+
+* branded hero section background
+* polished blue-violet product marketing page
+* premium tech brand surface
+
+### Maintain Consistency
+
+Make sure the updated background still works with:
+
+* existing typography
+* featured article cards
+* category tabs
+* metadata text
+* buttons and links
+* hover states
+
+### Deliverable
+
+Return the updated `Insights.tsx` styling so the full page background matches the attached brand color direction and feels consistent with the OnSpot brand.

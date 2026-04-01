@@ -158,11 +158,11 @@ function ArticleCard({ article }: { article: ArticleItem }) {
 
   return (
     <Card
-      className="overflow-hidden transition-all duration-300 group flex flex-col cursor-pointer h-full bg-slate-900/80 border-white/10 hover-elevate"
+      className="overflow-hidden transition-all duration-300 group flex flex-col cursor-pointer h-full bg-[#080a1a]/80 border-white/10 hover-elevate"
       onClick={() => navigate(`/insights/${article.slug}`)}
     >
       {/* Cover image */}
-      <div className="aspect-video bg-slate-800 relative overflow-hidden flex-shrink-0">
+      <div className="aspect-video bg-[#040611] relative overflow-hidden flex-shrink-0">
         <img
           src={article.image}
           alt={article.title}
@@ -243,12 +243,12 @@ function PodcastCard({ article }: { article: ArticleItem }) {
 
   return (
     <Card
-      className="overflow-hidden transition-all duration-300 group cursor-pointer bg-slate-900/80 border-white/10 hover-elevate"
+      className="overflow-hidden transition-all duration-300 group cursor-pointer bg-[#080a1a]/80 border-white/10 hover-elevate"
       onClick={() => navigate(`/insights/${article.slug}`)}
     >
       <div className="flex flex-col sm:flex-row">
         {/* Thumbnail */}
-        <div className="sm:w-44 flex-shrink-0 bg-slate-800 relative overflow-hidden aspect-video sm:aspect-auto">
+        <div className="sm:w-44 flex-shrink-0 bg-[#040611] relative overflow-hidden aspect-video sm:aspect-auto">
           <img
             src={article.image}
             alt={article.title}
@@ -321,7 +321,7 @@ function PodcastCard({ article }: { article: ArticleItem }) {
 // ─── ArticleCardSkeleton ───────────────────────────────────────────────────────
 function ArticleCardSkeleton() {
   return (
-    <Card className="overflow-hidden flex flex-col bg-slate-900/80 border-white/10">
+    <Card className="overflow-hidden flex flex-col bg-[#080a1a]/80 border-white/10">
       <Skeleton className="aspect-video bg-white/10" />
       <CardContent className="p-5 flex flex-col gap-3">
         <Skeleton className="h-5 w-full bg-white/10" />
@@ -397,8 +397,8 @@ function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
               draggable={false}
             />
             {/* Overlays for readability */}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/55 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-950/25 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#080a1a] via-[#0d0f2d]/65 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#080a1a]/85 via-[#0d0f2d]/30 to-transparent" />
           </div>
         ))}
 
@@ -521,7 +521,7 @@ function CategoryNav({
 }) {
   return (
     <div
-      className="sticky z-40 bg-slate-950 border-b border-slate-800"
+      className="sticky z-40 bg-[#0a0c22]/95 backdrop-blur-md border-b border-white/10"
       style={{
         top: navVisible ? "var(--nav-h)" : "0",
         transition: "top 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -582,7 +582,7 @@ function SectionHeading({
 // ─── Empty state ──────────────────────────────────────────────────────────────
 function EmptyState({ icon: Icon, message }: { icon: React.ElementType; message: string }) {
   return (
-    <div className="rounded-2xl border border-dashed border-white/10 bg-slate-900/40 p-8 text-center text-slate-400">
+    <div className="rounded-2xl border border-dashed border-white/10 bg-[#080a1a]/40 p-8 text-center text-slate-400">
       <Icon className="w-8 h-8 mx-auto mb-3 opacity-30" />
       <p className="text-sm">{message}</p>
     </div>
@@ -689,11 +689,11 @@ export default function Insights() {
 
   // ─── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-gradient-to-br from-[#0d0f2d] via-[#141656] to-[#0d0f2d]">
 
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden bg-slate-950 border-b border-slate-800">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(71,78,173,0.26),transparent_32%),radial-gradient(circle_at_80%_20%,rgba(142,147,255,0.14),transparent_28%)] pointer-events-none" />
+      <div className="relative overflow-hidden bg-transparent border-b border-white/10">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(71,78,173,0.45),transparent_38%),radial-gradient(ellipse_at_80%_10%,rgba(142,147,255,0.22),transparent_32%)] pointer-events-none" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center relative">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.3em] text-slate-300">
             Insights &amp; Resources
@@ -710,7 +710,7 @@ export default function Insights() {
           {/* Search bar */}
           <div className="max-w-2xl mx-auto mb-4">
             <div className="relative p-[1px] rounded-full bg-gradient-to-r from-[#474ead]/40 via-[#474ead]/20 to-[#474ead]/40">
-              <div className="flex items-center bg-slate-900 rounded-full px-4 py-3 backdrop-blur transition-all focus-within:ring-2 focus-within:ring-[#474ead]/40">
+              <div className="flex items-center bg-[#080a1a] rounded-full px-4 py-3 backdrop-blur transition-all focus-within:ring-2 focus-within:ring-[#474ead]/40">
                 <Search className="w-5 h-5 text-[#474ead]/70 mr-3 flex-shrink-0" />
                 <input
                   type="text"
@@ -813,7 +813,7 @@ export default function Insights() {
               {isLoading ? (
                 <div className="space-y-4">
                   {Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="rounded-2xl border border-white/10 bg-slate-900/80 flex overflow-hidden">
+                    <div key={i} className="rounded-2xl border border-white/10 bg-[#080a1a]/80 flex overflow-hidden">
                       <Skeleton className="w-44 h-28 flex-shrink-0 bg-white/10" />
                       <div className="flex-1 p-4 space-y-2">
                         <Skeleton className="h-3 w-16 bg-white/10" />
@@ -893,7 +893,7 @@ export default function Insights() {
             {contentChannels.map((channel, index) => (
               <div
                 key={index}
-                className="text-center rounded-2xl border border-white/10 bg-slate-900/80 p-8 transition-all duration-300 hover-elevate"
+                className="text-center rounded-2xl border border-white/10 bg-[#080a1a]/80 p-8 transition-all duration-300 hover-elevate"
               >
                 <div
                   className={`w-14 h-14 mx-auto mb-5 rounded-2xl ${channel.color} flex items-center justify-center`}

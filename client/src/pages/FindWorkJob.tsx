@@ -421,7 +421,7 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
 
       {/* Hero */}
       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}
-        className="relative overflow-hidden bg-[#0f172a]">
+        className="relative overflow-hidden bg-gradient-to-br from-[#0d0f2d] via-[#141656] to-[#0d0f2d]">
         <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#474ead]/25 blur-[90px]" />
         <div className="pointer-events-none absolute -left-12 bottom-0 h-48 w-48 rounded-full bg-indigo-600/15 blur-[70px]" />
         <div className="relative mx-auto max-w-4xl px-6 pb-10 pt-8 md:px-12 lg:px-16">
