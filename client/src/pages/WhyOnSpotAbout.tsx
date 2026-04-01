@@ -202,10 +202,10 @@ const cultureGallery = [
   { label: "Happy Tribe",     photo: cultureHappy   },
 ];
 const dayVisuals = [
-  { label: "Life + Work",   photo: dayLifeWork,     objectPos: "object-center" },
-  { label: "Deep Work",     photo: dayDeepWork,     objectPos: "object-center" },
-  { label: "Team Flow",     photo: dayTeamFlow,     objectPos: "object-top"    },
-  { label: "Client Energy", photo: dayClientEnergy, objectPos: "object-top"    },
+  { label: "Life + Work",   photo: dayLifeWork,     imgStyle: { objectPosition: "50% 55%" } },
+  { label: "Deep Work",     photo: dayDeepWork,     imgStyle: { objectPosition: "50% 35%" } },
+  { label: "Team Flow",     photo: dayTeamFlow,     imgStyle: { objectPosition: "50% 20%" } },
+  { label: "Client Energy", photo: dayClientEnergy, imgStyle: { objectPosition: "50% 15%" } },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -543,13 +543,14 @@ export default function WhyOnSpotAbout() {
               {dayVisuals.map((item) => (
                 <div
                   key={item.label}
-                  className="group relative overflow-hidden rounded-2xl aspect-square transition-all duration-700 ease-out hover:scale-[1.07] hover:z-10"
+                  className="group relative overflow-hidden rounded-2xl aspect-square transition-all duration-700 ease-out hover:scale-[1.18] hover:z-20"
                 >
-                  {/* Real photo */}
+                  {/* Real photo — starts slightly zoomed in, reveals more on hover */}
                   <img
                     src={item.photo}
                     alt={item.label}
-                    className={`absolute inset-0 h-full w-full object-cover ${item.objectPos} transition-transform duration-1000 group-hover:scale-110`}
+                    style={item.imgStyle}
+                    className="absolute inset-0 h-full w-full object-cover scale-[1.08] transition-transform duration-700 ease-out group-hover:scale-100"
                   />
                   {/* Dark gradient overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />

@@ -1,0 +1,45 @@
+Update the A DAY AT ONSPOT / What a typical day looks like inside the Tribe photo cards in WhyOnspotAbout.tsx.
+
+Keep the exact current 2x2 layout, card positions, section structure, and spacing. Do not change the layout into a row or move the cards. The only change should be to improve the hover behavior and image framing.
+
+What to change:
+
+Make each card expand more on hover than it does now.
+The hover expansion should be large enough that more of the full photo becomes visible.
+Keep the expansion smooth and polished, matching the same visual language as the other animated cards on the page.
+Preserve rounded corners, overflow handling, and transition timing.
+
+Image/framing requirements:
+
+Prioritize showing the people clearly in each photo.
+Adjust crop/framing per image so faces and bodies are not awkwardly cut off.
+Use object-cover only if paired with proper object-position values per card.
+If needed, slightly zoom out the image on hover, or animate the image scale/position inside the card so more of the actual photo is revealed.
+For the attached photos, use custom object-position values per image instead of one shared value for all cards.
+Especially make sure the “Deep Work” and “Life + Work” photos show the people clearly.
+
+Animation behavior:
+
+Keep the base layout fixed in the original 2x2 arrangement.
+On hover, the hovered card should visually enlarge more than before, using scale and z-index if needed, without breaking the section layout.
+The hovered card can rise above neighboring cards slightly, but the overall section should still read as the same original grid.
+Use smooth transitions such as transition-all duration-700 ease-out.
+Ensure adjacent cards are not visually clipped in a bad way when one card expands.
+
+Implementation guidance:
+
+Keep the card wrapper relative overflow-hidden rounded-2xl.
+Increase the hover scale of the card container and/or image compared to the current implementation.
+Use hover:z-20 or similar so the expanded card sits above the others.
+Fine-tune each image individually with something like:
+object-position: center
+object-position: center top
+object-position: 50% 35%
+object-position: 50% 45%
+depending on where the people are in the photo.
+If needed, reduce the default zoom level so more of the original image is already visible before hover, then use hover to reveal even more naturally.
+Do not distort the images.
+Do not change the left timeline content.
+
+Goal:
+Keep the original layout exactly the same, but make the hover expansion stronger and make the full photos — especially the people in them — more visible.
