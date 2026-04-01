@@ -1,0 +1,38 @@
+Update the ‘The people who built OnSpot’ section in WhyOnspotAbout.tsx so the profile photos look more aligned and polished, especially for Alon Ben Eli and Mark Apostol.
+
+Requirements:
+
+Keep the existing card layout, names, titles, and descriptions.
+Adjust the profile image framing so the head level across all five cards feels visually aligned.
+Make the portraits look consistent in vertical positioning, especially:
+Alon Ben Eli
+Mark Apostol
+If needed, replace Alon’s photo with the new attached Alon.png.
+Keep Nur, Jake, Shane, and Mark visually balanced with Alon after the adjustment.
+Maintain the same rounded card design, image area size, and overall spacing.
+Preserve the subtle fade/gradient transition from the photo into the white card content area.
+
+Image/framing guidance:
+
+Use consistent portrait framing so each person’s eyes/headline area sits at roughly the same visual height across the row.
+Apply per-image positioning instead of one shared crop for all cards.
+Use object-cover with custom object-position values per person.
+If one image still looks off even with repositioning, allow a slightly different image height, internal padding, or scale for that one card only — but keep the cards looking uniform overall.
+Avoid awkward cropping at the forehead, chin, or shoulders.
+Make sure Mark Apostol’s portrait is also aligned more naturally with the others.
+
+Implementation guidance:
+
+Add an imagePosition or similar field in the people data array for each person.
+Example approach:
+Nur: object-[50%_25%]
+Jake: object-[50%_28%]
+Alon: object-[50%_18%] or adjust based on the new image
+Shane: object-[50%_24%]
+Mark: object-[50%_22%]
+Fine-tune visually until the head levels feel consistent across the row.
+Keep the photo container height the same unless a very small per-card adjustment is necessary.
+Preserve responsiveness on smaller screens.
+
+Goal:
+Make the five leadership photos feel professionally aligned, with consistent head level and cleaner portrait framing, especially for Alon and Mark.

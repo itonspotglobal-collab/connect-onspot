@@ -2,31 +2,31 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { ArrowRight, ChevronDown, ChevronUp, CheckCircle2 } from "lucide-react";
 import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
-import nurPhoto   from "@assets/Nur_1775038610216.png";
-import jakePhoto  from "@assets/Jake_1775039278985.png";
-import alonPhoto  from "@assets/Alon_1775039278985.png";
+import nurPhoto from "@assets/Nur_1775038610216.png";
+import jakePhoto from "@assets/Jake_1775039278985.png";
+import alonPhoto from "@assets/Alon_1775039278985.png";
 import shanePhoto from "@assets/Shane_1775038610216.png";
 import mackyPhoto from "@assets/Macky_1775038610215.png";
 import galleryLeadership from "@assets/Leadership_Lifestyle_1775042849148.png";
-import galleryFounder    from "@assets/Founder_Energy_1775042849148.png";
-import galleryLife       from "@assets/Life_Outside_Work_1775042849149.png";
-import galleryBuilt      from "@assets/Built_to_Live_1775042849148.png";
-import cultureCulture    from "@assets/Culture_Photo_1775044319871.png";
-import cultureTeam       from "@assets/Team_Lifestyle_1775044319872.png";
-import cultureOffsite    from "@assets/Offsite_Moment_1775044319872.png";
-import cultureHappy      from "@assets/Happy_Tribe_1775044319872.png";
-import dayLifeWork       from "@assets/Life_+_Work_1775045176827.png";
-import dayDeepWork       from "@assets/Deep_Work_1775045176826.png";
-import dayTeamFlow       from "@assets/Team_Flow_1775045176827.png";
-import dayClientEnergy   from "@assets/Client_Energy_1775045176826.png";
+import galleryFounder from "@assets/Founder_Energy_1775042849148.png";
+import galleryLife from "@assets/Life_Outside_Work_1775042849149.png";
+import galleryBuilt from "@assets/Built_to_Live_1775042849148.png";
+import cultureCulture from "@assets/Culture_Photo_1775044319871.png";
+import cultureTeam from "@assets/Team_Lifestyle_1775044319872.png";
+import cultureOffsite from "@assets/Offsite_Moment_1775044319872.png";
+import cultureHappy from "@assets/Happy_Tribe_1775044319872.png";
+import dayLifeWork from "@assets/Life_+_Work_1775045176827.png";
+import dayDeepWork from "@assets/Deep_Work_1775045176826.png";
+import dayTeamFlow from "@assets/Team_Flow_1775045176827.png";
+import dayClientEnergy from "@assets/Client_Energy_1775045176826.png";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
 const proofStats = [
-  { value: "500+",   label: "resources deployed" },
+  { value: "500+", label: "resources deployed" },
   { value: "50,000+", label: "vetted talent pool" },
-  { value: "100+",   label: "SOPs and systems built" },
-  { value: "$50M+",  label: "estimated value delivered" },
+  { value: "100+", label: "SOPs and systems built" },
+  { value: "$50M+", label: "estimated value delivered" },
 ];
 
 const leaders = [
@@ -56,7 +56,7 @@ const leaders = [
   },
   {
     name: "Mark Apostol",
-    role: "Head of People & Administration",
+    role: "Head of People",
     photo: mackyPhoto,
     desc: "Builds the people systems and culture that power high-performance delivery.",
   },
@@ -192,21 +192,37 @@ const faqs = [
 
 const galleryPlaceholders = [
   { label: "Leadership Lifestyle", photo: galleryLeadership },
-  { label: "Founder Energy",       photo: galleryFounder    },
-  { label: "Life Outside Work",    photo: galleryLife       },
-  { label: "Built to Live",        photo: galleryBuilt      },
+  { label: "Founder Energy", photo: galleryFounder },
+  { label: "Life Outside Work", photo: galleryLife },
+  { label: "Built to Live", photo: galleryBuilt },
 ];
 const cultureGallery = [
-  { label: "Culture Photo",   photo: cultureCulture },
-  { label: "Team Lifestyle",  photo: cultureTeam    },
-  { label: "Offsite Moment",  photo: cultureOffsite },
-  { label: "Happy Tribe",     photo: cultureHappy   },
+  { label: "Culture Photo", photo: cultureCulture },
+  { label: "Team Lifestyle", photo: cultureTeam },
+  { label: "Offsite Moment", photo: cultureOffsite },
+  { label: "Happy Tribe", photo: cultureHappy },
 ];
 const dayVisuals = [
-  { label: "Life + Work",   photo: dayLifeWork,     imgStyle: { objectPosition: "50% 55%" } },
-  { label: "Deep Work",     photo: dayDeepWork,     imgStyle: { objectPosition: "50% 35%" } },
-  { label: "Team Flow",     photo: dayTeamFlow,     imgStyle: { objectPosition: "50% 20%" } },
-  { label: "Client Energy", photo: dayClientEnergy, imgStyle: { objectPosition: "50% 15%" } },
+  {
+    label: "Life + Work",
+    photo: dayLifeWork,
+    imgStyle: { objectPosition: "50% 55%" },
+  },
+  {
+    label: "Deep Work",
+    photo: dayDeepWork,
+    imgStyle: { objectPosition: "50% 35%" },
+  },
+  {
+    label: "Team Flow",
+    photo: dayTeamFlow,
+    imgStyle: { objectPosition: "50% 20%" },
+  },
+  {
+    label: "Client Energy",
+    photo: dayClientEnergy,
+    imgStyle: { objectPosition: "50% 15%" },
+  },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -216,7 +232,6 @@ export default function WhyOnSpotAbout() {
 
   return (
     <div className="min-h-screen bg-white text-slate-950">
-
       {/* ── Sticky Header ──────────────────────────────────────────────────── */}
       <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-800/60 bg-slate-950/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
@@ -230,14 +245,17 @@ export default function WhyOnSpotAbout() {
 
           <nav className="hidden items-center gap-6 lg:flex">
             {[
-              { label: "Our Story",   href: "#the-why" },
-              { label: "Our People",  href: "#the-who" },
+              { label: "Our Story", href: "#the-why" },
+              { label: "Our People", href: "#the-who" },
               { label: "Our Culture", href: "#culture" },
               { label: "Our Systems", href: "#process" },
-              { label: "Services",    href: "#services" },
+              { label: "Services", href: "#services" },
             ].map((link) => (
-              <a key={link.label} href={link.href}
-                className="text-sm text-slate-300 transition hover:text-white">
+              <a
+                key={link.label}
+                href={link.href}
+                className="text-sm text-slate-300 transition hover:text-white"
+              >
                 {link.label}
               </a>
             ))}
@@ -269,10 +287,12 @@ export default function WhyOnSpotAbout() {
               </span>
             </h1>
             <p className="mt-8 max-w-2xl text-lg leading-8 text-slate-300">
-              OnSpot exists because scaling a business should not mean drowning in hiring, management, and
-              operational drag. AI should handle what can be systemized, and humans should step in where
-              judgment, care, and leadership matter most. When the right people are supported by the right
-              culture and the right intelligence layer, businesses grow better.
+              OnSpot exists because scaling a business should not mean drowning
+              in hiring, management, and operational drag. AI should handle what
+              can be systemized, and humans should step in where judgment, care,
+              and leadership matter most. When the right people are supported by
+              the right culture and the right intelligence layer, businesses
+              grow better.
             </p>
 
             <div className="mt-10 flex flex-wrap gap-4">
@@ -291,15 +311,21 @@ export default function WhyOnSpotAbout() {
           {/* Right — stats card */}
           <div className="flex items-start lg:col-span-5 lg:pt-4">
             <div className="w-full rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
-              <div className="text-xs uppercase tracking-[0.3em] text-slate-400">At a glance</div>
+              <div className="text-xs uppercase tracking-[0.3em] text-slate-400">
+                At a glance
+              </div>
               <div className="mt-5 grid gap-3">
                 {proofStats.map((stat) => (
                   <div
                     key={stat.label}
                     className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4"
                   >
-                    <div className="text-3xl font-semibold text-white">{stat.value}</div>
-                    <div className="mt-1 text-sm leading-6 text-slate-300">{stat.label}</div>
+                    <div className="text-3xl font-semibold text-white">
+                      {stat.value}
+                    </div>
+                    <div className="mt-1 text-sm leading-6 text-slate-300">
+                      {stat.label}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -309,11 +335,16 @@ export default function WhyOnSpotAbout() {
       </section>
 
       {/* ── Our Story / The Why ────────────────────────────────────────────── */}
-      <section id="the-why" className="mx-auto max-w-7xl px-6 py-24 lg:px-8 lg:py-32">
+      <section
+        id="the-why"
+        className="mx-auto max-w-7xl px-6 py-24 lg:px-8 lg:py-32"
+      >
         <div className="grid gap-14 lg:grid-cols-12 lg:gap-10">
           <div className="lg:col-span-4">
             <div className="sticky top-28">
-              <div className="text-sm font-semibold uppercase tracking-[0.28em] text-[#474ead]">The Why</div>
+              <div className="text-sm font-semibold uppercase tracking-[0.28em] text-[#474ead]">
+                The Why
+              </div>
               <h2 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
                 OnSpot started from a real problem.
               </h2>
@@ -323,24 +354,28 @@ export default function WhyOnSpotAbout() {
           <div className="lg:col-span-8">
             <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-8 sm:p-10 lg:p-14">
               <p className="text-2xl leading-[1.45] tracking-tight text-slate-900 sm:text-3xl">
-                Our founders were building businesses and ran into the same wall most operators eventually hit:
-                growth was possible, but operations were becoming the bottleneck.
+                Our founders were building businesses and ran into the same wall
+                most operators eventually hit: growth was possible, but
+                operations were becoming the bottleneck.
               </p>
               <div className="mt-8 space-y-6 text-lg leading-8 text-slate-600">
                 <p>
-                  Hiring took too long. Costs kept rising. Teams became harder to manage. Founder time was
-                  being consumed by work that should have been systemized.
+                  Hiring took too long. Costs kept rising. Teams became harder
+                  to manage. Founder time was being consumed by work that should
+                  have been systemized.
                 </p>
                 <p>
-                  So instead of accepting that as normal, they built a better way. What began as an internal
-                  solution became a company built to help other businesses scale with more clarity, better
+                  So instead of accepting that as normal, they built a better
+                  way. What began as an internal solution became a company built
+                  to help other businesses scale with more clarity, better
                   people, and less friction.
                 </p>
                 <p>
-                  That is why OnSpot exists. Not to be another outsourcing provider, but to become a trusted
-                  growth partner for businesses that need more than manpower. They need intelligence that
-                  removes drag, people who can lead and execute, and a support system that makes both work
-                  as one.
+                  That is why OnSpot exists. Not to be another outsourcing
+                  provider, but to become a trusted growth partner for
+                  businesses that need more than manpower. They need
+                  intelligence that removes drag, people who can lead and
+                  execute, and a support system that makes both work as one.
                 </p>
               </div>
               <a
@@ -389,13 +424,15 @@ export default function WhyOnSpotAbout() {
         {/* Leadership cards */}
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="mb-12">
-            <div className="text-sm font-semibold uppercase tracking-[0.28em] text-[#474ead]">The Who</div>
+            <div className="text-sm font-semibold uppercase tracking-[0.28em] text-[#474ead]">
+              The Who
+            </div>
             <h2 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
               The people who built OnSpot.
             </h2>
             <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-600">
-              A team that combines entrepreneurial instinct, operational depth, and genuine care for the
-              people who power the work.
+              A team that combines entrepreneurial instinct, operational depth,
+              and genuine care for the people who power the work.
             </p>
           </div>
 
@@ -418,11 +455,15 @@ export default function WhyOnSpotAbout() {
 
                 {/* Text content */}
                 <div className="px-5 pb-6 pt-4">
-                  <div className="text-base font-semibold text-slate-950">{leader.name}</div>
+                  <div className="text-base font-semibold text-slate-950">
+                    {leader.name}
+                  </div>
                   <div className="mt-0.5 text-xs font-semibold uppercase tracking-[0.14em] text-[#474ead]">
                     {leader.role}
                   </div>
-                  <p className="mt-3 text-sm leading-6 text-slate-600">{leader.desc}</p>
+                  <p className="mt-3 text-sm leading-6 text-slate-600">
+                    {leader.desc}
+                  </p>
                 </div>
               </div>
             ))}
@@ -431,7 +472,10 @@ export default function WhyOnSpotAbout() {
       </section>
 
       {/* ── Culture Section ─────────────────────────────────────────────────── */}
-      <section id="culture" className="border-y border-slate-200 bg-[#f5f8ff] py-24 lg:py-32">
+      <section
+        id="culture"
+        className="border-y border-slate-200 bg-[#f5f8ff] py-24 lg:py-32"
+      >
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           {/* Culture gallery */}
           <div className="mb-16 grid grid-cols-2 gap-4 md:flex md:h-72 md:gap-4">
@@ -461,13 +505,16 @@ export default function WhyOnSpotAbout() {
           </div>
 
           <div className="mb-14 max-w-3xl">
-            <div className="text-sm font-semibold uppercase tracking-[0.28em] text-[#474ead]">Our Culture</div>
+            <div className="text-sm font-semibold uppercase tracking-[0.28em] text-[#474ead]">
+              Our Culture
+            </div>
             <h2 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
               Culture is not decoration here. It is the engine.
             </h2>
             <p className="mt-5 text-lg leading-8 text-slate-600">
-              The "Happy Tribe" philosophy is built on a simple truth: when people feel valued, trusted, and
-              empowered, they bring their best. That is when clients notice the difference.
+              The "Happy Tribe" philosophy is built on a simple truth: when
+              people feel valued, trusted, and empowered, they bring their best.
+              That is when clients notice the difference.
             </p>
           </div>
 
@@ -477,8 +524,12 @@ export default function WhyOnSpotAbout() {
                 key={value.title}
                 className="rounded-[1.75rem] border border-white bg-white p-6 shadow-[0_10px_34px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
               >
-                <h3 className="text-xl font-semibold text-slate-950">{value.title}</h3>
-                <p className="mt-3 text-sm leading-7 text-slate-600">{value.body}</p>
+                <h3 className="text-xl font-semibold text-slate-950">
+                  {value.title}
+                </h3>
+                <p className="mt-3 text-sm leading-7 text-slate-600">
+                  {value.body}
+                </p>
                 <div className="mt-5 rounded-2xl border border-[#474ead]/15 bg-[#474ead]/5 px-4 py-3 text-sm font-semibold text-[#474ead]">
                   {value.highlight}
                 </div>
@@ -492,13 +543,16 @@ export default function WhyOnSpotAbout() {
       <section className="mx-auto max-w-7xl px-6 py-24 lg:px-8 lg:py-32">
         <div className="grid gap-14 lg:grid-cols-2 lg:gap-20">
           <div>
-            <div className="text-sm font-semibold uppercase tracking-[0.28em] text-[#474ead]">Our People</div>
+            <div className="text-sm font-semibold uppercase tracking-[0.28em] text-[#474ead]">
+              Our People
+            </div>
             <h2 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
               Great client work starts with how people are treated internally.
             </h2>
             <p className="mt-5 text-lg leading-8 text-slate-600">
-              OnSpot is not just an outsourcing company. It is a team that believes the quality of a
-              client's experience is a direct reflection of how the people delivering it are supported,
+              OnSpot is not just an outsourcing company. It is a team that
+              believes the quality of a client's experience is a direct
+              reflection of how the people delivering it are supported,
               developed, and led.
             </p>
           </div>
@@ -512,7 +566,9 @@ export default function WhyOnSpotAbout() {
                 <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-[#474ead]/10">
                   <CheckCircle2 className="h-4 w-4 text-[#474ead]" />
                 </div>
-                <p className="text-base leading-7 text-slate-700">{principle}</p>
+                <p className="text-base leading-7 text-slate-700">
+                  {principle}
+                </p>
               </div>
             ))}
           </div>
@@ -523,7 +579,9 @@ export default function WhyOnSpotAbout() {
       <section className="border-y border-slate-200 bg-white py-24 lg:py-32">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="mb-14 max-w-3xl">
-            <div className="text-sm font-semibold uppercase tracking-[0.28em] text-[#474ead]">A Day at OnSpot</div>
+            <div className="text-sm font-semibold uppercase tracking-[0.28em] text-[#474ead]">
+              A Day at OnSpot
+            </div>
             <h2 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
               What a typical day looks like inside the Tribe.
             </h2>
@@ -532,7 +590,10 @@ export default function WhyOnSpotAbout() {
           <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
             {/* Timeline */}
             <div className="relative">
-              <div className="absolute left-[1.75rem] top-0 h-full w-px bg-slate-200" aria-hidden="true" />
+              <div
+                className="absolute left-[1.75rem] top-0 h-full w-px bg-slate-200"
+                aria-hidden="true"
+              />
               <div className="space-y-8">
                 {dayInTheLife.map((entry) => (
                   <div key={entry.time} className="relative flex gap-6">
@@ -540,8 +601,12 @@ export default function WhyOnSpotAbout() {
                       {entry.time}
                     </div>
                     <div className="pb-2 pt-3">
-                      <div className="text-base font-semibold text-slate-950">{entry.title}</div>
-                      <p className="mt-1.5 text-sm leading-7 text-slate-600">{entry.body}</p>
+                      <div className="text-base font-semibold text-slate-950">
+                        {entry.title}
+                      </div>
+                      <p className="mt-1.5 text-sm leading-7 text-slate-600">
+                        {entry.body}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -576,15 +641,21 @@ export default function WhyOnSpotAbout() {
       </section>
 
       {/* ── Process Section ─────────────────────────────────────────────────── */}
-      <section id="process" className="bg-[linear-gradient(180deg,_#eef7ff_0%,_#f5f8ff_100%)] py-24 lg:py-32">
+      <section
+        id="process"
+        className="bg-[linear-gradient(180deg,_#eef7ff_0%,_#f5f8ff_100%)] py-24 lg:py-32"
+      >
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="mb-14 max-w-3xl">
-            <div className="text-sm font-semibold uppercase tracking-[0.28em] text-[#474ead]">How OnSpot Works</div>
+            <div className="text-sm font-semibold uppercase tracking-[0.28em] text-[#474ead]">
+              How OnSpot Works
+            </div>
             <h2 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
               Three steps from conversation to execution.
             </h2>
             <p className="mt-5 text-lg leading-8 text-slate-600">
-              We keep the process simple on purpose — complexity belongs in the solution, not the journey to get there.
+              We keep the process simple on purpose — complexity belongs in the
+              solution, not the journey to get there.
             </p>
           </div>
 
@@ -597,8 +668,12 @@ export default function WhyOnSpotAbout() {
                 <div className="text-xs font-semibold uppercase tracking-[0.2em] text-[#474ead]">
                   Step {item.step}
                 </div>
-                <h3 className="mt-4 text-2xl font-semibold text-slate-950">{item.title}</h3>
-                <p className="mt-3 text-sm leading-7 text-slate-600">{item.body}</p>
+                <h3 className="mt-4 text-2xl font-semibold text-slate-950">
+                  {item.title}
+                </h3>
+                <p className="mt-3 text-sm leading-7 text-slate-600">
+                  {item.body}
+                </p>
               </div>
             ))}
           </div>
@@ -606,16 +681,22 @@ export default function WhyOnSpotAbout() {
       </section>
 
       {/* ── Services Hub ────────────────────────────────────────────────────── */}
-      <section id="services" className="border-t border-slate-200 bg-white py-24 lg:py-32">
+      <section
+        id="services"
+        className="border-t border-slate-200 bg-white py-24 lg:py-32"
+      >
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="mb-14 max-w-3xl">
-            <div className="text-sm font-semibold uppercase tracking-[0.28em] text-[#474ead]">Our Service Models</div>
+            <div className="text-sm font-semibold uppercase tracking-[0.28em] text-[#474ead]">
+              Our Service Models
+            </div>
             <h2 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
               Explore Our Service Models
             </h2>
             <p className="mt-5 text-lg leading-8 text-slate-600">
-              Every organization is different. We built four distinct service models so the right level of
-              support meets the right stage of growth.
+              Every organization is different. We built four distinct service
+              models so the right level of support meets the right stage of
+              growth.
             </p>
           </div>
 
@@ -629,8 +710,12 @@ export default function WhyOnSpotAbout() {
                 <div className="text-xs font-semibold uppercase tracking-[0.2em] text-[#474ead]">
                   {service.eyebrow}
                 </div>
-                <h3 className="mt-3 text-xl font-semibold text-slate-950">{service.label}</h3>
-                <p className="mt-3 flex-1 text-sm leading-7 text-slate-600">{service.copy}</p>
+                <h3 className="mt-3 text-xl font-semibold text-slate-950">
+                  {service.label}
+                </h3>
+                <p className="mt-3 flex-1 text-sm leading-7 text-slate-600">
+                  {service.copy}
+                </p>
                 <div className="mt-6 flex items-center gap-2 text-sm font-semibold text-[#474ead] transition-all group-hover:gap-3">
                   Explore Service
                   <ArrowRight className="h-4 w-4" />
@@ -645,7 +730,9 @@ export default function WhyOnSpotAbout() {
       <section className="border-y border-slate-200 bg-[#f5f8ff] py-24 lg:py-32">
         <div className="mx-auto max-w-4xl px-6 lg:px-8">
           <div className="mb-14">
-            <div className="text-sm font-semibold uppercase tracking-[0.28em] text-[#474ead]">Questions</div>
+            <div className="text-sm font-semibold uppercase tracking-[0.28em] text-[#474ead]">
+              Questions
+            </div>
             <h2 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
               Common questions about OnSpot.
             </h2>
@@ -663,9 +750,15 @@ export default function WhyOnSpotAbout() {
                     onClick={() => setOpenFaq(isOpen ? null : index)}
                     className="flex w-full items-center justify-between gap-6 px-7 py-6 text-left"
                   >
-                    <span className="text-lg font-semibold text-slate-950">{faq.q}</span>
+                    <span className="text-lg font-semibold text-slate-950">
+                      {faq.q}
+                    </span>
                     <span className="flex-shrink-0 rounded-xl border border-slate-200 p-1.5 text-slate-400 transition hover:border-[#474ead]/30 hover:text-[#474ead]">
-                      {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      {isOpen ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
                     </span>
                   </button>
                   {isOpen && (
@@ -699,8 +792,8 @@ export default function WhyOnSpotAbout() {
             The right way to scale.
           </h2>
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-300">
-            Whether you are building your first outsourced team or transforming an enterprise operation,
-            OnSpot is built to move with you.
+            Whether you are building your first outsourced team or transforming
+            an enterprise operation, OnSpot is built to move with you.
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-4">
             <button className="rounded-full bg-[#474ead] px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-[#474ead]/25 transition hover:scale-[1.02] hover:bg-[#5b63d6]">
@@ -715,7 +808,6 @@ export default function WhyOnSpotAbout() {
           </div>
         </div>
       </section>
-
     </div>
   );
 }
