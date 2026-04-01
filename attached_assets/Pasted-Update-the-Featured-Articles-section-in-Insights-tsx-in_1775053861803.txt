@@ -1,0 +1,105 @@
+Update the **Featured Articles** section in `Insights.tsx` into a **Netflix-style auto-playing carousel** using **React + Tailwind CSS**, while preserving the existing article content, article data, and overall brand styling already used in the page.
+
+## Goal
+
+Convert the current static Featured Articles cards into a more interactive hero-style carousel.
+
+## Requirements
+
+* Use a **carousel/slider layout** for Featured Articles
+* Slides should **move automatically**
+* Add smooth transition/slide animation
+* Keep it elegant and premium, not overly flashy
+* Maintain responsiveness across desktop, tablet, and mobile
+
+## Design Direction
+
+Follow a **Netflix-inspired featured carousel**:
+
+* large cinematic featured slides
+* rich visual presentation
+* strong text hierarchy
+* content overlaid on top of high-quality background images
+* dark gradient overlays to ensure text readability
+* premium dark UI consistent with the rest of the OnSpot style
+* use the same overall visual system as `WhyOnspotAbout`
+
+## Content Rules
+
+Keep the existing Featured Articles content and metadata:
+
+* article titles
+* category labels
+* featured tags
+* descriptions
+* author
+* date
+* reading time
+* view count
+* links/navigation behavior
+
+Do **not** remove the article content.
+Do **not** replace the blog functionality.
+This is a **UI enhancement**, not a content rewrite.
+
+## Background Images
+
+For each featured slide:
+
+* use a **high-quality background image**
+* the image should fill the slide nicely like a hero banner
+* add a **dark overlay / gradient overlay** so text remains readable
+* if the article already has an image, use it as the slide background
+* if needed, convert current card images into full-background hero images
+
+## Layout Expectations
+
+Each slide should feel like a premium banner:
+
+* image as full background
+* overlay content aligned cleanly on the left or bottom-left
+* title prominent and readable
+* description underneath
+* metadata and badges styled cleanly
+* CTA or clickable area preserved if already present
+
+## Behavior
+
+* autoplay enabled
+* pause on hover if practical
+* optional manual navigation controls:
+
+  * arrows
+  * dots / indicators
+* smooth looping behavior
+* make transitions polished and not abrupt
+
+## Styling
+
+Match the current OnSpot premium dark style:
+
+* deep black / navy-black background
+* refined blue-purple accents
+* rounded corners where appropriate
+* subtle shadows/borders
+* consistent spacing and typography
+* readable white / soft-gray text on dark overlay
+
+## Technical Guidance
+
+* Use React and Tailwind CSS
+* Keep the implementation clean and reusable
+* If useful, create a reusable `FeaturedCarousel` component
+* Do not break the existing `Insights.tsx` structure
+* Keep the rest of the page intact
+
+## Accessibility
+
+* ensure text contrast is readable over images
+* buttons/arrows should be visible and usable
+* support keyboard interaction if possible
+* avoid excessive animation intensity
+
+## Deliverable
+
+Return the updated `Insights.tsx` code (and component code if needed) with the Featured Articles section turned into an auto-playing Netflix-style carousel with high-quality background images, while preserving the existing content and page behavior.

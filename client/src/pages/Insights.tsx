@@ -8,6 +8,7 @@ import {
   User, Calendar, Clock, Eye, Globe, TrendingUp,
   ExternalLink, Rss, ArrowRight, BookOpen, Linkedin, Youtube,
   Search, PlayCircle, Mic, LayoutGrid, Users, Briefcase,
+  ChevronLeft, ChevronRight,
 } from "lucide-react";
 import type { Post } from "@shared/schema";
 
@@ -336,6 +337,178 @@ function ArticleCardSkeleton() {
   );
 }
 
+// ─── FeaturedCarousel ─────────────────────────────────────────────────────────
+function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
+  const [, navigate] = useLocation();
+  const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const total = articles.length;
+
+  const goTo = (idx: number) =>
+    setActive(((idx % total) + total) % total);
+
+  useEffect(() => {
+    if (total <= 1 || paused) {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      return;
+    }
+    intervalRef.current = setInterval(() => {
+      setActive((prev) => (prev + 1) % total);
+    }, 5500);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [paused, total, active]);
+
+  if (total === 0) return null;
+
+  const art = articles[active];
+
+  return (
+    <>
+      {/* progress-bar keyframe */}
+      <style>{`
+        @keyframes carousel-bar { from { width: 0% } to { width: 100% } }
+        .carousel-bar { animation: carousel-bar 5.5s linear forwards; }
+      `}</style>
+
+      <div
+        className="relative w-full rounded-2xl overflow-hidden cursor-pointer group select-none"
+        style={{ height: "clamp(340px, 46vw, 540px)" }}
+        onClick={() => navigate(`/insights/${art.slug}`)}
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+        role="region"
+        aria-label="Featured articles carousel"
+      >
+        {/* ── Slides (cross-fade) ─────────────────────────────────────────── */}
+        {articles.map((a, i) => (
+          <div
+            key={a.id}
+            className="absolute inset-0 transition-opacity duration-700"
+            style={{ opacity: i === active ? 1 : 0, zIndex: i === active ? 1 : 0 }}
+            aria-hidden={i !== active}
+          >
+            <img
+              src={a.image}
+              alt={a.title}
+              className="w-full h-full object-cover"
+              draggable={false}
+            />
+            {/* Overlays for readability */}
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/55 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-950/25 to-transparent" />
+          </div>
+        ))}
+
+        {/* ── Content ─────────────────────────────────────────────────────── */}
+        <div className="absolute inset-0 z-10 flex flex-col justify-end px-8 pb-10 sm:px-12 sm:pb-12">
+          {/* Badges */}
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-[10px] uppercase tracking-[0.22em] font-semibold px-3 py-1 rounded-full bg-[#474ead] text-white">
+              {art.category}
+            </span>
+            {art.featured && (
+              <span className="text-[10px] uppercase tracking-[0.22em] font-semibold px-3 py-1 rounded-full bg-amber-400 text-black">
+                Featured
+              </span>
+            )}
+          </div>
+
+          {/* Title */}
+          <h2 className="text-2xl sm:text-3xl lg:text-[2.1rem] font-semibold text-white leading-tight max-w-2xl mb-3 tracking-tight">
+            {art.title}
+          </h2>
+
+          {/* Excerpt */}
+          {art.excerpt && (
+            <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-xl mb-5 line-clamp-2">
+              {art.excerpt}
+            </p>
+          )}
+
+          {/* Meta row */}
+          <div className="flex items-center gap-4 flex-wrap">
+            <span className="flex items-center gap-1.5 text-xs">
+              <span className="w-5 h-5 rounded-full bg-[#474ead]/30 text-[#474ead] text-[9px] font-bold flex items-center justify-center flex-shrink-0">
+                {getInitials(art.author)}
+              </span>
+              <span className="text-slate-300 font-medium">{art.author}</span>
+            </span>
+            <span className="flex items-center gap-1 text-xs text-slate-400">
+              <Calendar className="w-3 h-3" />
+              {art.date}
+            </span>
+            <span className="flex items-center gap-1 text-xs text-slate-400">
+              <Clock className="w-3 h-3" />
+              {art.readTime}
+            </span>
+            {art.views > 0 && (
+              <span className="flex items-center gap-1 text-xs text-slate-400">
+                <Eye className="w-3 h-3" />
+                {art.views.toLocaleString()}
+              </span>
+            )}
+            <span className="ml-auto flex items-center gap-1.5 text-sm font-semibold text-white group-hover:text-[#474ead] transition-colors">
+              Read Article
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+            </span>
+          </div>
+        </div>
+
+        {/* ── Arrow controls ──────────────────────────────────────────────── */}
+        {total > 1 && (
+          <>
+            <button
+              onClick={(e) => { e.stopPropagation(); goTo(active - 1); }}
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/40 border border-white/10 backdrop-blur-sm flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/60"
+              aria-label="Previous article"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); goTo(active + 1); }}
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/40 border border-white/10 backdrop-blur-sm flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/60"
+              aria-label="Next article"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </>
+        )}
+
+        {/* ── Dot indicators ──────────────────────────────────────────────── */}
+        {total > 1 && (
+          <div className="absolute bottom-5 right-8 sm:right-12 z-20 flex items-center gap-2">
+            {articles.map((_, i) => (
+              <button
+                key={i}
+                onClick={(e) => { e.stopPropagation(); goTo(i); }}
+                className={`rounded-full transition-all duration-300 ${
+                  i === active
+                    ? "w-6 h-2 bg-white"
+                    : "w-2 h-2 bg-white/35 hover:bg-white/65"
+                }`}
+                aria-label={`Go to slide ${i + 1}`}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* ── Progress bar ────────────────────────────────────────────────── */}
+        {total > 1 && !paused && (
+          <div className="absolute bottom-0 left-0 right-0 z-20 h-[2px] bg-white/10">
+            <div
+              key={`${active}-progress`}
+              className="h-full bg-[#474ead] carousel-bar"
+            />
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
 // ─── CategoryNav ──────────────────────────────────────────────────────────────
 function CategoryNav({
   selected,
@@ -598,15 +771,11 @@ export default function Insights() {
         {/* ── VIEW ALL: Featured + Articles + Podcasts ──────────────────────── */}
         {selectedCategory === "View All" && (
           <>
-            {/* Featured articles */}
+            {/* Featured carousel */}
             {!isLoading && featuredArticles.length > 0 && !searchQuery && !authorFilter && (
               <section className="mb-14">
                 <SectionHeading icon={TrendingUp} title="Featured Articles" />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {featuredArticles.slice(0, 2).map((article) => (
-                    <ArticleCard key={article.id} article={article} />
-                  ))}
-                </div>
+                <FeaturedCarousel articles={featuredArticles} />
               </section>
             )}
 
