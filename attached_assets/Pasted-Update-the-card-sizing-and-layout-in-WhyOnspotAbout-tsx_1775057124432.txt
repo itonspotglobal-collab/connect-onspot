@@ -1,0 +1,52 @@
+Update the card sizing and layout in WhyOnspotAbout.tsx so the photo cards are more consistent across sections, based on the target sizes shown in the attached screenshots.
+
+Lifestyle / Value cards
+For these four cards:
+Leadership Lifestyle
+Founder Energy
+Life Outside Work
+Built to Live
+
+Adjust the card sizes so they match the intended proportions from the screenshot:
+
+The first card (Leadership Lifestyle) should be visibly wider/larger than the other three.
+The other three cards should remain narrower and uniform.
+Keep the current hover-expand interaction.
+Maintain rounded corners, overlays, labels, spacing, and responsiveness.
+Make sure the images are framed well so the people are clearly visible.
+Our Culture section
+For these four cards:
+Culture Photo
+Team Lifestyle
+Officesite Moment
+Happy Tribe
+
+Adjust the card sizes to match the same visual sizing pattern as the Lifestyle / Value cards:
+
+First card should be wider/larger.
+Remaining three cards should be narrower and equal in size.
+Keep the hover-expand behavior consistent with the Lifestyle / Value cards.
+Preserve existing images, overlays, labels, and section spacing.
+Ensure image framing keeps people visible.
+A Day at OnSpot section
+For the What a typical day looks like inside the Tribe photo area:
+Adjust the 2x2 photo block on the right to match the target sizing shown in the second screenshot.
+Keep it as a 2x2 grid.
+Do not move the section away from its current left-text/right-photo structure.
+Make the cards larger and more balanced inside the grid area, filling the available right-side space more intentionally.
+Reduce the excess empty whitespace around the cards.
+Keep the hover-expand effect.
+Maintain rounded corners, overflow handling, smooth transitions, and z-index behavior.
+Ensure the photos are cropped/framed so the people are clearly visible.
+
+Implementation guidance:
+
+Rework the width/flex sizing of the Lifestyle / Value and Culture cards so the first card has a larger base width than the other three.
+Reuse the same structure and animation logic between the Lifestyle / Value and Culture sections so they behave consistently.
+For the A Day at OnSpot section, keep the grid layout but tune the container width, column sizes, row sizes, and gaps so it visually matches the provided target screenshot.
+Use per-image object-position values where needed so people are not cut off.
+Keep all sections responsive across desktop and mobile.
+Do not change the content, only refine the card sizing, proportions, and layout.
+
+Goal:
+Make the Lifestyle / Value cards and Culture cards share the same card sizing pattern, and make the A Day at OnSpot grid match the intended larger, cleaner layout from the screenshot while keeping hover animations and proper image framing.

@@ -359,11 +359,15 @@ export default function WhyOnSpotAbout() {
       <section id="the-who" className="bg-white py-24 lg:py-32">
         {/* Gallery row */}
         <div className="mx-auto mb-16 max-w-7xl px-6 lg:px-8">
-          <div className="grid grid-cols-2 gap-4 md:flex md:h-56 md:gap-4">
-            {galleryPlaceholders.map((item) => (
+          <div className="grid grid-cols-2 gap-4 md:flex md:h-72 md:gap-4">
+            {galleryPlaceholders.map((item, i) => (
               <div
                 key={item.label}
-                className="group relative overflow-hidden rounded-2xl transition-all duration-700 ease-out aspect-[4/3] md:h-56 md:flex-[1] md:min-w-0 md:hover:flex-[2.4]"
+                className={`group relative overflow-hidden rounded-2xl transition-all duration-700 ease-out aspect-[4/3] md:min-w-0 md:h-72 ${
+                  i === 0
+                    ? "md:flex-[1.7] md:hover:flex-[2.6]"
+                    : "md:flex-[1] md:hover:flex-[2.2]"
+                }`}
               >
                 {/* Real photo */}
                 <img
@@ -430,11 +434,15 @@ export default function WhyOnSpotAbout() {
       <section id="culture" className="border-y border-slate-200 bg-[#f5f8ff] py-24 lg:py-32">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           {/* Culture gallery */}
-          <div className="mb-16 grid grid-cols-2 gap-4 md:flex md:h-56 md:gap-4">
-            {cultureGallery.map((item) => (
+          <div className="mb-16 grid grid-cols-2 gap-4 md:flex md:h-72 md:gap-4">
+            {cultureGallery.map((item, i) => (
               <div
                 key={item.label}
-                className="group relative overflow-hidden rounded-2xl transition-all duration-700 ease-out aspect-[4/3] md:h-56 md:flex-[1] md:min-w-0 md:hover:flex-[2.4]"
+                className={`group relative overflow-hidden rounded-2xl transition-all duration-700 ease-out aspect-[4/3] md:min-w-0 md:h-72 ${
+                  i === 0
+                    ? "md:flex-[1.7] md:hover:flex-[2.6]"
+                    : "md:flex-[1] md:hover:flex-[2.2]"
+                }`}
               >
                 {/* Real photo */}
                 <img
@@ -541,11 +549,11 @@ export default function WhyOnSpotAbout() {
             </div>
 
             {/* Photo cards — 2×2 grid with per-card scale hover */}
-            <div className="grid grid-cols-2 gap-3 self-start">
+            <div className="grid grid-cols-2 gap-4">
               {dayVisuals.map((item) => (
                 <div
                   key={item.label}
-                  className="group relative overflow-hidden rounded-2xl aspect-square transition-all duration-700 ease-out hover:scale-[1.18] hover:z-20"
+                  className="group relative overflow-hidden rounded-2xl aspect-[3/4] transition-all duration-700 ease-out hover:scale-[1.12] hover:z-20"
                 >
                   {/* Real photo — starts slightly zoomed in, reveals more on hover */}
                   <img
