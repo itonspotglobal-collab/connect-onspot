@@ -2,8 +2,8 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { ArrowRight, ChevronDown, ChevronUp, CheckCircle2 } from "lucide-react";
 import nurPhoto   from "@assets/Nur_1775038610216.png";
-import jakePhoto  from "@assets/Jake_1775038610215.png";
-import alonPhoto  from "@assets/Alon_1775038610214.png";
+import jakePhoto  from "@assets/Jake_1775039278985.png";
+import alonPhoto  from "@assets/Alon_1775039278985.png";
 import shanePhoto from "@assets/Shane_1775038610216.png";
 import mackyPhoto from "@assets/Macky_1775038610215.png";
 
