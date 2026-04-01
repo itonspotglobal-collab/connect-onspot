@@ -52,8 +52,8 @@ const leaders = [
     photo: alonPhoto,
     imgPos: "50% 50%",
     imgWrap: {
-      transform: "scale(1.55) translateY(-14%)",
-      transformOrigin: "50% 48%",
+      transform: "scale(1.28) translateY(-9%)",
+      transformOrigin: "50% 42%",
     } as CSSProperties,
     desc: "Helps shape long-range strategy, positioning, and global growth.",
   },
