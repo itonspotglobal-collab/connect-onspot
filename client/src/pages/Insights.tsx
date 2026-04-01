@@ -589,6 +589,262 @@ function EmptyState({ icon: Icon, message }: { icon: React.ElementType; message:
   );
 }
 
+// ─── HighlightCard ────────────────────────────────────────────────────────────
+function HighlightCard({ article }: { article: ArticleItem }) {
+  const [, navigate] = useLocation();
+  return (
+    <div
+      className="relative overflow-hidden rounded-2xl cursor-pointer group h-full"
+      style={{ minHeight: "460px" }}
+      onClick={() => navigate(`/insights/${article.slug}`)}
+    >
+      <img
+        src={article.image}
+        alt={article.title}
+        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#050715]/96 via-[#050715]/55 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-r from-[#050715]/72 via-[#050715]/20 to-transparent" />
+      <div className="absolute inset-0 flex flex-col justify-end p-7 sm:p-10">
+        <span className="inline-flex self-start mb-3 text-[10px] uppercase tracking-[0.22em] font-semibold px-3 py-1 rounded-full bg-[#474ead] text-white">
+          {article.category}
+        </span>
+        <h3 className="text-2xl sm:text-3xl font-bold text-white leading-tight mb-3 tracking-tight">
+          {article.title}
+        </h3>
+        {article.excerpt && (
+          <p className="text-slate-300 text-sm leading-relaxed mb-5 line-clamp-3 max-w-xl">
+            {article.excerpt}
+          </p>
+        )}
+        <div className="flex items-center gap-4 flex-wrap mb-5">
+          <span className="flex items-center gap-1.5 text-xs">
+            <span className="w-6 h-6 rounded-full bg-[#474ead]/30 text-[#474ead] text-[9px] font-bold flex items-center justify-center flex-shrink-0">
+              {getInitials(article.author)}
+            </span>
+            <span className="text-slate-300 font-medium">{article.author}</span>
+          </span>
+          <span className="flex items-center gap-1 text-xs text-slate-400">
+            <Calendar className="w-3 h-3" /> {article.date}
+          </span>
+          <span className="flex items-center gap-1 text-xs text-slate-400">
+            <Clock className="w-3 h-3" /> {article.readTime}
+          </span>
+          {article.views > 0 && (
+            <span className="flex items-center gap-1 text-xs text-slate-400">
+              <Eye className="w-3 h-3" /> {article.views.toLocaleString()}
+            </span>
+          )}
+        </div>
+        <div className="inline-flex items-center gap-2 text-sm font-semibold text-white group-hover:text-[#474ead] transition-colors">
+          Read Article <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── PanelArticleCard ─────────────────────────────────────────────────────────
+function PanelArticleCard({ article }: { article: ArticleItem }) {
+  const [, navigate] = useLocation();
+  return (
+    <div
+      className="bg-[#080a1a]/80 border border-white/10 rounded-2xl overflow-hidden cursor-pointer group hover-elevate flex-shrink-0"
+      onClick={() => navigate(`/insights/${article.slug}`)}
+    >
+      <div className="relative h-44 overflow-hidden bg-[#040611]">
+        <img
+          src={article.image}
+          alt={article.title}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#080a1a]/70 to-transparent" />
+        <span className="absolute bottom-3 left-3 text-[10px] uppercase tracking-[0.2em] font-semibold px-3 py-1 rounded-full bg-[#474ead] text-white">
+          {article.category}
+        </span>
+      </div>
+      <div className="p-5">
+        <h3 className="text-base font-bold text-white leading-tight mb-2 line-clamp-2">
+          {article.title}
+        </h3>
+        {article.excerpt && (
+          <p className="text-slate-400 text-sm leading-relaxed line-clamp-2 mb-3">
+            {article.excerpt}
+          </p>
+        )}
+        <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap">
+          <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {article.date}</span>
+          <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {article.readTime}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── EditorialCTA ─────────────────────────────────────────────────────────────
+function EditorialCTA() {
+  return (
+    <div className="flex-1 bg-gradient-to-br from-[#474ead]/15 via-[#0d0f2d]/80 to-[#0d0f2d] border border-[#474ead]/20 rounded-2xl p-6 flex flex-col justify-between" style={{ minHeight: "160px" }}>
+      <div>
+        <div className="w-10 h-10 rounded-xl bg-[#474ead]/20 flex items-center justify-center mb-4">
+          <TrendingUp className="w-5 h-5 text-[#474ead]" />
+        </div>
+        <h4 className="text-base font-bold text-white mb-2">Stay ahead of the curve.</h4>
+        <p className="text-sm text-slate-400 leading-relaxed">
+          Follow OnSpot for the latest outsourcing intelligence, BPO strategies, and workforce insights.
+        </p>
+      </div>
+      <div className="mt-5 flex flex-col gap-2.5">
+        <a
+          href="https://www.linkedin.com/company/onspotglobal"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 rounded-full bg-[#474ead] px-4 py-2 text-sm font-semibold text-white hover:bg-[#5b63d6] transition"
+        >
+          <Linkedin className="w-3.5 h-3.5" /> Follow on LinkedIn
+        </a>
+        <a
+          href="https://youtube.com/@onspotglobal"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-white/10 transition"
+        >
+          <Youtube className="w-3.5 h-3.5" /> Watch on YouTube
+        </a>
+      </div>
+    </div>
+  );
+}
+
+// ─── EditorialSection ─────────────────────────────────────────────────────────
+function EditorialSection({
+  articles,
+  episodes,
+  isLoading,
+  searchActive,
+}: {
+  articles: ArticleItem[];
+  episodes: ArticleItem[];
+  isLoading: boolean;
+  searchActive: boolean;
+}) {
+  const GRID_LIMIT = 6;
+  const [showAll, setShowAll] = useState(false);
+
+  const highlightArticle = articles[0];
+  const panelArticle = articles[1];
+  const gridArticles = showAll ? articles.slice(2) : articles.slice(2, 2 + GRID_LIMIT);
+  const hasMore = !showAll && articles.length > 2 + GRID_LIMIT;
+
+  // When searching/filtering by author, show all results as a simple grid
+  if (searchActive) {
+    return (
+      <>
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-white tracking-tight">Search results</h2>
+          <p className="text-sm text-slate-400 mt-1">{articles.length} article{articles.length !== 1 ? "s" : ""} found</p>
+        </div>
+        {articles.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-14">
+            {articles.map((a) => <ArticleCard key={a.id} article={a} />)}
+          </div>
+        ) : (
+          <EmptyState icon={Search} message="No articles match your search." />
+        )}
+        {episodes.length > 0 && (
+          <section className="mb-14">
+            <SectionHeading icon={Mic} title="Podcast Episodes" />
+            <div className="space-y-4">
+              {episodes.map((e) => <PodcastCard key={e.id} article={e} />)}
+            </div>
+          </section>
+        )}
+      </>
+    );
+  }
+
+  return (
+    <>
+      {/* ── Section heading ─────────────────────────────────────────────── */}
+      <div className="mb-8 pt-2">
+        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#474ead] mb-2">
+          All Insights
+        </p>
+        <div className="flex items-end justify-between gap-6 flex-wrap">
+          <h2 className="text-3xl md:text-4xl font-bold text-white tracking-tight leading-tight">
+            Explore the full knowledge base.
+          </h2>
+          <p className="text-sm text-slate-400 max-w-xs leading-relaxed hidden sm:block">
+            Deep dives, expert analysis, and industry perspectives — curated by the OnSpot team.
+          </p>
+        </div>
+        {/* Thin rule */}
+        <div className="mt-6 h-px bg-gradient-to-r from-[#474ead]/40 via-white/10 to-transparent" />
+      </div>
+
+      {/* ── Hero editorial row ──────────────────────────────────────────── */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 mb-10">
+          <Skeleton className="rounded-2xl bg-white/10" style={{ minHeight: "460px" }} />
+          <div className="flex flex-col gap-5">
+            <Skeleton className="rounded-2xl bg-white/10 h-[268px]" />
+            <Skeleton className="rounded-2xl bg-white/10 flex-1" style={{ minHeight: "164px" }} />
+          </div>
+        </div>
+      ) : highlightArticle ? (
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 mb-10">
+          <HighlightCard article={highlightArticle} />
+          <div className="flex flex-col gap-5">
+            {panelArticle && <PanelArticleCard article={panelArticle} />}
+            <EditorialCTA />
+          </div>
+        </div>
+      ) : null}
+
+      {/* ── Supporting articles grid ─────────────────────────────────────── */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+          {Array.from({ length: 6 }).map((_, i) => <ArticleCardSkeleton key={i} />)}
+        </div>
+      ) : gridArticles.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+          {gridArticles.map((article) => (
+            <ArticleCard key={article.id} article={article} />
+          ))}
+        </div>
+      ) : null}
+
+      {/* ── View all / load more ─────────────────────────────────────────── */}
+      {hasMore && (
+        <div className="flex justify-center mb-12">
+          <button
+            onClick={() => setShowAll(true)}
+            className="inline-flex items-center gap-2.5 rounded-full border border-white/10 bg-white/[0.04] px-8 py-3 text-sm font-semibold text-slate-300 hover:bg-white/10 hover:text-white transition-all"
+          >
+            View all {articles.length} insights <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* ── Podcast episodes ────────────────────────────────────────────── */}
+      {episodes.length > 0 && (
+        <section className="mb-14">
+          <SectionHeading
+            icon={Mic}
+            title="Podcast Episodes"
+            subtitle="Conversations with outsourcing leaders, HR experts, and industry innovators."
+          />
+          <div className="space-y-4">
+            {episodes.map((episode) => (
+              <PodcastCard key={episode.id} article={episode} />
+            ))}
+          </div>
+        </section>
+      )}
+    </>
+  );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function Insights() {
   const [location] = useLocation();
@@ -768,71 +1024,23 @@ export default function Insights() {
           </div>
         )}
 
-        {/* ── VIEW ALL: Featured + Articles + Podcasts ──────────────────────── */}
+        {/* ── VIEW ALL: Featured carousel + editorial section ───────────────── */}
         {selectedCategory === "View All" && (
           <>
-            {/* Featured carousel */}
+            {/* Featured carousel — unchanged */}
             {!isLoading && featuredArticles.length > 0 && !searchQuery && !authorFilter && (
-              <section className="mb-14">
-                <SectionHeading icon={TrendingUp} title="Featured Articles" />
+              <section className="mb-10">
                 <FeaturedCarousel articles={featuredArticles} />
               </section>
             )}
 
-            {/* Latest Articles */}
-            <section className="mb-14">
-              <SectionHeading
-                icon={Globe}
-                title="Latest Articles"
-                subtitle="Updated regularly with curated insights on outsourcing, business, and workforce management."
-              />
-              {isLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <ArticleCardSkeleton key={i} />
-                  ))}
-                </div>
-              ) : latestArticles.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {latestArticles.map((article) => (
-                    <ArticleCard key={article.id} article={article} />
-                  ))}
-                </div>
-              ) : (
-                <EmptyState icon={Globe} message="No articles published yet." />
-              )}
-            </section>
-
-            {/* Latest Podcast Episodes */}
-            <section className="mb-14">
-              <SectionHeading
-                icon={Mic}
-                title="Latest Podcast Episodes"
-                subtitle="Conversations with outsourcing leaders, HR experts, and industry innovators."
-              />
-              {isLoading ? (
-                <div className="space-y-4">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="rounded-2xl border border-white/10 bg-[#080a1a]/80 flex overflow-hidden">
-                      <Skeleton className="w-44 h-28 flex-shrink-0 bg-white/10" />
-                      <div className="flex-1 p-4 space-y-2">
-                        <Skeleton className="h-3 w-16 bg-white/10" />
-                        <Skeleton className="h-4 w-3/4 bg-white/10" />
-                        <Skeleton className="h-3 w-1/2 bg-white/10" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : latestEpisodes.length > 0 ? (
-                <div className="space-y-4">
-                  {latestEpisodes.map((article) => (
-                    <PodcastCard key={article.id} article={article} />
-                  ))}
-                </div>
-              ) : (
-                <EmptyState icon={Mic} message="Podcast episodes coming soon." />
-              )}
-            </section>
+            {/* Editorial section */}
+            <EditorialSection
+              articles={latestArticles}
+              episodes={latestEpisodes}
+              isLoading={isLoading}
+              searchActive={!!(searchQuery || authorFilter)}
+            />
           </>
         )}
 

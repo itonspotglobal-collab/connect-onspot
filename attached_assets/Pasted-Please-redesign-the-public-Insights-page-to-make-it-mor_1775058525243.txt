@@ -1,0 +1,84 @@
+Please redesign the public Insights page to make it more curated and editorial, instead of showing all published posts equally.
+
+Goal:
+We want to organize the Insights page so it feels intentional and optimized. We do NOT want the page to simply dump all published posts in one long generic feed. The Featured Article carousel can stay as-is because that part is already good.
+
+The next section after the Featured carousel should be redesigned to follow the layout and hierarchy of the attached design/reference code.
+
+Main direction:
+- Keep the Featured Article carousel at the top
+- Redesign the section below it to feel curated, premium, and organized
+- Surface only a selected set of posts in a structured editorial layout
+- Avoid showing every published post immediately in the same way
+
+Target layout after the featured carousel:
+1. A curated “All Insights” / editorial section similar to the attached reference
+2. Use a layout like this:
+   - One larger featured/supporting card on the left
+   - A supporting content/info panel or highlighted block on the right
+   - Then a grid of selected insight cards below
+3. The overall structure should feel like a modern editorial/knowledge hub, not a plain blog archive
+
+What to implement:
+1. Keep the existing Featured carousel unchanged
+2. Replace the current section below it with a more curated layout inspired by the attached screenshot/code
+3. Add an editorial section heading similar in spirit to:
+   - “All Insights”
+   - “Explore the full knowledge base.”
+4. Show only a selected subset of posts in this section, not all published posts at once
+   - Limit visible cards to a curated number
+   - Prioritize featured, latest, or strategically selected posts
+   - Keep the rest accessible through category filtering, search, pagination, “View more”, or another secondary discovery method if needed
+5. Maintain category filtering support:
+   - CEO Insights
+   - Talent Insights
+   - Client Insights
+   - Industry Insights
+   - Learning Centre
+   - Podcast Videos
+6. Maintain search functionality if it already exists, but ensure the visual hierarchy stays content-first
+7. Keep the page responsive and polished on desktop and mobile
+
+Design expectations:
+- Clean editorial layout
+- More whitespace and intentional spacing
+- Strong content hierarchy
+- Premium publication feel
+- Better readability and scannability
+- Cards should feel organized, not crowded
+- Avoid overwhelming users with too many posts at once
+
+Content behavior:
+- The curated section should not automatically render every published article
+- Use a rule-based content selection strategy, for example:
+  - featured posts first
+  - then latest relevant posts
+  - then category-prioritized posts
+- If there are too many posts, show a limited set in the main layout
+- Optionally add a secondary “View all insights” action if needed
+
+Implementation guidance:
+- Reuse existing post data and CMS/API where possible
+- Do not break existing featured carousel functionality
+- Refactor the section below the carousel into reusable components
+- Make the layout data-driven
+- Keep filtering logic compatible with admin-selected categories
+- Ensure categories from admin match frontend filters exactly
+- Preserve clickable author, date, title, synopsis, and read time where applicable
+
+Reference:
+Please use the attached screenshot and attached code reference as the visual/structural inspiration for the section below the carousel. Match the layout style and hierarchy closely, while adapting it to the existing OnSpot Insights page and data model. The attached reference code should guide the component structure and layout behavior. :contentReference[oaicite:0]{index=0}
+
+Suggested component structure:
+- FeaturedCarousel (existing, keep)
+- InsightsEditorialSection
+- HighlightedInsightCard
+- SupportingEditorialPanel
+- InsightsGrid
+- ViewMore / ViewAllInsights action (optional)
+
+Expected result:
+- The top featured carousel remains
+- The next section becomes a curated editorial layout
+- The page no longer feels like it is exposing all published posts equally
+- The Insights page feels more premium, strategic, and easier to browse
