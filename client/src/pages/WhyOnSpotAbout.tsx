@@ -14,6 +14,10 @@ import cultureCulture    from "@assets/Culture_Photo_1775044319871.png";
 import cultureTeam       from "@assets/Team_Lifestyle_1775044319872.png";
 import cultureOffsite    from "@assets/Offsite_Moment_1775044319872.png";
 import cultureHappy      from "@assets/Happy_Tribe_1775044319872.png";
+import dayLifeWork       from "@assets/Life_+_Work_1775045176827.png";
+import dayDeepWork       from "@assets/Deep_Work_1775045176826.png";
+import dayTeamFlow       from "@assets/Team_Flow_1775045176827.png";
+import dayClientEnergy   from "@assets/Client_Energy_1775045176826.png";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -196,6 +200,12 @@ const cultureGallery = [
   { label: "Team Lifestyle",  photo: cultureTeam    },
   { label: "Offsite Moment",  photo: cultureOffsite },
   { label: "Happy Tribe",     photo: cultureHappy   },
+];
+const dayVisuals = [
+  { label: "Life + Work",     photo: dayLifeWork     },
+  { label: "Deep Work",       photo: dayDeepWork     },
+  { label: "Team Flow",       photo: dayTeamFlow     },
+  { label: "Client Energy",   photo: dayClientEnergy },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -528,15 +538,24 @@ export default function WhyOnSpotAbout() {
               </div>
             </div>
 
-            {/* Visual placeholder grid */}
-            <div className="grid grid-cols-2 gap-4 self-start">
-              {["Work + Life", "Deep Work", "Team Flow", "Client Energy"].map((label) => (
-                <div key={label} className="group relative aspect-square overflow-hidden rounded-2xl">
-                  <div className="absolute inset-0 bg-gradient-to-br from-slate-200 to-indigo-100 transition-transform duration-700 group-hover:scale-105" />
-                  <div className="absolute inset-0 flex items-end p-4">
-                    <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 opacity-0 transition duration-500 group-hover:opacity-100">
-                      {label}
-                    </span>
+            {/* Photo cards — expand on hover, matching lifestyle/culture cards */}
+            <div className="grid grid-cols-2 gap-3 self-start lg:flex lg:h-64 lg:gap-3">
+              {dayVisuals.map((item) => (
+                <div
+                  key={item.label}
+                  className="group relative overflow-hidden rounded-2xl transition-all duration-700 ease-out aspect-square lg:aspect-auto lg:h-64 lg:flex-[1] lg:min-w-0 lg:hover:flex-[2.4]"
+                >
+                  {/* Real photo */}
+                  <img
+                    src={item.photo}
+                    alt={item.label}
+                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                  />
+                  {/* Dark gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                  {/* Label */}
+                  <div className="absolute bottom-3 left-3 text-xs font-semibold uppercase tracking-[0.16em] text-white/80 opacity-0 transition duration-500 group-hover:opacity-100">
+                    {item.label}
                   </div>
                 </div>
               ))}

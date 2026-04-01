@@ -1,0 +1,26 @@
+Update the ‘What a typical day looks like inside the Tribe’ photo section in WhyOnspotAbout.tsx to support real images and the same hover-expand animation used in the other image card sections on the page.
+
+Requirements:
+
+Replace the 4 current placeholder photo blocks on the right side with real images that I will attach in Replit.
+Import the 4 local image assets at the top of the file and map them to this section.
+Keep the existing left-side timeline content exactly as it is.
+Make the 4 photo cards use the same hover animation behavior as the other OnSpot cards:
+when a card is hovered, it expands
+the non-hovered cards compress/shrink proportionally
+use the same transition timing, easing, rounded corners, overflow handling, and polished interaction style as the Lifestyle/Value cards and Culture cards
+Keep the images clean and premium with object-cover so they fill the card without distortion.
+Preserve a responsive layout across screen sizes.
+Maintain consistent spacing and visual hierarchy with the rest of the page.
+
+Implementation guidance:
+
+Reuse the same card structure/classes/hover logic already used by the expanding image cards elsewhere in WhyOnspotAbout.tsx.
+If the other sections use a flex row with cards like flex-[1] min-w-0 hover:flex-[2.4] transition-all duration-700 ease-out, apply the same approach here.
+Since this section currently appears as a 2x2 grid of placeholders, refactor it into an expandable card layout that still feels aligned with the timeline section.
+If needed, on desktop keep the cards in a horizontal flex row so the hover expansion effect works smoothly, and stack them appropriately on mobile/tablet.
+Add subtle overlay treatment if needed for better visual consistency, but keep the focus on the images.
+Remove the old placeholder background blocks once the images are connected.
+
+Goal:
+Make this section feel visually consistent with the rest of the page by using real photos and the same smooth hover-expand interaction pattern already established in the Lifestyle/Value and Culture sections.
