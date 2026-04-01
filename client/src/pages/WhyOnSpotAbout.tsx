@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { ArrowRight, ChevronDown, ChevronUp, CheckCircle2 } from "lucide-react";
+import nurPhoto   from "@assets/Nur_1775038610216.png";
+import jakePhoto  from "@assets/Jake_1775038610215.png";
+import alonPhoto  from "@assets/Alon_1775038610214.png";
+import shanePhoto from "@assets/Shane_1775038610216.png";
+import mackyPhoto from "@assets/Macky_1775038610215.png";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -15,31 +20,31 @@ const leaders = [
   {
     name: "Nur Laminero",
     role: "CEO",
-    initials: "NL",
+    photo: nurPhoto,
     desc: "Turns growth vision into systems, structure, and execution that scale.",
   },
   {
     name: "Jake Wainberg",
     role: "Founder & President",
-    initials: "JW",
+    photo: jakePhoto,
     desc: "Built OnSpot from real entrepreneurial pain points while scaling businesses in New York.",
   },
   {
     name: "Alon Ben Eli",
     role: "Co-Founder",
-    initials: "AB",
+    photo: alonPhoto,
     desc: "Helps shape long-range strategy, positioning, and global growth.",
   },
   {
     name: "Shane Limiac",
     role: "Head of Delivery",
-    initials: "SL",
+    photo: shanePhoto,
     desc: "Leads execution and ensures the client experience translates into measurable results.",
   },
   {
     name: "Mark Apostol",
     role: "Head of People & Administration",
-    initials: "MA",
+    photo: mackyPhoto,
     desc: "Builds the people systems and culture that power high-performance delivery.",
   },
 ];
@@ -358,17 +363,27 @@ export default function WhyOnSpotAbout() {
             {leaders.map((leader) => (
               <div
                 key={leader.name}
-                className="group rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#474ead]/25 hover:shadow-xl"
+                className="group overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#474ead]/25 hover:shadow-xl"
               >
-                {/* Avatar placeholder */}
-                <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#474ead]/10 text-base font-bold text-[#474ead] transition group-hover:scale-105">
-                  {leader.initials}
+                {/* Portrait photo */}
+                <div className="relative h-64 w-full overflow-hidden bg-slate-100">
+                  <img
+                    src={leader.photo}
+                    alt={leader.name}
+                    className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                  />
+                  {/* Subtle gradient at bottom to blend into card */}
+                  <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white/60 to-transparent" />
                 </div>
-                <div className="text-base font-semibold text-slate-950">{leader.name}</div>
-                <div className="mt-0.5 text-xs font-semibold uppercase tracking-[0.14em] text-[#474ead]">
-                  {leader.role}
+
+                {/* Text content */}
+                <div className="px-5 pb-6 pt-4">
+                  <div className="text-base font-semibold text-slate-950">{leader.name}</div>
+                  <div className="mt-0.5 text-xs font-semibold uppercase tracking-[0.14em] text-[#474ead]">
+                    {leader.role}
+                  </div>
+                  <p className="mt-3 text-sm leading-6 text-slate-600">{leader.desc}</p>
                 </div>
-                <p className="mt-3 text-sm leading-6 text-slate-600">{leader.desc}</p>
               </div>
             ))}
           </div>

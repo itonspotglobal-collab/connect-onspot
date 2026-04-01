@@ -90,7 +90,9 @@ function StatPill({
         <Icon className="h-4 w-4 text-white" />
       </div>
       <div>
-        <p className="text-[10px] font-medium uppercase tracking-wider text-white/50">{label}</p>
+        <p className="text-[10px] font-medium uppercase tracking-wider text-white/50">
+          {label}
+        </p>
         <p className="text-xl font-bold text-white leading-tight">{value}</p>
       </div>
     </div>
@@ -145,18 +147,26 @@ function AdminJobRow({
                   : "bg-slate-100 text-slate-500 dark:bg-white/[0.06] dark:text-white/40"
               }`}
             >
-              {isOpen ? "Open" : job.status === "closed" ? "Closed" : job.status}
+              {isOpen
+                ? "Open"
+                : job.status === "closed"
+                  ? "Closed"
+                  : job.status}
             </span>
           </div>
 
           <div className="flex flex-wrap items-center gap-3 text-[13px] text-slate-500 dark:text-slate-400">
-            <span className="capitalize">{job.category?.replace(/-/g, " ")}</span>
+            <span className="capitalize">
+              {job.category?.replace(/-/g, " ")}
+            </span>
             <span className="text-slate-300 dark:text-white/20">·</span>
             <span>{job.location || "Remote"}</span>
             {pay && (
               <>
                 <span className="text-slate-300 dark:text-white/20">·</span>
-                <span className="font-medium text-[#474ead] dark:text-indigo-400">{pay}</span>
+                <span className="font-medium text-[#474ead] dark:text-indigo-400">
+                  {pay}
+                </span>
               </>
             )}
             <span className="text-slate-300 dark:text-white/20">·</span>
@@ -169,7 +179,8 @@ function AdminJobRow({
                 <span className="text-slate-300 dark:text-white/20">·</span>
                 <span className="flex items-center gap-1">
                   <Users className="h-3 w-3" />
-                  {job.proposalCount} application{job.proposalCount !== 1 ? "s" : ""}
+                  {job.proposalCount} application
+                  {job.proposalCount !== 1 ? "s" : ""}
                 </span>
               </>
             )}
@@ -196,11 +207,22 @@ function AdminJobRow({
 
         {/* Right: action buttons */}
         <div className="flex flex-wrap items-center gap-2 shrink-0">
-          <Button variant="outline" size="sm" onClick={onToggle} disabled={isToggling}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onToggle}
+            disabled={isToggling}
+          >
             {isOpen ? (
-              <><EyeOff className="w-3.5 h-3.5 mr-1.5" />Close</>
+              <>
+                <EyeOff className="w-3.5 h-3.5 mr-1.5" />
+                Close
+              </>
             ) : (
-              <><Eye className="w-3.5 h-3.5 mr-1.5" />Reopen</>
+              <>
+                <Eye className="w-3.5 h-3.5 mr-1.5" />
+                Reopen
+              </>
             )}
           </Button>
 
@@ -210,7 +232,11 @@ function AdminJobRow({
           </Button>
 
           <Button variant="outline" size="sm" asChild>
-            <a href={`/find-work/job/${job.id}`} target="_blank" rel="noopener noreferrer">
+            <a
+              href={`/find-work/job/${job.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
               Preview
             </a>
@@ -218,9 +244,15 @@ function AdminJobRow({
 
           <Button variant="outline" size="sm" onClick={onCopy}>
             {copiedId === job.id ? (
-              <><Check className="w-3.5 h-3.5 mr-1.5 text-emerald-500" />Copied</>
+              <>
+                <Check className="w-3.5 h-3.5 mr-1.5 text-emerald-500" />
+                Copied
+              </>
             ) : (
-              <><Copy className="w-3.5 h-3.5 mr-1.5" />Share</>
+              <>
+                <Copy className="w-3.5 h-3.5 mr-1.5" />
+                Share
+              </>
             )}
           </Button>
 
@@ -258,9 +290,18 @@ export default function AdminFindWork() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
 
-  const openCreate = () => { setEditingJob(null); setModalOpen(true); };
-  const openEdit = (job: Job) => { setEditingJob(job); setModalOpen(true); };
-  const closeModal = () => { setModalOpen(false); setEditingJob(null); };
+  const openCreate = () => {
+    setEditingJob(null);
+    setModalOpen(true);
+  };
+  const openEdit = (job: Job) => {
+    setEditingJob(job);
+    setModalOpen(true);
+  };
+  const closeModal = () => {
+    setModalOpen(false);
+    setEditingJob(null);
+  };
 
   // ─── Queries ──────────────────────────────────────────────────────────────
   const { data: jobs = [], isLoading } = useQuery<Job[]>({
@@ -281,22 +322,38 @@ export default function AdminFindWork() {
   const toggleStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
       apiRequest("PATCH", `/api/admin/jobs/${id}/status`, { status }),
-    onSuccess: () => { invalidate(); toast({ title: "Job status updated" }); },
+    onSuccess: () => {
+      invalidate();
+      toast({ title: "Job status updated" });
+    },
     onError: (err: any) =>
-      toast({ title: "Failed to update status", description: err.message, variant: "destructive" }),
+      toast({
+        title: "Failed to update status",
+        description: err.message,
+        variant: "destructive",
+      }),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/admin/jobs/${id}`),
-    onSuccess: () => { invalidate(); toast({ title: "Job posting removed" }); },
+    onSuccess: () => {
+      invalidate();
+      toast({ title: "Job posting removed" });
+    },
     onError: (err: any) =>
-      toast({ title: "Failed to remove job", description: err.message, variant: "destructive" }),
+      toast({
+        title: "Failed to remove job",
+        description: err.message,
+        variant: "destructive",
+      }),
   });
 
   // ─── Derived stats ────────────────────────────────────────────────────────
-  const openJobs    = jobs.filter((j) => j.status === "open");
-  const closedJobs  = jobs.filter((j) => j.status === "closed" || j.status === "cancelled");
-  const totalApps   = jobs.reduce((sum, j) => sum + (j.proposalCount || 0), 0);
+  const openJobs = jobs.filter((j) => j.status === "open");
+  const closedJobs = jobs.filter(
+    (j) => j.status === "closed" || j.status === "cancelled",
+  );
+  const totalApps = jobs.reduce((sum, j) => sum + (j.proposalCount || 0), 0);
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
@@ -309,7 +366,6 @@ export default function AdminFindWork() {
       />
 
       <div className="min-h-screen bg-slate-50 dark:bg-[#060816]">
-
         {/* ── Hero header ──────────────────────────────────────────────────── */}
         <div className="relative overflow-hidden bg-[#0f172a]">
           {/* Gradient blobs */}
@@ -317,7 +373,6 @@ export default function AdminFindWork() {
           <div className="pointer-events-none absolute -left-10 bottom-0 h-48 w-48 rounded-full bg-indigo-600/20 blur-[80px]" />
 
           <div className="relative mx-auto max-w-6xl px-6 pb-10 pt-8 md:px-10">
-
             {/* Top bar */}
             <div className="flex items-center justify-between gap-4 flex-wrap mb-8">
               <div className="flex items-center gap-3">
@@ -339,7 +394,11 @@ export default function AdminFindWork() {
                   className="border-white/15 bg-white/[0.06] text-white/70 hover:bg-white/10 hover:text-white"
                   asChild
                 >
-                  <a href="/find-work" target="_blank" rel="noopener noreferrer">
+                  <a
+                    href="/find-work"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
                     View Public Page
                   </a>
@@ -366,23 +425,36 @@ export default function AdminFindWork() {
                 Jobs Admin
               </h1>
               <p className="mt-2 max-w-lg text-slate-400">
-                Manage job postings — changes appear instantly on the public Find Work page.
+                Manage job postings — changes appear instantly on the public
+                Find Work page.
               </p>
             </div>
 
             {/* Stats */}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <StatPill icon={Briefcase}    label="Total Jobs"    value={jobs.length} accent />
-              <StatPill icon={CheckCircle2} label="Open"          value={openJobs.length} />
-              <StatPill icon={XCircle}      label="Closed"        value={closedJobs.length} />
-              <StatPill icon={Users}        label="Applications"  value={totalApps} />
+              <StatPill
+                icon={Briefcase}
+                label="Total Jobs"
+                value={jobs.length}
+                accent
+              />
+              <StatPill
+                icon={CheckCircle2}
+                label="Open"
+                value={openJobs.length}
+              />
+              <StatPill
+                icon={XCircle}
+                label="Closed"
+                value={closedJobs.length}
+              />
+              <StatPill icon={Users} label="Applications" value={totalApps} />
             </div>
           </div>
         </div>
 
         {/* ── Body ─────────────────────────────────────────────────────────── */}
         <div className="mx-auto max-w-6xl px-6 py-10 md:px-10">
-
           {/* Section header */}
           <div className="mb-6 flex items-center justify-between gap-4 flex-wrap">
             <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
@@ -418,7 +490,8 @@ export default function AdminFindWork() {
                 No job postings yet
               </h3>
               <p className="mb-6 max-w-xs text-slate-500 dark:text-slate-400">
-                Create your first job posting to start attracting talent to OnSpot Global.
+                Create your first job posting to start attracting talent to
+                OnSpot Global.
               </p>
               <Button
                 onClick={openCreate}
@@ -450,55 +523,6 @@ export default function AdminFindWork() {
               ))}
             </div>
           )}
-
-          {/* ── Field reference ──────────────────────────────────────────── */}
-          <div className="mt-12 rounded-2xl border border-slate-200 bg-white p-6 dark:border-white/[0.08] dark:bg-[#0f172a]/60">
-            <p className="mb-5 text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-white/40">
-              Field Reference — Where Each Field Appears Publicly
-            </p>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-100 dark:border-white/[0.06]">
-                    <th className="pb-3 pr-6 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">Field</th>
-                    <th className="pb-3 pr-6 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">Job Card</th>
-                    <th className="pb-3 pr-6 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">Full Job Page</th>
-                    <th className="pb-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">Modal</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50 dark:divide-white/[0.04]">
-                  {[
-                    ["title",                              "✅ Header",         "✅ Hero",                    "✅ Header"],
-                    ["company",                            "✅ Header",         "✅ Hero",                    "✅ Header"],
-                    ["location / work setup",              "✅ Meta",           "✅ Hero + meta",             "✅ Meta"],
-                    ["contractType",                       "✅ Meta",           "✅ Meta",                    "✅ Meta"],
-                    ["experienceLevel",                    "—",                 "✅ Hero + meta",             "✅ Meta"],
-                    ["category",                           "✅ Color coding",   "✅ Hero color",              "✅ Color coding"],
-                    ["description",                        "✅ 2-line preview", "✅ Job Description section", "✅ Overview"],
-                    ["responsibilities",                   "—",                 "✅ Responsibilities section","✅ Rich text"],
-                    ["requirements",                       "—",                 "✅ Skills Needed section",   "✅ Rich text"],
-                    ["culturalFit",                        "—",                 "✅ Cultural Fit section",    "✅ Rich text"],
-                    ["skillTags",                          "✅ Skill badges",   "✅ Skills & Tags section",   "✅ Tag badges"],
-                    ["budget / hourlyRateMin/Max (₱)",     "—",                 "✅ Hero salary pill",        "✅ Header"],
-                    ["status",                             "—",                 "—",                          "✅ Toggle"],
-                    ["proposalCount",                      "—",                 "—",                          "—"],
-                    ["createdAt",                          "✅ Time ago",       "✅ Hero (time ago)",         "✅ Time ago"],
-                    ["Top Paying badge (auto)",             "✅ ₱50k+",         "✅ Auto",                    "—"],
-                    ["Urgently Hiring badge (auto)",        "✅ 0 apps ≤14d",   "✅ Auto",                    "—"],
-                    ["Multiple Slots badge (auto)",         "✅ Title keywords", "✅ Auto",                   "—"],
-                  ].map(([field, card, page, modal]) => (
-                    <tr key={field}>
-                      <td className="py-2.5 pr-6 font-mono text-xs text-[#474ead] dark:text-indigo-400">{field}</td>
-                      <td className="py-2.5 pr-6 text-xs text-slate-500 dark:text-slate-400">{card}</td>
-                      <td className="py-2.5 pr-6 text-xs text-slate-500 dark:text-slate-400">{page}</td>
-                      <td className="py-2.5 text-xs text-slate-500 dark:text-slate-400">{modal}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
         </div>
       </div>
     </>
