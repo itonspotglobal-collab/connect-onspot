@@ -418,11 +418,11 @@ export default function WhyOnSpotAbout() {
       <section id="culture" className="border-y border-slate-200 bg-[#f5f8ff] py-24 lg:py-32">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           {/* Culture gallery */}
-          <div className="mb-16 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div className="mb-16 grid grid-cols-2 gap-4 md:flex md:h-56 md:gap-4">
             {cultureGallery.map((item) => (
               <div
                 key={item.label}
-                className="group relative overflow-hidden rounded-2xl aspect-[4/3]"
+                className="group relative overflow-hidden rounded-2xl transition-all duration-700 ease-out aspect-[4/3] md:h-56 md:flex-[1] md:min-w-0 md:hover:flex-[2.4]"
               >
                 {/* Real photo */}
                 <img
