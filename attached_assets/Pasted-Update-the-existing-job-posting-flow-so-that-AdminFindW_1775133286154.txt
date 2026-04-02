@@ -1,0 +1,163 @@
+Update the existing job posting flow so that `AdminFindWork.tsx` stores the full internal JSP-based job posting data, while `FindWorkJob.tsx` only displays the candidate-facing fields needed for the public job posting.
+
+Goal:
+- The admin side should contain the full Job Success Profile content plus existing job posting fields.
+- The public job posting page should remain simplified.
+- Only show candidate-relevant job details publicly.
+- Add JSP-based remote-work requirement fields for remote roles.
+
+Files involved:
+- `AdminFindWork.tsx` → admin create/edit job posting form
+- `FindWorkJob.tsx` → public/candidate-facing job details page
+
+Current public job details already shown in `FindWorkJob.tsx`:
+1. Job Description
+2. Responsibilities
+3. Skills Needed
+4. Cultural Fit
+
+New public details to add from JSP:
+1. Minimum Internet Speed
+2. System Requirements
+
+Important display rule:
+- `minimumInternetSpeed` should only be shown in `FindWorkJob.tsx` if the role is remote.
+- `systemRequirements` should only be shown in `FindWorkJob.tsx` if the role is remote.
+- For non-remote roles, do not render these two fields on the public page.
+
+Admin requirements (`AdminFindWork.tsx`):
+Keep all existing fields and functionality already present in the Add/Edit Job Posting modal.
+Do not remove or break existing create/edit flows.
+
+Existing fields already present:
+- jobTitle
+- company
+- workSetup
+- category
+- experienceLevel
+- contractType
+- duration
+- status
+- fixedMonthlyBudget
+- rateRangeMin
+- rateRangeMax
+
+Add these new fields to admin create/edit job posting:
+Role details:
+- reportingTo
+- division
+- jobCode
+- jobGrade
+- jobLevel
+
+Internal JSP content sections:
+- companyOverview
+- roleMission
+- keyOutcomes
+- keyResponsibilities
+- skillsAndCompetencies
+- behavioralTraits
+- culturalFit
+- kpis
+- trainingAndSupport
+- growthPath
+
+Remote/system requirement fields:
+- minimumInternetSpeed
+- systemRequirements
+
+Mapping for public-facing `FindWorkJob.tsx`:
+Map admin/JSP fields to the existing public sections as follows:
+
+- Job Description → use a candidate-friendly field sourced from JSP content, preferably:
+  - `companyOverview` and/or `roleMission`
+  - choose the cleanest existing section already used by the current UI pattern
+- Responsibilities → use `keyResponsibilities`
+- Skills Needed → use `skillsAndCompetencies`
+- Cultural Fit → use `culturalFit`
+
+Additional public fields:
+- Minimum Internet Speed → use `minimumInternetSpeed`, only if `workSetup` indicates Remote
+- System Requirements → use `systemRequirements`, only if `workSetup` indicates Remote
+
+Implementation requirements:
+1. Update the admin form state/type/interface/model used by `AdminFindWork.tsx` to include all new fields.
+2. Add the new inputs to both Add Job and Edit Job flows.
+3. Preserve the existing layout/styling patterns in the admin modal.
+4. Group the new admin fields into sections below Salary/Rate:
+   - Role Details
+   - Company Overview
+   - Role Mission
+   - Key Outcomes
+   - Key Responsibilities
+   - Skills & Competencies
+   - Behavioral Traits
+   - Cultural Fit
+   - KPIs
+   - Training & Support
+   - Growth Path
+   - System Requirements
+5. Use text inputs for:
+   - reportingTo
+   - division
+   - jobCode
+   - jobGrade
+   - jobLevel
+   - minimumInternetSpeed
+6. Use multiline textareas for:
+   - companyOverview
+   - roleMission
+   - keyOutcomes
+   - keyResponsibilities
+   - skillsAndCompetencies
+   - behavioralTraits
+   - culturalFit
+   - kpis
+   - trainingAndSupport
+   - growthPath
+   - systemRequirements
+7. Ensure create and update payloads include all new fields.
+8. Ensure edit mode preloads all new fields safely.
+9. Keep backward compatibility so existing/older job records without these new fields do not crash the UI.
+10. If there is a shared type/interface for job posting data, update it once and reuse it across admin and public job components.
+11. Keep admin-only JSP fields hidden from the public job page unless explicitly needed there.
+
+Public page requirements (`FindWorkJob.tsx`):
+1. Keep the existing public layout style.
+2. Continue showing:
+   - Job Description
+   - Responsibilities
+   - Skills Needed
+   - Cultural Fit
+3. Add:
+   - Minimum Internet Speed
+   - System Requirements
+4. Only render the two new remote requirement fields if the role is remote.
+5. Do not expose internal-only JSP fields publicly, such as:
+   - reportingTo
+   - division
+   - jobCode
+   - jobGrade
+   - jobLevel
+   - behavioralTraits
+   - kpis
+   - trainingAndSupport
+   - growthPath
+6. Handle empty values gracefully and avoid blank sections.
+
+Use these example values for testing:
+- reportingTo: "Team Manager"
+- division: "Delivery"
+- jobCode: "CSR-LTS-DEL-001"
+- jobGrade: "3"
+- jobLevel: "P13"
+- minimumInternetSpeed: "50 Mbps minimum"
+- systemRequirements: "Stable internet connection, quiet workspace, headset, and laptop/desktop suitable for remote work."
+
+Expected outcome:
+- Admin can create and update richer JSP-based job postings in `AdminFindWork.tsx`
+- Public `FindWorkJob.tsx` stays clean and only shows relevant candidate-facing information
+- Remote roles display internet/system requirements
+- Non-remote roles do not show those remote-only requirement fields
+
+Please make minimal, clean changes and reuse existing handlers, state structure, components, payload mappers, and styling patterns instead of rewriting the whole feature.

@@ -4,6 +4,7 @@ import {
   ArrowLeft, ArrowRight, Sparkles, Clock3, Globe2,
   BriefcaseBusiness, DollarSign, ListChecks, CheckCircle2,
   Award, Gift, Tag, AlertCircle, MapPin, Layers, Loader2,
+  Wifi, Monitor,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
@@ -409,11 +410,33 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
   const pay = buildRateDisplay(job);
   const badges = getJobBadges(job);
   const timeAgo = getTimeAgo(job.createdAt);
-  const responsibilities = (job.responsibilities ?? []) as string[];
-  const requirements    = (job.requirements    ?? []) as string[];
-  const culturalFit     = ((job.culturalFit     ?? []) as string[]).length > 0
+
+  // Determine if this is a remote role (location stores the work setup value)
+  const isRemote = (job.location ?? "Remote").toLowerCase().includes("remote");
+
+  // ── JSP field extraction with fallbacks to legacy array fields ──────────
+  // Job Description: prefer JSP companyOverview + roleMission, else legacy description
+  const companyOverview = (job as any).companyOverview as string | null | undefined;
+  const roleMission     = (job as any).roleMission     as string | null | undefined;
+  const hasJspDescription = !!(companyOverview?.trim() || roleMission?.trim());
+
+  // Responsibilities: prefer JSP keyResponsibilities, else legacy responsibilities array
+  const keyResponsibilities   = (job as any).keyResponsibilities   as string | null | undefined;
+  const legacyResponsibilities = (job.responsibilities ?? []) as string[];
+
+  // Skills Needed: prefer JSP skillsAndCompetencies, else legacy requirements array
+  const skillsAndCompetencies = (job as any).skillsAndCompetencies as string | null | undefined;
+  const legacyRequirements    = (job.requirements ?? []) as string[];
+
+  // Cultural Fit (unchanged — falls back to defaults)
+  const culturalFit = ((job.culturalFit ?? []) as string[]).length > 0
     ? (job.culturalFit as string[])
     : CULTURAL_FIT_DEFAULTS;
+
+  // Remote-only requirement fields
+  const minimumInternetSpeed = (job as any).minimumInternetSpeed as string | null | undefined;
+  const systemRequirements   = (job as any).systemRequirements   as string | null | undefined;
+
   const tags = (job.skillTags ?? []) as string[];
 
   return (
@@ -481,8 +504,25 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
         className="mx-auto max-w-4xl"
       >
 
-        {/* Job Description */}
-        {job.description && (
+        {/* Job Description — JSP (companyOverview + roleMission) or legacy description */}
+        {hasJspDescription ? (
+          <Section
+            icon={<Globe2 className="h-5 w-5 text-indigo-500" />}
+            iconBg="bg-indigo-50 dark:bg-indigo-900/30"
+            label="Job Description"
+          >
+            {companyOverview?.trim() && (
+              <p className="text-base md:text-lg leading-7 md:leading-8 text-slate-600 dark:text-slate-300 whitespace-pre-wrap">
+                {companyOverview.trim()}
+              </p>
+            )}
+            {roleMission?.trim() && (
+              <p className={`text-base md:text-lg leading-7 md:leading-8 text-slate-600 dark:text-slate-300 whitespace-pre-wrap${companyOverview?.trim() ? " mt-5" : ""}`}>
+                {roleMission.trim()}
+              </p>
+            )}
+          </Section>
+        ) : job.description ? (
           <Section
             icon={<Globe2 className="h-5 w-5 text-indigo-500" />}
             iconBg="bg-indigo-50 dark:bg-indigo-900/30"
@@ -490,29 +530,49 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
           >
             <p className="text-base md:text-lg leading-7 md:leading-8 text-slate-600 dark:text-slate-300">{job.description}</p>
           </Section>
-        )}
+        ) : null}
 
-        {/* Responsibilities */}
-        {responsibilities.length > 0 && (
+        {/* Responsibilities — JSP keyResponsibilities or legacy array */}
+        {keyResponsibilities?.trim() ? (
           <Section
             icon={<ListChecks className="h-5 w-5 text-blue-500" />}
             iconBg="bg-blue-50 dark:bg-blue-900/30"
             label="Responsibilities"
           >
-            <SectionBody items={responsibilities} bulletColor="bg-blue-400" />
+            <p className="text-base md:text-lg leading-7 md:leading-8 text-slate-600 dark:text-slate-300 whitespace-pre-wrap">
+              {keyResponsibilities.trim()}
+            </p>
           </Section>
-        )}
+        ) : legacyResponsibilities.length > 0 ? (
+          <Section
+            icon={<ListChecks className="h-5 w-5 text-blue-500" />}
+            iconBg="bg-blue-50 dark:bg-blue-900/30"
+            label="Responsibilities"
+          >
+            <SectionBody items={legacyResponsibilities} bulletColor="bg-blue-400" />
+          </Section>
+        ) : null}
 
-        {/* Skills Needed */}
-        {requirements.length > 0 && (
+        {/* Skills Needed — JSP skillsAndCompetencies or legacy requirements array */}
+        {skillsAndCompetencies?.trim() ? (
           <Section
             icon={<CheckCircle2 className="h-5 w-5 text-emerald-500" />}
             iconBg="bg-emerald-50 dark:bg-emerald-900/30"
             label="Skills Needed"
           >
-            <SectionBody items={requirements} bulletColor="bg-emerald-500" />
+            <p className="text-base md:text-lg leading-7 md:leading-8 text-slate-600 dark:text-slate-300 whitespace-pre-wrap">
+              {skillsAndCompetencies.trim()}
+            </p>
           </Section>
-        )}
+        ) : legacyRequirements.length > 0 ? (
+          <Section
+            icon={<CheckCircle2 className="h-5 w-5 text-emerald-500" />}
+            iconBg="bg-emerald-50 dark:bg-emerald-900/30"
+            label="Skills Needed"
+          >
+            <SectionBody items={legacyRequirements} bulletColor="bg-emerald-500" />
+          </Section>
+        ) : null}
 
         {/* Cultural Fit */}
         <Section
@@ -520,12 +580,34 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
           iconBg="bg-[#474ead]/10 dark:bg-[#474ead]/20"
           label="Cultural Fit"
         >
-          <ul className="space-y-4">
-            {culturalFit.map((item, i) => (
-              <BulletRow key={i} text={item} color="bg-[#474ead]" />
-            ))}
-          </ul>
+          <SectionBody items={culturalFit} bulletColor="bg-[#474ead]" />
         </Section>
+
+        {/* Remote-only: Minimum Internet Speed */}
+        {isRemote && minimumInternetSpeed?.trim() && (
+          <Section
+            icon={<Wifi className="h-5 w-5 text-sky-500" />}
+            iconBg="bg-sky-50 dark:bg-sky-900/30"
+            label="Minimum Internet Speed"
+          >
+            <p className="text-base md:text-lg leading-7 md:leading-8 text-slate-600 dark:text-slate-300">
+              {minimumInternetSpeed.trim()}
+            </p>
+          </Section>
+        )}
+
+        {/* Remote-only: System Requirements */}
+        {isRemote && systemRequirements?.trim() && (
+          <Section
+            icon={<Monitor className="h-5 w-5 text-slate-500" />}
+            iconBg="bg-slate-100 dark:bg-white/[0.06]"
+            label="System Requirements"
+          >
+            <p className="text-base md:text-lg leading-7 md:leading-8 text-slate-600 dark:text-slate-300 whitespace-pre-wrap">
+              {systemRequirements.trim()}
+            </p>
+          </Section>
+        )}
 
         {/* Skills & Tags */}
         {tags.length > 0 && (
