@@ -92,6 +92,25 @@ export const jobs = pgTable("jobs", {
   requirements: text("requirements").array(),
   skillTags: text("skill_tags").array(),
   culturalFit: text("cultural_fit").array(),
+  // Role profile identifiers
+  reportingTo: text("reporting_to"),
+  division: text("division"),
+  jobCode: text("job_code"),
+  jobGrade: text("job_grade"),
+  jobLevel: text("job_level"),
+  // Job Success Profile content sections (rich text / plain text)
+  companyOverview: text("company_overview"),
+  roleMission: text("role_mission"),
+  keyOutcomes: text("key_outcomes"),
+  keyResponsibilities: text("key_responsibilities"),
+  skillsAndCompetencies: text("skills_and_competencies"),
+  behavioralTraits: text("behavioral_traits"),
+  kpis: text("kpis"),
+  trainingAndSupport: text("training_and_support"),
+  growthPath: text("growth_path"),
+  // System requirements
+  minimumInternetSpeed: text("minimum_internet_speed"),
+  systemRequirements: text("system_requirements"),
   status: text("status").notNull().default("open"), // open, in_progress, completed, cancelled
   proposalCount: integer("proposal_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),

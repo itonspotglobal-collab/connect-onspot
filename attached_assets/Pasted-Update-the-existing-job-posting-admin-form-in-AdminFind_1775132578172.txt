@@ -1,0 +1,121 @@
+Update the existing job posting admin form in `AdminFindWork.tsx` so that the current Find Work Add/Edit Job modal becomes the main Job Success Profile-based job posting form.
+
+Context:
+- Keep all existing fields and functionality already present in the Add/Edit Job Posting modal.
+- Do NOT remove or break existing create/edit job flows.
+- Extend the form by adding the missing fields from the Job Success Profile document.
+- This JSP file is now the basis for job postings.
+- Also add Mark’s requested system requirements field, specifically allowing values like “50 Mbps minimum”.
+
+Existing fields already in the form:
+- jobTitle
+- company
+- workSetup
+- category
+- experienceLevel
+- contractType
+- duration
+- status
+- fixedMonthlyBudget
+- rateRangeMin
+- rateRangeMax
+
+Add these new fields to both create and update job posting flows:
+Role details:
+- reportingTo
+- division
+- jobCode
+- jobGrade
+- jobLevel
+
+Job Success Profile content sections:
+- companyOverview
+- roleMission
+- keyOutcomes
+- keyResponsibilities
+- skillsAndCompetencies
+- behavioralTraits
+- culturalFit
+- kpis
+- trainingAndSupport
+- growthPath
+
+System requirements:
+- minimumInternetSpeed
+- systemRequirements
+
+Requirements:
+1. Update the form state/type/interface/model used by `AdminFindWork.tsx` to include all new fields.
+2. Add the new input controls to the Add Job and Edit Job modal.
+3. Preserve existing layout and styling patterns already used in the component.
+4. Group the new fields into clear sections below the existing Salary/Rate section, such as:
+   - Role Details
+   - Company Overview
+   - Role Mission
+   - Key Outcomes
+   - Key Responsibilities
+   - Skills & Competencies
+   - Behavioral Traits
+   - Cultural Fit
+   - KPIs
+   - Training & Support
+   - Growth Path
+   - System Requirements
+5. Use text inputs for:
+   - reportingTo
+   - division
+   - jobCode
+   - jobGrade
+   - jobLevel
+   - minimumInternetSpeed
+6. Use multiline textareas for:
+   - companyOverview
+   - roleMission
+   - keyOutcomes
+   - keyResponsibilities
+   - skillsAndCompetencies
+   - behavioralTraits
+   - culturalFit
+   - kpis
+   - trainingAndSupport
+   - growthPath
+   - systemRequirements
+7. Ensure both create and edit payloads include all newly added fields.
+8. Ensure existing job data populates correctly in edit mode.
+9. Add simple validation for newly added required fields where appropriate, but do not overcomplicate validation if the existing form only has light validation.
+10. Keep backward compatibility so older job records without these fields do not crash the UI.
+
+Use this Job Success Profile content structure as the basis of the new fields:
+- Role: Sales Operations Specialist
+- Reporting to: Team Manager
+- Division: Delivery
+- Job Code: CSR-LTS-DEL-001
+- Job Grade: 3
+- Job Level: P13
+- Company Overview
+- Role Mission
+- Key Outcomes
+- Key Responsibilities
+- Skills & Competencies
+- Behavioral Traits
+- Cultural Fit
+- Key Performance Indicators (KPIs)
+- Training & Support
+- Growth Path
+
+For system requirements, support values like:
+- minimumInternetSpeed: "50 Mbps minimum"
+- systemRequirements: "Stable internet connection, quiet workspace, headset, and laptop/desktop suitable for remote work."
+
+Implementation details:
+- Reuse the component’s existing input components, modal structure, handlers, and submit logic.
+- If there is a shared `initialFormData` object, extend it.
+- If there are TypeScript interfaces/types for job posting payloads, extend them.
+- If there are API helper functions or request payload mappings, update them too.
+- If the preview/public job details depend on this shape, safely pass through the new fields without breaking current rendering.
+- Prefer minimal, clean changes rather than rewriting the whole component.
+
+Deliverables:
+- Updated `AdminFindWork.tsx`
+- Any related type/interface or payload mapping updates needed for the new fields
+- Brief code comments only where necessary

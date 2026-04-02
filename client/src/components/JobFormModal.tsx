@@ -68,6 +68,25 @@ export const defaultFormData = {
   requirements: "",
   skillTags: "",
   culturalFit: "",
+  // Role details
+  reportingTo: "",
+  division: "",
+  jobCode: "",
+  jobGrade: "",
+  jobLevel: "",
+  // Job Success Profile sections
+  companyOverview: "",
+  roleMission: "",
+  keyOutcomes: "",
+  keyResponsibilities: "",
+  skillsAndCompetencies: "",
+  behavioralTraits: "",
+  kpis: "",
+  trainingAndSupport: "",
+  growthPath: "",
+  // System requirements
+  minimumInternetSpeed: "",
+  systemRequirements: "",
 };
 
 export type JobFormData = typeof defaultFormData;
@@ -93,6 +112,25 @@ export function jobToFormData(job: Job): JobFormData {
       ? (job.skillTags as string[]).join(", ")
       : "",
     culturalFit: toQuillHtml(job.culturalFit as string[]),
+    // Role details
+    reportingTo: (job as any).reportingTo || "",
+    division: (job as any).division || "",
+    jobCode: (job as any).jobCode || "",
+    jobGrade: (job as any).jobGrade || "",
+    jobLevel: (job as any).jobLevel || "",
+    // JSP sections
+    companyOverview: (job as any).companyOverview || "",
+    roleMission: (job as any).roleMission || "",
+    keyOutcomes: (job as any).keyOutcomes || "",
+    keyResponsibilities: (job as any).keyResponsibilities || "",
+    skillsAndCompetencies: (job as any).skillsAndCompetencies || "",
+    behavioralTraits: (job as any).behavioralTraits || "",
+    kpis: (job as any).kpis || "",
+    trainingAndSupport: (job as any).trainingAndSupport || "",
+    growthPath: (job as any).growthPath || "",
+    // System requirements
+    minimumInternetSpeed: (job as any).minimumInternetSpeed || "",
+    systemRequirements: (job as any).systemRequirements || "",
   };
 }
 
@@ -216,6 +254,28 @@ export function JobFormModal({ open, onClose, job, onSuccess }: JobFormModalProp
     payload.culturalFit = !isEmptyQuill(formData.culturalFit)
       ? [formData.culturalFit]
       : [];
+
+    // Role details (text fields — omit if empty)
+    if (formData.reportingTo) payload.reportingTo = formData.reportingTo.trim();
+    if (formData.division) payload.division = formData.division.trim();
+    if (formData.jobCode) payload.jobCode = formData.jobCode.trim();
+    if (formData.jobGrade) payload.jobGrade = formData.jobGrade.trim();
+    if (formData.jobLevel) payload.jobLevel = formData.jobLevel.trim();
+
+    // JSP sections (plain text — always include so edits can clear values)
+    payload.companyOverview = formData.companyOverview.trim();
+    payload.roleMission = formData.roleMission.trim();
+    payload.keyOutcomes = formData.keyOutcomes.trim();
+    payload.keyResponsibilities = formData.keyResponsibilities.trim();
+    payload.skillsAndCompetencies = formData.skillsAndCompetencies.trim();
+    payload.behavioralTraits = formData.behavioralTraits.trim();
+    payload.kpis = formData.kpis.trim();
+    payload.trainingAndSupport = formData.trainingAndSupport.trim();
+    payload.growthPath = formData.growthPath.trim();
+
+    // System requirements
+    if (formData.minimumInternetSpeed) payload.minimumInternetSpeed = formData.minimumInternetSpeed.trim();
+    payload.systemRequirements = formData.systemRequirements.trim();
 
     if (isEditing && job) {
       updateMutation.mutate({ id: job.id, data: payload });
@@ -592,6 +652,140 @@ export function JobFormModal({ open, onClose, job, onSuccess }: JobFormModalProp
               <p className="text-[10px] text-muted-foreground">
                 If left empty, a set of default cultural values will be shown on the public page.
               </p>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* ── Section 5: Role Details ─────────────────────────────────────── */}
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
+              Role Details
+            </p>
+            <p className="text-xs text-muted-foreground mb-4">
+              Organisational context for this role — used internally and on the dedicated job page.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="modal-reportingTo">Reporting To</Label>
+                <Input
+                  id="modal-reportingTo"
+                  value={formData.reportingTo}
+                  onChange={(e) => updateField("reportingTo", e.target.value)}
+                  placeholder="e.g. Team Manager"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="modal-division">Division</Label>
+                <Input
+                  id="modal-division"
+                  value={formData.division}
+                  onChange={(e) => updateField("division", e.target.value)}
+                  placeholder="e.g. Delivery"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="modal-jobCode">Job Code</Label>
+                <Input
+                  id="modal-jobCode"
+                  value={formData.jobCode}
+                  onChange={(e) => updateField("jobCode", e.target.value)}
+                  placeholder="e.g. CSR-LTS-DEL-001"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="modal-jobGrade">Job Grade</Label>
+                <Input
+                  id="modal-jobGrade"
+                  value={formData.jobGrade}
+                  onChange={(e) => updateField("jobGrade", e.target.value)}
+                  placeholder="e.g. 3"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="modal-jobLevel">Job Level</Label>
+                <Input
+                  id="modal-jobLevel"
+                  value={formData.jobLevel}
+                  onChange={(e) => updateField("jobLevel", e.target.value)}
+                  placeholder="e.g. P13"
+                />
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* ── Section 6: Job Success Profile ──────────────────────────────── */}
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Sparkles className="w-4 h-4 text-[#474ead]" />
+              <p className="text-[11px] font-bold uppercase tracking-widest text-[#474ead]">
+                Job Success Profile
+              </p>
+            </div>
+            <p className="text-xs text-muted-foreground mb-5">
+              Complete the Job Success Profile sections below. These appear on the dedicated role page and are used by the AI matching system.
+            </p>
+
+            <div className="space-y-5">
+              {(
+                [
+                  { id: "modal-companyOverview", field: "companyOverview", label: "Company Overview", placeholder: "Describe the company, its mission, and what makes it a great place to work..." },
+                  { id: "modal-roleMission", field: "roleMission", label: "Role Mission", placeholder: "What is the core purpose of this role? What does success look like..." },
+                  { id: "modal-keyOutcomes", field: "keyOutcomes", label: "Key Outcomes", placeholder: "List the 3–5 measurable outcomes this role is responsible for delivering..." },
+                  { id: "modal-keyResponsibilities", field: "keyResponsibilities", label: "Key Responsibilities", placeholder: "Day-to-day responsibilities and accountabilities of this role..." },
+                  { id: "modal-skillsAndCompetencies", field: "skillsAndCompetencies", label: "Skills & Competencies", placeholder: "Core skills, technical knowledge, and professional competencies required..." },
+                  { id: "modal-behavioralTraits", field: "behavioralTraits", label: "Behavioral Traits", placeholder: "Personality traits and working style that set top performers apart in this role..." },
+                  { id: "modal-kpis", field: "kpis", label: "Key Performance Indicators (KPIs)", placeholder: "How will performance be measured? List KPIs and targets..." },
+                  { id: "modal-trainingAndSupport", field: "trainingAndSupport", label: "Training & Support", placeholder: "What onboarding, training, and ongoing support does this role receive..." },
+                  { id: "modal-growthPath", field: "growthPath", label: "Growth Path", placeholder: "What career progression or advancement opportunities are available..." },
+                ] as const
+              ).map(({ id, field, label, placeholder }) => (
+                <div className="space-y-2" key={field}>
+                  <Label htmlFor={id}>{label}</Label>
+                  <Textarea
+                    id={id}
+                    value={formData[field]}
+                    onChange={(e) => updateField(field, e.target.value)}
+                    placeholder={placeholder}
+                    className="min-h-[90px] resize-y"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* ── Section 7: System Requirements ──────────────────────────────── */}
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
+              System Requirements
+            </p>
+            <p className="text-xs text-muted-foreground mb-4">
+              Technical setup required by the candidate to perform this role remotely.
+            </p>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="modal-internetSpeed">Minimum Internet Speed</Label>
+                <Input
+                  id="modal-internetSpeed"
+                  value={formData.minimumInternetSpeed}
+                  onChange={(e) => updateField("minimumInternetSpeed", e.target.value)}
+                  placeholder="e.g. 50 Mbps minimum"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="modal-systemReqs">System Requirements</Label>
+                <Textarea
+                  id="modal-systemReqs"
+                  value={formData.systemRequirements}
+                  onChange={(e) => updateField("systemRequirements", e.target.value)}
+                  placeholder="e.g. Stable internet connection, quiet workspace, headset, and laptop/desktop suitable for remote work."
+                  className="min-h-[80px] resize-y"
+                />
+              </div>
             </div>
           </div>
 
