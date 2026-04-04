@@ -845,6 +845,71 @@ function EditorialSection({
   );
 }
 
+// ─── InsightsCTA — page-level conversion section ──────────────────────────────
+const INSIGHTS_CTA_CARDS = [
+  {
+    title: "Hire Talent",
+    copy: "Find high-performance talent matched to your needs.",
+    href: "/services/resourced",
+  },
+  {
+    title: "Managed Services",
+    copy: "Deploy an operator-led delivery system with AI support.",
+    href: "/services/managed",
+  },
+  {
+    title: "Find Work",
+    copy: "Discover serious opportunities faster.",
+    href: "/find-work",
+  },
+] as const;
+
+function InsightsCTA() {
+  return (
+    <section className="mb-10">
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-8 py-10 md:px-12 md:py-14">
+        <div className="grid grid-cols-1 lg:grid-cols-[45%_55%] gap-10 items-start">
+
+          {/* ── Left: label + headline + copy ── */}
+          <div className="max-w-lg">
+            <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-[#474ead] mb-4">
+              Editorial CTA
+            </p>
+            <h2 className="text-3xl md:text-4xl font-bold text-white leading-tight mb-5">
+              Turn insights into an operating advantage.
+            </h2>
+            <p className="text-slate-300 text-base leading-8">
+              Readers who are ready to move from ideas into execution should be
+              able to transition naturally into your hire talent, managed
+              services, or find work journeys.
+            </p>
+          </div>
+
+          {/* ── Right: 3 CTA cards ── */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {INSIGHTS_CTA_CARDS.map(({ title, copy, href }) => (
+              <a
+                key={title}
+                href={href}
+                className="group flex flex-col gap-4 rounded-xl border border-white/10 bg-[#080a1a]/80 p-5 transition-all duration-200 hover:border-[#474ead]/40 hover:bg-[#080a1a]"
+              >
+                <div className="flex-1">
+                  <h3 className="text-sm font-bold text-white mb-2">{title}</h3>
+                  <p className="text-xs text-slate-400 leading-5">{copy}</p>
+                </div>
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#474ead] group-hover:text-[#8e93ff] transition-colors">
+                  Explore <ArrowRight className="w-3 h-3" />
+                </span>
+              </a>
+            ))}
+          </div>
+
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function Insights() {
   const [location] = useLocation();
@@ -1144,6 +1209,9 @@ export default function Insights() {
             </button>
           </div>
         </section>
+
+        {/* ── Insights CTA ──────────────────────────────────────────────────── */}
+        <InsightsCTA />
 
       </div>
     </div>

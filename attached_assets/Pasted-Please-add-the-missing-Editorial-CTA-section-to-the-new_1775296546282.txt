@@ -1,0 +1,60 @@
+Please add the missing “Editorial CTA” section to the new public Insights page, matching the attached screenshot.
+
+Context:
+The redesigned Insights page is missing the bottom CTA block. I want this included as part of the new Insights page layout.
+
+Add this section near the bottom of the page:
+- Place it after the curated insights/article section
+- It should feel like the closing conversion section of the page
+
+Section content:
+Left side:
+- Small eyebrow label: “EDITORIAL CTA”
+- Large headline: “Turn insights into an operating advantage.”
+- Supporting copy:
+  “Readers who are ready to move from ideas into execution should be able to transition naturally into your hire talent, managed services, or find work journeys.”
+
+Right side:
+Show 3 CTA cards:
+1. Hire Talent
+   Copy: “Find high-performance talent matched to your needs.”
+   CTA text: “Explore”
+2. Managed Services
+   Copy: “Deploy an operator-led delivery system with AI support.”
+   CTA text: “Explore”
+3. Find Work
+   Copy: “Help applicants discover serious opportunities faster.”
+   CTA text: “Explore”
+
+Design requirements:
+- Match the attached screenshot closely in layout and tone
+- Use a clean editorial style with lots of whitespace
+- Left side should contain the label, headline, and paragraph
+- Right side should contain 3 rounded cards laid out horizontally on desktop
+- Cards should stack cleanly on smaller screens
+- Each card should have:
+  - title
+  - short description
+  - Explore link/button with arrow icon
+- Keep the styling premium, minimal, and consistent with the new Insights page redesign
+
+Layout behavior:
+- Desktop:
+  - 2-column section
+  - left content block larger
+  - 3 CTA cards on the right
+- Mobile/tablet:
+  - stack sections cleanly
+  - maintain readability and spacing
+
+Implementation notes:
+- Reuse existing design system/components where possible
+- Keep the section responsive
+- Hook each CTA card to the correct destination page if routes already exist
+- If routes are not yet wired, leave clean placeholder links ready for mapping
+- Use reusable CTA card components if appropriate
+
+Expected result:
+- The new Insights page includes this bottom Editorial CTA section
+- It visually matches the attached design
+- It creates a natural transition from reading insights to taking action
