@@ -694,7 +694,7 @@ export default function OnSpotFindWorkRedesign() {
   const [schedule, setSchedule] = useState("All schedules");
   const [earning, setEarning] = useState("Any pay");
   const [kind, setKind] = useState("All work");
-  const [profileStrength] = useState(68);
+  const [profileStrength] = useState(68);  
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
