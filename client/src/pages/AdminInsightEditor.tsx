@@ -215,31 +215,37 @@ export default function AdminInsightEditor() {
 
       <form onSubmit={handleSubmit} className="max-w-4xl mx-auto px-4 py-8">
         <div className="space-y-8">
-          <div className="relative w-full aspect-[21/9] bg-muted rounded-xl overflow-hidden border-2 border-dashed border-muted-foreground/25 hover:border-muted-foreground/50 transition-colors">
-            {formData.coverImageUrl ? (
-              <>
-                <img 
-                  src={formData.coverImageUrl} 
-                  alt="Cover" 
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = "none";
-                  }}
-                />
-                <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <div className="text-white text-center">
-                    <ImageIcon className="h-8 w-8 mx-auto mb-2" />
-                    <p className="text-sm">Change cover image</p>
+          {/* Cover preview — uses the same 16:9 ratio as public article cards */}
+          <div>
+            <p className="text-xs text-muted-foreground mb-2 font-medium">
+              Cover image preview (16:9 — matches how it appears on the Insights page)
+            </p>
+            <div className="relative w-full aspect-video bg-muted rounded-xl overflow-hidden border-2 border-dashed border-muted-foreground/25 hover:border-muted-foreground/50 transition-colors">
+              {formData.coverImageUrl ? (
+                <>
+                  <img
+                    src={formData.coverImageUrl}
+                    alt="Cover"
+                    className="w-full h-full object-cover object-center"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <div className="text-white text-center">
+                      <ImageIcon className="h-8 w-8 mx-auto mb-2" />
+                      <p className="text-sm">Change cover image</p>
+                    </div>
                   </div>
+                </>
+              ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
+                  <ImageIcon className="h-12 w-12 mb-3" />
+                  <p className="text-sm font-medium">Add a cover image</p>
+                  <p className="text-xs mt-1">Paste a URL below or use the Image Uploader</p>
                 </div>
-              </>
-            ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
-                <ImageIcon className="h-12 w-12 mb-3" />
-                <p className="text-sm font-medium">Add a cover image</p>
-                <p className="text-xs mt-1">Paste a URL below or use the Image Uploader</p>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           <div className="flex flex-wrap items-end gap-3">

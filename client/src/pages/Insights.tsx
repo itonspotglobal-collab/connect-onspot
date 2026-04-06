@@ -161,15 +161,16 @@ function ArticleCard({ article }: { article: ArticleItem }) {
       className="overflow-hidden transition-all duration-300 group flex flex-col cursor-pointer h-full bg-[#080a1a]/80 border-white/10 hover-elevate"
       onClick={() => navigate(`/insights/${article.slug}`)}
     >
-      {/* Cover image */}
+      {/* Cover image — locked to 16:9, object-cover, never distorts */}
       <div className="aspect-video bg-[#040611] relative overflow-hidden flex-shrink-0">
         <img
           src={article.image}
           alt={article.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
           loading="lazy"
           width={800}
           height={450}
+          onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
         />
         <div className="absolute bottom-0 left-0 right-0 px-4 py-2 bg-gradient-to-t from-black/70 to-transparent flex items-end justify-between">
           <Badge
@@ -247,15 +248,16 @@ function PodcastCard({ article }: { article: ArticleItem }) {
       onClick={() => navigate(`/insights/${article.slug}`)}
     >
       <div className="flex flex-col sm:flex-row">
-        {/* Thumbnail */}
-        <div className="sm:w-44 flex-shrink-0 bg-[#040611] relative overflow-hidden aspect-video sm:aspect-auto">
+        {/* Thumbnail — 16:9 on mobile, fixed 176×120 column on desktop */}
+        <div className="aspect-video sm:aspect-auto sm:w-44 sm:min-h-[120px] flex-shrink-0 bg-[#040611] relative overflow-hidden">
           <img
             src={article.image}
             alt={article.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
             loading="lazy"
             width={176}
             height={120}
+            onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
           />
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
             <div className="w-11 h-11 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/40">
@@ -393,8 +395,9 @@ function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
             <img
               src={a.image}
               alt={a.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover object-center"
               draggable={false}
+              onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
             />
             {/* Overlays for readability */}
             <div className="absolute inset-0 bg-gradient-to-t from-[#080a1a] via-[#0d0f2d]/65 to-transparent" />
@@ -601,7 +604,8 @@ function HighlightCard({ article }: { article: ArticleItem }) {
       <img
         src={article.image}
         alt={article.title}
-        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+        className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
+        onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-[#050715]/96 via-[#050715]/55 to-transparent" />
       <div className="absolute inset-0 bg-gradient-to-r from-[#050715]/72 via-[#050715]/20 to-transparent" />
@@ -652,11 +656,14 @@ function PanelArticleCard({ article }: { article: ArticleItem }) {
       className="bg-[#080a1a]/80 border border-white/10 rounded-2xl overflow-hidden cursor-pointer group hover-elevate flex-shrink-0"
       onClick={() => navigate(`/insights/${article.slug}`)}
     >
-      <div className="relative h-44 overflow-hidden bg-[#040611]">
+      {/* Panel thumbnail — 16:9 locked, consistent with ArticleCard */}
+      <div className="relative aspect-video overflow-hidden bg-[#040611]">
         <img
           src={article.image}
           alt={article.title}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+          loading="lazy"
+          onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#080a1a]/70 to-transparent" />
         <span className="absolute bottom-3 left-3 text-[10px] uppercase tracking-[0.2em] font-semibold px-3 py-1 rounded-full bg-[#474ead] text-white">

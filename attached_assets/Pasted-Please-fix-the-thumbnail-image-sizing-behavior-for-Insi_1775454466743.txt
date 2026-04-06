@@ -1,0 +1,79 @@
+Please fix the thumbnail/image sizing behavior for Insights posts across both the public Insights page and AdminInsights.tsx.
+
+Problem:
+The published post/blog thumbnails look inconsistent and awkward. Some images appear too tall, too cropped, stretched, or visually unbalanced depending on the uploaded asset. Since the public Insights page and AdminInsights.tsx are connected, the fix should be applied consistently across both.
+
+Scope:
+- Public Insights page cards
+- Featured/hero insights thumbnails where applicable
+- Individual published post preview thumbnails
+- AdminInsights.tsx create/edit/post preview/upload flow
+- Any reusable image or thumbnail component shared between admin and public pages
+
+What to fix:
+1. Standardize thumbnail aspect ratio
+- Use a consistent aspect ratio for blog/post thumbnails
+- The image container should be uniform across cards so all thumbnails look aligned
+- Choose a clean editorial ratio such as:
+  - 16:9 for general thumbnails
+  - or another consistent ratio already suitable for the page design
+- Avoid random image heights based on uploaded file dimensions
+
+2. Prevent distortion
+- Images should never appear stretched or squashed
+- Use proper object-fit behavior
+- Prefer:
+  - `object-cover` for card thumbnails
+  - `object-center` by default
+- Ensure the container masks overflow cleanly
+
+3. Improve cropping behavior
+- Cropping should feel intentional and visually balanced
+- Faces/text in thumbnails should not be awkwardly cut off when possible
+- Keep featured images visually strong without breaking layout consistency
+
+4. Make upload/preview behavior in AdminInsights.tsx match frontend rendering
+- When uploading or previewing a thumbnail in admin, show it using the same aspect ratio/container behavior as the public page
+- This helps admins understand how the image will actually appear once published
+- Add a stable preview frame for the uploaded image
+
+5. Add fallback handling
+- If no thumbnail exists, show a clean placeholder/fallback image or fallback state
+- Make fallback dimensions consistent with the real thumbnail layout
+
+6. Keep layout consistency
+- All insight cards in grids/lists should align evenly
+- The featured card/carousel and standard cards should each have their own consistent image treatment
+- No jumping layout because of inconsistent image dimensions
+
+Implementation guidance:
+- Review the shared image rendering logic and reusable card components
+- Use fixed aspect-ratio wrappers instead of relying on raw uploaded image dimensions
+- Ensure both admin preview and public rendering use the same thumbnail rules
+- Refactor duplicated image markup into a shared component if appropriate
+- Preserve responsiveness across desktop and mobile
+
+Suggested technical direction:
+- Wrap images in a fixed ratio container
+- Apply classes similar to:
+  - `aspect-video`
+  - `overflow-hidden`
+  - `rounded-*`
+  - `object-cover`
+  - `w-full h-full`
+- For larger hero/featured thumbnails, use a separate but consistent ratio if needed
+- If using Next/Image or similar, ensure fill mode and crop behavior are configured properly
+
+Expected result:
+- Uploaded thumbnails look clean and consistent
+- Public insight cards no longer have weird image sizes
+- Admin preview matches published appearance
+- Card layouts feel polished and aligned
+- No stretched, squashed, or strangely cropped thumbnails
+
+Also please verify this in:
+- featured carousel cards
+- insight listing cards
+- individual post image display
+- admin create/edit thumbnail preview
+- existing older posts with mixed image sizes
