@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
@@ -28,6 +28,18 @@ const HOT_SEARCHES = [
   "Executive Assistant",
   "Finance",
 ];
+
+// Maps nav dropdown slug (?category=<slug>) → matching internal DB category values.
+// cats: [] means "All Categories" (no filter).
+// search: pre-fills the search bar for slugs with no direct DB category match.
+const NAV_SLUG_MAP: Record<string, { label: string; cats: string[]; search?: string }> = {
+  all:         { label: "All Jobs",              cats: [] },
+  development: { label: "Development & IT",      cats: ["Development", "Tech support"] },
+  design:      { label: "Design & Creative",     cats: ["Design"] },
+  marketing:   { label: "Sales & Marketing",     cats: ["Marketing", "Sales"] },
+  support:     { label: "Admin & Support",       cats: ["Admin", "Customer success", "Operations"] },
+  writing:     { label: "Writing & Translation", cats: [], search: "writing translation" },
+};
 
 const CATEGORIES = [
   "All Categories",
@@ -155,15 +167,32 @@ function JobCard({ job, onNavigate }: { job: Job; onNavigate: (id: string) => vo
   );
 }
 
+// Read ?category= from the URL and return the slug (e.g. "support", "design", "all")
+function getNavSlugFromUrl(): string {
+  try {
+    return new URLSearchParams(window.location.search).get("category") ?? "";
+  } catch {
+    return "";
+  }
+}
+
 export default function FindWorkAllJobs() {
   const [, navigate] = useLocation();
-  const [search, setSearch] = useState("");
+
+  // navSlug is set from the URL once on mount; null means "arrived directly, no nav preset"
+  const [navSlug] = useState<string>(getNavSlugFromUrl);
+  const navGroup = navSlug ? NAV_SLUG_MAP[navSlug] : undefined;
+
+  // Derive initial search from the nav group's search hint, if any
+  const [search, setSearch] = useState(() => navGroup?.search ?? "");
   const [category, setCategory] = useState("All Categories");
   const [location, setLocation] = useState("All Locations");
   const [contractType, setContractType] = useState("All Types");
   const [salary, setSalary] = useState("Any pay");
   const [sort, setSort] = useState<SortOption>("recently-posted");
-  const [showFilters, setShowFilters] = useState(false);
+  // Auto-open the filter panel when arriving from a nav category so the user
+  // can see which filter is active and adjust it easily
+  const [showFilters, setShowFilters] = useState(() => !!navSlug && navSlug !== "all");
 
   const { data: allJobs = [], isLoading } = useQuery<Job[]>({
     queryKey: ["/api/admin/jobs"],
@@ -188,9 +217,17 @@ export default function FindWorkAllJobs() {
         (job.location ?? "").toLowerCase().includes(q) ||
         (job.skillTags ?? []).some((t) => t.toLowerCase().includes(q));
 
-      const catPass =
-        category === "All Categories" ||
-        (job.category ?? "").toLowerCase() === category.toLowerCase();
+      // When a nav category group is active (from URL param) it can match
+      // multiple internal DB categories (e.g. "support" → Admin + Customer success).
+      // If the group is empty (cats: []) it means "All Jobs" — no filter.
+      // If the user manually picks a chip, that single-category filter takes precedence.
+      const navCatActive = !!navGroup && navGroup.cats.length > 0 && category === "All Categories";
+      const catPass = navCatActive
+        ? navGroup.cats.some(
+            (c) => (job.category ?? "").toLowerCase() === c.toLowerCase()
+          )
+        : category === "All Categories" ||
+          (job.category ?? "").toLowerCase() === category.toLowerCase();
 
       const locPass =
         location === "All Locations" ||
@@ -225,7 +262,8 @@ export default function FindWorkAllJobs() {
     category !== "All Categories" ||
     location !== "All Locations" ||
     contractType !== "All Types" ||
-    salary !== "Any pay";
+    salary !== "Any pay" ||
+    (!!navGroup && navGroup.cats.length > 0);
 
   function resetFilters() {
     setCategory("All Categories");
@@ -252,12 +290,18 @@ export default function FindWorkAllJobs() {
           </button>
 
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-            <Badge className="mb-4 rounded-full bg-[#474ead] text-white hover:bg-[#474ead]">All Job Openings</Badge>
+            <Badge className="mb-4 rounded-full bg-[#474ead] text-white hover:bg-[#474ead]">
+              {navGroup ? navGroup.label : "All Job Openings"}
+            </Badge>
             <h1 className="text-3xl font-bold leading-tight text-white md:text-5xl">
-              Discover your next remote opportunity.
+              {navGroup && navSlug !== "all"
+                ? `${navGroup.label} roles — open now.`
+                : "Discover your next remote opportunity."}
             </h1>
             <p className="mt-3 max-w-2xl text-base text-slate-400">
-              Browse every open role managed by OnSpot Global. Roles are updated in real time — apply before they fill.
+              {navGroup && navSlug !== "all"
+                ? `Showing ${navGroup.label} positions managed by OnSpot Global. Updated in real time — apply before they fill.`
+                : "Browse every open role managed by OnSpot Global. Roles are updated in real time — apply before they fill."}
             </p>
           </motion.div>
 
@@ -343,6 +387,23 @@ export default function FindWorkAllJobs() {
               transition={{ duration: 0.22 }}
               className="mt-5 border-t border-slate-100 pt-5 dark:border-white/10"
             >
+              {/* Nav category active banner */}
+              {navGroup && navGroup.cats.length > 0 && category === "All Categories" && (
+                <div className="mb-5 flex items-center gap-3 rounded-2xl border border-[#474ead]/20 bg-[#474ead]/5 px-4 py-3">
+                  <BriefcaseBusiness className="h-4 w-4 shrink-0 text-[#474ead]" />
+                  <p className="flex-1 text-sm text-slate-700 dark:text-slate-300">
+                    Filtering by <span className="font-semibold text-[#474ead]">{navGroup.label}</span>.
+                    Pick a chip below to narrow further, or{" "}
+                    <button
+                      className="font-medium text-[#474ead] underline underline-offset-2"
+                      onClick={() => navigate("/find-work/jobs")}
+                    >
+                      clear to see all jobs
+                    </button>.
+                  </p>
+                </div>
+              )}
+
               <div className="flex flex-wrap gap-6">
 
                 {/* Category */}

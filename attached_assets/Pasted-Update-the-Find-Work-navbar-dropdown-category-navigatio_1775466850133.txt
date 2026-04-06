@@ -1,0 +1,110 @@
+Update the Find Work navbar dropdown/category navigation so it works with the new Find Work pages and matches the old website behavior.
+
+Main goal
+The category links in the Find Work navigation dropdown should now redirect to the full jobs page rendered by `FindWorkJob.tsx`, and the page should automatically filter jobs based on the selected job type/category.
+
+Expected old behavior to restore
+- User opens the Find Work dropdown in the navbar
+- User clicks a category such as:
+  - All Jobs
+  - Development & IT
+  - Design & Creative
+  - Sales & Marketing
+  - Admin & Support
+  - Writing & Translation
+- The app navigates to the jobs page
+- The jobs page opens already filtered for that selected category/job type
+- This should behave like the old website
+
+What to change
+
+1. Update navbar category links
+In the Find Work navbar dropdown/menu:
+- wire each category item to the jobs page route that renders `FindWorkJob.tsx`
+- include a query param or route param that identifies the selected category
+
+Recommended route pattern:
+- `/find-work/jobs?category=all`
+- `/find-work/jobs?category=development-it`
+- `/find-work/jobs?category=design-creative`
+- `/find-work/jobs?category=sales-marketing`
+- `/find-work/jobs?category=admin-support`
+- `/find-work/jobs?category=writing-translation`
+
+Use the router/navigation pattern already used in the project.
+
+2. Make `FindWorkJob.tsx` read the selected category from the URL
+Update `FindWorkJob.tsx` so when the page loads:
+- it reads the selected category from the query string or route params
+- it applies that category as the default active filter
+- it shows only matching job postings from the shared jobs source
+
+Examples:
+- `/find-work/jobs?category=admin-support` → show only admin/support jobs
+- `/find-work/jobs?category=sales-marketing` → show only sales/marketing jobs
+- `/find-work/jobs?category=all` → show all available jobs
+
+3. Keep jobs synced with admin
+The filtered jobs shown in `FindWorkJob.tsx` must still come from the same shared source used by:
+- `AdminFindWork.tsx`
+- `FindWork.tsx`
+- `FindWorkJob.tsx`
+
+Do not hardcode category-specific job lists in the navbar or jobs page.
+
+4. Category mapping
+If admin job categories use slightly different labels, create a clean mapping so navbar categories still filter correctly.
+
+Example mapping idea:
+- `Development & IT` → ["Development & IT", "IT", "Software", "Engineering"]
+- `Design & Creative` → ["Design & Creative", "Design", "Creative"]
+- `Sales & Marketing` → ["Sales & Marketing", "Sales", "Marketing"]
+- `Admin & Support` → ["Admin & Support", "Admin", "Support", "Customer Support", "Virtual Assistant"]
+- `Writing & Translation` → ["Writing & Translation", "Writing", "Translation", "Content"]
+
+Use whatever mapping best matches the shared job data structure already in the app.
+
+5. Sync UI state on the jobs page
+On `FindWorkJob.tsx`:
+- the selected category filter chip/tab/dropdown should reflect the category from the URL
+- if the user changes filters manually on the page, it should update the filtered results accordingly
+- optionally update the URL too if that already fits the project routing pattern
+
+6. Keep current design
+Do not redesign the navbar or jobs page from scratch.
+Keep:
+- current dropdown design
+- current Find Work page styles
+- current jobs page layout
+- current search/filter UI
+- current OnSpot theme/colors
+
+Only update behavior and category filtering.
+
+7. Show all jobs for “All Jobs”
+The `All Jobs` navbar option should navigate to:
+- `/find-work/jobs`
+or
+- `/find-work/jobs?category=all`
+
+and show every available open job from the shared source.
+
+8. Handle empty states
+If a selected category has no matching jobs:
+- show a clean empty state message
+- keep the page layout intact
+- do not break the filter UI
+
+9. Output expectation
+Return updated code for:
+- navbar dropdown/category links
+- `FindWorkJob.tsx` URL param reading
+- category filter initialization
+- shared category mapping/helper if needed
+- route wiring so selected category opens filtered jobs page
+
+10. Important constraints
+- Do not leave the navbar pointing to the old behavior
+- Do not hardcode fake category pages
+- Do not disconnect from shared admin-managed jobs data
+- Keep the behavior consistent with the old site: click category -> open jobs page already filtered
