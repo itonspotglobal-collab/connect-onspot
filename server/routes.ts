@@ -5131,15 +5131,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     publishedAt: z.coerce.date().optional().nullable(),
   });
 
-  // Validation schema for updating posts (all fields optional for partial updates)
+  // Supported categories — kept in sync with the public Insights filter tabs
+  const VALID_CATEGORIES = [
+    "CEO Insights",
+    "Talent Insights",
+    "Client Insights",
+    "Industry Insights",
+    "Learning Centre",
+    "Podcast Videos",
+  ] as const;
+
+  // Validation schema for updating posts (all fields optional for partial updates).
+  // category uses a transform so that legacy / empty-string values from older posts
+  // don't cause a hard validation failure — they're normalised to a valid category
+  // or dropped from the update payload when empty.
   const updatePostSchema = z.object({
     title: z.string().min(1).optional(),
     slug: z.string().min(1).max(200).regex(/^[a-z0-9-]+$/).optional(),
     excerpt: z.string().min(1).optional(),
     content: z.string().optional(),
     coverImageUrl: z.string().optional().nullable(),
-    category: z.string().min(1).optional(),
-    author: z.string().min(1).optional(),
+    category: z
+      .string()
+      .optional()
+      .transform((val) => {
+        if (!val || !val.trim()) return undefined; // treat empty as "not provided"
+        const trimmed = val.trim();
+        if ((VALID_CATEGORIES as readonly string[]).includes(trimmed)) return trimmed;
+        // Best-effort normalisation for legacy values
+        const lower = trimmed.toLowerCase();
+        if (lower.includes("ceo") || lower.includes("founder")) return "CEO Insights";
+        if (lower.includes("talent") || lower.includes("freelanc")) return "Talent Insights";
+        if (lower.includes("client") || lower.includes("customer")) return "Client Insights";
+        if (lower.includes("podcast") || lower.includes("video")) return "Podcast Videos";
+        if (lower.includes("learn") || lower.includes("guide")) return "Learning Centre";
+        return "Industry Insights"; // safe default for any unknown legacy value
+      }),
+    author: z.string().optional().transform((v) => (v && v.trim() ? v.trim() : undefined)),
     isFeatured: z.boolean().optional(),
     status: z.enum(["draft", "published"]).optional(),
     readTime: z.string().optional().nullable(),

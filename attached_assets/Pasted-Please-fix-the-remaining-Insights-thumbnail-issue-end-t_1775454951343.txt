@@ -1,0 +1,96 @@
+Please fix the remaining Insights thumbnail issue end-to-end, including the update error for old published posts.
+
+Current problems:
+1. Old published posts still render with the wrong thumbnail sizing on the public Insight post page
+   - Example: the image is still using classes like `w-full h-64 md:h-96 object-cover`
+   - This forces a fixed height and causes awkward cropping/stretching for older posts
+   - The single post hero/cover image should use a consistent responsive aspect-ratio container instead of raw fixed heights
+
+2. Admin edit page preview does not fully solve the issue for old posts
+   - Even if the admin preview looks better, older published posts still display incorrectly on the live/public page
+   - The rendering logic needs to be fixed where the published post is displayed, not just in the admin preview
+
+3. Updating an old post throws a validation error
+   - Error shown:
+     `400: {"error":"Validation failed","message":"Invalid post data","details":{"category":["String must contain at least 1 character(s)"]}}`
+   - This suggests older posts may have missing/empty/legacy category values that are incompatible with the new validation rules
+
+What to fix:
+
+A. Fix single published post cover image rendering
+- Update the public InsightPost page component
+- Replace fixed height image usage like:
+  - `w-full h-64 md:h-96 object-cover`
+- Use a stable aspect-ratio wrapper instead, such as:
+  - 16:9 or another clean editorial ratio
+- The image should:
+  - fill the container cleanly
+  - use `object-cover`
+  - not stretch
+  - not create awkward inconsistent heights
+- Apply this to old and new posts consistently
+
+Recommended direction:
+- wrap the image in a container like:
+  - `aspect-[16/9]`
+  - `overflow-hidden`
+  - `rounded-2xl` or existing radius
+- image inside should use:
+  - `w-full h-full object-cover object-center`
+
+B. Ensure admin preview matches actual live rendering
+- Make AdminInsights.tsx edit/create preview use the same image rendering rules as the public InsightPost page
+- The admin preview should be a true representation of the live result
+- Reuse a shared cover image component if possible
+
+C. Fix old post update validation errors
+- Add backward-compatible handling for posts that have missing or legacy category values
+- When editing/updating an old post:
+  - prefill a valid category if missing
+  - or map old category values to the new supported categories
+- Ensure update payload always sends a non-empty valid category value
+
+Please check:
+- frontend form state initialization
+- edit form data mapping from API response
+- validation schema
+- update request payload
+- category dropdown/options
+- migration/fallback handling for older posts already stored in the database
+
+D. Add safe normalization for category values
+Supported categories should align with the Insights filters:
+- CEO Insights
+- Talent Insights
+- Client Insights
+- Industry Insights
+- Learning Centre
+- Podcast Videos
+
+Please normalize old/legacy category values where needed so existing posts can still be edited and rendered properly.
+
+Examples:
+- old category names
+- empty category values
+- legacy labels from previous versions
+should not cause update failure
+
+E. Verify all connected areas
+Please fix this consistently in:
+- public InsightPost page
+- Insights listing cards
+- featured carousel where applicable
+- AdminInsights.tsx create/edit preview
+- old existing published posts already in the database
+
+Expected result:
+- old posts no longer display weird cover image sizes
+- public post page uses a consistent cover image ratio
+- admin preview matches public rendering
+- updating old posts no longer fails because of empty/legacy category values
+- old and new posts both work correctly across admin and public pages
+
+If needed, refactor into:
+- shared thumbnail/cover component
+- category normalization helper
+- legacy category fallback mapping

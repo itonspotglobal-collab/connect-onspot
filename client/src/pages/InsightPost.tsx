@@ -158,11 +158,16 @@ export default function InsightPost() {
             </div>
           </header>
 
-          <div className="mb-8 rounded-xl overflow-hidden">
+          {/* Cover image — 16:9 aspect ratio, same as listing cards, never distorts */}
+          <div className="mb-8 rounded-xl overflow-hidden aspect-video bg-muted">
             <img
               src={coverImage}
               alt={post.title}
-              className="w-full h-64 md:h-96 object-cover"
+              className="w-full h-full object-cover object-center"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src =
+                  "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&h=675&fit=crop";
+              }}
             />
           </div>
 

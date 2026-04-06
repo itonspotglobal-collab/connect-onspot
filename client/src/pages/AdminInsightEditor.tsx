@@ -49,6 +49,25 @@ const categories = [
   "Podcast Videos",
 ];
 
+/**
+ * Maps any stored category value (including legacy/empty values) to one of the
+ * supported categories. Falls back to "Industry Insights" so edits never fail
+ * with a validation error on the category field.
+ */
+function normalizeCategory(raw: string | null | undefined): string {
+  if (!raw || !raw.trim()) return "Industry Insights";
+  const trimmed = raw.trim();
+  if ((categories as string[]).includes(trimmed)) return trimmed;
+  // Legacy name mapping
+  const lower = trimmed.toLowerCase();
+  if (lower.includes("ceo") || lower.includes("founder") || lower.includes("leader")) return "CEO Insights";
+  if (lower.includes("talent") || lower.includes("freelanc") || lower.includes("worker")) return "Talent Insights";
+  if (lower.includes("client") || lower.includes("customer") || lower.includes("business")) return "Client Insights";
+  if (lower.includes("podcast") || lower.includes("video") || lower.includes("episode")) return "Podcast Videos";
+  if (lower.includes("learn") || lower.includes("guide") || lower.includes("how")) return "Learning Centre";
+  return "Industry Insights";
+}
+
 function generateSlug(title: string): string {
   return title
     .toLowerCase()
@@ -96,8 +115,10 @@ export default function AdminInsightEditor() {
         excerpt: post.excerpt,
         content: post.content || "",
         coverImageUrl: post.coverImageUrl || "",
-        category: post.category,
-        author: post.author,
+        // normalizeCategory handles null/empty/legacy values so the dropdown
+        // always starts on a valid option and the update request never fails validation
+        category: normalizeCategory(post.category),
+        author: post.author || "OnSpot Team",
         isFeatured: post.isFeatured ?? false,
         status: post.status as "draft" | "published",
       });
