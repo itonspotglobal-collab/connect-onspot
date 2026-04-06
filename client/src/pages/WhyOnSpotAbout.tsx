@@ -276,7 +276,9 @@ export default function WhyOnSpotAbout() {
           </nav>
 
           <a
-            href="#contact"
+            href="https://calendly.com/hello-onspotglobal/lead-intake-schedule"
+            target="_blank"
+            rel="noopener noreferrer"
             className="rounded-full bg-[#474ead] px-5 py-2 text-sm font-semibold text-white transition hover:scale-[1.02] hover:bg-[#5b63d6]"
           >
             Book a Strategy Call
@@ -813,9 +815,14 @@ export default function WhyOnSpotAbout() {
             an enterprise operation, OnSpot is built to move with you.
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-4">
-            <button className="rounded-full bg-[#474ead] px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-[#474ead]/25 transition hover:scale-[1.02] hover:bg-[#5b63d6]">
+            <a
+              href="https://calendly.com/hello-onspotglobal/lead-intake-schedule"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-full bg-[#474ead] px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-[#474ead]/25 transition hover:scale-[1.02] hover:bg-[#5b63d6]"
+            >
               Book a Strategy Call
-            </button>
+            </a>
             <a
               href="#services"
               className="rounded-full border border-white/15 bg-white/5 px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-white/10"
