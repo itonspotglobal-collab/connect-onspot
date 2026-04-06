@@ -1,6 +1,6 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { motion } from "framer-motion";
 import {
   Search, Filter, ArrowLeft, ArrowRight, DollarSign,
@@ -167,32 +167,51 @@ function JobCard({ job, onNavigate }: { job: Job; onNavigate: (id: string) => vo
   );
 }
 
-// Read ?category= from the URL and return the slug (e.g. "support", "design", "all")
-function getNavSlugFromUrl(): string {
-  try {
-    return new URLSearchParams(window.location.search).get("category") ?? "";
-  } catch {
-    return "";
-  }
-}
-
 export default function FindWorkAllJobs() {
   const [, navigate] = useLocation();
 
-  // navSlug is set from the URL once on mount; null means "arrived directly, no nav preset"
-  const [navSlug] = useState<string>(getNavSlugFromUrl);
-  const navGroup = navSlug ? NAV_SLUG_MAP[navSlug] : undefined;
+  // useSearch() from wouter v3 — reactive to query-string changes on the SAME route.
+  // When the user clicks a different nav category while already on /find-work/jobs,
+  // wouter does a client-side push (no remount), so useState init runs only once.
+  // useSearch() re-renders this component whenever the search string changes.
+  const rawSearch = useSearch(); // e.g. "?category=design-creative" or ""
+  const navSlug = useMemo(() => {
+    try {
+      return new URLSearchParams(rawSearch).get("category") ?? "";
+    } catch {
+      return "";
+    }
+  }, [rawSearch]);
+  const navGroup = useMemo(() => (navSlug ? NAV_SLUG_MAP[navSlug] : undefined), [navSlug]);
 
-  // Derive initial search from the nav group's search hint, if any
-  const [search, setSearch] = useState(() => navGroup?.search ?? "");
+  // Search bar text — initialised from nav group on first load
+  const [search, setSearch] = useState(() => {
+    try {
+      const slug = new URLSearchParams(window.location.search).get("category") ?? "";
+      return NAV_SLUG_MAP[slug]?.search ?? "";
+    } catch { return ""; }
+  });
   const [category, setCategory] = useState("All Categories");
   const [location, setLocation] = useState("All Locations");
   const [contractType, setContractType] = useState("All Types");
   const [salary, setSalary] = useState("Any pay");
   const [sort, setSort] = useState<SortOption>("recently-posted");
-  // Auto-open the filter panel when arriving from a nav category so the user
-  // can see which filter is active and adjust it easily
-  const [showFilters, setShowFilters] = useState(() => !!navSlug && navSlug !== "all");
+  const [showFilters, setShowFilters] = useState(() => {
+    try {
+      const slug = new URLSearchParams(window.location.search).get("category") ?? "";
+      return !!slug && slug !== "all";
+    } catch { return false; }
+  });
+
+  // Skip the first render (handled by useState initialisers above);
+  // on subsequent navSlug changes (same-page nav), sync dependent state.
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    setSearch(navGroup?.search ?? "");
+    setCategory("All Categories");   // reset any manual chip selection
+    setShowFilters(!!navSlug && navSlug !== "all");
+  }, [navSlug]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: allJobs = [], isLoading } = useQuery<Job[]>({
     queryKey: ["/api/admin/jobs"],
@@ -251,7 +270,7 @@ export default function FindWorkAllJobs() {
       return queryPass && catPass && locPass && typePass && salaryPass;
     });
     return sortJobs(list, sort);
-  }, [openJobs, search, category, location, contractType, salary, sort]);
+  }, [openJobs, search, category, location, contractType, salary, sort, navSlug, navGroup]);
 
   function applyHotSearch(term: string) {
     setSearch(term);

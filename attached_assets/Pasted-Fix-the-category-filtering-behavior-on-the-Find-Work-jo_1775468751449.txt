@@ -1,0 +1,110 @@
+Fix the category filtering behavior on the Find Work jobs listing page when the user is already on that page.
+
+Problem
+The navbar category dropdown works when navigating from another page, but if I am already on the jobs listing page (`FindWorkAllJobs` / `FindWorkJob.tsx`) and click another category like:
+- Development & IT
+- Design & Creative
+
+the page URL may change, but the filtered results do not update.
+
+Current behavior
+- Works when coming from another page
+- Does not refresh/reapply filters when already on the jobs listing page
+
+Expected behavior
+The category filter should update every time a navbar category is clicked, even if the user is already on the jobs page.
+
+What to fix
+
+1. Make the jobs page react to URL query changes
+In the jobs listing page component (`FindWorkAllJobs.tsx` and/or `FindWorkJob.tsx`, whichever is actually rendering `/find-work/jobs`):
+- watch the `category` query param from the URL
+- whenever it changes, re-run the filtering logic
+- update the active category state
+- update the displayed jobs immediately
+
+This means the page must not only set the filter on first mount.
+It must also respond when the query param changes while staying on the same route.
+
+2. Fix stale state issue
+Most likely problem:
+- the selected category is only initialized once from the URL
+- state is not updated when `location.search`, `searchParams`, or router query changes
+
+Fix this by:
+- deriving the active category from the URL
+or
+- using an effect that listens to the query param and updates local filter state
+
+Examples of acceptable approaches:
+- React Router: watch `location.search` or `searchParams`
+- Next/router style: watch router query/category changes
+- avoid relying only on initial `useState(...)` from URL
+
+3. Keep category and filtered jobs in sync
+When the URL changes to something like:
+- `/find-work/jobs?category=development-it`
+- `/find-work/jobs?category=design-creative`
+
+the page should:
+- set the selected category chip/filter correctly
+- recalculate filtered jobs from shared admin-connected jobs data
+- rerender the list immediately
+
+4. Preserve All Jobs behavior
+Keep this behavior:
+- `All Jobs` in the navbar goes to `/find-work` (`FindWork.tsx`)
+- category-specific links go to `/find-work/jobs?...`
+
+Do not change that behavior.
+
+5. Update filtering on repeated category clicks
+Even while already on `/find-work/jobs`, clicking a different navbar category should:
+- update the URL
+- update active filter state
+- update results on the same page without needing a full reload
+
+6. Shared data source must still be used
+Filtered results must continue using the same shared job source as:
+- `AdminFindWork.tsx`
+- `FindWork.tsx`
+- `FindWorkAllJobs.tsx` / `FindWorkJob.tsx`
+
+Do not hardcode category results.
+
+7. Suggested implementation direction
+Check the jobs page for code like:
+- `const [selectedCategory, setSelectedCategory] = useState(initialCategoryFromUrl)`
+
+If that exists, fix it so it also updates when the URL changes.
+
+Possible pattern:
+- read category from URL
+- normalize it
+- use `useEffect(() => setSelectedCategory(normalizedCategory), [normalizedCategory])`
+- make filtered jobs depend on `selectedCategory`
+
+Or better:
+- derive filtered jobs directly from the current URL category param and other filters, instead of duplicating it in stale local state
+
+8. Keep UI/design unchanged
+Do not redesign the page.
+Keep:
+- current dropdown UI
+- current jobs page UI
+- current filter chips/tabs
+- current theme/colors/layout
+
+Only fix the behavior.
+
+9. Output expectation
+Return updated code for:
+- the jobs page component that handles `/find-work/jobs`
+- any URL/category parsing helper
+- filter synchronization logic
+
+10. Important
+The fix must work when:
+- opening category pages directly from another page
+- switching categories while already on `/find-work/jobs`
+- switching multiple times in a row
