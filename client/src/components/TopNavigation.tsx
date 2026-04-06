@@ -161,7 +161,7 @@ const workCategories = {
     specialties: ["All Categories", "All Skill Levels", "All Locations"],
     demand: "Very High",
     averageRate: "$8-65/hr",
-    path: "/find-work/jobs?category=all",
+    path: "/find-work",
     popular: true,
   },
   development: {

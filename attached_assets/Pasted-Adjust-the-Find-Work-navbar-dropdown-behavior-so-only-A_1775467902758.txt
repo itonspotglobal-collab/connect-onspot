@@ -1,0 +1,62 @@
+Adjust the Find Work navbar dropdown behavior so only **All Jobs** routes back to `FindWork.tsx`, while the other categories still route to the full jobs page rendered by `FindWorkJob.tsx` with category filtering.
+
+Required behavior
+
+1. `All Jobs`
+- Clicking `All Jobs` in the Find Work navbar dropdown should go to the main Find Work landing page.
+- Route it to the page/component for `FindWork.tsx`
+- Do not send `All Jobs` to `FindWorkJob.tsx`
+
+Expected route:
+- `/find-work`
+
+2. Other categories
+These should still open the jobs listing page rendered by `FindWorkJob.tsx`, filtered by the selected category:
+- Development & IT
+- Design & Creative
+- Sales & Marketing
+- Admin & Support
+- Writing & Translation
+
+Expected examples:
+- `/find-work/jobs?category=development-it`
+- `/find-work/jobs?category=design-creative`
+- `/find-work/jobs?category=sales-marketing`
+- `/find-work/jobs?category=admin-support`
+- `/find-work/jobs?category=writing-translation`
+
+3. Keep old website behavior
+Restore the old behavior exactly:
+- `All Jobs` = Find Work landing page
+- category-specific items = filtered jobs page
+
+4. Update navbar dropdown links
+In the current Find Work dropdown/menu:
+- change only the `All Jobs` link target to `/find-work`
+- keep the other category links pointed to `/find-work/jobs?...`
+
+5. Keep FindWorkJob.tsx behavior unchanged for categories
+`FindWorkJob.tsx` should still:
+- read the category from the URL
+- initialize the page filter from that category
+- show matching jobs from the shared admin-connected jobs source
+
+6. Keep current design intact
+Do not redesign the dropdown.
+Keep:
+- current layout
+- current colors
+- current card/dropdown styling
+- current hover states
+
+Only fix the navigation behavior.
+
+7. Output expectation
+Return updated code for:
+- navbar dropdown/category link definitions
+- any routing helper if needed
+
+Important:
+- Only `All Jobs` should open `FindWork.tsx`
+- Do not route `All Jobs` to the jobs listing page
+- Other categories must still route to `FindWorkJob.tsx` with filtering
