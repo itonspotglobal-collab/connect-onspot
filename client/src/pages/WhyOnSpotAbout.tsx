@@ -219,7 +219,8 @@ const dayVisuals = [
   {
     label: "Life + Work",
     photo: dayLifeWork,
-    imgStyle: { objectPosition: "50% 55%" },
+    // Shifted left (30%) and up (32%) to frame the three people rather than the table
+    imgStyle: { objectPosition: "30% 32%" },
   },
   {
     label: "Deep Work",
