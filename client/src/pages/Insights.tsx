@@ -5,16 +5,21 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   User, Calendar, Clock, Eye, Globe, TrendingUp,
   ExternalLink, Rss, ArrowRight, BookOpen, Linkedin, Youtube,
   Search, PlayCircle, Mic, LayoutGrid, Users, Briefcase,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, X,
 } from "lucide-react";
 import type { Post } from "@shared/schema";
 
 // ─── Navigation categories ────────────────────────────────────────────────────
 const NAV_CATEGORIES = [
-  { id: "View All",          label: "View All",          icon: LayoutGrid },
   { id: "CEO Insights",      label: "CEO Insights",      icon: Rss        },
   { id: "Talent Insights",   label: "Talent Insights",   icon: User       },
   { id: "Client Insights",   label: "Client Insights",   icon: Briefcase  },
@@ -23,7 +28,8 @@ const NAV_CATEGORIES = [
   { id: "Podcast Videos",    label: "Podcast Videos",    icon: Mic        },
 ] as const;
 
-type NavCategoryId = (typeof NAV_CATEGORIES)[number]["id"];
+// "View All" is still a valid state but has no tab; it is the default
+type NavCategoryId = (typeof NAV_CATEGORIES)[number]["id"] | "View All";
 
 // ─── Cover image fallbacks by category ────────────────────────────────────────
 const COVER_IMAGES: Record<string, string> = {
@@ -158,11 +164,10 @@ function ArticleCard({ article }: { article: ArticleItem }) {
 
   return (
     <Card
-      className="overflow-hidden transition-all duration-300 group flex flex-col cursor-pointer h-full bg-[#080a1a]/80 border-white/10 hover-elevate"
+      className="overflow-hidden transition-all duration-300 group flex flex-col cursor-pointer h-full bg-white border-slate-200/80 hover-elevate"
       onClick={() => navigate(`/insights/${article.slug}`)}
     >
-      {/* Cover image — locked to 16:9, object-cover, never distorts */}
-      <div className="aspect-video bg-[#040611] relative overflow-hidden flex-shrink-0">
+      <div className="aspect-video bg-slate-100 relative overflow-hidden flex-shrink-0">
         <img
           src={article.image}
           alt={article.title}
@@ -172,7 +177,7 @@ function ArticleCard({ article }: { article: ArticleItem }) {
           height={450}
           onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
         />
-        <div className="absolute bottom-0 left-0 right-0 px-4 py-2 bg-gradient-to-t from-black/70 to-transparent flex items-end justify-between">
+        <div className="absolute bottom-0 left-0 right-0 px-4 py-2 bg-gradient-to-t from-black/60 to-transparent flex items-end justify-between">
           <Badge
             variant="secondary"
             className="text-[10px] uppercase tracking-wider bg-white/20 text-white border-white/30 backdrop-blur-sm"
@@ -188,15 +193,15 @@ function ArticleCard({ article }: { article: ArticleItem }) {
       </div>
 
       <CardContent className="p-5 flex flex-col flex-1 gap-3">
-        <h4 className="text-base font-bold leading-snug line-clamp-2 text-white group-hover:text-[#474ead] transition-colors">
+        <h4 className="text-base font-bold leading-snug line-clamp-2 text-slate-900 group-hover:text-[#474ead] transition-colors">
           {article.title}
         </h4>
 
-        <p className="text-sm text-slate-400 line-clamp-3 leading-relaxed flex-1">
+        <p className="text-sm text-slate-500 line-clamp-3 leading-relaxed flex-1">
           {article.excerpt || "Read the full article for insights and analysis."}
         </p>
 
-        <div className="border-t border-white/10 pt-3 mt-auto">
+        <div className="border-t border-slate-200 pt-3 mt-auto">
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <a
               href={authorHref}
@@ -204,21 +209,21 @@ function ArticleCard({ article }: { article: ArticleItem }) {
               className="flex items-center gap-2 group/author min-w-0"
               title={`Articles by ${article.author}`}
             >
-              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#474ead]/20 text-[#474ead] text-[10px] font-bold flex items-center justify-center">
+              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#474ead]/15 text-[#474ead] text-[10px] font-bold flex items-center justify-center">
                 {initials}
               </span>
-              <span className="text-xs font-semibold text-slate-300 group-hover/author:text-[#474ead] transition-colors truncate underline-offset-2 group-hover/author:underline">
+              <span className="text-xs font-semibold text-slate-600 group-hover/author:text-[#474ead] transition-colors truncate underline-offset-2 group-hover/author:underline">
                 {article.author}
               </span>
             </a>
 
-            <span className="flex items-center gap-1 text-[11px] text-slate-500 flex-shrink-0">
+            <span className="flex items-center gap-1 text-[11px] text-slate-400 flex-shrink-0">
               <Clock className="w-3 h-3" />
               {article.readTime}
             </span>
           </div>
 
-          <div className="flex items-center gap-3 mt-1.5 text-[11px] text-slate-500">
+          <div className="flex items-center gap-3 mt-1.5 text-[11px] text-slate-400">
             <span className="flex items-center gap-1">
               <Calendar className="w-3 h-3" />
               {article.date}
@@ -244,12 +249,11 @@ function PodcastCard({ article }: { article: ArticleItem }) {
 
   return (
     <Card
-      className="overflow-hidden transition-all duration-300 group cursor-pointer bg-[#080a1a]/80 border-white/10 hover-elevate"
+      className="overflow-hidden transition-all duration-300 group cursor-pointer bg-white border-slate-200/80 hover-elevate"
       onClick={() => navigate(`/insights/${article.slug}`)}
     >
       <div className="flex flex-col sm:flex-row">
-        {/* Thumbnail — 16:9 on mobile, fixed 176×120 column on desktop */}
-        <div className="aspect-video sm:aspect-auto sm:w-44 sm:min-h-[120px] flex-shrink-0 bg-[#040611] relative overflow-hidden">
+        <div className="aspect-video sm:aspect-auto sm:w-44 sm:min-h-[120px] flex-shrink-0 bg-slate-100 relative overflow-hidden">
           <img
             src={article.image}
             alt={article.title}
@@ -270,7 +274,7 @@ function PodcastCard({ article }: { article: ArticleItem }) {
           <div className="flex items-center gap-2">
             <Badge
               variant="secondary"
-              className="text-[10px] uppercase tracking-wider self-start bg-white/10 text-slate-300 border-white/10"
+              className="text-[10px] uppercase tracking-wider self-start bg-slate-100 text-slate-600 border-slate-200"
             >
               Podcast
             </Badge>
@@ -281,35 +285,35 @@ function PodcastCard({ article }: { article: ArticleItem }) {
             )}
           </div>
 
-          <h4 className="text-sm font-bold line-clamp-2 text-white group-hover:text-[#474ead] transition-colors leading-snug">
+          <h4 className="text-sm font-bold line-clamp-2 text-slate-900 group-hover:text-[#474ead] transition-colors leading-snug">
             {article.title}
           </h4>
 
-          <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed flex-1">
+          <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed flex-1">
             {article.excerpt || "Listen to this episode for expert conversations."}
           </p>
 
-          <div className="flex items-center gap-2 flex-wrap mt-auto pt-2 border-t border-white/10">
+          <div className="flex items-center gap-2 flex-wrap mt-auto pt-2 border-t border-slate-200">
             <a
               href={authorHref}
               onClick={(e) => e.stopPropagation()}
               className="flex items-center gap-1.5 group/author"
               title={`Episodes by ${article.author}`}
             >
-              <span className="w-5 h-5 rounded-full bg-[#474ead]/20 text-[#474ead] text-[9px] font-bold flex items-center justify-center flex-shrink-0">
+              <span className="w-5 h-5 rounded-full bg-[#474ead]/15 text-[#474ead] text-[9px] font-bold flex items-center justify-center flex-shrink-0">
                 {initials}
               </span>
-              <span className="text-xs font-semibold text-slate-300 group-hover/author:text-[#474ead] transition-colors underline-offset-2 group-hover/author:underline">
+              <span className="text-xs font-semibold text-slate-600 group-hover/author:text-[#474ead] transition-colors underline-offset-2 group-hover/author:underline">
                 {article.author}
               </span>
             </a>
-            <span className="text-slate-600 text-xs">·</span>
-            <span className="text-[11px] text-slate-500 flex items-center gap-1">
+            <span className="text-slate-300 text-xs">·</span>
+            <span className="text-[11px] text-slate-400 flex items-center gap-1">
               <Calendar className="w-3 h-3" />
               {article.date}
             </span>
-            <span className="text-slate-600 text-xs">·</span>
-            <span className="text-[11px] text-slate-500 flex items-center gap-1">
+            <span className="text-slate-300 text-xs">·</span>
+            <span className="text-[11px] text-slate-400 flex items-center gap-1">
               <Clock className="w-3 h-3" />
               {article.readTime}
             </span>
@@ -323,17 +327,17 @@ function PodcastCard({ article }: { article: ArticleItem }) {
 // ─── ArticleCardSkeleton ───────────────────────────────────────────────────────
 function ArticleCardSkeleton() {
   return (
-    <Card className="overflow-hidden flex flex-col bg-[#080a1a]/80 border-white/10">
-      <Skeleton className="aspect-video bg-white/10" />
+    <Card className="overflow-hidden flex flex-col bg-white border-slate-200">
+      <Skeleton className="aspect-video bg-slate-200" />
       <CardContent className="p-5 flex flex-col gap-3">
-        <Skeleton className="h-5 w-full bg-white/10" />
-        <Skeleton className="h-4 w-full bg-white/10" />
-        <Skeleton className="h-4 w-3/4 bg-white/10" />
-        <div className="border-t border-white/10 pt-3 mt-1 flex items-center justify-between">
-          <Skeleton className="h-5 w-28 bg-white/10" />
-          <Skeleton className="h-4 w-16 bg-white/10" />
+        <Skeleton className="h-5 w-full bg-slate-200" />
+        <Skeleton className="h-4 w-full bg-slate-200" />
+        <Skeleton className="h-4 w-3/4 bg-slate-200" />
+        <div className="border-t border-slate-200 pt-3 mt-1 flex items-center justify-between">
+          <Skeleton className="h-5 w-28 bg-slate-200" />
+          <Skeleton className="h-4 w-16 bg-slate-200" />
         </div>
-        <Skeleton className="h-3 w-24 mt-0.5 bg-white/10" />
+        <Skeleton className="h-3 w-24 mt-0.5 bg-slate-200" />
       </CardContent>
     </Card>
   );
@@ -369,7 +373,6 @@ function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
 
   return (
     <>
-      {/* progress-bar keyframe */}
       <style>{`
         @keyframes carousel-bar { from { width: 0% } to { width: 100% } }
         .carousel-bar { animation: carousel-bar 5.5s linear forwards; }
@@ -384,7 +387,6 @@ function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
         role="region"
         aria-label="Featured articles carousel"
       >
-        {/* ── Slides (cross-fade) ─────────────────────────────────────────── */}
         {articles.map((a, i) => (
           <div
             key={a.id}
@@ -399,15 +401,12 @@ function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
               draggable={false}
               onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
             />
-            {/* Overlays for readability */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#080a1a] via-[#0d0f2d]/65 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#080a1a]/85 via-[#0d0f2d]/30 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/65 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-900/85 via-slate-900/30 to-transparent" />
           </div>
         ))}
 
-        {/* ── Content ─────────────────────────────────────────────────────── */}
         <div className="absolute inset-0 z-10 flex flex-col justify-end px-8 pb-10 sm:px-12 sm:pb-12">
-          {/* Badges */}
           <div className="flex items-center gap-2 mb-3">
             <span className="text-[10px] uppercase tracking-[0.22em] font-semibold px-3 py-1 rounded-full bg-[#474ead] text-white">
               {art.category}
@@ -419,19 +418,16 @@ function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
             )}
           </div>
 
-          {/* Title */}
           <h2 className="text-2xl sm:text-3xl lg:text-[2.1rem] font-semibold text-white leading-tight max-w-2xl mb-3 tracking-tight">
             {art.title}
           </h2>
 
-          {/* Excerpt */}
           {art.excerpt && (
             <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-xl mb-5 line-clamp-2">
               {art.excerpt}
             </p>
           )}
 
-          {/* Meta row */}
           <div className="flex items-center gap-4 flex-wrap">
             <span className="flex items-center gap-1.5 text-xs">
               <span className="w-5 h-5 rounded-full bg-[#474ead]/30 text-[#474ead] text-[9px] font-bold flex items-center justify-center flex-shrink-0">
@@ -460,7 +456,6 @@ function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
           </div>
         </div>
 
-        {/* ── Arrow controls ──────────────────────────────────────────────── */}
         {total > 1 && (
           <>
             <button
@@ -480,7 +475,6 @@ function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
           </>
         )}
 
-        {/* ── Dot indicators ──────────────────────────────────────────────── */}
         {total > 1 && (
           <div className="absolute bottom-5 right-8 sm:right-12 z-20 flex items-center gap-2">
             {articles.map((_, i) => (
@@ -498,7 +492,6 @@ function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
           </div>
         )}
 
-        {/* ── Progress bar ────────────────────────────────────────────────── */}
         {total > 1 && !paused && (
           <div className="absolute bottom-0 left-0 right-0 z-20 h-[2px] bg-white/10">
             <div
@@ -516,22 +509,36 @@ function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
 function CategoryNav({
   selected,
   onSelect,
-  navVisible,
 }: {
   selected: NavCategoryId;
   onSelect: (id: NavCategoryId) => void;
-  navVisible: boolean;
 }) {
+  const [, navigate] = useLocation();
+
   return (
-    <div
-      className="sticky z-40 bg-[#0a0c22]/95 backdrop-blur-md border-b border-white/10"
-      style={{
-        top: navVisible ? "var(--nav-h)" : "0",
-        transition: "top 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-      }}
-    >
+    <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center overflow-x-auto scrollbar-hide -mb-px gap-0">
+          {/* OnSpot logo — replaces "View All"; click goes to homepage */}
+          <button
+            onClick={() => navigate("/")}
+            className="flex items-center gap-2 px-4 py-3.5 flex-shrink-0 mr-2 border-b-2 border-transparent"
+            aria-label="Go to OnSpot homepage"
+          >
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-md bg-[#474ead] flex items-center justify-center text-white font-bold text-sm relative">
+                <span>O</span>
+                <div className="absolute w-1.5 h-1.5 rounded-full bg-white top-1 right-1" />
+              </div>
+              <span className="font-bold text-[#474ead] text-base tracking-tight leading-none">
+                OnSpot
+              </span>
+            </div>
+          </button>
+
+          {/* Divider */}
+          <div className="w-px h-5 bg-slate-200 flex-shrink-0 mr-2" />
+
           {NAV_CATEGORIES.map(({ id, label, icon: Icon }) => {
             const active = selected === id;
             return (
@@ -544,7 +551,7 @@ function CategoryNav({
                   ${
                     active
                       ? "border-[#474ead] text-[#474ead]"
-                      : "border-transparent text-slate-400 hover:text-white hover:border-slate-600"
+                      : "border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300"
                   }
                 `}
               >
@@ -573,10 +580,10 @@ function SectionHeading({
     <div className="flex items-start justify-between gap-4 mb-8 flex-wrap">
       <div className="flex items-center gap-2">
         <Icon className="w-5 h-5 text-[#474ead]" />
-        <h2 className="text-2xl font-bold text-white">{title}</h2>
+        <h2 className="text-2xl font-bold text-slate-900">{title}</h2>
       </div>
       {subtitle && (
-        <p className="text-sm text-slate-400 max-w-md">{subtitle}</p>
+        <p className="text-sm text-slate-500 max-w-md">{subtitle}</p>
       )}
     </div>
   );
@@ -585,8 +592,8 @@ function SectionHeading({
 // ─── Empty state ──────────────────────────────────────────────────────────────
 function EmptyState({ icon: Icon, message }: { icon: React.ElementType; message: string }) {
   return (
-    <div className="rounded-2xl border border-dashed border-white/10 bg-[#080a1a]/40 p-8 text-center text-slate-400">
-      <Icon className="w-8 h-8 mx-auto mb-3 opacity-30" />
+    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-slate-400">
+      <Icon className="w-8 h-8 mx-auto mb-3 opacity-40" />
       <p className="text-sm">{message}</p>
     </div>
   );
@@ -607,8 +614,8 @@ function HighlightCard({ article }: { article: ArticleItem }) {
         className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
         onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-[#050715]/96 via-[#050715]/55 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-r from-[#050715]/72 via-[#050715]/20 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/96 via-slate-900/55 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-r from-slate-900/72 via-slate-900/20 to-transparent" />
       <div className="absolute inset-0 flex flex-col justify-end p-7 sm:p-10">
         <span className="inline-flex self-start mb-3 text-[10px] uppercase tracking-[0.22em] font-semibold px-3 py-1 rounded-full bg-[#474ead] text-white">
           {article.category}
@@ -653,11 +660,10 @@ function PanelArticleCard({ article }: { article: ArticleItem }) {
   const [, navigate] = useLocation();
   return (
     <div
-      className="bg-[#080a1a]/80 border border-white/10 rounded-2xl overflow-hidden cursor-pointer group hover-elevate flex-shrink-0"
+      className="bg-white border border-slate-200 rounded-2xl overflow-hidden cursor-pointer group hover-elevate flex-shrink-0"
       onClick={() => navigate(`/insights/${article.slug}`)}
     >
-      {/* Panel thumbnail — 16:9 locked, consistent with ArticleCard */}
-      <div className="relative aspect-video overflow-hidden bg-[#040611]">
+      <div className="relative aspect-video overflow-hidden bg-slate-100">
         <img
           src={article.image}
           alt={article.title}
@@ -665,21 +671,21 @@ function PanelArticleCard({ article }: { article: ArticleItem }) {
           loading="lazy"
           onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#080a1a]/70 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/70 to-transparent" />
         <span className="absolute bottom-3 left-3 text-[10px] uppercase tracking-[0.2em] font-semibold px-3 py-1 rounded-full bg-[#474ead] text-white">
           {article.category}
         </span>
       </div>
       <div className="p-5">
-        <h3 className="text-base font-bold text-white leading-tight mb-2 line-clamp-2">
+        <h3 className="text-base font-bold text-slate-900 leading-tight mb-2 line-clamp-2">
           {article.title}
         </h3>
         {article.excerpt && (
-          <p className="text-slate-400 text-sm leading-relaxed line-clamp-2 mb-3">
+          <p className="text-slate-500 text-sm leading-relaxed line-clamp-2 mb-3">
             {article.excerpt}
           </p>
         )}
-        <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap">
+        <div className="flex items-center gap-3 text-xs text-slate-400 flex-wrap">
           <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {article.date}</span>
           <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {article.readTime}</span>
         </div>
@@ -691,13 +697,13 @@ function PanelArticleCard({ article }: { article: ArticleItem }) {
 // ─── EditorialCTA ─────────────────────────────────────────────────────────────
 function EditorialCTA() {
   return (
-    <div className="flex-1 bg-gradient-to-br from-[#474ead]/15 via-[#0d0f2d]/80 to-[#0d0f2d] border border-[#474ead]/20 rounded-2xl p-6 flex flex-col justify-between" style={{ minHeight: "160px" }}>
+    <div className="flex-1 bg-gradient-to-br from-[#474ead]/10 via-slate-50 to-white border border-[#474ead]/20 rounded-2xl p-6 flex flex-col justify-between" style={{ minHeight: "160px" }}>
       <div>
-        <div className="w-10 h-10 rounded-xl bg-[#474ead]/20 flex items-center justify-center mb-4">
+        <div className="w-10 h-10 rounded-xl bg-[#474ead]/15 flex items-center justify-center mb-4">
           <TrendingUp className="w-5 h-5 text-[#474ead]" />
         </div>
-        <h4 className="text-base font-bold text-white mb-2">Stay ahead of the curve.</h4>
-        <p className="text-sm text-slate-400 leading-relaxed">
+        <h4 className="text-base font-bold text-slate-900 mb-2">Case Study</h4>
+        <p className="text-sm text-slate-600 leading-relaxed">
           Follow OnSpot for the latest outsourcing intelligence, BPO strategies, and workforce insights.
         </p>
       </div>
@@ -714,7 +720,7 @@ function EditorialCTA() {
           href="https://youtube.com/@onspotglobal"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-white/10 transition"
+          className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 transition"
         >
           <Youtube className="w-3.5 h-3.5" /> Watch on YouTube
         </a>
@@ -743,13 +749,12 @@ function EditorialSection({
   const gridArticles = showAll ? articles.slice(2) : articles.slice(2, 2 + GRID_LIMIT);
   const hasMore = !showAll && articles.length > 2 + GRID_LIMIT;
 
-  // When searching/filtering by author, show all results as a simple grid
   if (searchActive) {
     return (
       <>
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-white tracking-tight">Search results</h2>
-          <p className="text-sm text-slate-400 mt-1">{articles.length} article{articles.length !== 1 ? "s" : ""} found</p>
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Search results</h2>
+          <p className="text-sm text-slate-500 mt-1">{articles.length} article{articles.length !== 1 ? "s" : ""} found</p>
         </div>
         {articles.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-14">
@@ -772,30 +777,27 @@ function EditorialSection({
 
   return (
     <>
-      {/* ── Section heading ─────────────────────────────────────────────── */}
       <div className="mb-8 pt-2">
         <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#474ead] mb-2">
           All Insights
         </p>
         <div className="flex items-end justify-between gap-6 flex-wrap">
-          <h2 className="text-3xl md:text-4xl font-bold text-white tracking-tight leading-tight">
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight leading-tight">
             Explore the full knowledge base.
           </h2>
-          <p className="text-sm text-slate-400 max-w-xs leading-relaxed hidden sm:block">
+          <p className="text-sm text-slate-500 max-w-xs leading-relaxed hidden sm:block">
             Deep dives, expert analysis, and industry perspectives — curated by the OnSpot team.
           </p>
         </div>
-        {/* Thin rule */}
-        <div className="mt-6 h-px bg-gradient-to-r from-[#474ead]/40 via-white/10 to-transparent" />
+        <div className="mt-6 h-px bg-gradient-to-r from-[#474ead]/30 via-slate-200 to-transparent" />
       </div>
 
-      {/* ── Hero editorial row ──────────────────────────────────────────── */}
       {isLoading ? (
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 mb-10">
-          <Skeleton className="rounded-2xl bg-white/10" style={{ minHeight: "460px" }} />
+          <Skeleton className="rounded-2xl bg-slate-200" style={{ minHeight: "460px" }} />
           <div className="flex flex-col gap-5">
-            <Skeleton className="rounded-2xl bg-white/10 h-[268px]" />
-            <Skeleton className="rounded-2xl bg-white/10 flex-1" style={{ minHeight: "164px" }} />
+            <Skeleton className="rounded-2xl bg-slate-200 h-[268px]" />
+            <Skeleton className="rounded-2xl bg-slate-200 flex-1" style={{ minHeight: "164px" }} />
           </div>
         </div>
       ) : highlightArticle ? (
@@ -808,7 +810,6 @@ function EditorialSection({
         </div>
       ) : null}
 
-      {/* ── Supporting articles grid ─────────────────────────────────────── */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
           {Array.from({ length: 6 }).map((_, i) => <ArticleCardSkeleton key={i} />)}
@@ -821,19 +822,17 @@ function EditorialSection({
         </div>
       ) : null}
 
-      {/* ── View all / load more ─────────────────────────────────────────── */}
       {hasMore && (
         <div className="flex justify-center mb-12">
           <button
             onClick={() => setShowAll(true)}
-            className="inline-flex items-center gap-2.5 rounded-full border border-white/10 bg-white/[0.04] px-8 py-3 text-sm font-semibold text-slate-300 hover:bg-white/10 hover:text-white transition-all"
+            className="inline-flex items-center gap-2.5 rounded-full border border-slate-200 bg-white px-8 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all"
           >
             View all {articles.length} insights <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       )}
 
-      {/* ── Podcast episodes ────────────────────────────────────────────── */}
       {episodes.length > 0 && (
         <section className="mb-14">
           <SectionHeading
@@ -874,37 +873,35 @@ const INSIGHTS_CTA_CARDS = [
 function InsightsCTA() {
   return (
     <section className="mb-10">
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-8 py-10 md:px-12 md:py-14">
+      <div className="rounded-2xl border border-slate-200 bg-white px-8 py-10 md:px-12 md:py-14">
         <div className="grid grid-cols-1 lg:grid-cols-[45%_55%] gap-10 items-start">
 
-          {/* ── Left: label + headline + copy ── */}
           <div className="max-w-lg">
             <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-[#474ead] mb-4">
               Editorial CTA
             </p>
-            <h2 className="text-3xl md:text-4xl font-bold text-white leading-tight mb-5">
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 leading-tight mb-5">
               Turn insights into an operating advantage.
             </h2>
-            <p className="text-slate-300 text-base leading-8">
+            <p className="text-slate-600 text-base leading-8">
               Readers who are ready to move from ideas into execution should be
               able to transition naturally into your hire talent, managed
               services, or find work journeys.
             </p>
           </div>
 
-          {/* ── Right: 3 CTA cards ── */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {INSIGHTS_CTA_CARDS.map(({ title, copy, href }) => (
               <a
                 key={title}
                 href={href}
-                className="group flex flex-col gap-4 rounded-xl border border-white/10 bg-[#080a1a]/80 p-5 transition-all duration-200 hover:border-[#474ead]/40 hover:bg-[#080a1a]"
+                className="group flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-5 transition-all duration-200 hover:border-[#474ead]/40 hover:bg-white"
               >
                 <div className="flex-1">
-                  <h3 className="text-sm font-bold text-white mb-2">{title}</h3>
-                  <p className="text-xs text-slate-400 leading-5">{copy}</p>
+                  <h3 className="text-sm font-bold text-slate-900 mb-2">{title}</h3>
+                  <p className="text-xs text-slate-500 leading-5">{copy}</p>
                 </div>
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#474ead] group-hover:text-[#8e93ff] transition-colors">
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#474ead] group-hover:text-[#5b63d6] transition-colors">
                   Explore <ArrowRight className="w-3 h-3" />
                 </span>
               </a>
@@ -917,46 +914,93 @@ function InsightsCTA() {
   );
 }
 
+// ─── WeeklyNotesModal ─────────────────────────────────────────────────────────
+function WeeklyNotesModal({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-lg bg-white border-slate-200 p-0 overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-[#474ead] to-[#6b72e0] px-8 pt-8 pb-6">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+              <Rss className="w-5 h-5 text-white" />
+            </div>
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold text-white leading-tight">
+                Weekly Notes from our CEO
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+          <p className="text-white/80 text-sm leading-relaxed">
+            Raw, unfiltered perspectives on outsourcing, leadership, and business
+            growth — delivered every week.
+          </p>
+        </div>
+
+        {/* Body */}
+        <div className="px-8 py-6">
+          <p className="text-slate-600 text-sm leading-relaxed mb-6">
+            Get exclusive insights straight from our leadership team. No fluff —
+            just honest takes on the future of global outsourcing, talent
+            strategy, and what's happening in the industry right now.
+          </p>
+
+          <div className="space-y-3 mb-6">
+            {[
+              "Candid thoughts on industry trends",
+              "Behind-the-scenes of how OnSpot operates",
+              "Actionable advice for clients and talent",
+              "Delivered every week, short and readable",
+            ].map((item) => (
+              <div key={item} className="flex items-start gap-2.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#474ead] mt-1.5 flex-shrink-0" />
+                <span className="text-sm text-slate-600">{item}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <a
+              href="https://www.linkedin.com/company/onspotglobal"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-[#474ead] px-6 py-3 text-sm font-semibold text-white hover:bg-[#5b63d6] transition"
+            >
+              <Linkedin className="w-4 h-4" />
+              Follow our CEO on LinkedIn
+            </a>
+            <button
+              onClick={onClose}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
+            >
+              Maybe later
+            </button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function Insights() {
   const [location] = useLocation();
   const [selectedCategory, setSelectedCategory] = useState<NavCategoryId>("View All");
   const [searchQuery, setSearchQuery] = useState("");
   const [authorFilter, setAuthorFilter] = useState("");
+  const [ceoModalOpen, setCeoModalOpen] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const a = params.get("author");
     if (a) setAuthorFilter(decodeURIComponent(a));
   }, [location]);
-
-  const [navVisible, setNavVisible] = useState(true);
-  const lastScrollY = useRef(0);
-  const ticking = useRef(false);
-
-  useEffect(() => {
-    const onScroll = () => {
-      if (ticking.current) return;
-      ticking.current = true;
-      requestAnimationFrame(() => {
-        const y = Math.max(0, window.scrollY);
-        const delta = Math.abs(y - lastScrollY.current);
-        if (delta >= 10) {
-          if (y < 100) {
-            setNavVisible(true);
-          } else if (y > lastScrollY.current && y > 200) {
-            setNavVisible(false);
-          } else if (y < lastScrollY.current) {
-            setNavVisible(true);
-          }
-          lastScrollY.current = y;
-        }
-        ticking.current = false;
-      });
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
 
   const { data, isLoading } = useQuery<{ success: boolean; posts: Post[] }>({
     queryKey: ["/api/posts"],
@@ -1001,6 +1045,8 @@ export default function Insights() {
       ? allArticles.filter((a) => a.isEpisode)
       : selectedCategory === "CEO Insights"
       ? allArticles.filter((a) => !a.isEpisode && matchesCeo(a))
+      : selectedCategory === "View All"
+      ? []
       : allArticles.filter(
           (a) =>
             !a.isEpisode &&
@@ -1017,73 +1063,21 @@ export default function Insights() {
 
   // ─── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0d0f2d] via-[#141656] to-[#0d0f2d]">
+    <div className="min-h-screen bg-slate-50">
+      <WeeklyNotesModal open={ceoModalOpen} onClose={() => setCeoModalOpen(false)} />
 
-      {/* ── Hero ──────────────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden bg-transparent border-b border-white/10">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(71,78,173,0.45),transparent_38%),radial-gradient(ellipse_at_80%_10%,rgba(142,147,255,0.22),transparent_32%)] pointer-events-none" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center relative">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.3em] text-slate-300">
-            Insights &amp; Resources
-          </div>
-          <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-white mb-4 leading-tight">
-            Outsourcing Intelligence Hub
-          </h1>
-          <p className="text-lg text-slate-300 max-w-3xl mx-auto mb-10 leading-8">
-            Stay ahead with expert analysis, industry trends, and actionable
-            insights on global outsourcing, BPO services, and workforce
-            optimization.
-          </p>
-
-          {/* Search bar */}
-          <div className="max-w-2xl mx-auto mb-4">
-            <div className="relative p-[1px] rounded-full bg-gradient-to-r from-[#474ead]/40 via-[#474ead]/20 to-[#474ead]/40">
-              <div className="flex items-center bg-[#080a1a] rounded-full px-4 py-3 backdrop-blur transition-all focus-within:ring-2 focus-within:ring-[#474ead]/40">
-                <Search className="w-5 h-5 text-[#474ead]/70 mr-3 flex-shrink-0" />
-                <input
-                  type="text"
-                  placeholder="Search insights, topics, or authors…"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-transparent text-sm text-white focus:outline-none placeholder:text-slate-500"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Active author filter pill */}
-          {authorFilter && (
-            <div className="flex justify-center mt-2">
-              <span className="inline-flex items-center gap-2 rounded-full bg-[#474ead]/20 border border-[#474ead]/30 text-[#474ead] text-xs px-3 py-1.5 font-medium">
-                <Users className="w-3 h-3" />
-                Articles by {authorFilter}
-                <button
-                  onClick={() => setAuthorFilter("")}
-                  className="ml-1 hover:text-white transition-colors"
-                  aria-label="Clear author filter"
-                >
-                  ×
-                </button>
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── Category navigation ────────────────────────────────────────────── */}
+      {/* ── Category navigation (top, sticky, no TopNavigation above it) ─── */}
       <CategoryNav
         selected={selectedCategory}
         onSelect={(id) => {
           setSelectedCategory(id);
           setAuthorFilter("");
         }}
-        navVisible={navVisible}
       />
 
       {/* ── Main content area ─────────────────────────────────────────────── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
-        {/* Empty / no results state */}
         {!isLoading && isEmpty && (
           <div className="text-center py-20 text-slate-400">
             <Search className="w-10 h-10 mx-auto mb-4 opacity-30" />
@@ -1099,14 +1093,12 @@ export default function Insights() {
         {/* ── VIEW ALL: Featured carousel + editorial section ───────────────── */}
         {selectedCategory === "View All" && (
           <>
-            {/* Featured carousel — unchanged */}
             {!isLoading && featuredArticles.length > 0 && !searchQuery && !authorFilter && (
               <section className="mb-10">
                 <FeaturedCarousel articles={featuredArticles} />
               </section>
             )}
 
-            {/* Editorial section */}
             <EditorialSection
               articles={latestArticles}
               episodes={latestEpisodes}
@@ -1173,15 +1165,15 @@ export default function Insights() {
             {contentChannels.map((channel, index) => (
               <div
                 key={index}
-                className="text-center rounded-2xl border border-white/10 bg-[#080a1a]/80 p-8 transition-all duration-300 hover-elevate"
+                className="text-center rounded-2xl border border-slate-200 bg-white p-8 transition-all duration-300 hover-elevate"
               >
                 <div
                   className={`w-14 h-14 mx-auto mb-5 rounded-2xl ${channel.color} flex items-center justify-center`}
                 >
                   <channel.icon className="w-7 h-7 text-white" />
                 </div>
-                <h4 className="text-lg font-bold mb-3 text-white">{channel.title}</h4>
-                <p className="text-sm text-slate-400 mb-6 leading-relaxed">
+                <h4 className="text-lg font-bold mb-3 text-slate-900">{channel.title}</h4>
+                <p className="text-sm text-slate-500 mb-6 leading-relaxed">
                   {channel.description}
                 </p>
                 <a
@@ -1198,22 +1190,87 @@ export default function Insights() {
           </div>
         </section>
 
-        {/* ── CEO Notes CTA ────────────────────────────────────────────────── */}
+        {/* ── Weekly CEO Notes — opens modal ────────────────────────────────── */}
         <section className="mb-10">
-          <div className="rounded-2xl border border-[#474ead]/30 bg-gradient-to-r from-[#474ead]/20 via-[#474ead]/10 to-[#8e93ff]/10 p-8 text-center">
+          <div className="rounded-2xl border border-[#474ead]/20 bg-gradient-to-r from-[#474ead]/8 via-[#474ead]/4 to-[#8e93ff]/8 p-8 text-center">
             <div className="flex items-center justify-center gap-2 mb-4">
               <Rss className="w-6 h-6 text-[#474ead]" />
-              <h3 className="text-2xl font-bold text-white">Daily Notes from our CEO</h3>
+              <h3 className="text-2xl font-bold text-slate-900">Weekly Notes from our CEO</h3>
             </div>
-            <p className="text-slate-300 mb-6 max-w-2xl mx-auto leading-8">
+            <p className="text-slate-600 mb-6 max-w-2xl mx-auto leading-8">
               Get exclusive insights and thoughts from our leadership team.
               Raw, unfiltered perspectives on the future of outsourcing and
               business growth.
             </p>
-            <button className="inline-flex items-center gap-2 rounded-full bg-[#474ead] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#474ead]/25 transition hover:scale-[1.02] hover:bg-[#5b63d6]">
-              Subscribe to CEO Notes
+            <button
+              onClick={() => setCeoModalOpen(true)}
+              className="inline-flex items-center gap-2 rounded-full bg-[#474ead] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#474ead]/20 transition hover:bg-[#5b63d6]"
+            >
+              Read Weekly Notes
               <ArrowRight className="w-4 h-4" />
             </button>
+          </div>
+        </section>
+
+        {/* ── Hero / title section (moved to bottom) ────────────────────────── */}
+        <section className="mb-10">
+          <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(71,78,173,0.08),transparent_50%),radial-gradient(ellipse_at_80%_10%,rgba(142,147,255,0.06),transparent_40%)] pointer-events-none" />
+            <div className="px-8 py-14 text-center relative sm:px-12 lg:px-16">
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#474ead]/20 bg-[#474ead]/6 px-4 py-2 text-xs uppercase tracking-[0.3em] text-[#474ead]">
+                Insights &amp; Resources
+              </div>
+              <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-slate-900 mb-4 leading-tight">
+                Outsourcing Intelligence Hub
+              </h1>
+              <p className="text-lg text-slate-600 max-w-3xl mx-auto mb-10 leading-8">
+                Stay ahead with expert analysis, industry trends, and actionable
+                insights on global outsourcing, BPO services, and workforce
+                optimization.
+              </p>
+
+              {/* Search bar */}
+              <div className="max-w-2xl mx-auto mb-4">
+                <div className="relative p-[1px] rounded-full bg-gradient-to-r from-[#474ead]/30 via-[#474ead]/15 to-[#474ead]/30">
+                  <div className="flex items-center bg-white rounded-full px-4 py-3 backdrop-blur transition-all focus-within:ring-2 focus-within:ring-[#474ead]/30 shadow-sm">
+                    <Search className="w-5 h-5 text-[#474ead]/60 mr-3 flex-shrink-0" />
+                    <input
+                      type="text"
+                      placeholder="Search insights, topics, or authors…"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full bg-transparent text-sm text-slate-900 focus:outline-none placeholder:text-slate-400"
+                    />
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery("")}
+                        className="ml-2 text-slate-400 hover:text-slate-600 transition-colors flex-shrink-0"
+                        aria-label="Clear search"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Active author filter pill */}
+              {authorFilter && (
+                <div className="flex justify-center mt-2">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-[#474ead]/10 border border-[#474ead]/20 text-[#474ead] text-xs px-3 py-1.5 font-medium">
+                    <Users className="w-3 h-3" />
+                    Articles by {authorFilter}
+                    <button
+                      onClick={() => setAuthorFilter("")}
+                      className="ml-1 hover:text-[#474ead]/60 transition-colors"
+                      aria-label="Clear author filter"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         </section>
 

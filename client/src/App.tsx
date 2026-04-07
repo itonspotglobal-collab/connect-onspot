@@ -82,7 +82,10 @@ function LegalOpsImmersive() {
 function PublicRouter() {
   const { isAuthenticated, user } = useAuth();
   const [location] = useLocation();
-  const hideTopNav = location === "/why-onspot/about";
+  const hideTopNav =
+    location === "/why-onspot/about" ||
+    location === "/insights" ||
+    location.startsWith("/insights/");
 
   return (
     <div className="min-h-screen bg-background">
