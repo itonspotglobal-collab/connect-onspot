@@ -289,145 +289,135 @@ function AdminJobRow({
   );
 }
 
-// ─── Topgrading Guide content ─────────────────────────────────────────────────
+// ─── Topgrading Guide — document-style content (mirrors TA-TGP-001 PDF) ────────
 
-const APPLICANT_STAGES = [
+const PROCEDURE_STAGES = [
   {
-    title: "Application",
+    code: "Stage 1",
+    title: "Preparation & Job Scorecard",
     items: [
-      "Submit your application through the ATS.",
-      "Complete required written responses: compensation history/expectation, motivation for the role, career goals, manager assessment insights, and a Core Values Alignment Scenario.",
-      "Applications missing the mandatory values-alignment question may be disqualified.",
+      { text: "Create Job Success Profile (JSP) based on:", sub: ["Key Accountabilities (3–5 measurable outcomes)", "Core Values and Behaviors", "Technical and Soft Skills"] },
+      { text: "Develop an A-Player Scorecard including:", sub: ["Core Competencies", "Performance Metrics", "Culture Fit Indicators"] },
+      { text: "Use Standard Template: A-Player Job Scorecard" },
     ],
   },
   {
+    code: "Stage 2",
+    title: "Attracting A-Players",
+    items: [
+      { text: "Publish Smart Job Ads using compelling, results-focused language." },
+      { text: "Emphasize OnSpot\u2019s culture, growth opportunity, and impact." },
+      { text: "Include self-screening challenge questions." },
+      { text: "Post across Careers Page, LinkedIn, and relevant platforms." },
+    ],
+  },
+  {
+    code: "Stage 3",
+    title: "Written Pre-Screening",
+    items: [
+      { text: "Collect initial applications through ATS." },
+      { text: "Include required written responses:", sub: ["Compensation History and Expectation", "Motivation for Role", "Career Goals", "Manager Assessment Insights", "Core Values Alignment Scenario (Mandatory)"] },
+      { text: "Disqualify applicants who skip value-alignment question." },
+      { text: "Invite qualified candidates to complete the Career History Form (CHF)." },
+    ],
+  },
+  {
+    code: "Stage 4",
     title: "Career History Form (CHF)",
     items: [
-      "Qualified candidates will be invited to complete a Career History Form.",
-      "Includes: salary history, past manager names/contacts, key achievements and failures, self and manager performance ratings, and reasons for leaving previous roles.",
+      { text: "Candidate submits CHF with:", sub: ["Full Salary History", "Past Manager Names and Contacts", "Key Achievements and Failures", "Self and Manager Performance Ratings", "Reasons for Leaving Roles"] },
+      { text: "Notify candidate about reference checks to ensure transparency." },
     ],
   },
   {
+    code: "Stage 5",
     title: "Initial Screening Interview",
     items: [
-      "Assessed using the \u201cGets It, Wants It, Capacity to Do It\u201d framework.",
-      "Focus areas: role understanding, motivation, personal capacity, and culture fit.",
+      { text: "Conduct interview using the \u201cGets It, Wants It, Capacity to Do It\u201d model." },
+      { text: "Key Evaluation Areas:", sub: ["Role Understanding and Motivation", "Personal and Professional Capacity", "Environmental and Cultural Alignment"] },
+      { text: "Document findings using Interview Notes Sheet." },
     ],
   },
   {
-    title: "Topgrading Interview",
+    code: "Stage 6",
+    title: "Topgrading Interview (Deep Dive)",
     items: [
-      "A chronological deep-dive covering all roles since college.",
-      "Questions explore: role objectives, achievements, challenges, manager feedback, and reasons for leaving.",
+      { text: "Hiring Manager conducts a chronological interview covering all roles since college." },
+      { text: "Capture information on:", sub: ["Role Objectives", "Successes and Failures", "Team and Manager Feedback", "Departure Reason"] },
+      { text: "Use structured follow-up for pattern recognition." },
+      { text: "One interviewer leads; one (or AI Agent) records detailed notes." },
     ],
   },
   {
-    title: "Competency Interviews",
+    code: "Stage 7",
+    title: "Competency Interviews (Manager Level Roles)",
     items: [
-      "May apply to manager-level or delivery-related roles.",
-      "Uses scenario-based and behavioral questions tied to the job scorecard.",
-      "Client interview required for delivery roles.",
+      { text: "Conduct a panel or functional interview." },
+      { text: "Assess top 3\u20135 competencies from the scorecard." },
+      { text: "Include scenario-based and behavioral questions." },
+      { text: "Client Interview required for Delivery-related positions." },
     ],
   },
   {
+    code: "Stage 8",
     title: "TORC Reference Checking",
     items: [
-      "Candidates facilitate 2–3 reference calls.",
-      "References validate performance, integrity, team fit, and rehire likelihood.",
+      { text: "Require candidate to facilitate 2\u20133 reference calls." },
+      { text: "Suggested Questions:", sub: ["Relationship and Tenure", "Performance, Integrity, Team Fit", "Rehire Likelihood"] },
+      { text: "Use TORC to validate claims and eliminate dishonest candidates." },
     ],
   },
   {
+    code: "Stage 9",
     title: "Hiring Decision",
     items: [
-      "Final evaluation considers: Performance Record, Competency Match, Values Alignment, Coachability, and Compensation Fit.",
-      "All criteria must be met with clear evidence.",
-      "Candidates showing consistent blame behavior or lack of evidence are disqualified.",
+      { text: "Use the Topgrading Decision Grid:", sub: ["Performance Record", "Competency Match", "Values Alignment", "Coachability", "Compensation Fit"] },
+      { text: "Hire only if all criteria are met with evidence." },
+      { text: "Disqualify candidates with consistent blame behavior or lack of evidence." },
     ],
   },
-];
+  {
+    code: "Stage 10",
+    title: "Post-Hire Coaching",
+    items: [
+      { text: "Share the Job Scorecard on Day 1." },
+      { text: "Provide a 30-60-90 Day Plan." },
+      { text: "Hold monthly check-ins on outcomes." },
+      { text: "Review Topgrading interview inputs and build coaching alignment." },
+    ],
+  },
+] as const;
 
-const TA_STAGES = [
-  {
-    title: "Stage 1 — Preparation & Job Scorecard",
-    items: [
-      "Create a Job Success Profile (JSP) with 3–5 measurable key accountabilities, core values, and required skills.",
-      "Develop an A-Player Scorecard with core competencies, performance metrics, and culture fit indicators.",
-    ],
-  },
-  {
-    title: "Stage 2 — Attracting A-Players",
-    items: [
-      "Publish smart job ads using compelling, results-focused language.",
-      "Highlight OnSpot's culture, growth opportunities, and impact.",
-      "Include self-screening challenge questions.",
-      "Post on Careers page, LinkedIn, and relevant platforms.",
-    ],
-  },
-  {
-    title: "Stage 3 — Written Pre-Screening",
-    items: [
-      "Collect applications via ATS with required written responses: compensation, motivation, career goals, manager insights, and Core Values Alignment Scenario.",
-      "Disqualify applicants who skip the mandatory values-alignment question.",
-      "Invite qualified candidates to complete the CHF.",
-    ],
-  },
-  {
-    title: "Stage 4 — Career History Form (CHF)",
-    items: [
-      "Candidate submits full salary history, past manager names/contacts, key achievements and failures, self and manager performance ratings, and reasons for leaving.",
-      "Notify candidates about reference checks to ensure transparency.",
-    ],
-  },
-  {
-    title: "Stage 5 — Initial Screening Interview",
-    items: [
-      "Conduct interview using \u201cGets It, Wants It, Capacity to Do It\u201d framework.",
-      "Key areas: role understanding, motivation, capacity, and cultural alignment.",
-      "Document findings using the Interview Notes Sheet.",
-    ],
-  },
-  {
-    title: "Stage 6 — Topgrading Interview (Deep Dive)",
-    items: [
-      "Chronological deep-dive covering all roles since college.",
-      "Capture: role objectives, successes/failures, team and manager feedback, departure reasons.",
-      "Use structured follow-up for pattern recognition.",
-      "One interviewer leads; one (or AI agent) records detailed notes.",
-    ],
-  },
-  {
-    title: "Stage 7 — Competency Interviews",
-    items: [
-      "Assess top 3–5 competencies from the scorecard using scenario-based and behavioral questions.",
-      "Client interview is required for delivery-related positions.",
-    ],
-  },
-  {
-    title: "Stage 8 — TORC Reference Checking",
-    items: [
-      "Require candidate to facilitate 2–3 reference calls.",
-      "Validate claims, performance, integrity, team fit, and rehire likelihood.",
-      "Use TORC to eliminate dishonest candidates.",
-    ],
-  },
-  {
-    title: "Stage 9 — Hiring Decision",
-    items: [
-      "Use the Topgrading Decision Grid: Performance Record, Competency Match, Values Alignment, Coachability, Compensation Fit.",
-      "Hire only when all criteria are met with evidence.",
-      "Disqualify candidates with consistent blame behavior or lack of evidence.",
-    ],
-  },
-  {
-    title: "Stage 10 — Post-Hire Coaching",
-    items: [
-      "Share the Job Scorecard on Day 1.",
-      "Provide a 30-60-90 Day Plan.",
-      "Hold monthly check-ins on outcomes.",
-      "Review Topgrading interview insights to build coaching alignment.",
-    ],
-  },
-];
+// ─── Guide modal micro-components ────────────────────────────────────────────
+
+function DocSection({ number, title, children }: { number: string; title: string; children: React.ReactNode }) {
+  return (
+    <section>
+      <div className="mb-3 flex items-center gap-2">
+        <span className="text-[11px] font-bold tracking-widest text-[#474ead] uppercase">{number}</span>
+        <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800 dark:text-slate-100">{title}</h2>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function DocDivider() {
+  return <div className="border-t border-slate-200 dark:border-white/10" />;
+}
+
+function BulletList({ items }: { items: readonly string[] }) {
+  return (
+    <ul className="space-y-1.5">
+      {items.map((item) => (
+        <li key={item} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
+          <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#474ead]" />
+          <span>{item}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function AdminFindWork() {
@@ -532,99 +522,156 @@ export default function AdminFindWork() {
             </div>
           </DialogHeader>
 
-          <div className="px-6 py-6 space-y-8">
-            {/* ── For Applicants ── */}
-            <section>
-              <div className="mb-4 flex items-center gap-2">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#474ead] text-[11px] font-bold text-white">
-                  A
-                </span>
-                <h2 className="text-sm font-bold uppercase tracking-widest text-[#474ead]">
-                  For Applicants
-                </h2>
-              </div>
-              <p className="mb-5 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                Our process is designed to identify strong-fit candidates who
-                align with OnSpot's core values, show genuine motivation, can
-                deliver results, and have the skills needed for the role.
+          <div className="px-6 py-6 space-y-6">
+
+            {/* ── 1.0 PURPOSE ── */}
+            <DocSection number="1.0" title="Purpose">
+              <p className="mb-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                This document outlines the Talent Acquisition Topgrading Process of OnSpot in alignment with ISO 9001:2015 standards. The objective is to ensure the consistent recruitment of A-Players who exhibit the following:
               </p>
+              <BulletList items={["Strong Will and Motivation", "Alignment with OnSpot Core Values", "Proven Ability to Deliver Results", "Skills and Competencies for Role Success"]} />
+            </DocSection>
+
+            <DocDivider />
+
+            {/* ── 2.0 SCOPE ── */}
+            <DocSection number="2.0" title="Scope">
+              <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                This procedure applies to all internal and external hiring for regular, project-based, and contractual roles at OnSpot.
+              </p>
+            </DocSection>
+
+            <DocDivider />
+
+            {/* ── 3.0 DEFINITIONS ── */}
+            <DocSection number="3.0" title="Definitions">
+              <ul className="space-y-2">
+                {[
+                  { term: "A-Player", def: "Top 10% of talent available for any given role." },
+                  { term: "Job Success Profile (JSP)", def: "A framework defining success attributes and outcomes required for a role." },
+                  { term: "Topgrading", def: "A hiring methodology aimed at systematically identifying high performers through deep-dive screening." },
+                ].map(({ term, def }) => (
+                  <li key={term} className="text-sm text-slate-600 dark:text-slate-300">
+                    <span className="font-semibold text-slate-800 dark:text-slate-100">{term}</span> — {def}
+                  </li>
+                ))}
+              </ul>
+            </DocSection>
+
+            <DocDivider />
+
+            {/* ── 4.0 RESPONSIBILITIES ── */}
+            <DocSection number="4.0" title="Responsibilities">
+              <BulletList items={[
+                "Head of People and Workplace – Oversees implementation of the process.",
+                "Talent Acquisition Manager – Executes the process and ensures ISO compliance.",
+                "Hiring Managers – Participate in interviews and final decisions.",
+                "QMR – Audits process alignment with ISO 9001:2015.",
+              ]} />
+            </DocSection>
+
+            <DocDivider />
+
+            {/* ── 5.0 PROCEDURE ── */}
+            <DocSection number="5.0" title="Procedure">
               <div className="space-y-4">
-                {APPLICANT_STAGES.map((stage, i) => (
-                  <div
-                    key={stage.title}
-                    className="rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-white/[0.06] dark:bg-white/[0.03]"
-                  >
-                    <div className="flex items-start gap-3 mb-2.5">
-                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#474ead]/10 text-[10px] font-bold text-[#474ead]">
+                {PROCEDURE_STAGES.map((stage, i) => (
+                  <div key={stage.code} className="rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-white/[0.06] dark:bg-white/[0.03]">
+                    <div className="mb-3 flex items-center gap-2.5">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#474ead] text-[10px] font-bold text-white">
                         {i + 1}
                       </span>
-                      <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                      <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wide">
                         {stage.title}
                       </h3>
                     </div>
-                    <ul className="ml-8 space-y-1.5">
+                    <ul className="space-y-2">
                       {stage.items.map((item) => (
-                        <li
-                          key={item}
-                          className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300"
-                        >
-                          <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#474ead]" />
-                          <span>{item}</span>
+                        <li key={item.text} className="text-sm text-slate-600 dark:text-slate-300">
+                          <div className="flex items-start gap-2">
+                            <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#474ead]" />
+                            <span>{item.text}</span>
+                          </div>
+                          {"sub" in item && item.sub && (
+                            <ul className="ml-5 mt-1.5 space-y-1">
+                              {item.sub.map((s: string) => (
+                                <li key={s} className="flex items-start gap-2 text-sm text-slate-500 dark:text-slate-400">
+                                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400 dark:bg-slate-500" />
+                                  {s}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
                         </li>
                       ))}
                     </ul>
                   </div>
                 ))}
               </div>
-            </section>
+            </DocSection>
 
-            {/* Divider */}
-            <div className="border-t border-slate-200 dark:border-white/10" />
+            <DocDivider />
 
-            {/* ── For TA Team ── */}
-            <section>
-              <div className="mb-4 flex items-center gap-2">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-[11px] font-bold text-white">
-                  T
-                </span>
-                <h2 className="text-sm font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
-                  For TA Team
-                </h2>
-              </div>
-              <p className="mb-5 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                The full 10-stage Topgrading process for the Talent Acquisition
-                team. Follow each stage in sequence to consistently recruit
-                A-Players.
+            {/* ── 6.0 DOCUMENTED INFORMATION ── */}
+            <DocSection number="6.0" title="Documented Information (Templates Required)">
+              <BulletList items={[
+                "Job Success Profile Template",
+                "A-Player Job Scorecard Template",
+                "Career History Form (CHF)",
+                "TORC Reference Script",
+                "Interview Notes Sheet",
+                "Topgrading Decision Grid",
+              ]} />
+            </DocSection>
+
+            <DocDivider />
+
+            {/* ── 7.0 QUALITY ASSURANCE ── */}
+            <DocSection number="7.0" title="Quality Assurance and Audit">
+              <BulletList items={[
+                "Regular process audits conducted by QMR.",
+                "Feedback loops established from Hiring Managers and New Hires.",
+                "Annual process review and template updates.",
+              ]} />
+            </DocSection>
+
+            <DocDivider />
+
+            {/* ── 8.0 RECORDS RETENTION ── */}
+            <DocSection number="8.0" title="Records Retention">
+              <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                All candidate documents shall be retained for 2 years in secure HRIS or ATS.
               </p>
-              <div className="space-y-4">
-                {TA_STAGES.map((stage) => (
-                  <div
-                    key={stage.title}
-                    className="rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-white/[0.06] dark:bg-white/[0.03]"
-                  >
-                    <h3 className="mb-2.5 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                      {stage.title}
-                    </h3>
-                    <ul className="space-y-1.5">
-                      {stage.items.map((item) => (
-                        <li
-                          key={item}
-                          className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300"
-                        >
-                          <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-indigo-500 dark:text-indigo-400" />
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            </section>
+            </DocSection>
 
-            {/* Footer note */}
+            <DocDivider />
+
+            {/* ── 9.0 REVISION HISTORY ── */}
+            <DocSection number="9.0" title="Revision History">
+              <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10 text-sm">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-100 dark:border-white/10 dark:bg-white/[0.04]">
+                      {["Version", "Date", "Description", "Prepared By"].map((h) => (
+                        <th key={h} className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="px-3 py-2.5 text-slate-700 dark:text-slate-300">1.0</td>
+                      <td className="px-3 py-2.5 text-slate-700 dark:text-slate-300">[TBD]</td>
+                      <td className="px-3 py-2.5 text-slate-700 dark:text-slate-300">Initial Implementation</td>
+                      <td className="px-3 py-2.5 text-slate-700 dark:text-slate-300">Head of People and Workplace</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </DocSection>
+
+            {/* Document footer */}
             <div className="rounded-xl border border-[#474ead]/15 bg-[#474ead]/[0.04] px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
-              Document Code: TA-TGP-001 · Owner: Head of People and Workplace ·
-              Version 1.0
+              Document Code: TA-TGP-001 &nbsp;·&nbsp; Owner: Head of People and Workplace &nbsp;·&nbsp; Version 1.0 &nbsp;·&nbsp; ISO 9001:2015 Aligned
             </div>
           </div>
         </DialogContent>

@@ -1,0 +1,213 @@
+Update only the content inside the existing Guide modal/popup in `AdminFindWork.tsx`.
+
+
+
+Do not change:
+- the "Top Grading Process" button
+- the modal open/close functionality
+- the layout/scroll behavior
+- existing styling unless needed for better readability
+
+
+
+I only want the modal content to be revised so it matches the uploaded PDF more accurately.
+
+
+
+Replace the current content with a document-style guide based closely on the “OnSpot Talent Acquisition Topgrading Process” PDF.
+
+
+
+Content structure to use inside the popup:
+
+
+
+Title:
+Topgrading Process Guide
+
+
+
+Subtitle / metadata:
+Document Code: TA-TGP-001
+Version: 1.0
+
+
+
+Then include these sections in this order:
+
+
+
+1.0 PURPOSE
+This document outlines the Talent Acquisition Topgrading Process of OnSpot in alignment with ISO 9001:2015 standards. The objective is to ensure the consistent recruitment of A-Players who exhibit the following:
+- Strong Will and Motivation
+- Alignment with OnSpot Core Values
+- Proven Ability to Deliver Results
+- Skills and Competencies for Role Success
+
+
+
+2.0 SCOPE
+This procedure applies to all internal and external hiring for regular, project-based, and contractual roles at OnSpot.
+
+
+
+3.0 DEFINITIONS
+- A-Player – Top 10% of talent available for any given role.
+- Job Success Profile (JSP) – A framework defining success attributes and outcomes required for a role.
+- Topgrading – A hiring methodology aimed at systematically identifying high performers through deep-dive screening.
+
+
+
+4.0 RESPONSIBILITIES
+- Head of People and Workplace – Oversees implementation of the process.
+- Talent Acquisition Manager – Executes the process and ensures ISO compliance.
+- Hiring Managers – Participate in interviews and final decisions.
+- QMR – Audits process alignment with ISO 9001:2015.
+
+
+
+5.0 PROCEDURE
+
+
+
+STAGE 1: PREPARATION & JOB SCORECARD
+- Create Job Success Profile (JSP) based on:
+  - Key Accountabilities (3–5 measurable outcomes)
+  - Core Values and Behaviors
+  - Technical and Soft Skills
+- Develop an A-Player Scorecard including:
+  - Core Competencies
+  - Performance Metrics
+  - Culture Fit Indicators
+- Use Standard Template: A-Player Job Scorecard
+
+
+
+STAGE 2: ATTRACTING A-PLAYERS
+- Publish Smart Job Ads using compelling, results-focused language.
+- Emphasize OnSpot's culture, growth opportunity, and impact.
+- Include self-screening challenge questions.
+- Post across Careers Page, LinkedIn, and relevant platforms.
+
+
+
+STAGE 3: WRITTEN PRE-SCREENING
+- Collect initial applications through ATS.
+- Include required written responses:
+  - Compensation History and Expectation
+  - Motivation for Role
+  - Career Goals
+  - Manager Assessment Insights
+  - Core Values Alignment Scenario (Mandatory)
+- Disqualify applicants who skip value-alignment question.
+- Invite qualified candidates to complete the Career History Form (CHF).
+
+
+
+STAGE 4: CAREER HISTORY FORM (CHF)
+- Candidate submits CHF with:
+  - Full Salary History
+  - Past Manager Names and Contacts
+  - Key Achievements and Failures
+  - Self and Manager Performance Ratings
+  - Reasons for Leaving Roles
+- Notify candidate about reference checks to ensure transparency.
+
+
+
+STAGE 5: INITIAL SCREENING INTERVIEW
+- Conduct interview using the "Gets It, Wants It, Capacity to Do It" model.
+- Key Evaluation Areas:
+  - Role Understanding and Motivation
+  - Personal and Professional Capacity
+  - Environmental and Cultural Alignment
+- Document findings using Interview Notes Sheet.
+
+
+
+STAGE 6: TOPGRADING INTERVIEW (DEEP DIVE)
+- Hiring Manager conducts a chronological interview covering all roles since college.
+- Capture information on:
+  - Role Objectives
+  - Successes and Failures
+  - Team and Manager Feedback
+  - Departure Reason
+- Use structured follow-up for pattern recognition.
+- One interviewer leads; one (or AI Agent) records detailed notes.
+
+
+
+STAGE 7: COMPETENCY INTERVIEWS (MANAGER LEVEL ROLES)
+- Conduct a panel or functional interview.
+- Assess top 3–5 competencies from the scorecard.
+- Include scenario-based and behavioral questions.
+- Client Interview required for Delivery-related positions.
+
+
+
+STAGE 8: TORC REFERENCE CHECKING
+- Require candidate to facilitate 2–3 reference calls.
+- Suggested Questions:
+  - Relationship and Tenure
+  - Performance, Integrity, Team Fit
+  - Rehire Likelihood
+- Use TORC to validate claims and eliminate dishonest candidates.
+
+
+
+STAGE 9: HIRING DECISION
+- Use the Topgrading Decision Grid:
+  - Performance Record
+  - Competency Match
+  - Values Alignment
+  - Coachability
+  - Compensation Fit
+- Hire only if all criteria are met with evidence.
+- Disqualify candidates with consistent blame behavior or lack of evidence.
+
+
+
+STAGE 10: POST-HIRE COACHING
+- Share the Job Scorecard on Day 1.
+- Provide a 30-60-90 Day Plan.
+- Hold monthly check-ins on outcomes.
+- Review Topgrading interview inputs and build coaching alignment.
+
+
+
+6.0 DOCUMENTED INFORMATION (TEMPLATES REQUIRED)
+- Job Success Profile Template
+- A-Player Job Scorecard Template
+- Career History Form (CHF)
+- TORC Reference Script
+- Interview Notes Sheet
+- Topgrading Decision Grid
+
+
+
+7.0 QUALITY ASSURANCE AND AUDIT
+- Regular process audits conducted by QMR.
+- Feedback loops established from Hiring Managers and New Hires.
+- Annual process review and template updates.
+
+
+
+8.0 RECORDS RETENTION
+All candidate documents shall be retained for 2 years in secure HRIS or ATS.
+
+
+
+9.0 REVISION HISTORY
+Version: 1.0
+Date: [TBD]
+Description: Initial Implementation
+Prepared By: Head of People and Workplace
+
+
+
+Implementation notes:
+- Keep the current modal component and existing functionality unchanged.
+- Only replace the current guide text/content.
+- Present the content in a readable document-like format with section headings, stage headings, and bullet points.
+- Make the content easy to scan inside the existing scrollable modal.
+- Keep the wording close to the PDF instead of using a simplified “For Applicants / For TA Team” format.
