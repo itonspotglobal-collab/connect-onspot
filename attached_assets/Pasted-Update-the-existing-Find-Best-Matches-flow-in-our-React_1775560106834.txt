@@ -1,0 +1,116 @@
+Update the existing Find Best Matches flow in our React + TypeScript site.
+
+Context:
+We already have:
+- FindWork.tsx
+- FindBestMatches.tsx
+- FindWorkAllJobs.tsx
+
+Required change:
+The quiz results in FindBestMatches.tsx must ONLY show job roles that are actually posted and visible in the Job Dashboard / FindWorkAllJobs.tsx.
+
+Do NOT generate or display made-up roles, placeholder roles, or role suggestions that do not exist in the posted jobs source used by FindWorkAllJobs.tsx.
+
+Core requirement:
+Use the same source of truth as FindWorkAllJobs.tsx for available jobs.
+The result after evaluation should be filtered strictly against the posted jobs list.
+If a role is a strong match in the quiz logic but is not currently posted in FindWorkAllJobs.tsx, it must NOT appear in the result.
+
+What to implement:
+
+1. Shared source of truth for posted jobs
+- Inspect how FindWorkAllJobs.tsx gets its job list.
+- Reuse the same data source, query, hook, props, store, API call, or job array in FindBestMatches.tsx.
+- Refactor if needed so both pages use a shared helper/hook like:
+  - usePostedJobs()
+  - getPostedJobs()
+  - mapPostedJobsToRoleCatalog()
+- Avoid duplicating job data in FindBestMatches.tsx.
+
+2. Quiz result filtering
+- Keep the quiz evaluation and scoring logic.
+- But before displaying result cards, filter matches so only posted jobs remain.
+- Matching should work against actual posted jobs, not a static generic role list alone.
+- If multiple posted jobs map to the same role category, show the posted job entries only.
+- Use real posted job title, metadata, and links from the existing jobs source.
+
+3. Empty-state handling
+If no posted jobs match the evaluation result, show a polished notice card/section instead of fake roles.
+
+Use copy like:
+“No matching roles are available right now.”
+Then add supporting text such as:
+“Based on your quiz responses, we do not have an active posted role that matches your profile yet. Please browse all current openings or check back soon.”
+
+Also include CTA buttons:
+- Browse All Roles
+- Retake Quiz
+
+4. No-posted-jobs handling
+If there are currently no posted jobs at all from the FindWorkAllJobs.tsx source, show a clear notice like:
+“There are no open roles available at the moment.”
+Supporting text:
+“We’re not showing role matches yet because there are currently no active job postings. Please check back later.”
+
+Also include a CTA:
+- Browse All Roles
+
+5. Design requirements
+The empty state / notice section must match the existing look and feel of:
+- Insights.tsx
+- FindWork.tsx
+- WhyOnSpotAbout.tsx
+
+Keep:
+- same colors
+- same font usage
+- same buttons
+- same rounded card containers
+- same spacing
+- same visual tone
+
+The notice section should feel like part of the existing site, similar to the polished callout card style already used in the app.
+
+6. Matching behavior
+Implement matching in this order:
+- evaluate user quiz answers
+- calculate role/category compatibility
+- map compatibility against currently posted jobs
+- sort only the posted jobs that match
+- display top posted matches
+
+Do not show a result based only on a role template.
+Only show results backed by an actual posted job from the jobs data source.
+
+7. Suggested implementation details
+- Create a shared helper that normalizes posted jobs from FindWorkAllJobs.tsx into comparable tags such as:
+  - title
+  - category
+  - skills
+  - shift
+  - work setup
+  - department
+  - keywords
+- Then compare quiz answers against those normalized posted jobs.
+- If the current posted jobs data does not include rich tags, infer basic tags from title/department carefully, but still only return actual posted jobs.
+- Keep the logic maintainable and TypeScript-safe.
+
+8. Files to update
+Please update:
+- FindWork.tsx if needed
+- FindBestMatches.tsx
+- FindWorkAllJobs.tsx only if needed for shared logic
+- any shared hooks/helpers/types needed for posted jobs matching
+
+9. Final output expected
+Provide:
+- production-ready code changes
+- shared matching/filtering logic
+- empty-state UI
+- explanation of how the filtering now guarantees only posted jobs appear
+
+Important:
+Do not create fictional jobs.
+Do not return generic role cards that are not posted.
+The quiz results must be constrained to the active jobs shown in FindWorkAllJobs.tsx.
+If none are available, show the notice state instead.
