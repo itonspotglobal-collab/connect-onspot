@@ -1,0 +1,91 @@
+I want to update `AdminFindWork.tsx` in our React/TypeScript project.
+
+Goal:
+Add a “Guide” button intended for both applicants and the TA Team. When the button is clicked, it should open a popup/modal that displays a clear guide about the Topgrading Process.
+
+Requirements:
+1. Add a button labeled `Guide` in a suitable place in `AdminFindWork.tsx`.
+2. When clicked, open a modal/popup.
+3. The modal should contain a user-friendly guide version of our Topgrading Process, separated into sections for:
+   - Applicants
+   - TA Team
+4. The UI should look clean, professional, and easy to read.
+5. Include a close button (`X` or `Close`) to dismiss the modal.
+6. Use React + TypeScript best practices.
+7. Keep the implementation simple and maintainable.
+8. If there is already an existing modal component in the project, reuse it. Otherwise, create the popup using the current UI pattern used in the file/project.
+9. Make sure the modal is scrollable in case the content is long.
+10. Do not break existing functionality in `AdminFindWork.tsx`.
+
+Guide content to include:
+
+For Applicants:
+- The process is designed to identify strong-fit candidates who align with company values, show motivation, can deliver results, and have the skills needed for the role.
+- Application stage:
+  - Submit application through the ATS.
+  - Complete required written responses such as compensation history/expectation, motivation for the role, career goals, manager assessment insights, and a core values alignment scenario.
+  - Applications missing the required value-alignment question may be disqualified.
+- Career History Form (CHF):
+  - Qualified candidates may be asked to complete a Career History Form.
+  - This includes salary history, past managers, achievements, failures, self-ratings, manager ratings, and reasons for leaving previous roles.
+- Initial Screening Interview:
+  - Candidates will be assessed using the “Gets It, Wants It, Capacity to Do It” model.
+  - Focus areas include understanding of the role, motivation, capacity, and culture fit.
+- Topgrading Interview:
+  - A deeper chronological interview covering roles since college.
+  - Questions may include objectives, accomplishments, challenges, feedback from managers, and reasons for leaving.
+- Competency Interviews:
+  - For some roles, especially manager-level or delivery-related roles, candidates may go through additional competency or client interviews.
+- Reference Checking:
+  - Candidates may be asked to help facilitate 2–3 reference calls.
+- Hiring Decision:
+  - Final evaluation considers performance record, competencies, values alignment, coachability, and compensation fit.
+
+For TA Team:
+- Preparation & Job Scorecard:
+  - Create the Job Success Profile (JSP) with measurable outcomes, values, and required skills.
+  - Develop an A-Player Scorecard with competencies, performance metrics, and culture fit indicators.
+- Attracting A-Players:
+  - Publish smart job ads using compelling and results-focused language.
+  - Highlight company culture, growth opportunities, and impact.
+  - Include self-screening challenge questions.
+  - Post on careers page, LinkedIn, and relevant platforms.
+- Written Pre-Screening:
+  - Collect applications via ATS.
+  - Require written responses including compensation, motivation, career goals, manager insights, and core values alignment scenario.
+  - Disqualify applicants who skip mandatory value-alignment questions.
+  - Invite qualified candidates to complete the CHF.
+- Initial Screening:
+  - Conduct screening interview using the “Gets It, Wants It, Capacity to Do It” framework.
+  - Document findings in interview notes.
+- Topgrading Interview:
+  - Conduct a chronological deep-dive interview covering all roles since college.
+  - Capture role objectives, successes/failures, team and manager feedback, and departure reasons.
+  - One interviewer leads while another or an AI agent records notes.
+- Competency Interviews:
+  - Assess top competencies from the scorecard using scenario-based and behavioral questions.
+  - Client interview is required for delivery-related roles.
+- TORC Reference Checking:
+  - Require 2–3 reference calls.
+  - Validate candidate claims, integrity, performance, team fit, and rehire likelihood.
+- Hiring Decision:
+  - Use the Topgrading Decision Grid:
+    - Performance Record
+    - Competency Match
+    - Values Alignment
+    - Coachability
+    - Compensation Fit
+  - Disqualify candidates showing consistent blame behavior or lack of evidence.
+- Post-Hire Coaching:
+  - Share the Job Scorecard on Day 1.
+  - Provide a 30-60-90 Day Plan.
+  - Hold monthly check-ins and use interview insights for coaching alignment.
+
+Additional instructions:
+- Create the modal content in a structured way using headings, bullet points, and short descriptions for readability.
+- Keep the text concise but informative.
+- If appropriate, extract the guide content into a separate constant or helper component for cleaner code.
+- Please provide the updated code for `AdminFindWork.tsx` and include any small supporting code needed.
+
+Reference:
+The content is based on the “OnSpot Talent Acquisition Topgrading Process” document, which outlines stages including preparation, attracting A-Players, written pre-screening, Career History Form, initial screening, Topgrading interview, competency interviews, TORC reference checking, hiring decision, and post-hire coaching. :contentReference[oaicite:0]{index=0}
