@@ -461,7 +461,7 @@ export default function AdminFindWork() {
     refetchOnWindowFocus: false,
   });
 
-  // ─── Mutations ────────────────────────────────────────────────────────────
+  // ─── Mutations ──────────────────────────── p�───────────────────────────────
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["/api/admin/jobs"] });
     queryClient.invalidateQueries({ queryKey: ["/api/jobs/search"] });
@@ -525,34 +525,49 @@ export default function AdminFindWork() {
                 <DialogTitle className="text-base font-semibold text-slate-900 dark:text-white">
                   Topgrading Process Guide
                 </DialogTitle>
-                <p className="text-xs text-slate-500 dark:text-slate-400">OnSpot Talent Acquisition — TA-TGP-001</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  OnSpot Talent Acquisition — TA-TGP-001
+                </p>
               </div>
             </div>
           </DialogHeader>
 
           <div className="px-6 py-6 space-y-8">
-
             {/* ── For Applicants ── */}
             <section>
               <div className="mb-4 flex items-center gap-2">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#474ead] text-[11px] font-bold text-white">A</span>
-                <h2 className="text-sm font-bold uppercase tracking-widest text-[#474ead]">For Applicants</h2>
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#474ead] text-[11px] font-bold text-white">
+                  A
+                </span>
+                <h2 className="text-sm font-bold uppercase tracking-widest text-[#474ead]">
+                  For Applicants
+                </h2>
               </div>
               <p className="mb-5 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                Our process is designed to identify strong-fit candidates who align with OnSpot's core values, show genuine motivation, can deliver results, and have the skills needed for the role.
+                Our process is designed to identify strong-fit candidates who
+                align with OnSpot's core values, show genuine motivation, can
+                deliver results, and have the skills needed for the role.
               </p>
               <div className="space-y-4">
                 {APPLICANT_STAGES.map((stage, i) => (
-                  <div key={stage.title} className="rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-white/[0.06] dark:bg-white/[0.03]">
+                  <div
+                    key={stage.title}
+                    className="rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-white/[0.06] dark:bg-white/[0.03]"
+                  >
                     <div className="flex items-start gap-3 mb-2.5">
                       <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#474ead]/10 text-[10px] font-bold text-[#474ead]">
                         {i + 1}
                       </span>
-                      <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{stage.title}</h3>
+                      <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                        {stage.title}
+                      </h3>
                     </div>
                     <ul className="ml-8 space-y-1.5">
                       {stage.items.map((item) => (
-                        <li key={item} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
+                        <li
+                          key={item}
+                          className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300"
+                        >
                           <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#474ead]" />
                           <span>{item}</span>
                         </li>
@@ -569,19 +584,33 @@ export default function AdminFindWork() {
             {/* ── For TA Team ── */}
             <section>
               <div className="mb-4 flex items-center gap-2">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-[11px] font-bold text-white">T</span>
-                <h2 className="text-sm font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">For TA Team</h2>
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-[11px] font-bold text-white">
+                  T
+                </span>
+                <h2 className="text-sm font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
+                  For TA Team
+                </h2>
               </div>
               <p className="mb-5 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                The full 10-stage Topgrading process for the Talent Acquisition team. Follow each stage in sequence to consistently recruit A-Players.
+                The full 10-stage Topgrading process for the Talent Acquisition
+                team. Follow each stage in sequence to consistently recruit
+                A-Players.
               </p>
               <div className="space-y-4">
                 {TA_STAGES.map((stage) => (
-                  <div key={stage.title} className="rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-white/[0.06] dark:bg-white/[0.03]">
-                    <h3 className="mb-2.5 text-sm font-semibold text-slate-800 dark:text-slate-100">{stage.title}</h3>
+                  <div
+                    key={stage.title}
+                    className="rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-white/[0.06] dark:bg-white/[0.03]"
+                  >
+                    <h3 className="mb-2.5 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                      {stage.title}
+                    </h3>
                     <ul className="space-y-1.5">
                       {stage.items.map((item) => (
-                        <li key={item} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
+                        <li
+                          key={item}
+                          className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300"
+                        >
                           <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-indigo-500 dark:text-indigo-400" />
                           <span>{item}</span>
                         </li>
@@ -594,7 +623,8 @@ export default function AdminFindWork() {
 
             {/* Footer note */}
             <div className="rounded-xl border border-[#474ead]/15 bg-[#474ead]/[0.04] px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
-              Document Code: TA-TGP-001 · Owner: Head of People and Workplace · Version 1.0
+              Document Code: TA-TGP-001 · Owner: Head of People and Workplace ·
+              Version 1.0
             </div>
           </div>
         </DialogContent>
@@ -630,7 +660,7 @@ export default function AdminFindWork() {
                   onClick={() => setGuideOpen(true)}
                 >
                   <BookOpen className="w-3.5 h-3.5 mr-1.5" />
-                  Guide
+                  Top Grading Process
                 </Button>
                 <Button
                   variant="outline"

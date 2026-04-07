@@ -1,0 +1,113 @@
+Update `AdminFindWork.tsx` to add a `Guide` button that opens a modal/popup showing the Topgrading Process Guide.
+
+Requirements:
+- Add a `Guide` button in a suitable location in `AdminFindWork.tsx`
+- On click, open a scrollable modal/popup
+- Include a close button
+- Keep styling clean and professional
+- Use React + TypeScript best practices
+- Reuse the existing modal component if the project already has one
+- Do not break existing functionality
+
+Modal title:
+`Topgrading Process Guide`
+
+Modal content should have 2 sections:
+
+1. `For Applicants`
+This should be presented as a simplified, candidate-friendly summary of the process:
+- Intro text:
+  `Our process is designed to identify strong-fit candidates who align with OnSpot's core values, show genuine motivation, can deliver results, and have the skills needed for the role.`
+
+- Step 1: Application
+  - Submit your application through the ATS.
+  - Complete required written responses: compensation history/expectation, motivation for the role, career goals, manager assessment insights, and a Core Values Alignment Scenario.
+  - Applications missing the mandatory values-alignment question may be disqualified.
+
+- Step 2: Career History Form (CHF)
+  - Qualified candidates will be invited to complete a Career History Form.
+  - Includes: salary history, past manager names/contacts, key achievements and failures, self and manager performance ratings, and reasons for leaving previous roles.
+
+- Step 3: Initial Screening Interview
+  - Assessed using the “Gets It, Wants It, Capacity to Do It” framework.
+  - Focus areas: role understanding, motivation, personal capacity, and culture fit.
+
+- Step 4: Topgrading Interview
+  - A chronological deep-dive covering all roles since college.
+  - Questions explore: role objectives, achievements, challenges, manager feedback, and reasons for leaving.
+
+- Step 5: Competency Interviews
+  - May apply to manager-level or delivery-related roles.
+  - Uses scenario-based and behavioral questions tied to the job scorecard.
+  - Client interview required for delivery roles.
+
+- Step 6: TORC Reference Checking
+  - Candidates facilitate 2–3 reference calls.
+  - References validate performance, integrity, team fit, and rehire likelihood.
+
+- Step 7: Hiring Decision
+  - Final evaluation considers: Performance Record, Competency Match, Values Alignment, Coachability, and Compensation Fit.
+  - All criteria must be met with clear evidence.
+  - Candidates showing consistent blame behavior or lack of evidence are disqualified.
+
+2. `For TA Team`
+This section should closely reflect the official Topgrading document:
+- Intro text:
+  `The full 10-stage Topgrading process for the Talent Acquisition team. Follow each stage in sequence to consistently recruit A-Players.`
+
+- Stage 1 — Preparation & Job Scorecard
+  - Create a Job Success Profile (JSP) with 3–5 measurable key accountabilities, core values, and required skills.
+  - Develop an A-Player Scorecard with core competencies, performance metrics, and culture fit indicators.
+
+- Stage 2 — Attracting A-Players
+  - Publish smart job ads using compelling, results-focused language.
+  - Highlight OnSpot's culture, growth opportunities, and impact.
+  - Include self-screening challenge questions.
+  - Post on Careers page, LinkedIn, and relevant platforms.
+
+- Stage 3 — Written Pre-Screening
+  - Collect applications via ATS with required written responses: compensation, motivation, career goals, manager insights, and Core Values Alignment Scenario.
+  - Disqualify applicants who skip the mandatory values-alignment question.
+  - Invite qualified candidates to complete the CHF.
+
+- Stage 4 — Career History Form (CHF)
+  - Candidate submits full salary history, past manager names/contacts, key achievements and failures, self and manager performance ratings, and reasons for leaving.
+  - Notify candidates about reference checks to ensure transparency.
+
+- Stage 5 — Initial Screening Interview
+  - Conduct interview using “Gets It, Wants It, Capacity to Do It” framework.
+  - Key areas: role understanding, motivation, capacity, and cultural alignment.
+  - Document findings using the Interview Notes Sheet.
+
+- Stage 6 — Topgrading Interview (Deep Dive)
+  - Chronological deep-dive covering all roles since college.
+  - Capture: role objectives, successes/failures, team and manager feedback, departure reasons.
+  - Use structured follow-up for pattern recognition.
+  - One interviewer leads; one (or AI agent) records detailed notes.
+
+- Stage 7 — Competency Interviews
+  - Assess top 3–5 competencies from the scorecard using scenario-based and behavioral questions.
+  - Client interview is required for delivery-related positions.
+
+- Stage 8 — TORC Reference Checking
+  - Require candidate to facilitate 2–3 reference calls.
+  - Validate claims, performance, integrity, team fit, and rehire likelihood.
+  - Use TORC to eliminate dishonest candidates.
+
+- Stage 9 — Hiring Decision
+  - Use the Topgrading Decision Grid: Performance Record, Competency Match, Values Alignment, Coachability, Compensation Fit.
+  - Hire only when all criteria are met with evidence.
+  - Disqualify candidates with consistent blame behavior or lack of evidence.
+
+- Stage 10 — Post-Hire Coaching
+  - Share the Job Scorecard on Day 1.
+  - Provide a 30-60-90 Day Plan.
+  - Hold monthly check-ins on outcomes.
+  - Review Topgrading interview insights to build coaching alignment.
+
+Implementation notes:
+- Structure the modal content with clear section headers and numbered/staged blocks
+- Make the content easy to scan
+- Extract the guide content into constants or helper data structures if that makes the component cleaner
+- Return the full updated `AdminFindWork.tsx` code
+- Keep the wording close to the official Topgrading document, especially for the TA Team section
