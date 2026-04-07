@@ -837,7 +837,7 @@ export default function OnSpotFindWorkRedesign() {
                 </div>
 
                 <div className="mt-4 flex flex-wrap items-center gap-3">
-                  <Button className="rounded-full bg-[#474ead] px-6 text-white hover:bg-[#3d439c]">
+                  <Button className="rounded-full bg-[#474ead] px-6 text-white hover:bg-[#3d439c]" onClick={() => navigate("/find-best-matches")}>
                     Find My Best Matches
                   </Button>
                   <Button variant="outline" className="rounded-full px-6" onClick={() => navigate("/find-work/jobs")}>

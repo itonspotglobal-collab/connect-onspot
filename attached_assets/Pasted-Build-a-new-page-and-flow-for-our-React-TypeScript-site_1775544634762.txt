@@ -1,0 +1,188 @@
+Build a new page and flow for our React/TypeScript site for the “Find My Best Matches” button in FindWork.tsx.
+
+Goal:
+When the user clicks “Find My Best Matches”, route them to a new discovery quiz page that helps evaluate:
+1. skills
+2. work values
+3. preferred work environment
+4. schedule preference
+5. communication and task style
+
+After completing the quiz, show a results page that surfaces specific role matches based on the user’s answers, similar in spirit to Indeed’s career/discovery matching flow, but designed for our OnSpot site.
+
+Important design requirement:
+The new page must match the existing visual system used in:
+- Insights.tsx
+- FindWork.tsx
+- WhyOnSpotAbout.tsx
+
+That means:
+- same color palette
+- same typography/font usage
+- same button styling
+- same spacing rhythm
+- same border radius
+- same card styles
+- same overall clean and modern layout
+- same responsive behavior patterns
+
+Do not introduce a completely new design system. Reuse the same components, utility classes, tokens, and layout conventions already present in the codebase whenever possible.
+
+What to build:
+
+1. Update FindWork.tsx
+- Make the “Find My Best Matches” button navigate to a new route, for example:
+  /find-best-matches
+- Keep the existing button design unchanged.
+
+2. Create a new page component
+Suggested name:
+- FindBestMatches.tsx
+or
+- DiscoveryQuiz.tsx
+
+This page should include:
+- a hero/header section consistent with FindWork.tsx
+- a short introduction explaining that the quiz helps discover best-fit remote roles
+- a multi-step quiz form
+- progress indicator at the top
+- back and next buttons
+- a final submit button on the last step
+
+3. Quiz structure
+Create a polished multi-step quiz with sections such as:
+
+Step 1: Skills
+- Ask about strongest skills
+- Allow multi-select options such as:
+  - customer support
+  - admin support
+  - data entry
+  - calendar management
+  - email management
+  - research
+  - social media
+  - content writing
+  - bookkeeping
+  - project coordination
+  - sales support
+  - technical support
+
+Step 2: Work values
+- Ask what matters most in a job
+- Allow selecting top priorities:
+  - high salary
+  - work-life balance
+  - growth opportunities
+  - stable schedule
+  - independent work
+  - collaborative team
+  - meaningful work
+  - fast-paced environment
+
+Step 3: Preferred environment
+- Ask what type of environment suits them best
+- Include choices like:
+  - structured and predictable
+  - flexible and dynamic
+  - highly collaborative
+  - independent and quiet
+  - process-driven
+  - creative and evolving
+
+Step 4: Schedule and work setup
+- Ask preferences for:
+  - day shift / night shift / flexible
+  - full-time / part-time
+  - voice / non-voice / either
+  - client-facing / behind-the-scenes / either
+
+Step 5: Work style
+- Ask about preferred way of working
+- Include choices or scales for:
+  - detail-oriented vs big-picture
+  - repetitive tasks vs varied tasks
+  - multitasking comfort
+  - communication-heavy vs execution-heavy work
+
+4. Scoring and matching logic
+Implement a simple frontend matching engine.
+Based on user selections, calculate role matches and rank them.
+
+Sample roles to include:
+- Virtual Assistant
+- Executive Assistant
+- Customer Support Representative
+- Data Entry Specialist
+- Social Media Assistant
+- Content Writer
+- Bookkeeping Assistant
+- Project Coordinator
+- Sales Support Assistant
+- Research Assistant
+- Operations Assistant
+- Technical Support Assistant
+
+For each role, define matching tags/attributes such as:
+- required skills
+- preferred work style
+- environment fit
+- shift fit
+- voice/non-voice fit
+
+After submission:
+- compute a score per role
+- sort descending
+- show the top 3 to top 6 role matches
+
+5. Results page/section
+After the user completes the quiz, show a results page or results state with:
+- a headline like “Your Best Matches”
+- a short personalized summary
+- cards for the matched roles
+- each card should show:
+  - role title
+  - match percentage
+  - short reason why it matches
+  - sample traits/skills that aligned
+- include CTA buttons such as:
+  - Browse Roles
+  - Retake Quiz
+
+6. UX requirements
+- fully responsive
+- accessible form controls
+- state managed cleanly with React hooks
+- smooth transitions between steps
+- validation so users cannot continue without answering required questions
+- preserve the polished marketing-site feel of the current pages
+
+7. Code quality requirements
+- Use TypeScript
+- Keep components modular
+- Create reusable components where appropriate, such as:
+  - QuizStep
+  - ProgressBar
+  - MatchCard
+  - OptionChip or SelectCard
+- Keep code clean and production-ready
+- Add comments only where helpful
+- Avoid unnecessary dependencies unless the project already uses them
+
+8. Routing
+Add the necessary route in the app router so the new page is accessible.
+Ensure the button in FindWork.tsx correctly navigates there.
+
+9. Content tone
+Use supportive, professional, modern copy consistent with the rest of the site.
+It should feel polished and credible, not overly playful.
+
+10. Final deliverables
+Please provide:
+- all new/updated React TypeScript code
+- any helper data structures for quiz questions and role matching
+- routing updates
+- brief explanation of how the matching logic works
+
+Extra instruction:
+Before coding, inspect the styles and structure of Insights.tsx, FindWork.tsx, and WhyOnSpotAbout.tsx and mirror them closely so the new page looks native to the existing site.
