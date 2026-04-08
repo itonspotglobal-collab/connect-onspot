@@ -1,0 +1,173 @@
+Improve the bulk-upload PDF import formatting in `AdminFindWork.tsx` so imported job postings are automatically cleaned and structured properly, without requiring manual editing.
+
+Current problem:
+The parser now extracts the correct content, but the formatting is poor:
+- PDF header noise is being included, such as:
+  - `OnSpot Global Corp.`
+  - `Confidential Document`
+  - `DO NOT SHARE`
+- Some bullet points are broken into multiple lines
+- Some section text is merged or split awkwardly
+- Responsibilities, Skills & Requirements, and Cultural Fit need to be auto-formatted cleanly
+- The import should save job postings in a ready-to-use format as much as possible
+
+Goal:
+After import, the generated Job Posting should already look clean and usable in the edit form and public page, with minimal or no manual cleanup.
+
+What to improve:
+
+1. Add PDF text cleanup before mapping fields
+Create a cleanup/normalization layer for extracted PDF text.
+
+Remove obvious document-noise lines such as:
+- `OnSpot Global Corp.`
+- `OnSpot Global Corp. - Confidential Document - DO NOT SHARE`
+- `Confidential Document`
+- `DO NOT SHARE`
+
+Also remove repeated blank lines, page header/footer fragments, and standalone decorative labels that are not part of the job content.
+
+2. Normalize broken PDF lines
+Some bullet items are wrapping across lines because of PDF extraction.
+Join wrapped lines intelligently.
+
+Examples:
+- `Record day-to-day financial transactions using accounting software (e.g.,`
+  next line `QuickBooks, Xero, Wave, etc.)`
+Should become one bullet:
+- `Record day-to-day financial transactions using accounting software (e.g., QuickBooks, Xero, Wave, etc.)`
+
+- `Excellent organizational and time management skills, with the ability to meet`
+  next line `deadlines independently`
+Should become:
+- `Excellent organizational and time management skills, with the ability to meet deadlines independently`
+
+Rules:
+- If a line does not start a new section or new bullet, treat it as a continuation of the previous line
+- Preserve real bullet boundaries
+- Preserve section boundaries
+
+3. Clean and format Responsibilities
+For Responsibilities:
+- Extract only the bullet items under `Key Responsibilities` or `Responsibilities`
+- Convert them into a clean bullet-list format
+- One logical responsibility per bullet
+- Remove accidental line breaks inside a bullet
+- Do not include unrelated headers or text from other sections
+
+Expected example:
+- Record day-to-day financial transactions using accounting software (e.g., QuickBooks, Xero, Wave, etc.)
+- Reconcile bank statements and credit card accounts monthly
+- Track income and expenses and categorize transactions accurately
+...
+
+4. Clean and format Skills / Qualifications
+For Skills & Requirements / Qualifications:
+- Extract only items under:
+  - `Requirements`
+  - `Job Qualifications`
+  - `Qualifications`
+- Remove company header noise
+- Convert to one clean bullet per requirement
+- Merge wrapped lines into a single bullet item
+- Do not include:
+  - company name
+  - confidential notice
+  - unrelated headings
+  - section headers themselves as bullets
+
+Expected example:
+- Demonstrated experience as a Bookkeeper, Accounting Assistant, or Virtual Assistant with a focus on financial tasks
+- Proficient in accounting software such as QuickBooks Online, Xero, FreshBooks, or other similar platforms
+- Solid understanding of bookkeeping practices and fundamental accounting principles
+...
+
+5. Clean and format Cultural Fit
+For Cultural Fit:
+- Extract only the actual Cultural Fit bullet points
+- Remove the intro sentence from becoming a bullet unless it is intentionally used as a short intro paragraph
+- Format into bullet points cleanly
+- Merge wrapped lines properly
+
+6. Improve Job Description formatting
+For Job Description:
+- Build it from relevant sections only, such as:
+  - Company Overview
+  - About the Role
+  - Position Overview
+- Preserve paragraph spacing
+- Do not dump raw OCR/PDF text as one long block
+- Do not include DISC profile content, red flags, or additional success factors in the main Job Description unless there is a specific field for them
+- Keep Job Description readable and polished
+
+7. Better section boundary detection
+The parser should stop section capture when it reaches a new known section header.
+
+Known section headers may include:
+- Company Overview
+- About the Role
+- Position Overview
+- Key Responsibilities
+- Responsibilities
+- Requirements
+- Job Qualifications
+- Qualifications
+- Cultural Fit
+- Why Join Us
+- Job Success Profile
+- Ideal DISC Profile for Success
+- What to Avoid
+- Additional Success Factors
+
+Do not allow one section to bleed into another.
+
+8. Rich text formatting output
+If the editor fields expect HTML or rich text, format imported lists properly using `<ul><li>...</li></ul>` or the format already used by the current editor.
+If the editor expects plain text, format with consistent bullet lines.
+Match the existing editor format used in `AdminFindWork.tsx`.
+
+9. Add dedicated formatting helpers
+Create reusable helper functions such as:
+- `cleanPdfText()`
+- `mergeWrappedLines()`
+- `extractSection()`
+- `formatBulletList()`
+- `removeDocumentNoise()`
+- `normalizeBulletLines()`
+
+10. Keep extracted content structured
+For PDF imports, map like this:
+- Job Description = Company Overview + About the Role + Position Overview
+- Responsibilities = Key Responsibilities bullets
+- Skills & Requirements = Requirements / Job Qualifications bullets
+- Cultural Fit = Cultural Fit bullets
+- Optional notes = Why Join Us / Additional Success Factors if there is a suitable field
+
+11. Expected result for the uploaded “Senior Virtual Assistant” PDF
+The final imported posting should:
+- keep title as `Senior Virtual Assistant`
+- keep department/division as `Delivery`
+- show a readable Job Description with proper paragraphs
+- show Responsibilities as a clean bullet list
+- show Skills & Requirements as a clean bullet list without header noise
+- show Cultural Fit as a clean bullet list
+- avoid broken wrapped lines and accidental junk text
+
+12. Expected result for the uploaded “Customer Service Representative” PDF
+The final imported posting should:
+- keep title as `Customer Service Representative`
+- keep department/division as `Delivery`
+- keep Responsibilities cleanly separated
+- keep Job Qualifications cleanly formatted as requirement bullets
+- avoid mixing section headers into the content
+
+13. Do not change:
+- the Guide feature
+- the modal flow
+- the manual add/edit job flow
+- the working multi-file bulk upload behavior
+
+14. Return:
+- the full updated `AdminFindWork.tsx`
+- any helper functions used for text cleanup and formatting
+- minimal unrelated refactoring

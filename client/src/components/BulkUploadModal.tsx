@@ -375,47 +375,146 @@ function parseSections(rawText: string): Record<string, string> {
   return sections;
 }
 
+// ── Document noise patterns ───────────────────────────────────────────────────
+
+const PDF_NOISE_PATTERNS: RegExp[] = [
+  /onspot\s+global\s+corp\.?/i,
+  /confidential\s+document/i,
+  /do\s+not\s+share/i,
+  /page\s+\d+\s+of\s+\d+/i,
+  /^\d+\s*$/,                         // standalone page numbers
+  /job\s+success\s+profile\s*$/i,     // standalone JSP header line
+];
+
+/** Remove company header/footer noise lines from raw PDF lines. */
+function removeDocumentNoise(lines: string[]): string[] {
+  return lines.filter((line) => {
+    const t = line.trim();
+    if (!t) return false;
+    return !PDF_NOISE_PATTERNS.some((rx) => rx.test(t));
+  });
+}
+
 // ── Filename → title fallback ─────────────────────────────────────────────────
 
 function titleFromFilename(filename: string): string {
   return filename
     .replace(/\.pdf$/i, "")
     .replace(/Job\s+Success\s+Profile/gi, "")
-    .replace(/\(\d+\)/g, "")          // strip (1) (2) etc
-    .replace(/[._-]+/g, " ")          // dots/underscores/dashes → space
+    .replace(/\(\d+\)/g, "")
+    .replace(/[._-]+/g, " ")
     .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+// ── Smart line merging ────────────────────────────────────────────────────────
+
+// A line starts a new bullet when it begins with a common bullet marker.
+const BULLET_START_RX = /^[\s]*[•●·▪▸→\-\*][\s]|^\s*\d+[.)]\s+|^\s*[a-z][.)]\s+/i;
+
+/**
+ * Merge PDF text lines that are continuations of the previous line.
+ * A line is a continuation when it does NOT begin with a bullet marker
+ * and is NOT blank. This handles wrapped bullets and wrapped paragraphs.
+ */
+function mergeWrappedLines(rawLines: string[]): string[] {
+  const result: string[] = [];
+  for (const raw of rawLines) {
+    const line = raw.trim();
+    if (!line) {
+      // Blank line = new logical paragraph / bullet
+      result.push("");
+      continue;
+    }
+    if (result.length === 0 || BULLET_START_RX.test(line) || result[result.length - 1] === "") {
+      result.push(line);
+    } else {
+      // Continuation: glue onto previous
+      result[result.length - 1] += " " + line;
+    }
+  }
+  // Collapse consecutive blanks
+  return result.filter((l, i) => l !== "" || (result[i - 1] ?? "") !== "");
+}
+
+/**
+ * Extract a clean bullet array from section body text.
+ * - Merges wrapped lines first
+ * - Strips leading bullet characters
+ * - Filters out very short fragments (likely OCR noise)
+ */
+function extractBullets(sectionText: string | undefined): string[] {
+  if (!sectionText?.trim()) return [];
+  const lines = mergeWrappedLines(sectionText.split("\n"));
+  return lines
+    .filter((l) => l.trim().length > 5)
+    .map((l) =>
+      l
+        .replace(/^[\s•●·▪▸→\-\*]+/, "")
+        .replace(/^\d+[.)]\s+/, "")
+        .replace(/^[a-z][.)]\s+/i, "")
+        .trim(),
+    )
+    .filter((l) => l.length > 5);
+}
+
+/**
+ * Build a clean plain-text description from description-style sections.
+ * Merges wrapped lines, preserves paragraph spacing.
+ */
+function buildDescription(parts: (string | undefined)[]): string {
+  return parts
+    .filter(Boolean)
+    .map((part) => {
+      const merged = mergeWrappedLines((part as string).split("\n"));
+      return merged.filter((l) => l.trim()).join(" ").trim();
+    })
+    .join("\n\n")
     .trim();
 }
 
 // ── Build the final record from extracted sections ────────────────────────────
 
 async function parsePdf(file: File): Promise<ParsedJobRecord[]> {
-  const text = await extractPdfText(file);
-  const sec = parseSections(text);
+  const rawText = await extractPdfText(file);
 
-  // Title: explicit label > filename fallback
-  const title = sec["title"] || titleFromFilename(file.name);
+  // Remove document noise before parsing
+  const cleanedLines = removeDocumentNoise(rawText.split("\n"));
+  const cleanedText  = cleanedLines.join("\n");
 
-  // Department: from division/department/team label
-  const division = sec["division"] || "";
+  const sec = parseSections(cleanedText);
 
-  // Description: compose from available overview/description sections
-  const description = [
+  // Title: explicit label → filename fallback
+  const title = sec["title"]?.trim() || titleFromFilename(file.name);
+
+  // Department
+  const division = sec["division"]?.trim() || "";
+
+  // Description from Company Overview + About the Role + Position Overview only
+  // (excludes internal-only sections like successFactors, benefits, culturalFit)
+  const description = buildDescription([
     sec["companyOverview"],
     sec["description"],
     sec["roleMission"],
-    sec["successFactors"],
-    sec["benefits"],
-  ].filter(Boolean).join("\n\n").trim();
+  ]);
 
-  // Debug output in development
+  // Clean bullet lists
+  const responsibilities = extractBullets(sec["responsibilities"]);
+  const requirements     = extractBullets(sec["requirements"]);
+  const culturalFit      = extractBullets(sec["culturalFit"]);
+
+  // Dev-mode debug
   if (import.meta.env.DEV) {
     console.group(`[BulkUpload] PDF parsed: ${file.name}`);
-    console.log("title:", title, title === sec["title"] ? "(from label)" : "(from filename)");
+    console.log("title:", title, sec["title"] ? "(from label)" : "(from filename)");
     console.log("division:", division || "(none)");
-    console.log("description length:", description.length);
-    console.log("responsibilities:", textToArray(sec["responsibilities"]).length, "items");
-    console.log("qualifications:", textToArray(sec["requirements"]).length, "items");
+    console.log("description chars:", description.length);
+    console.log("responsibilities:", responsibilities.length, "items");
+    console.log("requirements:", requirements.length, "items");
+    console.log("culturalFit:", culturalFit.length, "items");
+    if (import.meta.env.DEV) {
+      console.log("--- raw sections ---", sec);
+    }
     console.groupEnd();
   }
 
@@ -423,18 +522,18 @@ async function parsePdf(file: File): Promise<ParsedJobRecord[]> {
     title,
     category:         division,
     description,
-    reportingTo:      sec["reportingTo"],
+    reportingTo:      sec["reportingTo"]?.trim(),
     division,
-    jobGrade:         sec["jobGrade"],
-    jobLevel:         sec["jobLevel"],
-    companyOverview:  sec["companyOverview"],
-    roleMission:      sec["roleMission"],
-    responsibilities: textToArray(sec["responsibilities"]),
-    requirements:     textToArray(sec["requirements"]),
-    culturalFit:      textToArray(sec["culturalFit"]),
+    jobGrade:         sec["jobGrade"]?.trim(),
+    jobLevel:         sec["jobLevel"]?.trim(),
+    companyOverview:  sec["companyOverview"]?.trim(),
+    roleMission:      sec["roleMission"]?.trim(),
+    responsibilities,
+    requirements,
+    culturalFit,
     skillTags:        [],
     contractType:     "fixed",
-    experienceLevel:  sec["jobLevel"],
+    experienceLevel:  sec["jobLevel"]?.trim(),
   };
 
   return [validateRecord(raw, 0, file.name)];
