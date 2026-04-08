@@ -1,0 +1,187 @@
+Update `AdminFindWork.tsx` to add a **Bulk Upload Job Postings** feature for TA and recruiters.
+
+Important:
+- Do not remove or break the existing single job posting flow
+- Do not change the existing Guide button/modal behavior
+- Reuse the current UI patterns already used in `AdminFindWork.tsx`
+- Keep the implementation clean and maintainable
+- Focus on adding bulk upload for job postings based on a job opening / job success profile document format
+
+Goal:
+Allow TA and recruiters to upload a file containing multiple job postings in bulk, then map the important fields into the existing Job Posting structure.
+
+Use this uploaded example as the basis for the fields we should support:
+The sample PDF contains a role like “Senior Virtual Assistant” with details such as reporting line, division, grade/level, company overview, about the role, key responsibilities, requirements, cultural fit, benefits, work hours, and job success profile. :contentReference[oaicite:0]{index=0}
+
+What to add in `AdminFindWork.tsx`:
+
+1. Add a new button:
+- Label: `Bulk Upload`
+- Place it near the existing job posting actions/buttons
+- Clicking it should open a modal/popup/drawer consistent with the current page design
+
+2. Inside the Bulk Upload modal:
+- File input that supports `.csv`, `.xls`, `.xlsx`, and `.pdf`
+- Helper text such as:
+  `Upload a file containing one or more job postings. Supported formats: CSV, Excel, PDF.`
+- Show the selected file name
+- Add buttons:
+  - `Upload and Preview`
+  - `Confirm Bulk Create`
+  - `Cancel`
+
+3. Expected behavior:
+- User uploads a file with one or more job posting records
+- Parse the file contents
+- Extract the important fields
+- Convert each valid record into the same shape used by the existing manual job posting form
+- Preview the parsed records before creating them
+- Allow creating only the valid rows
+
+4. Support two input styles:
+A. Spreadsheet style rows (`csv/xlsx/xls`)
+Each row represents one job posting.
+
+B. Document style job profile (`pdf`)
+A PDF may contain one or more job descriptions / job success profiles.
+For PDF parsing, support extracting fields like:
+- Role / Job Title
+- Reporting To
+- Division / Department
+- Job Grade
+- Job Level
+- Company Overview
+- About the Role
+- Key Responsibilities
+- Requirements
+- Cultural Fit
+- Why Join Us / Benefits
+- Work Schedule / Shift / Hours
+- Job Success Profile / Position Overview
+- Additional Success Factors
+
+5. Field mapping into Job Posting
+Map uploaded data into the job posting fields as closely as possible.
+At minimum, support these target fields:
+- Job Title
+- Department
+- Employment Type
+- Work Setup
+- Location
+- Job Description
+- Qualifications
+- Responsibilities
+- Salary Range
+- Hiring Manager
+- Number of Openings
+- Status
+- Posted Date
+- Closing Date
+
+For document-style PDF input, map like this where possible:
+- `Role` → Job Title
+- `Division` → Department
+- `About the Role` + `Company Overview` + `Position Overview` → Job Description
+- `Requirements` → Qualifications
+- `Key Responsibilities` → Responsibilities
+- `Reporting to` → Hiring Manager or reporting field if one exists
+- Shift or working-hours text → Employment Type / Work Setup notes if no dedicated field exists
+- `Why Join Us` can be appended to Job Description or Benefits section if supported
+- `Cultural Fit` can be appended to Qualifications or Job Description if needed
+- `Job Grade` and `Job Level` can be stored in optional metadata or appended in description if there is no dedicated field
+
+6. Header alias mapping for spreadsheet uploads
+Support flexible headers like:
+- Job Title / Title / Position / Role
+- Department / Division / Team
+- Employment Type / Job Type
+- Work Setup / Work Arrangement / Setup
+- Location / Work Location
+- Job Description / Description / About the Role
+- Qualifications / Requirements
+- Responsibilities / Duties / Key Responsibilities
+- Hiring Manager / Reporting To / Reports To
+- Salary Range / Salary
+- Number of Openings / Openings / Headcount
+- Status
+- Posted Date
+- Closing Date
+
+7. Validation
+- Skip blank rows
+- Require at least:
+  - Job Title
+  - Department or Division
+  - Job Description or About the Role
+- Mark invalid rows and explain why
+- Show summary counts:
+  - total records found
+  - valid records
+  - invalid records
+  - successfully created
+  - failed to create
+
+8. Preview UI
+Inside the modal, after parsing:
+- Show a preview table or card list of parsed job postings
+- Each preview item should show:
+  - Job Title
+  - Department
+  - short Job Description preview
+  - Responsibilities count
+  - Qualifications count
+  - validity status
+- Highlight invalid items
+- Show validation messages per row/item
+
+9. Submission behavior
+- Reuse the existing create job posting API/mutation/form logic where possible
+- If there is an existing create-job flow, call it for each valid parsed item
+- If there is already a bulk endpoint in the project, use it instead
+- Prevent duplicate submissions while upload is in progress
+- Show loading, success, and error states
+
+10. Parsing implementation notes
+- Reuse any existing file parsing libraries in the project
+- For CSV/XLS/XLSX:
+  - normalize headers
+  - trim values
+  - convert empty strings to null
+- For PDF:
+  - extract text and parse sections based on labels commonly found in these job profile documents:
+    - Role:
+    - Reporting to:
+    - Division:
+    - Job Grade:
+    - Job Level:
+    - Company Overview
+    - About the Role:
+    - Key Responsibilities
+    - Requirements:
+    - Cultural Fit
+    - Why Join Us:
+    - Position Overview
+    - Additional Success Factors
+- If a PDF contains only one role, create one parsed preview item
+- If a PDF contains multiple role sections, parse each as separate items when possible
+
+11. Template/help section
+Add a small helper block in the modal:
+- `Tip: Use standard headers like Job Title, Department, Job Description, Qualifications, and Responsibilities for best import accuracy.`
+- Also mention that job profile PDFs with sections like Role, About the Role, Key Responsibilities, and Requirements can be parsed into a posting.
+
+12. Code quality
+- Use React + TypeScript best practices
+- Extract helper functions/types where appropriate
+- Minimize unrelated refactoring
+- Return the full updated `AdminFindWork.tsx` code and any helper code needed
+
+Expected parsing example based on the uploaded sample PDF:
+From the sample document, the parser should be able to extract approximately:
+- Job Title: Senior Virtual Assistant
+- Department/Division: Delivery
+- Hiring Manager / Reporting To: Line Manager
+- Job Description: combine Company Overview + About the Role + Position Overview
+- Responsibilities: the bullet list under Key Responsibilities
+- Qualifications: the bullet list under Requirements
+- Additional fit/notes: Cultural Fit, Why Join Us, Job Success Profile, Additional Success Factors :contentReference[oaicite:1]{index=1}

@@ -4,6 +4,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BulkUploadModal } from "@/components/BulkUploadModal";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,6 +45,7 @@ import {
   Sparkles,
   Clock,
   BookOpen,
+  Upload,
 } from "lucide-react";
 import type { Job } from "@shared/schema";
 import { JobFormModal } from "@/components/JobFormModal";
@@ -427,6 +429,7 @@ export default function AdminFindWork() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
 
   const openCreate = () => {
     setEditingJob(null);
@@ -501,6 +504,12 @@ export default function AdminFindWork() {
         onClose={closeModal}
         job={editingJob}
         onSuccess={closeModal}
+      />
+
+      <BulkUploadModal
+        open={bulkOpen}
+        onClose={() => setBulkOpen(false)}
+        onSuccess={() => setBulkOpen(false)}
       />
 
       {/* ── Topgrading Guide Modal ── */}
@@ -725,6 +734,15 @@ export default function AdminFindWork() {
                   </a>
                 </Button>
                 <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-white/15 bg-white/[0.06] text-white/70 hover:bg-white/10 hover:text-white"
+                  onClick={() => setBulkOpen(true)}
+                >
+                  <Upload className="w-3.5 h-3.5 mr-1.5" />
+                  Bulk Upload
+                </Button>
+                <Button
                   onClick={openCreate}
                   className="bg-[#474ead] text-white shadow-[0_4px_20px_rgba(71,78,173,0.4)] hover:bg-[#3d439c]"
                 >
@@ -785,14 +803,25 @@ export default function AdminFindWork() {
                 {jobs.length}
               </span>
             </h2>
-            <Button
-              onClick={openCreate}
-              size="sm"
-              className="bg-[#474ead] text-white hover:bg-[#3d439c]"
-            >
-              <Plus className="w-4 h-4 mr-1.5" />
-              Add New Job
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setBulkOpen(true)}
+                className="rounded-full"
+              >
+                <Upload className="w-3.5 h-3.5 mr-1.5" />
+                Bulk Upload
+              </Button>
+              <Button
+                onClick={openCreate}
+                size="sm"
+                className="bg-[#474ead] text-white hover:bg-[#3d439c]"
+              >
+                <Plus className="w-4 h-4 mr-1.5" />
+                Add New Job
+              </Button>
+            </div>
           </div>
 
           {/* Job list */}
