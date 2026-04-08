@@ -93,3 +93,12 @@ Preferred communication style: Simple, everyday language.
 - **Real jobs only**: Results use `usePostedJobs()` hook (same source as FindWorkAllJobs); maps top profile archetypes to actual open jobs; empty-state cards shown when no matches exist
 - **Results screen**: Top profile match card → Values alignment card → Matched posted job cards → Bottom CTA
 - **Matching animation**: 2.8-second animated loading screen between assessment completion and results reveal
+
+#### Matching Engine (Domain-Based, v2)
+- **Domain-first scoring**: Each candidate skill maps to a functional domain (admin_ops, customer_support, sales_marketing, finance, technical, design, hr). Each job's domain is inferred from its **title keywords first** (preventing mislabeled categories, e.g. "IT Administrator" in "Admin" category → `technical`), falling back to DB category.
+- **Hard incompatibility rejection**: Domain penalty matrix defines hard penalties per [candidateDomain][jobDomain]. If the minimum penalty across all candidate domains ≥ `DOMAIN_HARD_THRESHOLD` (40), the job is rejected before scoring begins.
+- **Weighted scoring**: Skills overlap (0–35 pts, via SKILL_ALIASES exact matching against job text), domain match (0–25 pts), experience level tier alignment (0–20 pts, -10 on mismatch), work preferences (0–12 pts: voice, work type, remote), values bonus (0–5 pts — supportive only, never primary driver).
+- **Skill alias matching**: Each candidate skill has an exhaustive list of aliases matched against the full job text (title + description + skillTags + requirements + skillsAndCompetencies). Prevents false positives like "Admin Support" matching "IT Administrator" via title substring.
+- **Confidence threshold**: `MATCH_THRESHOLD = 35`. Only jobs scoring ≥ 35 appear in results. Empty state shown instead of weak matches.
+- **Per-job match explanation**: Each result card shows concrete reasons (e.g. "Matched skills: Bookkeeping, Report Generation", "Experience fit: Entry-level role", "Preference fit: Non-voice role, Remote setup") — no generic or misleading text.
+- **Safeguard examples**: accounting/admin candidate vs IT Administrator → hard rejected (penalty 45); customer support candidate vs bookkeeping role → hard rejected (penalty 30); social media candidate vs technical support → hard rejected (penalty 50).

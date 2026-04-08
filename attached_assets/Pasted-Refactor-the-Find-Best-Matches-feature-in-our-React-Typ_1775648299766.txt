@@ -1,0 +1,242 @@
+Refactor the Find Best Matches feature in our React + TypeScript site to make the job matching much more accurate and prevent irrelevant results from being shown.
+
+Problem we need to solve:
+Right now, the feature can show unrelated jobs in the final results.
+Example:
+A candidate with manager/accounting/operations experience may receive “IT Administrator” as a best match even when it is far from their real skills and experience.
+We want to avoid this completely.
+
+Main goal:
+Only show jobs that are genuinely relevant to the candidate’s profile, skills, experience, preferences, and values.
+If the system is not confident enough, do not show weak matches. Show a notice instead.
+
+Important constraint:
+The final results must ONLY use real posted jobs from the same source as FindWorkAllJobs.tsx.
+Do not invent jobs, placeholder roles, or generic role cards.
+
+What to change:
+
+1. Use the same source of truth as FindWorkAllJobs.tsx
+- Reuse the same jobs data source, hook, API, store, or helper used by FindWorkAllJobs.tsx
+- Refactor into a shared helper if needed, such as:
+  - usePostedJobs()
+  - getPostedJobs()
+  - normalizePostedJobs()
+- FindBestMatches.tsx must only score and display active posted jobs
+
+2. Build a stricter matching engine
+The current matching is too loose.
+Replace it with a weighted scoring system that evaluates:
+
+A. Hard skill alignment
+Examples:
+- accounting
+- bookkeeping
+- operations
+- executive assistance
+- customer support
+- IT support
+- social media
+- project coordination
+- sales
+- admin support
+
+B. Experience alignment
+Examples:
+- entry level
+- junior
+- mid-level
+- senior
+- manager
+- specialist
+
+C. Domain/function alignment
+Examples:
+- finance/accounting
+- admin/operations
+- customer support
+- technical/IT
+- marketing
+- HR/recruitment
+- sales/business development
+
+D. Work preference alignment
+Examples:
+- day shift / night shift / flexible
+- full-time / part-time
+- remote / onsite / hybrid
+- voice / non-voice / either
+
+E. Work style / environment alignment
+Examples:
+- structured
+- fast-paced
+- collaborative
+- independent
+- detail-oriented
+- client-facing
+- back-office
+
+3. Normalize every posted job into matching attributes
+For each actual posted job from FindWorkAllJobs.tsx, derive or store normalized tags such as:
+- title
+- department
+- seniority
+- core skills
+- secondary skills
+- domain
+- shift
+- setup
+- voice/non-voice
+- work style
+- keywords
+
+If the jobs source does not already provide enough metadata, infer carefully from:
+- job title
+- department
+- description
+- skills list
+- category fields
+
+Still only return actual posted jobs.
+
+4. Candidate profile modeling
+Build a stronger candidate profile from the assessment:
+- strongest skills
+- years of experience
+- seniority level
+- preferred work setup
+- shift preference
+- communication preference
+- preferred environment
+- role priorities
+- core values alignment
+- optional resume/profile tags
+
+5. Weighted scoring logic
+Implement a weighted score with clear penalties for mismatch.
+
+Example logic:
+- hard skill overlap: highest weight
+- seniority/experience alignment: high weight
+- domain alignment: high weight
+- work preference alignment: medium weight
+- values/environment alignment: supportive weight
+- mismatch penalties: strong negative effect
+
+Examples of penalties:
+- manager/accounting profile vs IT Administrator: heavy penalty
+- non-technical profile vs technical support role: heavy penalty
+- finance profile vs marketing role: heavy penalty
+- day-shift-only candidate vs night-only role: penalty
+- non-voice preference vs heavily voice role: penalty
+
+Important:
+A role should not surface just because one small attribute happens to match.
+
+6. Confidence threshold
+Add a minimum confidence threshold before showing a job in results.
+
+Example:
+- Only show jobs above a meaningful relevance threshold
+- If the top matches are too weak, show no matches
+
+Do not fill results with poor matches just to avoid an empty state.
+
+7. Better result rules
+Apply these rules:
+- sort by weighted score descending
+- hide any result below threshold
+- cap the list to the most relevant real posted jobs
+- if only 1 or 2 roles are genuinely relevant, show only those
+- do not show unrelated jobs just to make the list longer
+
+8. Empty state behavior
+If no posted jobs pass the relevance threshold, show a polished notice instead of weak matches.
+
+Use copy like:
+“No strong role matches are available right now.”
+Supporting text:
+“Based on your skills, experience, and preferences, we do not currently have an active posted role that closely matches your profile. You can browse all open positions or check back soon.”
+
+Buttons:
+- Browse All Roles
+- Retake Assessment
+
+If there are no posted jobs at all:
+“There are no open roles available at the moment.”
+Supporting text:
+“We’re not showing role matches yet because there are currently no active job postings. Please check back later.”
+
+9. Core values alignment
+Keep the values/culture assessment aligned to our company values, but do not let values fit overpower role relevance.
+Values alignment should support the ranking, not cause unrelated roles to appear.
+
+Our core values include:
+- People First
+- Beat Yesterday
+- Fast-Fast-Fast
+- Integrity Matters
+- Extreme Ownership
+- We Are Intrapreneurs
+
+10. Explanation in the UI
+For each matched job shown, explain why it matched using real reasons only, such as:
+- matched skills
+- aligned experience level
+- matching work setup
+- matching preferred environment
+
+Do not show generic or misleading reasons.
+
+Bad example:
+“Environment fit: Flexible & dynamic” for a role that otherwise does not fit.
+Good example:
+“Matched skills: Financial reporting, budgeting, team leadership”
+“Experience fit: Management-level operations background”
+“Preference fit: Hybrid full-time setup”
+
+11. Design requirements
+The UI must remain visually consistent with:
+- Insights.tsx
+- FindWork.tsx
+- WhyOnSpotAbout.tsx
+- core values/culture sections already on the site
+
+Keep:
+- same color palette
+- same fonts
+- same spacing
+- same rounded cards
+- same button styles
+- same layout quality
+- same responsive behavior
+
+12. Suggested technical structure
+Refactor into reusable logic and components such as:
+- usePostedJobs()
+- normalizePostedJobs()
+- buildCandidateProfile()
+- scoreJobMatch()
+- applyMatchThreshold()
+- MatchExplanation
+- EmptyMatchState
+
+13. Matching safeguards
+Add safeguards so these scenarios do not happen:
+- accounting/manager profile gets IT Administrator
+- customer support applicant gets bookkeeping manager
+- social media profile gets technical support
+- junior applicant gets senior specialist role unless the fit is truly strong
+
+14. Output requirements
+Please provide:
+- production-ready code
+- updated FindBestMatches.tsx
+- any needed shared helpers/hooks/types
+- updates to FindWorkAllJobs.tsx only if necessary for shared job normalization
+- clear explanation of the scoring formula and thresholds
+
+Critical rule:
+Accuracy is more important than showing more results.
+It is better to show zero matches than to show unrelated roles.
