@@ -13,10 +13,72 @@ import {
 import {
   User, Calendar, Clock, Eye, Globe, TrendingUp,
   ExternalLink, Rss, ArrowRight, BookOpen, Linkedin, Youtube,
-  Search, PlayCircle, Mic, LayoutGrid, Users, Briefcase,
-  ChevronLeft, ChevronRight, X,
+  Search, PlayCircle, Mic, Users, Briefcase,
+  ChevronLeft, ChevronRight, X, Target, Zap, Award,
 } from "lucide-react";
 import type { Post } from "@shared/schema";
+import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
+
+// ─── Shared Case Studies data (sourced from WhyOnSpot Success Stories) ───────
+const CASE_STUDIES = [
+  {
+    company: "TechFlow Solutions",
+    industry: "Software Development",
+    logo: "TS",
+    challenge: "Overwhelmed by customer support while trying to scale development",
+    solution: "Deployed 12 customer support specialists and 3 technical support engineers",
+    results: [
+      { metric: "Response Time",         value: "87%", description: "faster response times" },
+      { metric: "Customer Satisfaction", value: "94%", description: "CSAT score achieved" },
+      { metric: "Cost Savings",          value: "65%", description: "reduction in support costs" },
+      { metric: "Team Growth",           value: "3x",  description: "development team scaling" },
+    ],
+    testimonial: "OnSpot didn't just solve our support bottleneck — they freed our entire team to focus on what we do best: building amazing software.",
+    clientName: "Sarah Chen",
+    clientTitle: "CTO",
+    timeframe: "6 months",
+    teamSize: "15 people",
+    model: "Managed Services",
+  },
+  {
+    company: "GlobalTrade Logistics",
+    industry: "Logistics & Supply Chain",
+    logo: "GL",
+    challenge: "Manual processes causing delays and errors in shipment tracking",
+    solution: "Built dedicated operations team with process automation specialists",
+    results: [
+      { metric: "Processing Speed",   value: "78%",  description: "faster order processing" },
+      { metric: "Error Rate",         value: "95%",  description: "reduction in errors" },
+      { metric: "Cost Efficiency",    value: "72%",  description: "operational cost savings" },
+      { metric: "Customer Retention", value: "8.5x", description: "growth in repeat customers" },
+    ],
+    testimonial: "The transformation was incredible. What used to take our team days now happens in hours, with perfect accuracy.",
+    clientName: "Marcus Rodriguez",
+    clientTitle: "Operations Director",
+    timeframe: "4 months",
+    teamSize: "22 people",
+    model: "Enterprise Services",
+  },
+  {
+    company: "HealthFirst Medical",
+    industry: "Healthcare Services",
+    logo: "HM",
+    challenge: "Administrative burden preventing focus on patient care",
+    solution: "Deployed specialized medical administration and billing support team",
+    results: [
+      { metric: "Admin Time",          value: "83%",  description: "reduction in admin overhead" },
+      { metric: "Revenue Cycle",       value: "45%",  description: "faster billing processing" },
+      { metric: "Patient Satisfaction",value: "91%",  description: "satisfaction rating" },
+      { metric: "Staff Efficiency",    value: "6.2x", description: "improvement in productivity" },
+    ],
+    testimonial: "OnSpot gave us back what matters most — time with our patients. Our doctors can finally focus on healing instead of paperwork.",
+    clientName: "Dr. Jennifer Park",
+    clientTitle: "Chief Medical Officer",
+    timeframe: "8 months",
+    teamSize: "18 people",
+    model: "Managed Services",
+  },
+];
 
 // ─── Navigation categories ────────────────────────────────────────────────────
 const NAV_CATEGORIES = [
@@ -509,57 +571,70 @@ function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
 function CategoryNav({
   selected,
   onSelect,
+  onSearchClick,
 }: {
   selected: NavCategoryId;
   onSelect: (id: NavCategoryId) => void;
+  onSearchClick: () => void;
 }) {
   const [, navigate] = useLocation();
 
   return (
     <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center overflow-x-auto scrollbar-hide -mb-px gap-0">
+        <div className="flex items-center -mb-px">
           {/* OnSpot logo — replaces "View All"; click goes to homepage */}
           <button
             onClick={() => navigate("/")}
-            className="flex items-center gap-2 px-4 py-3.5 flex-shrink-0 mr-2 border-b-2 border-transparent"
+            className="flex items-center py-2.5 pr-4 flex-shrink-0 border-b-2 border-transparent"
             aria-label="Go to OnSpot homepage"
           >
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-md bg-[#474ead] flex items-center justify-center text-white font-bold text-sm relative">
-                <span>O</span>
-                <div className="absolute w-1.5 h-1.5 rounded-full bg-white top-1 right-1" />
-              </div>
-              <span className="font-bold text-[#474ead] text-base tracking-tight leading-none">
-                OnSpot
-              </span>
-            </div>
+            <img
+              src={onspotLogo}
+              alt="OnSpot"
+              className="h-7 w-auto object-contain"
+            />
           </button>
 
           {/* Divider */}
-          <div className="w-px h-5 bg-slate-200 flex-shrink-0 mr-2" />
+          <div className="w-px h-5 bg-slate-200 flex-shrink-0 mx-2" />
 
-          {NAV_CATEGORIES.map(({ id, label, icon: Icon }) => {
-            const active = selected === id;
-            return (
-              <button
-                key={id}
-                onClick={() => onSelect(id)}
-                className={`
-                  flex items-center gap-2 px-4 py-3.5 text-sm font-medium whitespace-nowrap
-                  border-b-2 transition-all duration-200 flex-shrink-0
-                  ${
-                    active
-                      ? "border-[#474ead] text-[#474ead]"
-                      : "border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300"
-                  }
-                `}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                {label}
-              </button>
-            );
-          })}
+          {/* Scrollable category tabs */}
+          <div className="flex items-center overflow-x-auto scrollbar-hide flex-1 gap-0">
+            {NAV_CATEGORIES.map(({ id, label, icon: Icon }) => {
+              const active = selected === id;
+              return (
+                <button
+                  key={id}
+                  onClick={() => onSelect(id)}
+                  className={`
+                    flex items-center gap-2 px-4 py-3.5 text-sm font-medium whitespace-nowrap
+                    border-b-2 transition-all duration-200 flex-shrink-0
+                    ${
+                      active
+                        ? "border-[#474ead] text-[#474ead]"
+                        : "border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300"
+                    }
+                  `}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Search button — right side, separated */}
+          <div className="flex items-center flex-shrink-0 pl-2 ml-1 border-l border-slate-200">
+            <button
+              onClick={onSearchClick}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-slate-500 hover:text-[#474ead] hover:bg-[#474ead]/8 transition-all duration-200 text-sm font-medium"
+              aria-label="Open search"
+            >
+              <Search className="w-4 h-4" />
+              <span className="hidden sm:inline">Search</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -694,35 +769,57 @@ function PanelArticleCard({ article }: { article: ArticleItem }) {
   );
 }
 
-// ─── EditorialCTA ─────────────────────────────────────────────────────────────
-function EditorialCTA() {
+// ─── CaseStudyTeaser — pulls from shared CASE_STUDIES data ───────────────────
+function CaseStudyTeaser() {
+  const study = CASE_STUDIES[0]; // First featured case study
   return (
-    <div className="flex-1 bg-gradient-to-br from-[#474ead]/10 via-slate-50 to-white border border-[#474ead]/20 rounded-2xl p-6 flex flex-col justify-between" style={{ minHeight: "160px" }}>
-      <div>
-        <div className="w-10 h-10 rounded-xl bg-[#474ead]/15 flex items-center justify-center mb-4">
-          <TrendingUp className="w-5 h-5 text-[#474ead]" />
-        </div>
-        <h4 className="text-base font-bold text-slate-900 mb-2">Case Study</h4>
-        <p className="text-sm text-slate-600 leading-relaxed">
-          Follow OnSpot for the latest outsourcing intelligence, BPO strategies, and workforce insights.
-        </p>
+    <div
+      className="flex-1 bg-gradient-to-br from-[#474ead]/10 via-white to-[#f0f4ff] border border-[#474ead]/20 rounded-2xl overflow-hidden flex flex-col"
+      style={{ minHeight: "160px" }}
+    >
+      {/* Header strip */}
+      <div className="bg-[#474ead] px-5 py-3 flex items-center gap-2">
+        <Award className="w-4 h-4 text-white/80 flex-shrink-0" />
+        <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white">
+          Case Study
+        </span>
+        <span className="ml-auto text-[10px] text-white/60">{study.model}</span>
       </div>
-      <div className="mt-5 flex flex-col gap-2.5">
+
+      {/* Body */}
+      <div className="p-5 flex flex-col flex-1 gap-3">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="w-7 h-7 rounded-full bg-[#474ead] text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+              {study.logo}
+            </span>
+            <span className="text-sm font-bold text-slate-900">{study.company}</span>
+          </div>
+          <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">
+            {study.challenge}
+          </p>
+        </div>
+
+        {/* Top 2 result metrics */}
+        <div className="grid grid-cols-2 gap-2">
+          {study.results.slice(0, 2).map((r) => (
+            <div key={r.metric} className="bg-white rounded-lg p-2.5 border border-slate-100 text-center">
+              <div className="text-lg font-bold text-[#474ead]">{r.value}</div>
+              <div className="text-[10px] text-slate-500 leading-tight">{r.description}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Quote snippet */}
+        <p className="text-xs text-slate-600 italic leading-relaxed line-clamp-2 border-l-2 border-[#474ead]/30 pl-2">
+          "{study.testimonial}"
+        </p>
+
         <a
-          href="https://www.linkedin.com/company/onspotglobal"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 rounded-full bg-[#474ead] px-4 py-2 text-sm font-semibold text-white hover:bg-[#5b63d6] transition"
+          href="/why-onspot/case-studies"
+          className="mt-auto inline-flex items-center gap-1.5 text-xs font-semibold text-[#474ead] hover:text-[#5b63d6] transition-colors"
         >
-          <Linkedin className="w-3.5 h-3.5" /> Follow on LinkedIn
-        </a>
-        <a
-          href="https://youtube.com/@onspotglobal"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 transition"
-        >
-          <Youtube className="w-3.5 h-3.5" /> Watch on YouTube
+          View all success stories <ArrowRight className="w-3 h-3" />
         </a>
       </div>
     </div>
@@ -805,7 +902,7 @@ function EditorialSection({
           <HighlightCard article={highlightArticle} />
           <div className="flex flex-col gap-5">
             {panelArticle && <PanelArticleCard article={panelArticle} />}
-            <EditorialCTA />
+            <CaseStudyTeaser />
           </div>
         </div>
       ) : null}
@@ -995,6 +1092,13 @@ export default function Insights() {
   const [searchQuery, setSearchQuery] = useState("");
   const [authorFilter, setAuthorFilter] = useState("");
   const [ceoModalOpen, setCeoModalOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  function handleSearchClick() {
+    // Scroll to the bottom hero/search section and focus the input
+    searchInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setTimeout(() => searchInputRef.current?.focus(), 400);
+  }
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -1063,7 +1167,7 @@ export default function Insights() {
 
   // ─── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-[#f0f4ff]">
       <WeeklyNotesModal open={ceoModalOpen} onClose={() => setCeoModalOpen(false)} />
 
       {/* ── Category navigation (top, sticky, no TopNavigation above it) ─── */}
@@ -1073,6 +1177,7 @@ export default function Insights() {
           setSelectedCategory(id);
           setAuthorFilter("");
         }}
+        onSearchClick={handleSearchClick}
       />
 
       {/* ── Main content area ─────────────────────────────────────────────── */}
@@ -1235,6 +1340,7 @@ export default function Insights() {
                   <div className="flex items-center bg-white rounded-full px-4 py-3 backdrop-blur transition-all focus-within:ring-2 focus-within:ring-[#474ead]/30 shadow-sm">
                     <Search className="w-5 h-5 text-[#474ead]/60 mr-3 flex-shrink-0" />
                     <input
+                      ref={searchInputRef}
                       type="text"
                       placeholder="Search insights, topics, or authors…"
                       value={searchQuery}

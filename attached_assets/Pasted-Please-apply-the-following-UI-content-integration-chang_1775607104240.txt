@@ -1,0 +1,56 @@
+Please apply the following UI/content integration changes to the public Insights page.
+
+1. Change page background color
+Current issue:
+- The Insights page background is turning plain white.
+Desired update:
+- Change it to a very light blue / soft cool tone similar to the landing page background
+- Match the overall feel of the OnSpot landing page hero/background
+- Keep it subtle, clean, and premium, not overly saturated
+- Make sure cards and sections still have enough contrast on top of the new background
+
+Implementation guidance:
+- Update the page-level background and any section wrappers that are forcing white
+- Keep the background consistent throughout the Insights page
+- Use a tone that aligns with OnSpot branding and the landing page visual identity
+
+2. Replace the logo in the Insights top nav
+Current issue:
+- The top nav/logo area is not using the proper OnSpot logo
+Desired update:
+- Replace it with the official OnSpot logo
+- Ensure the logo size, alignment, and spacing look correct in the Insights navbar
+- Keep it visually consistent with the main site navigation
+
+3. Connect “Case Study” content to the existing Case Study section from “Why OnSpot”
+Current requirement:
+- The “Case Study” part in Insights should not be standalone/mock content
+- It should connect to or reuse the actual Case Study content/source from the “Why OnSpot” page / Success Stories section
+
+Please do the following:
+- Reuse the same case study data source, structure, or component if possible
+- Ensure the Insights page pulls from the same real Case Study content used in “Why OnSpot”
+- Keep styling adapted to the Insights page if needed, but the content/data should be connected
+- If there is an existing component for the Success Stories / Case Study section, reuse or adapt it rather than duplicating hardcoded content
+- Make sure future updates to the Case Study source reflect properly where applicable
+
+4. Add a search button in the Insights navigation bar
+Current requirement:
+- In the Insights nav bar, add a search button/icon next to “Podcast Videos”
+- Add proper spacing/separation between “Podcast Videos” and the new search button
+- Make sure the nav does not feel cramped
+- Search button should visually match the rest of the navigation
+- It should be aligned properly on desktop and still behave well responsively
+
+Implementation guidance for nav:
+- Add a little more spacing after “Podcast Videos”
+- Then place a search icon/button
+- Keep the nav balanced and polished
+- Do not let the search control break the category navigation layout on smaller screens
+
+Expected result:
+- Insights page uses a light blue branded background instead of plain white
+- Top nav shows the correct OnSpot logo
+- Case Study section is connected to the actual “Why OnSpot” / Success Stories case study source
+- Search button is added beside “Podcast Videos” with proper spacing and alignment
+- Overall page remains responsive, polished, and consistent with the rest of the site
