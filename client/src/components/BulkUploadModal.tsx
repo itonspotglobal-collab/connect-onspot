@@ -252,26 +252,37 @@ async function parseSpreadsheet(file: File): Promise<ParsedJobRecord[]> {
 
 // ─── PDF Parser ───────────────────────────────────────────────────────────────
 
-const PDF_SECTION_KEYS = [
-  { key: "title",           patterns: ["role:", "job title:", "position:"] },
-  { key: "reportingTo",     patterns: ["reporting to:", "reports to:", "reporting line:"] },
-  { key: "division",        patterns: ["division:", "department:", "team:"] },
-  { key: "jobGrade",        patterns: ["job grade:", "grade:"] },
-  { key: "jobLevel",        patterns: ["job level:", "level:"] },
-  { key: "companyOverview", patterns: ["company overview"] },
-  { key: "description",     patterns: ["about the role", "about the position", "role summary"] },
-  { key: "responsibilities",patterns: ["key responsibilities", "responsibilities"] },
-  { key: "requirements",    patterns: ["requirements", "qualifications"] },
-  { key: "culturalFit",     patterns: ["cultural fit", "culture fit"] },
-  { key: "benefits",        patterns: ["why join us", "benefits", "what we offer"] },
-  { key: "roleMission",     patterns: ["position overview", "job success profile", "role overview"] },
-  { key: "successFactors",  patterns: ["additional success factors", "success factors"] },
-] as const;
+// Section definitions ordered most-specific first.
+// `inline: true`  → label + value on the same line  (e.g. "Role: Senior VA")
+// `inline: false` → label is a standalone header; body follows on next lines
+const PDF_SECTIONS: Array<{
+  key: string;
+  regex: RegExp;
+  inline: boolean;
+}> = [
+  // Inline label fields
+  { key: "title",        regex: /^(?:role|job\s+title|position|title)\s*:\s*(.+)/i,           inline: true  },
+  { key: "reportingTo", regex: /^(?:reporting\s+to|reports\s+to|reporting\s+line)\s*:\s*(.+)/i, inline: true },
+  { key: "division",    regex: /^(?:division|department|team)\s*:\s*(.+)/i,                    inline: true  },
+  { key: "jobGrade",    regex: /^(?:job\s+grade|grade)\s*:\s*(.+)/i,                           inline: true  },
+  { key: "jobLevel",    regex: /^(?:job\s+level|level)\s*:\s*(.+)/i,                           inline: true  },
+  // Block-header fields (body on following lines)
+  { key: "companyOverview",  regex: /^company\s+overview\s*:?\s*$/i,                                         inline: false },
+  { key: "description",      regex: /^(?:about\s+the\s+(?:role|position)|role\s+summary)\s*:?\s*$/i,         inline: false },
+  { key: "roleMission",      regex: /^(?:position\s+overview|role\s+overview|job\s+success\s+profile)\s*:?\s*$/i, inline: false },
+  { key: "responsibilities", regex: /^(?:key\s+)?responsibilities\s*:?\s*$/i,                                inline: false },
+  { key: "requirements",     regex: /^(?:requirements?|job\s+qualifications?|qualifications?)\s*:?\s*$/i,    inline: false },
+  { key: "culturalFit",      regex: /^(?:cultural|culture)\s+fit\s*:?\s*$/i,                                 inline: false },
+  { key: "benefits",         regex: /^(?:why\s+join\s+us|benefits|what\s+we\s+offer)\s*:?\s*$/i,             inline: false },
+  { key: "successFactors",   regex: /^(?:additional\s+)?success\s+factors\s*:?\s*$/i,                        inline: false },
+];
+
+// ── Text extraction — uses Y-coordinate grouping to preserve real line breaks ──
 
 async function extractPdfText(file: File): Promise<string> {
   const pdfjsLib = await import("pdfjs-dist");
 
-  // Use Vite's static asset URL resolution — no CDN dependency
+  // Local Vite bundle — no CDN dependency
   pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
     "pdfjs-dist/build/pdf.worker.min.mjs",
     import.meta.url,
@@ -280,26 +291,50 @@ async function extractPdfText(file: File): Promise<string> {
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
-  let fullText = "";
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
+  const allLines: string[] = [];
+
+  for (let p = 1; p <= pdf.numPages; p++) {
+    const page = await pdf.getPage(p);
     const content = await page.getTextContent();
-    const pageText = content.items
-      .map((item: unknown) => (item as { str: string }).str)
-      .join(" ");
-    fullText += pageText + "\n";
+
+    // Group spans by rounded Y position so we reconstruct actual visual lines
+    const byY = new Map<number, string[]>();
+    const yOrder: number[] = [];
+
+    for (const item of content.items) {
+      const ti = item as { str: string; transform: number[]; hasEOL?: boolean };
+      const y = Math.round(ti.transform[5]);
+      if (!byY.has(y)) { byY.set(y, []); yOrder.push(y); }
+      if (ti.str.trim()) byY.get(y)!.push(ti.str);
+    }
+
+    // Sort descending (PDF y=0 is bottom) then emit lines top→bottom
+    yOrder.sort((a, b) => b - a);
+    for (const y of yOrder) {
+      const lineText = byY.get(y)!.join(" ").replace(/\s{2,}/g, " ").trim();
+      if (lineText) allLines.push(lineText);
+    }
   }
-  return fullText;
+
+  return allLines.join("\n");
 }
 
-function parseSections(text: string): Record<string, string> {
-  const lines = text.split(/\n|\r/).map((l) => l.trim());
+// ── Section-based parser using regex ─────────────────────────────────────────
+
+function parseSections(rawText: string): Record<string, string> {
+  // Normalise line endings
+  const lines = rawText
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .split("\n")
+    .map((l) => l.replace(/\s{2,}/g, " ").trim());
+
   const sections: Record<string, string> = {};
   let currentKey: string | null = null;
   const accum: string[] = [];
 
-  const flushCurrent = () => {
-    if (currentKey) {
+  const flush = () => {
+    if (currentKey && accum.length) {
       sections[currentKey] = (sections[currentKey]
         ? sections[currentKey] + "\n"
         : "") + accum.join("\n").trim();
@@ -308,71 +343,98 @@ function parseSections(text: string): Record<string, string> {
   };
 
   for (const line of lines) {
-    const lower = line.toLowerCase();
-    let matched: string | null = null;
-    for (const sec of PDF_SECTION_KEYS) {
-      if (sec.patterns.some((p) => lower.startsWith(p) || lower === p.replace(/:$/, ""))) {
-        matched = sec.key;
-        break;
+    if (!line) continue;
+
+    let matched = false;
+    for (const sec of PDF_SECTIONS) {
+      const m = sec.regex.exec(line);
+      if (!m) continue;
+
+      flush();
+      currentKey = sec.key;
+
+      if (sec.inline) {
+        // Value is on the same line after the colon
+        const val = m[1]?.trim();
+        if (val) sections[currentKey] = val;
+        // Don't accumulate more lines for inline fields
+        currentKey = null;
       }
+      // For block headers, keep currentKey so body lines accumulate
+
+      matched = true;
+      break;
     }
-    if (matched) {
-      flushCurrent();
-      currentKey = matched;
-      const colonIdx = line.indexOf(":");
-      if (colonIdx > -1) {
-        const inline = line.slice(colonIdx + 1).trim();
-        if (inline) accum.push(inline);
-      }
-    } else if (line && currentKey) {
+
+    if (!matched && currentKey) {
       accum.push(line);
     }
   }
-  flushCurrent();
+  flush();
+
   return sections;
 }
 
-function detectDocTitle(text: string): string | undefined {
-  const lines = text.split(/\n|\r/).map((l) => l.trim()).filter((l) => l.length > 2);
-  for (const line of lines.slice(0, 8)) {
-    const lower = line.toLowerCase();
-    const isSectionStart = PDF_SECTION_KEYS.some((s) =>
-      s.patterns.some((p) => lower.startsWith(p)),
-    );
-    if (!isSectionStart && line.length > 4 && line.length < 80) return line;
-  }
-  return undefined;
+// ── Filename → title fallback ─────────────────────────────────────────────────
+
+function titleFromFilename(filename: string): string {
+  return filename
+    .replace(/\.pdf$/i, "")
+    .replace(/Job\s+Success\s+Profile/gi, "")
+    .replace(/\(\d+\)/g, "")          // strip (1) (2) etc
+    .replace(/[._-]+/g, " ")          // dots/underscores/dashes → space
+    .replace(/\s{2,}/g, " ")
+    .trim();
 }
+
+// ── Build the final record from extracted sections ────────────────────────────
 
 async function parsePdf(file: File): Promise<ParsedJobRecord[]> {
   const text = await extractPdfText(file);
-  const sections = parseSections(text);
-  const docTitle = sections["title"] || detectDocTitle(text);
+  const sec = parseSections(text);
 
+  // Title: explicit label > filename fallback
+  const title = sec["title"] || titleFromFilename(file.name);
+
+  // Department: from division/department/team label
+  const division = sec["division"] || "";
+
+  // Description: compose from available overview/description sections
   const description = [
-    sections["companyOverview"],
-    sections["description"],
-    sections["roleMission"],
-    sections["successFactors"],
-    sections["benefits"],
+    sec["companyOverview"],
+    sec["description"],
+    sec["roleMission"],
+    sec["successFactors"],
+    sec["benefits"],
   ].filter(Boolean).join("\n\n").trim();
 
+  // Debug output in development
+  if (import.meta.env.DEV) {
+    console.group(`[BulkUpload] PDF parsed: ${file.name}`);
+    console.log("title:", title, title === sec["title"] ? "(from label)" : "(from filename)");
+    console.log("division:", division || "(none)");
+    console.log("description length:", description.length);
+    console.log("responsibilities:", textToArray(sec["responsibilities"]).length, "items");
+    console.log("qualifications:", textToArray(sec["requirements"]).length, "items");
+    console.groupEnd();
+  }
+
   const raw: Partial<ParsedJobRecord> = {
-    title:            docTitle,
-    category:         sections["division"],
-    description:      description || sections["roleMission"],
-    reportingTo:      sections["reportingTo"],
-    division:         sections["division"],
-    jobGrade:         sections["jobGrade"],
-    jobLevel:         sections["jobLevel"],
-    companyOverview:  sections["companyOverview"],
-    roleMission:      sections["roleMission"],
-    responsibilities: textToArray(sections["responsibilities"]),
-    requirements:     textToArray(sections["requirements"]),
-    culturalFit:      textToArray(sections["culturalFit"]),
+    title,
+    category:         division,
+    description,
+    reportingTo:      sec["reportingTo"],
+    division,
+    jobGrade:         sec["jobGrade"],
+    jobLevel:         sec["jobLevel"],
+    companyOverview:  sec["companyOverview"],
+    roleMission:      sec["roleMission"],
+    responsibilities: textToArray(sec["responsibilities"]),
+    requirements:     textToArray(sec["requirements"]),
+    culturalFit:      textToArray(sec["culturalFit"]),
     skillTags:        [],
     contractType:     "fixed",
-    experienceLevel:  sections["jobLevel"],
+    experienceLevel:  sec["jobLevel"],
   };
 
   return [validateRecord(raw, 0, file.name)];

@@ -1,0 +1,145 @@
+Fix the PDF parsing logic in the bulk upload feature in `AdminFindWork.tsx`.
+
+Problem:
+The uploaded PDF files clearly contain a title, but the preview shows `No title` and marks the record invalid.
+
+Examples from the uploaded PDFs:
+- `Role: Senior Virtual Assistant`
+- `Role: Customer Service Representative`
+
+So the parser must correctly extract the job title from `Role:` and not fail when the PDF structure differs slightly.
+
+What to fix:
+
+1. Update PDF title extraction
+- First look for these patterns, case-insensitive:
+  - `Role:`
+  - `Job Title:`
+  - `Position:`
+  - `Title:`
+- Extract the text on the same line after the label
+- Trim spaces and punctuation
+- Preserve values like:
+  - `Senior Virtual Assistant`
+  - `Customer Service Representative`
+
+2. Add fallback title extraction
+If no explicit title is found in PDF text:
+- Try to infer from the filename
+- Example:
+  - `Virtual Assistant.Bookkeeper.Job Success Profile.pdf` -> `Virtual Assistant Bookkeeper`
+  - `Customer Service Representative.Job Success Profile (1).pdf` -> `Customer Service Representative`
+- Remove:
+  - `.pdf`
+  - `Job Success Profile`
+  - duplicate dots
+  - trailing `(1)` style suffixes
+- Convert separators like `.`, `_`, and `-` into spaces
+- Collapse repeated spaces
+
+3. Update department extraction
+Support these labels:
+- `Division:`
+- `Department:`
+- `Team:`
+
+Example from the PDFs:
+- `Division: Delivery`
+
+4. Update description extraction
+The parser should not require one rigid PDF structure.
+Build `jobDescription` using the first available sections from:
+- `Company Overview`
+- `About the Role`
+- `Position Overview`
+
+If `About the Role` is missing but `Position Overview` exists, still create a valid job description.
+
+5. Update responsibilities extraction
+Support these section headers:
+- `Key Responsibilities`
+- `Responsibilities`
+
+Capture bullet items that follow until the next known section.
+
+6. Update qualifications extraction
+Support these section headers:
+- `Requirements:`
+- `Requirements`
+- `Job Qualifications`
+- `Qualifications`
+
+Capture bullet items that follow until the next known section.
+
+7. Make PDF parsing less strict
+Right now one uploaded file shows `Invalid PDF structure`.
+Do not reject a PDF just because section names differ slightly.
+
+Treat a PDF as valid if it can extract at least:
+- title, and
+- department/division, and
+- a usable description from Company Overview / About the Role / Position Overview
+
+Even if some optional fields are missing, still create a valid preview record.
+
+8. Add parser debug output in development
+For each parsed PDF, log extracted values in dev mode:
+- title
+- department
+- description length
+- responsibilities count
+- qualifications count
+- which fallback was used
+
+This is only for debugging and should not break the UI.
+
+9. Validation adjustments
+For PDF-derived records:
+- required:
+  - title
+  - department/division
+  - description
+- optional:
+  - responsibilities
+  - qualifications
+
+10. Improve section matching
+Normalize extracted PDF text before parsing:
+- convert Windows/newline variants consistently
+- collapse repeated spaces but preserve line boundaries
+- support OCR-like weird spacing around labels such as:
+  - `Role :`
+  - `Role:`
+  - `Company Overview`
+  - `Company Overview `
+- use regex that tolerates spacing and capitalization differences
+
+11. Expected result for these two uploaded files
+
+For `Virtual Assistant.Bookkeeper.Job Success Profile.pdf`
+Expected extraction:
+- title: `Senior Virtual Assistant`
+- department: `Delivery`
+- reportingTo: `Line Manager`
+- description: built from Company Overview + About the Role + Position Overview
+- responsibilities: bullet list under Key Responsibilities
+- qualifications: bullet list under Requirements
+
+For `Customer Service Representative.Job Success Profile (1).pdf`
+Expected extraction:
+- title: `Customer Service Representative`
+- department: `Delivery`
+- reportingTo: `Team Manager`
+- description: built from Company Overview + Position Overview
+- responsibilities: bullet list under Key Responsibilities
+- qualifications: bullet list under Job Qualifications
+
+12. Do not change:
+- the Guide button/modal
+- the existing manual add job flow
+- the bulk upload modal layout unless needed for better error display
+
+13. Return:
+- the full updated parsing logic
+- updated `AdminFindWork.tsx`
+- any helper functions used for PDF text extraction and field parsing
