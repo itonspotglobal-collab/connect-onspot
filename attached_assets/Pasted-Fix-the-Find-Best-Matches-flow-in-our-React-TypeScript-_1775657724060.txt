@@ -1,0 +1,202 @@
+Fix the Find Best Matches flow in our React + TypeScript site. There are 3 major problems:
+
+PROBLEM 1 — Wrong Full Name extraction
+The Full Name is being extracted as “Tertiary Education”, which is incorrect.
+That is a section heading, not the candidate’s name.
+
+Expected:
+The parser should extract the real full name from the resume header area.
+For the tested resume, the correct name is:
+- Frenzy Val Eloise L. Legaspi
+
+Fix the resume parsing logic so that:
+- it strongly prioritizes the top contact/header area of the resume
+- it ignores section headings like:
+  - Tertiary Education
+  - Education
+  - Objectives
+  - Work Experience
+  - Reference
+  - About Me
+  - Project Developed
+  - Industry
+- it detects likely human name patterns
+- it does not choose labels or section titles as the full name
+- it uses confidence scoring for extraction
+
+Recommended name extraction logic:
+1. Search the first portion of the resume first
+2. Score lines by likelihood of being a person’s name
+3. Reject known section headers and generic phrases
+4. Prefer title-cased multi-word lines near phone/email/address
+5. If a better name is already found near the top, never override it later with a section title
+
+PROBLEM 2 — Flow should show Culture Result first, then Job Openings
+After the candidate answers the Culture Evaluation, do not immediately jump straight into job recommendations.
+
+Required new step flow:
+1. Resume Upload
+2. Finalize Profile
+3. Culture Evaluation
+4. Culture Result
+5. Relevant Job Openings
+
+What to add:
+After completing the culture evaluation, show a dedicated results screen first.
+
+The Culture Result step should show:
+- whether the candidate appears aligned with OnSpot’s culture
+- a short values-alignment summary
+- strengths observed from the answers
+- any growth areas if appropriate
+- a CTA button like:
+  - Continue to Relevant Job Openings
+
+This should feel like its own proper step in the journey, not just a hidden calculation.
+
+Example messaging:
+- “You show strong alignment with OnSpot’s core values.”
+or
+- “You show promising alignment with several of OnSpot’s core values.”
+
+Include references to values like:
+- People First
+- Beat Yesterday
+- Fast-Fast-Fast
+- Integrity Matters
+- Extreme Ownership
+- We Are Intrapreneurs
+
+Important:
+This culture result should be informative, polished, and visually consistent with the rest of the site.
+Then the user clicks Next / Continue to proceed to the job openings step.
+
+PROBLEM 3 — Irrelevant job recommendations
+If the candidate’s Target Job Position is “Developer”, they should not receive unrelated recommendations such as:
+- Virtual Assistant
+- IT Administrator (unless there is a very strong true technical infrastructure/admin fit)
+
+The matching engine is still too loose and is incorrectly showing jobs outside the candidate’s real niche.
+
+Required fix:
+Add a strict domain/job-family gate before scoring jobs.
+
+Important rule:
+The Target Job Position and finalized niche/category must act as a hard filter before broader scoring.
+
+Examples:
+- Developer → should only match software development / engineering / web development / application development / closely related technical build roles
+- It should NOT match:
+  - Virtual Assistant
+  - Admin
+  - Customer Support
+  - Bookkeeping
+  - Marketing
+- IT Administrator should only be considered if the user profile includes true systems/infrastructure/admin support signals, not just because they are in a broad “Development” or “Tech” category
+
+Implement a stricter matching architecture:
+
+A. Candidate profile normalization
+Normalize the finalized profile into:
+- targetPosition
+- domain/job family
+- seniority
+- core skills
+- secondary skills
+- work preferences
+- culture fit result
+
+B. Job normalization
+Normalize posted jobs from FindWorkAllJobs.tsx into:
+- title
+- department
+- domain/job family
+- seniority
+- core skills
+- keywords
+- setup
+- shift
+- job type
+
+C. Hard domain gate
+Before scoring:
+- map the candidate target position into a job family
+- only allow jobs in the same or closely related job family
+- exclude unrelated families completely
+
+Example job family mapping:
+- Developer / Software Developer / Full Stack Developer / Frontend Developer / Backend Developer → Development / Engineering
+- Team Manager / Operations Manager → Operations / Leadership
+- Executive Assistant / Virtual Assistant → Admin / Executive Support
+- Bookkeeper / Accounting Assistant → Finance / Accounting
+- Customer Service Representative → Customer Support
+- IT Support / System Admin → IT Support / Infrastructure
+
+D. Stronger title relevance scoring
+Within allowed job families, score title relevance heavily.
+Examples:
+- Developer should score high for:
+  - Software Developer
+  - Frontend Developer
+  - Backend Developer
+  - Full Stack Developer
+  - Web Developer
+- Developer should score low or be excluded for:
+  - IT Administrator
+  - Virtual Assistant
+
+E. Skill alignment
+Use actual extracted skills such as:
+- C
+- C#
+- JavaScript
+- HTML
+- CSS
+- .NET
+- React
+- Git
+- Postman
+- Visual Studio
+- SQL
+
+These should strongly support developer roles, not admin roles.
+
+F. Confidence threshold
+Do not show weak matches.
+If there are no real posted jobs that are strongly relevant to “Developer”, show an empty state instead of unrelated recommendations.
+
+Use copy like:
+“No strong developer-related openings are available right now.”
+Supporting text:
+“Based on your finalized profile, we do not currently have an active posted role that closely matches your development background. Please browse all openings or check back soon.”
+
+Important:
+Accuracy is more important than filling the results list.
+
+UI/Flow requirements:
+- Keep visual style consistent with:
+  - Insights.tsx
+  - FindWork.tsx
+  - WhyOnSpotAbout.tsx
+- Keep the rounded card style and current polished layout
+- Add a separate progress step for Culture Result
+- Make the stepper show the new sequence clearly
+
+Suggested updated step flow:
+Step 1 — Upload Resume
+Step 2 — Finalize Profile
+Step 3 — Culture Evaluation
+Step 4 — Culture Result
+Step 5 — Relevant Job Openings
+
+Also fix the extracted profile notice:
+If autofill is partial, show exactly which fields were confidently extracted versus which still need manual review.
+
+Implementation expectations:
+- production-ready code
+- improved resume name extraction
+- added Culture Result step
+- stricter job-family filtering
+- stronger title/skill/domain matching
+- no unrelated roles for Developer
+- no section headings used as Full Name

@@ -215,7 +215,21 @@ const JUNIOR_KEYWORDS = ["junior", "jr.", "associate", "trainee", "intern", "ent
 
 // ─── Lines that should never be treated as a person's name ───────────────────
 
+// Whole-line section header pattern (e.g. "Education" alone)
 const NOISE_LINE_RX = /^(?:resume|curriculum\s+vitae|cv|profile|contact|references?|about\s+me|education|objectives?|work\s+experience|experience|employment|skills?|summary|professional\s+summary|career\s+objective|languages?|certifications?|awards?|achievements?|projects?|portfolio|hobbies?|interests?|activities|publications?|volunteer)\s*:?\s*$/i;
+
+// Individual words that should NEVER appear in a person's name.
+// Used to reject lines like "Tertiary Education", "Project Developed", "Industry", etc.
+const NAME_NOISE_WORDS = new Set([
+  "education", "tertiary", "secondary", "primary", "academic", "academics",
+  "experience", "employment", "industry", "project", "projects", "developed",
+  "volunteer", "volunteering", "achievement", "achievements",
+  "certification", "certifications", "certificate",
+  "objective", "objectives", "reference", "references",
+  "interests", "hobbies", "activities", "publications",
+  "qualifications", "address", "contact", "phone", "email",
+  "summary", "profile", "overview",
+]);
 
 const CONTACT_LINE_RX = /[@\d]{2,}|https?:\/\/|linkedin\.com|github\.com|facebook\.com/i;
 
@@ -320,6 +334,13 @@ function looksLikePersonName(line: string): boolean {
 
   const words = line.trim().split(/\s+/);
   if (words.length < 2 || words.length > 6) return false;
+
+  // Reject if ANY word in the line is a known non-name word
+  // (catches "Tertiary Education", "Project Developed", "Industry", etc.)
+  const hasNoiseWord = words.some((w) =>
+    NAME_NOISE_WORDS.has(w.toLowerCase().replace(/[^a-z]/g, ""))
+  );
+  if (hasNoiseWord) return false;
 
   // Allow middle initials like "L." — the word just needs to start with a letter
   const allLetterWords = words.every((w) => NAME_WORD_RX.test(w));

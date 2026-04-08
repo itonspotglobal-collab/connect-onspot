@@ -56,9 +56,10 @@ const EMPTY_PROFILE: CandidateProfile = {
 // ─── Flow step definitions ────────────────────────────────────────────────────
 
 const FLOW_STEPS = [
-  { label: "Upload",        icon: Upload },
-  { label: "Your Profile",  icon: FileText },
-  { label: "Culture Fit",   icon: Heart },
+  { label: "Upload",          icon: Upload },
+  { label: "Your Profile",    icon: FileText },
+  { label: "Culture Fit",     icon: Heart },
+  { label: "Culture Result",  icon: Sparkles },
 ];
 const TOTAL_FLOW_STEPS = FLOW_STEPS.length;
 
@@ -268,6 +269,8 @@ const TITLE_DOMAIN_RULES: Array<{ keywords: string[]; domain: Domain }> = [
       "information technology", "it specialist", "it support specialist",
       "it manager", "it officer", "it coordinator", "it helpdesk",
       "network engineer", "security analyst", "cybersecurity",
+      // Plain "developer" alone — important for targetPosition free-text matching
+      "developer",
     ],
     domain: "technical",
   },
@@ -376,10 +379,13 @@ const DOMAIN_PENALTY: Partial<Record<Domain, Partial<Record<Domain, number>>>> =
     hr:         20,
   },
   technical: {
-    design:     10,
-    finance:    25,
-    hr:         30,
-    customer_support: 10,
+    design:          10,
+    finance:         35,
+    hr:              40,
+    customer_support: 20,
+    admin_ops:       55,   // developers / IT should never match VA / admin roles
+    sales_marketing:  55,  // developers / IT should never match sales / marketing roles
+    management:      20,
   },
   design: {
     technical:  15,
@@ -633,6 +639,24 @@ function scoreJobMatch(job: Job, profile: CandidateProfile): PostedJobMatch {
     return { job, score: 0, reasons: [] };
   }
 
+  // ── 1b. Position sub-domain gate (within shared broad domain) ─────────────
+  // Prevents "Developer" from matching "IT Administrator" and vice-versa even
+  // though both sit in the "technical" domain.
+  {
+    const candLower  = profile.targetPosition.toLowerCase();
+    const jobTitleLower = (job.title ?? "").toLowerCase();
+
+    const isSoftwareDev = /\b(develop|programm|engineer|coder|web\s*dev|full[\s\-]?stack|front[\s\-]?end|back[\s\-]?end|software)\b/.test(candLower);
+    const isItAdminJob  = /\b(it\s*admin|system\s*admin|sysadmin|infrastructure|network\s*admin|helpdesk|help\s*desk)\b/.test(jobTitleLower);
+
+    const isItAdminCand = /\b(it\s*admin|system\s*admin|sysadmin|infrastructure|helpdesk)\b/.test(candLower);
+    const isSoftwareDevJob = /\b(software\s*dev|web\s*dev|full[\s\-]?stack|front[\s\-]?end|back[\s\-]?end|programm)\b/.test(jobTitleLower);
+
+    if ((isSoftwareDev && isItAdminJob) || (isItAdminCand && isSoftwareDevJob)) {
+      return { job, score: 0, reasons: [] };
+    }
+  }
+
   // ── 2. Position relevance (0–20 pts) — PRIMARY driver ────────────────────
   const posScore = scorePositionRelevance(profile.targetPosition, job);
   score += posScore;
@@ -756,8 +780,30 @@ function canProceed(step: number, p: CandidateProfile): boolean {
         p.coreSkills.length > 0
       );
     case 2: return Object.keys(p.valuesAnswers).length === CORE_VALUES_QUESTIONS.length;
+    case 3: return true; // Culture result — always ready to proceed
     default: return true;
   }
+}
+
+// ─── Per-value breakdown helper for Culture Result step ──────────────────────
+
+interface ValueBreakdown {
+  value: string;
+  icon: React.ElementType;
+  score: number;      // 0, 1, or 2
+  trait: string | null;
+}
+
+function computeValuesBreakdown(valuesAnswers: Record<string, string>): ValueBreakdown[] {
+  return CORE_VALUES_QUESTIONS.map((q) => {
+    const opt = q.options.find((o) => o.id === valuesAnswers[q.id]);
+    return {
+      value: q.value,
+      icon:  q.icon,
+      score: opt?.score ?? 0,
+      trait: opt?.trait ?? null,
+    };
+  });
 }
 
 // ─── Matching animation ───────────────────────────────────────────────────────
@@ -1049,17 +1095,25 @@ function NoOpenRoles({ onBrowse }: { onBrowse: () => void }) {
   );
 }
 
-function NoStrongMatches({ onBrowse, onRetake }: { onBrowse: () => void; onRetake: () => void }) {
+function NoStrongMatches({
+  onBrowse, onRetake, targetPosition,
+}: { onBrowse: () => void; onRetake: () => void; targetPosition?: string }) {
+  const pos = (targetPosition ?? "").toLowerCase();
+  const isDev = /\b(develop|programm|engineer|coder|web\s*dev|full[\s\-]?stack)\b/.test(pos);
+  const heading = isDev
+    ? `No strong ${targetPosition ?? "developer"}-related openings are available right now.`
+    : "No strong role matches are available right now.";
+  const body = isDev
+    ? `Based on your finalized profile, we do not currently have an active posted role that closely matches your development background. Please browse all openings or check back soon.`
+    : `Based on your finalized profile and culture assessment, we do not currently have an active posted role that closely matches your background. Please browse all current openings or check back soon.`;
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
       <div className="rounded-2xl border border-slate-200 bg-white px-8 py-12 text-center">
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#474ead]/10">
           <SearchX className="h-7 w-7 text-[#474ead]" />
         </div>
-        <h2 className="text-lg font-semibold text-slate-900">No strong role matches are available right now.</h2>
-        <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
-          Based on your finalized profile and culture assessment, we do not currently have an active posted role that closely matches your background. Please browse all current openings or check back soon.
-        </p>
+        <h2 className="text-lg font-semibold text-slate-900">{heading}</h2>
+        <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">{body}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Button onClick={onBrowse} className="rounded-full bg-[#474ead] px-8 text-white">Browse All Roles</Button>
           <Button variant="outline" onClick={onRetake} className="rounded-full px-8">
@@ -1666,6 +1720,159 @@ export default function FindBestMatches() {
     );
   }
 
+  // ── Culture Result ────────────────────────────────────────────────────────
+  function CultureResultStep() {
+    const alignment = valuesAlignment;
+    const breakdown = computeValuesBreakdown(profile.valuesAnswers);
+    const aligned   = breakdown.filter((v) => v.score === 2);
+    const partial   = breakdown.filter((v) => v.score === 1);
+    const missing   = breakdown.filter((v) => v.score === 0);
+
+    const headingText =
+      alignment.score >= 80
+        ? "You show strong alignment with OnSpot's core values."
+        : alignment.score >= 60
+        ? "You show promising alignment with several of OnSpot's core values."
+        : alignment.score >= 40
+        ? "You show some alignment with our culture — and room to grow."
+        : "Our culture may be a meaningful shift for you.";
+
+    const scoreBandColor =
+      alignment.score >= 80 ? "text-emerald-600"
+      : alignment.score >= 60 ? "text-[#474ead]"
+      : alignment.score >= 40 ? "text-amber-600"
+      : "text-slate-500";
+
+    const scoreBandBg =
+      alignment.score >= 80 ? "border-emerald-200 bg-emerald-50"
+      : alignment.score >= 60 ? "border-indigo-200 bg-indigo-50"
+      : alignment.score >= 40 ? "border-amber-200 bg-amber-50"
+      : "border-slate-200 bg-slate-50";
+
+    return (
+      <div className="space-y-6">
+        <StepLabel step={4} title="Culture Result" />
+
+        {/* Score card */}
+        <div className={`flex items-center gap-4 rounded-2xl border p-5 ${scoreBandBg}`}>
+          <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 ${
+            alignment.score >= 80 ? "border-emerald-300 bg-emerald-100"
+            : alignment.score >= 60 ? "border-indigo-300 bg-indigo-100"
+            : alignment.score >= 40 ? "border-amber-300 bg-amber-100"
+            : "border-slate-300 bg-slate-100"
+          }`}>
+            <span className={`text-xl font-bold ${scoreBandColor}`}>{alignment.score}%</span>
+          </div>
+          <div className="flex-1">
+            <p className={`text-base font-semibold ${scoreBandColor}`}>{headingText}</p>
+            <p className="mt-1 text-sm text-slate-600 leading-relaxed">{alignment.summary}</p>
+          </div>
+        </div>
+
+        {/* Per-value breakdown */}
+        <div>
+          <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">Values Breakdown</p>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {breakdown.map((v) => {
+              const Icon = v.icon;
+              const isAligned = v.score === 2;
+              const isPartial = v.score === 1;
+              return (
+                <div
+                  key={v.value}
+                  className={`flex items-start gap-3 rounded-xl border p-3 ${
+                    isAligned
+                      ? "border-emerald-200 bg-emerald-50"
+                      : isPartial
+                      ? "border-amber-200 bg-amber-50"
+                      : "border-slate-200 bg-white"
+                  }`}
+                >
+                  <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+                    isAligned ? "bg-emerald-100 text-emerald-600"
+                    : isPartial ? "bg-amber-100 text-amber-600"
+                    : "bg-slate-100 text-slate-400"
+                  }`}>
+                    <Icon className="h-3.5 w-3.5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-semibold leading-tight ${
+                      isAligned ? "text-emerald-700" : isPartial ? "text-amber-700" : "text-slate-500"
+                    }`}>{v.value}</p>
+                    {v.trait ? (
+                      <p className="text-xs text-slate-500 mt-0.5">{v.trait}</p>
+                    ) : (
+                      <p className="text-xs text-slate-400 mt-0.5">Growth opportunity</p>
+                    )}
+                  </div>
+                  <div className="shrink-0">
+                    {isAligned ? (
+                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                    ) : isPartial ? (
+                      <div className="h-4 w-4 rounded-full border-2 border-amber-400 bg-amber-100" />
+                    ) : (
+                      <div className="h-4 w-4 rounded-full border-2 border-slate-300" />
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Strengths */}
+        {aligned.length > 0 && (
+          <div>
+            <p className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-400">Observed Strengths</p>
+            <div className="flex flex-wrap gap-2">
+              {aligned.map((v) => (
+                <span
+                  key={v.value}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700"
+                >
+                  <CheckCircle2 className="h-3 w-3" />
+                  {v.trait ?? v.value}
+                </span>
+              ))}
+              {partial.map((v) => (
+                v.trait && (
+                  <span
+                    key={v.value}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700"
+                  >
+                    {v.trait}
+                  </span>
+                )
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Growth areas */}
+        {missing.length > 0 && (
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <p className="text-xs font-semibold text-slate-600">
+              Growth areas to explore:{" "}
+              <span className="font-normal text-slate-500">
+                {missing.map((v) => v.value).join(", ")}
+              </span>
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              Every team member grows into our values. These are simply areas to be aware of as you join and develop.
+            </p>
+          </div>
+        )}
+
+        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+          <p className="text-sm text-slate-600">
+            Ready to see which roles match your profile and values? Click{" "}
+            <span className="font-semibold text-[#474ead]">Find My Matches</span> to continue.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // ── Results ───────────────────────────────────────────────────────────────
   function ResultsSection() {
     return (
@@ -1696,7 +1903,7 @@ export default function FindBestMatches() {
         ) : openJobs.length === 0 ? (
           <NoOpenRoles onBrowse={() => navigate("/find-work/jobs")} />
         ) : jobMatches.length === 0 ? (
-          <NoStrongMatches onBrowse={() => navigate("/find-work/jobs")} onRetake={handleRetake} />
+          <NoStrongMatches onBrowse={() => navigate("/find-work/jobs")} onRetake={handleRetake} targetPosition={profile.targetPosition} />
         ) : (
           <div className="space-y-4">
             {jobMatches.map((match, i) => (
@@ -1723,7 +1930,8 @@ export default function FindBestMatches() {
   function renderStep() {
     if (flowStep === 0) return UploadResumeStep();
     if (flowStep === 1) return FinalizeInformationStep();
-    return CultureEvaluationStep();
+    if (flowStep === 2) return CultureEvaluationStep();
+    return CultureResultStep();
   }
 
   return (
