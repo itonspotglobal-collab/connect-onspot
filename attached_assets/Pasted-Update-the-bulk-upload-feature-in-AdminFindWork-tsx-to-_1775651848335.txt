@@ -1,0 +1,96 @@
+Update the bulk upload feature in `AdminFindWork.tsx` to fix the PDF runtime error and make the upload truly support bulk files.
+
+Problems to fix:
+1. The current PDF parsing throws this runtime error:
+   `Failed to fetch dynamically imported module: https://cdnjs.cloudflare.com/ajax/libs/pdf.js/.../pdf.worker.min.js`
+2. The current upload only behaves like a single-file upload, but this feature should support bulk upload with 2 or more files.
+
+What to change:
+
+A. Fix the PDF parsing error
+- Do not load the PDF worker from a remote CDN URL at runtime.
+- Use a local/pdfjs-compatible setup for Vite, or use a parsing approach that does not depend on fetching the worker from Cloudflare.
+- If the current project already has `pdfjs-dist`, configure it correctly for Vite.
+- If the worker setup is still unstable, add a safe fallback:
+  - show a friendly error for unsupported PDF parsing
+  - continue supporting CSV/XLS/XLSX uploads normally
+- Do not crash the page or trigger the runtime overlay
+
+Preferred implementation:
+- Import pdf.js locally and configure `GlobalWorkerOptions.workerSrc` using a local worker entry that works in Vite
+- Or use `?url`-style worker import if the current setup supports it
+- Keep the code compatible with React + TypeScript
+
+B. Make upload actually support bulk files
+- Change the file input to accept multiple files
+- Users should be able to select and upload 2 or more files at once
+- Support mixed file types in one upload session:
+  - `.csv`
+  - `.xls`
+  - `.xlsx`
+  - `.pdf`
+
+C. Bulk behavior
+- Parse every selected file
+- Flatten all parsed job posting records into one combined preview list
+- Show which file each parsed record came from
+- If one file fails, the other files should still continue processing
+- Show per-file results:
+  - filename
+  - file type
+  - records found
+  - valid records
+  - invalid records
+  - parsing errors if any
+
+D. Update the UI
+Inside the Bulk Upload modal:
+- Change the helper text to indicate multiple files are supported
+- Show a list of selected files, not just one file
+- Allow removing an individual file before parsing
+- Show a note like:
+  `Select two or more files to bulk upload job postings. You may upload CSV, Excel, or text-based PDF job profile files.`
+
+E. Update validation rules
+- Bulk upload should work even if the user selects one file, but the UI and wording should clearly support multiple files
+- If no files are selected, disable the preview/import actions
+- Keep row-level validation for parsed postings
+- Keep file-level error handling
+
+F. Update preview/results
+- Preview should include:
+  - source file name
+  - job title
+  - department
+  - description preview
+  - validity
+  - validation issues
+- Results summary should include:
+  - total files uploaded
+  - total records found
+  - total valid records
+  - total invalid records
+  - successfully created job posts
+  - failed job posts
+
+G. Code quality
+- Keep all existing functionality working
+- Do not change the Guide modal
+- Do not break manual job posting
+- Extract file parsing logic into helper functions if needed
+- Return the full updated `AdminFindWork.tsx` code and any helper code needed
+
+Implementation guidance:
+- For CSV/XLS/XLSX: continue parsing as structured tabular data
+- For PDF: support text-based PDFs only
+- If a PDF cannot be parsed, show a non-blocking error message tied to that file
+- Never crash the entire modal because one file cannot be parsed
+
+Expected UX:
+- User clicks `Bulk Upload`
+- User selects multiple files
+- Selected files appear in a list
+- User clicks `Upload and Preview`
+- App parses each file independently
+- Combined preview appears
+- User confirms bulk create for valid parsed records only

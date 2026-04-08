@@ -9,9 +9,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Upload, FileText, X as XIcon, CheckCircle2, AlertCircle,
+  Upload, X as XIcon, CheckCircle2, AlertCircle,
   Loader2, ChevronRight, RefreshCcw, FileSpreadsheet,
-  File as FilePdfIcon, Info,
+  File as FileGeneric, Info, FileText,
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
@@ -20,14 +20,12 @@ import { useToast } from "@/hooks/use-toast";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface ParsedJobRecord {
-  // Core fields
   title: string;
   category: string;
   description: string;
   contractType: string;
   experienceLevel: string;
   location: string;
-  // Extended fields
   reportingTo?: string;
   division?: string;
   jobGrade?: string;
@@ -38,14 +36,20 @@ export interface ParsedJobRecord {
   requirements?: string[];
   skillTags?: string[];
   culturalFit?: string[];
-  // Validation
   _valid: boolean;
   _errors: string[];
   _index: number;
   _selected: boolean;
+  _source: string;
 }
 
 type Stage = "upload" | "parsing" | "preview" | "submitting" | "done";
+
+interface FileResult {
+  file: File;
+  records: ParsedJobRecord[];
+  error?: string;
+}
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -54,7 +58,6 @@ const VALID_CATEGORIES = [
   "Tech support", "Sales", "Operations", "Design", "Development",
 ];
 
-// Map department/division text → closest valid DB category
 const CATEGORY_MAP: Record<string, string> = {
   admin: "Admin", administrative: "Admin", "admin support": "Admin",
   operations: "Operations", ops: "Operations", delivery: "Operations",
@@ -70,7 +73,6 @@ const CATEGORY_MAP: Record<string, string> = {
   hr: "Admin", "human resources": "Admin", recruitment: "Admin",
 };
 
-// Map experience-level text → DB value
 const EXP_MAP: Record<string, string> = {
   entry: "entry", junior: "entry", "entry level": "entry",
   "entry-level": "entry", "0-2": "entry",
@@ -80,7 +82,6 @@ const EXP_MAP: Record<string, string> = {
   "5+": "expert", lead: "expert", manager: "expert",
 };
 
-// Spreadsheet header alias → internal field key
 const HEADER_ALIASES: Record<string, keyof ParsedJobRecord> = {
   "job title": "title", title: "title", position: "title", role: "title",
   department: "category", division: "category", team: "category",
@@ -96,15 +97,13 @@ const HEADER_ALIASES: Record<string, keyof ParsedJobRecord> = {
   "reports to": "reportingTo",
   "experience level": "experienceLevel", experience: "experienceLevel",
   seniority: "experienceLevel",
-  "skill tags": "skillTags", skills: "skillTags",
-  "key skills": "skillTags",
+  "skill tags": "skillTags", skills: "skillTags", "key skills": "skillTags",
   "cultural fit": "culturalFit", culture: "culturalFit",
   "company overview": "companyOverview",
-  "role mission": "roleMission", "job grade": "jobGrade",
-  "job level": "jobLevel",
+  "role mission": "roleMission", "job grade": "jobGrade", "job level": "jobLevel",
 };
 
-// ─── Category / experience normalisation ─────────────────────────────────────
+// ─── Normalisation helpers ────────────────────────────────────────────────────
 
 function normaliseCategory(raw: string | undefined): string {
   if (!raw) return "Admin";
@@ -128,12 +127,9 @@ function normaliseExperience(raw: string | undefined): string {
 
 function normaliseContractType(raw: string | undefined): string {
   if (!raw) return "fixed";
-  const k = raw.toLowerCase();
-  if (k.includes("hourly") || k.includes("per hour")) return "hourly";
-  return "fixed";
+  return raw.toLowerCase().includes("hourly") ? "hourly" : "fixed";
 }
 
-// Turn a multi-line text block into a clean string array of bullet points
 function textToArray(text: string | undefined): string[] {
   if (!text) return [];
   return text
@@ -144,7 +140,11 @@ function textToArray(text: string | undefined): string[] {
 
 // ─── Validation ───────────────────────────────────────────────────────────────
 
-function validateRecord(rec: Partial<ParsedJobRecord>, index: number): ParsedJobRecord {
+function validateRecord(
+  rec: Partial<ParsedJobRecord>,
+  index: number,
+  source: string,
+): ParsedJobRecord {
   const errors: string[] = [];
   if (!rec.title?.trim()) errors.push("Missing job title");
   if (!rec.description?.trim()) errors.push("Missing job description");
@@ -171,57 +171,23 @@ function validateRecord(rec: Partial<ParsedJobRecord>, index: number): ParsedJob
     _errors: errors,
     _index: index,
     _selected: errors.length === 0,
+    _source: source,
   };
 }
 
 // ─── CSV / XLSX / XLS Parser ─────────────────────────────────────────────────
 
-async function parseSpreadsheet(file: File): Promise<ParsedJobRecord[]> {
-  const isCsv = file.name.toLowerCase().endsWith(".csv");
-
-  if (isCsv) {
-    return new Promise<ParsedJobRecord[]>((resolve, reject) => {
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        transformHeader: (h: string) => h.trim().toLowerCase(),
-        complete: (results: Papa.ParseResult<Record<string, string>>) => {
-          resolve(rowsToRecords(results.data as Record<string, string>[]));
-        },
-        error: (err: Error) => reject(err),
-      });
-    });
-  }
-
-  // XLSX / XLS — dynamic import to avoid bundling the worker in main chunk
-  const XLSX = await import("xlsx");
-  const buffer = await file.arrayBuffer();
-  const workbook = XLSX.read(buffer, { type: "array" });
-  const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
-    defval: "",
-    raw: false,
-  });
-  const rows = rawRows.map((r) => {
-    const out: Record<string, string> = {};
-    for (const [k, v] of Object.entries(r)) {
-      out[k.trim().toLowerCase()] = String(v ?? "").trim();
-    }
-    return out;
-  });
-  return rowsToRecords(rows);
-}
-
-function rowsToRecords(rows: Record<string, string>[]): ParsedJobRecord[] {
+function rowsToRecords(
+  rows: Record<string, string>[],
+  source: string,
+): ParsedJobRecord[] {
   return rows
     .filter((row) => Object.values(row).some((v) => v.trim()))
     .map((row, idx) => {
-      const get = (key: keyof ParsedJobRecord) => {
-        // check exact alias match first
+      const get = (key: keyof ParsedJobRecord): string | undefined => {
         for (const [alias, field] of Object.entries(HEADER_ALIASES)) {
           if (field === key && row[alias] !== undefined) return row[alias];
         }
-        // then check if any header contains the field name
         for (const [header, value] of Object.entries(row)) {
           if (HEADER_ALIASES[header] === key) return value;
         }
@@ -247,34 +213,69 @@ function rowsToRecords(rows: Record<string, string>[]): ParsedJobRecord[] {
         culturalFit:     textToArray(get("culturalFit")),
       };
 
-      return validateRecord(raw, idx);
+      return validateRecord(raw, idx, source);
     });
+}
+
+async function parseSpreadsheet(file: File): Promise<ParsedJobRecord[]> {
+  if (file.name.toLowerCase().endsWith(".csv")) {
+    return new Promise<ParsedJobRecord[]>((resolve, reject) => {
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        transformHeader: (h: string) => h.trim().toLowerCase(),
+        complete: (results: Papa.ParseResult<Record<string, string>>) => {
+          resolve(rowsToRecords(results.data, file.name));
+        },
+        error: (err: Error) => reject(err),
+      });
+    });
+  }
+
+  const XLSX = await import("xlsx");
+  const buffer = await file.arrayBuffer();
+  const workbook = XLSX.read(buffer, { type: "array" });
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
+    defval: "",
+    raw: false,
+  });
+  const rows = rawRows.map((r) => {
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(r)) {
+      out[k.trim().toLowerCase()] = String(v ?? "").trim();
+    }
+    return out;
+  });
+  return rowsToRecords(rows, file.name);
 }
 
 // ─── PDF Parser ───────────────────────────────────────────────────────────────
 
-// Section labels used in job profile documents
 const PDF_SECTION_KEYS = [
-  { key: "title",          patterns: ["role:", "job title:", "position:"] },
-  { key: "reportingTo",    patterns: ["reporting to:", "reports to:", "reporting line:"] },
-  { key: "division",       patterns: ["division:", "department:", "team:"] },
-  { key: "jobGrade",       patterns: ["job grade:", "grade:"] },
-  { key: "jobLevel",       patterns: ["job level:", "level:"] },
-  { key: "companyOverview",patterns: ["company overview"] },
-  { key: "description",    patterns: ["about the role", "about the position", "role summary"] },
+  { key: "title",           patterns: ["role:", "job title:", "position:"] },
+  { key: "reportingTo",     patterns: ["reporting to:", "reports to:", "reporting line:"] },
+  { key: "division",        patterns: ["division:", "department:", "team:"] },
+  { key: "jobGrade",        patterns: ["job grade:", "grade:"] },
+  { key: "jobLevel",        patterns: ["job level:", "level:"] },
+  { key: "companyOverview", patterns: ["company overview"] },
+  { key: "description",     patterns: ["about the role", "about the position", "role summary"] },
   { key: "responsibilities",patterns: ["key responsibilities", "responsibilities"] },
-  { key: "requirements",   patterns: ["requirements", "qualifications"] },
-  { key: "culturalFit",    patterns: ["cultural fit", "culture fit"] },
-  { key: "benefits",       patterns: ["why join us", "benefits", "what we offer"] },
-  { key: "roleMission",    patterns: ["position overview", "job success profile", "role overview"] },
-  { key: "successFactors", patterns: ["additional success factors", "success factors"] },
+  { key: "requirements",    patterns: ["requirements", "qualifications"] },
+  { key: "culturalFit",     patterns: ["cultural fit", "culture fit"] },
+  { key: "benefits",        patterns: ["why join us", "benefits", "what we offer"] },
+  { key: "roleMission",     patterns: ["position overview", "job success profile", "role overview"] },
+  { key: "successFactors",  patterns: ["additional success factors", "success factors"] },
 ] as const;
 
 async function extractPdfText(file: File): Promise<string> {
   const pdfjsLib = await import("pdfjs-dist");
-  // Use the CDN worker to avoid complex Vite bundling
-  pdfjsLib.GlobalWorkerOptions.workerSrc =
-    `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+
+  // Use Vite's static asset URL resolution — no CDN dependency
+  pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+    "pdfjs-dist/build/pdf.worker.min.mjs",
+    import.meta.url,
+  ).href;
 
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -308,8 +309,6 @@ function parseSections(text: string): Record<string, string> {
 
   for (const line of lines) {
     const lower = line.toLowerCase();
-
-    // Detect known section header
     let matched: string | null = null;
     for (const sec of PDF_SECTION_KEYS) {
       if (sec.patterns.some((p) => lower.startsWith(p) || lower === p.replace(/:$/, ""))) {
@@ -317,11 +316,9 @@ function parseSections(text: string): Record<string, string> {
         break;
       }
     }
-
     if (matched) {
       flushCurrent();
       currentKey = matched;
-      // Inline value after colon (e.g., "Role: Senior VA")
       const colonIdx = line.indexOf(":");
       if (colonIdx > -1) {
         const inline = line.slice(colonIdx + 1).trim();
@@ -335,8 +332,6 @@ function parseSections(text: string): Record<string, string> {
   return sections;
 }
 
-// Try to detect a standalone job title from the beginning of the document
-// (ALL CAPS lines or the first substantial line before any section header)
 function detectDocTitle(text: string): string | undefined {
   const lines = text.split(/\n|\r/).map((l) => l.trim()).filter((l) => l.length > 2);
   for (const line of lines.slice(0, 8)) {
@@ -344,10 +339,7 @@ function detectDocTitle(text: string): string | undefined {
     const isSectionStart = PDF_SECTION_KEYS.some((s) =>
       s.patterns.some((p) => lower.startsWith(p)),
     );
-    if (!isSectionStart && line.length > 4 && line.length < 80) {
-      // Looks like a title
-      return line;
-    }
+    if (!isSectionStart && line.length > 4 && line.length < 80) return line;
   }
   return undefined;
 }
@@ -363,30 +355,27 @@ async function parsePdf(file: File): Promise<ParsedJobRecord[]> {
     sections["roleMission"],
     sections["successFactors"],
     sections["benefits"],
-  ]
-    .filter(Boolean)
-    .join("\n\n")
-    .trim();
+  ].filter(Boolean).join("\n\n").trim();
 
   const raw: Partial<ParsedJobRecord> = {
-    title:           docTitle,
-    category:        sections["division"],
-    description:     description || sections["roleMission"],
-    reportingTo:     sections["reportingTo"],
-    division:        sections["division"],
-    jobGrade:        sections["jobGrade"],
-    jobLevel:        sections["jobLevel"],
-    companyOverview: sections["companyOverview"],
-    roleMission:     sections["roleMission"],
-    responsibilities:textToArray(sections["responsibilities"]),
-    requirements:    textToArray(sections["requirements"]),
-    culturalFit:     textToArray(sections["culturalFit"]),
-    skillTags:       [],
-    contractType:    "fixed",
-    experienceLevel: sections["jobLevel"],
+    title:            docTitle,
+    category:         sections["division"],
+    description:      description || sections["roleMission"],
+    reportingTo:      sections["reportingTo"],
+    division:         sections["division"],
+    jobGrade:         sections["jobGrade"],
+    jobLevel:         sections["jobLevel"],
+    companyOverview:  sections["companyOverview"],
+    roleMission:      sections["roleMission"],
+    responsibilities: textToArray(sections["responsibilities"]),
+    requirements:     textToArray(sections["requirements"]),
+    culturalFit:      textToArray(sections["culturalFit"]),
+    skillTags:        [],
+    contractType:     "fixed",
+    experienceLevel:  sections["jobLevel"],
   };
 
-  return [validateRecord(raw, 0)];
+  return [validateRecord(raw, 0, file.name)];
 }
 
 // ─── Main dispatcher ──────────────────────────────────────────────────────────
@@ -402,7 +391,7 @@ async function parseFile(file: File): Promise<ParsedJobRecord[]> {
   throw new Error("Unsupported file type. Please upload CSV, XLS, XLSX, or PDF.");
 }
 
-// ─── Job API submission ───────────────────────────────────────────────────────
+// ─── API submission ───────────────────────────────────────────────────────────
 
 async function submitJob(record: ParsedJobRecord): Promise<void> {
   const body: Record<string, unknown> = {
@@ -414,7 +403,6 @@ async function submitJob(record: ParsedJobRecord): Promise<void> {
     location:        record.location || "Remote",
     status:          "open",
   };
-
   if (record.responsibilities?.length)  body.responsibilities  = record.responsibilities;
   if (record.requirements?.length)      body.requirements      = record.requirements;
   if (record.skillTags?.length)         body.skillTags         = record.skillTags;
@@ -425,8 +413,16 @@ async function submitJob(record: ParsedJobRecord): Promise<void> {
   if (record.roleMission)               body.roleMission       = record.roleMission;
   if (record.jobLevel)                  body.jobLevel          = record.jobLevel;
   if (record.jobGrade)                  body.jobGrade          = record.jobGrade;
-
   await apiRequest("POST", "/api/admin/jobs", body);
+}
+
+// ─── File icon helper ─────────────────────────────────────────────────────────
+
+function fileExtBadge(name: string) {
+  const lower = name.toLowerCase();
+  if (lower.endsWith(".pdf"))  return { label: "PDF",  Icon: FileGeneric,    cls: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/20 dark:text-rose-400 dark:border-rose-800/30" };
+  if (lower.endsWith(".csv"))  return { label: "CSV",  Icon: FileText,       cls: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/30" };
+  return                               { label: "XLSX", Icon: FileSpreadsheet,cls: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800/30" };
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -438,9 +434,14 @@ interface BulkUploadModalProps {
 }
 
 interface SubmitSummary {
+  attempted: number;
   succeeded: number;
   failed: number;
   errors: Array<{ title: string; error: string }>;
+  fileCount: number;
+  totalRecords: number;
+  validRecords: number;
+  invalidRecords: number;
 }
 
 export function BulkUploadModal({ open, onClose, onSuccess }: BulkUploadModalProps) {
@@ -448,16 +449,16 @@ export function BulkUploadModal({ open, onClose, onSuccess }: BulkUploadModalPro
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [stage, setStage] = useState<Stage>("upload");
-  const [file, setFile] = useState<File | null>(null);
-  const [parseError, setParseError] = useState<string | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
+  const [fileResults, setFileResults] = useState<FileResult[]>([]);
   const [records, setRecords] = useState<ParsedJobRecord[]>([]);
   const [summary, setSummary] = useState<SubmitSummary | null>(null);
   const [progressCount, setProgressCount] = useState(0);
 
   function reset() {
     setStage("upload");
-    setFile(null);
-    setParseError(null);
+    setFiles([]);
+    setFileResults([]);
     setRecords([]);
     setSummary(null);
     setProgressCount(0);
@@ -469,32 +470,66 @@ export function BulkUploadModal({ open, onClose, onSuccess }: BulkUploadModalPro
     onClose();
   }
 
+  function removeFile(index: number) {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const chosen = Array.from(e.target.files ?? []);
+    if (chosen.length === 0) return;
+    setFiles((prev) => {
+      const existingNames = new Set(prev.map((f) => f.name));
+      const deduped = chosen.filter((f) => !existingNames.has(f.name));
+      return [...prev, ...deduped];
+    });
+  }
+
   async function handleParse() {
-    if (!file) return;
+    if (files.length === 0) return;
     setStage("parsing");
-    setParseError(null);
-    try {
-      const parsed = await parseFile(file);
-      if (parsed.length === 0) {
-        setParseError("No records were found in the file. Please check the format.");
-        setStage("upload");
-        return;
+
+    // Parse each file independently; failures don't stop others
+    const results: FileResult[] = await Promise.all(
+      files.map(async (file) => {
+        try {
+          const parsed = await parseFile(file);
+          return { file, records: parsed };
+        } catch (err: unknown) {
+          const error = err instanceof Error ? err.message : String(err);
+          return { file, records: [], error };
+        }
+      }),
+    );
+
+    setFileResults(results);
+
+    // Flatten all records, giving each a unique global index
+    let globalIdx = 0;
+    const allRecords: ParsedJobRecord[] = [];
+    for (const r of results) {
+      for (const rec of r.records) {
+        allRecords.push({ ...rec, _index: globalIdx++ });
       }
-      setRecords(parsed);
-      setStage("preview");
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setParseError(msg);
+    }
+
+    if (allRecords.length === 0 && results.every((r) => r.error)) {
+      // All files failed — stay on upload with errors shown
       setStage("upload");
+    } else {
+      setRecords(allRecords);
+      setStage("preview");
     }
   }
 
   function toggleSelect(index: number) {
     setRecords((prev) =>
-      prev.map((r) =>
-        r._index === index ? { ...r, _selected: !r._selected } : r,
-      ),
+      prev.map((r) => (r._index === index ? { ...r, _selected: !r._selected } : r)),
     );
+  }
+
+  function toggleAll(to: boolean) {
+    setRecords((prev) => prev.map((r) => (r._valid ? { ...r, _selected: to } : r)));
   }
 
   async function handleSubmit() {
@@ -503,6 +538,7 @@ export function BulkUploadModal({ open, onClose, onSuccess }: BulkUploadModalPro
 
     setStage("submitting");
     setProgressCount(0);
+
     const errors: SubmitSummary["errors"] = [];
     let succeeded = 0;
 
@@ -520,7 +556,19 @@ export function BulkUploadModal({ open, onClose, onSuccess }: BulkUploadModalPro
     queryClient.invalidateQueries({ queryKey: ["/api/admin/jobs"] });
     queryClient.invalidateQueries({ queryKey: ["/api/jobs/search"] });
 
-    setSummary({ succeeded, failed: errors.length, errors });
+    const validCount   = records.filter((r) => r._valid).length;
+    const invalidCount = records.filter((r) => !r._valid).length;
+
+    setSummary({
+      attempted:     selected.length,
+      succeeded,
+      failed:        errors.length,
+      errors,
+      fileCount:     files.length,
+      totalRecords:  records.length,
+      validRecords:  validCount,
+      invalidRecords: invalidCount,
+    });
     setStage("done");
 
     if (succeeded > 0) {
@@ -533,25 +581,23 @@ export function BulkUploadModal({ open, onClose, onSuccess }: BulkUploadModalPro
   const invalidCount  = records.filter((r) => !r._valid).length;
   const selectedCount = records.filter((r) => r._selected && r._valid).length;
 
-  const fileIcon = file?.name.endsWith(".pdf") ? FilePdfIcon : FileSpreadsheet;
-  const FileIcon = fileIcon;
-
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); }}>
       <DialogContent className="flex max-h-[90vh] max-w-3xl flex-col overflow-hidden p-0">
+
         {/* Header */}
         <DialogHeader className="sticky top-0 z-10 shrink-0 border-b border-slate-200 bg-white px-6 py-4 dark:border-white/10 dark:bg-[#0f172a]">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#474ead]/10">
-              <Upload className="h-4.5 w-4.5 text-[#474ead]" />
+              <Upload className="h-4 w-4 text-[#474ead]" />
             </div>
             <div className="flex-1">
               <DialogTitle className="text-base font-semibold text-slate-900 dark:text-white">
                 Bulk Upload Job Postings
               </DialogTitle>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Upload CSV, Excel, or a job profile PDF to create multiple postings at once.
+                Select two or more files to bulk upload job postings. Supports CSV, Excel, and text-based PDF job profile files.
               </p>
             </div>
             {stage !== "upload" && stage !== "parsing" && (
@@ -564,11 +610,11 @@ export function BulkUploadModal({ open, onClose, onSuccess }: BulkUploadModalPro
             )}
           </div>
 
-          {/* Stage progress pills */}
+          {/* Stage pills */}
           <div className="mt-3 flex gap-2">
-            {(["upload", "preview", "done"] as Stage[]).map((s, i) => {
-              const isActive  = stage === s || (s === "preview" && stage === "submitting");
-              const isDone    = (s === "upload" && stage !== "upload")
+            {(["upload", "preview", "done"] as Stage[]).map((s) => {
+              const isActive = stage === s || (s === "preview" && stage === "submitting");
+              const isDone   = (s === "upload" && stage !== "upload" && stage !== "parsing")
                              || (s === "preview" && stage === "done");
               return (
                 <div
@@ -581,14 +627,8 @@ export function BulkUploadModal({ open, onClose, onSuccess }: BulkUploadModalPro
                       : "bg-slate-100 text-slate-400 dark:bg-white/5 dark:text-slate-500"
                   }`}
                 >
-                  {isDone ? (
-                    <CheckCircle2 className="h-3 w-3" />
-                  ) : (
-                    <span className="h-4 w-4 rounded-full border-2 border-current text-center text-[9px] font-bold leading-[14px]">
-                      {i + 1}
-                    </span>
-                  )}
-                  {s === "upload" ? "Select File" : s === "preview" ? "Preview" : "Results"}
+                  {isDone ? <CheckCircle2 className="h-3 w-3" /> : <span className="h-1.5 w-1.5 rounded-full bg-current" />}
+                  {s === "upload" ? "Select Files" : s === "preview" ? "Preview" : "Results"}
                 </div>
               );
             })}
@@ -605,66 +645,90 @@ export function BulkUploadModal({ open, onClose, onSuccess }: BulkUploadModalPro
                 ref={fileInputRef}
                 type="file"
                 accept=".csv,.xls,.xlsx,.pdf"
+                multiple
                 className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0] ?? null;
-                  setFile(f);
-                  setParseError(null);
-                }}
+                onChange={handleFileChange}
               />
 
               {/* Drop zone */}
-              {!file ? (
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex w-full flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 p-10 text-center transition-all hover:border-[#474ead]/40 hover:bg-[#474ead]/3 dark:border-white/10 dark:bg-white/[0.02]"
-                >
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#0f172a]">
-                    <Upload className="h-6 w-6 text-[#474ead]" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                      Click to upload a file
-                    </p>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                      Supported formats: CSV, Excel (.xls / .xlsx), PDF
-                    </p>
-                  </div>
-                  <span className="rounded-full border border-[#474ead]/30 bg-white px-4 py-1.5 text-xs font-medium text-[#474ead] shadow-sm dark:bg-[#0f172a]">
-                    Choose file
-                  </span>
-                </button>
-              ) : (
-                <div className="flex items-center gap-4 rounded-2xl border border-[#474ead]/20 bg-[#474ead]/5 p-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#474ead] text-white">
-                    <FileIcon className="h-6 w-6" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
-                      {file.name}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {(file.size / 1024).toFixed(1)} KB
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => { setFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
-                    className="shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:text-slate-600"
-                  >
-                    <XIcon className="h-4 w-4" />
-                  </button>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex w-full flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 p-8 text-center transition-all hover:border-[#474ead]/40 hover:bg-[#474ead]/5 dark:border-white/10 dark:bg-white/[0.02]"
+              >
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#0f172a]">
+                  <Upload className="h-6 w-6 text-[#474ead]" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                    Click to add files
+                  </p>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    CSV, Excel (.xls / .xlsx), or text-based PDF — multiple files supported
+                  </p>
+                </div>
+                <span className="rounded-full border border-[#474ead]/30 bg-white px-4 py-1.5 text-xs font-medium text-[#474ead] shadow-sm dark:bg-[#0f172a]">
+                  {files.length > 0 ? "Add more files" : "Choose files"}
+                </span>
+              </button>
+
+              {/* Selected files list */}
+              {files.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                    {files.length} file{files.length !== 1 ? "s" : ""} selected
+                  </p>
+                  {files.map((f, i) => {
+                    const { label, Icon, cls } = fileExtBadge(f.name);
+                    return (
+                      <div
+                        key={`${f.name}-${i}`}
+                        className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 dark:border-white/[0.08] dark:bg-white/[0.03]"
+                      >
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 dark:bg-white/10">
+                          <Icon className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-slate-900 dark:text-white">
+                            {f.name}
+                          </p>
+                          <p className="text-xs text-slate-400">
+                            {(f.size / 1024).toFixed(1)} KB
+                          </p>
+                        </div>
+                        <Badge className={`shrink-0 rounded-full border text-[10px] ${cls}`}>
+                          {label}
+                        </Badge>
+                        <button
+                          onClick={() => removeFile(i)}
+                          className="shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-200"
+                        >
+                          <XIcon className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
-              {parseError && (
-                <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400">
-                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                  {parseError}
+              {/* Per-file errors from last parse attempt */}
+              {fileResults.some((r) => r.error) && (
+                <div className="space-y-2">
+                  {fileResults.filter((r) => r.error).map((r, i) => (
+                    <div
+                      key={i}
+                      className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400"
+                    >
+                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                      <span>
+                        <strong className="font-semibold">{r.file.name}:</strong> {r.error}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               )}
 
-              {/* Tip block */}
+              {/* Tips */}
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-white/[0.08] dark:bg-white/[0.02]">
                 <div className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-slate-400">
                   <Info className="h-3.5 w-3.5" /> Upload Tips
@@ -677,17 +741,22 @@ export function BulkUploadModal({ open, onClose, onSuccess }: BulkUploadModalPro
                       <code className="rounded bg-slate-100 px-1 dark:bg-white/10">Job Title</code>,{" "}
                       <code className="rounded bg-slate-100 px-1 dark:bg-white/10">Department</code>,{" "}
                       <code className="rounded bg-slate-100 px-1 dark:bg-white/10">Job Description</code>,{" "}
-                      <code className="rounded bg-slate-100 px-1 dark:bg-white/10">Qualifications</code>,{" "}
-                      <code className="rounded bg-slate-100 px-1 dark:bg-white/10">Responsibilities</code>.
+                      <code className="rounded bg-slate-100 px-1 dark:bg-white/10">Qualifications</code>.
                       Each row = one job posting.
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <FilePdfIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-500" />
+                    <FileGeneric className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-500" />
                     <span>
-                      <strong>PDF:</strong> Job Success Profile documents with sections like{" "}
+                      <strong>PDF:</strong> Text-based Job Success Profile documents with sections like{" "}
                       <em>Role, About the Role, Key Responsibilities, Requirements</em> are
-                      automatically parsed. Text-based PDFs only (not scanned images).
+                      automatically parsed. Scanned/image PDFs are not supported.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Upload className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
+                    <span>
+                      <strong>Mixed uploads:</strong> You can select a combination of CSV, Excel, and PDF files in one session. Each file is parsed independently.
                     </span>
                   </li>
                 </ul>
@@ -695,20 +764,67 @@ export function BulkUploadModal({ open, onClose, onSuccess }: BulkUploadModalPro
             </div>
           )}
 
-          {/* ── Stage: parsing (spinner) ── */}
+          {/* ── Stage: parsing spinner ── */}
           {stage === "parsing" && (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <Loader2 className="mb-4 h-10 w-10 animate-spin text-[#474ead]" />
-              <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Parsing file…</p>
-              <p className="mt-1 text-xs text-slate-400">Extracting job records and validating fields.</p>
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Parsing {files.length} file{files.length !== 1 ? "s" : ""}…
+              </p>
+              <p className="mt-1 text-xs text-slate-400">
+                Extracting job records and validating fields.
+              </p>
             </div>
           )}
 
           {/* ── Stage: preview ── */}
           {stage === "preview" && (
             <div className="space-y-4">
-              {/* Summary pills */}
-              <div className="flex flex-wrap gap-2">
+
+              {/* Per-file summary */}
+              <div className="space-y-2">
+                {fileResults.map((fr, i) => {
+                  const { label, Icon, cls } = fileExtBadge(fr.file.name);
+                  const frValid   = fr.records.filter((r) => r._valid).length;
+                  const frInvalid = fr.records.filter((r) => !r._valid).length;
+                  return (
+                    <div
+                      key={i}
+                      className={`flex flex-wrap items-center gap-3 rounded-xl border p-3 ${
+                        fr.error
+                          ? "border-red-200 bg-red-50 dark:border-red-800/30 dark:bg-red-900/10"
+                          : "border-slate-200 bg-white dark:border-white/[0.08] dark:bg-white/[0.03]"
+                      }`}
+                    >
+                      <Icon className="h-4 w-4 shrink-0 text-slate-400" />
+                      <p className="min-w-0 flex-1 truncate text-sm font-medium text-slate-800 dark:text-slate-200">
+                        {fr.file.name}
+                      </p>
+                      <Badge className={`rounded-full border text-[10px] ${cls}`}>{label}</Badge>
+                      {fr.error ? (
+                        <span className="text-xs text-red-600 dark:text-red-400">{fr.error}</span>
+                      ) : (
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="text-slate-500">{fr.records.length} found</span>
+                          {frValid > 0 && (
+                            <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                              {frValid} valid
+                            </span>
+                          )}
+                          {frInvalid > 0 && (
+                            <span className="font-medium text-red-500">
+                              {frInvalid} invalid
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Aggregate pills + select-all */}
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
                   {records.length} total record{records.length !== 1 ? "s" : ""}
                 </span>
@@ -725,6 +841,21 @@ export function BulkUploadModal({ open, onClose, onSuccess }: BulkUploadModalPro
                 <span className="rounded-full border border-[#474ead]/20 bg-[#474ead]/8 px-3 py-1 text-xs font-medium text-[#474ead]">
                   {selectedCount} selected
                 </span>
+                <div className="ml-auto flex gap-2">
+                  <button
+                    onClick={() => toggleAll(true)}
+                    className="text-xs text-[#474ead] underline-offset-2 hover:underline"
+                  >
+                    Select all
+                  </button>
+                  <span className="text-xs text-slate-300 dark:text-slate-600">|</span>
+                  <button
+                    onClick={() => toggleAll(false)}
+                    className="text-xs text-slate-500 underline-offset-2 hover:underline"
+                  >
+                    Deselect all
+                  </button>
+                </div>
               </div>
 
               {/* Record cards */}
@@ -741,8 +872,7 @@ export function BulkUploadModal({ open, onClose, onSuccess }: BulkUploadModalPro
                     }`}
                   >
                     <div className="flex items-start gap-3">
-                      {/* Checkbox */}
-                      {rec._valid && (
+                      {rec._valid ? (
                         <button
                           onClick={() => toggleSelect(rec._index)}
                           className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-all ${
@@ -753,26 +883,29 @@ export function BulkUploadModal({ open, onClose, onSuccess }: BulkUploadModalPro
                         >
                           {rec._selected && <CheckCircle2 className="h-3 w-3 text-white" />}
                         </button>
-                      )}
-                      {!rec._valid && (
+                      ) : (
                         <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
                       )}
 
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                      <div className="min-w-0 flex-1">
+                        <div className="mb-1.5 flex flex-wrap items-center gap-2">
                           <p className={`text-sm font-semibold ${
                             rec.title ? "text-slate-900 dark:text-white" : "text-red-500 italic"
                           }`}>
                             {rec.title || "No title"}
                           </p>
                           <Badge
-                            className={`rounded-full text-[10px] ${
+                            className={`rounded-full border text-[10px] ${
                               rec._valid
                                 ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/30"
                                 : "bg-red-50 text-red-700 border-red-200 hover:bg-red-50 dark:bg-red-900/20 dark:text-red-400"
                             }`}
                           >
                             {rec._valid ? "Valid" : "Invalid"}
+                          </Badge>
+                          {/* Source file badge */}
+                          <Badge className="rounded-full border border-slate-200 bg-slate-100 text-[10px] text-slate-500 hover:bg-slate-100 dark:border-white/10 dark:bg-white/5 dark:text-slate-400">
+                            {rec._source}
                           </Badge>
                         </div>
 
@@ -811,7 +944,6 @@ export function BulkUploadModal({ open, onClose, onSuccess }: BulkUploadModalPro
                           )}
                         </div>
 
-                        {/* Errors */}
                         {rec._errors.length > 0 && (
                           <ul className="mt-2 space-y-0.5">
                             {rec._errors.map((e) => (
@@ -851,7 +983,7 @@ export function BulkUploadModal({ open, onClose, onSuccess }: BulkUploadModalPro
           {/* ── Stage: done ── */}
           {stage === "done" && summary && (
             <div className="space-y-4 py-4">
-              <div className="flex flex-col items-center text-center pb-4">
+              <div className="flex flex-col items-center pb-4 text-center">
                 {summary.succeeded > 0 ? (
                   <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-900/20">
                     <CheckCircle2 className="h-8 w-8 text-emerald-500" />
@@ -868,13 +1000,23 @@ export function BulkUploadModal({ open, onClose, onSuccess }: BulkUploadModalPro
 
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <div className="rounded-xl border border-slate-200 bg-white p-4 text-center dark:border-white/[0.08] dark:bg-[#0f172a]/60">
-                  <p className="text-2xl font-bold text-[#474ead]">{selectedCount}</p>
+                  <p className="text-2xl font-bold text-slate-600 dark:text-slate-300">{summary.fileCount}</p>
+                  <p className="mt-0.5 text-xs text-slate-500">Files</p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-white p-4 text-center dark:border-white/[0.08] dark:bg-[#0f172a]/60">
+                  <p className="text-2xl font-bold text-[#474ead]">{summary.attempted}</p>
                   <p className="mt-0.5 text-xs text-slate-500">Attempted</p>
                 </div>
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-center dark:border-emerald-800/30 dark:bg-emerald-900/20">
                   <p className="text-2xl font-bold text-emerald-600">{summary.succeeded}</p>
                   <p className="mt-0.5 text-xs text-slate-500">Created</p>
                 </div>
+                {summary.invalidRecords > 0 && (
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 text-center dark:border-white/[0.08] dark:bg-[#0f172a]/60">
+                    <p className="text-2xl font-bold text-amber-500">{summary.invalidRecords}</p>
+                    <p className="mt-0.5 text-xs text-slate-500">Skipped (invalid)</p>
+                  </div>
+                )}
                 {summary.failed > 0 && (
                   <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-center dark:border-red-800/30 dark:bg-red-900/20">
                     <p className="text-2xl font-bold text-red-600">{summary.failed}</p>
@@ -899,7 +1041,7 @@ export function BulkUploadModal({ open, onClose, onSuccess }: BulkUploadModalPro
           )}
         </div>
 
-        {/* Footer actions */}
+        {/* Footer */}
         <div className="shrink-0 border-t border-slate-200 bg-white px-6 py-4 dark:border-white/10 dark:bg-[#0f172a]">
           {(stage === "upload" || stage === "parsing") && (
             <div className="flex items-center justify-between gap-3">
@@ -908,13 +1050,21 @@ export function BulkUploadModal({ open, onClose, onSuccess }: BulkUploadModalPro
               </Button>
               <Button
                 onClick={handleParse}
-                disabled={!file || stage === "parsing"}
+                disabled={files.length === 0 || stage === "parsing"}
                 className="rounded-full bg-[#474ead] px-6 text-white hover:bg-[#3d439c] disabled:opacity-40"
               >
                 {stage === "parsing" ? (
                   <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Parsing…</>
                 ) : (
-                  <>Upload and Preview <ChevronRight className="ml-1 h-4 w-4" /></>
+                  <>
+                    Parse &amp; Preview
+                    {files.length > 0 && (
+                      <span className="ml-1.5 rounded-full bg-white/20 px-1.5 py-0.5 text-[10px] font-bold">
+                        {files.length}
+                      </span>
+                    )}
+                    <ChevronRight className="ml-1 h-4 w-4" />
+                  </>
                 )}
               </Button>
             </div>
@@ -928,10 +1078,10 @@ export function BulkUploadModal({ open, onClose, onSuccess }: BulkUploadModalPro
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
-                  onClick={() => { setStage("upload"); setFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                  onClick={() => { setStage("upload"); setFileResults([]); }}
                   className="rounded-full"
                 >
-                  Change File
+                  Change Files
                 </Button>
                 <Button
                   onClick={handleSubmit}
@@ -946,7 +1096,10 @@ export function BulkUploadModal({ open, onClose, onSuccess }: BulkUploadModalPro
 
           {stage === "done" && (
             <div className="flex justify-end">
-              <Button onClick={handleClose} className="rounded-full bg-[#474ead] px-8 text-white hover:bg-[#3d439c]">
+              <Button
+                onClick={handleClose}
+                className="rounded-full bg-[#474ead] px-8 text-white hover:bg-[#3d439c]"
+              >
                 Done
               </Button>
             </div>
