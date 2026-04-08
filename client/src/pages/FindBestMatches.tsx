@@ -6,7 +6,7 @@ import {
   BriefcaseBusiness, Target, TrendingUp, ChevronRight,
   SearchX, Loader2, Inbox, Upload, FileText, X as XIcon,
   Shield, Zap, Heart, Award, Lightbulb, Clock,
-  BarChart2, Star, User, Briefcase, Tag, Plus,
+  BarChart2, Star, User, Briefcase, Tag, Plus, AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import type { Job } from "@shared/schema";
 import { usePostedJobs } from "@/hooks/usePostedJobs";
+import { parseResumeFile, type ExtractedCandidateProfile } from "@/lib/resumeParser";
 
 // ─── CandidateProfile type ────────────────────────────────────────────────────
 
@@ -81,6 +82,18 @@ const EXPERIENCE_LEVELS = [
   { id: "3-5", label: "3–5 years", desc: "Confident, well-rounded, and independently capable" },
   { id: "5+",  label: "5+ years",  desc: "Senior-level expertise with a strong track record" },
 ];
+
+// Human-readable labels for auto-extracted field badges shown in Step 2 notice
+const EXTRACTED_FIELD_LABELS: Record<string, string> = {
+  fullName:          "Name",
+  targetPosition:    "Job Title",
+  jobCategory:       "Category",
+  yearsOfExperience: "Experience",
+  seniority:         "Seniority",
+  coreSkills:        "Core Skills",
+  secondarySkills:   "Other Skills",
+  summary:           "Summary",
+};
 
 const SENIORITY_LEVELS = [
   { id: "entry",  label: "Entry / Junior",  desc: "Learning the ropes, eager to grow and contribute" },
@@ -1070,6 +1083,11 @@ export default function FindBestMatches() {
   const [secSkillInput, setSecSkillInput] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // ── Resume-extraction state ──────────────────────────────────────────────
+  const [extracting, setExtracting] = useState(false);
+  const [extracted, setExtracted] = useState<ExtractedCandidateProfile | null>(null);
+  const [extractParseError, setExtractParseError] = useState<string | null>(null);
+
   const { openJobs, isLoading: jobsLoading } = usePostedJobs();
 
   const primaryDomain   = useMemo(() => getPrimaryDomainFromProfile(profile), [profile]);
@@ -1085,6 +1103,44 @@ export default function FindBestMatches() {
     const t = setTimeout(() => setPhase("results"), 2800);
     return () => clearTimeout(t);
   }, [phase]);
+
+  // ── Resume extraction trigger ────────────────────────────────────────────
+  async function handleFileChange(file: File | null) {
+    setField("resumeFile", file);
+    if (!file) { setExtracted(null); setExtractParseError(null); return; }
+
+    setExtracting(true);
+    setExtractParseError(null);
+
+    try {
+      const result = await parseResumeFile(file);
+
+      if (result.parseError) {
+        setExtractParseError(result.parseError);
+      } else {
+        setExtracted(result);
+        // Hydrate profile with extracted values, keeping any already-set fields
+        setProfile((prev) => ({
+          ...prev,
+          fullName:          result.fullName          || prev.fullName,
+          targetPosition:    result.targetPosition    || prev.targetPosition,
+          jobCategory:       result.jobCategory       || prev.jobCategory,
+          yearsOfExperience: result.yearsOfExperience || prev.yearsOfExperience,
+          seniority:         result.seniority         || prev.seniority,
+          coreSkills:        result.coreSkills.length    ? result.coreSkills    : prev.coreSkills,
+          secondarySkills:   result.secondarySkills.length ? result.secondarySkills : prev.secondarySkills,
+          summary:           result.summary           || prev.summary,
+        }));
+      }
+    } catch {
+      setExtractParseError("An unexpected error occurred while reading your resume.");
+    } finally {
+      setExtracting(false);
+      // Automatically advance to Step 2 (profile review)
+      setFlowStep(1);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
 
   function setField<K extends keyof CandidateProfile>(key: K, value: CandidateProfile[K]) {
     setProfile((p) => ({ ...p, [key]: value }));
@@ -1122,10 +1178,13 @@ export default function FindBestMatches() {
     setSecSkillInput("");
     setFlowStep(0);
     setPhase("flow");
+    setExtracted(null);
+    setExtractParseError(null);
+    setExtracting(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  const ready = canProceed(flowStep, profile);
+  const ready = canProceed(flowStep, profile) && !extracting;
 
   // ── Hero ──────────────────────────────────────────────────────────────────
   function HeroContent() {
@@ -1183,7 +1242,7 @@ export default function FindBestMatches() {
         <StepLabel step={1} title="Resume Upload" />
         <h2 className="mt-1 text-xl font-semibold text-slate-900">Let's start with your resume.</h2>
         <p className="mt-1.5 text-sm text-slate-500">
-          Upload your resume to give us a head start on your profile, or continue manually. Either way, you'll finalize everything in the next step.
+          Upload your resume and we'll automatically fill in your profile for you — or continue manually if you prefer.
         </p>
         <div className="mt-6 space-y-4">
           <input
@@ -1191,19 +1250,36 @@ export default function FindBestMatches() {
             type="file"
             accept=".pdf,.doc,.docx"
             className="hidden"
-            onChange={(e) => setField("resumeFile", e.target.files?.[0] ?? null)}
+            onChange={(e) => handleFileChange(e.target.files?.[0] ?? null)}
           />
-          {profile.resumeFile ? (
+
+          {/* Extracting state */}
+          {extracting ? (
+            <div className="flex flex-col items-center gap-4 rounded-2xl border border-[#474ead]/25 bg-[#474ead]/5 p-10 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#474ead] text-white shadow-lg shadow-[#474ead]/20">
+                <Loader2 className="h-7 w-7 animate-spin" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Analyzing your resume…</p>
+                <p className="mt-1 text-xs text-slate-500">Extracting your profile details. This takes a moment.</p>
+              </div>
+            </div>
+          ) : profile.resumeFile ? (
             <div className="flex items-center gap-4 rounded-2xl border border-[#474ead]/25 bg-[#474ead]/5 p-5">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#474ead] text-white">
                 <FileText className="h-6 w-6" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-slate-900 truncate">{profile.resumeFile.name}</p>
-                <p className="text-xs text-slate-500 mt-0.5">Resume received. You'll review and complete your profile in the next step.</p>
+                <p className="text-xs text-slate-500 mt-0.5">Resume received. Review your prefilled profile in the next step.</p>
               </div>
               <button
-                onClick={() => { setField("resumeFile", null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                onClick={() => {
+                  setField("resumeFile", null);
+                  setExtracted(null);
+                  setExtractParseError(null);
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                }}
                 className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
                 aria-label="Remove resume"
               >
@@ -1226,6 +1302,7 @@ export default function FindBestMatches() {
               <span className="rounded-full border border-[#474ead]/30 bg-white px-4 py-1.5 text-xs font-medium text-[#474ead] shadow-sm">Choose file</span>
             </button>
           )}
+
           <div className="flex items-center gap-3 text-xs text-slate-400">
             <div className="flex-1 h-px bg-slate-200" />
             <span>or continue without one</span>
@@ -1235,9 +1312,9 @@ export default function FindBestMatches() {
             <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">What happens next</p>
             <div className="space-y-3">
               {[
-                { icon: FileText,        text: "Finalize your target position, skills, and work preferences" },
-                { icon: Heart,           text: "Complete a short culture evaluation aligned to our values" },
-                { icon: Sparkles,        text: "Get matched to real active roles that fit your exact niche" },
+                { icon: Sparkles,  text: "We auto-extract your details from the resume" },
+                { icon: FileText,  text: "Review and confirm your target position, skills, and preferences" },
+                { icon: Heart,     text: "Complete a short culture evaluation aligned to our values" },
               ].map(({ icon: Icon, text }, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#474ead]/10 text-[#474ead]">
@@ -1255,15 +1332,78 @@ export default function FindBestMatches() {
 
   // ── Step 1: Finalize Information ─────────────────────────────────────────
   function FinalizeInformationStep() {
+    // Banner copy depends on extraction outcome
+    const hasPrefilled = extracted && extracted.extractedFields.length > 0;
+    const hasPartialPrefill = extracted && extracted.confidence === "partial";
+
     return (
       <div className="space-y-8">
         <div>
           <StepLabel step={2} title="Finalize Your Profile" />
-          <h2 className="mt-1 text-xl font-semibold text-slate-900">Tell us about yourself.</h2>
+          <h2 className="mt-1 text-xl font-semibold text-slate-900">
+            {hasPrefilled ? "Review your extracted profile." : "Tell us about yourself."}
+          </h2>
           <p className="mt-1.5 text-sm text-slate-500">
             This is the main source of truth for your job matching. Please review and complete every field — the more accurate this is, the more precise your matches will be.
           </p>
         </div>
+
+        {/* ── Extraction notice ─────────────────────────────────────────────── */}
+        {profile.resumeFile && !extracting && (
+          <>
+            {hasPrefilled && (
+              <div className={`flex gap-3 rounded-2xl border p-4 ${
+                hasPartialPrefill
+                  ? "border-amber-200 bg-amber-50"
+                  : "border-[#474ead]/20 bg-[#474ead]/5"
+              }`}>
+                <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                  hasPartialPrefill ? "bg-amber-100 text-amber-600" : "bg-[#474ead]/15 text-[#474ead]"
+                }`}>
+                  <Sparkles className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className={`text-sm font-semibold ${hasPartialPrefill ? "text-amber-800" : "text-[#474ead]"}`}>
+                    {hasPartialPrefill
+                      ? "Partially auto-filled from your resume"
+                      : "Pre-filled from your resume"}
+                  </p>
+                  <p className={`mt-0.5 text-xs leading-relaxed ${hasPartialPrefill ? "text-amber-700" : "text-slate-600"}`}>
+                    {hasPartialPrefill
+                      ? "We extracted some details. Please review and fill in any missing fields."
+                      : "We've populated your profile with detected information. Review everything before continuing."}
+                  </p>
+                  {extracted.extractedFields.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {extracted.extractedFields.map((f) => (
+                        <Badge key={f} className={`text-[10px] px-2 py-0.5 rounded-full pointer-events-none ${
+                          hasPartialPrefill
+                            ? "bg-amber-100 text-amber-700 border-amber-200"
+                            : "bg-[#474ead]/10 text-[#474ead] border-transparent"
+                        }`}>
+                          {EXTRACTED_FIELD_LABELS[f] ?? f}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            {extractParseError && (
+              <div className="flex gap-3 rounded-2xl border border-red-200 bg-red-50 p-4">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-500">
+                  <AlertCircle className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-red-700">Couldn't fully read your resume</p>
+                  <p className="mt-0.5 text-xs text-red-600">
+                    {extractParseError} Please complete your profile manually below.
+                  </p>
+                </div>
+              </div>
+            )}
+          </>
+        )}
 
         {/* Basic info */}
         <div className="space-y-4">

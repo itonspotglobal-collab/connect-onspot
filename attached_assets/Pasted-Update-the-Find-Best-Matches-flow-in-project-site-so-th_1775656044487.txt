@@ -1,0 +1,242 @@
+Update the Find Best Matches flow in project site so that after the user uploads a resume/file, the system automatically extracts information from the resume and pre-fills the fields in Step 2 (Finalize Your Profile).
+
+
+
+Main requirement:
+After uploading the resume/file, the form fields in the “Finalize Your Profile” step should automatically populate based on the resume content, so the employee only needs to review and edit anything that needs correction.
+
+
+
+Desired flow:
+1. Upload Resume/File
+2. Auto-extract candidate information from resume
+3. Open Step 2 with fields already prefilled
+4. Candidate reviews/edits the data
+5. Continue to Culture Evaluation
+6. Show only relevant real job openings
+
+
+
+Important UX goal:
+The candidate should not have to manually type everything if the resume already contains the information.
+Step 2 should behave like a review-and-confirm step, not a blank form.
+
+
+
+Fields to auto-fill from the resume as much as possible:
+- Full Name
+- Target Job Position or Current/Most Recent Position
+- Job Category / Niche
+- Years of Professional Experience
+- Seniority Level
+- Core Skills
+- Secondary Skills
+- Preferred Work Setup if inferable
+- Preferred Job Type if inferable
+- Short Professional Summary if inferable
+
+
+
+If a field cannot be confidently extracted:
+- leave it blank
+- or show a suggested value with low-confidence state if appropriate
+- but do not invent random information
+
+
+
+Core implementation requirement:
+Build resume parsing / extraction logic that reads the uploaded file and maps extracted content into the profile form state used in Step 2.
+
+
+
+Technical behavior:
+1. On file upload:
+- parse the uploaded resume text
+- extract structured candidate information
+- save the extracted profile object into state
+- navigate to Step 2 with the fields prefilled
+
+
+
+2. In Step 2:
+- initialize the form using extracted values
+- allow the user to edit all fields
+- clearly treat the form as the final source of truth for matching
+
+
+
+3. If parsing fails:
+- still allow the user to continue with a blank/editable form
+- show a helpful message like:
+  “We couldn’t fully extract your details, so please review and complete your profile manually.”
+
+
+
+Extraction logic requirements:
+Use careful resume-to-profile mapping, not random guessing.
+
+
+
+Examples of what to extract:
+A. Full Name
+- detect likely candidate name near the top of the resume
+
+
+
+B. Current or Most Recent Job Title
+- detect latest role title from work experience
+- use this to prefill Target Job Position or suggest one
+
+
+
+C. Job Category / Niche
+Map extracted role titles into a job family/category such as:
+- Admin
+- Customer Support
+- Marketing
+- Finance
+- Tech Support
+- Sales
+- Operations
+- Design
+- Development
+- HR
+
+
+
+Examples:
+- Team Manager / Operations Manager → Operations
+- Bookkeeper / Accounting Assistant → Finance
+- Executive Assistant / Virtual Assistant → Admin
+- CSR / Customer Service Representative → Customer Support
+- IT Support / System Administrator → Tech Support
+
+
+
+D. Years of Professional Experience
+Estimate total years from work history dates if possible.
+If exact calculation is difficult, infer a reasonable range such as:
+- 0–1 year
+- 1–3 years
+- 3–5 years
+- 5–8 years
+- 8+ years
+
+
+
+E. Seniority Level
+Infer from title and years of experience:
+- Entry
+- Junior
+- Mid-Level
+- Senior
+- Manager
+
+
+
+F. Skills
+Extract skills from:
+- explicit skills section
+- tools/platforms
+- repeated keywords from experience entries
+
+
+
+Split into:
+- core skills
+- secondary skills
+
+
+
+G. Professional Summary
+Extract or generate a short structured summary from the resume content if possible.
+Keep it grounded in actual content from the resume.
+
+
+
+Important:
+Do not fabricate information that is not supported by the resume.
+Confidence-based extraction is preferred.
+
+
+
+Matching flow requirement:
+The finalized Step 2 profile remains the source of truth.
+Even if auto-extraction occurs, the user can edit the values before proceeding.
+Job matching must use the final reviewed values, not the raw extracted text.
+
+
+
+Critical result rule:
+After culture evaluation, only show real posted jobs from the same source as FindWorkAllJobs.tsx, and only if they are relevant to the finalized candidate position/niche.
+No unrelated jobs should appear.
+
+
+
+Example:
+If the resume indicates Team Manager / Operations Manager, then:
+- auto-fill Target Job Position accordingly
+- map category to Operations or Managerial
+- only show managerial/operations-related posted jobs later
+- do not show IT Administrator or unrelated roles
+
+
+
+Design requirement:
+Keep the exact visual style consistent with:
+- Insights.tsx
+- FindWork.tsx
+- WhyOnSpotAbout.tsx
+
+
+
+Step 2 should still look like the existing polished profile form, just prefilled after upload.
+
+
+
+Suggested implementation:
+- create a resume parsing helper such as:
+  - parseResumeFile()
+  - extractCandidateProfileFromResume()
+- create a structured extracted profile object
+- hydrate the Step 2 form state from extracted profile data
+- allow all fields to be edited before submission
+
+
+
+Suggested types:
+- UploadedResume
+- ExtractedCandidateProfile
+- FinalCandidateProfile
+
+
+
+Suggested UI details:
+- show a small note near the top of Step 2 such as:
+  “We pre-filled your profile based on your resume. Please review and update anything needed.”
+- optionally show which fields were auto-detected
+- optionally tag uncertain fields as “Review suggested value”
+
+
+
+Files likely involved:
+- FindBestMatches.tsx
+- resume parsing helper/utils
+- shared types for candidate profile
+- any upload component or step components
+
+
+
+Final output expected:
+- production-ready code
+- resume upload to profile extraction flow
+- Step 2 prefilled form behavior
+- editable extracted fields
+- fallback behavior when parsing is incomplete
+- explanation of how extracted data is mapped into profile fields
+
+
+
+Important:
+Do not make Step 2 blank after upload.
+Uploading the resume should automatically prefill the profile review form as much as possible.
