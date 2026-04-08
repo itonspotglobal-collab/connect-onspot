@@ -571,29 +571,52 @@ function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
 function CategoryNav({
   selected,
   onSelect,
-  onSearchClick,
+  searchQuery,
+  onSearchChange,
+  authorFilter,
+  onClearAuthor,
 }: {
   selected: NavCategoryId;
   onSelect: (id: NavCategoryId) => void;
-  onSearchClick: () => void;
+  searchQuery: string;
+  onSearchChange: (v: string) => void;
+  authorFilter: string;
+  onClearAuthor: () => void;
 }) {
   const [, navigate] = useLocation();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const navInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-open the search row if a query or author filter is already active
+  useEffect(() => {
+    if (searchQuery || authorFilter) setSearchOpen(true);
+  }, []);
+
+  function toggleSearch() {
+    const next = !searchOpen;
+    setSearchOpen(next);
+    if (next) {
+      setTimeout(() => navInputRef.current?.focus(), 50);
+    } else {
+      onSearchChange("");
+    }
+  }
+
+  const hasActiveSearch = !!searchQuery || !!authorFilter;
 
   return (
     <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        {/* ── Primary nav row ─────────────────────────────────────────────── */}
         <div className="flex items-center -mb-px">
-          {/* OnSpot logo — replaces "View All"; click goes to homepage */}
+          {/* OnSpot logo → homepage */}
           <button
             onClick={() => navigate("/")}
             className="flex items-center py-2.5 pr-4 flex-shrink-0 border-b-2 border-transparent"
             aria-label="Go to OnSpot homepage"
           >
-            <img
-              src={onspotLogo}
-              alt="OnSpot"
-              className="h-7 w-auto object-contain"
-            />
+            <img src={onspotLogo} alt="OnSpot" className="h-7 w-auto object-contain" />
           </button>
 
           {/* Divider */}
@@ -624,18 +647,68 @@ function CategoryNav({
             })}
           </div>
 
-          {/* Search button — right side, separated */}
+          {/* Search toggle — right side */}
           <div className="flex items-center flex-shrink-0 pl-2 ml-1 border-l border-slate-200">
             <button
-              onClick={onSearchClick}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-slate-500 hover:text-[#474ead] hover:bg-[#474ead]/8 transition-all duration-200 text-sm font-medium"
-              aria-label="Open search"
+              onClick={toggleSearch}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
+                searchOpen || hasActiveSearch
+                  ? "text-[#474ead] bg-[#474ead]/8"
+                  : "text-slate-500 hover:text-[#474ead] hover:bg-[#474ead]/8"
+              }`}
+              aria-label={searchOpen ? "Close search" : "Open search"}
             >
-              <Search className="w-4 h-4" />
-              <span className="hidden sm:inline">Search</span>
+              {searchOpen ? <X className="w-4 h-4" /> : <Search className="w-4 h-4" />}
+              <span className="hidden sm:inline">{searchOpen ? "Close" : "Search"}</span>
+              {hasActiveSearch && !searchOpen && (
+                <span className="w-1.5 h-1.5 rounded-full bg-[#474ead] flex-shrink-0" />
+              )}
             </button>
           </div>
         </div>
+
+        {/* ── Expandable search row ────────────────────────────────────────── */}
+        {searchOpen && (
+          <div className="pb-3 pt-1 flex flex-col gap-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#474ead]/60 pointer-events-none" />
+              <input
+                ref={navInputRef}
+                type="text"
+                placeholder="Search by title, excerpt, author, or category…"
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                className="w-full pl-9 pr-9 py-2.5 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-900 focus:outline-none focus:border-[#474ead]/50 focus:ring-2 focus:ring-[#474ead]/10 placeholder:text-slate-400 transition"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => onSearchChange("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  aria-label="Clear search"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Author filter pill — shown inside search row when active */}
+            {authorFilter && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="inline-flex items-center gap-2 rounded-full bg-[#474ead]/10 border border-[#474ead]/20 text-[#474ead] text-xs px-3 py-1.5 font-medium">
+                  <Users className="w-3 h-3" />
+                  Articles by {authorFilter}
+                  <button
+                    onClick={onClearAuthor}
+                    className="ml-0.5 hover:text-[#474ead]/60 transition-colors"
+                    aria-label="Clear author filter"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1092,13 +1165,6 @@ export default function Insights() {
   const [searchQuery, setSearchQuery] = useState("");
   const [authorFilter, setAuthorFilter] = useState("");
   const [ceoModalOpen, setCeoModalOpen] = useState(false);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-
-  function handleSearchClick() {
-    // Scroll to the bottom hero/search section and focus the input
-    searchInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-    setTimeout(() => searchInputRef.current?.focus(), 400);
-  }
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -1177,7 +1243,10 @@ export default function Insights() {
           setSelectedCategory(id);
           setAuthorFilter("");
         }}
-        onSearchClick={handleSearchClick}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        authorFilter={authorFilter}
+        onClearAuthor={() => setAuthorFilter("")}
       />
 
       {/* ── Main content area ─────────────────────────────────────────────── */}
@@ -1328,54 +1397,11 @@ export default function Insights() {
               <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-slate-900 mb-4 leading-tight">
                 Outsourcing Intelligence Hub
               </h1>
-              <p className="text-lg text-slate-600 max-w-3xl mx-auto mb-10 leading-8">
+              <p className="text-lg text-slate-600 max-w-3xl mx-auto leading-8">
                 Stay ahead with expert analysis, industry trends, and actionable
                 insights on global outsourcing, BPO services, and workforce
                 optimization.
               </p>
-
-              {/* Search bar */}
-              <div className="max-w-2xl mx-auto mb-4">
-                <div className="relative p-[1px] rounded-full bg-gradient-to-r from-[#474ead]/30 via-[#474ead]/15 to-[#474ead]/30">
-                  <div className="flex items-center bg-white rounded-full px-4 py-3 backdrop-blur transition-all focus-within:ring-2 focus-within:ring-[#474ead]/30 shadow-sm">
-                    <Search className="w-5 h-5 text-[#474ead]/60 mr-3 flex-shrink-0" />
-                    <input
-                      ref={searchInputRef}
-                      type="text"
-                      placeholder="Search insights, topics, or authors…"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full bg-transparent text-sm text-slate-900 focus:outline-none placeholder:text-slate-400"
-                    />
-                    {searchQuery && (
-                      <button
-                        onClick={() => setSearchQuery("")}
-                        className="ml-2 text-slate-400 hover:text-slate-600 transition-colors flex-shrink-0"
-                        aria-label="Clear search"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Active author filter pill */}
-              {authorFilter && (
-                <div className="flex justify-center mt-2">
-                  <span className="inline-flex items-center gap-2 rounded-full bg-[#474ead]/10 border border-[#474ead]/20 text-[#474ead] text-xs px-3 py-1.5 font-medium">
-                    <Users className="w-3 h-3" />
-                    Articles by {authorFilter}
-                    <button
-                      onClick={() => setAuthorFilter("")}
-                      className="ml-1 hover:text-[#474ead]/60 transition-colors"
-                      aria-label="Clear author filter"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                </div>
-              )}
             </div>
           </div>
         </section>

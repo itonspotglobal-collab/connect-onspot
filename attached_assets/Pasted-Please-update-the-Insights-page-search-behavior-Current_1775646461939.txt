@@ -1,0 +1,45 @@
+Please update the Insights page search behavior.
+
+Current issue:
+- The new search control in the top Insights navigation currently redirects/jumps to the search bar inside the “Outsourcing Intelligence Hub” section.
+- That is not the behavior we want.
+- We are planning to remove the search bar from the “Outsourcing Intelligence Hub” section entirely.
+
+Required behavior:
+1. Make the search input/button in the top Insights navigation the primary and only search control for the page.
+2. Do not redirect, jump, or scroll to the old search bar section.
+3. Remove the search bar from the “Outsourcing Intelligence Hub” section.
+4. Keep the “Outsourcing Intelligence Hub” title/intro block, but without the embedded search input.
+5. The top nav search should directly filter/search the Insights content on the page.
+
+Search behavior requirements:
+- Typing in the top nav search should filter the visible Insights content in real time
+- It should work against relevant fields such as:
+  - article title
+  - synopsis/excerpt
+  - author name
+  - category
+  - podcast title if applicable
+- It should work together with the category filters
+- Search should be case-insensitive and resilient to minor spacing/casing differences
+- If there are no matches, show a clean empty state
+
+UI requirements:
+- Keep the top nav search visually aligned with the category nav
+- Make sure it has proper width, spacing, and responsiveness
+- It should look like a real functional search input/button, not just a link or anchor
+- On smaller screens, make sure it still behaves cleanly and does not break the nav layout
+
+Implementation guidance:
+- Remove any anchor-link behavior or scroll-to-section behavior tied to the search control
+- Lift the search state up so the nav search controls the page content directly
+- Reuse the same filtering logic that was previously tied to the hub search bar, but connect it to the nav search instead
+- Remove the duplicate search field from the hero/intro section
+- Keep the page clean and editorial
+
+Expected result:
+- Only the top nav search remains
+- Searching happens directly from that nav control
+- The “Outsourcing Intelligence Hub” section no longer contains a search bar
+- No redirect/jump behavior
+- Search and category filtering work together smoothly
