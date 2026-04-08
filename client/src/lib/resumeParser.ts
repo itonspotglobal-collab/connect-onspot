@@ -2,10 +2,7 @@
  * resumeParser.ts
  *
  * Client-side resume text extraction and profile inference.
- * Supports PDF (via pdfjs-dist) and DOCX/DOC (via mammoth).
- *
- * Exported surface:
- *   parseResumeFile(file)  → Promise<ExtractedCandidateProfile>
+ * Supports PDF (pdfjs-dist) and DOCX/DOC (mammoth).
  */
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -15,13 +12,12 @@ export interface ExtractedCandidateProfile {
   targetPosition: string;
   jobCategory: string;
   yearsOfExperience: string;   // "0-1" | "1-3" | "3-5" | "5+"
-  seniority: string;            // "entry" | "mid" | "senior"
+  seniority: string;
   coreSkills: string[];
   secondarySkills: string[];
   summary: string;
-  // Meta
   confidence: "high" | "partial" | "low";
-  extractedFields: string[];    // which fields were successfully detected
+  extractedFields: string[];
   parseError?: string;
 }
 
@@ -33,7 +29,7 @@ export const EMPTY_EXTRACTION: ExtractedCandidateProfile = {
   confidence: "low", extractedFields: [],
 };
 
-// ─── Known core skills (mirrors FindBestMatches) ──────────────────────────────
+// ─── Core skill aliases (maps resume phrases → chip labels) ──────────────────
 
 const CORE_SKILL_LIST = [
   "Customer Support", "Admin Support", "Data Entry", "Calendar Management",
@@ -42,7 +38,6 @@ const CORE_SKILL_LIST = [
   "CRM Management", "Scheduling", "Report Generation",
 ];
 
-// Lower-cased aliases → canonical core skill name
 const CORE_SKILL_ALIASES: Record<string, string> = {
   "customer service": "Customer Support", "customer support": "Customer Support",
   "cx": "Customer Support", "client support": "Customer Support",
@@ -58,7 +53,6 @@ const CORE_SKILL_ALIASES: Record<string, string> = {
   "email handling": "Email Management", "correspondence": "Email Management",
   "research": "Research", "market research": "Research", "online research": "Research",
   "social media": "Social Media", "social media management": "Social Media",
-  "instagram": "Social Media", "facebook": "Social Media",
   "content writing": "Content Writing", "copywriting": "Content Writing",
   "content creation": "Content Writing", "blog writing": "Content Writing",
   "bookkeeping": "Bookkeeping", "accounting": "Bookkeeping",
@@ -77,15 +71,76 @@ const CORE_SKILL_ALIASES: Record<string, string> = {
   "data analysis": "Report Generation", "analytics": "Report Generation",
 };
 
+// ─── Known secondary / tech skills (case-insensitive exact phrase match) ─────
+// Ordered longest-first so more specific matches win before shorter ones.
+
+const KNOWN_SKILLS: string[] = [
+  // Languages & markup
+  "JavaScript", "TypeScript", "Python", "Java", "C#", "C++", "PHP", "Ruby",
+  "Swift", "Kotlin", "Go", "Rust", "HTML", "CSS", "SQL", "NoSQL",
+  ".NET", "Node.js", "Bash", "Shell Scripting", "R", "MATLAB",
+  // Web frameworks / libs
+  "React", "Vue.js", "Angular", "Next.js", "Nuxt.js", "Svelte",
+  "Django", "Flask", "FastAPI", "Laravel", "Express.js", "Spring Boot",
+  "ASP.NET", "Ruby on Rails",
+  // Mobile
+  "React Native", "Flutter", "iOS Development", "Android Development",
+  // Databases
+  "MySQL", "PostgreSQL", "MongoDB", "SQLite", "Redis", "Elasticsearch",
+  "Oracle", "MSSQL", "Firebase",
+  // DevOps / infra
+  "Docker", "Kubernetes", "AWS", "Azure", "Google Cloud", "GCP",
+  "Linux", "Ubuntu", "CI/CD", "Jenkins", "GitHub Actions", "Terraform",
+  "Ansible", "Nginx",
+  // Tools
+  "Git", "GitHub", "Gitlab", "Jira", "Trello", "Asana", "Slack",
+  "Postman", "Figma", "Sketch", "Adobe XD", "Photoshop", "Illustrator",
+  "Visual Studio", "VS Code", "IntelliJ", "Eclipse", "Xcode",
+  "Tableau", "Power BI", "Google Analytics", "Mixpanel", "Amplitude",
+  // QA / testing
+  "Automation Testing", "Manual Testing", "Selenium", "Cypress",
+  "Playwright", "Jest", "Mocha", "Chai", "JUnit", "TestNG",
+  "Quality Assurance", "QA Testing", "Bug Tracking", "UAT Testing",
+  // Design / UX
+  "UI/UX Design", "Wireframing", "Prototyping", "User Research",
+  // Office / productivity
+  "Microsoft Office", "Google Workspace", "MS Excel", "MS Word",
+  "Google Sheets", "Google Docs", "PowerPoint", "Google Slides",
+  "Canva", "Notion", "Confluence",
+  // Communication / support
+  "Documentation", "Technical Writing", "Transcription", "Transcriber",
+  "Translation", "Customer Success", "Live Chat Support",
+  // Finance / operations
+  "Payroll Processing", "Accounts Payable", "Accounts Receivable",
+  "Financial Reporting", "Budgeting", "Forecasting", "SAP", "NetSuite",
+  // Data
+  "Data Analysis", "Data Entry", "Data Visualization",
+  "Machine Learning", "Deep Learning", "NLP", "TensorFlow", "PyTorch",
+  // HR / management
+  "Recruitment", "Talent Acquisition", "Performance Management",
+  "Onboarding", "Employee Relations", "HRIS",
+  // Marketing
+  "SEO", "SEM", "Email Marketing", "Content Marketing", "PPC",
+  "Facebook Ads", "Google Ads", "LinkedIn Ads", "Copywriting",
+  // Sales
+  "Lead Generation", "Cold Calling", "CRM", "Pipeline Management",
+  "B2B Sales", "B2C Sales", "Account Management",
+  // Generic
+  "Problem Solving", "Critical Thinking", "Team Leadership",
+  "Project Management", "Agile", "Scrum", "Kanban", "Waterfall",
+].sort((a, b) => b.length - a.length); // longest first for greedy matching
+
 // ─── Title → category mapping ─────────────────────────────────────────────────
 
 const TITLE_TO_CATEGORY: Array<{ keywords: string[]; category: string }> = [
   {
     keywords: [
-      "it administrator", "it admin", "systems administrator", "network administrator",
+      "qa engineer", "quality assurance", "test engineer", "software tester",
+      "automation engineer", "it administrator", "it admin", "system administrator",
       "sysadmin", "devops", "cloud engineer", "software developer", "software engineer",
       "web developer", "programmer", "it specialist", "it support specialist",
       "it manager", "network engineer", "cybersecurity", "it officer",
+      "systems analyst", "database administrator", "dba",
     ],
     category: "Tech Support",
   },
@@ -152,15 +207,19 @@ const TITLE_TO_CATEGORY: Array<{ keywords: string[]; category: string }> = [
   },
 ];
 
-// ─── Seniority keywords ───────────────────────────────────────────────────────
-
 const SENIOR_KEYWORDS = [
   "senior", "sr.", "lead", "principal", "head", "chief", "director",
   "vp", "vice president", "manager", "supervisor", "team lead",
 ];
 const JUNIOR_KEYWORDS = ["junior", "jr.", "associate", "trainee", "intern", "entry"];
 
-// ─── Text extraction from file ────────────────────────────────────────────────
+// ─── Lines that should never be treated as a person's name ───────────────────
+
+const NOISE_LINE_RX = /^(?:resume|curriculum\s+vitae|cv|profile|contact|references?|about\s+me|education|objectives?|work\s+experience|experience|employment|skills?|summary|professional\s+summary|career\s+objective|languages?|certifications?|awards?|achievements?|projects?|portfolio|hobbies?|interests?|activities|publications?|volunteer)\s*:?\s*$/i;
+
+const CONTACT_LINE_RX = /[@\d]{2,}|https?:\/\/|linkedin\.com|github\.com|facebook\.com/i;
+
+// ─── Text extraction ──────────────────────────────────────────────────────────
 
 async function extractTextFromPdf(file: File): Promise<string> {
   const pdfjsLib = await import("pdfjs-dist");
@@ -205,17 +264,16 @@ export async function extractTextFromFile(file: File): Promise<string> {
   const name = file.name.toLowerCase();
   if (name.endsWith(".pdf")) return extractTextFromPdf(file);
   if (name.endsWith(".docx") || name.endsWith(".doc")) return extractTextFromDocx(file);
-  // Plain text fallback
   return file.text();
 }
 
-// ─── Section detection ────────────────────────────────────────────────────────
+// ─── Section splitting ────────────────────────────────────────────────────────
 
 const SECTION_HEADERS: Record<string, RegExp> = {
-  summary:    /^(?:summary|professional\s+summary|objective|profile|about\s+me|professional\s+profile|career\s+objective)\s*:?\s*$/i,
+  summary: /^(?:summary|professional\s+summary|objective[s]?|profile|about\s+me|professional\s+profile|career\s+objective)\s*:?\s*$/i,
   experience: /^(?:work\s+experience|experience|employment\s+history|professional\s+experience|work\s+history|career\s+history)\s*:?\s*$/i,
-  education:  /^(?:education|academic|qualifications?)\s*:?\s*$/i,
-  skills:     /^(?:skills?|technical\s+skills?|key\s+skills?|core\s+competencies|competencies|expertise|tools?\s*&?\s*technologies?|skills?\s*&\s*competencies)\s*:?\s*$/i,
+  education: /^(?:education|academic|qualifications?|schooling)\s*:?\s*$/i,
+  skills: /^(?:skills?|technical\s+skills?|key\s+skills?|core\s+competencies|competencies|expertise|tools?\s*(?:&|and)?\s*technologies?|skills?\s*(?:&|and)\s*competencies|programming\s+languages?|frameworks?|technologies?|tools?\s+(?:used|&)|technical\s+competencies|technical\s+toolkit)\s*:?\s*$/i,
 };
 
 interface ResumeSection { type: string; lines: string[]; }
@@ -231,6 +289,11 @@ function splitIntoSections(lines: string[]): ResumeSection[] {
     let matched = false;
     for (const [type, rx] of Object.entries(SECTION_HEADERS)) {
       if (rx.test(trimmed)) {
+        // Merge adjacent skill sections into one
+        if (type === "skills") {
+          const existing = sections.find((s) => s.type === "skills");
+          if (existing) { current = existing; matched = true; break; }
+        }
         current = { type, lines: [] };
         sections.push(current);
         matched = true;
@@ -242,39 +305,50 @@ function splitIntoSections(lines: string[]): ResumeSection[] {
   return sections;
 }
 
-// ─── Name detection ───────────────────────────────────────────────────────────
+// ─── Name extraction ──────────────────────────────────────────────────────────
 
-const CONTACT_RX = /[@\d\+\(\)\/\-\.]{3,}|^https?:\/\//i;
-const SECTION_HEADER_RX = /^(?:resume|curriculum vitae|cv|name|contact|profile)\s*:?\s*$/i;
+function toTitleCase(str: string): string {
+  return str.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
-function extractName(headerLines: string[]): string {
-  for (const line of headerLines.slice(0, 8)) {
-    const t = line.trim();
-    if (!t || CONTACT_RX.test(t) || SECTION_HEADER_RX.test(t)) continue;
-    // 2–4 words, mostly letters, likely PascalCase or ALL CAPS
-    const words = t.split(/\s+/);
-    if (words.length >= 2 && words.length <= 5) {
-      const hasLetters = words.every((w) => /^[A-Za-z\u00C0-\u024F\'\-\.]+$/.test(w));
-      if (hasLetters) return toTitleCase(t);
+/** A word in a person's name: letters (incl. accented), optional trailing period for initials. */
+const NAME_WORD_RX = /^[A-Za-zÀ-ÖØ-öø-ÿ][\w\u00C0-\u024F\'\-]*\.?$/;
+
+function looksLikePersonName(line: string): boolean {
+  if (NOISE_LINE_RX.test(line)) return false;
+  if (CONTACT_LINE_RX.test(line)) return false;
+
+  const words = line.trim().split(/\s+/);
+  if (words.length < 2 || words.length > 6) return false;
+
+  // Allow middle initials like "L." — the word just needs to start with a letter
+  const allLetterWords = words.every((w) => NAME_WORD_RX.test(w));
+  if (!allLetterWords) return false;
+
+  // At least 2 words that are longer than 1 char (not all initials)
+  const substantiveWords = words.filter((w) => w.replace(/\.$/, "").length > 1);
+  return substantiveWords.length >= 2;
+}
+
+function extractName(allLines: string[]): string {
+  // Scan the first 15 non-empty lines of the document
+  const candidates = allLines.slice(0, 15).map((l) => l.trim()).filter(Boolean);
+  for (const line of candidates) {
+    if (looksLikePersonName(line)) {
+      return toTitleCase(line);
     }
   }
   return "";
 }
 
-function toTitleCase(str: string): string {
-  return str
-    .toLowerCase()
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-// ─── Job title detection ──────────────────────────────────────────────────────
+// ─── Job title extraction ─────────────────────────────────────────────────────
 
 const TITLE_INDICATORS = [
   "manager", "specialist", "executive", "assistant", "coordinator", "analyst",
   "developer", "engineer", "officer", "representative", "consultant",
   "lead", "director", "associate", "supervisor", "administrator", "support",
   "agent", "operator", "advisor", "technician", "bookkeeper", "accountant",
-  "recruiter", "designer",
+  "recruiter", "designer", "tester", "qa", "transcriber",
 ];
 
 function looksLikeTitle(line: string): boolean {
@@ -283,24 +357,33 @@ function looksLikeTitle(line: string): boolean {
   return (
     wordCount >= 1 && wordCount <= 8 &&
     TITLE_INDICATORS.some((kw) => lower.includes(kw)) &&
-    !CONTACT_RX.test(line)
+    !CONTACT_LINE_RX.test(line)
   );
 }
 
-/** Extract the most recent job title from experience section or header area. */
-function extractTitle(sections: ResumeSection[]): string {
-  // Check header first (often has title right under name)
+function extractTitle(sections: ResumeSection[], allLines: string[]): string {
   const header = sections.find((s) => s.type === "header");
+
+  // First: lines in header that look like a title (skip likely name lines)
   if (header) {
-    for (const line of header.lines.slice(1, 6)) {
-      if (looksLikeTitle(line)) return toTitleCase(line.trim());
+    for (const line of header.lines.slice(0, 10)) {
+      if (!looksLikePersonName(line) && looksLikeTitle(line)) {
+        return toTitleCase(line.trim());
+      }
     }
   }
 
-  // Check experience section — first job title entry
+  // Second: look at lines 1–20 of raw text for a title-like line after the name
+  for (const line of allLines.slice(1, 20)) {
+    if (!looksLikePersonName(line) && looksLikeTitle(line) && !CONTACT_LINE_RX.test(line)) {
+      return toTitleCase(line.trim());
+    }
+  }
+
+  // Third: first title in experience section
   const exp = sections.find((s) => s.type === "experience");
   if (exp) {
-    for (const line of exp.lines.slice(0, 15)) {
+    for (const line of exp.lines.slice(0, 10)) {
       if (looksLikeTitle(line)) return toTitleCase(line.trim());
     }
   }
@@ -308,23 +391,22 @@ function extractTitle(sections: ResumeSection[]): string {
   return "";
 }
 
-// ─── Category inference ───────────────────────────────────────────────────────
+// ─── Category ─────────────────────────────────────────────────────────────────
 
 function inferCategory(title: string, allText: string): string {
-  const lower = (title + " " + allText.slice(0, 1500)).toLowerCase();
+  const lower = (title + " " + allText.slice(0, 2000)).toLowerCase();
   for (const { keywords, category } of TITLE_TO_CATEGORY) {
     if (keywords.some((kw) => lower.includes(kw))) return category;
   }
   return "";
 }
 
-// ─── Seniority inference ──────────────────────────────────────────────────────
+// ─── Seniority ────────────────────────────────────────────────────────────────
 
 function inferSeniority(title: string, yearsId: string): string {
   const lower = title.toLowerCase();
   if (SENIOR_KEYWORDS.some((kw) => lower.includes(kw))) return "senior";
   if (JUNIOR_KEYWORDS.some((kw) => lower.includes(kw))) return "entry";
-  // Fall back to years of experience
   if (yearsId === "5+") return "senior";
   if (yearsId === "3-5") return "mid";
   if (yearsId === "1-3") return "mid";
@@ -333,32 +415,33 @@ function inferSeniority(title: string, yearsId: string): string {
 
 // ─── Years of experience ──────────────────────────────────────────────────────
 
-const YEAR_RX = /\b(19|20)\d{2}\b/g;
 const PRESENT_RX = /\b(?:present|current|now|ongoing)\b/i;
-const DATE_RANGE_RX = /(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[\s,]+(\d{4})\s*[-–—to]+\s*(?:(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[\s,]+(\d{4})|present|current)/gi;
+const DATE_RANGE_RX = /(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)[,\s]+(\d{4})\s*[-–—to]+\s*(?:(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)[,\s]+(\d{4})|present|current|now)/gi;
+const BARE_YEAR_RX = /\b(19|20)\d{2}\b/g;
 
 function extractYearsOfExperience(expSection: ResumeSection | undefined, allText: string): string {
   const currentYear = new Date().getFullYear();
-  const text = expSection ? expSection.lines.join(" ") : allText.slice(0, 3000);
+  const text = expSection ? expSection.lines.join(" ") : allText.slice(0, 4000);
 
   let earliest = currentYear;
   let latest = 0;
 
-  // Try date range pattern first (month year – month year)
-  let m: RegExpExecArray | null;
+  // Named month + year range
   const dr = new RegExp(DATE_RANGE_RX.source, "gi");
+  let m: RegExpExecArray | null;
   while ((m = dr.exec(text)) !== null) {
     const start = parseInt(m[1]);
-    const end = PRESENT_RX.test(m[0]) ? currentYear : parseInt(m[2] ?? String(currentYear));
+    const isPresent = PRESENT_RX.test(m[0]);
+    const end = isPresent ? currentYear : parseInt(m[2] ?? String(currentYear));
     if (start >= 1990 && start <= currentYear) earliest = Math.min(earliest, start);
     if (end >= 1990 && end <= currentYear) latest = Math.max(latest, end);
   }
 
-  // Fall back to bare year mentions
+  // Bare year fallback
   if (latest === 0) {
     const years: number[] = [];
+    const yr = new RegExp(BARE_YEAR_RX.source, "g");
     let ym: RegExpExecArray | null;
-    const yr = new RegExp(YEAR_RX.source, "g");
     while ((ym = yr.exec(text)) !== null) {
       const y = parseInt(ym[0]);
       if (y >= 1990 && y <= currentYear) years.push(y);
@@ -366,154 +449,151 @@ function extractYearsOfExperience(expSection: ResumeSection | undefined, allText
     if (years.length >= 2) {
       earliest = Math.min(...years);
       latest = Math.max(...years);
-      // If text says "present" anywhere, set latest to current
       if (PRESENT_RX.test(text)) latest = currentYear;
     }
   }
 
-  if (latest === 0) return ""; // Could not determine
+  if (latest === 0) return "";
 
-  const totalYears = Math.max(0, latest - earliest);
-  if (totalYears <= 1)  return "0-1";
-  if (totalYears <= 3)  return "1-3";
-  if (totalYears <= 5)  return "3-5";
+  const total = Math.max(0, latest - earliest);
+  if (total <= 1)  return "0-1";
+  if (total <= 3)  return "1-3";
+  if (total <= 5)  return "3-5";
   return "5+";
 }
 
 // ─── Skills extraction ────────────────────────────────────────────────────────
 
 function extractSkills(
-  skillsSection: ResumeSection | undefined,
+  skillSections: ResumeSection[],
   allText: string,
 ): { coreSkills: string[]; secondarySkills: string[] } {
   const coreFound = new Set<string>();
   const secondaryFound = new Set<string>();
 
-  const sources = [
-    skillsSection ? skillsSection.lines.join(" ") : "",
-    allText.slice(0, 4000),
-  ];
+  const fullLower = allText.toLowerCase();
 
-  for (const src of sources) {
-    if (!src) continue;
-    const lower = src.toLowerCase();
-
-    // Match against known aliases
-    for (const [alias, canonical] of Object.entries(CORE_SKILL_ALIASES)) {
-      if (lower.includes(alias) && CORE_SKILL_LIST.includes(canonical)) {
-        coreFound.add(canonical);
-      }
+  // ── Core skills: match aliases across full text ──────────────────────────
+  for (const [alias, canonical] of Object.entries(CORE_SKILL_ALIASES)) {
+    if (CORE_SKILL_LIST.includes(canonical) && fullLower.includes(alias)) {
+      coreFound.add(canonical);
     }
   }
 
-  // Secondary: look in skills section for items not already captured
-  if (skillsSection) {
-    const rawText = skillsSection.lines.join("\n");
-    // Split by bullets, commas, pipes, semicolons, newlines
-    const tokens = rawText
-      .split(/[\n•·,|;\/\t]+/)
-      .map((t) => t.replace(/^[\s\-*●]+/, "").trim())
-      .filter((t) => t.length > 2 && t.length < 50);
-
-    for (const token of tokens) {
-      // Skip if it matches a core skill alias (already handled)
-      const lower = token.toLowerCase();
-      const isCore = Object.keys(CORE_SKILL_ALIASES).some((a) => lower.includes(a));
-      if (!isCore && !secondaryFound.has(token)) {
-        secondaryFound.add(toTitleCase(token));
-      }
+  // ── Secondary skills: match known skill keywords in full text ────────────
+  for (const skill of KNOWN_SKILLS) {
+    const needle = skill.toLowerCase();
+    // Look for the skill as a whole word/phrase (not as a substring of another word)
+    const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const rx = new RegExp(`(?<![\\w.])${escaped}(?![\\w.])`, "i");
+    if (rx.test(allText)) {
+      secondaryFound.add(skill);
     }
   }
 
-  return {
-    coreSkills: [...coreFound],
-    secondarySkills: [...secondaryFound].slice(0, 10), // cap secondary
-  };
+  // ── Also parse skill section lines for unlisted items ───────────────────
+  const skillLines = skillSections.flatMap((s) => s.lines).join("\n");
+  const tokens = skillLines
+    .split(/[\n•·,|;\/\t\u2022\u2023\u25E6\u2043\u204C\u204D]+/)
+    .map((t) => t.replace(/^\s*[\-*●▪▸►→]+\s*/, "").trim())
+    .filter((t) => t.length > 1 && t.length < 60);
+
+  for (const token of tokens) {
+    const lower = token.toLowerCase();
+    // Skip if already in core
+    const isCore = Object.keys(CORE_SKILL_ALIASES).some((a) => lower.includes(a) && CORE_SKILL_LIST.includes(CORE_SKILL_ALIASES[a]));
+    if (isCore) continue;
+    // Skip if already in known skills (already captured)
+    const isKnown = KNOWN_SKILLS.some((k) => k.toLowerCase() === lower);
+    if (isKnown) continue;
+    // Skip noise
+    if (/^\d+$/.test(token)) continue;
+    if (NOISE_LINE_RX.test(token)) continue;
+    if (token.split(/\s+/).length > 5) continue;
+    secondaryFound.add(toTitleCase(token));
+  }
+
+  // Remove any secondary skills that duplicate core skills
+  const coreArr = [...coreFound];
+  const secondaryArr = [...secondaryFound]
+    .filter((s) => !coreArr.includes(s))
+    .slice(0, 20);
+
+  return { coreSkills: coreArr, secondarySkills: secondaryArr };
 }
 
 // ─── Summary extraction ───────────────────────────────────────────────────────
 
 function extractSummary(summarySection: ResumeSection | undefined): string {
   if (!summarySection || summarySection.lines.length === 0) return "";
-  const text = summarySection.lines
-    .slice(0, 8)
-    .join(" ")
-    .trim();
-  // Take up to ~280 chars (roughly 2–3 sentences)
+  const text = summarySection.lines.slice(0, 6).join(" ").trim();
   const sentences = text.match(/[^.!?]+[.!?]+/g) ?? [text];
   return sentences.slice(0, 3).join(" ").trim().slice(0, 350);
 }
 
-// ─── Main parse function ──────────────────────────────────────────────────────
+// ─── Main export ──────────────────────────────────────────────────────────────
 
 export async function parseResumeFile(file: File): Promise<ExtractedCandidateProfile> {
   let rawText: string;
   try {
     rawText = await extractTextFromFile(file);
   } catch (err) {
-    return {
-      ...EMPTY_EXTRACTION,
-      parseError: "Could not read the file. Please try a PDF or DOCX format.",
-    };
+    return { ...EMPTY_EXTRACTION, parseError: "Could not read the file. Please try a PDF or DOCX format." };
   }
 
   if (!rawText.trim() || rawText.trim().length < 30) {
-    return {
-      ...EMPTY_EXTRACTION,
-      parseError: "The file appears to be empty or unreadable.",
-    };
+    return { ...EMPTY_EXTRACTION, parseError: "The file appears to be empty or unreadable." };
   }
 
-  const lines = rawText.split("\n").map((l) => l.trim()).filter(Boolean);
+  const lines    = rawText.split("\n").map((l) => l.trim()).filter(Boolean);
   const sections = splitIntoSections(lines);
-  const header   = sections.find((s) => s.type === "header");
   const expSec   = sections.find((s) => s.type === "experience");
-  const skillSec = sections.find((s) => s.type === "skills");
+  const skillSec = sections.filter((s) => s.type === "skills");
   const summSec  = sections.find((s) => s.type === "summary");
 
   const extracted: Partial<ExtractedCandidateProfile> = {};
   const extractedFields: string[] = [];
 
-  // ── Full name ──────────────────────────────────────────────────────────────
-  const name = extractName(header?.lines ?? lines);
+  // Name — scan first 15 raw lines (before any section-grouping)
+  const name = extractName(lines);
   if (name) { extracted.fullName = name; extractedFields.push("fullName"); }
 
-  // ── Target position ────────────────────────────────────────────────────────
-  const title = extractTitle(sections);
+  // Title
+  const title = extractTitle(sections, lines);
   if (title) { extracted.targetPosition = title; extractedFields.push("targetPosition"); }
 
-  // ── Years of experience ────────────────────────────────────────────────────
+  // Years of experience
   const yearsId = extractYearsOfExperience(expSec, rawText);
   if (yearsId) { extracted.yearsOfExperience = yearsId; extractedFields.push("yearsOfExperience"); }
 
-  // ── Seniority ──────────────────────────────────────────────────────────────
+  // Seniority
   const seniority = inferSeniority(title, yearsId);
   extracted.seniority = seniority;
   if (title || yearsId) extractedFields.push("seniority");
 
-  // ── Category ───────────────────────────────────────────────────────────────
+  // Category
   const category = inferCategory(title, rawText);
   if (category) { extracted.jobCategory = category; extractedFields.push("jobCategory"); }
 
-  // ── Skills ─────────────────────────────────────────────────────────────────
+  // Skills — pass all skill sections and full text
   const { coreSkills, secondarySkills } = extractSkills(skillSec, rawText);
   extracted.coreSkills = coreSkills;
   extracted.secondarySkills = secondarySkills;
-  if (coreSkills.length > 0) extractedFields.push("coreSkills");
+  if (coreSkills.length > 0)    extractedFields.push("coreSkills");
   if (secondarySkills.length > 0) extractedFields.push("secondarySkills");
 
-  // ── Summary ────────────────────────────────────────────────────────────────
+  // Summary
   const summary = extractSummary(summSec);
   if (summary) { extracted.summary = summary; extractedFields.push("summary"); }
 
-  // ── Confidence rating ──────────────────────────────────────────────────────
-  const keyFieldCount = [
+  // Confidence
+  const keyCount = [
     extracted.fullName, extracted.targetPosition, extracted.jobCategory,
-    extracted.yearsOfExperience, extracted.coreSkills?.length,
+    extracted.yearsOfExperience, extracted.coreSkills?.length ?? 0,
+    extracted.secondarySkills?.length ?? 0,
   ].filter(Boolean).length;
-
   const confidence: "high" | "partial" | "low" =
-    keyFieldCount >= 4 ? "high" : keyFieldCount >= 2 ? "partial" : "low";
+    keyCount >= 4 ? "high" : keyCount >= 2 ? "partial" : "low";
 
   if (import.meta.env.DEV) {
     console.group("[ResumeParser] Extraction complete");

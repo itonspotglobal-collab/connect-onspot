@@ -1,0 +1,156 @@
+Fix the Find Best Matches resume parsing and profile form behavior in our React + TypeScript site.
+
+We tested with a real uploaded resume and found these bugs:
+
+1. The parser did not extract the candidate’s name even though it is clearly present near the top of the resume.
+2. In the profile form, typing in the Name field and Skills field is buggy because the page jumps to the top or loses focus after every character / entry.
+3. Skills from the resume are not being automatically collected and added into the Skills field.
+4. The Step 2 profile form should be prefilled from the uploaded resume so the user only reviews and edits it.
+
+Please fix all of these.
+
+Expected behavior:
+- After uploading the resume, extract the candidate’s information automatically
+- Open Step 2 with the fields already prefilled
+- Keep the inputs stable so the user can type continuously without the page jumping or losing focus
+- Auto-populate skills from the resume into the skills/tags input
+- Let the user edit the extracted values normally
+
+Specific extraction issue to fix:
+The uploaded resume clearly contains the candidate name near the top and it should be extracted correctly.
+
+Example from the tested resume:
+Name:
+- Frenzy Val Eloise L. Legaspi
+
+The parser should detect likely full name candidates near the top header/contact section before falling back to weaker heuristics.
+
+Resume parsing improvements required:
+
+1. Name extraction
+Implement stronger name extraction logic:
+- prioritize lines near the top of the resume
+- ignore section headers like:
+  - REFERENCE
+  - About Me
+  - Education
+  - Objectives
+  - Work Experience
+- detect a likely person name pattern with 2 to 5 words, title case, possible middle initial
+- prefer the line near contact info / summary block
+- do not incorrectly use labels or headings as the name
+
+2. Skills extraction
+Extract skills from multiple resume sections, including:
+- Programming Language
+- Framework
+- Tools
+- explicit skills lists
+- repeated technical keywords in work experience/projects
+
+For the tested resume, examples that should be captured include:
+- C
+- C#
+- JavaScript
+- HTML
+- CSS
+- .NET
+- React
+- Git
+- Postman
+- Visual Studio
+- SQL
+- Automation Testing
+- Manual Testing
+- Transcriber
+- Quality Assurance
+- Documentation
+
+Deduplicate skills before placing them in the form.
+Normalize formatting where appropriate, such as:
+- Javascipt -> JavaScript if you implement typo cleanup carefully
+But do not over-correct unsupported data.
+
+3. Profile autofill
+After upload, Step 2 should automatically prefill fields such as:
+- Full Name
+- Target Job Position / most recent role if inferable
+- Job Category / niche if inferable
+- Years of Experience if inferable
+- Skills
+- Summary if inferable
+
+Important:
+The form in Step 2 must be initialized from extracted resume data only once in a controlled way.
+Do not keep reinitializing the form on every render.
+
+Critical bug to fix:
+Typing in the Name or Skills field currently causes the page to jump to the top / lose focus / only allow typing one character or one skill at a time.
+
+This likely means one or more of these problems is happening:
+- the form state is being reset on every render
+- a parent component is being remounted
+- key props are changing incorrectly
+- the form values are being recomputed from extracted data every keystroke
+- the skills chip input is blurring/re-rendering after each update
+- there may be an unwanted scrollIntoView / auto focus / step reset effect
+
+Please fix the form architecture so the user can type continuously.
+
+Implementation requirements for the form bug:
+- initialize form state once from extracted resume data
+- do not overwrite user edits after initialization
+- use stable component keys
+- avoid remounting the step container on every field update
+- ensure controlled inputs keep focus while typing
+- ensure skills tag input supports continuous typing and adding/removing tags smoothly
+- prevent any logic that scrolls the page to top on each input change
+
+Recommended approach:
+- keep extracted profile data in one state
+- hydrate editable form state once when extraction completes
+- track whether hydration already happened with a guard like hasHydratedFromResume
+- after hydration, let the editable form state be the only source for input values
+
+Example:
+- upload resume
+- parse resume
+- set extractedProfile
+- if form has not yet been hydrated, copy extractedProfile into form state
+- user edits form freely
+- do not re-copy extractedProfile into form state on every render
+
+Skills field behavior:
+- auto-add extracted skills as chips/tags
+- allow user to type continuously in the input
+- allow comma / enter to add custom skills
+- allow removing skills without rerender bugs
+- keep focus in the input after adding a skill if possible
+- do not scroll to top after each skill entry
+
+If parsing is incomplete:
+- leave missing fields blank
+- allow manual editing
+- optionally show:
+  “We pre-filled your profile based on your resume. Please review and update anything needed.”
+
+Files likely involved:
+- FindBestMatches.tsx
+- resume parsing helper/utils
+- profile form component
+- skills tag input component
+- shared candidate profile types
+
+Final expected result:
+1. Uploading the resume correctly extracts the name
+2. Uploading the resume automatically adds detected skills into the skills field
+3. The profile form is prefilled after upload
+4. The Name field can be typed in continuously
+5. The Skills field can be typed in continuously
+6. No page jump to the top while typing
+7. User edits are preserved after autofill
+
+Important:
+Do not reset the form after every keystroke.
+Do not remount the step component while typing.
+Use the uploaded resume data only as initial defaults for the editable profile form.

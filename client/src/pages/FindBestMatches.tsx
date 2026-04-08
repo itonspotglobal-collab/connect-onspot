@@ -1714,11 +1714,17 @@ export default function FindBestMatches() {
   }
 
   // ── Layout ────────────────────────────────────────────────────────────────
-  const stepContent = [
-    <UploadResumeStep key="upload" />,
-    <FinalizeInformationStep key="finalize" />,
-    <CultureEvaluationStep key="culture" />,
-  ];
+  // IMPORTANT: call step functions directly (not as JSX components) so React
+  // does NOT create a new component boundary on each render.  Using
+  // <UploadResumeStep /> would cause React to see a new component type on
+  // every parent re-render (since the function is recreated inside this
+  // closure), unmounting and remounting all DOM nodes — including inputs —
+  // which causes focus loss on every keystroke.
+  function renderStep() {
+    if (flowStep === 0) return UploadResumeStep();
+    if (flowStep === 1) return FinalizeInformationStep();
+    return CultureEvaluationStep();
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -1749,7 +1755,7 @@ export default function FindBestMatches() {
               transition={{ duration: 0.22 }}
             >
               <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
-                {stepContent[flowStep]}
+                {renderStep()}
               </div>
 
               {/* Nav buttons */}
