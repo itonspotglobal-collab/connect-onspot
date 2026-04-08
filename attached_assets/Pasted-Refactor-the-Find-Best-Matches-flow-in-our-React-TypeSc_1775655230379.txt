@@ -1,0 +1,253 @@
+Refactor the Find Best Matches flow in our React + TypeScript site to follow this exact candidate journey:
+
+1. Resume/File Upload
+2. Finalize Information
+3. Culture Evaluation
+4. Relevant Job Openings
+
+Main goal:
+We want the feature to feel accurate and intentional.
+After the user uploads a resume/file, the system should not immediately show broad or unrelated matches.
+Instead, it should first let the candidate finalize their extracted information, then complete a culture evaluation, and only after that should it show job openings that are truly related to their background.
+
+Critical requirement:
+The final job results must only show jobs that are:
+- actually posted in FindWorkAllJobs.tsx
+- related to the user’s finalized job position / niche / domain
+
+Example:
+If the employee’s niche is “Team Manager”, the results should only show managerial or closely related leadership roles.
+It must NOT show unrelated roles like:
+- IT Administrator
+- Technical Support
+- Customer Service
+- other unrelated fields
+unless they are genuinely aligned with the candidate’s background and finalized information.
+
+New required flow:
+
+STEP 1 — Resume/File Upload
+- Keep the upload resume/file UI
+- Allow upload of PDF/DOC/DOCX if already supported
+- If resume parsing exists, use it to prefill candidate information
+- If resume parsing is not fully implemented, simulate clean placeholder extraction and allow manual editing
+- Show a clear CTA to continue
+
+STEP 2 — Finalize Information
+This should be the next screen after upload.
+
+Create a form where the candidate reviews and finalizes their profile information, including:
+- Full Name
+- Target Job Position / Current Position
+- Job Category / Niche
+- Years of Experience
+- Seniority Level
+- Core Skills
+- Secondary Skills
+- Preferred Work Setup
+- Preferred Shift
+- Preferred Job Type
+- Preferred Work Environment
+- Short Professional Summary (optional)
+
+Important:
+This step should be treated as the main source of truth for matching.
+The system should use this finalized information more heavily than loose quiz assumptions.
+
+If resume data was extracted, prefill the form.
+The candidate must be able to edit everything before continuing.
+
+STEP 3 — Culture Evaluation
+After finalizing information, the next step should be a culture evaluation aligned to OnSpot’s core values.
+
+This step is to evaluate whether the employee fits the culture of OnSpot.
+
+Build a thoughtful assessment aligned to our values such as:
+- People First
+- Beat Yesterday
+- Fast-Fast-Fast
+- Integrity Matters
+- Extreme Ownership
+- We Are Intrapreneurs
+
+The questions should evaluate:
+- accountability
+- trust/integrity
+- urgency with precision
+- ownership mindset
+- growth mindset
+- initiative and problem-solving
+- collaboration and people-centered behavior
+
+Important:
+Culture evaluation should be a supporting filter/signal.
+It should not overpower role relevance.
+A high culture score should not cause unrelated jobs to appear.
+
+STEP 4 — Job Openings
+After culture evaluation, show job openings.
+
+Critical logic:
+Only show real posted jobs from the same source as FindWorkAllJobs.tsx.
+Do not invent jobs.
+Do not show generic sample roles.
+Do not show broad “possible matches” unless they are truly relevant.
+
+Most important matching rule:
+The finalized candidate information must drive the job filtering first.
+
+Matching should prioritize:
+1. Job/Position alignment
+2. Job category / niche alignment
+3. Experience / seniority alignment
+4. Core skills alignment
+5. Work setup / shift / job type alignment
+6. Culture fit as a secondary signal
+
+This means:
+If the candidate finalizes their position/niche as:
+- Team Manager
+- Operations Manager
+- Accounting Manager
+- Executive Assistant
+- Bookkeeper
+- Social Media Manager
+then the job results should stay within that field or a very closely related field.
+
+Do NOT cross into unrelated domains.
+
+Examples:
+- Team Manager → managerial / team lead / operations lead / department lead roles only
+- Accounting candidate → accounting / finance / bookkeeping related roles only
+- Executive Assistant candidate → executive assistant / admin / operations support related roles only
+- IT candidate → IT / technical support / systems roles only
+
+Strict filtering behavior:
+Before scoring jobs, first filter out unrelated job families.
+For example:
+- managerial profile should not even consider IT Administrator unless the candidate’s skills/domain are technical
+- finance profile should not consider marketing roles
+- customer support profile should not consider accounting manager roles
+
+Implement a domain gate before detailed scoring.
+
+Technical requirements:
+
+1. Shared posted jobs source
+- Reuse the same source of truth as FindWorkAllJobs.tsx
+- If needed, extract shared logic into helpers like:
+  - usePostedJobs()
+  - normalizePostedJobs()
+  - getJobFamily()
+  - scoreJobMatch()
+
+2. Job normalization
+Normalize each posted job into attributes like:
+- title
+- department
+- domain/job family
+- seniority
+- core skills
+- secondary skills
+- work setup
+- shift
+- employment type
+- keywords/tags
+
+3. Candidate profile object
+Create a finalized candidate profile object from Step 2:
+- name
+- currentPosition
+- targetPosition
+- niche/domain
+- experienceYears
+- seniority
+- coreSkills
+- secondarySkills
+- preferredSetup
+- preferredShift
+- preferredJobType
+- environment
+- summary
+
+4. Matching engine
+Use a strict weighted scoring engine with a domain gate.
+
+Required matching order:
+A. Domain/job family gate
+- Remove unrelated jobs first
+
+B. Position/seniority relevance
+- strong weight
+
+C. Core skill overlap
+- strongest weight
+
+D. Secondary skill overlap
+- medium weight
+
+E. Work preference alignment
+- medium weight
+
+F. Culture alignment
+- supportive weight only
+
+Also add mismatch penalties.
+
+5. Confidence threshold
+Do not show low-confidence matches.
+If no jobs pass the threshold, show a polished notice state.
+
+Example empty state:
+“No strong role matches are available right now.”
+“Based on your finalized profile and culture assessment, we do not currently have an active posted role that closely matches your background. Please browse all current openings or check back soon.”
+
+Buttons:
+- Browse All Roles
+- Retake Assessment
+
+Design requirements:
+The full flow must match the visual style of:
+- Insights.tsx
+- FindWork.tsx
+- WhyOnSpotAbout.tsx
+
+Also align visually with our culture/core values sections:
+- same colors
+- same fonts
+- same rounded cards
+- same spacing
+- same button styles
+- same clean, premium layout
+
+Do not create a new design system.
+
+Suggested UI structure:
+- Step 1: UploadResumeStep
+- Step 2: FinalizeInformationStep
+- Step 3: CultureEvaluationStep
+- Step 4: MatchingResultsStep
+
+Important UX details:
+- Show progress bar
+- Allow back/next navigation
+- Validate required fields before continuing
+- Prefill extracted resume information where possible
+- Let the user edit all extracted fields
+- Show only relevant roles at the end
+- If only 1 or 2 roles are highly relevant, show only those
+- Better to show no roles than unrelated roles
+
+Files likely involved:
+- FindWork.tsx
+- FindBestMatches.tsx
+- FindWorkAllJobs.tsx if needed for shared logic
+- shared helpers/types/hooks/components
+
+Final result expectations:
+- After upload, next screen is Finalize Information
+- After Finalize Information, next is Culture Evaluation
+- After Culture Evaluation, next is Relevant Job Openings
+- Final results must only include real posted jobs related to the candidate’s finalized position/niche
+- No unrelated cross-domain jobs should appear
+- Provide production-ready code and explain the filtering logic
