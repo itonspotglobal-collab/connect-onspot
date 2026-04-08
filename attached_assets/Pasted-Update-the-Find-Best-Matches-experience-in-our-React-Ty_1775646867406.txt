@@ -1,0 +1,293 @@
+Update the Find Best Matches experience in our React + TypeScript site so it follows our desired candidate journey and reflects our company core values more closely.
+
+Context:
+We want to evolve the current Find Best Matches / discovery quiz feature into a smarter candidate journey inspired by the attached flow:
+1. Entry → Resume Upload / import profile
+2. JSP Matching
+3. Role Mapping (JSP → Jobs)
+4. Job Exploration → Apply
+5. Core Values Assessment
+6. Confirmation + Interview Scheduling
+7. Interview Stage
+8. Hiring Pipeline
+
+Important:
+The current feature should no longer feel like a generic career quiz.
+As much as possible, it should feel aligned to our company’s core values and culture.
+
+Design requirement:
+The page and its components must visually match the style already used in:
+- Insights.tsx
+- FindWork.tsx
+- WhyOnSpotAbout.tsx
+
+Also use the same visual tone as our core values/culture section:
+- clean, premium, rounded cards
+- same fonts
+- same colors
+- same spacing
+- same button styles
+- same professional and modern tone
+
+Do not introduce a new design system.
+
+Main product goal:
+Turn “Find My Best Matches” into a more structured candidate matching flow that:
+- starts from candidate background / resume or profile inputs
+- evaluates fit against internal role profile categories (JSP-style logic)
+- maps those categories to real posted jobs only
+- includes a values-fit / culture-fit assessment aligned to our core values
+- ends with clear next steps
+
+Core behavior changes:
+
+1. Entry step
+When the user clicks “Find My Best Matches” from FindWork.tsx, route them to a new or updated FindBestMatches.tsx page.
+
+The first section should feel like a guided matching journey, not just a quiz.
+
+Include an entry step that lets the candidate:
+- upload a resume OR
+- continue manually with profile/quiz inputs
+
+If resume parsing is not yet implemented, create the UI and local placeholder logic cleanly so it is ready for future backend integration.
+For now:
+- accept file upload UI
+- optionally simulate extracting profile tags from the resume
+- allow manual fallback
+
+2. Candidate profile step
+Build a profile capture step that gathers:
+- strongest skills
+- experience level
+- preferred shift
+- voice/non-voice preference
+- work style
+- preferred environment
+- priorities in a role
+- tools/platform familiarity if relevant
+
+This should help construct a candidate profile object.
+
+3. JSP-style matching layer
+Introduce a structured intermediate matching layer before showing jobs.
+
+Create a concept similar to JSP/profile categories, for example:
+- Sales Hunter
+- Customer Support
+- Operations Support
+- Executive Assistance
+- Social Media Support
+- Finance/Admin Support
+- Research/Data Support
+- Technical Support
+
+These are not necessarily jobs shown to the user as final results.
+They are profile archetypes or matching categories used internally by the flow.
+
+Each profile category should have:
+- preferred skills
+- experience indicators
+- keywords/tags
+- work style fit
+- environment fit
+- values/behavior indicators
+
+Then:
+- compare the candidate profile against all profile categories
+- score them
+- rank them
+
+4. Role mapping from profile category to real posted jobs
+Very important:
+Only show jobs that are actually posted in FindWorkAllJobs.tsx.
+
+Do NOT show fictional roles, placeholder jobs, or role suggestions that are not currently posted.
+
+Implementation requirement:
+- use the same source of truth as FindWorkAllJobs.tsx
+- reuse the same job list, hook, API, store, or shared helper
+- if needed, refactor into a shared helper like:
+  - usePostedJobs()
+  - getPostedJobs()
+  - normalizePostedJobs()
+
+Then:
+- map top-matching profile categories to actual posted jobs
+- filter strictly to active posted roles only
+- show only real posted job cards in the results
+
+If a category matches but there are no active jobs tied to it, do not show fake job cards.
+
+5. Core values assessment
+Add a dedicated step that reflects our company values and culture.
+
+We want this part to feel aligned with the core values section of the site.
+Use language and answer options that reflect values such as:
+- People First
+- Beat Yesterday
+- Fast-Fast-Fast
+- Integrity Matters
+- Extreme Ownership
+- We Are Intrapreneurs
+
+Build a short assessment that evaluates behavioral and cultural fit in a polished, respectful way.
+
+Examples:
+- how they handle accountability
+- how they approach improvement
+- how they work with urgency and precision
+- how they treat trust and integrity
+- how they solve problems independently
+- how they think proactively and act like owners
+
+Do not make this feel like a personality gimmick.
+It should feel thoughtful, professional, and employer-branded.
+
+Output from this step can include:
+- values alignment summary
+- culture fit indicators
+- behavioral strengths
+
+6. Results flow
+After evaluation, show a results screen with sections like:
+- Your strongest profile match
+- Your values alignment summary
+- Posted roles that match you right now
+
+Results should include:
+A. Top profile/category match
+- profile/category name
+- match score
+- short explanation
+
+B. Core values / culture alignment summary
+- short, polished summary of strengths
+- aligned traits based on answers
+
+C. Real posted jobs only
+- job title
+- match percentage
+- short reason it matches
+- CTA to view/apply
+
+7. Empty states
+If no real posted jobs match the candidate profile:
+show a notice card like:
+“No matching roles are available right now.”
+Supporting text:
+“Based on your current profile and assessment, we do not have an active posted role that matches you yet. Please browse all open positions or check back soon.”
+
+If there are no posted jobs at all:
+show:
+“There are no open roles available at the moment.”
+Supporting text:
+“We’re not showing role matches yet because there are currently no active job postings. Please check back later.”
+
+Both empty states should use the same polished rounded card style as the rest of the site and include CTA buttons:
+- Browse All Roles
+- Retake Assessment
+
+8. Step flow structure
+Please structure the candidate journey approximately like this:
+
+Step 1:
+Welcome / intro / optional resume upload
+
+Step 2:
+Skills and experience profile
+
+Step 3:
+Work preferences and environment fit
+
+Step 4:
+Core values assessment
+
+Step 5:
+Matching in progress state
+
+Step 6:
+Results:
+- top profile/category match
+- values alignment summary
+- matching posted jobs only
+
+9. Copywriting tone
+Use a tone that is:
+- professional
+- clear
+- warm but not overly casual
+- employer-brand aligned
+- trustworthy
+- high quality
+
+The wording should feel like it belongs to our platform and reflect our culture, not like a generic quiz builder.
+
+10. UI requirements
+- responsive
+- accessible
+- same visual style as existing pages
+- progress indicator
+- next/back controls
+- validation
+- clean transitions
+- modular components
+
+11. Suggested component structure
+Create modular reusable components such as:
+- MatchJourneyHero
+- ResumeUploadStep
+- CandidateProfileStep
+- WorkPreferencesStep
+- CoreValuesStep
+- ProgressBar
+- ProfileMatchCard
+- ValuesSummaryCard
+- PostedJobMatchCard
+- EmptyMatchState
+
+12. Data / logic requirements
+Implement a clean TypeScript structure for:
+- candidate profile
+- profile category definitions
+- values assessment questions
+- posted job normalization
+- category-to-job mapping
+- scoring logic
+
+Matching logic should work like this:
+- build candidate profile
+- score against internal profile categories
+- score values alignment
+- map top categories to real posted jobs
+- display only active posted jobs from FindWorkAllJobs.tsx
+
+13. Important restrictions
+- Do not invent job postings
+- Do not show generic role templates as final results
+- Final job results must be backed by actual posted jobs
+- If no actual job exists, show notice state instead
+
+14. Files likely involved
+Please update or create as needed:
+- FindWork.tsx
+- FindBestMatches.tsx
+- FindWorkAllJobs.tsx if needed for shared logic
+- shared hooks/helpers/types/components for matching
+
+15. Final output expected
+Please provide:
+- production-ready code
+- shared matching logic
+- updated flow structure
+- values assessment integration
+- empty-state handling
+- brief explanation of how the new matching journey works
+
+Reference behavior to follow conceptually:
+- resume/profile entry
+- profile-category matching
+- category-to-job mapping
+- values assessment
+- real job results only
+- clear next step toward application/interview readiness

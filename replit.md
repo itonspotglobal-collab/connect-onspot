@@ -85,3 +85,11 @@ Preferred communication style: Simple, everyday language.
 #### Chatbot Integration
 - **VanessaChat (OpenAI Assistant API)**: AI virtual assistant with custom knowledge base, self-learning, and conversational training.
 - **Lindy.ai**: Embedded AI chatbot for customer support (pending whitelisting).
+
+#### Candidate Matching Journey (`/find-best-matches`)
+- **4-step structured flow**: Welcome + Resume Upload → Skills & Experience → Work Preferences → Core Values Assessment
+- **JSP-style profile archetypes**: 10 internal role profiles (Operations Support, Executive Assistance, Customer Support, Sales Hunter Support, Social Media Support, Finance/Admin Support, Research/Data Support, Technical Support, Project Coordination) used for candidate matching — not shown as final results
+- **Core Values Assessment**: 6 questions aligned to company values (People First, Beat Yesterday, Fast-Fast-Fast, Integrity Matters, Extreme Ownership, We Are Intrapreneurs); outputs values alignment score (0–100%) + trait badges + personalized summary
+- **Real jobs only**: Results use `usePostedJobs()` hook (same source as FindWorkAllJobs); maps top profile archetypes to actual open jobs; empty-state cards shown when no matches exist
+- **Results screen**: Top profile match card → Values alignment card → Matched posted job cards → Bottom CTA
+- **Matching animation**: 2.8-second animated loading screen between assessment completion and results reveal
