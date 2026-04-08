@@ -255,26 +255,34 @@ async function parseSpreadsheet(file: File): Promise<ParsedJobRecord[]> {
 // Section definitions ordered most-specific first.
 // `inline: true`  → label + value on the same line  (e.g. "Role: Senior VA")
 // `inline: false` → label is a standalone header; body follows on next lines
+// Keys prefixed with "_" are internal-only — captured but never mapped to public fields.
 const PDF_SECTIONS: Array<{
   key: string;
   regex: RegExp;
   inline: boolean;
 }> = [
-  // Inline label fields
-  { key: "title",        regex: /^(?:role|job\s+title|position|title)\s*:\s*(.+)/i,           inline: true  },
-  { key: "reportingTo", regex: /^(?:reporting\s+to|reports\s+to|reporting\s+line)\s*:\s*(.+)/i, inline: true },
-  { key: "division",    regex: /^(?:division|department|team)\s*:\s*(.+)/i,                    inline: true  },
-  { key: "jobGrade",    regex: /^(?:job\s+grade|grade)\s*:\s*(.+)/i,                           inline: true  },
-  { key: "jobLevel",    regex: /^(?:job\s+level|level)\s*:\s*(.+)/i,                           inline: true  },
-  // Block-header fields (body on following lines)
-  { key: "companyOverview",  regex: /^company\s+overview\s*:?\s*$/i,                                         inline: false },
-  { key: "description",      regex: /^(?:about\s+the\s+(?:role|position)|role\s+summary)\s*:?\s*$/i,         inline: false },
-  { key: "roleMission",      regex: /^(?:position\s+overview|role\s+overview|job\s+success\s+profile)\s*:?\s*$/i, inline: false },
-  { key: "responsibilities", regex: /^(?:key\s+)?responsibilities\s*:?\s*$/i,                                inline: false },
-  { key: "requirements",     regex: /^(?:requirements?|job\s+qualifications?|qualifications?)\s*:?\s*$/i,    inline: false },
-  { key: "culturalFit",      regex: /^(?:cultural|culture)\s+fit\s*:?\s*$/i,                                 inline: false },
-  { key: "benefits",         regex: /^(?:why\s+join\s+us|benefits|what\s+we\s+offer)\s*:?\s*$/i,             inline: false },
-  { key: "successFactors",   regex: /^(?:additional\s+)?success\s+factors\s*:?\s*$/i,                        inline: false },
+  // ── Inline label fields ──────────────────────────────────────────────────
+  { key: "title",       regex: /^(?:role|job\s+title|position|title)\s*:\s*(.+)/i,                        inline: true },
+  { key: "reportingTo", regex: /^(?:reporting\s+to|reports\s+to|reporting\s+line)\s*:\s*(.+)/i,           inline: true },
+  { key: "division",    regex: /^(?:division|department|team)\s*:\s*(.+)/i,                                inline: true },
+  { key: "jobGrade",    regex: /^(?:job\s+grade|grade)\s*:\s*(.+)/i,                                      inline: true },
+  { key: "jobLevel",    regex: /^(?:job\s+level|level)\s*:\s*(.+)/i,                                      inline: true },
+
+  // ── Internal-only block sections (captured, not mapped to public fields) ─
+  // Must come before public sections so they capture first and stop bleed
+  { key: "_disc",           regex: /^(?:ideal\s+)?disc\s+profile(?:\s+for\s+success)?\s*:?\s*$/i,         inline: false },
+  { key: "_redFlags",       regex: /^(?:what\s+to\s+avoid|red\s+flags?)\s*:?\s*$/i,                       inline: false },
+  { key: "_successFactors", regex: /^(?:additional\s+)?success\s+factors\s*:?\s*$/i,                      inline: false },
+  { key: "_jspHeader",      regex: /^[A-Z]\.\s+(?:job\s+success\s+profile|role\s+details?)\s*:?\s*$/i,    inline: false },
+
+  // ── Public block sections ────────────────────────────────────────────────
+  { key: "companyOverview",  regex: /^company\s+overview\s*:?\s*$/i,                                       inline: false },
+  { key: "description",      regex: /^(?:about\s+the\s+(?:role|position)|role\s+summary)\s*:?\s*$/i,       inline: false },
+  { key: "roleMission",      regex: /^(?:position\s+overview|role\s+overview)\s*:?\s*$/i,                  inline: false },
+  { key: "responsibilities", regex: /^(?:key\s+)?responsibilities\s*:?\s*$/i,                               inline: false },
+  { key: "requirements",     regex: /^(?:requirements?|job\s+qualifications?|qualifications?)\s*:?\s*$/i,  inline: false },
+  { key: "culturalFit",      regex: /^(?:cultural|culture)\s+fit\s*:?\s*$/i,                               inline: false },
+  { key: "_benefits",        regex: /^(?:why\s+join\s+us|benefits|what\s+we\s+offer)\s*:?\s*$/i,           inline: false },
 ];
 
 // ── Text extraction — uses Y-coordinate grouping to preserve real line breaks ──
@@ -378,12 +386,20 @@ function parseSections(rawText: string): Record<string, string> {
 // ── Document noise patterns ───────────────────────────────────────────────────
 
 const PDF_NOISE_PATTERNS: RegExp[] = [
-  /onspot\s+global\s+corp\.?/i,
+  // Company header / confidential stamp (all variants)
+  /onspot\s+global(\s+corp\.?)?/i,
   /confidential\s+document/i,
   /do\s+not\s+share/i,
-  /page\s+\d+\s+of\s+\d+/i,
-  /^\d+\s*$/,                         // standalone page numbers
-  /job\s+success\s+profile\s*$/i,     // standalone JSP header line
+  // Combined-line variant
+  /onspot.*confidential.*share/i,
+  // Page numbers and decorative separators
+  /^page\s+\d+(\s+of\s+\d+)?$/i,
+  /^\d+\s*$/,
+  /^[-–—=_*]{3,}$/,                   // decorative dividers
+  // Standalone lettered section markers like "A. ROLE DETAILS", "B. JOB SUCCESS PROFILE"
+  /^[A-Z]\.\s+(job\s+success\s+profile|role\s+details?)\s*$/i,
+  // Standalone "Job Success Profile" label (not inline)
+  /^job\s+success\s+profile\s*$/i,
 ];
 
 /** Remove company header/footer noise lines from raw PDF lines. */
@@ -459,18 +475,62 @@ function extractBullets(sectionText: string | undefined): string[] {
 }
 
 /**
- * Build a clean plain-text description from description-style sections.
- * Merges wrapped lines, preserves paragraph spacing.
+ * Merge and clean a single block-section body into a readable paragraph string.
  */
-function buildDescription(parts: (string | undefined)[]): string {
-  return parts
-    .filter(Boolean)
-    .map((part) => {
-      const merged = mergeWrappedLines((part as string).split("\n"));
-      return merged.filter((l) => l.trim()).join(" ").trim();
+function cleanParagraph(raw: string | undefined): string {
+  if (!raw?.trim()) return "";
+  const merged = mergeWrappedLines(raw.split("\n"));
+  return merged.filter((l) => l.trim()).join(" ").trim();
+}
+
+/**
+ * Build the public-facing Job Description.
+ *
+ * Priority:
+ *   1. "About the Role" (sec.description) — most role-specific
+ *   2. "Position Overview" (sec.roleMission) — fallback role narrative
+ *   3. A SHORT excerpt from Company Overview prepended as intro only if it
+ *      adds context and neither of the above covers the company.
+ *
+ * Internal-only sections (DISC, red flags, success factors) are never included.
+ */
+function buildJobDescription(sec: Record<string, string>): string {
+  const aboutRole      = cleanParagraph(sec["description"]);
+  const posOverview    = cleanParagraph(sec["roleMission"]);
+  const companyOverview = cleanParagraph(sec["companyOverview"]);
+
+  // Pick the primary role narrative
+  const roleNarrative = aboutRole || posOverview;
+
+  const parts: string[] = [];
+
+  // Company Overview: only as a short intro (max ~400 chars, first 2 sentences)
+  if (companyOverview && roleNarrative) {
+    const sentences = companyOverview.match(/[^.!?]+[.!?]+/g) ?? [companyOverview];
+    const shortIntro = sentences.slice(0, 2).join(" ").trim();
+    if (shortIntro.length > 20) parts.push(shortIntro);
+  }
+
+  if (roleNarrative) parts.push(roleNarrative);
+
+  // If neither About the Role nor Position Overview exist, fall back to full overview
+  if (parts.length === 0 && companyOverview) parts.push(companyOverview);
+
+  return parts.join("\n\n").trim();
+}
+
+/** Deduplicate adjacent near-identical paragraphs that appear due to page-break repeats. */
+function deduplicateText(text: string): string {
+  const paras = text.split(/\n{2,}/);
+  const seen = new Set<string>();
+  return paras
+    .filter((p) => {
+      const key = p.replace(/\s+/g, " ").trim().toLowerCase().slice(0, 120);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
     })
-    .join("\n\n")
-    .trim();
+    .join("\n\n");
 }
 
 // ── Build the final record from extracted sections ────────────────────────────
@@ -478,27 +538,24 @@ function buildDescription(parts: (string | undefined)[]): string {
 async function parsePdf(file: File): Promise<ParsedJobRecord[]> {
   const rawText = await extractPdfText(file);
 
-  // Remove document noise before parsing
+  // Strip noise lines before section parsing
   const cleanedLines = removeDocumentNoise(rawText.split("\n"));
   const cleanedText  = cleanedLines.join("\n");
 
   const sec = parseSections(cleanedText);
 
-  // Title: explicit label → filename fallback
+  // ── Public fields ─────────────────────────────────────────────────────────
+
+  // Title: explicit "Role:" label → filename fallback
   const title = sec["title"]?.trim() || titleFromFilename(file.name);
 
-  // Department
+  // Department/Division
   const division = sec["division"]?.trim() || "";
 
-  // Description from Company Overview + About the Role + Position Overview only
-  // (excludes internal-only sections like successFactors, benefits, culturalFit)
-  const description = buildDescription([
-    sec["companyOverview"],
-    sec["description"],
-    sec["roleMission"],
-  ]);
+  // Job Description: role-first, company overview as short intro only
+  const description = deduplicateText(buildJobDescription(sec));
 
-  // Clean bullet lists
+  // Bullet lists — internal keys (_disc, _redFlags, _successFactors) are ignored
   const responsibilities = extractBullets(sec["responsibilities"]);
   const requirements     = extractBullets(sec["requirements"]);
   const culturalFit      = extractBullets(sec["culturalFit"]);
@@ -506,15 +563,19 @@ async function parsePdf(file: File): Promise<ParsedJobRecord[]> {
   // Dev-mode debug
   if (import.meta.env.DEV) {
     console.group(`[BulkUpload] PDF parsed: ${file.name}`);
-    console.log("title:", title, sec["title"] ? "(from label)" : "(from filename)");
+    console.log("title:", title, sec["title"] ? "(from 'Role:' label)" : "(from filename fallback)");
     console.log("division:", division || "(none)");
+    console.log("description source:",
+      sec["description"] ? "About the Role" :
+      sec["roleMission"] ? "Position Overview" :
+      sec["companyOverview"] ? "Company Overview (fallback)" : "none",
+    );
     console.log("description chars:", description.length);
     console.log("responsibilities:", responsibilities.length, "items");
     console.log("requirements:", requirements.length, "items");
     console.log("culturalFit:", culturalFit.length, "items");
-    if (import.meta.env.DEV) {
-      console.log("--- raw sections ---", sec);
-    }
+    console.log("internal keys captured:", Object.keys(sec).filter((k) => k.startsWith("_")));
+    console.log("--- raw sections ---", sec);
     console.groupEnd();
   }
 

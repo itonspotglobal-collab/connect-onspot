@@ -1,0 +1,180 @@
+Refine the bulk-upload PDF import logic in `AdminFindWork.tsx` so the imported job posting fields map correctly and require little to no manual editing.
+
+Current issue:
+The parser is extracting content, but it is assigning the wrong content to fields.
+Examples:
+- `Job Description` is being populated mostly from `Company Overview`, which is not the intended role description
+- Confidential footer/header text like `OnSpot Global Corp. - Confidential Document - DO NOT SHARE` is still being imported
+- Internal-only content like DISC profile, red flags, and extra success profile notes are leaking into the public-facing posting
+- Too much manual cleanup is still needed after import
+
+Goal:
+Make imported job postings closely match how a recruiter would manually encode them.
+
+Correct field mapping for PDF imports:
+
+1. Job Title
+Extract from:
+- `Role:`
+Fallbacks:
+- `Job Title:`
+- `Position:`
+- cleaned filename if needed
+
+2. Department / Division
+Extract from:
+- `Division:`
+Fallbacks:
+- `Department:`
+- `Team:`
+
+3. Reporting To
+Extract from:
+- `Reporting to:`
+- `Reports to:`
+
+4. Job Description
+This should NOT default to Company Overview.
+
+Preferred mapping:
+- Primary source: `About the Role`
+- Fallback: `Position Overview`
+- Optional short prefix: a shortened `Company Overview` only if needed and only if the existing posting model expects a company intro
+
+Rules:
+- `Job Description` should describe the role itself, not mostly the company
+- If both `About the Role` and `Position Overview` exist, prefer the more role-specific one and avoid duplicating similar text
+- If `Company Overview` is included, place it at the beginning as a short intro paragraph only, not as the main body
+- Do not include DISC profile, red flags, additional success factors, or confidential notices in Job Description
+
+5. Responsibilities
+Extract only from:
+- `Key Responsibilities`
+- `Responsibilities`
+
+Rules:
+- Keep one logical bullet per item
+- Merge wrapped lines
+- Preserve labels like:
+  - `Customer Support: ...`
+  - `Client Relationship Management: ...`
+- Do not include footer/header text or unrelated sections
+
+6. Skills & Requirements
+Extract only from:
+- `Requirements`
+- `Job Qualifications`
+- `Qualifications`
+
+Rules:
+- Keep one logical bullet per item
+- Merge wrapped lines
+- Remove noise such as:
+  - company headers
+  - confidential notices
+  - decorative text
+- Do not include Cultural Fit here
+
+7. Cultural Fit
+Extract only from:
+- `Cultural Fit`
+
+Rules:
+- Keep actual cultural-fit bullets only
+- Do not include the section heading as a bullet
+- Do not include Why Join Us, DISC profile, red flags, or additional success factors here unless there is a dedicated internal field
+
+8. Exclude these sections from public-facing import by default
+Do not import these into Job Description / Responsibilities / Skills / Cultural Fit:
+- `Ideal DISC Profile for Success`
+- `What to Avoid`
+- `Red Flags`
+- `Additional Success Factors`
+- `B. JOB SUCCESS PROFILE`
+- confidential headers/footers such as:
+  - `OnSpot Global Corp.`
+  - `Confidential Document`
+  - `DO NOT SHARE`
+  - `OnSpot Global Corp. - Confidential Document - DO NOT SHARE`
+
+9. Better section priority for these PDFs
+
+For `Virtual Assistant.Bookkeeper.Job Success Profile.pdf`
+Use:
+- Job Title = `Senior Virtual Assistant`
+- Department = `Delivery`
+- Reporting To = `Line Manager`
+- Job Description = mostly from `About the Role`
+- Responsibilities = from `Key Responsibilities`
+- Skills & Requirements = from `Requirements`
+- Cultural Fit = from `Cultural Fit`
+
+Do NOT place most of `Company Overview` into Job Description.
+If included at all, it should only be a short intro paragraph.
+
+For `Customer Service Representative.Job Success Profile (1).pdf`
+Use:
+- Job Title = `Customer Service Representative`
+- Department = `Delivery`
+- Reporting To = `Team Manager`
+- Job Description = from `Position Overview`
+- Responsibilities = from `Key Responsibilities`
+- Skills & Requirements = from `Job Qualifications`
+- Cultural Fit = from `Cultural Fit`
+
+10. Add strong cleanup rules
+Before saving parsed values:
+- remove confidential header/footer lines
+- deduplicate repeated paragraphs
+- remove repeated section text caused by page breaks
+- trim stray punctuation and extra line breaks
+- merge wrapped bullet lines
+- prevent section bleed into the next section
+
+11. Make Job Description recruiter-friendly
+The final Job Description should read like a proper posting.
+Rules:
+- Prefer clean paragraphs
+- prioritize role explanation over company background
+- avoid duplicated text
+- avoid internal assessment content
+- avoid footer artifacts
+- keep it concise and polished
+
+12. Add an import strategy option in code
+Create a clear parsing strategy for PDF job profile documents:
+
+Public posting fields:
+- title
+- department
+- reportingTo
+- jobDescription
+- responsibilities
+- qualifications
+- culturalFit
+
+Internal-only parsed extras (optional, not shown publicly unless the app supports it):
+- companyOverview
+- jobSuccessProfile
+- discProfile
+- additionalSuccessFactors
+
+This way, the parser can still read more sections without dumping them into the visible posting fields.
+
+13. Validation update
+A PDF import should be considered successful when it has:
+- title
+- department/division
+- role-focused job description from About the Role or Position Overview
+Responsibilities and qualifications should improve quality, but should not force the wrong fallback mapping.
+
+14. Keep unchanged
+- existing bulk upload modal behavior
+- multi-file upload support
+- manual add/edit job posting flow
+- Guide button/modal
+
+15. Return
+- full updated `AdminFindWork.tsx`
+- helper functions for section extraction and cleanup
+- minimal unrelated refactoring
