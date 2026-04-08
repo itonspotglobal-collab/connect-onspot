@@ -1094,60 +1094,58 @@ function WeeklyNotesModal({
 }) {
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg bg-white border-slate-200 p-0 overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-[#474ead] to-[#6b72e0] px-8 pt-8 pb-6">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+      <DialogContent className="max-w-md bg-white border-0 p-0 overflow-hidden shadow-2xl shadow-slate-900/15 rounded-2xl gap-0">
+        {/* Branded header */}
+        <div className="relative bg-gradient-to-br from-[#2e3494] via-[#474ead] to-[#6b72e0] px-8 pt-8 pb-7 overflow-hidden">
+          {/* Subtle decorative circles */}
+          <div className="pointer-events-none absolute -top-8 -right-8 h-36 w-36 rounded-full bg-white/5" />
+          <div className="pointer-events-none absolute bottom-0 -left-4 h-24 w-24 rounded-full bg-white/5" />
+
+          <div className="relative flex items-start gap-4 mb-4">
+            <div className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center shrink-0 mt-0.5">
               <Rss className="w-5 h-5 text-white" />
             </div>
-            <DialogHeader>
+            <DialogHeader className="space-y-1">
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60">From Our Leadership</p>
               <DialogTitle className="text-xl font-bold text-white leading-tight">
                 Weekly Notes from our CEO
               </DialogTitle>
             </DialogHeader>
           </div>
-          <p className="text-white/80 text-sm leading-relaxed">
-            Raw, unfiltered perspectives on outsourcing, leadership, and business
-            growth — delivered every week.
+          <p className="relative text-white/75 text-sm leading-relaxed">
+            Get exclusive insights and thoughts from our leadership team. Raw, unfiltered perspectives on the future of outsourcing and business growth.
           </p>
         </div>
 
         {/* Body */}
         <div className="px-8 py-6">
-          <p className="text-slate-600 text-sm leading-relaxed mb-6">
-            Get exclusive insights straight from our leadership team. No fluff —
-            just honest takes on the future of global outsourcing, talent
-            strategy, and what's happening in the industry right now.
-          </p>
-
-          <div className="space-y-3 mb-6">
+          <div className="space-y-2.5 mb-6">
             {[
-              "Candid thoughts on industry trends",
-              "Behind-the-scenes of how OnSpot operates",
-              "Actionable advice for clients and talent",
-              "Delivered every week, short and readable",
+              "Candid thoughts on industry trends and the BPO landscape",
+              "Behind-the-scenes perspective on how OnSpot operates",
+              "Actionable insights for clients, talent, and leaders",
+              "Short, readable, and delivered every week",
             ].map((item) => (
               <div key={item} className="flex items-start gap-2.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#474ead] mt-1.5 flex-shrink-0" />
-                <span className="text-sm text-slate-600">{item}</span>
+                <div className="w-1.5 h-1.5 rounded-full bg-[#474ead] mt-[7px] flex-shrink-0" />
+                <span className="text-sm text-slate-600 leading-relaxed">{item}</span>
               </div>
             ))}
           </div>
 
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2.5">
             <a
               href="https://www.linkedin.com/company/onspotglobal"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-[#474ead] px-6 py-3 text-sm font-semibold text-white hover:bg-[#5b63d6] transition"
+              className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-[#474ead] px-6 py-3 text-sm font-semibold text-white shadow-md shadow-[#474ead]/25 hover:bg-[#5b63d6] transition-colors"
             >
-              <Linkedin className="w-4 h-4" />
-              Follow our CEO on LinkedIn
+              <Rss className="w-4 h-4" />
+              Read Weekly Notes
             </a>
             <button
               onClick={onClose}
-              className="w-full inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
+              className="w-full inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 px-6 py-2.5 text-sm font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors"
             >
               Maybe later
             </button>
@@ -1158,6 +1156,8 @@ function WeeklyNotesModal({
   );
 }
 
+const CEO_POPUP_DISMISSED_KEY = "onspot_ceo_popup_dismissed";
+
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function Insights() {
   const [location] = useLocation();
@@ -1165,6 +1165,34 @@ export default function Insights() {
   const [searchQuery, setSearchQuery] = useState("");
   const [authorFilter, setAuthorFilter] = useState("");
   const [ceoModalOpen, setCeoModalOpen] = useState(false);
+  const [ceoDismissed, setCeoDismissed] = useState(
+    () => sessionStorage.getItem(CEO_POPUP_DISMISSED_KEY) === "1"
+  );
+
+  // Auto-trigger after 60 seconds — only if not already dismissed this session
+  useEffect(() => {
+    if (ceoDismissed) return;
+    const timer = setTimeout(() => {
+      if (sessionStorage.getItem(CEO_POPUP_DISMISSED_KEY) !== "1") {
+        setCeoModalOpen(true);
+      }
+    }, 60_000);
+    return () => clearTimeout(timer);
+    // Run once on mount — deliberately empty dep array
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function handleCeoModalClose() {
+    setCeoModalOpen(false);
+    setCeoDismissed(true);
+    sessionStorage.setItem(CEO_POPUP_DISMISSED_KEY, "1");
+  }
+
+  function handleReopenCeoModal() {
+    sessionStorage.removeItem(CEO_POPUP_DISMISSED_KEY);
+    setCeoDismissed(false);
+    setCeoModalOpen(true);
+  }
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -1234,7 +1262,22 @@ export default function Insights() {
   // ─── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#f0f4ff]">
-      <WeeklyNotesModal open={ceoModalOpen} onClose={() => setCeoModalOpen(false)} />
+      <WeeklyNotesModal open={ceoModalOpen} onClose={handleCeoModalClose} />
+
+      {/* Floating reopen trigger — visible only after user dismissed the popup */}
+      {ceoDismissed && !ceoModalOpen && (
+        <button
+          onClick={handleReopenCeoModal}
+          aria-label="Reopen CEO Weekly Notes"
+          title="Weekly Notes from our CEO"
+          className="fixed bottom-6 right-6 z-40 flex items-center gap-2.5 rounded-full bg-white border border-slate-200 px-4 py-2.5 text-xs font-semibold text-[#474ead] shadow-lg shadow-slate-900/10 hover:border-[#474ead]/30 hover:shadow-xl hover:shadow-[#474ead]/10 transition-all duration-200 group"
+        >
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#474ead]/10 group-hover:bg-[#474ead]/15 transition-colors">
+            <Rss className="w-3 h-3 text-[#474ead]" />
+          </span>
+          CEO Weekly Notes
+        </button>
+      )}
 
       {/* ── Category navigation (top, sticky, no TopNavigation above it) ─── */}
       <CategoryNav
@@ -1364,29 +1407,7 @@ export default function Insights() {
           </div>
         </section>
 
-        {/* ── Weekly CEO Notes — opens modal ────────────────────────────────── */}
-        <section className="mb-10">
-          <div className="rounded-2xl border border-[#474ead]/20 bg-gradient-to-r from-[#474ead]/8 via-[#474ead]/4 to-[#8e93ff]/8 p-8 text-center">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <Rss className="w-6 h-6 text-[#474ead]" />
-              <h3 className="text-2xl font-bold text-slate-900">Weekly Notes from our CEO</h3>
-            </div>
-            <p className="text-slate-600 mb-6 max-w-2xl mx-auto leading-8">
-              Get exclusive insights and thoughts from our leadership team.
-              Raw, unfiltered perspectives on the future of outsourcing and
-              business growth.
-            </p>
-            <button
-              onClick={() => setCeoModalOpen(true)}
-              className="inline-flex items-center gap-2 rounded-full bg-[#474ead] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#474ead]/20 transition hover:bg-[#5b63d6]"
-            >
-              Read Weekly Notes
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </section>
-
-        {/* ── Hero / title section (moved to bottom) ────────────────────────── */}
+        {/* ── Hero / title section ──────────────────────────────────────────── */}
         <section className="mb-10">
           <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white">
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(71,78,173,0.08),transparent_50%),radial-gradient(ellipse_at_80%_10%,rgba(142,147,255,0.06),transparent_40%)] pointer-events-none" />

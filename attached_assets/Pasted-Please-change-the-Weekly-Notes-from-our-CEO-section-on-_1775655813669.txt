@@ -1,0 +1,54 @@
+Please change the “Weekly Notes from our CEO” section on the Insights page from a static/clickable banner into a timed popup modal.
+
+Goal:
+Make it feel more engaging and intentional. Instead of always sitting on the page as a clickable section, it should appear as a popup after the user has been on the Insights page for about 1 minute.
+
+Required behavior:
+1. Remove the current inline/clickable “Weekly Notes from our CEO” banner section from the page layout.
+2. Replace it with a popup modal that appears automatically after 60 seconds on the Insights page.
+3. The popup should be closable at any time with a visible close button.
+4. If the user closes it, it should not immediately reopen on the same visit.
+5. Add a way for the user to manually reopen/reactivate the popup later.
+   - This can be a subtle floating button, nav action, or small fixed CTA
+   - It should feel clean and not intrusive
+6. The popup should be visually pleasing, polished, and engaging.
+
+Popup content:
+- Title: “Weekly Notes from our CEO”
+- Supporting text: “Get exclusive insights and thoughts from our leadership team. Raw, unfiltered perspectives on the future of outsourcing and business growth.”
+- Primary CTA: “Read Weekly Notes”
+
+Design direction:
+- Match the premium editorial style of the Insights page
+- Use a refined modal design with clean spacing, soft shadow, smooth rounded corners, and branded colors
+- Make it feel more like an executive editorial invitation than a generic popup
+- Optional enhancements:
+  - subtle entrance animation
+  - small icon
+  - soft background overlay
+  - elegant CTA button treatment
+
+Behavior details:
+- Trigger only on the Insights page
+- Appear after ~60 seconds from page load
+- Do not trigger repeatedly while the user remains on the same page session after closing
+- Prefer storing dismissed state in sessionStorage or similar so it stays dismissed during that visit
+- If the user manually clicks the “reopen” control, show the popup again immediately
+- If the user clicks the CTA, route to the Weekly Notes / CEO content destination
+
+Implementation guidance:
+- Remove the old inline banner block from the page flow
+- Add timed modal state management
+- Add dismiss + manual reopen control
+- Keep it accessible:
+  - ESC to close
+  - focus handling
+  - keyboard-friendly close button
+- Ensure it looks good on desktop and mobile
+
+Expected result:
+- The Insights page no longer shows the Weekly Notes block inline
+- After 1 minute, a branded popup appears
+- Users can close it anytime
+- Users can reopen it later from a subtle trigger
+- The experience feels elegant, engaging, and not disruptive
