@@ -1324,6 +1324,7 @@ function canProceed(
   step: number,
   p: CandidateProfile,
   accountForm?: { email: string; password: string; confirmPassword: string },
+  accountCheckResult?: "new" | "existing" | null,
 ): boolean {
   switch (step) {
     case 0:
@@ -1336,7 +1337,8 @@ function canProceed(
         !!p.seniority &&
         p.coreSkills.length > 0
       );
-    case 2: // Account Creation
+    case 2: // Account Creation — allow proceed if existing account confirmed OR form is valid
+      if (accountCheckResult === "existing") return true;
       return accountForm ? canProceedAccount(accountForm) : false;
     case 3: // Account Success — always proceed
       return true;
@@ -1895,6 +1897,14 @@ export default function FindBestMatches() {
     showPassword: false,
   });
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
+  const [accountCheckResult, setAccountCheckResult] = useState<
+    "new" | "existing" | null
+  >(null);
+  const [existingCandidateInfo, setExistingCandidateInfo] = useState<{
+    id: string;
+    fullName: string | null;
+    email: string | null;
+  } | null>(null);
 
   const { openJobs, isLoading: jobsLoading } = usePostedJobs();
 
@@ -2083,44 +2093,64 @@ export default function FindBestMatches() {
       }));
     }
 
-    // ── Step 2 → 3: Simulate account creation, save to DB ──────────────────
+    // ── Step 2: Account setup — email check + create/link ────────────────────
     if (flowStep === 2) {
+      // If we already know it's an existing account, just advance
+      if (accountCheckResult === "existing") {
+        setFlowStep((s) => s + 1);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+
       setIsCreatingAccount(true);
       try {
-        if (candidateId) {
-          await fetch(`/api/candidates/${candidateId}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email: accountForm.email,
-              accountCreated: true,
-              updatedAt: new Date().toISOString(),
-            }),
-          });
-        }
-        // If no candidateId yet (skipped upload+profile somehow), create record
-        if (!candidateId) {
-          const res = await fetch("/api/candidates", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              fullName: profile.fullName,
-              email: accountForm.email,
-              targetPosition: profile.targetPosition || "Unknown",
-              category: profile.jobCategory || "General",
-              profileCompleted: true,
-              accountCreated: true,
-            }),
-          });
-          if (res.ok) {
-            const data = await res.json();
-            setCandidateId(data.id);
+        const profileData = {
+          fullName: profile.fullName,
+          targetPosition: profile.targetPosition || "Unknown",
+          category: profile.jobCategory || "General",
+          phone: profile.phone || null,
+          location: profile.location || null,
+          coreSkills: profile.coreSkills,
+          secondarySkills: profile.secondarySkills,
+          summary: profile.summary || null,
+          profileCompleted: !!candidateId,
+        };
+        const res = await fetch("/api/candidates/account-setup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: accountForm.email,
+            candidateId: candidateId || undefined,
+            profileData,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          // Update the candidate ID with whichever record we settled on
+          setCandidateId(data.candidateId);
+          setField("email", accountForm.email);
+
+          if (data.status === "existing") {
+            // Surface the existing-account UI — do NOT advance yet
+            setAccountCheckResult("existing");
+            setExistingCandidateInfo({
+              id: data.candidateId,
+              fullName: data.candidate?.fullName ?? null,
+              email: data.candidate?.email ?? accountForm.email,
+            });
+            setIsCreatingAccount(false);
+            return; // Stop here — let user decide what to do
           }
+          // "created" or "updated" → proceed
+          setAccountCheckResult("new");
+        } else {
+          // Non-blocking on error — treat as a new account
+          setAccountCheckResult("new");
+          setField("email", accountForm.email);
         }
-        // Update profile email with the confirmed account email
-        setField("email", accountForm.email);
       } catch {
-        // Non-blocking
+        setAccountCheckResult("new");
+        setField("email", accountForm.email);
       } finally {
         setIsCreatingAccount(false);
       }
@@ -2174,7 +2204,7 @@ export default function FindBestMatches() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  const ready = canProceed(flowStep, profile, accountForm) && !extracting && !isSavingProfile && !isCreatingAccount;
+  const ready = canProceed(flowStep, profile, accountForm, accountCheckResult) && !extracting && !isSavingProfile && !isCreatingAccount;
 
   // ── Hero ──────────────────────────────────────────────────────────────────
   function HeroContent() {
@@ -3002,6 +3032,161 @@ export default function FindBestMatches() {
 
   // ── Step 2: Account Creation ──────────────────────────────────────────────
   function AccountCreationStep() {
+    // ── Existing account found ───────────────────────────────────────────────
+    if (accountCheckResult === "existing") {
+      const existingName = existingCandidateInfo?.fullName;
+      const existingEmail = existingCandidateInfo?.email ?? accountForm.email;
+
+      async function handleUpdateProfile() {
+        setIsCreatingAccount(true);
+        try {
+          const profileData = {
+            fullName: profile.fullName,
+            targetPosition: profile.targetPosition || "Unknown",
+            category: profile.jobCategory || "General",
+            phone: profile.phone || null,
+            location: profile.location || null,
+            coreSkills: profile.coreSkills,
+            secondarySkills: profile.secondarySkills,
+            summary: profile.summary || null,
+            profileCompleted: true,
+          };
+          if (existingCandidateInfo?.id) {
+            await fetch(`/api/candidates/${existingCandidateInfo.id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                ...profileData,
+                accountCreated: true,
+                updatedAt: new Date().toISOString(),
+              }),
+            });
+          }
+        } catch {
+          // Non-blocking
+        } finally {
+          setIsCreatingAccount(false);
+          setFlowStep((s) => s + 1);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      }
+
+      return (
+        <div className="space-y-8">
+          <div>
+            <StepLabel step={3} title="Account Setup" />
+            <h2 className="mt-1 text-xl font-semibold text-slate-900">
+              Existing account found.
+            </h2>
+            <p className="mt-1.5 text-sm text-slate-500">
+              We found an existing account associated with this email.
+            </p>
+          </div>
+
+          {/* Existing account card */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-2xl border border-amber-200 bg-amber-50 p-6"
+          >
+            <div className="flex items-start gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                <User className="h-5 w-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-amber-800">
+                  Existing account found
+                </p>
+                <p className="mt-1 text-sm text-amber-700 leading-relaxed">
+                  We found an existing account associated with this email. You
+                  can continue with your saved profile or update it with your
+                  current information before moving forward.
+                </p>
+
+                <div className="mt-4 space-y-2">
+                  {existingName && (
+                    <div className="flex items-center gap-2 text-sm text-amber-700">
+                      <User className="h-3.5 w-3.5 shrink-0" />
+                      <span className="font-medium">{existingName}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 text-sm text-amber-700">
+                    <Mail className="h-3.5 w-3.5 shrink-0" />
+                    <span>{existingEmail}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* CTAs */}
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Button
+                onClick={() => {
+                  setFlowStep((s) => s + 1);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="rounded-full bg-[#474ead] text-white"
+              >
+                <ArrowRight className="mr-2 h-4 w-4" />
+                Continue with Existing Profile
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleUpdateProfile}
+                disabled={isCreatingAccount}
+                className="rounded-full"
+              >
+                {isCreatingAccount ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Updating…
+                  </>
+                ) : (
+                  <>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Update Profile
+                  </>
+                )}
+              </Button>
+            </div>
+          </motion.div>
+
+          {/* Use different email */}
+          <div className="flex items-center gap-2 text-sm text-slate-500">
+            <button
+              type="button"
+              className="text-[#474ead] font-medium hover:underline"
+              onClick={() => {
+                setAccountCheckResult(null);
+                setExistingCandidateInfo(null);
+                setAccountForm((f) => ({
+                  ...f,
+                  email: "",
+                  password: "",
+                  confirmPassword: "",
+                }));
+              }}
+            >
+              Use a different email address
+            </button>
+          </div>
+
+          {/* Auth note */}
+          <div className="flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-500">
+              <Lock className="h-4 w-4" />
+            </div>
+            <p className="text-xs text-slate-500">
+              Full sign-in and account access will be enabled once
+              authentication is added. For now, your existing profile is
+              linked automatically.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    // ── New account form ─────────────────────────────────────────────────────
     const emailError =
       accountForm.email &&
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(accountForm.email)
@@ -3181,15 +3366,32 @@ export default function FindBestMatches() {
   // ── Step 3: Account Success ────────────────────────────────────────────────
   function AccountSuccessStep() {
     const name = profile.fullName ? profile.fullName.split(" ")[0] : "there";
+    const isExisting = accountCheckResult === "existing";
+
+    const badgeLabel = isExisting ? "Account Linked" : "Account Created";
+    const headline = isExisting
+      ? `Welcome back${name !== "there" ? `, ${name}` : ""}!`
+      : `Welcome to OnSpot${name !== "there" ? `, ${name}` : ""}!`;
+    const subtext = isExisting
+      ? "Your existing account has been linked to this profile. You're all set — head into the culture evaluation to uncover your best-fit roles."
+      : "Your account has been created and your profile is saved. You're now ready for the culture evaluation — the final step before we reveal your best-fit roles.";
+    const accountStatusLabel = isExisting ? "Linked" : "Created";
+
     return (
       <div className="flex flex-col items-center py-8 text-center">
         <motion.div
           initial={{ scale: 0.7, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: "spring", duration: 0.6 }}
-          className="flex h-20 w-20 items-center justify-center rounded-full bg-[#474ead]/10 mb-6"
+          className={`flex h-20 w-20 items-center justify-center rounded-full mb-6 ${
+            isExisting ? "bg-amber-100" : "bg-[#474ead]/10"
+          }`}
         >
-          <PartyPopper className="h-10 w-10 text-[#474ead]" />
+          {isExisting ? (
+            <CheckCircle2 className="h-10 w-10 text-amber-600" />
+          ) : (
+            <PartyPopper className="h-10 w-10 text-[#474ead]" />
+          )}
         </motion.div>
 
         <motion.div
@@ -3197,16 +3399,18 @@ export default function FindBestMatches() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <Badge className="mb-4 rounded-full bg-emerald-100 px-4 py-1.5 text-emerald-700 text-xs font-semibold hover:bg-emerald-100">
-            Account Created
+          <Badge
+            className={`mb-4 rounded-full px-4 py-1.5 text-xs font-semibold ${
+              isExisting
+                ? "bg-amber-100 text-amber-700 hover:bg-amber-100"
+                : "bg-emerald-100 text-emerald-700 hover:bg-emerald-100"
+            }`}
+          >
+            {badgeLabel}
           </Badge>
-          <h2 className="text-2xl font-bold text-slate-900">
-            Welcome to OnSpot{name !== "there" ? `, ${name}` : ""}!
-          </h2>
+          <h2 className="text-2xl font-bold text-slate-900">{headline}</h2>
           <p className="mt-3 max-w-md text-sm text-slate-500 leading-relaxed">
-            Your account has been created and your profile is saved. You're
-            now ready for the culture evaluation — the final step before we
-            reveal your best-fit roles.
+            {subtext}
           </p>
         </motion.div>
 
@@ -3218,10 +3422,14 @@ export default function FindBestMatches() {
         >
           {[
             { label: "Profile", value: "Completed", ok: true },
-            { label: "Account", value: "Created", ok: true },
+            { label: "Account", value: accountStatusLabel, ok: true },
             {
               label: "Email",
-              value: accountForm.email || profile.email || "—",
+              value:
+                existingCandidateInfo?.email ||
+                accountForm.email ||
+                profile.email ||
+                "—",
               ok: true,
             },
             { label: "Culture Evaluation", value: "Next step", ok: false },
@@ -3668,7 +3876,7 @@ export default function FindBestMatches() {
                 {renderStep()}
               </div>
 
-              {/* Nav buttons */}
+              {/* Nav buttons — hide primary CTA when existing-account card handles it */}
               <div className="mt-6 flex items-center justify-between gap-4">
                 <Button
                   variant="outline"
@@ -3678,37 +3886,41 @@ export default function FindBestMatches() {
                 >
                   <ArrowLeft className="mr-2 h-4 w-4" /> Back
                 </Button>
-                <Button
-                  onClick={handleNext}
-                  disabled={!ready}
-                  className="rounded-full bg-[#474ead] px-8 text-white"
-                >
-                  {isSavingProfile ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving Profile…
-                    </>
-                  ) : isCreatingAccount ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating Account…
-                    </>
-                  ) : flowStep === 2 ? (
-                    <>
-                      <CheckCircle2 className="mr-2 h-4 w-4" /> Create Account
-                    </>
-                  ) : flowStep === 3 ? (
-                    <>
-                      Continue to Culture Evaluation <ArrowRight className="ml-2 h-4 w-4" />
-                    </>
-                  ) : flowStep === LAST_FLOW_STEP ? (
-                    <>
-                      <Sparkles className="mr-2 h-4 w-4" /> Find My Matches
-                    </>
-                  ) : (
-                    <>
-                      Continue <ArrowRight className="ml-2 h-4 w-4" />
-                    </>
-                  )}
-                </Button>
+                {/* Hide the footer action button when the existing-account card
+                    is shown — those inline CTAs handle continuing */}
+                {!(flowStep === 2 && accountCheckResult === "existing") && (
+                  <Button
+                    onClick={handleNext}
+                    disabled={!ready}
+                    className="rounded-full bg-[#474ead] px-8 text-white"
+                  >
+                    {isSavingProfile ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving Profile…
+                      </>
+                    ) : isCreatingAccount ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating Account…
+                      </>
+                    ) : flowStep === 2 ? (
+                      <>
+                        <CheckCircle2 className="mr-2 h-4 w-4" /> Create Account
+                      </>
+                    ) : flowStep === 3 ? (
+                      <>
+                        Continue to Culture Evaluation <ArrowRight className="ml-2 h-4 w-4" />
+                      </>
+                    ) : flowStep === LAST_FLOW_STEP ? (
+                      <>
+                        <Sparkles className="mr-2 h-4 w-4" /> Find My Matches
+                      </>
+                    ) : (
+                      <>
+                        Continue <ArrowRight className="ml-2 h-4 w-4" />
+                      </>
+                    )}
+                  </Button>
+                )}
               </div>
             </motion.div>
           )}

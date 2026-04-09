@@ -3219,6 +3219,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ==================== CANDIDATES ====================
+  /**
+   * POST /api/candidates/account-setup
+   * Checks if a candidate with the given email exists.
+   * - If found: returns { status: "existing", candidate }
+   * - If not found and candidateId provided: updates that record, returns { status: "updated", candidate }
+   * - Otherwise: creates a new record, returns { status: "created", candidate }
+   * Designed to be upgraded to real auth without API contract changes.
+   */
+  app.post("/api/candidates/account-setup", async (req, res) => {
+    try {
+      const { email, candidateId, profileData } = req.body as {
+        email: string;
+        candidateId?: string;
+        profileData?: Record<string, unknown>;
+      };
+
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({ error: "Valid email is required" });
+      }
+
+      const existing = await storage.getCandidateByEmail(email);
+
+      if (existing) {
+        // If we have a pending candidateId and it's a different record, optionally merge profile data
+        if (candidateId && candidateId !== existing.id && profileData) {
+          await storage.updateCandidate(existing.id, {
+            ...profileData,
+            email,
+            accountCreated: true,
+            updatedAt: new Date().toISOString(),
+          } as any);
+        } else {
+          // Just mark accountCreated if not already
+          if (!existing.accountCreated) {
+            await storage.updateCandidate(existing.id, {
+              accountCreated: true,
+              updatedAt: new Date().toISOString(),
+            } as any);
+          }
+        }
+        const refreshed = await storage.getCandidate(existing.id);
+        return res.json({
+          status: "existing",
+          candidateId: existing.id,
+          accountCreated: true,
+          message: "An account with this email already exists in our system.",
+          candidate: refreshed ?? existing,
+        });
+      }
+
+      // No existing record — update the pending candidate or create new
+      if (candidateId) {
+        const updated = await storage.updateCandidate(candidateId, {
+          email,
+          accountCreated: true,
+          updatedAt: new Date().toISOString(),
+        } as any);
+        return res.json({
+          status: "updated",
+          candidateId,
+          accountCreated: true,
+          message: "Account details saved to your profile.",
+          candidate: updated,
+        });
+      }
+
+      // Create brand new candidate record
+      const { insertCandidateSchema } = await import("@shared/schema");
+      const payload = insertCandidateSchema.parse({
+        email,
+        fullName: (profileData?.fullName as string) ?? "Unknown",
+        targetPosition: (profileData?.targetPosition as string) ?? "Unknown",
+        category: (profileData?.category as string) ?? "General",
+        profileCompleted: false,
+        accountCreated: true,
+        ...(profileData ?? {}),
+      });
+      const created = await storage.createCandidate(payload);
+      return res.json({
+        status: "created",
+        candidateId: created.id,
+        accountCreated: true,
+        message: "Your account has been created successfully.",
+        candidate: created,
+      });
+    } catch (error: any) {
+      if (error?.name === "ZodError") return res.status(400).json({ error: error.errors });
+      console.error("POST /api/candidates/account-setup error:", error);
+      res.status(500).json({ error: "Account setup failed" });
+    }
+  });
+
   app.post("/api/candidates", async (req, res) => {
     try {
       const { insertCandidateSchema } = await import("@shared/schema");

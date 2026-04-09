@@ -312,6 +312,7 @@ export interface IStorage {
   // Candidates
   createCandidate(data: InsertCandidate): Promise<Candidate>;
   getCandidate(id: string): Promise<Candidate | undefined>;
+  getCandidateByEmail(email: string): Promise<Candidate | undefined>;
   getCandidates(): Promise<Candidate[]>;
   updateCandidate(id: string, updates: Partial<InsertCandidate>): Promise<Candidate | undefined>;
 }
@@ -2390,6 +2391,7 @@ export class MemStorage implements IStorage {
     return candidate;
   }
   async getCandidate(_id: string): Promise<Candidate | undefined> { return undefined; }
+  async getCandidateByEmail(_email: string): Promise<Candidate | undefined> { return undefined; }
   async getCandidates(): Promise<Candidate[]> { return []; }
   async updateCandidate(_id: string, _updates: Partial<InsertCandidate>): Promise<Candidate | undefined> { return undefined; }
 }
@@ -2849,6 +2851,11 @@ export class DbStorage extends MemStorage {
 
   async getCandidate(id: string): Promise<Candidate | undefined> {
     const [candidate] = await db.select().from(candidatesTable).where(eq(candidatesTable.id, id));
+    return candidate;
+  }
+
+  async getCandidateByEmail(email: string): Promise<Candidate | undefined> {
+    const [candidate] = await db.select().from(candidatesTable).where(eq(candidatesTable.email, email));
     return candidate;
   }
 

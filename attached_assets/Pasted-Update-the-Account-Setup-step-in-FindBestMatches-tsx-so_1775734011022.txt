@@ -1,0 +1,136 @@
+Update the Account Setup step in FindBestMatches.tsx so it handles both new users and users who already have an account.
+
+Main requirement:
+At the Account Setup step, the system should check whether the entered email already exists in the database.
+
+Expected behavior:
+
+CASE 1 — New user
+If the email does not exist:
+- show normal account creation flow
+- button text can be:
+  - “Create Your Account”
+  - or “Complete Account Setup”
+- save/update the candidate record
+- mark accountCreated = true
+- show success notification
+- continue to Cultural Evaluation
+
+CASE 2 — Existing user
+If the email already exists in the database:
+- do NOT create a duplicate account
+- do NOT create duplicate candidate records for the same person
+- instead show a clear message like:
+  - “We found an existing account for this email.”
+  - “You already have a profile in our system.”
+
+Then allow one of these actions in test mode:
+- Continue with Existing Profile
+- Update Existing Profile
+- Proceed to Cultural Evaluation
+
+Because authentication is not enabled yet:
+- do not build full login yet
+- just detect existing record by email
+- reuse or update the existing candidate/account record
+- then continue the flow
+
+Important:
+This should be implemented in a way that is easy to upgrade later into real authentication/sign-in.
+
+Required backend logic:
+Create or update the account setup API/database logic so it:
+- checks if a candidate/account already exists by email
+- if not found:
+  - create new candidate/account record
+- if found:
+  - return existing record
+  - optionally update profile fields if the current profile data is newer
+  - do not duplicate the account
+
+Suggested response shape:
+- status: "created" | "existing" | "updated"
+- candidateId
+- accountCreated
+- message
+
+UI requirements for existing account case:
+Show a polished info state/card matching the current design system.
+
+Example copy:
+Title:
+- “Existing account found”
+Body:
+- “We found an existing account associated with this email. You can continue with your saved profile or update it before moving forward.”
+
+Suggested CTAs:
+- Continue with Existing Profile
+- Update Profile
+
+Optional helper text:
+- “Full sign-in and account access will be enabled once authentication is added.”
+
+Flow requirements:
+Current intended flow becomes:
+
+1. Resume Upload
+2. Profile Creation / Update Profile
+3. Account Setup
+   - if new email → Create Account
+   - if existing email → Existing Account Found
+4. Account Success / Existing Account Confirmed
+5. Cultural Evaluation
+6. Culture Result
+7. Relevant Job Openings
+
+Important:
+The success/confirmation step should still exist for both paths.
+
+Example:
+For new account:
+- “Your account has been created successfully.”
+
+For existing account:
+- “Your existing account has been linked to this profile successfully.”
+or
+- “Your existing account is ready. You can continue to the next step.”
+
+Database requirements:
+Use email as the temporary unique identifier for now.
+No authentication yet, but still prevent duplicate candidate/account records.
+
+Suggested fields:
+- id
+- email
+- fullName
+- profileCompleted
+- accountCreated
+- createdAt
+- updatedAt
+
+Important constraints:
+- no real auth/session required yet
+- test mode only
+- do not block the user from continuing just because auth is not live
+- but do enforce no duplicate accounts by email
+
+Design requirements:
+Keep the same visual style as:
+- Insights.tsx
+- FindWork.tsx
+- WhyOnSpotAbout.tsx
+
+Use the same:
+- rounded cards
+- colors
+- button styles
+- spacing
+- typography
+
+Final output expected:
+- updated account setup logic
+- duplicate email check
+- existing account UI state
+- create vs existing branching
+- no duplicate candidate records
+- production-ready code structure for future auth integration
