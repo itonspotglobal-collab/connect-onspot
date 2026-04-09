@@ -1018,8 +1018,11 @@ export const candidates = pgTable("candidates", {
   workHistory: jsonb("work_history").default([]),
   preferences: jsonb("preferences").default({}),
   summary: text("summary"),
+  profileCompleted: boolean("profile_completed").default(false),
+  accountCreated: boolean("account_created").default(false),
   cultureScore: integer("culture_score"),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const insertCandidateSchema = createInsertSchema(candidates).omit({

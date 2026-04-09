@@ -1,0 +1,170 @@
+Update the Find Best Matches flow in our React + TypeScript site to include an Account Creation step after the candidate finishes filling up the profile.
+
+New required flow:
+1. Resume Upload
+2. Profile Creation / Update Profile
+3. Account Creation
+4. Account Creation Success
+5. Cultural Evaluation
+6. Culture Result
+7. Relevant Job Openings
+
+Main goal:
+After the candidate completes their profile, the next step should not immediately go to the cultural evaluation.
+Instead, it should first guide them into creating an account (or confirming account creation in test mode), then show a success notification, and only after that proceed to the cultural evaluation.
+
+Important context:
+Authentication is not yet enabled in the project.
+For now, implement this in test mode, but structure it cleanly so it can later connect to real authentication.
+
+Behavior requirements:
+
+STEP 1 — Resume Upload
+- keep existing resume upload behavior
+- parse and prefill profile fields where possible
+
+STEP 2 — Profile Creation / Update Profile
+- candidate fills up or reviews their profile
+- include job history, skills, experience, preferences, and summary
+- user can edit all extracted fields
+- profile data should be saved in the database as a Candidate/Employee record
+- no real auth yet, but still persist the candidate record
+
+After Step 2:
+- save/update the profile in the database first
+- then proceed to a dedicated Account Creation step
+
+STEP 3 — Account Creation
+Create a separate step or screen after profile creation.
+
+This screen should:
+- feel like a natural continuation of the profile flow
+- allow the candidate to create an account or confirm profile setup
+- use wording like:
+  - “Create Your Account”
+  - or “Complete Your Account Setup”
+
+Because auth is not yet enabled, implement it in test mode.
+
+For now, include fields such as:
+- email
+- password
+- confirm password
+
+If email was extracted from the resume, prefill it.
+Allow user editing.
+
+If you prefer a simpler temporary version, this step can behave like:
+- user confirms their email/password
+- frontend simulates account creation
+- backend creates/saves candidate account metadata in DB
+- mark the candidate as account_created = true
+
+Important:
+Even in test mode, structure the code so it is ready for future real authentication integration.
+
+STEP 4 — Account Creation Success
+After clicking Create Account / Complete Setup:
+- show a success state or success screen
+- use a polished confirmation message such as:
+  - “Your account has been created successfully.”
+  - “Your profile is now saved and ready for the next step.”
+- add a CTA button:
+  - “Continue to Cultural Evaluation”
+
+This should feel like an intentional milestone in the journey.
+
+STEP 5 — Cultural Evaluation
+- only after the success step should the flow continue here
+- use the existing culture/value-fit questions aligned to OnSpot’s values:
+  - People First
+  - Beat Yesterday
+  - Fast-Fast-Fast
+  - Integrity Matters
+  - Extreme Ownership
+  - We Are Intrapreneurs
+
+STEP 6 — Culture Result
+- show a dedicated result step after evaluation
+- include fit summary, strengths, and a continue button
+
+STEP 7 — Relevant Job Openings
+- only show real posted jobs from FindWorkAllJobs.tsx
+- use strict matching based on finalized profile
+- no unrelated roles
+- if no strong matches, show empty state
+
+Database requirements:
+Since there is no authentication yet, save candidate records in the database in test mode.
+
+Candidate record should include at least:
+- id
+- fullName
+- email
+- phone (optional)
+- targetPosition
+- category
+- experienceYears
+- seniority
+- coreSkills
+- secondarySkills
+- workHistory
+- summary
+- preferences
+- profileCompleted
+- accountCreated
+- cultureScore (optional later)
+- createdAt
+- updatedAt
+
+Suggested backend behavior:
+- save candidate profile after Step 2
+- on Step 3 account creation:
+  - update candidate record with email/password placeholder or account metadata
+  - set accountCreated = true
+- no real login/session required yet
+
+If password storage is included even in test mode:
+- structure it properly and safely
+- avoid storing plain text if backend logic exists
+- but if real auth is not being fully implemented yet, it is okay to stub/mock this part cleanly for now
+
+UI requirements:
+- keep the same visual style as:
+  - Insights.tsx
+  - FindWork.tsx
+  - WhyOnSpotAbout.tsx
+- preserve same colors, font, spacing, card styles, rounded corners, and button styling
+
+Suggested updated stepper:
+- Step 1: Upload Resume
+- Step 2: Profile
+- Step 3: Account
+- Step 4: Success
+- Step 5: Culture
+- Step 6: Culture Result
+- Step 7: Jobs
+
+Important UX details:
+- after profile completion, do not skip straight to culture
+- account creation should feel like a real checkpoint
+- success notification should be its own screen or clear inline success state
+- candidate should understand that their account/profile has been saved successfully before continuing
+
+Suggested components:
+- ResumeUploadStep
+- CandidateProfileStep
+- AccountCreationStep
+- AccountSuccessStep
+- CultureEvaluationStep
+- CultureResultStep
+- RelevantJobsStep
+
+Final output expected:
+- updated multi-step flow
+- account creation step after profile
+- success notification step
+- candidate profile saved in DB
+- accountCreated flag in DB
+- clean test-mode implementation without full auth
+- production-ready React/TypeScript code structure

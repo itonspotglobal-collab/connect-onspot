@@ -87,7 +87,7 @@ Preferred communication style: Simple, everyday language.
 - **Lindy.ai**: Embedded AI chatbot for customer support (pending whitelisting).
 
 #### Candidate Matching Journey (`/find-best-matches`)
-- **5-step stepper**: Upload Resume → Your Profile → Culture Fit → Culture Result → Jobs (5th shown in stepper; actual flow steps 0-3 with results as a phase)
+- **7-step stepper**: Upload → Profile → Account → Success → Culture → Result → Jobs (actual flow steps 0-5; results are a phase)
 - **Resume Auto-Extraction**: `client/src/lib/resumeParser.ts` — client-side PDF (pdfjs-dist) + DOCX (mammoth) text extraction; infers name, job title, category, years of experience, seniority, core/secondary skills, and summary; Step 2 is pre-filled automatically with extracted values and a confidence-level banner ("Pre-filled from your resume" / "Partially auto-filled"); fallback to blank form with error notice if parsing fails
 - **`ExtractedCandidateProfile` type**: `fullName`, `targetPosition`, `jobCategory`, `yearsOfExperience`, `seniority`, `coreSkills[]`, `secondarySkills[]`, `summary`, `confidence` (high/partial/low), `extractedFields[]`
 - **Auto-advance**: After parsing completes (or fails), the flow automatically advances to Step 2

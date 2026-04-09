@@ -37,6 +37,10 @@ import {
   Trash2,
   Building2,
   CalendarDays,
+  Eye,
+  EyeOff,
+  Lock,
+  PartyPopper,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -119,13 +123,15 @@ const EMPTY_PROFILE: CandidateProfile = {
 
 const FLOW_STEPS = [
   { label: "Upload", icon: Upload },
-  { label: "Your Profile", icon: FileText },
-  { label: "Culture Fit", icon: Heart },
-  { label: "Culture Result", icon: Sparkles },
+  { label: "Profile", icon: FileText },
+  { label: "Account", icon: User },
+  { label: "Success", icon: CheckCircle2 },
+  { label: "Culture", icon: Heart },
+  { label: "Result", icon: Sparkles },
   { label: "Jobs", icon: BriefcaseBusiness },
 ];
-const TOTAL_FLOW_STEPS = FLOW_STEPS.length; // 5 labels; actual flow steps are 0-3
-const LAST_FLOW_STEP = 3; // step index that triggers matching
+const TOTAL_FLOW_STEPS = FLOW_STEPS.length; // 7 labels; actual flow steps are 0-5
+const LAST_FLOW_STEP = 5; // step index that triggers matching (Culture Result)
 
 // ─── Constants for Finalize step ─────────────────────────────────────────────
 
@@ -1305,7 +1311,20 @@ function computeValuesAlignment(
 
 // ─── canProceed per step ──────────────────────────────────────────────────────
 
-function canProceed(step: number, p: CandidateProfile): boolean {
+function canProceedAccount(
+  form: { email: string; password: string; confirmPassword: string },
+): boolean {
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim());
+  const passOk = form.password.length >= 6;
+  const confirmOk = form.password === form.confirmPassword;
+  return emailOk && passOk && confirmOk;
+}
+
+function canProceed(
+  step: number,
+  p: CandidateProfile,
+  accountForm?: { email: string; password: string; confirmPassword: string },
+): boolean {
   switch (step) {
     case 0:
       return true; // Upload is optional
@@ -1317,12 +1336,16 @@ function canProceed(step: number, p: CandidateProfile): boolean {
         !!p.seniority &&
         p.coreSkills.length > 0
       );
-    case 2:
+    case 2: // Account Creation
+      return accountForm ? canProceedAccount(accountForm) : false;
+    case 3: // Account Success — always proceed
+      return true;
+    case 4: // Culture Evaluation — all questions answered
       return (
         Object.keys(p.valuesAnswers).length === CORE_VALUES_QUESTIONS.length
       );
-    case 3:
-      return true; // Culture result — always ready to proceed
+    case 5: // Culture Result — always ready to proceed
+      return true;
     default:
       return true;
   }
@@ -1864,6 +1887,15 @@ export default function FindBestMatches() {
     ...EMPTY_WORK_ENTRY,
   });
 
+  // ── Account creation form state ───────────────────────────────────────────
+  const [accountForm, setAccountForm] = useState({
+    email: "",
+    password: "",
+    confirmPassword: "",
+    showPassword: false,
+  });
+  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
+
   const { openJobs, isLoading: jobsLoading } = usePostedJobs();
 
   const primaryDomain = useMemo(
@@ -2002,8 +2034,8 @@ export default function FindBestMatches() {
 
   // ── Navigation ────────────────────────────────────────────────────────────
   async function handleNext() {
+    // ── Step 1 → 2: Save profile to DB, pre-fill account email ──────────────
     if (flowStep === 1) {
-      // Save candidate profile to DB then advance
       setIsSavingProfile(true);
       try {
         const payload = {
@@ -2025,6 +2057,8 @@ export default function FindBestMatches() {
             environment: profile.workEnvironment,
           },
           summary: profile.summary || null,
+          profileCompleted: true,
+          updatedAt: new Date().toISOString(),
         };
         const url = candidateId ? `/api/candidates/${candidateId}` : "/api/candidates";
         const method = candidateId ? "PATCH" : "POST";
@@ -2042,10 +2076,58 @@ export default function FindBestMatches() {
       } finally {
         setIsSavingProfile(false);
       }
+      // Pre-fill account email from profile if not yet set
+      setAccountForm((f) => ({
+        ...f,
+        email: f.email || profile.email || "",
+      }));
     }
 
+    // ── Step 2 → 3: Simulate account creation, save to DB ──────────────────
+    if (flowStep === 2) {
+      setIsCreatingAccount(true);
+      try {
+        if (candidateId) {
+          await fetch(`/api/candidates/${candidateId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: accountForm.email,
+              accountCreated: true,
+              updatedAt: new Date().toISOString(),
+            }),
+          });
+        }
+        // If no candidateId yet (skipped upload+profile somehow), create record
+        if (!candidateId) {
+          const res = await fetch("/api/candidates", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              fullName: profile.fullName,
+              email: accountForm.email,
+              targetPosition: profile.targetPosition || "Unknown",
+              category: profile.jobCategory || "General",
+              profileCompleted: true,
+              accountCreated: true,
+            }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setCandidateId(data.id);
+          }
+        }
+        // Update profile email with the confirmed account email
+        setField("email", accountForm.email);
+      } catch {
+        // Non-blocking
+      } finally {
+        setIsCreatingAccount(false);
+      }
+    }
+
+    // ── Step 5: Culture Result → trigger matching ────────────────────────────
     if (flowStep === LAST_FLOW_STEP) {
-      // Update culture score in DB then start matching
       if (candidateId) {
         const answered = Object.keys(profile.valuesAnswers).length;
         if (answered > 0) {
@@ -2053,7 +2135,10 @@ export default function FindBestMatches() {
           fetch(`/api/candidates/${candidateId}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ cultureScore: score }),
+            body: JSON.stringify({
+              cultureScore: score,
+              updatedAt: new Date().toISOString(),
+            }),
           }).catch(() => {});
         }
       }
@@ -2084,10 +2169,12 @@ export default function FindBestMatches() {
     setShowWorkForm(false);
     setEditWorkIdx(null);
     setWorkEntry({ ...EMPTY_WORK_ENTRY });
+    setAccountForm({ email: "", password: "", confirmPassword: "", showPassword: false });
+    setIsCreatingAccount(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  const ready = canProceed(flowStep, profile) && !extracting && !isSavingProfile;
+  const ready = canProceed(flowStep, profile, accountForm) && !extracting && !isSavingProfile && !isCreatingAccount;
 
   // ── Hero ──────────────────────────────────────────────────────────────────
   function HeroContent() {
@@ -2913,12 +3000,265 @@ export default function FindBestMatches() {
     );
   }
 
-  // ── Step 2: Culture Evaluation ─────────────────────────────────────────────
+  // ── Step 2: Account Creation ──────────────────────────────────────────────
+  function AccountCreationStep() {
+    const emailError =
+      accountForm.email &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(accountForm.email)
+        ? "Please enter a valid email address."
+        : null;
+    const passwordError =
+      accountForm.password && accountForm.password.length < 6
+        ? "Password must be at least 6 characters."
+        : null;
+    const confirmError =
+      accountForm.confirmPassword &&
+      accountForm.password !== accountForm.confirmPassword
+        ? "Passwords do not match."
+        : null;
+
+    return (
+      <div className="space-y-8">
+        <div>
+          <StepLabel step={3} title="Account Setup" />
+          <h2 className="mt-1 text-xl font-semibold text-slate-900">
+            Complete your account setup.
+          </h2>
+          <p className="mt-1.5 text-sm text-slate-500">
+            Your profile has been saved. Create your account to track your
+            application status and return to your matches anytime.
+          </p>
+        </div>
+
+        {/* Context notice */}
+        <div className="flex gap-3 rounded-2xl border border-[#474ead]/20 bg-[#474ead]/5 p-4">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#474ead]/15 text-[#474ead]">
+            <Lock className="h-4 w-4" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-[#474ead]">
+              Test mode — authentication is not yet enabled
+            </p>
+            <p className="mt-0.5 text-xs text-slate-600">
+              Your details will be saved securely. Full login capabilities will
+              be available once authentication is activated.
+            </p>
+          </div>
+        </div>
+
+        {/* Account form */}
+        <div className="space-y-5">
+          <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400">
+            Account Details
+          </h3>
+
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-slate-700">
+              Email Address{" "}
+              <span className="text-[#474ead] text-xs font-semibold ml-1">
+                Required
+              </span>
+            </Label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                type="email"
+                placeholder="you@email.com"
+                value={accountForm.email}
+                onChange={(e) =>
+                  setAccountForm((f) => ({ ...f, email: e.target.value }))
+                }
+                className="rounded-xl pl-9"
+              />
+            </div>
+            {emailError && (
+              <p className="text-xs text-red-500">{emailError}</p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-slate-700">
+              Password{" "}
+              <span className="text-[#474ead] text-xs font-semibold ml-1">
+                Required (min. 6 characters)
+              </span>
+            </Label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                type={accountForm.showPassword ? "text" : "password"}
+                placeholder="Create a password"
+                value={accountForm.password}
+                onChange={(e) =>
+                  setAccountForm((f) => ({ ...f, password: e.target.value }))
+                }
+                className="rounded-xl pl-9 pr-10"
+              />
+              <button
+                type="button"
+                onClick={() =>
+                  setAccountForm((f) => ({
+                    ...f,
+                    showPassword: !f.showPassword,
+                  }))
+                }
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                tabIndex={-1}
+              >
+                {accountForm.showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+            {passwordError && (
+              <p className="text-xs text-red-500">{passwordError}</p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-slate-700">
+              Confirm Password{" "}
+              <span className="text-[#474ead] text-xs font-semibold ml-1">
+                Required
+              </span>
+            </Label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                type={accountForm.showPassword ? "text" : "password"}
+                placeholder="Re-enter your password"
+                value={accountForm.confirmPassword}
+                onChange={(e) =>
+                  setAccountForm((f) => ({
+                    ...f,
+                    confirmPassword: e.target.value,
+                  }))
+                }
+                className="rounded-xl pl-9"
+              />
+            </div>
+            {confirmError && (
+              <p className="text-xs text-red-500">{confirmError}</p>
+            )}
+          </div>
+        </div>
+
+        {/* What's next */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-5">
+          <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">
+            What happens after
+          </p>
+          <div className="space-y-3">
+            {[
+              {
+                icon: CheckCircle2,
+                text: "Your profile is locked in and saved to our system",
+              },
+              {
+                icon: Heart,
+                text: "You'll complete a short values alignment evaluation",
+              },
+              {
+                icon: BriefcaseBusiness,
+                text: "We'll surface the best-fit roles from our live job board",
+              },
+            ].map(({ icon: Icon, text }, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#474ead]/10 text-[#474ead]">
+                  <Icon className="h-3.5 w-3.5" />
+                </div>
+                <span className="text-sm text-slate-600">{text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Step 3: Account Success ────────────────────────────────────────────────
+  function AccountSuccessStep() {
+    const name = profile.fullName ? profile.fullName.split(" ")[0] : "there";
+    return (
+      <div className="flex flex-col items-center py-8 text-center">
+        <motion.div
+          initial={{ scale: 0.7, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", duration: 0.6 }}
+          className="flex h-20 w-20 items-center justify-center rounded-full bg-[#474ead]/10 mb-6"
+        >
+          <PartyPopper className="h-10 w-10 text-[#474ead]" />
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <Badge className="mb-4 rounded-full bg-emerald-100 px-4 py-1.5 text-emerald-700 text-xs font-semibold hover:bg-emerald-100">
+            Account Created
+          </Badge>
+          <h2 className="text-2xl font-bold text-slate-900">
+            Welcome to OnSpot{name !== "there" ? `, ${name}` : ""}!
+          </h2>
+          <p className="mt-3 max-w-md text-sm text-slate-500 leading-relaxed">
+            Your account has been created and your profile is saved. You're
+            now ready for the culture evaluation — the final step before we
+            reveal your best-fit roles.
+          </p>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="mt-8 w-full max-w-sm space-y-3"
+        >
+          {[
+            { label: "Profile", value: "Completed", ok: true },
+            { label: "Account", value: "Created", ok: true },
+            {
+              label: "Email",
+              value: accountForm.email || profile.email || "—",
+              ok: true,
+            },
+            { label: "Culture Evaluation", value: "Next step", ok: false },
+          ].map(({ label, value, ok }) => (
+            <div
+              key={label}
+              className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-4 py-3"
+            >
+              <span className="text-sm text-slate-500">{label}</span>
+              <span
+                className={`flex items-center gap-1.5 text-sm font-semibold ${ok ? "text-emerald-600" : "text-[#474ead]"}`}
+              >
+                {ok && <CheckCircle2 className="h-3.5 w-3.5" />}
+                {value}
+              </span>
+            </div>
+          ))}
+        </motion.div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+          className="mt-6 text-xs text-slate-400"
+        >
+          Click "Continue to Culture Evaluation" below to proceed.
+        </motion.p>
+      </div>
+    );
+  }
+
+  // ── Step 4: Culture Evaluation ─────────────────────────────────────────────
   function CultureEvaluationStep() {
     const answered = Object.keys(profile.valuesAnswers).length;
     return (
       <div>
-        <StepLabel step={3} title="Culture Evaluation" />
+        <StepLabel step={5} title="Culture Evaluation" />
         <h2 className="mt-1 text-xl font-semibold text-slate-900">
           How well do you align with our culture?
         </h2>
@@ -3044,7 +3384,7 @@ export default function FindBestMatches() {
 
     return (
       <div className="space-y-6">
-        <StepLabel step={4} title="Culture Result" />
+        <StepLabel step={6} title="Culture Result" />
 
         {/* Score card */}
         <div
@@ -3280,8 +3620,10 @@ export default function FindBestMatches() {
   function renderStep() {
     if (flowStep === 0) return UploadResumeStep();
     if (flowStep === 1) return FinalizeInformationStep();
-    if (flowStep === 2) return CultureEvaluationStep();
-    return CultureResultStep();
+    if (flowStep === 2) return AccountCreationStep();
+    if (flowStep === 3) return AccountSuccessStep();
+    if (flowStep === 4) return CultureEvaluationStep();
+    return CultureResultStep(); // step 5
   }
 
   return (
@@ -3343,7 +3685,19 @@ export default function FindBestMatches() {
                 >
                   {isSavingProfile ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving Profile…
+                    </>
+                  ) : isCreatingAccount ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating Account…
+                    </>
+                  ) : flowStep === 2 ? (
+                    <>
+                      <CheckCircle2 className="mr-2 h-4 w-4" /> Create Account
+                    </>
+                  ) : flowStep === 3 ? (
+                    <>
+                      Continue to Culture Evaluation <ArrowRight className="ml-2 h-4 w-4" />
                     </>
                   ) : flowStep === LAST_FLOW_STEP ? (
                     <>
