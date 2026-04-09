@@ -1906,6 +1906,11 @@ export default function FindBestMatches() {
     email: string | null;
   } | null>(null);
 
+  // ── Culture evaluation persistence state ──────────────────────────────────
+  const [isSavingEvaluation, setIsSavingEvaluation] = useState(false);
+  const [evaluationSaveError, setEvaluationSaveError] = useState(false);
+  const [savedEvaluationId, setSavedEvaluationId] = useState<string | null>(null);
+
   const { openJobs, isLoading: jobsLoading } = usePostedJobs();
 
   const primaryDomain = useMemo(
@@ -2156,6 +2161,55 @@ export default function FindBestMatches() {
       }
     }
 
+    // ── Step 4: Culture Evaluation → save to DB, then show result ────────────
+    if (flowStep === 4) {
+      const { score, traits, summary } = computeValuesAlignment(profile.valuesAnswers);
+      const breakdown = computeValuesBreakdown(profile.valuesAnswers);
+      const alignmentLevel =
+        score >= 80 ? "Strong" :
+        score >= 60 ? "Solid" :
+        score >= 40 ? "Growing" : "Developing";
+      const valueScores = breakdown.map((b) => ({
+        value: b.value,
+        score: b.score,
+        trait: b.trait,
+      }));
+
+      setIsSavingEvaluation(true);
+      setEvaluationSaveError(false);
+      try {
+        const cidToUse = candidateId;
+        if (cidToUse) {
+          const res = await fetch(
+            `/api/candidates/${cidToUse}/culture-evaluation`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                answers: profile.valuesAnswers,
+                valueScores,
+                overallScore: score,
+                alignmentLevel,
+                summary,
+                traits,
+              }),
+            },
+          );
+          if (res.ok) {
+            const data = await res.json();
+            setSavedEvaluationId(data.evaluationId ?? null);
+          } else {
+            setEvaluationSaveError(true);
+          }
+        }
+        // Non-blocking — always advance even if no candidateId or save failed
+      } catch {
+        setEvaluationSaveError(true);
+      } finally {
+        setIsSavingEvaluation(false);
+      }
+    }
+
     // ── Step 5: Culture Result → trigger matching ────────────────────────────
     if (flowStep === LAST_FLOW_STEP) {
       if (candidateId) {
@@ -2201,10 +2255,15 @@ export default function FindBestMatches() {
     setWorkEntry({ ...EMPTY_WORK_ENTRY });
     setAccountForm({ email: "", password: "", confirmPassword: "", showPassword: false });
     setIsCreatingAccount(false);
+    setAccountCheckResult(null);
+    setExistingCandidateInfo(null);
+    setIsSavingEvaluation(false);
+    setEvaluationSaveError(false);
+    setSavedEvaluationId(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  const ready = canProceed(flowStep, profile, accountForm, accountCheckResult) && !extracting && !isSavingProfile && !isCreatingAccount;
+  const ready = canProceed(flowStep, profile, accountForm, accountCheckResult) && !extracting && !isSavingProfile && !isCreatingAccount && !isSavingEvaluation;
 
   // ── Hero ──────────────────────────────────────────────────────────────────
   function HeroContent() {
@@ -3551,6 +3610,17 @@ export default function FindBestMatches() {
             </p>
           </div>
         )}
+
+        {/* Save error notice — shown if evaluation couldn't be persisted */}
+        {evaluationSaveError && (
+          <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+            <p className="text-xs font-medium text-red-700">
+              We couldn't save your evaluation to the database. Your results
+              will still be shown — please try again or contact support if this
+              persists.
+            </p>
+          </div>
+        )}
       </div>
     );
   }
@@ -3592,7 +3662,19 @@ export default function FindBestMatches() {
 
     return (
       <div className="space-y-6">
-        <StepLabel step={6} title="Culture Result" />
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <StepLabel step={6} title="Culture Result" />
+          {savedEvaluationId ? (
+            <Badge className="rounded-full bg-emerald-100 px-3 py-1 text-xs text-emerald-700 hover:bg-emerald-100 shrink-0 flex items-center gap-1.5">
+              <CheckCircle2 className="h-3 w-3" />
+              Evaluation Saved
+            </Badge>
+          ) : evaluationSaveError ? (
+            <Badge className="rounded-full bg-red-100 px-3 py-1 text-xs text-red-700 hover:bg-red-100 shrink-0">
+              Save failed — contact support
+            </Badge>
+          ) : null}
+        </div>
 
         {/* Score card */}
         <div
@@ -3901,6 +3983,10 @@ export default function FindBestMatches() {
                     ) : isCreatingAccount ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating Account…
+                      </>
+                    ) : isSavingEvaluation ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving Evaluation…
                       </>
                     ) : flowStep === 2 ? (
                       <>

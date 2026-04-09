@@ -1,0 +1,196 @@
+Update the Find Best Matches flow so that the Cultural Evaluation is properly saved in the database and linked to the candidate who completed the form.
+
+Main requirement:
+The cultural evaluation must be persisted and connected to the same candidate/user record created during the profile + account setup flow.
+
+This is important because:
+- it will be used by TA / recruiters for screening
+- it is part of the candidate evaluation process
+- it should not be lost on refresh/navigation
+- it should be available later for recruiter/admin review
+
+Critical implementation rule:
+Do not keep the culture evaluation only in frontend state.
+It must be saved in the database and associated with the correct candidate record.
+
+Expected flow:
+1. Resume Upload
+2. Profile Creation / Update Profile
+3. Account Setup / Existing Account Check
+4. Account Success / Confirmation
+5. Cultural Evaluation
+6. Save Cultural Evaluation to DB
+7. Culture Result
+8. Relevant Job Openings
+
+Data relationship requirement:
+The cultural evaluation record must be connected to the same candidate who filled up the form.
+
+At minimum, use:
+- candidateId
+or equivalent foreign key/reference
+
+So the system can later retrieve:
+- candidate profile
+- account info
+- cultural evaluation
+- job matching result
+
+What to implement:
+
+1. Save candidate first
+Before the cultural evaluation starts, make sure the candidate record already exists in the database.
+The frontend should have access to the candidateId after:
+- profile creation
+- account creation / existing account lookup
+
+2. Save cultural evaluation answers
+When the user completes the cultural evaluation:
+- save the raw answers
+- save computed scores
+- save summary/result data
+- connect it to candidateId
+
+3. Database design
+Implement proper persistence.
+
+Option A:
+Create a separate table/model such as:
+- CandidateCultureEvaluation
+or
+- CandidateAssessment
+
+Recommended fields:
+- id
+- candidateId
+- answers (JSON)
+- valueScores (JSON)
+- overallScore
+- alignmentLevel
+- summary
+- strengths (JSON array)
+- growthAreas (JSON array, optional)
+- completedAt
+- createdAt
+- updatedAt
+
+Option B:
+If needed temporarily, store these fields directly in candidate record,
+but separate table/model is preferred for clean design and future scalability.
+
+Preferred approach:
+Use a separate table linked to candidateId.
+
+4. Save timing
+The cultural evaluation should be saved:
+- when the user submits/completes the evaluation
+or
+- step-by-step autosave if already convenient
+
+Minimum requirement:
+Save on final submission before showing the Culture Result step.
+
+5. Retrieval
+After saving successfully:
+- use the saved data to render the Culture Result step
+- do not rely only on temporary local state
+- ensure refresh/revisit can still retrieve the evaluation if needed
+
+6. Existing candidate behavior
+If the candidate already exists and is continuing the flow:
+- attach the new cultural evaluation to that same candidate
+- optionally update the latest evaluation or create a new evaluation version
+- do not disconnect it from the correct record
+
+Recommended behavior for now:
+- one latest active culture evaluation per candidate
+- update existing one if re-taken
+or
+- create new record and mark latest
+Either is okay, but implement consistently
+
+7. API requirements
+Create or update backend endpoints like:
+
+POST /api/candidates/:candidateId/culture-evaluation
+- save evaluation for a candidate
+
+GET /api/candidates/:candidateId/culture-evaluation
+- fetch saved evaluation
+
+Optional:
+PUT /api/candidates/:candidateId/culture-evaluation
+- update if candidate retakes the evaluation
+
+Suggested backend response:
+- success
+- candidateId
+- evaluationId
+- overallScore
+- alignmentLevel
+- summary
+
+8. Frontend requirements
+Update the Cultural Evaluation step so that:
+- it submits answers to the backend
+- waits for successful save
+- stores returned evaluation data in state
+- then shows the Culture Result step
+
+Add proper loading/error handling:
+- saving indicator
+- retry if save fails
+- do not proceed to result unless save succeeded
+
+9. Culture Result step
+The Culture Result screen should be powered by saved database data.
+It should display:
+- overall culture fit/alignment
+- values summary
+- strengths
+- optional growth areas
+- continue button to job openings
+
+10. Recruiter/screening use case
+Structure the data so recruiters can later review:
+- candidate basic profile
+- work history
+- skills
+- culture evaluation answers
+- culture score / alignment
+- matched jobs
+
+11. OnSpot core values
+Continue using the existing culture evaluation aligned to:
+- People First
+- Beat Yesterday
+- Fast-Fast-Fast
+- Integrity Matters
+- Extreme Ownership
+- We Are Intrapreneurs
+
+12. Design requirement
+Keep the same visual style as:
+- Insights.tsx
+- FindWork.tsx
+- WhyOnSpotAbout.tsx
+
+13. Important implementation safeguards
+- never orphan a culture evaluation without candidateId
+- never show culture result unless save succeeded
+- prevent mismatch between candidate and evaluation data
+- ensure retakes are linked to the correct candidate
+- make database writes explicit and reliable
+
+14. Final output expected
+Please provide:
+- updated database schema/model
+- backend API to save/fetch culture evaluation
+- frontend integration in FindBestMatches.tsx
+- linkage between candidate record and culture evaluation
+- proper save flow before Culture Result
+- production-ready structure for recruiter screening later
+
+Important:
+Treat the cultural evaluation as screening data, not temporary UI data.
+It must be saved and tied to the user/candidate record properly.

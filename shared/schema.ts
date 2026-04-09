@@ -1031,3 +1031,36 @@ export const insertCandidateSchema = createInsertSchema(candidates).omit({
 });
 export type InsertCandidate = z.infer<typeof insertCandidateSchema>;
 export type Candidate = typeof candidates.$inferSelect;
+
+// Candidate Culture Evaluations — persisted assessment linked to a candidate
+export const candidateCultureEvaluations = pgTable(
+  "candidate_culture_evaluations",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    candidateId: varchar("candidate_id")
+      .notNull()
+      .references(() => candidates.id, { onDelete: "cascade" }),
+    // Raw answers: { [questionId]: optionId }
+    answers: jsonb("answers").notNull().default({}),
+    // Per-value breakdown: { value, score, trait }[]
+    valueScores: jsonb("value_scores").notNull().default([]),
+    // 0–100 overall alignment percentage
+    overallScore: integer("overall_score").notNull().default(0),
+    // "Strong" | "Solid" | "Growing" | "Developing"
+    alignmentLevel: text("alignment_level").notNull().default(""),
+    summary: text("summary").notNull().default(""),
+    traits: text("traits").array().default([]),
+    completedAt: timestamp("completed_at").defaultNow(),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+);
+
+export const insertCultureEvaluationSchema = createInsertSchema(
+  candidateCultureEvaluations,
+).omit({ id: true, createdAt: true });
+export type InsertCultureEvaluation = z.infer<
+  typeof insertCultureEvaluationSchema
+>;
+export type CultureEvaluation =
+  typeof candidateCultureEvaluations.$inferSelect;

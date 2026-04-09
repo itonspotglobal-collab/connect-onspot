@@ -3356,6 +3356,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== CULTURE EVALUATIONS ====================
+
+  /**
+   * POST /api/candidates/:candidateId/culture-evaluation
+   * Saves (or updates) the cultural evaluation for a candidate.
+   * Returns the saved evaluation with computed scores.
+   */
+  app.post("/api/candidates/:candidateId/culture-evaluation", async (req, res) => {
+    try {
+      const { candidateId } = req.params;
+      if (!candidateId) {
+        return res.status(400).json({ error: "candidateId is required" });
+      }
+
+      const candidate = await storage.getCandidate(candidateId);
+      if (!candidate) {
+        return res.status(404).json({ error: "Candidate not found" });
+      }
+
+      const {
+        answers,
+        valueScores,
+        overallScore,
+        alignmentLevel,
+        summary,
+        traits,
+      } = req.body;
+
+      if (typeof overallScore !== "number" || !answers) {
+        return res.status(400).json({ error: "answers and overallScore are required" });
+      }
+
+      const evaluation = await storage.upsertCultureEvaluation(candidateId, {
+        answers,
+        valueScores: valueScores ?? [],
+        overallScore,
+        alignmentLevel: alignmentLevel ?? "",
+        summary: summary ?? "",
+        traits: traits ?? [],
+        completedAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      // Also update the top-level cultureScore on the candidate for quick access
+      await storage.updateCandidate(candidateId, {
+        cultureScore: overallScore,
+        updatedAt: new Date().toISOString(),
+      } as any);
+
+      return res.json({
+        success: true,
+        evaluationId: evaluation.id,
+        candidateId,
+        overallScore: evaluation.overallScore,
+        alignmentLevel: evaluation.alignmentLevel,
+        summary: evaluation.summary,
+        evaluation,
+      });
+    } catch (error) {
+      console.error("POST /api/candidates/:id/culture-evaluation error:", error);
+      res.status(500).json({ error: "Failed to save culture evaluation" });
+    }
+  });
+
+  /**
+   * GET /api/candidates/:candidateId/culture-evaluation
+   * Fetches the saved cultural evaluation for a candidate.
+   */
+  app.get("/api/candidates/:candidateId/culture-evaluation", async (req, res) => {
+    try {
+      const { candidateId } = req.params;
+      const evaluation = await storage.getCultureEvaluationByCandidate(candidateId);
+      if (!evaluation) {
+        return res.status(404).json({ error: "No culture evaluation found for this candidate" });
+      }
+      res.json(evaluation);
+    } catch (error) {
+      console.error("GET /api/candidates/:id/culture-evaluation error:", error);
+      res.status(500).json({ error: "Failed to fetch culture evaluation" });
+    }
+  });
+
   // ==================== JOBS ====================
   // Advanced Job Search - Critical for job discovery (must come before :id route)
   app.get("/api/jobs/search", async (req, res) => {

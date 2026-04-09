@@ -28,6 +28,7 @@ import {
   type Post, type InsertPost,
   type HotSearch, type InsertHotSearch,
   type Candidate, type InsertCandidate,
+  type CultureEvaluation, type InsertCultureEvaluation,
   leadIntakes,
   vanessaLogs,
   feedbacks,
@@ -38,6 +39,7 @@ import {
   hotSearches,
   jobs as jobsTable,
   candidates as candidatesTable,
+  candidateCultureEvaluations as cultureEvaluationsTable,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
@@ -315,6 +317,10 @@ export interface IStorage {
   getCandidateByEmail(email: string): Promise<Candidate | undefined>;
   getCandidates(): Promise<Candidate[]>;
   updateCandidate(id: string, updates: Partial<InsertCandidate>): Promise<Candidate | undefined>;
+
+  // Culture Evaluations
+  upsertCultureEvaluation(candidateId: string, data: Omit<InsertCultureEvaluation, "candidateId">): Promise<CultureEvaluation>;
+  getCultureEvaluationByCandidate(candidateId: string): Promise<CultureEvaluation | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -2394,6 +2400,10 @@ export class MemStorage implements IStorage {
   async getCandidateByEmail(_email: string): Promise<Candidate | undefined> { return undefined; }
   async getCandidates(): Promise<Candidate[]> { return []; }
   async updateCandidate(_id: string, _updates: Partial<InsertCandidate>): Promise<Candidate | undefined> { return undefined; }
+  async upsertCultureEvaluation(_candidateId: string, _data: Omit<InsertCultureEvaluation, "candidateId">): Promise<CultureEvaluation> {
+    throw new Error("Not implemented in MemStorage");
+  }
+  async getCultureEvaluationByCandidate(_candidateId: string): Promise<CultureEvaluation | undefined> { return undefined; }
 }
 
 // DbStorage class: Extends MemStorage but uses PostgreSQL for Vanessa logs
@@ -2866,6 +2876,36 @@ export class DbStorage extends MemStorage {
   async updateCandidate(id: string, updates: Partial<InsertCandidate>): Promise<Candidate | undefined> {
     const [updated] = await db.update(candidatesTable).set(updates).where(eq(candidatesTable.id, id)).returning();
     return updated;
+  }
+
+  async upsertCultureEvaluation(
+    candidateId: string,
+    data: Omit<InsertCultureEvaluation, "candidateId">,
+  ): Promise<CultureEvaluation> {
+    const existing = await this.getCultureEvaluationByCandidate(candidateId);
+    if (existing) {
+      const [updated] = await db
+        .update(cultureEvaluationsTable)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(cultureEvaluationsTable.id, existing.id))
+        .returning();
+      return updated;
+    }
+    const [created] = await db
+      .insert(cultureEvaluationsTable)
+      .values({ ...data, candidateId })
+      .returning();
+    return created;
+  }
+
+  async getCultureEvaluationByCandidate(candidateId: string): Promise<CultureEvaluation | undefined> {
+    const [row] = await db
+      .select()
+      .from(cultureEvaluationsTable)
+      .where(eq(cultureEvaluationsTable.candidateId, candidateId))
+      .orderBy(desc(cultureEvaluationsTable.createdAt))
+      .limit(1);
+    return row;
   }
 }
 
