@@ -7,10 +7,30 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  User, Calendar, Clock, Eye, Globe, TrendingUp,
-  ExternalLink, Rss, ArrowRight, BookOpen, Linkedin, Youtube,
-  Search, PlayCircle, Mic, Users, Briefcase,
-  ChevronLeft, ChevronRight, X, Target, Zap, Award, PenLine,
+  User,
+  Calendar,
+  Clock,
+  Eye,
+  Globe,
+  TrendingUp,
+  ExternalLink,
+  Rss,
+  ArrowRight,
+  BookOpen,
+  Linkedin,
+  Youtube,
+  Search,
+  PlayCircle,
+  Mic,
+  Users,
+  Briefcase,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  Target,
+  Zap,
+  Award,
+  PenLine,
 } from "lucide-react";
 import type { Post } from "@shared/schema";
 import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
@@ -21,15 +41,34 @@ const CASE_STUDIES = [
     company: "TechFlow Solutions",
     industry: "Software Development",
     logo: "TS",
-    challenge: "Overwhelmed by customer support while trying to scale development",
-    solution: "Deployed 12 customer support specialists and 3 technical support engineers",
+    challenge:
+      "Overwhelmed by customer support while trying to scale development",
+    solution:
+      "Deployed 12 customer support specialists and 3 technical support engineers",
     results: [
-      { metric: "Response Time",         value: "87%", description: "faster response times" },
-      { metric: "Customer Satisfaction", value: "94%", description: "CSAT score achieved" },
-      { metric: "Cost Savings",          value: "65%", description: "reduction in support costs" },
-      { metric: "Team Growth",           value: "3x",  description: "development team scaling" },
+      {
+        metric: "Response Time",
+        value: "87%",
+        description: "faster response times",
+      },
+      {
+        metric: "Customer Satisfaction",
+        value: "94%",
+        description: "CSAT score achieved",
+      },
+      {
+        metric: "Cost Savings",
+        value: "65%",
+        description: "reduction in support costs",
+      },
+      {
+        metric: "Team Growth",
+        value: "3x",
+        description: "development team scaling",
+      },
     ],
-    testimonial: "OnSpot didn't just solve our support bottleneck — they freed our entire team to focus on what we do best: building amazing software.",
+    testimonial:
+      "OnSpot didn't just solve our support bottleneck — they freed our entire team to focus on what we do best: building amazing software.",
     clientName: "Sarah Chen",
     clientTitle: "CTO",
     timeframe: "6 months",
@@ -40,15 +79,34 @@ const CASE_STUDIES = [
     company: "GlobalTrade Logistics",
     industry: "Logistics & Supply Chain",
     logo: "GL",
-    challenge: "Manual processes causing delays and errors in shipment tracking",
-    solution: "Built dedicated operations team with process automation specialists",
+    challenge:
+      "Manual processes causing delays and errors in shipment tracking",
+    solution:
+      "Built dedicated operations team with process automation specialists",
     results: [
-      { metric: "Processing Speed",   value: "78%",  description: "faster order processing" },
-      { metric: "Error Rate",         value: "95%",  description: "reduction in errors" },
-      { metric: "Cost Efficiency",    value: "72%",  description: "operational cost savings" },
-      { metric: "Customer Retention", value: "8.5x", description: "growth in repeat customers" },
+      {
+        metric: "Processing Speed",
+        value: "78%",
+        description: "faster order processing",
+      },
+      {
+        metric: "Error Rate",
+        value: "95%",
+        description: "reduction in errors",
+      },
+      {
+        metric: "Cost Efficiency",
+        value: "72%",
+        description: "operational cost savings",
+      },
+      {
+        metric: "Customer Retention",
+        value: "8.5x",
+        description: "growth in repeat customers",
+      },
     ],
-    testimonial: "The transformation was incredible. What used to take our team days now happens in hours, with perfect accuracy.",
+    testimonial:
+      "The transformation was incredible. What used to take our team days now happens in hours, with perfect accuracy.",
     clientName: "Marcus Rodriguez",
     clientTitle: "Operations Director",
     timeframe: "4 months",
@@ -60,14 +118,32 @@ const CASE_STUDIES = [
     industry: "Healthcare Services",
     logo: "HM",
     challenge: "Administrative burden preventing focus on patient care",
-    solution: "Deployed specialized medical administration and billing support team",
+    solution:
+      "Deployed specialized medical administration and billing support team",
     results: [
-      { metric: "Admin Time",          value: "83%",  description: "reduction in admin overhead" },
-      { metric: "Revenue Cycle",       value: "45%",  description: "faster billing processing" },
-      { metric: "Patient Satisfaction",value: "91%",  description: "satisfaction rating" },
-      { metric: "Staff Efficiency",    value: "6.2x", description: "improvement in productivity" },
+      {
+        metric: "Admin Time",
+        value: "83%",
+        description: "reduction in admin overhead",
+      },
+      {
+        metric: "Revenue Cycle",
+        value: "45%",
+        description: "faster billing processing",
+      },
+      {
+        metric: "Patient Satisfaction",
+        value: "91%",
+        description: "satisfaction rating",
+      },
+      {
+        metric: "Staff Efficiency",
+        value: "6.2x",
+        description: "improvement in productivity",
+      },
     ],
-    testimonial: "OnSpot gave us back what matters most — time with our patients. Our doctors can finally focus on healing instead of paperwork.",
+    testimonial:
+      "OnSpot gave us back what matters most — time with our patients. Our doctors can finally focus on healing instead of paperwork.",
     clientName: "Dr. Jennifer Park",
     clientTitle: "Chief Medical Officer",
     timeframe: "8 months",
@@ -78,12 +154,12 @@ const CASE_STUDIES = [
 
 // ─── Navigation categories ────────────────────────────────────────────────────
 const NAV_CATEGORIES = [
-  { id: "CEO Insights",      label: "CEO Insights",      icon: Rss        },
-  { id: "Talent Insights",   label: "Talent Insights",   icon: User       },
-  { id: "Client Insights",   label: "Client Insights",   icon: Briefcase  },
-  { id: "Industry Insights", label: "Industry Insights", icon: Globe      },
-  { id: "Learning Centre",   label: "Learning Centre",   icon: BookOpen   },
-  { id: "Podcast Videos",    label: "Podcast Videos",    icon: Mic        },
+  { id: "CEO Insights", label: "CEO Insights", icon: Rss },
+  { id: "Talent Insights", label: "Talent Insights", icon: User },
+  { id: "Client Insights", label: "Client Insights", icon: Briefcase },
+  { id: "Industry Insights", label: "Industry Insights", icon: Globe },
+  { id: "Learning Centre", label: "Learning Centre", icon: BookOpen },
+  { id: "Podcast Videos", label: "Podcast Videos", icon: Mic },
 ] as const;
 
 // "View All" is still a valid state but has no tab; it is the default
@@ -91,26 +167,38 @@ type NavCategoryId = (typeof NAV_CATEGORIES)[number]["id"] | "View All";
 
 // ─── Cover image fallbacks by category ────────────────────────────────────────
 const COVER_IMAGES: Record<string, string> = {
-  "CEO Insights":        "https://images.unsplash.com/photo-1549923746-c502d488b3ea?w=800&h=450&fit=crop",
-  "Talent Insights":     "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&h=450&fit=crop",
-  "Client Insights":     "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&h=450&fit=crop",
-  "Industry Insights":   "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=450&fit=crop",
-  "Learning Centre":     "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=450&fit=crop",
-  "Podcast Videos":      "https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=800&h=450&fit=crop",
-  "Global Outsourcing":  "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=800&h=450&fit=crop",
-  "Technology":          "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&h=450&fit=crop",
-  "Customer Service":    "https://images.unsplash.com/photo-1600298881974-6be191ceeda1?w=800&h=450&fit=crop",
-  "Industry Trends":     "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=450&fit=crop",
-  "Process Optimization":"https://images.unsplash.com/photo-1553484771-371a605b060b?w=800&h=450&fit=crop",
+  "CEO Insights":
+    "https://images.unsplash.com/photo-1549923746-c502d488b3ea?w=800&h=450&fit=crop",
+  "Talent Insights":
+    "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&h=450&fit=crop",
+  "Client Insights":
+    "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&h=450&fit=crop",
+  "Industry Insights":
+    "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=450&fit=crop",
+  "Learning Centre":
+    "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=450&fit=crop",
+  "Podcast Videos":
+    "https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=800&h=450&fit=crop",
+  "Global Outsourcing":
+    "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=800&h=450&fit=crop",
+  Technology:
+    "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&h=450&fit=crop",
+  "Customer Service":
+    "https://images.unsplash.com/photo-1600298881974-6be191ceeda1?w=800&h=450&fit=crop",
+  "Industry Trends":
+    "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=450&fit=crop",
+  "Process Optimization":
+    "https://images.unsplash.com/photo-1553484771-371a605b060b?w=800&h=450&fit=crop",
 };
-const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=450&fit=crop";
+const FALLBACK_IMAGE =
+  "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=450&fit=crop";
 
 // ─── Legacy category normalisation ────────────────────────────────────────────
 const LEGACY_CATEGORY_MAP: Record<string, string> = {
-  "Global Outsourcing":   "Industry Insights",
-  "Industry Trends":      "Industry Insights",
-  "Technology":           "Industry Insights",
-  "Customer Service":     "Client Insights",
+  "Global Outsourcing": "Industry Insights",
+  "Industry Trends": "Industry Insights",
+  Technology: "Industry Insights",
+  "Customer Service": "Client Insights",
   "Process Optimization": "Learning Centre",
 };
 
@@ -162,8 +250,7 @@ function formatDate(date: string | Date | null): string {
 
 function isPodcast(category: string): boolean {
   return (
-    category === "Podcast Videos" ||
-    category.toLowerCase().includes("podcast")
+    category === "Podcast Videos" || category.toLowerCase().includes("podcast")
   );
 }
 
@@ -233,7 +320,9 @@ function ArticleCard({ article }: { article: ArticleItem }) {
           loading="lazy"
           width={800}
           height={450}
-          onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
+          }}
         />
         <div className="absolute bottom-0 left-0 right-0 px-4 py-2 bg-gradient-to-t from-black/60 to-transparent flex items-end justify-between">
           <Badge
@@ -256,7 +345,8 @@ function ArticleCard({ article }: { article: ArticleItem }) {
         </h4>
 
         <p className="text-sm text-slate-500 line-clamp-3 leading-relaxed flex-1">
-          {article.excerpt || "Read the full article for insights and analysis."}
+          {article.excerpt ||
+            "Read the full article for insights and analysis."}
         </p>
 
         <div className="border-t border-slate-200 pt-3 mt-auto">
@@ -319,7 +409,9 @@ function PodcastCard({ article }: { article: ArticleItem }) {
             loading="lazy"
             width={176}
             height={120}
-            onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
+            }}
           />
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
             <div className="w-11 h-11 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/40">
@@ -348,7 +440,8 @@ function PodcastCard({ article }: { article: ArticleItem }) {
           </h4>
 
           <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed flex-1">
-            {article.excerpt || "Listen to this episode for expert conversations."}
+            {article.excerpt ||
+              "Listen to this episode for expert conversations."}
           </p>
 
           <div className="flex items-center gap-2 flex-wrap mt-auto pt-2 border-t border-slate-200">
@@ -409,8 +502,7 @@ function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const total = articles.length;
 
-  const goTo = (idx: number) =>
-    setActive(((idx % total) + total) % total);
+  const goTo = (idx: number) => setActive(((idx % total) + total) % total);
 
   useEffect(() => {
     if (total <= 1 || paused) {
@@ -449,7 +541,10 @@ function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
           <div
             key={a.id}
             className="absolute inset-0 transition-opacity duration-700"
-            style={{ opacity: i === active ? 1 : 0, zIndex: i === active ? 1 : 0 }}
+            style={{
+              opacity: i === active ? 1 : 0,
+              zIndex: i === active ? 1 : 0,
+            }}
             aria-hidden={i !== active}
           >
             <img
@@ -457,7 +552,9 @@ function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
               alt={a.title}
               className="w-full h-full object-cover object-center"
               draggable={false}
-              onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
+              }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/65 to-transparent" />
             <div className="absolute inset-0 bg-gradient-to-r from-slate-900/85 via-slate-900/30 to-transparent" />
@@ -517,14 +614,20 @@ function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
         {total > 1 && (
           <>
             <button
-              onClick={(e) => { e.stopPropagation(); goTo(active - 1); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                goTo(active - 1);
+              }}
               className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/40 border border-white/10 backdrop-blur-sm flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/60"
               aria-label="Previous article"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); goTo(active + 1); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                goTo(active + 1);
+              }}
               className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/40 border border-white/10 backdrop-blur-sm flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/60"
               aria-label="Next article"
             >
@@ -538,7 +641,10 @@ function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
             {articles.map((_, i) => (
               <button
                 key={i}
-                onClick={(e) => { e.stopPropagation(); goTo(i); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  goTo(i);
+                }}
                 className={`rounded-full transition-all duration-300 ${
                   i === active
                     ? "w-6 h-2 bg-white"
@@ -603,7 +709,6 @@ function CategoryNav({
   return (
     <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
         {/* ── Primary nav row ─────────────────────────────────────────────── */}
         <div className="flex items-center -mb-px">
           {/* OnSpot logo → homepage */}
@@ -612,7 +717,11 @@ function CategoryNav({
             className="flex items-center py-2.5 pr-4 flex-shrink-0 border-b-2 border-transparent"
             aria-label="Go to OnSpot homepage"
           >
-            <img src={onspotLogo} alt="OnSpot" className="h-7 w-auto object-contain" />
+            <img
+              src={onspotLogo}
+              alt="OnSpot"
+              className="h-7 w-auto object-contain"
+            />
           </button>
 
           {/* Divider */}
@@ -654,8 +763,14 @@ function CategoryNav({
               }`}
               aria-label={searchOpen ? "Close search" : "Open search"}
             >
-              {searchOpen ? <X className="w-4 h-4" /> : <Search className="w-4 h-4" />}
-              <span className="hidden sm:inline">{searchOpen ? "Close" : "Search"}</span>
+              {searchOpen ? (
+                <X className="w-4 h-4" />
+              ) : (
+                <Search className="w-4 h-4" />
+              )}
+              <span className="hidden sm:inline">
+                {searchOpen ? "Close" : "Search"}
+              </span>
               {hasActiveSearch && !searchOpen && (
                 <span className="w-1.5 h-1.5 rounded-full bg-[#474ead] flex-shrink-0" />
               )}
@@ -733,8 +848,14 @@ function SectionHeading({
   );
 }
 
-// ─── Empty state ──────────────────────────────────────────────────────────────
-function EmptyState({ icon: Icon, message }: { icon: React.ElementType; message: string }) {
+// ─── Empty state ──────────────────────────  �───────────────────────────────────
+function EmptyState({
+  icon: Icon,
+  message,
+}: {
+  icon: React.ElementType;
+  message: string;
+}) {
   return (
     <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-slate-400">
       <Icon className="w-8 h-8 mx-auto mb-3 opacity-40" />
@@ -756,7 +877,9 @@ function HighlightCard({ article }: { article: ArticleItem }) {
         src={article.image}
         alt={article.title}
         className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
-        onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
+        onError={(e) => {
+          (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
+        }}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-slate-900/96 via-slate-900/55 to-transparent" />
       <div className="absolute inset-0 bg-gradient-to-r from-slate-900/72 via-slate-900/20 to-transparent" />
@@ -792,7 +915,8 @@ function HighlightCard({ article }: { article: ArticleItem }) {
           )}
         </div>
         <div className="inline-flex items-center gap-2 text-sm font-semibold text-white group-hover:text-[#474ead] transition-colors">
-          Read Article <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+          Read Article{" "}
+          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
         </div>
       </div>
     </div>
@@ -813,7 +937,9 @@ function PanelArticleCard({ article }: { article: ArticleItem }) {
           alt={article.title}
           className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
           loading="lazy"
-          onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/70 to-transparent" />
         <span className="absolute bottom-3 left-3 text-[10px] uppercase tracking-[0.2em] font-semibold px-3 py-1 rounded-full bg-[#474ead] text-white">
@@ -830,8 +956,12 @@ function PanelArticleCard({ article }: { article: ArticleItem }) {
           </p>
         )}
         <div className="flex items-center gap-3 text-xs text-slate-400 flex-wrap">
-          <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {article.date}</span>
-          <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {article.readTime}</span>
+          <span className="flex items-center gap-1">
+            <Calendar className="w-3 h-3" /> {article.date}
+          </span>
+          <span className="flex items-center gap-1">
+            <Clock className="w-3 h-3" /> {article.readTime}
+          </span>
         </div>
       </div>
     </div>
@@ -862,7 +992,9 @@ function CaseStudyTeaser() {
             <span className="w-7 h-7 rounded-full bg-[#474ead] text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">
               {study.logo}
             </span>
-            <span className="text-sm font-bold text-slate-900">{study.company}</span>
+            <span className="text-sm font-bold text-slate-900">
+              {study.company}
+            </span>
           </div>
           <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">
             {study.challenge}
@@ -872,9 +1004,14 @@ function CaseStudyTeaser() {
         {/* Top 2 result metrics */}
         <div className="grid grid-cols-2 gap-2">
           {study.results.slice(0, 2).map((r) => (
-            <div key={r.metric} className="bg-white rounded-lg p-2.5 border border-slate-100 text-center">
+            <div
+              key={r.metric}
+              className="bg-white rounded-lg p-2.5 border border-slate-100 text-center"
+            >
               <div className="text-lg font-bold text-[#474ead]">{r.value}</div>
-              <div className="text-[10px] text-slate-500 leading-tight">{r.description}</div>
+              <div className="text-[10px] text-slate-500 leading-tight">
+                {r.description}
+              </div>
             </div>
           ))}
         </div>
@@ -912,19 +1049,27 @@ function EditorialSection({
 
   const highlightArticle = articles[0];
   const panelArticle = articles[1];
-  const gridArticles = showAll ? articles.slice(2) : articles.slice(2, 2 + GRID_LIMIT);
+  const gridArticles = showAll
+    ? articles.slice(2)
+    : articles.slice(2, 2 + GRID_LIMIT);
   const hasMore = !showAll && articles.length > 2 + GRID_LIMIT;
 
   if (searchActive) {
     return (
       <>
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Search results</h2>
-          <p className="text-sm text-slate-500 mt-1">{articles.length} article{articles.length !== 1 ? "s" : ""} found</p>
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+            Search results
+          </h2>
+          <p className="text-sm text-slate-500 mt-1">
+            {articles.length} article{articles.length !== 1 ? "s" : ""} found
+          </p>
         </div>
         {articles.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-14">
-            {articles.map((a) => <ArticleCard key={a.id} article={a} />)}
+            {articles.map((a) => (
+              <ArticleCard key={a.id} article={a} />
+            ))}
           </div>
         ) : (
           <EmptyState icon={Search} message="No articles match your search." />
@@ -933,7 +1078,9 @@ function EditorialSection({
           <section className="mb-14">
             <SectionHeading icon={Mic} title="Podcast Episodes" />
             <div className="space-y-4">
-              {episodes.map((e) => <PodcastCard key={e.id} article={e} />)}
+              {episodes.map((e) => (
+                <PodcastCard key={e.id} article={e} />
+              ))}
             </div>
           </section>
         )}
@@ -952,7 +1099,8 @@ function EditorialSection({
             Explore the full knowledge base.
           </h2>
           <p className="text-sm text-slate-500 max-w-xs leading-relaxed hidden sm:block">
-            Deep dives, expert analysis, and industry perspectives — curated by the OnSpot team.
+            Deep dives, expert analysis, and industry perspectives — curated by
+            the OnSpot team.
           </p>
         </div>
         <div className="mt-6 h-px bg-gradient-to-r from-[#474ead]/30 via-slate-200 to-transparent" />
@@ -960,10 +1108,16 @@ function EditorialSection({
 
       {isLoading ? (
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 mb-10">
-          <Skeleton className="rounded-2xl bg-slate-200" style={{ minHeight: "460px" }} />
+          <Skeleton
+            className="rounded-2xl bg-slate-200"
+            style={{ minHeight: "460px" }}
+          />
           <div className="flex flex-col gap-5">
             <Skeleton className="rounded-2xl bg-slate-200 h-[268px]" />
-            <Skeleton className="rounded-2xl bg-slate-200 flex-1" style={{ minHeight: "164px" }} />
+            <Skeleton
+              className="rounded-2xl bg-slate-200 flex-1"
+              style={{ minHeight: "164px" }}
+            />
           </div>
         </div>
       ) : highlightArticle ? (
@@ -978,7 +1132,9 @@ function EditorialSection({
 
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-          {Array.from({ length: 6 }).map((_, i) => <ArticleCardSkeleton key={i} />)}
+          {Array.from({ length: 6 }).map((_, i) => (
+            <ArticleCardSkeleton key={i} />
+          ))}
         </div>
       ) : gridArticles.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
@@ -994,7 +1150,8 @@ function EditorialSection({
             onClick={() => setShowAll(true)}
             className="inline-flex items-center gap-2.5 rounded-full border border-slate-200 bg-white px-8 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all"
           >
-            View all {articles.length} insights <ArrowRight className="w-4 h-4" />
+            View all {articles.length} insights{" "}
+            <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       )}
@@ -1041,7 +1198,6 @@ function InsightsCTA() {
     <section className="mb-10">
       <div className="rounded-2xl border border-slate-200 bg-white px-8 py-10 md:px-12 md:py-14">
         <div className="grid grid-cols-1 lg:grid-cols-[45%_55%] gap-10 items-start">
-
           <div className="max-w-lg">
             <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-[#474ead] mb-4">
               Editorial CTA
@@ -1064,7 +1220,9 @@ function InsightsCTA() {
                 className="group flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-5 transition-all duration-200 hover:border-[#474ead]/40 hover:bg-white"
               >
                 <div className="flex-1">
-                  <h3 className="text-sm font-bold text-slate-900 mb-2">{title}</h3>
+                  <h3 className="text-sm font-bold text-slate-900 mb-2">
+                    {title}
+                  </h3>
                   <p className="text-xs text-slate-500 leading-5">{copy}</p>
                 </div>
                 <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#474ead] group-hover:text-[#5b63d6] transition-colors">
@@ -1073,7 +1231,6 @@ function InsightsCTA() {
               </a>
             ))}
           </div>
-
         </div>
       </div>
     </section>
@@ -1091,7 +1248,9 @@ function WeeklyNotesModal({
   // Close on Escape for accessibility
   useEffect(() => {
     if (!open) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, [open, onClose]);
@@ -1167,7 +1326,9 @@ function WeeklyNotesModal({
 
               {/* Description */}
               <p className="mb-5 text-sm leading-relaxed text-slate-500">
-                Raw, candid perspectives on outsourcing, growth, and the future of remote work — written weekly by our CEO, straight from the front lines.
+                Raw, candid perspectives on outsourcing, growth, and the future
+                of remote work — written weekly by our CEO, straight from the
+                front lines.
               </p>
 
               {/* Divider */}
@@ -1182,7 +1343,9 @@ function WeeklyNotesModal({
                 ].map((item) => (
                   <div key={item} className="flex items-start gap-3">
                     <div className="mt-[6px] h-1.5 w-1.5 shrink-0 rounded-full bg-[#474ead]/50" />
-                    <span className="text-sm leading-relaxed text-slate-600">{item}</span>
+                    <span className="text-sm leading-relaxed text-slate-600">
+                      {item}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -1208,7 +1371,7 @@ function WeeklyNotesModal({
         </div>
       )}
     </AnimatePresence>,
-    document.body
+    document.body,
   );
 }
 
@@ -1217,12 +1380,13 @@ const CEO_POPUP_DISMISSED_KEY = "onspot_ceo_popup_dismissed";
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function Insights() {
   const [location] = useLocation();
-  const [selectedCategory, setSelectedCategory] = useState<NavCategoryId>("View All");
+  const [selectedCategory, setSelectedCategory] =
+    useState<NavCategoryId>("View All");
   const [searchQuery, setSearchQuery] = useState("");
   const [authorFilter, setAuthorFilter] = useState("");
   const [ceoModalOpen, setCeoModalOpen] = useState(false);
   const [ceoDismissed, setCeoDismissed] = useState(
-    () => sessionStorage.getItem(CEO_POPUP_DISMISSED_KEY) === "1"
+    () => sessionStorage.getItem(CEO_POPUP_DISMISSED_KEY) === "1",
   );
 
   // Auto-trigger after 5 seconds — only if not already dismissed this session
@@ -1298,14 +1462,15 @@ export default function Insights() {
     selectedCategory === "Podcast Videos"
       ? allArticles.filter((a) => a.isEpisode)
       : selectedCategory === "CEO Insights"
-      ? allArticles.filter((a) => !a.isEpisode && matchesCeo(a))
-      : selectedCategory === "View All"
-      ? []
-      : allArticles.filter(
-          (a) =>
-            !a.isEpisode &&
-            a.category.trim().toLowerCase() === selectedCategory.trim().toLowerCase()
-        )
+        ? allArticles.filter((a) => !a.isEpisode && matchesCeo(a))
+        : selectedCategory === "View All"
+          ? []
+          : allArticles.filter(
+              (a) =>
+                !a.isEpisode &&
+                a.category.trim().toLowerCase() ===
+                  selectedCategory.trim().toLowerCase(),
+            ),
   );
 
   const featuredArticles = latestArticles.filter((a) => a.featured);
@@ -1363,10 +1528,16 @@ export default function Insights() {
         !authorFilter && (
           <section className="hero-investor relative overflow-hidden">
             {/* Depth overlay — matches homepage hero treatment */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/30 pointer-events-none" aria-hidden="true" />
+            <div
+              className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/30 pointer-events-none"
+              aria-hidden="true"
+            />
 
             {/* Animated ambient accents — same as homepage */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+            <div
+              className="absolute inset-0 overflow-hidden pointer-events-none"
+              aria-hidden="true"
+            >
               <div className="absolute top-1/3 left-1/4 w-[600px] h-[600px] bg-gradient-radial from-white/5 to-transparent rounded-full blur-3xl animate-gentle-float" />
               <div className="absolute bottom-1/3 right-1/4 w-[500px] h-[500px] bg-gradient-radial from-blue-500/10 to-transparent rounded-full blur-3xl animate-slow-spin" />
             </div>
@@ -1388,7 +1559,6 @@ export default function Insights() {
 
       {/* ── Main content area ─────────────────────────────────────────────── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-
         {!isLoading && isEmpty && (
           <div className="text-center py-20 text-slate-400">
             <Search className="w-10 h-10 mx-auto mb-4 opacity-30" />
@@ -1432,34 +1602,36 @@ export default function Insights() {
         )}
 
         {/* ── SPECIFIC ARTICLE CATEGORIES ───────────────────────────────────── */}
-        {selectedCategory !== "View All" && selectedCategory !== "Podcast Videos" && (
-          <section className="mb-14">
-            <SectionHeading
-              icon={
-                NAV_CATEGORIES.find((c) => c.id === selectedCategory)?.icon ?? Globe
-              }
-              title={selectedCategory}
-            />
-            {isLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <ArticleCardSkeleton key={i} />
-                ))}
-              </div>
-            ) : categoryArticles.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {categoryArticles.map((article) => (
-                  <ArticleCard key={article.id} article={article} />
-                ))}
-              </div>
-            ) : (
-              <EmptyState
-                icon={Search}
-                message={`No ${selectedCategory} articles yet. Check back soon.`}
+        {selectedCategory !== "View All" &&
+          selectedCategory !== "Podcast Videos" && (
+            <section className="mb-14">
+              <SectionHeading
+                icon={
+                  NAV_CATEGORIES.find((c) => c.id === selectedCategory)?.icon ??
+                  Globe
+                }
+                title={selectedCategory}
               />
-            )}
-          </section>
-        )}
+              {isLoading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <ArticleCardSkeleton key={i} />
+                  ))}
+                </div>
+              ) : categoryArticles.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {categoryArticles.map((article) => (
+                    <ArticleCard key={article.id} article={article} />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  icon={Search}
+                  message={`No ${selectedCategory} articles yet. Check back soon.`}
+                />
+              )}
+            </section>
+          )}
 
         {/* ── Content Channels ─────────────────────────────────────────────── */}
         <section className="mb-14">
@@ -1475,7 +1647,9 @@ export default function Insights() {
                 >
                   <channel.icon className="w-7 h-7 text-white" />
                 </div>
-                <h4 className="text-lg font-bold mb-3 text-slate-900">{channel.title}</h4>
+                <h4 className="text-lg font-bold mb-3 text-slate-900">
+                  {channel.title}
+                </h4>
                 <p className="text-sm text-slate-500 mb-6 leading-relaxed">
                   {channel.description}
                 </p>
@@ -1515,7 +1689,6 @@ export default function Insights() {
 
         {/* ── Insights CTA ──────────────────────────────────────────────────── */}
         <InsightsCTA />
-
       </div>
     </div>
   );

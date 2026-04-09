@@ -30,6 +30,13 @@ import {
   Tag,
   Plus,
   AlertCircle,
+  MapPin,
+  Phone,
+  Mail,
+  Pencil,
+  Trash2,
+  Building2,
+  CalendarDays,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -49,17 +56,28 @@ import {
 
 type Phase = "flow" | "matching" | "results";
 
+interface WorkHistoryEntry {
+  jobTitle: string;
+  company: string;
+  duration: string;
+  responsibilities: string;
+}
+
 interface CandidateProfile {
   // Step 1 — Upload
   resumeFile: File | null;
   // Step 2 — Finalize Information (primary source of truth for matching)
   fullName: string;
+  email: string;
+  phone: string;
+  location: string;
   targetPosition: string; // FREE TEXT — most important matching input
   jobCategory: string; // niche / department
   yearsOfExperience: string; // "0-1" | "1-3" | "3-5" | "5+"
   seniority: string; // "entry" | "mid" | "senior"
   coreSkills: string[]; // from skill chips
   secondarySkills: string[]; // from free-text tag input
+  workHistory: WorkHistoryEntry[];
   preferredSetup: string; // "Remote" | "Hybrid" | "On-site"
   preferredShift: string;
   preferredJobType: string; // "Full-time" | "Part-time"
@@ -69,15 +87,26 @@ interface CandidateProfile {
   valuesAnswers: Record<string, string>;
 }
 
+const EMPTY_WORK_ENTRY: WorkHistoryEntry = {
+  jobTitle: "",
+  company: "",
+  duration: "",
+  responsibilities: "",
+};
+
 const EMPTY_PROFILE: CandidateProfile = {
   resumeFile: null,
   fullName: "",
+  email: "",
+  phone: "",
+  location: "",
   targetPosition: "",
   jobCategory: "",
   yearsOfExperience: "",
   seniority: "",
   coreSkills: [],
   secondarySkills: [],
+  workHistory: [],
   preferredSetup: "",
   preferredShift: "",
   preferredJobType: "",
@@ -93,8 +122,10 @@ const FLOW_STEPS = [
   { label: "Your Profile", icon: FileText },
   { label: "Culture Fit", icon: Heart },
   { label: "Culture Result", icon: Sparkles },
+  { label: "Jobs", icon: BriefcaseBusiness },
 ];
-const TOTAL_FLOW_STEPS = FLOW_STEPS.length;
+const TOTAL_FLOW_STEPS = FLOW_STEPS.length; // 5 labels; actual flow steps are 0-3
+const LAST_FLOW_STEP = 3; // step index that triggers matching
 
 // ─── Constants for Finalize step ─────────────────────────────────────────────
 
@@ -1822,6 +1853,17 @@ export default function FindBestMatches() {
     null,
   );
 
+  // ── Candidate persistence state ──────────────────────────────────────────
+  const [candidateId, setCandidateId] = useState<string | null>(null);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  // ── Work history form state ──────────────────────────────────────────────
+  const [showWorkForm, setShowWorkForm] = useState(false);
+  const [editWorkIdx, setEditWorkIdx] = useState<number | null>(null);
+  const [workEntry, setWorkEntry] = useState<WorkHistoryEntry>({
+    ...EMPTY_WORK_ENTRY,
+  });
+
   const { openJobs, isLoading: jobsLoading } = usePostedJobs();
 
   const primaryDomain = useMemo(
@@ -1923,15 +1965,107 @@ export default function FindBestMatches() {
   function setValuesAnswer(qId: string, optId: string) {
     setField("valuesAnswers", { ...profile.valuesAnswers, [qId]: optId });
   }
-  function handleNext() {
-    if (flowStep < TOTAL_FLOW_STEPS - 1) {
-      setFlowStep((s) => s + 1);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+
+  // ── Work history helpers ──────────────────────────────────────────────────
+  function openAddWorkForm() {
+    setWorkEntry({ ...EMPTY_WORK_ENTRY });
+    setEditWorkIdx(null);
+    setShowWorkForm(true);
+  }
+  function openEditWorkForm(idx: number) {
+    setWorkEntry({ ...profile.workHistory[idx] });
+    setEditWorkIdx(idx);
+    setShowWorkForm(true);
+  }
+  function cancelWorkForm() {
+    setShowWorkForm(false);
+    setEditWorkIdx(null);
+    setWorkEntry({ ...EMPTY_WORK_ENTRY });
+  }
+  function saveWorkEntry() {
+    if (!workEntry.jobTitle.trim() || !workEntry.company.trim()) return;
+    const newHistory = [...profile.workHistory];
+    if (editWorkIdx !== null) {
+      newHistory[editWorkIdx] = { ...workEntry };
     } else {
+      newHistory.push({ ...workEntry });
+    }
+    setField("workHistory", newHistory);
+    cancelWorkForm();
+  }
+  function removeWorkEntry(idx: number) {
+    setField(
+      "workHistory",
+      profile.workHistory.filter((_, i) => i !== idx),
+    );
+  }
+
+  // ── Navigation ────────────────────────────────────────────────────────────
+  async function handleNext() {
+    if (flowStep === 1) {
+      // Save candidate profile to DB then advance
+      setIsSavingProfile(true);
+      try {
+        const payload = {
+          fullName: profile.fullName,
+          email: profile.email || null,
+          phone: profile.phone || null,
+          location: profile.location || null,
+          targetPosition: profile.targetPosition,
+          category: profile.jobCategory,
+          experienceYears: profile.yearsOfExperience || null,
+          seniority: profile.seniority || null,
+          coreSkills: profile.coreSkills,
+          secondarySkills: profile.secondarySkills,
+          workHistory: profile.workHistory,
+          preferences: {
+            setup: profile.preferredSetup,
+            shift: profile.preferredShift,
+            jobType: profile.preferredJobType,
+            environment: profile.workEnvironment,
+          },
+          summary: profile.summary || null,
+        };
+        const url = candidateId ? `/api/candidates/${candidateId}` : "/api/candidates";
+        const method = candidateId ? "PATCH" : "POST";
+        const res = await fetch(url, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (!candidateId) setCandidateId(data.id);
+        }
+      } catch {
+        // Non-blocking — proceed even if save fails
+      } finally {
+        setIsSavingProfile(false);
+      }
+    }
+
+    if (flowStep === LAST_FLOW_STEP) {
+      // Update culture score in DB then start matching
+      if (candidateId) {
+        const answered = Object.keys(profile.valuesAnswers).length;
+        if (answered > 0) {
+          const { score } = computeValuesAlignment(profile.valuesAnswers);
+          fetch(`/api/candidates/${candidateId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ cultureScore: score }),
+          }).catch(() => {});
+        }
+      }
       setPhase("matching");
       window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
     }
+
+    setFlowStep((s) => s + 1);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
+
   function handleBack() {
     if (flowStep > 0) {
       setFlowStep((s) => s - 1);
@@ -1946,10 +2080,14 @@ export default function FindBestMatches() {
     setExtracted(null);
     setExtractParseError(null);
     setExtracting(false);
+    setCandidateId(null);
+    setShowWorkForm(false);
+    setEditWorkIdx(null);
+    setWorkEntry({ ...EMPTY_WORK_ENTRY });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  const ready = canProceed(flowStep, profile) && !extracting;
+  const ready = canProceed(flowStep, profile) && !extracting && !isSavingProfile;
 
   // ── Hero ──────────────────────────────────────────────────────────────────
   function HeroContent() {
@@ -2025,8 +2163,8 @@ export default function FindBestMatches() {
           Find your best-fit remote role.
         </h1>
         <p className="mt-3 max-w-2xl text-base text-slate-500">
-          A guided 3-step journey. Upload your resume, finalize your profile,
-          complete a culture evaluation — then see roles that truly match you.
+          A guided journey. Upload your resume, build your profile, complete a
+          culture evaluation — then see roles that truly match you.
         </p>
         <FlowProgress flowStep={flowStep} />
       </motion.div>
@@ -2263,12 +2401,66 @@ export default function FindBestMatches() {
               Full Name{" "}
               <span className="text-slate-400 font-normal">(optional)</span>
             </Label>
-            <Input
-              placeholder="e.g. Maria Santos"
-              value={profile.fullName}
-              onChange={(e) => setField("fullName", e.target.value)}
-              className="rounded-xl"
-            />
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="e.g. Maria Santos"
+                value={profile.fullName}
+                onChange={(e) => setField("fullName", e.target.value)}
+                className="rounded-xl pl-9"
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-slate-700">
+                Email{" "}
+                <span className="text-slate-400 font-normal">(optional)</span>
+              </Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  type="email"
+                  placeholder="you@email.com"
+                  value={profile.email}
+                  onChange={(e) => setField("email", e.target.value)}
+                  className="rounded-xl pl-9"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-slate-700">
+                Phone{" "}
+                <span className="text-slate-400 font-normal">(optional)</span>
+              </Label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  type="tel"
+                  placeholder="+63 912 345 6789"
+                  value={profile.phone}
+                  onChange={(e) => setField("phone", e.target.value)}
+                  className="rounded-xl pl-9"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-slate-700">
+              Location{" "}
+              <span className="text-slate-400 font-normal">(optional)</span>
+            </Label>
+            <div className="relative">
+              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="e.g. Cebu City, Philippines"
+                value={profile.location}
+                onChange={(e) => setField("location", e.target.value)}
+                className="rounded-xl pl-9"
+              />
+            </div>
           </div>
 
           <div className="space-y-1.5">
@@ -2512,6 +2704,182 @@ export default function FindBestMatches() {
               ))}
             </div>
           </div>
+        </div>
+
+        {/* Work History */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400">
+              Work History{" "}
+              <span className="font-normal normal-case text-slate-400">
+                (optional)
+              </span>
+            </h3>
+            {!showWorkForm && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={openAddWorkForm}
+                className="rounded-full shrink-0"
+              >
+                <Plus className="h-3.5 w-3.5 mr-1" /> Add Entry
+              </Button>
+            )}
+          </div>
+
+          {/* Existing entries */}
+          {profile.workHistory.length > 0 && (
+            <div className="space-y-3">
+              {profile.workHistory.map((entry, idx) => (
+                <div
+                  key={idx}
+                  className="rounded-xl border border-slate-200 bg-slate-50 p-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-900 truncate">
+                        {entry.jobTitle}
+                      </p>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-slate-500">
+                        {entry.company && (
+                          <span className="flex items-center gap-1">
+                            <Building2 className="h-3 w-3" /> {entry.company}
+                          </span>
+                        )}
+                        {entry.duration && (
+                          <span className="flex items-center gap-1">
+                            <CalendarDays className="h-3 w-3" /> {entry.duration}
+                          </span>
+                        )}
+                      </div>
+                      {entry.responsibilities && (
+                        <p className="mt-2 text-xs text-slate-600 leading-relaxed line-clamp-2">
+                          {entry.responsibilities}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => openEditWorkForm(idx)}
+                        className="h-7 w-7"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => removeWorkEntry(idx)}
+                        className="h-7 w-7 text-red-400 hover:text-red-600"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Inline add/edit form */}
+          {showWorkForm && (
+            <div className="rounded-2xl border border-[#474ead]/20 bg-[#474ead]/3 p-5 space-y-4">
+              <p className="text-sm font-semibold text-[#474ead]">
+                {editWorkIdx !== null ? "Edit Work Entry" : "Add Work Entry"}
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-slate-600">
+                    Job Title <span className="text-[#474ead]">*</span>
+                  </Label>
+                  <Input
+                    placeholder="e.g. Virtual Assistant"
+                    value={workEntry.jobTitle}
+                    onChange={(e) =>
+                      setWorkEntry((w) => ({ ...w, jobTitle: e.target.value }))
+                    }
+                    className="rounded-xl"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-slate-600">
+                    Company <span className="text-[#474ead]">*</span>
+                  </Label>
+                  <Input
+                    placeholder="e.g. Acme Corp"
+                    value={workEntry.company}
+                    onChange={(e) =>
+                      setWorkEntry((w) => ({ ...w, company: e.target.value }))
+                    }
+                    className="rounded-xl"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-600">
+                  Duration (optional)
+                </Label>
+                <Input
+                  placeholder="e.g. Jan 2022 – Present · 2 yrs"
+                  value={workEntry.duration}
+                  onChange={(e) =>
+                    setWorkEntry((w) => ({ ...w, duration: e.target.value }))
+                  }
+                  className="rounded-xl"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-600">
+                  Key Responsibilities (optional)
+                </Label>
+                <Textarea
+                  placeholder="Brief summary of your main duties and achievements…"
+                  value={workEntry.responsibilities}
+                  onChange={(e) =>
+                    setWorkEntry((w) => ({
+                      ...w,
+                      responsibilities: e.target.value,
+                    }))
+                  }
+                  rows={3}
+                  className="rounded-xl resize-none"
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={cancelWorkForm}
+                  className="rounded-full px-5"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={saveWorkEntry}
+                  disabled={
+                    !workEntry.jobTitle.trim() || !workEntry.company.trim()
+                  }
+                  className="rounded-full bg-[#474ead] px-5 text-white"
+                >
+                  {editWorkIdx !== null ? "Save Changes" : "Add Entry"}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {profile.workHistory.length === 0 && !showWorkForm && (
+            <p className="text-xs text-slate-400">
+              No work history added yet. Click "Add Entry" to include past
+              experience.
+            </p>
+          )}
         </div>
 
         {/* Optional summary */}
@@ -2973,7 +3341,11 @@ export default function FindBestMatches() {
                   disabled={!ready}
                   className="rounded-full bg-[#474ead] px-8 text-white"
                 >
-                  {flowStep === TOTAL_FLOW_STEPS - 1 ? (
+                  {isSavingProfile ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…
+                    </>
+                  ) : flowStep === LAST_FLOW_STEP ? (
                     <>
                       <Sparkles className="mr-2 h-4 w-4" /> Find My Matches
                     </>

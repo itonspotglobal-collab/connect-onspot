@@ -87,15 +87,21 @@ Preferred communication style: Simple, everyday language.
 - **Lindy.ai**: Embedded AI chatbot for customer support (pending whitelisting).
 
 #### Candidate Matching Journey (`/find-best-matches`)
-- **3-step flow**: Upload Resume → Finalize Your Profile → Culture Evaluation → Results
+- **5-step stepper**: Upload Resume → Your Profile → Culture Fit → Culture Result → Jobs (5th shown in stepper; actual flow steps 0-3 with results as a phase)
 - **Resume Auto-Extraction**: `client/src/lib/resumeParser.ts` — client-side PDF (pdfjs-dist) + DOCX (mammoth) text extraction; infers name, job title, category, years of experience, seniority, core/secondary skills, and summary; Step 2 is pre-filled automatically with extracted values and a confidence-level banner ("Pre-filled from your resume" / "Partially auto-filled"); fallback to blank form with error notice if parsing fails
 - **`ExtractedCandidateProfile` type**: `fullName`, `targetPosition`, `jobCategory`, `yearsOfExperience`, `seniority`, `coreSkills[]`, `secondarySkills[]`, `summary`, `confidence` (high/partial/low), `extractedFields[]`
 - **Auto-advance**: After parsing completes (or fails), the flow automatically advances to Step 2
+- **Extended CandidateProfile**: Now includes `email`, `phone`, `location`, `workHistory: WorkHistoryEntry[]` (all optional contact/context fields)
+- **Work History Section**: Add/edit/remove work history entries inline (job title, company, duration, responsibilities); inline mini-form with cancel/save within FinalizeInformationStep
+- **DB Persistence**: Candidate profiles saved to `candidates` table on Step 2 → Step 3 transition via `POST /api/candidates`; culture score saved at the end via `PATCH /api/candidates/:id`; `candidateId` persisted in state for the session
+- **Candidates Table**: `shared/schema.ts` → `candidates` (id varchar PK, fullName, email, phone, location, targetPosition, category, experienceYears, seniority, coreSkills[], secondarySkills[], workHistory jsonb, preferences jsonb, summary, cultureScore, createdAt)
+- **Candidates API**: `POST /api/candidates`, `GET /api/candidates`, `GET /api/candidates/:id`, `PATCH /api/candidates/:id`
 - **JSP-style profile archetypes**: 10 internal role profiles used for candidate matching — not shown as final results
 - **Core Values Assessment**: 6 questions aligned to company values; outputs values alignment score (0–100%) + trait badges + personalized summary
 - **Real jobs only**: Results use `usePostedJobs()` hook (same source as FindWorkAllJobs); empty-state cards shown when no matches exist
 - **Results screen**: Top profile match card → Values alignment card → Matched posted job cards → Bottom CTA
 - **Matching animation**: 2.8-second animated loading screen between assessment completion and results reveal
+- **LAST_FLOW_STEP = 3**: The constant marks the culture result step; `handleNext` checks this explicitly to trigger matching (not `TOTAL_FLOW_STEPS - 1`)
 
 #### Matching Engine (Domain-Based, v2)
 - **Domain-first scoring**: Each candidate skill maps to a functional domain (admin_ops, customer_support, sales_marketing, finance, technical, design, hr). Each job's domain is inferred from its **title keywords first** (preventing mislabeled categories, e.g. "IT Administrator" in "Admin" category → `technical`), falling back to DB category.

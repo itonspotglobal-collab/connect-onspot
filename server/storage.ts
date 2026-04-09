@@ -27,6 +27,7 @@ import {
   type LegalOpsTrial, type InsertLegalOpsTrial,
   type Post, type InsertPost,
   type HotSearch, type InsertHotSearch,
+  type Candidate, type InsertCandidate,
   leadIntakes,
   vanessaLogs,
   feedbacks,
@@ -35,7 +36,8 @@ import {
   legalOpsTrials,
   posts,
   hotSearches,
-  jobs as jobsTable
+  jobs as jobsTable,
+  candidates as candidatesTable,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
@@ -306,6 +308,12 @@ export interface IStorage {
   // Hot Searches
   trackHotSearch(term: string): Promise<HotSearch>;
   getHotSearches(range: "daily" | "weekly"): Promise<{ term: string; count: number }[]>;
+
+  // Candidates
+  createCandidate(data: InsertCandidate): Promise<Candidate>;
+  getCandidate(id: string): Promise<Candidate | undefined>;
+  getCandidates(): Promise<Candidate[]>;
+  updateCandidate(id: string, updates: Partial<InsertCandidate>): Promise<Candidate | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -2375,6 +2383,15 @@ export class MemStorage implements IStorage {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
   }
+
+  async createCandidate(data: InsertCandidate): Promise<Candidate> {
+    const id = randomUUID();
+    const candidate: Candidate = { ...data, id, createdAt: new Date() } as Candidate;
+    return candidate;
+  }
+  async getCandidate(_id: string): Promise<Candidate | undefined> { return undefined; }
+  async getCandidates(): Promise<Candidate[]> { return []; }
+  async updateCandidate(_id: string, _updates: Partial<InsertCandidate>): Promise<Candidate | undefined> { return undefined; }
 }
 
 // DbStorage class: Extends MemStorage but uses PostgreSQL for Vanessa logs
@@ -2823,6 +2840,25 @@ export class DbStorage extends MemStorage {
       .orderBy(desc(sqlOp`count(*)`))
       .limit(5);
     return rows;
+  }
+
+  async createCandidate(data: InsertCandidate): Promise<Candidate> {
+    const [candidate] = await db.insert(candidatesTable).values(data).returning();
+    return candidate;
+  }
+
+  async getCandidate(id: string): Promise<Candidate | undefined> {
+    const [candidate] = await db.select().from(candidatesTable).where(eq(candidatesTable.id, id));
+    return candidate;
+  }
+
+  async getCandidates(): Promise<Candidate[]> {
+    return await db.select().from(candidatesTable).orderBy(desc(candidatesTable.createdAt));
+  }
+
+  async updateCandidate(id: string, updates: Partial<InsertCandidate>): Promise<Candidate | undefined> {
+    const [updated] = await db.update(candidatesTable).set(updates).where(eq(candidatesTable.id, id)).returning();
+    return updated;
   }
 }
 

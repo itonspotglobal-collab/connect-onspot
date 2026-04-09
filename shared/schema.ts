@@ -1001,3 +1001,30 @@ export const insertHotSearchSchema = createInsertSchema(hotSearches).omit({
 });
 export type InsertHotSearch = z.infer<typeof insertHotSearchSchema>;
 export type HotSearch = typeof hotSearches.$inferSelect;
+
+// Candidates — Find Best Matches flow (no auth required)
+export const candidates = pgTable("candidates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fullName: text("full_name").notNull().default(""),
+  email: text("email"),
+  phone: text("phone"),
+  location: text("location"),
+  targetPosition: text("target_position").notNull().default(""),
+  category: text("category").notNull().default(""),
+  experienceYears: text("experience_years"),
+  seniority: text("seniority"),
+  coreSkills: text("core_skills").array().default([]),
+  secondarySkills: text("secondary_skills").array().default([]),
+  workHistory: jsonb("work_history").default([]),
+  preferences: jsonb("preferences").default({}),
+  summary: text("summary"),
+  cultureScore: integer("culture_score"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertCandidateSchema = createInsertSchema(candidates).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertCandidate = z.infer<typeof insertCandidateSchema>;
+export type Candidate = typeof candidates.$inferSelect;

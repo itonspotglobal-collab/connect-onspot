@@ -3218,6 +3218,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== CANDIDATES ====================
+  app.post("/api/candidates", async (req, res) => {
+    try {
+      const { insertCandidateSchema } = await import("@shared/schema");
+      const data = insertCandidateSchema.parse(req.body);
+      const candidate = await storage.createCandidate(data);
+      res.json(candidate);
+    } catch (error: any) {
+      if (error?.name === "ZodError") return res.status(400).json({ error: error.errors });
+      console.error("POST /api/candidates error:", error);
+      res.status(500).json({ error: "Failed to save candidate" });
+    }
+  });
+
+  app.get("/api/candidates", async (req, res) => {
+    try {
+      const candidates = await storage.getCandidates();
+      res.json(candidates);
+    } catch (error) {
+      console.error("GET /api/candidates error:", error);
+      res.status(500).json({ error: "Failed to fetch candidates" });
+    }
+  });
+
+  app.get("/api/candidates/:id", async (req, res) => {
+    try {
+      const candidate = await storage.getCandidate(req.params.id);
+      if (!candidate) return res.status(404).json({ error: "Candidate not found" });
+      res.json(candidate);
+    } catch (error) {
+      console.error("GET /api/candidates/:id error:", error);
+      res.status(500).json({ error: "Failed to fetch candidate" });
+    }
+  });
+
+  app.patch("/api/candidates/:id", async (req, res) => {
+    try {
+      const updated = await storage.updateCandidate(req.params.id, req.body);
+      if (!updated) return res.status(404).json({ error: "Candidate not found" });
+      res.json(updated);
+    } catch (error) {
+      console.error("PATCH /api/candidates/:id error:", error);
+      res.status(500).json({ error: "Failed to update candidate" });
+    }
+  });
+
   // ==================== JOBS ====================
   // Advanced Job Search - Critical for job discovery (must come before :id route)
   app.get("/api/jobs/search", async (req, res) => {

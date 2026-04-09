@@ -1,0 +1,240 @@
+Refactor the Find Best Matches feature into a structured Candidate Profile Creation + Matching system.
+
+Main goal:
+Transform the flow from a simple quiz into a proper candidate onboarding and screening pipeline.
+
+New required flow:
+1. Resume Upload
+2. Candidate Profile Creation (FULL profile form)
+3. Save Candidate Profile to Database
+4. Culture Evaluation
+5. Culture Result
+6. Relevant Job Openings
+
+Important:
+We are NOT implementing authentication yet.
+For now, this is test mode only.
+All candidate profiles should still be saved in the database as "Candidate" or "Employee" records.
+
+-------------------------------------
+STEP 1 — Resume Upload
+-------------------------------------
+- Keep existing upload functionality
+- Parse resume and extract initial data
+- Store extracted data temporarily in state
+
+-------------------------------------
+STEP 2 — Candidate Profile Creation (MAIN STEP)
+-------------------------------------
+This is no longer just “Finalize Profile”.
+This becomes a FULL candidate profile form.
+
+Purpose:
+- This is what recruiters (TA) will use to screen candidates
+- This must feel like building a real applicant profile
+
+Sections to include:
+
+A. Basic Information
+- Full Name
+- Email (optional for now)
+- Phone (optional for now)
+- Location
+
+B. Target Role Information
+- Target Job Position (VERY IMPORTANT FIELD)
+- Job Category / Niche
+- Preferred Job Type (Full-time, Part-time, Contract)
+- Preferred Work Setup (Remote, Hybrid, On-site)
+- Preferred Shift
+
+C. Experience & Seniority
+- Years of Experience
+- Seniority Level
+
+D. Skills
+- Core Skills (select + auto-detected from resume)
+- Secondary Skills (tag input, auto-filled from resume)
+
+E. Work History (VERY IMPORTANT)
+Allow adding multiple entries:
+- Job Title
+- Company Name
+- Duration (Start - End)
+- Responsibilities (textarea)
+
+User must be able to:
+- Add
+- Edit
+- Remove work history entries
+
+F. Professional Summary
+- Prefilled from resume if available
+- Editable textarea
+
+-------------------------------------
+AUTO-FILL REQUIREMENT
+-------------------------------------
+- Resume parsing should prefill:
+  - Name
+  - Skills
+  - Latest Job Title
+  - Summary
+  - Work history (basic parsing if possible)
+- User MUST be able to edit everything
+
+-------------------------------------
+SAVE TO DATABASE (IMPORTANT)
+-------------------------------------
+After the user clicks “Continue” or “Finish Profile”:
+
+- Save the candidate profile to the database
+- Create a new record with:
+  type: "candidate"
+
+Fields:
+- fullName
+- targetPosition
+- category
+- experienceYears
+- seniority
+- coreSkills
+- secondarySkills
+- workPreferences
+- workHistory[]
+- summary
+- createdAt
+
+Important:
+- No authentication yet
+- Just create records directly
+- Return candidateId after saving
+- Store candidateId in frontend state for next steps
+
+-------------------------------------
+STEP 3 — Culture Evaluation
+-------------------------------------
+- Use existing culture questions
+- Evaluate based on:
+  - People First
+  - Beat Yesterday
+  - Fast-Fast-Fast
+  - Integrity Matters
+  - Extreme Ownership
+  - We Are Intrapreneurs
+
+-------------------------------------
+STEP 4 — Culture Result (NEW STEP)
+-------------------------------------
+After evaluation, show:
+
+- Culture Fit Score
+- Summary:
+  Example:
+  “You show strong alignment with our ownership and growth mindset values.”
+
+- Strengths:
+  - Ownership
+  - Accountability
+  - Adaptability
+
+- CTA:
+  "Continue to Matching Jobs"
+
+-------------------------------------
+STEP 5 — Relevant Job Openings
+-------------------------------------
+CRITICAL RULE:
+Only show real posted jobs from FindWorkAllJobs.tsx
+
+Matching logic must use:
+- targetPosition (PRIMARY FILTER)
+- job category
+- experience level
+- skills
+
+STRICT FILTER:
+- Developer → only development roles
+- Manager → only managerial roles
+- Finance → only finance roles
+
+DO NOT:
+- show unrelated roles
+- show fallback roles just to fill UI
+
+If no match:
+Show:
+“No strong role matches are available right now.”
+
+-------------------------------------
+BACKEND REQUIREMENTS
+-------------------------------------
+Create a simple API (no auth required):
+
+POST /api/candidates
+- save candidate profile
+
+GET /api/candidates/:id
+- fetch candidate profile
+
+Optional:
+GET /api/candidates
+- list all candidates (for recruiter view later)
+
+-------------------------------------
+DATABASE STRUCTURE (SIMPLE)
+-------------------------------------
+Candidate:
+- id
+- fullName
+- targetPosition
+- category
+- experienceYears
+- seniority
+- coreSkills (array)
+- secondarySkills (array)
+- workHistory (array of objects)
+- preferences (object)
+- summary
+- cultureScore (optional)
+- createdAt
+
+-------------------------------------
+FRONTEND REQUIREMENTS
+-------------------------------------
+- Keep design consistent with:
+  - Insights.tsx
+  - FindWork.tsx
+  - WhyOnSpotAbout.tsx
+
+- Add stepper:
+  Step 1: Upload
+  Step 2: Profile
+  Step 3: Culture
+  Step 4: Result
+  Step 5: Jobs
+
+- Ensure:
+  - no input lag
+  - no scroll jump bugs
+  - stable form state
+  - smooth navigation between steps
+
+-------------------------------------
+IMPORTANT RULES
+-------------------------------------
+- Profile must be saved BEFORE culture evaluation
+- Candidate profile becomes the source of truth for matching
+- No authentication required yet
+- Focus on functionality first (test mode)
+
+-------------------------------------
+FINAL OUTPUT EXPECTED
+-------------------------------------
+- Updated FindBestMatches.tsx flow
+- Candidate profile form with work history
+- Resume autofill working
+- API for saving candidate
+- Database model
+- Culture evaluation + result step
+- Strict job matching logic
