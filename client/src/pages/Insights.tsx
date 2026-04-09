@@ -1361,20 +1361,21 @@ export default function Insights() {
         featuredArticles.length > 0 &&
         !searchQuery &&
         !authorFilter && (
-          <section
-            className="relative overflow-hidden"
-            style={{ background: "linear-gradient(160deg, #2640c9 0%, #1b2aab 30%, #111a72 65%, #0a1040 100%)" }}
-          >
-            {/* Subtle ambient glow — very soft, non-distracting */}
-            <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-              <div className="absolute -top-20 left-1/3 h-[600px] w-[600px] rounded-full bg-white/[0.03] blur-3xl" />
+          <section className="hero-investor relative overflow-hidden">
+            {/* Depth overlay — matches homepage hero treatment */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/30 pointer-events-none" aria-hidden="true" />
+
+            {/* Animated ambient accents — same as homepage */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+              <div className="absolute top-1/3 left-1/4 w-[600px] h-[600px] bg-gradient-radial from-white/5 to-transparent rounded-full blur-3xl animate-gentle-float" />
+              <div className="absolute bottom-1/3 right-1/4 w-[500px] h-[500px] bg-gradient-radial from-blue-500/10 to-transparent rounded-full blur-3xl animate-slow-spin" />
             </div>
 
-            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-24 sm:pt-14 sm:pb-28">
+            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-32 sm:pt-14 sm:pb-36">
               {/* Section eyebrow */}
               <div className="mb-6 flex items-center gap-3">
                 <div className="h-px w-8 bg-white/20" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/45">
+                <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/50">
                   Featured Stories
                 </span>
               </div>
@@ -1382,9 +1383,6 @@ export default function Insights() {
               {/* Carousel — unchanged behavior */}
               <FeaturedCarousel articles={featuredArticles} />
             </div>
-
-            {/* Bottom fade — taller for a smooth, breathing transition */}
-            <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-b from-transparent to-[#f0f4ff]" aria-hidden="true" />
           </section>
         )}
 

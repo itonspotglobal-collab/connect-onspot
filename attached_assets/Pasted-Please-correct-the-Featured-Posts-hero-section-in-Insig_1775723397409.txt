@@ -1,0 +1,41 @@
+Please correct the Featured Posts hero section in Insights.tsx. The previous change only changed the background color, but it did NOT fix the bottom portion or the section divider treatment.
+
+What I actually want:
+
+1. Make the Featured section background match the homepage hero more closely
+- Use the same kind of deep branded blue/purple tone as the homepage hero
+- It should feel like a solid branded field, not a visible gradient band
+- Avoid the obvious gradient/fade treatment currently showing in the Featured section
+- Match the homepage/landing page color treatment as closely as possible
+
+2. Extend the bottom portion of the Featured section
+- Right now the section ends too soon under the carousel/card
+- Increase the height/padding below the featured carousel so the branded background continues further downward
+- The section should feel like a real hero block, with more breathing room below the card
+- The featured card should sit comfortably inside the section, not too close to the bottom edge
+
+3. Remove the gradient-looking breaker/divider
+- The transition below the Featured section should NOT look like a gradient shadow/fade
+- Remove that soft glowing/gradient breaker effect under the featured area
+- Replace it with a cleaner transition, similar to the homepage structure
+- The divider/break between sections should feel solid and intentional, not hazy or glowing
+
+4. Keep the section clean and structured
+- Featured section remains a separate hero-like block
+- Carousel behavior stays unchanged
+- Text readability stays strong
+- The next lighter Insights section should begin cleanly after the featured hero block
+
+Implementation guidance:
+- Update the section wrapper around the featured carousel, not just the card
+- Increase bottom padding substantially
+- Remove blur/shadow/gradient overlays that create the fake divider effect
+- Use a more solid background treatment, closer to the homepage hero
+- If needed, use a clean hard transition into the next section instead of a fade
+
+Expected result:
+- Featured hero section looks closer to the homepage hero
+- Background is more solid and branded
+- Bottom area is taller/expanded
+- No gradient-like breaker or glow under the section
+- The transition into the next section is clean and intentional
