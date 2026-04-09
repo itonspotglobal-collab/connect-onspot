@@ -1355,6 +1355,37 @@ export default function Insights() {
         onClearAuthor={() => setAuthorFilter("")}
       />
 
+      {/* ── Featured Hero Band — full-bleed, homepage-inspired ────────────── */}
+      {selectedCategory === "View All" &&
+        !isLoading &&
+        featuredArticles.length > 0 &&
+        !searchQuery &&
+        !authorFilter && (
+          <section className="hero-investor relative overflow-hidden">
+            {/* Decorative ambient glows — match homepage feel */}
+            <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+              <div className="absolute top-1/3 left-1/4 h-[500px] w-[500px] rounded-full bg-white/[0.04] blur-3xl animate-gentle-float" />
+              <div className="absolute bottom-1/4 right-1/6 h-[400px] w-[400px] rounded-full bg-blue-400/[0.06] blur-3xl animate-slow-spin" />
+            </div>
+
+            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-14 sm:pt-12 sm:pb-16">
+              {/* Section eyebrow */}
+              <div className="mb-5 flex items-center gap-3">
+                <div className="h-px w-8 bg-white/25" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/50">
+                  Featured Stories
+                </span>
+              </div>
+
+              {/* Carousel — unchanged behavior */}
+              <FeaturedCarousel articles={featuredArticles} />
+            </div>
+
+            {/* Bottom fade to page background */}
+            <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-b from-transparent to-[#f0f4ff]" aria-hidden="true" />
+          </section>
+        )}
+
       {/* ── Main content area ─────────────────────────────────────────────── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
@@ -1370,22 +1401,14 @@ export default function Insights() {
           </div>
         )}
 
-        {/* ── VIEW ALL: Featured carousel + editorial section ───────────────── */}
+        {/* ── VIEW ALL: editorial section (featured carousel is now above) ── */}
         {selectedCategory === "View All" && (
-          <>
-            {!isLoading && featuredArticles.length > 0 && !searchQuery && !authorFilter && (
-              <section className="mb-10">
-                <FeaturedCarousel articles={featuredArticles} />
-              </section>
-            )}
-
-            <EditorialSection
-              articles={latestArticles}
-              episodes={latestEpisodes}
-              isLoading={isLoading}
-              searchActive={!!(searchQuery || authorFilter)}
-            />
-          </>
+          <EditorialSection
+            articles={latestArticles}
+            episodes={latestEpisodes}
+            isLoading={isLoading}
+            searchActive={!!(searchQuery || authorFilter)}
+          />
         )}
 
         {/* ── PODCAST VIDEOS category ───────────────────────────────────────── */}

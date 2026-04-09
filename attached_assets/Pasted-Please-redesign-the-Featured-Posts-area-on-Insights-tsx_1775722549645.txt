@@ -1,0 +1,57 @@
+Please redesign the Featured Posts area on Insights.tsx so it becomes its own distinct section, visually inspired by the homepage hero.
+
+Goal:
+We want the Featured Posts section to feel separate and elevated from the rest of the Insights page. The background behind the featured post section should use the same visual tone/style as the homepage hero background, instead of blending into the regular page background.
+
+What to change:
+1. Create a dedicated Featured Posts section
+- The featured carousel/posts should sit inside their own section wrapper
+- This section should feel like a hero-style band or panel before the rest of the editorial content
+- Add more intentional spacing above and below it so it reads as a separate section
+
+2. Use homepage-inspired background styling
+- Apply a background similar to the homepage hero:
+  - same or closely matched gradient / deep blue branded tone
+  - premium, slightly dramatic, polished feel
+- The featured section should visually connect to OnSpot branding
+- Keep it elegant and not too visually noisy
+
+3. Keep the featured carousel functionality
+- Do not remove the existing featured post carousel behavior
+- Keep navigation arrows, indicators, metadata, and CTA working
+- Only change the section treatment/layout/background around it
+
+4. Improve contrast and readability
+- Ensure text remains highly readable on top of the darker homepage-style background
+- Make sure chips/tags, metadata, title, excerpt, and CTA still stand out clearly
+- Preserve accessibility and good contrast
+
+5. Separate it from the “All Insights” area
+- After the featured section ends, transition cleanly back into the lighter editorial page background
+- The “All Insights / Explore the full knowledge base” section should remain below as a separate lighter section
+- The contrast between Featured vs. Editorial content should feel intentional
+
+6. Keep the page responsive
+- Desktop: hero-like featured band/panel with generous breathing room
+- Mobile/tablet: preserve the distinct section feel without breaking layout
+- Ensure spacing and padding scale nicely
+
+Design direction:
+- Think of the Featured Posts section as an Insights hero zone
+- Inspired by the homepage background and tone
+- Premium, branded, editorial
+- Strong contrast between the dark featured zone and the lighter content sections below
+
+Implementation guidance:
+- Add a dedicated wrapper/container around the featured carousel
+- Apply homepage-like gradient/background utilities to that wrapper
+- Adjust surrounding section spacing, padding, and border radius as needed
+- Reuse homepage theme tokens/styles if available instead of hardcoding unrelated values
+- Keep the featured card itself aligned with the new section background
+
+Expected result:
+- Featured Posts has its own dedicated, homepage-inspired branded section
+- It feels visually distinct from the rest of the Insights page
+- The background matches the homepage tone/style
+- Carousel behavior remains intact
+- The rest of the Insights page continues below in a lighter editorial layout
