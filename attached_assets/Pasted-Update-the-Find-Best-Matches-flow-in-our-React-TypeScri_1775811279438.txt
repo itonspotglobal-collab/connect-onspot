@@ -1,0 +1,221 @@
+Update the Find Best Matches flow in our React + TypeScript site so that after the user reviews/finalizes the profile extracted from the resume, the next step becomes an Account Access step with two clear options:
+
+1. Log in (if the user already has an account)
+2. Sign up / Create account (if the user does not have an account yet)
+
+Main requirement:
+After the candidate completes the profile review step, do not send them directly into one fixed account-creation form.
+Instead, show an account access step that supports both existing and new users.
+
+New intended flow:
+1. Resume Upload
+2. Review / Finalize Extracted Profile
+3. Account Access
+   - Log in
+   - Sign up
+4. Account Success / Confirmation
+5. Cultural Evaluation
+6. Save Cultural Evaluation to DB
+7. Culture Result
+8. Relevant Job Openings
+
+Important context:
+Authentication is not fully enabled yet.
+Implement this in test mode for now, but structure it cleanly so it can be upgraded into real authentication later.
+
+ACCOUNT ACCESS STEP REQUIREMENTS
+
+A. Show two clear options
+On the account step, show a polished UI with:
+- “I already have an account” → Log in
+- “I’m new here” → Sign up / Create account
+
+This should be visually clear and aligned to the current design system.
+
+B. Duplicate account check
+Before creating a new account, always check whether the email already exists in the database.
+
+Required duplicate detection:
+- use email as the temporary unique identifier
+- if email already exists, do not create a duplicate candidate/account record
+- instead show:
+  - “We found an existing account for this email.”
+  - and guide the user to Log in / Continue with existing account
+
+C. Existing account behavior
+If the candidate chooses Log in:
+- show a test-mode login form:
+  - email
+  - password
+- if the email exists, allow the user to continue in test mode
+- if auth is still mocked, simulate successful login only against existing records
+- load the existing candidate record
+- continue the flow without creating duplicate records
+
+D. New account behavior
+If the candidate chooses Sign up:
+- show sign-up fields:
+  - email
+  - password
+  - confirm password
+- prefill email if extracted from resume
+- before saving, check for duplicates by email
+- if duplicate exists:
+  - block account creation
+  - show a helpful message
+  - offer switch to Login instead
+- if no duplicate exists:
+  - create account metadata / candidate account state
+  - mark accountCreated = true
+  - continue to success state
+
+E. Success / confirmation step
+After login or sign-up:
+- show a confirmation state before cultural evaluation
+
+For login path example:
+- “You’re signed in successfully.”
+- “Your profile is linked to your existing account.”
+
+For signup path example:
+- “Your account has been created successfully.”
+- “Your profile is now saved and ready for the next step.”
+
+Add CTA:
+- Continue to Cultural Evaluation
+
+DATABASE / BACKEND REQUIREMENTS
+
+1. Candidate record uniqueness
+Use email as the temporary unique identifier for now.
+Do not allow duplicate candidate/account records with the same email.
+
+2. Required logic
+Implement backend logic like:
+- find candidate/account by email
+- if login flow:
+  - verify record exists
+  - return existing candidate
+- if signup flow:
+  - check duplicate first
+  - create only if not found
+
+3. Suggested endpoints
+Examples:
+POST /api/candidates/check-email
+- input: email
+- output:
+  - exists: boolean
+  - candidateId if exists
+
+POST /api/candidates/signup
+- create new candidate/account in test mode
+- reject duplicate email
+
+POST /api/candidates/login
+- test-mode login against existing candidate/account records
+
+GET /api/candidates/:id
+- fetch candidate profile
+
+4. Suggested candidate/account fields
+- id
+- email
+- fullName
+- profileCompleted
+- accountCreated
+- accountStatus
+- createdAt
+- updatedAt
+
+If test-mode password handling is implemented:
+- do not store plain text if backend password logic is available
+- if auth is mocked for now, structure it so real auth can replace it later
+
+FRONTEND REQUIREMENTS
+
+1. Profile review step
+After finalizing the extracted profile:
+- save/update the candidate profile first if needed
+- then move to the Account Access step
+
+2. Account access UI
+Create a dedicated step/component such as:
+- AccountAccessStep
+
+This screen should:
+- explain why account access is needed
+- give two clear buttons/cards:
+  - Log in
+  - Sign up
+
+3. Branching UI
+Depending on selection:
+- show Login form
+or
+- show Signup form
+
+Keep the UX smooth and avoid unnecessary redirects.
+
+4. Duplicate account UX
+If the email entered in sign-up already exists:
+- show inline warning
+- suggest logging in instead
+- do not proceed with signup
+
+Example message:
+- “An account already exists for this email. Please log in to continue.”
+
+5. Existing account UX
+If login succeeds:
+- load the candidate’s saved profile/account
+- continue to the success/confirmation step
+- then proceed to cultural evaluation
+
+CULTURAL EVALUATION REQUIREMENT
+After account success/confirmation:
+- proceed to cultural evaluation
+- save the cultural evaluation in the database
+- connect it to the correct candidateId
+- use it later for screening
+
+DESIGN REQUIREMENTS
+Keep everything visually consistent with:
+- Insights.tsx
+- FindWork.tsx
+- WhyOnSpotAbout.tsx
+
+Use the same:
+- fonts
+- spacing
+- rounded cards
+- button styles
+- clean premium layout
+
+STEPPER UPDATE
+Update the stepper to reflect the new sequence:
+- Step 1: Upload Resume
+- Step 2: Review Profile
+- Step 3: Account Access
+- Step 4: Confirmation
+- Step 5: Cultural Evaluation
+- Step 6: Culture Result
+- Step 7: Relevant Jobs
+
+IMPORTANT RULES
+- do not create duplicate accounts
+- use email uniqueness checking
+- support both login and signup
+- keep this test-mode friendly for now
+- structure it so real auth can be added later
+- ensure culture evaluation remains linked to the correct candidate record
+
+FINAL OUTPUT EXPECTED
+Please provide:
+- updated multi-step flow
+- login/signup branching step
+- duplicate email/account checking
+- no duplicate candidate records
+- account success/confirmation step
+- clean backend/API structure for future auth
+- production-ready React/TypeScript implementation

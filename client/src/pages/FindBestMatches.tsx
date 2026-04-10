@@ -1320,11 +1320,20 @@ function canProceedAccount(
   return emailOk && passOk && confirmOk;
 }
 
+function canProceedLogin(
+  form: { email: string; password: string },
+): boolean {
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim());
+  const passOk = form.password.length >= 1;
+  return emailOk && passOk;
+}
+
 function canProceed(
   step: number,
   p: CandidateProfile,
   accountForm?: { email: string; password: string; confirmPassword: string },
   accountCheckResult?: "new" | "existing" | null,
+  accountMode?: "choice" | "login" | "signup" | null,
 ): boolean {
   switch (step) {
     case 0:
@@ -1337,9 +1346,12 @@ function canProceed(
         !!p.seniority &&
         p.coreSkills.length > 0
       );
-    case 2: // Account Creation — allow proceed if existing account confirmed OR form is valid
+    case 2: // Account Access — depends on mode
       if (accountCheckResult === "existing") return true;
-      return accountForm ? canProceedAccount(accountForm) : false;
+      if (!accountMode || accountMode === "choice") return false;
+      if (accountMode === "login") return accountForm ? canProceedLogin(accountForm) : false;
+      if (accountMode === "signup") return accountForm ? canProceedAccount(accountForm) : false;
+      return false;
     case 3: // Account Success — always proceed
       return true;
     case 4: // Culture Evaluation — all questions answered
@@ -1889,13 +1901,15 @@ export default function FindBestMatches() {
     ...EMPTY_WORK_ENTRY,
   });
 
-  // ── Account creation form state ───────────────────────────────────────────
+  // ── Account access form state ─────────────────────────────────────────────
   const [accountForm, setAccountForm] = useState({
     email: "",
     password: "",
     confirmPassword: "",
     showPassword: false,
   });
+  const [accountMode, setAccountMode] = useState<"choice" | "login" | "signup" | null>(null);
+  const [loginError, setLoginError] = useState<string | null>(null);
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [accountCheckResult, setAccountCheckResult] = useState<
     "new" | "existing" | null
@@ -2096,68 +2110,116 @@ export default function FindBestMatches() {
         ...f,
         email: f.email || profile.email || "",
       }));
+      // Reset account mode so the user starts at the choice screen
+      setAccountMode(null);
+      setLoginError(null);
     }
 
-    // ── Step 2: Account setup — email check + create/link ────────────────────
+    // ── Step 2: Account Access — handles both login and signup ───────────────
     if (flowStep === 2) {
-      // If we already know it's an existing account, just advance
+      // Already confirmed as existing → advance
       if (accountCheckResult === "existing") {
         setFlowStep((s) => s + 1);
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
 
-      setIsCreatingAccount(true);
-      try {
-        const profileData = {
-          fullName: profile.fullName,
-          targetPosition: profile.targetPosition || "Unknown",
-          category: profile.jobCategory || "General",
-          phone: profile.phone || null,
-          location: profile.location || null,
-          coreSkills: profile.coreSkills,
-          secondarySkills: profile.secondarySkills,
-          summary: profile.summary || null,
-          profileCompleted: !!candidateId,
-        };
-        const res = await fetch("/api/candidates/account-setup", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: accountForm.email,
-            candidateId: candidateId || undefined,
-            profileData,
-          }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          // Update the candidate ID with whichever record we settled on
-          setCandidateId(data.candidateId);
-          setField("email", accountForm.email);
-
-          if (data.status === "existing") {
-            // Surface the existing-account UI — do NOT advance yet
-            setAccountCheckResult("existing");
-            setExistingCandidateInfo({
-              id: data.candidateId,
-              fullName: data.candidate?.fullName ?? null,
-              email: data.candidate?.email ?? accountForm.email,
-            });
-            setIsCreatingAccount(false);
-            return; // Stop here — let user decide what to do
+      // ── Login flow ─────────────────────────────────────────────────────────
+      if (accountMode === "login") {
+        setIsCreatingAccount(true);
+        setLoginError(null);
+        try {
+          const res = await fetch("/api/candidates/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: accountForm.email }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.exists) {
+              setCandidateId(data.candidateId);
+              setField("email", accountForm.email);
+              setAccountCheckResult("existing");
+              setExistingCandidateInfo({
+                id: data.candidateId,
+                fullName: data.candidate?.fullName ?? null,
+                email: data.candidate?.email ?? accountForm.email,
+              });
+              // Advance immediately — login is confirmed
+              setFlowStep((s) => s + 1);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+              setIsCreatingAccount(false);
+              return;
+            } else {
+              setLoginError(
+                "No account found for this email. Please sign up instead, or try a different email.",
+              );
+              setIsCreatingAccount(false);
+              return;
+            }
+          } else {
+            setLoginError("Login check failed. Please try again.");
           }
-          // "created" or "updated" → proceed
-          setAccountCheckResult("new");
-        } else {
-          // Non-blocking on error — treat as a new account
+        } catch {
+          setLoginError("A connection error occurred. Please try again.");
+        } finally {
+          setIsCreatingAccount(false);
+        }
+        return;
+      }
+
+      // ── Signup flow ────────────────────────────────────────────────────────
+      if (accountMode === "signup") {
+        setIsCreatingAccount(true);
+        try {
+          const profileData = {
+            fullName: profile.fullName,
+            targetPosition: profile.targetPosition || "Unknown",
+            category: profile.jobCategory || "General",
+            phone: profile.phone || null,
+            location: profile.location || null,
+            coreSkills: profile.coreSkills,
+            secondarySkills: profile.secondarySkills,
+            summary: profile.summary || null,
+            profileCompleted: !!candidateId,
+          };
+          const res = await fetch("/api/candidates/account-setup", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: accountForm.email,
+              candidateId: candidateId || undefined,
+              profileData,
+            }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setCandidateId(data.candidateId);
+            setField("email", accountForm.email);
+
+            if (data.status === "existing") {
+              // Duplicate email found — show warning in signup form
+              setAccountCheckResult("existing");
+              setExistingCandidateInfo({
+                id: data.candidateId,
+                fullName: data.candidate?.fullName ?? null,
+                email: data.candidate?.email ?? accountForm.email,
+              });
+              setIsCreatingAccount(false);
+              return; // Stay on step 2 — let user switch to login
+            }
+            // "created" or "updated" → proceed
+            setAccountCheckResult("new");
+          } else {
+            setAccountCheckResult("new");
+            setField("email", accountForm.email);
+          }
+        } catch {
           setAccountCheckResult("new");
           setField("email", accountForm.email);
+        } finally {
+          setIsCreatingAccount(false);
         }
-      } catch {
-        setAccountCheckResult("new");
-        setField("email", accountForm.email);
-      } finally {
-        setIsCreatingAccount(false);
       }
     }
 
@@ -2254,6 +2316,8 @@ export default function FindBestMatches() {
     setEditWorkIdx(null);
     setWorkEntry({ ...EMPTY_WORK_ENTRY });
     setAccountForm({ email: "", password: "", confirmPassword: "", showPassword: false });
+    setAccountMode(null);
+    setLoginError(null);
     setIsCreatingAccount(false);
     setAccountCheckResult(null);
     setExistingCandidateInfo(null);
@@ -2263,7 +2327,7 @@ export default function FindBestMatches() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  const ready = canProceed(flowStep, profile, accountForm, accountCheckResult) && !extracting && !isSavingProfile && !isCreatingAccount && !isSavingEvaluation;
+  const ready = canProceed(flowStep, profile, accountForm, accountCheckResult, accountMode) && !extracting && !isSavingProfile && !isCreatingAccount && !isSavingEvaluation;
 
   // ── Hero ──────────────────────────────────────────────────────────────────
   function HeroContent() {
@@ -3089,60 +3153,39 @@ export default function FindBestMatches() {
     );
   }
 
-  // ── Step 2: Account Creation ──────────────────────────────────────────────
-  function AccountCreationStep() {
-    // ── Existing account found ───────────────────────────────────────────────
-    if (accountCheckResult === "existing") {
-      const existingName = existingCandidateInfo?.fullName;
+  // ── Step 2: Account Access (Login / Sign Up) ──────────────────────────────
+  function AccountAccessStep() {
+    const emailError =
+      accountForm.email &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(accountForm.email)
+        ? "Please enter a valid email address."
+        : null;
+    const passwordError =
+      accountMode === "signup" && accountForm.password && accountForm.password.length < 6
+        ? "Password must be at least 6 characters."
+        : null;
+    const confirmError =
+      accountMode === "signup" &&
+      accountForm.confirmPassword &&
+      accountForm.password !== accountForm.confirmPassword
+        ? "Passwords do not match."
+        : null;
+
+    // ── DUPLICATE FOUND IN SIGNUP flow ────────────────────────────────────────
+    if (accountMode === "signup" && accountCheckResult === "existing") {
       const existingEmail = existingCandidateInfo?.email ?? accountForm.email;
-
-      async function handleUpdateProfile() {
-        setIsCreatingAccount(true);
-        try {
-          const profileData = {
-            fullName: profile.fullName,
-            targetPosition: profile.targetPosition || "Unknown",
-            category: profile.jobCategory || "General",
-            phone: profile.phone || null,
-            location: profile.location || null,
-            coreSkills: profile.coreSkills,
-            secondarySkills: profile.secondarySkills,
-            summary: profile.summary || null,
-            profileCompleted: true,
-          };
-          if (existingCandidateInfo?.id) {
-            await fetch(`/api/candidates/${existingCandidateInfo.id}`, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                ...profileData,
-                accountCreated: true,
-                updatedAt: new Date().toISOString(),
-              }),
-            });
-          }
-        } catch {
-          // Non-blocking
-        } finally {
-          setIsCreatingAccount(false);
-          setFlowStep((s) => s + 1);
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        }
-      }
-
       return (
         <div className="space-y-8">
           <div>
-            <StepLabel step={3} title="Account Setup" />
+            <StepLabel step={3} title="Account Access" />
             <h2 className="mt-1 text-xl font-semibold text-slate-900">
-              Existing account found.
+              Account already exists.
             </h2>
             <p className="mt-1.5 text-sm text-slate-500">
-              We found an existing account associated with this email.
+              An account with this email is already registered.
             </p>
           </div>
 
-          {/* Existing account card */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -3150,147 +3193,305 @@ export default function FindBestMatches() {
           >
             <div className="flex items-start gap-4">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
-                <User className="h-5 w-5" />
+                <AlertCircle className="h-5 w-5" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-amber-800">
-                  Existing account found
+                  An account already exists for this email.
                 </p>
                 <p className="mt-1 text-sm text-amber-700 leading-relaxed">
-                  We found an existing account associated with this email. You
-                  can continue with your saved profile or update it with your
-                  current information before moving forward.
+                  We found an existing profile linked to{" "}
+                  <span className="font-semibold">{existingEmail}</span>. Please
+                  log in to continue with your existing account, or use a
+                  different email address to sign up.
                 </p>
-
-                <div className="mt-4 space-y-2">
-                  {existingName && (
-                    <div className="flex items-center gap-2 text-sm text-amber-700">
-                      <User className="h-3.5 w-3.5 shrink-0" />
-                      <span className="font-medium">{existingName}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2 text-sm text-amber-700">
-                    <Mail className="h-3.5 w-3.5 shrink-0" />
-                    <span>{existingEmail}</span>
-                  </div>
-                </div>
               </div>
             </div>
 
-            {/* CTAs */}
             <div className="mt-5 flex flex-wrap gap-3">
               <Button
                 onClick={() => {
-                  setFlowStep((s) => s + 1);
-                  window.scrollTo({ top: 0, behavior: "smooth" });
+                  setAccountCheckResult(null);
+                  setExistingCandidateInfo(null);
+                  setAccountMode("login");
+                  setAccountForm((f) => ({
+                    ...f,
+                    password: "",
+                    confirmPassword: "",
+                  }));
                 }}
                 className="rounded-full bg-[#474ead] text-white"
               >
-                <ArrowRight className="mr-2 h-4 w-4" />
-                Continue with Existing Profile
+                <Lock className="mr-2 h-4 w-4" />
+                Log in instead
               </Button>
               <Button
                 variant="outline"
-                onClick={handleUpdateProfile}
-                disabled={isCreatingAccount}
+                onClick={() => {
+                  setAccountCheckResult(null);
+                  setExistingCandidateInfo(null);
+                  setAccountForm((f) => ({
+                    ...f,
+                    email: "",
+                    password: "",
+                    confirmPassword: "",
+                  }));
+                }}
                 className="rounded-full"
               >
-                {isCreatingAccount ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Updating…
-                  </>
-                ) : (
-                  <>
-                    <Pencil className="mr-2 h-4 w-4" />
-                    Update Profile
-                  </>
-                )}
+                Use a different email
               </Button>
             </div>
           </motion.div>
+        </div>
+      );
+    }
 
-          {/* Use different email */}
-          <div className="flex items-center gap-2 text-sm text-slate-500">
+    // ── CHOICE SCREEN ─────────────────────────────────────────────────────────
+    if (!accountMode || accountMode === "choice") {
+      return (
+        <div className="space-y-8">
+          <div>
+            <StepLabel step={3} title="Account Access" />
+            <h2 className="mt-1 text-xl font-semibold text-slate-900">
+              Access your account.
+            </h2>
+            <p className="mt-1.5 text-sm text-slate-500">
+              Your profile is saved. Sign in to link it to an existing account,
+              or create a new one to track your application and matches.
+            </p>
+          </div>
+
+          {/* Test-mode notice */}
+          <div className="flex gap-3 rounded-2xl border border-[#474ead]/20 bg-[#474ead]/5 p-4">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#474ead]/15 text-[#474ead]">
+              <Lock className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-[#474ead]">
+                Test mode — authentication is not yet fully enabled
+              </p>
+              <p className="mt-0.5 text-xs text-slate-600">
+                Your details are saved securely. Full login capabilities will be
+                available once authentication is activated.
+              </p>
+            </div>
+          </div>
+
+          {/* Choice cards */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            {/* Login card */}
             <button
               type="button"
-              className="text-[#474ead] font-medium hover:underline"
               onClick={() => {
-                setAccountCheckResult(null);
-                setExistingCandidateInfo(null);
-                setAccountForm((f) => ({
-                  ...f,
-                  email: "",
-                  password: "",
-                  confirmPassword: "",
-                }));
+                setAccountMode("login");
+                setLoginError(null);
+                setAccountForm((f) => ({ ...f, password: "", confirmPassword: "" }));
               }}
+              className="group flex flex-col items-start gap-3 rounded-2xl border border-slate-200 bg-white p-6 text-left transition-all hover-elevate"
             >
-              Use a different email address
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#474ead]/10 text-[#474ead] group-hover:bg-[#474ead]/15 transition-colors">
+                <Lock className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-semibold text-slate-900">I already have an account</p>
+                <p className="mt-1 text-sm text-slate-500">
+                  Sign in with your email to link this profile and continue.
+                </p>
+              </div>
+              <span className="mt-auto flex items-center gap-1.5 text-sm font-medium text-[#474ead]">
+                Log in <ArrowRight className="h-4 w-4" />
+              </span>
+            </button>
+
+            {/* Sign up card */}
+            <button
+              type="button"
+              onClick={() => {
+                setAccountMode("signup");
+                setLoginError(null);
+                setAccountForm((f) => ({ ...f, password: "", confirmPassword: "" }));
+              }}
+              className="group flex flex-col items-start gap-3 rounded-2xl border border-slate-200 bg-white p-6 text-left transition-all hover-elevate"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 group-hover:bg-emerald-200 transition-colors">
+                <User className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-semibold text-slate-900">I'm new here</p>
+                <p className="mt-1 text-sm text-slate-500">
+                  Create a free account to save your profile and track your matches.
+                </p>
+              </div>
+              <span className="mt-auto flex items-center gap-1.5 text-sm font-medium text-emerald-700">
+                Sign up <ArrowRight className="h-4 w-4" />
+              </span>
             </button>
           </div>
 
-          {/* Auth note */}
-          <div className="flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-500">
-              <Lock className="h-4 w-4" />
-            </div>
-            <p className="text-xs text-slate-500">
-              Full sign-in and account access will be enabled once
-              authentication is added. For now, your existing profile is
-              linked automatically.
+          {/* What's next */}
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+            <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">
+              What happens after
             </p>
+            <div className="space-y-3">
+              {[
+                { icon: CheckCircle2, text: "Your profile is locked in and saved to our system" },
+                { icon: Heart, text: "You'll complete a short values alignment evaluation" },
+                { icon: BriefcaseBusiness, text: "We'll surface the best-fit roles from our live job board" },
+              ].map(({ icon: Icon, text }, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#474ead]/10 text-[#474ead]">
+                    <Icon className="h-3.5 w-3.5" />
+                  </div>
+                  <span className="text-sm text-slate-600">{text}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       );
     }
 
-    // ── New account form ─────────────────────────────────────────────────────
-    const emailError =
-      accountForm.email &&
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(accountForm.email)
-        ? "Please enter a valid email address."
-        : null;
-    const passwordError =
-      accountForm.password && accountForm.password.length < 6
-        ? "Password must be at least 6 characters."
-        : null;
-    const confirmError =
-      accountForm.confirmPassword &&
-      accountForm.password !== accountForm.confirmPassword
-        ? "Passwords do not match."
-        : null;
+    // ── LOGIN FORM ────────────────────────────────────────────────────────────
+    if (accountMode === "login") {
+      return (
+        <div className="space-y-8">
+          <div>
+            <StepLabel step={3} title="Account Access" />
+            <div className="flex items-center gap-2 mt-1">
+              <h2 className="text-xl font-semibold text-slate-900">
+                Sign in to your account.
+              </h2>
+            </div>
+            <p className="mt-1.5 text-sm text-slate-500">
+              Enter your credentials to link this profile to your existing
+              account.
+            </p>
+          </div>
 
+          {/* Login error */}
+          {loginError && (
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-xl border border-red-200 bg-red-50 px-4 py-3"
+            >
+              <p className="text-sm text-red-700">{loginError}</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginError(null);
+                  setAccountMode("signup");
+                  setAccountForm((f) => ({ ...f, password: "", confirmPassword: "" }));
+                }}
+                className="mt-2 text-xs font-medium text-red-700 hover:underline"
+              >
+                Switch to sign up instead
+              </button>
+            </motion.div>
+          )}
+
+          {/* Login form fields */}
+          <div className="space-y-5">
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-slate-700">
+                Email Address{" "}
+                <span className="text-[#474ead] text-xs font-semibold ml-1">Required</span>
+              </Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  type="email"
+                  placeholder="you@email.com"
+                  value={accountForm.email}
+                  onChange={(e) => {
+                    setAccountForm((f) => ({ ...f, email: e.target.value }));
+                    setLoginError(null);
+                  }}
+                  className="rounded-xl pl-9"
+                />
+              </div>
+              {emailError && <p className="text-xs text-red-500">{emailError}</p>}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-slate-700">
+                Password{" "}
+                <span className="text-[#474ead] text-xs font-semibold ml-1">Required</span>
+              </Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  type={accountForm.showPassword ? "text" : "password"}
+                  placeholder="Your password"
+                  value={accountForm.password}
+                  onChange={(e) => {
+                    setAccountForm((f) => ({ ...f, password: e.target.value }));
+                    setLoginError(null);
+                  }}
+                  className="rounded-xl pl-9 pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setAccountForm((f) => ({ ...f, showPassword: !f.showPassword }))}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  tabIndex={-1}
+                >
+                  {accountForm.showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Switch to sign up */}
+          <div className="flex items-center gap-2 text-sm text-slate-500">
+            <span>Don't have an account yet?</span>
+            <button
+              type="button"
+              className="text-[#474ead] font-medium hover:underline"
+              onClick={() => {
+                setAccountMode("signup");
+                setLoginError(null);
+                setAccountCheckResult(null);
+                setAccountForm((f) => ({ ...f, password: "", confirmPassword: "" }));
+              }}
+            >
+              Sign up instead
+            </button>
+          </div>
+
+          {/* Back to choice */}
+          <button
+            type="button"
+            className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-600"
+            onClick={() => {
+              setAccountMode(null);
+              setLoginError(null);
+              setAccountCheckResult(null);
+            }}
+          >
+            <ArrowLeft className="h-3.5 w-3.5" /> Back to options
+          </button>
+        </div>
+      );
+    }
+
+    // ── SIGNUP FORM ───────────────────────────────────────────────────────────
     return (
       <div className="space-y-8">
         <div>
-          <StepLabel step={3} title="Account Setup" />
+          <StepLabel step={3} title="Account Access" />
           <h2 className="mt-1 text-xl font-semibold text-slate-900">
-            Complete your account setup.
+            Create your account.
           </h2>
           <p className="mt-1.5 text-sm text-slate-500">
-            Your profile has been saved. Create your account to track your
-            application status and return to your matches anytime.
+            Your profile has been saved. Set up your account to track your
+            application and return to your matches anytime.
           </p>
         </div>
 
-        {/* Context notice */}
-        <div className="flex gap-3 rounded-2xl border border-[#474ead]/20 bg-[#474ead]/5 p-4">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#474ead]/15 text-[#474ead]">
-            <Lock className="h-4 w-4" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-[#474ead]">
-              Test mode — authentication is not yet enabled
-            </p>
-            <p className="mt-0.5 text-xs text-slate-600">
-              Your details will be saved securely. Full login capabilities will
-              be available once authentication is activated.
-            </p>
-          </div>
-        </div>
-
-        {/* Account form */}
+        {/* Signup form fields */}
         <div className="space-y-5">
           <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400">
             Account Details
@@ -3299,9 +3500,7 @@ export default function FindBestMatches() {
           <div className="space-y-1.5">
             <Label className="text-sm font-medium text-slate-700">
               Email Address{" "}
-              <span className="text-[#474ead] text-xs font-semibold ml-1">
-                Required
-              </span>
+              <span className="text-[#474ead] text-xs font-semibold ml-1">Required</span>
             </Label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -3315,9 +3514,7 @@ export default function FindBestMatches() {
                 className="rounded-xl pl-9"
               />
             </div>
-            {emailError && (
-              <p className="text-xs text-red-500">{emailError}</p>
-            )}
+            {emailError && <p className="text-xs text-red-500">{emailError}</p>}
           </div>
 
           <div className="space-y-1.5">
@@ -3341,32 +3538,21 @@ export default function FindBestMatches() {
               <button
                 type="button"
                 onClick={() =>
-                  setAccountForm((f) => ({
-                    ...f,
-                    showPassword: !f.showPassword,
-                  }))
+                  setAccountForm((f) => ({ ...f, showPassword: !f.showPassword }))
                 }
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                 tabIndex={-1}
               >
-                {accountForm.showPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
+                {accountForm.showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
-            {passwordError && (
-              <p className="text-xs text-red-500">{passwordError}</p>
-            )}
+            {passwordError && <p className="text-xs text-red-500">{passwordError}</p>}
           </div>
 
           <div className="space-y-1.5">
             <Label className="text-sm font-medium text-slate-700">
               Confirm Password{" "}
-              <span className="text-[#474ead] text-xs font-semibold ml-1">
-                Required
-              </span>
+              <span className="text-[#474ead] text-xs font-semibold ml-1">Required</span>
             </Label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -3375,49 +3561,43 @@ export default function FindBestMatches() {
                 placeholder="Re-enter your password"
                 value={accountForm.confirmPassword}
                 onChange={(e) =>
-                  setAccountForm((f) => ({
-                    ...f,
-                    confirmPassword: e.target.value,
-                  }))
+                  setAccountForm((f) => ({ ...f, confirmPassword: e.target.value }))
                 }
                 className="rounded-xl pl-9"
               />
             </div>
-            {confirmError && (
-              <p className="text-xs text-red-500">{confirmError}</p>
-            )}
+            {confirmError && <p className="text-xs text-red-500">{confirmError}</p>}
           </div>
         </div>
 
-        {/* What's next */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">
-            What happens after
-          </p>
-          <div className="space-y-3">
-            {[
-              {
-                icon: CheckCircle2,
-                text: "Your profile is locked in and saved to our system",
-              },
-              {
-                icon: Heart,
-                text: "You'll complete a short values alignment evaluation",
-              },
-              {
-                icon: BriefcaseBusiness,
-                text: "We'll surface the best-fit roles from our live job board",
-              },
-            ].map(({ icon: Icon, text }, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#474ead]/10 text-[#474ead]">
-                  <Icon className="h-3.5 w-3.5" />
-                </div>
-                <span className="text-sm text-slate-600">{text}</span>
-              </div>
-            ))}
-          </div>
+        {/* Switch to login */}
+        <div className="flex items-center gap-2 text-sm text-slate-500">
+          <span>Already have an account?</span>
+          <button
+            type="button"
+            className="text-[#474ead] font-medium hover:underline"
+            onClick={() => {
+              setAccountMode("login");
+              setLoginError(null);
+              setAccountCheckResult(null);
+              setAccountForm((f) => ({ ...f, password: "", confirmPassword: "" }));
+            }}
+          >
+            Log in instead
+          </button>
         </div>
+
+        {/* Back to choice */}
+        <button
+          type="button"
+          className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-600"
+          onClick={() => {
+            setAccountMode(null);
+            setAccountCheckResult(null);
+          }}
+        >
+          <ArrowLeft className="h-3.5 w-3.5" /> Back to options
+        </button>
       </div>
     );
   }
@@ -3425,16 +3605,19 @@ export default function FindBestMatches() {
   // ── Step 3: Account Success ────────────────────────────────────────────────
   function AccountSuccessStep() {
     const name = profile.fullName ? profile.fullName.split(" ")[0] : "there";
+    const isLogin = accountMode === "login";
     const isExisting = accountCheckResult === "existing";
 
-    const badgeLabel = isExisting ? "Account Linked" : "Account Created";
-    const headline = isExisting
+    const badgeLabel = isLogin ? "Signed In" : isExisting ? "Account Linked" : "Account Created";
+    const headline = isLogin || isExisting
       ? `Welcome back${name !== "there" ? `, ${name}` : ""}!`
       : `Welcome to OnSpot${name !== "there" ? `, ${name}` : ""}!`;
-    const subtext = isExisting
-      ? "Your existing account has been linked to this profile. You're all set — head into the culture evaluation to uncover your best-fit roles."
-      : "Your account has been created and your profile is saved. You're now ready for the culture evaluation — the final step before we reveal your best-fit roles.";
-    const accountStatusLabel = isExisting ? "Linked" : "Created";
+    const subtext = isLogin
+      ? "You're signed in successfully. Your profile is linked to your existing account — continue to the culture evaluation to uncover your best-fit roles."
+      : isExisting
+        ? "Your existing account has been linked to this profile. You're all set — head into the culture evaluation to uncover your best-fit roles."
+        : "Your account has been created and your profile is saved. You're now ready for the culture evaluation — the final step before we reveal your best-fit roles.";
+    const accountStatusLabel = isLogin ? "Signed In" : isExisting ? "Linked" : "Created";
 
     return (
       <div className="flex flex-col items-center py-8 text-center">
@@ -3443,10 +3626,12 @@ export default function FindBestMatches() {
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: "spring", duration: 0.6 }}
           className={`flex h-20 w-20 items-center justify-center rounded-full mb-6 ${
-            isExisting ? "bg-amber-100" : "bg-[#474ead]/10"
+            isLogin ? "bg-[#474ead]/10" : isExisting ? "bg-amber-100" : "bg-[#474ead]/10"
           }`}
         >
-          {isExisting ? (
+          {isLogin ? (
+            <CheckCircle2 className="h-10 w-10 text-[#474ead]" />
+          ) : isExisting ? (
             <CheckCircle2 className="h-10 w-10 text-amber-600" />
           ) : (
             <PartyPopper className="h-10 w-10 text-[#474ead]" />
@@ -3910,7 +4095,7 @@ export default function FindBestMatches() {
   function renderStep() {
     if (flowStep === 0) return UploadResumeStep();
     if (flowStep === 1) return FinalizeInformationStep();
-    if (flowStep === 2) return AccountCreationStep();
+    if (flowStep === 2) return AccountAccessStep();
     if (flowStep === 3) return AccountSuccessStep();
     if (flowStep === 4) return CultureEvaluationStep();
     return CultureResultStep(); // step 5
@@ -3968,9 +4153,13 @@ export default function FindBestMatches() {
                 >
                   <ArrowLeft className="mr-2 h-4 w-4" /> Back
                 </Button>
-                {/* Hide the footer action button when the existing-account card
-                    is shown — those inline CTAs handle continuing */}
-                {!(flowStep === 2 && accountCheckResult === "existing") && (
+                {/* Hide the footer CTA when:
+                    - step 2 choice screen (cards handle navigation)
+                    - step 2 signup with duplicate email (inline CTAs handle it)
+                    - step 2 existing account confirmed via login (handled inline during login flow via setFlowStep)
+                    Always show for login/signup form buttons */}
+                {!(flowStep === 2 && (!accountMode || accountMode === "choice")) &&
+                  !(flowStep === 2 && accountMode === "signup" && accountCheckResult === "existing") && (
                   <Button
                     onClick={handleNext}
                     disabled={!ready}
@@ -3982,13 +4171,18 @@ export default function FindBestMatches() {
                       </>
                     ) : isCreatingAccount ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating Account…
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {accountMode === "login" ? "Signing In…" : "Creating Account…"}
                       </>
                     ) : isSavingEvaluation ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving Evaluation…
                       </>
-                    ) : flowStep === 2 ? (
+                    ) : flowStep === 2 && accountMode === "login" ? (
+                      <>
+                        <Lock className="mr-2 h-4 w-4" /> Sign In
+                      </>
+                    ) : flowStep === 2 && accountMode === "signup" ? (
                       <>
                         <CheckCircle2 className="mr-2 h-4 w-4" /> Create Account
                       </>

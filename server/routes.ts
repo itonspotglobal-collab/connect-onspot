@@ -3311,6 +3311,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * POST /api/candidates/check-email
+   * Returns whether a candidate with the given email exists.
+   */
+  app.post("/api/candidates/check-email", async (req, res) => {
+    try {
+      const { email } = req.body as { email?: string };
+      if (!email || typeof email !== "string") {
+        return res.status(400).json({ error: "Email is required" });
+      }
+      const candidate = await storage.getCandidateByEmail(email.toLowerCase().trim());
+      return res.json({ exists: !!candidate, candidateId: candidate?.id ?? null });
+    } catch (error: any) {
+      console.error("POST /api/candidates/check-email error:", error);
+      return res.status(500).json({ error: "Email check failed" });
+    }
+  });
+
+  /**
+   * POST /api/candidates/login
+   * Test-mode login — verifies the email exists and returns the candidate.
+   * Structured so real password/JWT auth can be dropped in later.
+   */
+  app.post("/api/candidates/login", async (req, res) => {
+    try {
+      const { email } = req.body as { email?: string };
+      if (!email || typeof email !== "string") {
+        return res.status(400).json({ error: "Email is required" });
+      }
+      const candidate = await storage.getCandidateByEmail(email.toLowerCase().trim());
+      if (!candidate) {
+        return res.json({ exists: false });
+      }
+      return res.json({
+        exists: true,
+        candidateId: candidate.id,
+        candidate: {
+          id: candidate.id,
+          fullName: candidate.fullName,
+          email: candidate.email,
+          targetPosition: candidate.targetPosition,
+          coreSkills: candidate.coreSkills,
+        },
+      });
+    } catch (error: any) {
+      console.error("POST /api/candidates/login error:", error);
+      return res.status(500).json({ error: "Login failed" });
+    }
+  });
+
   app.post("/api/candidates", async (req, res) => {
     try {
       const { insertCandidateSchema } = await import("@shared/schema");
