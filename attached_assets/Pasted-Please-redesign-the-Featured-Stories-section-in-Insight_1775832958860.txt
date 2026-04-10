@@ -1,0 +1,55 @@
+Please redesign the Featured Stories section in Insights.tsx so the highlighted post image becomes the background of the entire featured hero section, similar to Netflix-style hero treatment.
+
+Goal:
+Instead of having the highlighted image only inside the carousel/card, make that featured image the full background of the whole highlight section.
+
+What I want:
+- The entire dark/violet highlighted hero area should use the selected featured post’s thumbnail/cover image as its background
+- The content should sit on top of that image with a dark overlay for readability
+- The effect should feel cinematic/editorial, similar to a Netflix hero banner
+
+Required behavior:
+1. Make the featured post image the background of the entire Featured Stories section
+- Not just the card
+- The full hero wrapper/section should use the active featured post image as the background
+- When the carousel changes slides, the background image should also change with it
+
+2. Add a strong readable overlay
+- Use a dark overlay/gradient on top of the image so text remains readable
+- Keep the overlay elegant and premium, not muddy
+- Prefer a left-to-right or layered overlay so title/excerpt text remains clear
+
+3. Keep the featured content layered above the background
+- Keep the title, tags, excerpt, author, date, read time, CTA, arrows, and indicators visible on top
+- Layout should still feel clean and intentional
+- The content can stay left-aligned as it is now
+
+4. Reduce the “boxed card” feel
+- Since the whole section becomes the featured image background, the inner featured card/container should be simplified
+- Remove or reduce the sense that the image is trapped inside a separate card
+- Make the section feel like one unified hero block
+
+5. Keep the carousel functionality
+- Previous/next arrows must still work
+- Slide indicators must still work
+- Active slide background should update accordingly
+- CTA and metadata must remain functional
+
+6. Preserve branding and polish
+- Keep the section premium and aligned with OnSpot’s brand
+- Maintain clean spacing and large hero presence
+- Ensure responsiveness across desktop and mobile
+
+Implementation guidance:
+- Use the active featured post image as a background image on the outer featured section wrapper
+- Add overlay layers for readability
+- Keep the content container constrained in width, but let the background image fill the full highlighted section
+- Use smooth background/image transitions when the active featured post changes
+- Keep the homepage-inspired blue/purple framing if needed, but the main visible hero surface should now be the active featured image
+
+Expected result:
+- The whole highlighted section behaves like a Netflix-style hero banner
+- The active featured image becomes the section background
+- Text and controls sit on top with good contrast
+- Carousel interaction updates the background as slides change
+- The hero feels immersive instead of card-based

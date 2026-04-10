@@ -528,41 +528,59 @@ function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
         .carousel-bar { animation: carousel-bar 5.5s linear forwards; }
       `}</style>
 
+      {/* ── Full-bleed Netflix-style hero ──────────────────────────────── */}
       <div
-        className="relative w-full rounded-2xl overflow-hidden cursor-pointer group select-none"
-        style={{ height: "clamp(340px, 46vw, 540px)" }}
-        onClick={() => navigate(`/insights/${art.slug}`)}
+        className="relative w-full overflow-hidden group select-none"
+        style={{ minHeight: "clamp(520px, 62vw, 700px)" }}
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
         role="region"
         aria-label="Featured articles carousel"
       >
+        {/* Background image slides — full section fill */}
         {articles.map((a, i) => (
           <div
             key={a.id}
-            className="absolute inset-0 transition-opacity duration-700"
-            style={{
-              opacity: i === active ? 1 : 0,
-              zIndex: i === active ? 1 : 0,
-            }}
+            className="absolute inset-0 transition-opacity duration-1000"
+            style={{ opacity: i === active ? 1 : 0, zIndex: 0 }}
             aria-hidden={i !== active}
           >
             <img
               src={a.image}
-              alt={a.title}
+              alt=""
               className="w-full h-full object-cover object-center"
+              style={{
+                transform: i === active ? "scale(1)" : "scale(1.05)",
+                transition: "transform 8s ease-out",
+              }}
               draggable={false}
               onError={(e) => {
                 (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
               }}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/65 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-900/85 via-slate-900/30 to-transparent" />
           </div>
         ))}
 
-        <div className="absolute inset-0 z-10 flex flex-col justify-end px-8 pb-10 sm:px-12 sm:pb-12">
-          <div className="flex items-center gap-2 mb-3">
+        {/* Cinematic overlays */}
+        <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black/92 via-black/45 to-black/15 pointer-events-none" />
+        <div className="absolute inset-0 z-[1] bg-gradient-to-r from-black/75 via-black/25 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 z-[1] bg-gradient-to-b from-black/30 via-transparent to-transparent pointer-events-none" />
+
+        {/* ── Content ───────────────────────────────────────────────────── */}
+        <div
+          className="relative z-[2] flex flex-col justify-end h-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-12"
+          style={{ paddingBottom: "clamp(48px, 6vw, 80px)", minHeight: "inherit" }}
+        >
+          {/* Eyebrow label */}
+          <div className="flex items-center gap-3 mb-6">
+            <div className="h-px w-8 bg-white/30" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.28em] text-white/50">
+              Featured Stories
+            </span>
+          </div>
+
+          {/* Category + Featured badges */}
+          <div className="flex items-center gap-2 mb-4">
             <span className="text-[10px] uppercase tracking-[0.22em] font-semibold px-3 py-1 rounded-full bg-[#474ead] text-white">
               {art.category}
             </span>
@@ -573,62 +591,68 @@ function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
             )}
           </div>
 
-          <h2 className="text-2xl sm:text-3xl lg:text-[2.1rem] font-semibold text-white leading-tight max-w-2xl mb-3 tracking-tight">
+          {/* Title */}
+          <h2
+            className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight max-w-3xl mb-4 tracking-tight cursor-pointer"
+            onClick={() => navigate(`/insights/${art.slug}`)}
+          >
             {art.title}
           </h2>
 
+          {/* Excerpt */}
           {art.excerpt && (
-            <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-xl mb-5 line-clamp-2">
+            <p className="text-white/70 text-sm sm:text-base leading-relaxed max-w-2xl mb-6 line-clamp-2">
               {art.excerpt}
             </p>
           )}
 
-          <div className="flex items-center gap-4 flex-wrap">
+          {/* Meta row + CTA */}
+          <div className="flex items-center gap-5 flex-wrap">
             <span className="flex items-center gap-1.5 text-xs">
-              <span className="w-5 h-5 rounded-full bg-[#474ead]/30 text-[#474ead] text-[9px] font-bold flex items-center justify-center flex-shrink-0">
+              <span className="w-6 h-6 rounded-full bg-white/15 text-white text-[9px] font-bold flex items-center justify-center flex-shrink-0 border border-white/20">
                 {getInitials(art.author)}
               </span>
-              <span className="text-slate-300 font-medium">{art.author}</span>
+              <span className="text-white/80 font-medium">{art.author}</span>
             </span>
-            <span className="flex items-center gap-1 text-xs text-slate-400">
+            <span className="flex items-center gap-1 text-xs text-white/50">
               <Calendar className="w-3 h-3" />
               {art.date}
             </span>
-            <span className="flex items-center gap-1 text-xs text-slate-400">
+            <span className="flex items-center gap-1 text-xs text-white/50">
               <Clock className="w-3 h-3" />
               {art.readTime}
             </span>
             {art.views > 0 && (
-              <span className="flex items-center gap-1 text-xs text-slate-400">
+              <span className="flex items-center gap-1 text-xs text-white/50">
                 <Eye className="w-3 h-3" />
                 {art.views.toLocaleString()}
               </span>
             )}
-            <span className="ml-auto flex items-center gap-1.5 text-sm font-semibold text-white group-hover:text-[#474ead] transition-colors">
+
+            {/* CTA button */}
+            <button
+              onClick={() => navigate(`/insights/${art.slug}`)}
+              className="ml-auto flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-slate-900 text-sm font-semibold hover:bg-white/90 transition-all duration-200 shadow-lg"
+            >
               Read Article
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-            </span>
+            </button>
           </div>
         </div>
 
+        {/* ── Prev / Next arrows ─────────────────────────────────────────── */}
         {total > 1 && (
           <>
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                goTo(active - 1);
-              }}
-              className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/40 border border-white/10 backdrop-blur-sm flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/60"
+              onClick={(e) => { e.stopPropagation(); goTo(active - 1); }}
+              className="absolute left-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/40 border border-white/15 backdrop-blur-sm flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/60"
               aria-label="Previous article"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                goTo(active + 1);
-              }}
-              className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/40 border border-white/10 backdrop-blur-sm flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/60"
+              onClick={(e) => { e.stopPropagation(); goTo(active + 1); }}
+              className="absolute right-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/40 border border-white/15 backdrop-blur-sm flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/60"
               aria-label="Next article"
             >
               <ChevronRight className="w-5 h-5" />
@@ -636,15 +660,13 @@ function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
           </>
         )}
 
+        {/* ── Slide indicators ───────────────────────────────────────────── */}
         {total > 1 && (
-          <div className="absolute bottom-5 right-8 sm:right-12 z-20 flex items-center gap-2">
+          <div className="absolute bottom-6 right-8 sm:right-12 z-20 flex items-center gap-2">
             {articles.map((_, i) => (
               <button
                 key={i}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  goTo(i);
-                }}
+                onClick={(e) => { e.stopPropagation(); goTo(i); }}
                 className={`rounded-full transition-all duration-300 ${
                   i === active
                     ? "w-6 h-2 bg-white"
@@ -656,12 +678,10 @@ function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
           </div>
         )}
 
+        {/* ── Progress bar ───────────────────────────────────────────────── */}
         {total > 1 && !paused && (
           <div className="absolute bottom-0 left-0 right-0 z-20 h-[2px] bg-white/10">
-            <div
-              key={`${active}-progress`}
-              className="h-full bg-[#474ead] carousel-bar"
-            />
+            <div key={`${active}-progress`} className="h-full bg-white/60 carousel-bar" />
           </div>
         )}
       </div>
@@ -1520,40 +1540,14 @@ export default function Insights() {
         onClearAuthor={() => setAuthorFilter("")}
       />
 
-      {/* ── Featured Hero Band — full-bleed, homepage-inspired ────────────── */}
+      {/* ── Featured Hero Band — full-bleed Netflix-style ───────────────── */}
       {selectedCategory === "View All" &&
         !isLoading &&
         featuredArticles.length > 0 &&
         !searchQuery &&
         !authorFilter && (
-          <section className="hero-investor relative overflow-hidden">
-            {/* Depth overlay — matches homepage hero treatment */}
-            <div
-              className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/30 pointer-events-none"
-              aria-hidden="true"
-            />
-
-            {/* Animated ambient accents — same as homepage */}
-            <div
-              className="absolute inset-0 overflow-hidden pointer-events-none"
-              aria-hidden="true"
-            >
-              <div className="absolute top-1/3 left-1/4 w-[600px] h-[600px] bg-gradient-radial from-white/5 to-transparent rounded-full blur-3xl animate-gentle-float" />
-              <div className="absolute bottom-1/3 right-1/4 w-[500px] h-[500px] bg-gradient-radial from-blue-500/10 to-transparent rounded-full blur-3xl animate-slow-spin" />
-            </div>
-
-            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-32 sm:pt-14 sm:pb-36">
-              {/* Section eyebrow */}
-              <div className="mb-6 flex items-center gap-3">
-                <div className="h-px w-8 bg-white/20" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/50">
-                  Featured Stories
-                </span>
-              </div>
-
-              {/* Carousel — unchanged behavior */}
-              <FeaturedCarousel articles={featuredArticles} />
-            </div>
+          <section className="relative overflow-hidden">
+            <FeaturedCarousel articles={featuredArticles} />
           </section>
         )}
 
