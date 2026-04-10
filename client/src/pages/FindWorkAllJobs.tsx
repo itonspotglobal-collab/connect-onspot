@@ -5,12 +5,12 @@ import { motion } from "framer-motion";
 import {
   Search, Filter, ArrowLeft, ArrowRight, DollarSign,
   MapPin, BriefcaseBusiness, Layers, Zap, Users, Clock3,
-  SlidersHorizontal, X,
+  SlidersHorizontal, X, Calendar, Code2, HeadphonesIcon,
+  BarChart2, PenLine, Settings2, ShoppingBag, FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import type { Job } from "@shared/schema";
 import { buildRateDisplay, getJobBadges, getTimeAgo, sortJobs, type SortOption } from "@/lib/jobUtils";
 
@@ -83,86 +83,118 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "featured", label: "Featured" },
 ];
 
+const CATEGORY_ICONS: Record<string, React.ElementType> = {
+  development: Code2,
+  "tech support": Code2,
+  design: PenLine,
+  marketing: BarChart2,
+  sales: ShoppingBag,
+  admin: Settings2,
+  "customer success": HeadphonesIcon,
+  operations: Settings2,
+  finance: FileText,
+};
+
+function getCategoryIcon(category: string | null): React.ElementType {
+  const key = (category ?? "").toLowerCase();
+  return CATEGORY_ICONS[key] ?? BriefcaseBusiness;
+}
+
 function JobCard({ job, onNavigate }: { job: Job; onNavigate: (id: string) => void }) {
   const pay = buildRateDisplay(job);
   const badges = getJobBadges(job);
   const timeAgo = getTimeAgo(job.createdAt);
-  const tags = (job.skillTags ?? []).slice(0, 4);
+  const tags = (job.skillTags ?? []).slice(0, 5);
+  const CategoryIcon = getCategoryIcon(job.category);
+  const contractLabel = (job.contractType ?? "Full-time").replace(/-/g, " ");
 
   return (
     <motion.div layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28 }}>
-      <Card className="flex h-full flex-col rounded-3xl border-slate-200/70 bg-white/90 transition-all hover:border-[#474ead]/25 hover:shadow-[0_16px_48px_rgba(71,78,173,0.10)] dark:border-white/10 dark:bg-white/[0.03]">
-        <CardContent className="flex flex-1 flex-col p-6">
-          {/* Header */}
-          <div className="mb-4 flex items-start justify-between gap-3">
-            <div className="flex-1">
-              <div className="mb-2 flex flex-wrap gap-1.5">
-                {badges.map((b) => (
-                  <span key={b.key} className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${b.className}`}>{b.label}</span>
-                ))}
-                {badges.length === 0 && (
-                  <span className="rounded-full bg-[#474ead]/10 px-2.5 py-0.5 text-[11px] font-semibold text-[#474ead]">Open</span>
-                )}
-              </div>
-              <h3 className="text-lg font-semibold leading-snug text-slate-900 dark:text-white">{job.title}</h3>
-              <p className="mt-0.5 text-sm text-slate-500">{job.company ?? "OnSpot Global"}</p>
-            </div>
-            <span className="shrink-0 text-xs text-slate-400">{timeAgo}</span>
-          </div>
+      <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-all hover:shadow-[0_8px_32px_rgba(71,78,173,0.12)] dark:border-white/10 dark:bg-white/[0.03]">
 
-          {/* Meta */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-xl bg-slate-50 p-2.5 dark:bg-white/[0.04]">
-              <div className="flex items-center gap-1.5 text-[11px] text-slate-500"><DollarSign className="h-3 w-3" /> Pay</div>
-              <div className="mt-0.5 text-sm font-semibold text-slate-900 dark:text-white">{pay}</div>
+        {/* ── Gradient header ─────────────────────────────────────────────── */}
+        <div className="flex items-center justify-between gap-4 bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] px-5 py-4">
+          {/* Left: icon + title + meta */}
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15">
+              <CategoryIcon className="h-5 w-5 text-white" />
             </div>
-            <div className="rounded-xl bg-slate-50 p-2.5 dark:bg-white/[0.04]">
-              <div className="flex items-center gap-1.5 text-[11px] text-slate-500"><MapPin className="h-3 w-3" /> Location</div>
-              <div className="mt-0.5 text-sm font-semibold text-slate-900 dark:text-white">{job.location ?? "Remote"}</div>
-            </div>
-            <div className="rounded-xl bg-slate-50 p-2.5 dark:bg-white/[0.04]">
-              <div className="flex items-center gap-1.5 text-[11px] text-slate-500"><BriefcaseBusiness className="h-3 w-3" /> Category</div>
-              <div className="mt-0.5 text-sm font-semibold capitalize text-slate-900 dark:text-white">{job.category}</div>
-            </div>
-            <div className="rounded-xl bg-slate-50 p-2.5 dark:bg-white/[0.04]">
-              <div className="flex items-center gap-1.5 text-[11px] text-slate-500"><Layers className="h-3 w-3" /> Type</div>
-              <div className="mt-0.5 text-sm font-semibold capitalize text-slate-900 dark:text-white">
-                {(job.contractType ?? "Full-time").replace(/-/g, " ")}
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
+                <h3 className="text-base font-bold leading-tight text-white truncate">{job.title}</h3>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-white/70">{job.company ?? "OnSpot Global"}</span>
+                <span className="text-white/30 text-xs">·</span>
+                {badges.length > 0
+                  ? badges.map((b) => (
+                      <span key={b.key} className="rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-semibold text-white">{b.label}</span>
+                    ))
+                  : <span className="rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-semibold text-white capitalize">{contractLabel}</span>
+                }
               </div>
             </div>
           </div>
 
-          {/* Description */}
+          {/* Right: pay + posted */}
+          <div className="shrink-0 text-right">
+            <div className="text-base font-bold text-white">{pay}</div>
+            <div className="mt-0.5 text-[11px] text-white/60">Job posted {timeAgo}</div>
+          </div>
+        </div>
+
+        {/* ── Metadata row ────────────────────────────────────────────────── */}
+        <div className="grid grid-cols-4 divide-x divide-slate-100 border-b border-slate-100 dark:divide-white/[0.06] dark:border-white/[0.06]">
+          {[
+            { icon: Layers,          label: "CONTRACT", value: contractLabel },
+            { icon: DollarSign,      label: "SALARY",   value: pay },
+            { icon: MapPin,          label: "LOCATION",  value: job.location ?? "Remote" },
+            { icon: Calendar,        label: "POSTED",    value: timeAgo },
+          ].map(({ icon: Icon, label, value }) => (
+            <div key={label} className="flex flex-col gap-0.5 px-4 py-3">
+              <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                <Icon className="h-3 w-3" />
+                {label}
+              </div>
+              <div className="text-sm font-semibold capitalize text-slate-800 dark:text-white truncate">{value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Body ────────────────────────────────────────────────────────── */}
+        <div className="px-5 py-4">
           {job.description && (
-            <p className="mt-4 line-clamp-2 text-sm leading-6 text-slate-600 dark:text-slate-400">{job.description}</p>
+            <p className="line-clamp-2 text-sm leading-6 text-slate-600 dark:text-slate-400">{job.description}</p>
           )}
 
           {/* Skill tags */}
           {tags.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-1.5">
+            <div className="mt-3 flex flex-wrap gap-1.5">
               {tags.map((tag) => (
-                <span key={tag} className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700 dark:bg-white/[0.06] dark:text-slate-300">{tag}</span>
+                <span key={tag} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-700 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-slate-300">
+                  {tag}
+                </span>
               ))}
             </div>
           )}
 
           {/* Actions */}
-          <div className="mt-5 flex items-center justify-between gap-3">
+          <div className="mt-4 flex items-center gap-3">
             <Button
-              className="rounded-full bg-[#474ead] px-5 text-white hover:bg-[#3d439c]"
+              className="rounded-full bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] px-6 text-white border-0"
               onClick={() => window.open(APPLY_URL, "_blank", "noopener,noreferrer")}
             >
               Apply Now
             </Button>
             <button
               onClick={() => onNavigate(job.id)}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 transition-colors hover:text-[#474ead] dark:text-slate-300"
+              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-[#474ead]/30 hover:bg-[#474ead]/5 hover:text-[#474ead] dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-300"
             >
-              View details <ArrowRight className="h-4 w-4" />
+              View details <ArrowRight className="h-3.5 w-3.5" />
             </button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </motion.div>
   );
 }
@@ -563,9 +595,28 @@ export default function FindWorkAllJobs() {
 
         {/* Loading state */}
         {isLoading && (
-          <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
-            {[1, 2, 3, 4, 5, 6].map((n) => (
-              <div key={n} className="h-72 animate-pulse rounded-3xl bg-slate-100 dark:bg-white/[0.04]" />
+          <div className="space-y-4">
+            {[1, 2, 3].map((n) => (
+              <div key={n} className="overflow-hidden rounded-2xl border border-slate-100 bg-white dark:border-white/[0.06] dark:bg-white/[0.03]">
+                <div className="h-16 animate-pulse bg-gradient-to-r from-slate-200 to-slate-100 dark:from-white/[0.08] dark:to-white/[0.04]" />
+                <div className="grid grid-cols-4 divide-x divide-slate-100 border-b border-slate-100 dark:divide-white/[0.06] dark:border-white/[0.06]">
+                  {[1, 2, 3, 4].map((c) => (
+                    <div key={c} className="px-4 py-3">
+                      <div className="mb-1.5 h-2.5 w-16 animate-pulse rounded bg-slate-100 dark:bg-white/[0.06]" />
+                      <div className="h-4 w-20 animate-pulse rounded bg-slate-100 dark:bg-white/[0.06]" />
+                    </div>
+                  ))}
+                </div>
+                <div className="px-5 py-4 space-y-2">
+                  <div className="h-3.5 w-full animate-pulse rounded bg-slate-100 dark:bg-white/[0.06]" />
+                  <div className="h-3.5 w-4/5 animate-pulse rounded bg-slate-100 dark:bg-white/[0.06]" />
+                  <div className="mt-3 flex gap-2">
+                    {[1, 2, 3].map((t) => (
+                      <div key={t} className="h-6 w-20 animate-pulse rounded-full bg-slate-100 dark:bg-white/[0.06]" />
+                    ))}
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
         )}
@@ -588,9 +639,9 @@ export default function FindWorkAllJobs() {
           </div>
         )}
 
-        {/* Job grid */}
+        {/* Job list */}
         {!isLoading && filtered.length > 0 && (
-          <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
+          <div className="space-y-4">
             {filtered.map((job) => (
               <JobCard key={job.id} job={job} onNavigate={(id) => navigate(`/find-work/job/${id}`)} />
             ))}

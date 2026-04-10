@@ -1,0 +1,61 @@
+Update my React + TypeScript file `FindWorkAllJob.tsx` to change the current vertical boxed job cards into a full-width horizontal job listing layout.
+
+Goal:
+- Keep all existing functionality, filtering, sorting, search, navigation, and data logic unchanged.
+- Only update the UI layout and styling of the job results section.
+- The new design should look like a horizontal job row card, similar to a modern job board list layout.
+- Do NOT copy content from any reference image. Only follow the style direction: horizontal alignment, wider cards, structured info sections, and cleaner row-based layout.
+
+What I want changed:
+1. Change each job item from a grid card into a full-width horizontal card.
+2. Add a colored header section at the top of each job card.
+3. In the header:
+   - show badges/status
+   - show job title
+   - show company
+   - show contract type
+   - show pay on the right side
+   - show “Job posted” or posted time on the right side
+4. Below the header, create a horizontal metadata row with 4 sections:
+   - Type
+   - Salary
+   - Location
+   - Posted
+5. Below the metadata row:
+   - show description
+   - show skill tags
+   - show action buttons like “Apply Now” and “View details”
+6. Keep the current data fields already used in the component:
+   - title
+   - company
+   - contractType
+   - location
+   - description
+   - skillTags
+   - createdAt
+   - pay/rate display
+   - badges
+7. Keep dark mode compatibility.
+8. Keep Framer Motion animation.
+9. Keep Tailwind styling consistent with the rest of the page.
+10. Make the results container render as a vertical list using `space-y-*` instead of a multi-column grid.
+11. Update the loading skeletons so they also match the new horizontal card layout.
+
+Important:
+- Do not change business logic.
+- Do not remove existing filters, sorting, search, or navigation.
+- Only refactor the `JobCard` UI and the results/loading layout wrappers.
+- Preserve TypeScript types.
+- Return the final updated code for:
+  - the `JobCard` component
+  - the loading state block
+  - the results block
+
+Design direction:
+- rounded large container
+- subtle border
+- hover shadow
+- blue/purple gradient header
+- clean section dividers
+- full-width list layout
+- professional job-board style
