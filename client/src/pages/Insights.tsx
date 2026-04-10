@@ -707,7 +707,7 @@ function CategoryNav({
   const hasActiveSearch = !!searchQuery || !!authorFilter;
 
   return (
-    <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
+    <div className="sticky top-0 z-50 bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] backdrop-blur-md border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* ── Primary nav row ─────────────────────────────────────────────── */}
         <div className="flex items-center -mb-px">
@@ -720,12 +720,12 @@ function CategoryNav({
             <img
               src={onspotLogo}
               alt="OnSpot"
-              className="h-7 w-auto object-contain"
+              className="h-7 w-auto object-contain brightness-0 saturate-100 invert drop-shadow-sm"
             />
           </button>
 
           {/* Divider */}
-          <div className="w-px h-5 bg-slate-200 flex-shrink-0 mx-2" />
+          <div className="w-px h-5 bg-white/20 flex-shrink-0 mx-2" />
 
           {/* Scrollable category tabs */}
           <div className="flex items-center overflow-x-auto scrollbar-hide flex-1 gap-0">
@@ -740,8 +740,8 @@ function CategoryNav({
                     border-b-2 transition-all duration-200 flex-shrink-0
                     ${
                       active
-                        ? "border-[#474ead] text-[#474ead]"
-                        : "border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300"
+                        ? "border-white text-white"
+                        : "border-transparent text-white/70 hover:text-white hover:border-white/40"
                     }
                   `}
                 >
@@ -753,13 +753,13 @@ function CategoryNav({
           </div>
 
           {/* Search toggle — right side */}
-          <div className="flex items-center flex-shrink-0 pl-2 ml-1 border-l border-slate-200">
+          <div className="flex items-center flex-shrink-0 pl-2 ml-1 border-l border-white/20">
             <button
               onClick={toggleSearch}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
                 searchOpen || hasActiveSearch
-                  ? "text-[#474ead] bg-[#474ead]/8"
-                  : "text-slate-500 hover:text-[#474ead] hover:bg-[#474ead]/8"
+                  ? "text-white bg-white/15"
+                  : "text-white/70 hover:text-white hover:bg-white/10"
               }`}
               aria-label={searchOpen ? "Close search" : "Open search"}
             >
@@ -772,7 +772,7 @@ function CategoryNav({
                 {searchOpen ? "Close" : "Search"}
               </span>
               {hasActiveSearch && !searchOpen && (
-                <span className="w-1.5 h-1.5 rounded-full bg-[#474ead] flex-shrink-0" />
+                <span className="w-1.5 h-1.5 rounded-full bg-white flex-shrink-0" />
               )}
             </button>
           </div>
@@ -782,19 +782,19 @@ function CategoryNav({
         {searchOpen && (
           <div className="pb-3 pt-1 flex flex-col gap-2">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#474ead]/60 pointer-events-none" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 pointer-events-none" />
               <input
                 ref={navInputRef}
                 type="text"
                 placeholder="Search by title, excerpt, author, or category…"
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
-                className="w-full pl-9 pr-9 py-2.5 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-900 focus:outline-none focus:border-[#474ead]/50 focus:ring-2 focus:ring-[#474ead]/10 placeholder:text-slate-400 transition"
+                className="w-full pl-9 pr-9 py-2.5 rounded-lg border border-white/20 bg-white/10 text-sm text-white focus:outline-none focus:border-white/40 focus:ring-2 focus:ring-white/10 placeholder:text-white/40 transition backdrop-blur-sm"
               />
               {searchQuery && (
                 <button
                   onClick={() => onSearchChange("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors"
                   aria-label="Clear search"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -805,12 +805,12 @@ function CategoryNav({
             {/* Author filter pill — shown inside search row when active */}
             {authorFilter && (
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="inline-flex items-center gap-2 rounded-full bg-[#474ead]/10 border border-[#474ead]/20 text-[#474ead] text-xs px-3 py-1.5 font-medium">
+                <span className="inline-flex items-center gap-2 rounded-full bg-white/15 border border-white/25 text-white text-xs px-3 py-1.5 font-medium">
                   <Users className="w-3 h-3" />
                   Articles by {authorFilter}
                   <button
                     onClick={onClearAuthor}
-                    className="ml-0.5 hover:text-[#474ead]/60 transition-colors"
+                    className="ml-0.5 hover:text-white/60 transition-colors"
                     aria-label="Clear author filter"
                   >
                     <X className="w-3 h-3" />
