@@ -1,0 +1,83 @@
+Fix the bug where **System Requirements** data is saved/edited in the Jobs Admin page but does **not appear on the public full job details page**.
+
+### Bug description
+
+When creating or editing a job posting in the Jobs Admin modal, fields like:
+
+* `Minimum Internet Speed`
+* `System Requirements`
+
+are being entered correctly in admin, but they are not rendering on the public job details page.
+
+### What to investigate
+
+Please trace the full data flow for these fields from admin form to public page:
+
+1. Admin form state
+2. create/update request payload
+3. backend validation/schema
+4. database persistence
+5. API response for job details
+6. frontend job details type/interface
+7. public job details rendering component/page
+
+### Expected behavior
+
+If a job has system requirement values, the public full job details page should display a **System Requirements** section, for example:
+
+* Section title: `System Requirements`
+* Show `Minimum Internet Speed` if present
+* Show `System Requirements` text/content if present
+
+Only render the section when at least one of these fields has a value.
+
+### Requirements
+
+1. Verify the exact field names used across frontend and backend.
+
+   * Check for mismatches like:
+
+     * `systemRequirements` vs `system_requirements`
+     * `minimumInternetSpeed` vs `minInternetSpeed`
+     * missing mapping in DTOs/types/interfaces
+     * omitted fields in serializers or select queries
+
+2. Fix both create and edit flows.
+
+   * New jobs should save and display correctly
+   * Existing jobs should update and display correctly
+
+3. Fix public rendering.
+
+   * On the full details page, render the section only if data exists
+   * Keep styling consistent with the existing job details sections
+
+4. Do not affect the job card summary behavior.
+
+   * This fix is only for the full job details page
+
+5. Add safe fallback behavior.
+
+   * If one field exists and the other does not, still render the available value
+
+### Likely files involved
+
+Please inspect and update the relevant files, including but not limited to:
+
+* admin add/edit job modal component
+* frontend job form types/interfaces
+* API request mapping
+* backend route/controller/service for create/update/get job
+* database schema/model
+* public job details page component
+* any shared job type definitions
+
+### After fixing
+
+Please show me:
+
+1. the exact files changed
+2. the root cause of the bug
+3. the exact field name mismatches or missing mappings found
+4. whether a migration is needed
+5. how the public page now decides when to show the System Requirements section

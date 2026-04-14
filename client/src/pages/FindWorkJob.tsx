@@ -583,8 +583,8 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
           <SectionBody items={culturalFit} bulletColor="bg-[#474ead]" />
         </Section>
 
-        {/* Remote-only: Minimum Internet Speed */}
-        {isRemote && minimumInternetSpeed?.trim() && (
+        {/* Minimum Internet Speed */}
+        {minimumInternetSpeed?.trim() && (
           <Section
             icon={<Wifi className="h-5 w-5 text-sky-500" />}
             iconBg="bg-sky-50 dark:bg-sky-900/30"
@@ -596,8 +596,8 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
           </Section>
         )}
 
-        {/* Remote-only: System Requirements */}
-        {isRemote && systemRequirements?.trim() && (
+        {/* System Requirements */}
+        {systemRequirements?.trim() && (
           <Section
             icon={<Monitor className="h-5 w-5 text-slate-500" />}
             iconBg="bg-slate-100 dark:bg-white/[0.06]"
