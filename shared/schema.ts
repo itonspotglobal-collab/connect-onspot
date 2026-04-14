@@ -108,6 +108,8 @@ export const jobs = pgTable("jobs", {
   kpis: text("kpis"),
   trainingAndSupport: text("training_and_support"),
   growthPath: text("growth_path"),
+  // Public card preview summary (separate from full description)
+  jobSummary: text("job_summary"),
   // System requirements
   minimumInternetSpeed: text("minimum_internet_speed"),
   systemRequirements: text("system_requirements"),

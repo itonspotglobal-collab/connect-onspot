@@ -58,6 +58,7 @@ export const defaultFormData = {
   category: "support",
   contractType: "full-time",
   experienceLevel: "entry",
+  jobSummary: "",
   description: "",
   budget: "",
   hourlyRateMin: "",
@@ -100,6 +101,7 @@ export function jobToFormData(job: Job): JobFormData {
     category: job.category || "support",
     contractType: job.contractType || "full-time",
     experienceLevel: job.experienceLevel || "entry",
+    jobSummary: (job as any).jobSummary || "",
     description: job.description || "",
     budget: job.budget || "",
     hourlyRateMin: job.hourlyRateMin || "",
@@ -232,6 +234,7 @@ export function JobFormModal({ open, onClose, job, onSuccess }: JobFormModalProp
       contractType: formData.contractType,
       experienceLevel: formData.experienceLevel,
       description: formData.description.trim(),
+      jobSummary: formData.jobSummary.trim() || null,
       status: formData.status,
       budgetCurrency: "PHP",
     };
@@ -542,11 +545,35 @@ export function JobFormModal({ open, onClose, job, onSuccess }: JobFormModalProp
               Role Content
             </p>
 
+            {/* ── Job Summary (card preview) ───────────────────────────── */}
+            <div className="space-y-2 mb-5">
+              <Label htmlFor="modal-job-summary">
+                Card Preview Summary
+                <span className="ml-1 text-[10px] text-muted-foreground font-normal">
+                  (optional · max 220 characters)
+                </span>
+              </Label>
+              <Textarea
+                id="modal-job-summary"
+                value={formData.jobSummary}
+                onChange={(e) => updateField("jobSummary", e.target.value.slice(0, 220))}
+                placeholder="Write a short hook that appears on the public job card — 1–2 sentences max."
+                className="min-h-[64px] resize-none"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                This short summary is shown on the public job card preview only. It will not appear in the full job details page.{" "}
+                <span className={formData.jobSummary.length > 200 ? "text-amber-500 font-medium" : ""}>
+                  {formData.jobSummary.length}/220
+                </span>
+              </p>
+            </div>
+
+            {/* ── Full Description ─────────────────────────────────────── */}
             <div className="space-y-2 mb-5">
               <Label htmlFor="modal-description">
-                Role Overview <span className="text-red-500">*</span>
+                Full Role Description <span className="text-red-500">*</span>
                 <span className="ml-1 text-[10px] text-muted-foreground font-normal">
-                  (shown on dedicated page and card preview)
+                  (shown on the full job details page)
                 </span>
               </Label>
               <Textarea

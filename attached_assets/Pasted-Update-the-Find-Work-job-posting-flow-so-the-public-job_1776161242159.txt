@@ -1,0 +1,108 @@
+Update the Find Work job posting flow so the public job card shows a **short job summary** instead of the beginning of the full job description.
+
+### Goal
+
+On the `FindWorkAllJobs.tsx` job card, the text preview section should display a **short summary of the job opening** only.
+The **full job description/details page** should continue showing the complete job description as it does now.
+
+### What to change
+
+#### 1. Add a new field for short summary
+
+Add a new field to the job posting model called something like:
+
+* `jobSummary`
+  or
+* `summary`
+
+This field should be separate from the full job description field.
+
+#### 2. Admin add/edit job form
+
+In the Find Work admin page where jobs are added/edited:
+
+* Add a new input field for **Job Summary**
+* Use a textarea
+* Place it near the full job description field, or under the basic job details section
+* Add helper text like:
+  `"This short summary is shown on the public job card preview only. It will not appear in the full job details page."`
+
+#### 3. Validation
+
+For the new summary field:
+
+* make it optional if that is easier for backward compatibility
+* but preferred behavior:
+
+  * trim whitespace before saving
+  * max length around `180 to 250` characters
+* if summary is empty for older records, fallback to:
+
+  * either a truncated version of the description
+  * or show nothing
+    Choose the cleanest approach for existing records.
+
+#### 4. Public Find Work listing
+
+In `FindWorkAllJobs.tsx`:
+
+* replace the current description preview text inside the job card
+* display `jobSummary` instead of the full description
+* clamp it to around 2 lines
+* keep the existing UI styling as much as possible
+
+Important:
+
+* The card should only show the short summary
+* It should never expose the full description there
+
+#### 5. Full details page
+
+Do **not** show the new `jobSummary` field on the full job details page.
+The full details page should continue using the full job description field only.
+
+#### 6. Data flow
+
+Make sure the new summary field is:
+
+* included in create job request payload
+* included in edit/update job request payload
+* returned in the API response
+* mapped correctly in frontend types/interfaces
+* persisted in the database/schema if needed
+
+#### 7. Backward compatibility
+
+There are already existing job postings.
+Please update the code safely so older jobs do not break.
+If summary is missing:
+
+* fallback to truncated description in the card preview, or
+* render an empty preview gracefully
+
+### Files likely involved
+
+Please inspect and update the relevant files, including but not limited to:
+
+* `client/src/pages/FindWorkAllJobs.tsx`
+* admin add/edit job posting form component/page
+* frontend interfaces/types for job posting
+* backend API create/update/get job endpoints
+* database schema/model/migration files if applicable
+
+### Expected result
+
+* Admin can enter a short summary when creating/editing a job
+* Public job cards show only that short summary
+* Full details page still shows the full job description
+* Existing UI remains consistent
+* No breaking changes for older job posts
+
+### Also do this
+
+After implementing:
+
+1. Show me the exact files changed
+2. Summarize the changes made
+3. Point out any migration or seed update I need to run
+4. Highlight any fallback behavior used for old records
