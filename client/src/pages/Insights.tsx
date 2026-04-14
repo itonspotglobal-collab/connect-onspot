@@ -531,7 +531,7 @@ function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
       {/* ── Full-bleed Netflix-style hero ──────────────────────────────── */}
       <div
         className="relative w-full overflow-hidden group select-none"
-        style={{ minHeight: "clamp(440px, 52vw, 580px)" }}
+        style={{ minHeight: "clamp(520px, 62vw, 700px)" }}
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
         role="region"
