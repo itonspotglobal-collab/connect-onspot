@@ -1546,10 +1546,8 @@ export default function Insights() {
         featuredArticles.length > 0 &&
         !searchQuery &&
         !authorFilter && (
-          <section className="py-8 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-7xl mx-auto rounded-2xl overflow-hidden">
-              <FeaturedCarousel articles={featuredArticles} />
-            </div>
+          <section className="relative overflow-hidden">
+            <FeaturedCarousel articles={featuredArticles} />
           </section>
         )}
 
