@@ -569,7 +569,7 @@ function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
         {/* ── Content ───────────────────────────────────────────────────── */}
         <div
           className="relative z-[2] flex flex-col justify-end h-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-12"
-          style={{ paddingBottom: "clamp(48px, 6vw, 80px)", minHeight: "inherit" }}
+          style={{ paddingBottom: "clamp(20px, 2.5vw, 36px)", minHeight: "inherit" }}
         >
           {/* Eyebrow label */}
           <div className="flex items-center gap-3 mb-6">
