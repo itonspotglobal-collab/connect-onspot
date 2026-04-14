@@ -550,21 +550,18 @@ export function JobFormModal({ open, onClose, job, onSuccess }: JobFormModalProp
               <Label htmlFor="modal-job-summary">
                 Card Preview Summary
                 <span className="ml-1 text-[10px] text-muted-foreground font-normal">
-                  (optional · max 220 characters)
+                  (optional)
                 </span>
               </Label>
               <Textarea
                 id="modal-job-summary"
                 value={formData.jobSummary}
-                onChange={(e) => updateField("jobSummary", e.target.value.slice(0, 220))}
+                onChange={(e) => updateField("jobSummary", e.target.value)}
                 placeholder="Write a short hook that appears on the public job card — 1–2 sentences max."
                 className="min-h-[64px] resize-none"
               />
               <p className="text-[11px] text-muted-foreground">
-                This short summary is shown on the public job card preview only. It will not appear in the full job details page.{" "}
-                <span className={formData.jobSummary.length > 200 ? "text-amber-500 font-medium" : ""}>
-                  {formData.jobSummary.length}/220
-                </span>
+                This short summary is shown on the public job card preview only. It will not appear in the full job details page.
               </p>
             </div>
 

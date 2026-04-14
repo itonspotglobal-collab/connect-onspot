@@ -164,8 +164,7 @@ function JobCard({ job, onNavigate }: { job: Job; onNavigate: (id: string) => vo
         {/* ── Body ────────────────────────────────────────────────────────── */}
         <div className="px-5 py-4">
           {(() => {
-            const preview = (job as any).jobSummary?.trim() ||
-              (job.description ? job.description.slice(0, 200) + (job.description.length > 200 ? "…" : "") : "");
+            const preview = (job as any).jobSummary?.trim() || job.description?.trim();
             return preview ? (
               <p className="line-clamp-2 text-sm leading-6 text-slate-600 dark:text-slate-400">{preview}</p>
             ) : null;
