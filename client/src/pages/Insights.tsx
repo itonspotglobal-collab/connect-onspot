@@ -569,10 +569,10 @@ function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
         {/* ── Content ───────────────────────────────────────────────────── */}
         <div
           className="relative z-[2] flex flex-col justify-end h-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-12"
-          style={{ paddingBottom: "clamp(20px, 2.5vw, 36px)", minHeight: "inherit" }}
+          style={{ paddingBottom: "clamp(28px, 3vw, 44px)", minHeight: "inherit" }}
         >
           {/* Eyebrow label */}
-          <div className="flex items-center gap-3 mb-6">
+          <div className="flex items-center gap-3 mb-2">
             <div className="h-px w-8 bg-white/30" />
             <span className="text-[10px] font-bold uppercase tracking-[0.28em] text-white/50">
               Featured Stories
@@ -580,7 +580,7 @@ function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
           </div>
 
           {/* Category + Featured badges */}
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-3">
             <span className="text-[10px] uppercase tracking-[0.22em] font-semibold px-3 py-1 rounded-full bg-[#474ead] text-white">
               {art.category}
             </span>
@@ -593,7 +593,7 @@ function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
 
           {/* Title */}
           <h2
-            className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight max-w-3xl mb-4 tracking-tight cursor-pointer"
+            className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight max-w-3xl mb-3 tracking-tight cursor-pointer"
             onClick={() => navigate(`/insights/${art.slug}`)}
           >
             {art.title}
@@ -601,7 +601,7 @@ function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
 
           {/* Excerpt */}
           {art.excerpt && (
-            <p className="text-white/70 text-sm sm:text-base leading-relaxed max-w-2xl mb-6 line-clamp-2">
+            <p className="text-white/70 text-sm sm:text-base leading-relaxed max-w-2xl mb-4 line-clamp-2">
               {art.excerpt}
             </p>
           )}
