@@ -1,0 +1,52 @@
+Please update the Insights.tsx mobile navigation so it behaves like TopNavigation.tsx on mobile.
+
+Current issue:
+- The Insights page nav does not adapt well on mobile
+- The desktop-style category links are still trying to show in the top bar and it looks cramped/broken
+- We want the mobile behavior to match the main site’s TopNavigation.tsx pattern
+
+What to change:
+1. Copy the mobile navigation behavior from TopNavigation.tsx
+- On mobile, the Insights nav should switch to the same responsive pattern used by TopNavigation.tsx
+- Replace the cramped inline links with the same mobile nav experience:
+  - logo on the left
+  - menu button/hamburger on the right
+  - full mobile menu drawer/panel when opened
+  - same interaction pattern for open/close
+
+2. Keep Insights-specific navigation items
+- In the mobile menu, include the Insights page links/items:
+  - CEO Insights
+  - Talent Insights
+  - Client Insights
+  - Industry Insights
+  - Learning Centre
+  - Podcast Videos
+  - Search
+- Keep them styled and organized cleanly for mobile
+
+3. Reuse TopNavigation.tsx mobile styles/structure where possible
+- Do not create a separate inconsistent mobile nav system
+- Reuse the same mobile menu layout, transitions, spacing, overlay, and open/close behavior as TopNavigation.tsx
+- Match the visual treatment as closely as possible
+
+4. Preserve desktop behavior
+- Only apply this change for mobile/smaller breakpoints
+- Desktop/tablet nav can stay as it is if already working correctly
+
+5. Keep branding consistent
+- Same navbar background treatment as TopNavigation.tsx
+- Same mobile menu feel, button sizing, spacing, and polish
+- Clean responsive handling with no overlapping/cut-off links
+
+Implementation guidance:
+- Inspect TopNavigation.tsx and reuse its mobile breakpoint logic and menu behavior
+- If possible, extract/reuse shared nav components instead of duplicating logic
+- Make sure the mobile menu supports the Insights navigation links cleanly
+- Search should remain accessible in mobile nav as well
+
+Expected result:
+- On mobile, Insights navigation looks and behaves like TopNavigation.tsx
+- No cramped inline category links in the top bar
+- Users get a clean hamburger menu / drawer experience
+- Insights links remain accessible and branded consistently

@@ -31,6 +31,8 @@ import {
   Zap,
   Award,
   PenLine,
+  Menu,
+  Layers,
 } from "lucide-react";
 import type { Post } from "@shared/schema";
 import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
@@ -707,12 +709,23 @@ function CategoryNav({
 }) {
   const [, navigate] = useLocation();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navInputRef = useRef<HTMLInputElement>(null);
+  const mobileSearchRef = useRef<HTMLInputElement>(null);
 
   // Auto-open the search row if a query or author filter is already active
   useEffect(() => {
     if (searchQuery || authorFilter) setSearchOpen(true);
   }, []);
+
+  // Close mobile menu when resizing to desktop
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768 && isMobileMenuOpen) setIsMobileMenuOpen(false);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [isMobileMenuOpen]);
 
   function toggleSearch() {
     const next = !searchOpen;
@@ -727,6 +740,7 @@ function CategoryNav({
   const hasActiveSearch = !!searchQuery || !!authorFilter;
 
   return (
+    <>
     <div className="sticky top-0 z-50 bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] backdrop-blur-md border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* ── Primary nav row ─────────────────────────────────────────────── */}
@@ -744,11 +758,11 @@ function CategoryNav({
             />
           </button>
 
-          {/* Divider */}
-          <div className="w-px h-5 bg-white/20 flex-shrink-0 mx-2" />
+          {/* Divider — desktop only */}
+          <div className="hidden md:block w-px h-5 bg-white/20 flex-shrink-0 mx-2" />
 
-          {/* Scrollable category tabs */}
-          <div className="flex items-center overflow-x-auto scrollbar-hide flex-1 gap-0">
+          {/* Scrollable category tabs — desktop only */}
+          <div className="hidden md:flex items-center overflow-x-auto scrollbar-hide flex-1 gap-0">
             {NAV_CATEGORIES.map(({ id, label, icon: Icon }) => {
               const active = selected === id;
               return (
@@ -772,8 +786,11 @@ function CategoryNav({
             })}
           </div>
 
-          {/* Search toggle — right side */}
-          <div className="flex items-center flex-shrink-0 pl-2 ml-1 border-l border-white/20">
+          {/* Mobile: spacer to push right controls to the end */}
+          <div className="flex-1 md:hidden" />
+
+          {/* Search toggle — right side (desktop) */}
+          <div className="hidden md:flex items-center flex-shrink-0 pl-2 ml-1 border-l border-white/20">
             <button
               onClick={toggleSearch}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
@@ -796,11 +813,25 @@ function CategoryNav({
               )}
             </button>
           </div>
+
+          {/* Mobile hamburger toggle */}
+          <button
+            onClick={() => setIsMobileMenuOpen((v) => !v)}
+            className="md:hidden p-2 ml-2 text-white hover:bg-white/10 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+            aria-label="Toggle menu"
+            aria-expanded={isMobileMenuOpen}
+          >
+            {isMobileMenuOpen ? (
+              <X className="h-6 w-6" />
+            ) : (
+              <Menu className="h-6 w-6" />
+            )}
+          </button>
         </div>
 
-        {/* ── Expandable search row ────────────────────────────────────────── */}
+        {/* ── Expandable search row — desktop only ─────────────────────────── */}
         {searchOpen && (
-          <div className="pb-3 pt-1 flex flex-col gap-2">
+          <div className="hidden md:flex pb-3 pt-1 flex-col gap-2">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 pointer-events-none" />
               <input
@@ -842,6 +873,103 @@ function CategoryNav({
         )}
       </div>
     </div>
+
+      {/* ── Mobile menu scrim ─────────────────────────────────────────── */}
+      {isMobileMenuOpen && (
+        <div
+          className="menu-scrim md:hidden"
+          style={{ zIndex: 39 }}
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* ── Mobile menu panel ─────────────────────────────────────────── */}
+      <div
+        className={`mobile-menu-panel md:hidden fixed left-0 right-0 overflow-hidden transition-all ${
+          isMobileMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
+        style={{
+          top: "var(--nav-h)",
+          transform: isMobileMenuOpen ? "translateY(0) scale(1)" : "translateY(6px) scale(0.98)",
+          zIndex: 40,
+          background: "rgba(44, 48, 114, 0.86)",
+          backdropFilter: "blur(10px) saturate(110%)",
+          WebkitBackdropFilter: "blur(10px) saturate(110%)",
+          borderTop: "1px solid rgba(255, 255, 255, 0.08)",
+          boxShadow: "0 24px 48px rgba(0, 0, 0, 0.2)",
+          transitionDuration: isMobileMenuOpen ? "160ms" : "150ms",
+          transitionTimingFunction: "cubic-bezier(0.2, 0.8, 0.2, 1)",
+        }}
+      >
+        <div className="max-h-[calc(100vh-var(--nav-h))] overflow-y-auto px-4 py-5">
+          {/* View All */}
+          <button
+            onClick={() => { onSelect("View All"); setIsMobileMenuOpen(false); }}
+            className={`mobile-menu-link w-full text-left py-4 text-white font-semibold flex items-center gap-3 ${
+              selected === "View All" ? "nav-glow-active" : ""
+            }`}
+          >
+            <Layers className="w-4 h-4 flex-shrink-0" />
+            View All
+          </button>
+
+          <div className="h-px bg-white/10 my-1" />
+
+          {/* Category items */}
+          {NAV_CATEGORIES.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => { onSelect(id); setIsMobileMenuOpen(false); }}
+              className={`mobile-menu-link w-full text-left py-4 text-white font-semibold flex items-center gap-3 ${
+                selected === id ? "nav-glow-active" : ""
+              }`}
+            >
+              <Icon className="w-4 h-4 flex-shrink-0" />
+              {label}
+            </button>
+          ))}
+
+          {/* Search inside mobile panel */}
+          <div className="mt-4 pt-4 border-t border-white/10">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 pointer-events-none" />
+              <input
+                ref={mobileSearchRef}
+                type="text"
+                placeholder="Search articles…"
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                className="w-full pl-9 pr-9 py-2.5 rounded-lg border border-white/20 bg-white/10 text-sm text-white focus:outline-none focus:border-white/40 focus:ring-2 focus:ring-white/10 placeholder:text-white/40 transition backdrop-blur-sm"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => onSearchChange("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors"
+                  aria-label="Clear search"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+            {authorFilter && (
+              <div className="mt-2 flex items-center gap-2 flex-wrap">
+                <span className="inline-flex items-center gap-2 rounded-full bg-white/15 border border-white/25 text-white text-xs px-3 py-1.5 font-medium">
+                  <Users className="w-3 h-3" />
+                  Articles by {authorFilter}
+                  <button
+                    onClick={() => { onClearAuthor(); }}
+                    className="ml-0.5 hover:text-white/60 transition-colors"
+                    aria-label="Clear author filter"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
 
