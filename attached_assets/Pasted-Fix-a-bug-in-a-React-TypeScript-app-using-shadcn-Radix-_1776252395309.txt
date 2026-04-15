@@ -1,0 +1,78 @@
+Fix a bug in a React + TypeScript app using shadcn/Radix Dialog where the job form modal closes unexpectedly while creating or editing a job posting.
+
+Files involved:
+
+* `client/src/pages/AdminFindWork.tsx`
+* `client/src/components/JobFormModal.tsx`
+
+Current behavior:
+
+* The modal for creating/editing a job posting sometimes closes unexpectedly without the user intentionally cancelling or saving.
+* The parent page controls the modal with:
+
+  * `open={modalOpen}`
+  * `onClose={closeModal}`
+  * `job={editingJob}`
+  * `onSuccess={closeModal}`
+* In `JobFormModal.tsx`, the dialog is currently implemented like this:
+
+  ```tsx
+  <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0">
+  ```
+* The modal contains several Radix/shadcn `Select` components and multiple `ReactQuill` editors.
+
+Likely root cause:
+
+* `Dialog` is closing because `onOpenChange(false)` is being triggered by outside interaction, focus changes, escape key, or portal/editor interactions from `ReactQuill` or `Select`.
+* Since every `false` immediately calls `onClose()`, the modal closes unexpectedly.
+
+Please implement a robust fix with these goals:
+
+1. The modal should only close when:
+
+   * the user clicks the Cancel button
+   * the user successfully saves
+   * the user intentionally uses a dedicated close control
+2. It should NOT close from:
+
+   * clicking outside the dialog
+   * focus leaving the dialog
+   * interacting with `ReactQuill`
+   * interacting with `Select` dropdowns
+   * accidental escape key dismissal
+3. Keep the dialog fully controlled by the parent component.
+
+Please update `JobFormModal.tsx` as follows:
+
+* Keep `open={open}`
+* Replace the current `onOpenChange={(v) => !v && onClose()}` with a safer controlled approach
+* Add dismissal guards on `DialogContent`:
+
+  ```tsx
+  onPointerDownOutside={(e) => e.preventDefault()}
+  onInteractOutside={(e) => e.preventDefault()}
+  onEscapeKeyDown={(e) => e.preventDefault()}
+  ```
+* Ensure the Cancel button still calls `onClose()`
+* Ensure successful create/update still calls `onSuccess()`
+* Do not break create/edit behavior or form reset behavior
+
+Also review whether any remount/reset issue is caused by:
+
+```tsx
+useEffect(() => {
+  if (open) {
+    setFormData(job ? jobToFormData(job) : defaultFormData);
+    setErrors({});
+  }
+}, [open, job]);
+```
+
+If needed, refine this effect so it only resets when the modal is first opened or when switching to a different job, but does not unintentionally wipe user input during harmless parent rerenders.
+
+Deliver:
+
+* the exact code changes
+* a short explanation of why the modal was auto-closing
+* any additional defensive improvements for Radix Dialog + ReactQuill compatibility

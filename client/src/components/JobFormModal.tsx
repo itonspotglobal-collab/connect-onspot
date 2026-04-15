@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -153,12 +153,17 @@ export function JobFormModal({ open, onClose, job, onSuccess }: JobFormModalProp
   const [formData, setFormData] = useState<JobFormData>(defaultFormData);
   const [errors, setErrors] = useState<Partial<Record<keyof JobFormData, string>>>({});
 
+  // Only seed/reset the form when the modal transitions from closed → open.
+  // Using a ref prevents parent re-renders (which may produce a new `job`
+  // object reference with the same data) from wiping user input mid-session.
+  const prevOpenRef = useRef(false);
   useEffect(() => {
-    if (open) {
+    if (open && !prevOpenRef.current) {
       setFormData(job ? jobToFormData(job) : defaultFormData);
       setErrors({});
     }
-  }, [open, job]);
+    prevOpenRef.current = open;
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Mutations ───────────────────────────────────────────────────────────────
   const invalidate = () => {
@@ -289,8 +294,13 @@ export function JobFormModal({ open, onClose, job, onSuccess }: JobFormModalProp
 
   // ─── Render ───────────────────────────────────────────────────────────────────
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0">
+    <Dialog open={open} onOpenChange={() => {}}>
+      <DialogContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto p-0"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         {/* Sticky header */}
         <div className="sticky top-0 z-10 bg-background border-b border-border px-6 pt-6 pb-4">
           <DialogHeader>
