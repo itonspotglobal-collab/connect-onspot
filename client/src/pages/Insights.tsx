@@ -737,6 +737,12 @@ function CategoryNav({
     }
   }
 
+  // Opens the mobile panel and focuses the search input inside it
+  function handleMobileSearchTap() {
+    setIsMobileMenuOpen(true);
+    setTimeout(() => mobileSearchRef.current?.focus(), 160);
+  }
+
   const hasActiveSearch = !!searchQuery || !!authorFilter;
 
   return (
@@ -756,6 +762,20 @@ function CategoryNav({
 
           {/* ── Primary nav row ───────────────────────────────────────── */}
           <div className="flex items-center h-[56px]">
+
+            {/* ── MOBILE LEFT: Search icon tap → opens panel + focuses search ── */}
+            <button
+              onClick={handleMobileSearchTap}
+              className="md:hidden flex items-center justify-center rounded-lg transition-colors text-white hover:bg-white/10 flex-shrink-0 relative"
+              style={{ width: 44, height: 44, marginRight: 4 }}
+              aria-label="Search articles"
+            >
+              <Search className="h-5 w-5" />
+              {/* Dot indicator when a search/author filter is active */}
+              {hasActiveSearch && (
+                <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-white" />
+              )}
+            </button>
 
             {/* Logo */}
             <button
@@ -794,10 +814,10 @@ function CategoryNav({
               })}
             </div>
 
-            {/* Spacer — mobile only */}
+            {/* Spacer — pushes right-side controls to the far end (mobile: grows; desktop: tabs container already grows) */}
             <div className="flex-1 md:hidden" />
 
-            {/* Desktop search toggle */}
+            {/* Desktop search toggle — hidden on mobile */}
             <div className="hidden md:flex items-center flex-shrink-0 pl-2 ml-1 border-l border-white/20">
               <button
                 onClick={toggleSearch}
@@ -818,11 +838,21 @@ function CategoryNav({
               </button>
             </div>
 
-            {/* Mobile hamburger — right side, same sizing as TopNavigation */}
+            {/* ── MOBILE RIGHT: Profile / account button ─────────────────── */}
+            <button
+              onClick={() => navigate("/")}
+              className="md:hidden flex items-center justify-center rounded-lg transition-colors text-white hover:bg-white/10 flex-shrink-0"
+              style={{ width: 44, height: 44 }}
+              aria-label="Go to account"
+            >
+              <User className="h-5 w-5" />
+            </button>
+
+            {/* ── MOBILE RIGHT: Hamburger — opens/closes the nav drawer ──── */}
             <button
               onClick={() => setIsMobileMenuOpen((v) => !v)}
-              className="md:hidden flex items-center justify-center rounded-lg transition-colors text-white hover:bg-white/10"
-              style={{ width: 44, height: 44, marginLeft: 8, flexShrink: 0 }}
+              className="md:hidden flex items-center justify-center rounded-lg transition-colors text-white hover:bg-white/10 flex-shrink-0"
+              style={{ width: 44, height: 44, marginLeft: 2 }}
               aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
               aria-expanded={isMobileMenuOpen}
             >
