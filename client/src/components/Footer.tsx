@@ -331,7 +331,7 @@ export function Footer() {
                   <span>
                     US - 2248 Broadway, New York, 10024
                     <br />
-                    PH - 610 Nepo Center, Angeles City, 2009
+                    PH - Unit No. 1702, 17th Floor High Street South Corporate Plaza Tower 2, 11th Ave Cor 26th St, Bonifacio Global City, Taguig
                   </span>
                 </li>
               </ul>

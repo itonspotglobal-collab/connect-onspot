@@ -1969,7 +1969,7 @@ export default function Home() {
                     >
                       <MapPinIcon className="w-5 h-5 flex-shrink-0 mt-0.5 group-hover:scale-110 group-hover:text-violet-500 transition-all duration-300" />
                       <span className="break-words sm:break-normal underline-offset-2 group-hover:underline">
-                        PH - 610 Nepo Center, Angeles City, 2009
+                        PH - Unit No. 1702, 17th Floor High Street South Corporate Plaza Tower 2, 11th Ave Cor 26th St, Bonifacio Global City, Taguig
                       </span>
                     </a>
                   </span>
