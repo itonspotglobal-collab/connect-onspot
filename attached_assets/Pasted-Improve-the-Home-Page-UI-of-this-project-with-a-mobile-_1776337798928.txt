@@ -1,0 +1,37 @@
+Improve the Home Page UI of this project with a mobile-first focus.
+
+Goals:
+1. Reduce excessive white/blank space in banner/hero sections, especially on mobile view.
+2. Center-align icons and related text elements for better visual balance and cleaner layout.
+3. Remove the blur effect from the “Superhuman BPO Network” images on mobile.
+
+Requirements:
+- First inspect the existing Home Page structure, components, and styles used by this repo before making changes.
+- Identify the files responsible for:
+  - the homepage/banner/hero sections
+  - icon + text content blocks
+  - the “Superhuman BPO Network” image section
+  - mobile-responsive styling
+- Preserve the current branding, colors, typography, and desktop layout as much as possible.
+- Focus only on improving spacing, alignment, and mobile responsiveness without changing the content unnecessarily.
+
+Implementation details:
+- Reduce large top/bottom paddings, margins, min-heights, and empty gaps in banner sections on small screens.
+- Make mobile spacing tighter and more proportional while keeping the section breathable.
+- Center icons horizontally and vertically with their text blocks where appropriate.
+- Ensure text under or beside icons is visually centered and balanced on tablet and mobile breakpoints.
+- For the “Superhuman BPO Network” images, remove any blur/filter effect on mobile only, while keeping desktop appearance unchanged unless necessary.
+- Check for utility classes, CSS modules, Tailwind classes, styled-components, or inline styles that may be causing the spacing, alignment, or blur behavior.
+- Make sure the result looks polished across common breakpoints (mobile, tablet, desktop).
+
+Validation:
+- Verify the homepage has less unused vertical space on mobile.
+- Verify icons and text are centered consistently.
+- Verify “Superhuman BPO Network” images are no longer blurred on mobile.
+- Ensure there are no regressions in desktop layout.
+- Keep the code clean and minimal.
+
+Deliverables:
+- Apply the code changes directly.
+- Briefly summarize what files were updated.
+- Explain what caused the spacing/alignment/blur issues and how you fixed them.

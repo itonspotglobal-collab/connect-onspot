@@ -368,7 +368,7 @@ export default function Home() {
   return (
     <div>
       {/* Hero Section */}
-      <div className="relative overflow-hidden min-h-screen flex items-center justify-center hero-investor">
+      <div className="relative overflow-hidden min-h-[80vh] sm:min-h-screen flex items-center justify-center hero-investor">
         {/* Elegant Gradient Overlay for Depth */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/30"></div>
 
@@ -379,7 +379,7 @@ export default function Home() {
         </div>
 
         <div className="container mx-auto text-center relative z-20 px-4 sm:px-6">
-          <div className="max-w-5xl mx-auto space-y-8 sm:space-y-10 lg:space-y-12">
+          <div className="max-w-5xl mx-auto space-y-5 sm:space-y-8 lg:space-y-12">
             {/* Ultra-minimal Badge */}
             <div
               className="hero-fade-up inline-flex items-center gap-2.5 text-xs sm:text-sm font-medium text-white/90 tracking-wide bg-white/5 backdrop-blur-xl px-4 sm:px-5 py-2 sm:py-2.5 rounded-full border border-white/20"
@@ -435,7 +435,7 @@ export default function Home() {
       {/* Trusted By Section - Premium Apple-Style Design */}
       <div
         className="relative overflow-hidden bg-[#f7f9ff] dark:bg-background"
-        style={{ padding: "clamp(4rem, 8vw, 8rem) 0" }}
+        style={{ padding: "clamp(2.5rem, 6vw, 8rem) 0" }}
       >
         {/* Centered 1px highlight line with soft contact shadow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[85%] pointer-events-none">
@@ -446,7 +446,7 @@ export default function Home() {
         </div>
 
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
-          <div className="text-center space-y-12 sm:space-y-16">
+          <div className="text-center space-y-8 sm:space-y-12">
             {/* Balanced Typography */}
             <div className="space-y-4 sm:space-y-6 mx-auto">
               <p className="text-xs sm:text-sm font-medium uppercase tracking-[0.2em] bg-gradient-to-r from-violet-600/80 to-blue-600/80 bg-clip-text text-transparent">
@@ -507,13 +507,13 @@ export default function Home() {
       </div>
 
       {/* The Superhuman System - Cinematic Apple-style Cards */}
-      <div className="relative py-24 sm:py-32 overflow-hidden">
+      <div className="relative py-12 sm:py-24 overflow-hidden">
         {/* Subtle background gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-background via-background/95 to-background pointer-events-none"></div>
 
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
           {/* Section Title */}
-          <div className="text-center mb-16 sm:mb-20 space-y-4">
+          <div className="text-center mb-10 sm:mb-16 space-y-4">
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight">
               The Superhuman System
             </h2>
@@ -536,7 +536,7 @@ export default function Home() {
                 ></div>
 
                 {/* Glass card */}
-                <div className="relative bg-background/40 backdrop-blur-xl border border-white/10 rounded-3xl p-8 sm:p-10 transition-all duration-500 group-hover:border-white/20 group-hover:bg-background/50 h-full flex flex-col">
+                <div className="relative bg-background/40 backdrop-blur-xl border border-white/10 rounded-3xl p-8 sm:p-10 transition-all duration-500 group-hover:border-white/20 group-hover:bg-background/50 h-full flex flex-col items-center md:items-start">
                   {/* Icon with gradient background */}
                   <div
                     className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br ${item.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500`}
@@ -545,12 +545,12 @@ export default function Home() {
                   </div>
 
                   {/* Title */}
-                  <h3 className="text-xl sm:text-2xl font-semibold mb-3 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+                  <h3 className="text-xl sm:text-2xl font-semibold mb-3 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent text-center md:text-left">
                     {item.title}
                   </h3>
 
                   {/* Subtitle */}
-                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed text-center md:text-left">
                     {item.subtitle}
                   </p>
 
@@ -566,7 +566,7 @@ export default function Home() {
       </div>
 
       {/* AI + Human Advantage Philosophy Section */}
-      <div className="relative py-24 sm:py-32 lg:py-40 overflow-hidden mt-16">
+      <div className="relative py-12 sm:py-24 lg:py-32 overflow-hidden mt-8 sm:mt-16">
         {/* Luminous gradient background */}
         <div className="absolute inset-0 bg-gradient-to-b from-background via-violet-500/5 to-background"></div>
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -618,13 +618,13 @@ export default function Home() {
       </div>
 
       {/* Integrations - Neural Grid */}
-      <div className="relative py-24 sm:py-32 overflow-hidden">
+      <div className="relative py-12 sm:py-24 overflow-hidden">
         {/* Background gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-background via-violet-500/5 to-background"></div>
 
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
           {/* Section Title */}
-          <div className="text-center mb-16 sm:mb-20 space-y-3">
+          <div className="text-center mb-10 sm:mb-16 space-y-3">
             <p className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wider">
               Connected Intelligence
             </p>
@@ -820,7 +820,7 @@ export default function Home() {
       </div>
 
       {/* Transformation Stories - Cinematic Gallery */}
-      <div className="relative py-24 sm:py-32 lg:py-40 overflow-hidden">
+      <div className="relative py-12 sm:py-24 lg:py-32 overflow-hidden">
         {/* Ethereal background */}
         <div className="absolute inset-0 bg-gradient-to-b from-background via-violet-500/5 to-background"></div>
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -830,7 +830,7 @@ export default function Home() {
 
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
           {/* Section Title */}
-          <div className="text-center mb-16 sm:mb-20 space-y-4">
+          <div className="text-center mb-10 sm:mb-16 space-y-4">
             <p className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wider">
               Transformation Stories
             </p>
@@ -1005,7 +1005,7 @@ export default function Home() {
       </div>
 
       {/* Hire Talent - Cinematic Selector */}
-      <div className="relative py-24 sm:py-32 lg:py-40 overflow-hidden">
+      <div className="relative py-12 sm:py-24 lg:py-32 overflow-hidden">
         {/* Network lines background */}
         <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-background">
           <svg
@@ -1063,7 +1063,7 @@ export default function Home() {
 
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
           {/* Section Title */}
-          <div className="text-center mb-16 sm:mb-20 space-y-4">
+          <div className="text-center mb-10 sm:mb-16 space-y-4">
             <p className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wider">
               Choose Your Path
             </p>
@@ -1095,7 +1095,7 @@ export default function Home() {
                 <div className="relative bg-background/30 backdrop-blur-xl border border-white/10 rounded-3xl p-8 lg:p-10 transition-all duration-700 group-hover:border-white/20 group-hover:bg-background/40 h-full flex flex-col group-hover:transform group-hover:scale-[1.02]">
                   {/* Icon */}
                   <div
-                    className={`w-16 h-16 lg:w-20 lg:h-20 rounded-2xl bg-gradient-to-br ${mode.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500`}
+                    className={`w-16 h-16 lg:w-20 lg:h-20 rounded-2xl bg-gradient-to-br ${mode.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 mx-auto md:mx-0`}
                   >
                     <mode.icon className="w-8 h-8 lg:w-10 lg:h-10 text-foreground" />
                   </div>
@@ -1167,7 +1167,7 @@ export default function Home() {
       </div>
 
       {/* Why Partner with OnSpot - Brand Philosophy */}
-      <div className="relative py-24 sm:py-32 lg:py-40 overflow-hidden">
+      <div className="relative py-12 sm:py-24 lg:py-32 overflow-hidden">
         {/* Subtle gradient background */}
         <div className="absolute inset-0 bg-gradient-to-b from-background via-violet-500/5 to-background"></div>
 
@@ -1182,7 +1182,7 @@ export default function Home() {
 
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
           {/* Philosophy Title */}
-          <div className="text-center mb-20 sm:mb-24 space-y-6 max-w-4xl mx-auto">
+          <div className="text-center mb-12 sm:mb-20 space-y-6 max-w-4xl mx-auto">
             <p className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wider">
               Our Philosophy
             </p>
@@ -1215,7 +1215,7 @@ export default function Home() {
                 ></div>
 
                 {/* Glass card */}
-                <div className="relative bg-background/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-8 sm:p-10 lg:p-12 transition-all duration-700 group-hover:border-white/30 group-hover:bg-background/50 h-full flex flex-col">
+                <div className="relative bg-background/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-8 sm:p-10 lg:p-12 transition-all duration-700 group-hover:border-white/30 group-hover:bg-background/50 h-full flex flex-col items-center md:items-start">
                   {/* Icon */}
                   <div
                     className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br ${pillar.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500`}
@@ -1224,12 +1224,12 @@ export default function Home() {
                   </div>
 
                   {/* Title with gradient on hover */}
-                  <h3 className="text-xl sm:text-2xl lg:text-3xl font-semibold mb-2 transition-all duration-500 group-hover:bg-gradient-to-r group-hover:from-violet-600 group-hover:to-blue-600 group-hover:bg-clip-text group-hover:text-transparent">
+                  <h3 className="text-xl sm:text-2xl lg:text-3xl font-semibold mb-2 transition-all duration-500 group-hover:bg-gradient-to-r group-hover:from-violet-600 group-hover:to-blue-600 group-hover:bg-clip-text group-hover:text-transparent text-center md:text-left">
                     {pillar.title}
                   </h3>
 
                   {/* Subtitle */}
-                  <p className="text-sm sm:text-base text-muted-foreground mb-6">
+                  <p className="text-sm sm:text-base text-muted-foreground mb-6 text-center md:text-left">
                     {pillar.subtitle}
                   </p>
 
@@ -1263,7 +1263,7 @@ export default function Home() {
       </div>
 
       {/* The Experience — One System. Your Unfair Advantage */}
-      <div className="relative py-24 sm:py-32 lg:py-40 overflow-hidden mt-16">
+      <div className="relative py-12 sm:py-24 lg:py-32 overflow-hidden mt-8 sm:mt-16">
         {/* Gradient glow background */}
         <div className="absolute inset-0 bg-gradient-to-r from-violet-600/20 via-blue-600/20 to-cyan-500/20"></div>
         <div className="absolute inset-0 overflow-hidden">
@@ -1273,7 +1273,7 @@ export default function Home() {
 
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
           {/* Title */}
-          <div className="text-center mb-16 sm:mb-20 space-y-4">
+          <div className="text-center mb-10 sm:mb-16 space-y-4">
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight">
               The Experience
             </h2>
@@ -1386,10 +1386,10 @@ export default function Home() {
       </div>
 
       {/* The Proof — Global Talent, Human Excellence */}
-      <div className="relative py-24 sm:py-32 overflow-hidden mt-16">
+      <div className="relative py-12 sm:py-24 overflow-hidden mt-8 sm:mt-16">
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
           {/* Title */}
-          <div className="text-center mb-16 sm:mb-20 space-y-4">
+          <div className="text-center mb-10 sm:mb-16 space-y-4">
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight">
               The Proof
             </h2>
@@ -1417,15 +1417,15 @@ export default function Home() {
                     width="400"
                     height="400"
                     loading="lazy"
-                    className="w-full h-full object-cover blur-sm group-hover:blur-none opacity-60 group-hover:opacity-100 transition-all duration-500"
+                    className="w-full h-full object-cover sm:blur-sm sm:group-hover:blur-none opacity-100 sm:opacity-60 sm:group-hover:opacity-100 transition-all duration-500"
                     style={{
                       objectPosition: `center ${profile.focalY || "15%"}`,
                     }}
                   />
 
-                  {/* Semi-transparent gradient overlay with name/title - reveals on hover */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end p-4">
-                    <div className="text-white transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
+                  {/* Semi-transparent gradient overlay with name/title - always visible on mobile, hover on desktop */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-500 flex items-end p-4">
+                    <div className="text-white transform translate-y-0 sm:translate-y-2 sm:group-hover:translate-y-0 transition-transform duration-500">
                       <p className="font-semibold text-sm sm:text-base leading-tight">
                         {profile.name}
                       </p>
@@ -1447,7 +1447,7 @@ export default function Home() {
       </div>
 
       {/* The Call — Ready to Become Superhuman */}
-      <div className="relative py-32 sm:py-40 lg:py-48 overflow-hidden mt-16">
+      <div className="relative py-16 sm:py-32 lg:py-40 overflow-hidden mt-8 sm:mt-16">
         {/* Full-screen gradient */}
         <div className="absolute inset-0 bg-gradient-to-br from-violet-600/30 via-blue-600/30 to-cyan-500/30"></div>
         <div className="absolute inset-0 overflow-hidden">
