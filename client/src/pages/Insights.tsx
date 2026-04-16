@@ -741,231 +741,228 @@ function CategoryNav({
 
   return (
     <>
-    <div className="sticky top-0 z-50 bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] backdrop-blur-md border-b border-white/10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* ── Primary nav row ─────────────────────────────────────────────── */}
-        <div className="flex items-center -mb-px">
-          {/* OnSpot logo → homepage */}
-          <button
-            onClick={() => navigate("/")}
-            className="flex items-center py-2.5 pr-4 flex-shrink-0 border-b-2 border-transparent"
-            aria-label="Go to OnSpot homepage"
-          >
-            <img
-              src={onspotLogo}
-              alt="OnSpot"
-              className="h-7 w-auto object-contain brightness-0 saturate-100 invert drop-shadow-sm"
-            />
-          </button>
-
-          {/* Divider — desktop only */}
-          <div className="hidden md:block w-px h-5 bg-white/20 flex-shrink-0 mx-2" />
-
-          {/* Scrollable category tabs — desktop only */}
-          <div className="hidden md:flex items-center overflow-x-auto scrollbar-hide flex-1 gap-0">
-            {NAV_CATEGORIES.map(({ id, label, icon: Icon }) => {
-              const active = selected === id;
-              return (
-                <button
-                  key={id}
-                  onClick={() => onSelect(id)}
-                  className={`
-                    flex items-center gap-2 px-4 py-3.5 text-sm font-medium whitespace-nowrap
-                    border-b-2 transition-all duration-200 flex-shrink-0
-                    ${
-                      active
-                        ? "border-white text-white"
-                        : "border-transparent text-white/70 hover:text-white hover:border-white/40"
-                    }
-                  `}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Mobile: spacer to push right controls to the end */}
-          <div className="flex-1 md:hidden" />
-
-          {/* Search toggle — right side (desktop) */}
-          <div className="hidden md:flex items-center flex-shrink-0 pl-2 ml-1 border-l border-white/20">
-            <button
-              onClick={toggleSearch}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
-                searchOpen || hasActiveSearch
-                  ? "text-white bg-white/15"
-                  : "text-white/70 hover:text-white hover:bg-white/10"
-              }`}
-              aria-label={searchOpen ? "Close search" : "Open search"}
-            >
-              {searchOpen ? (
-                <X className="w-4 h-4" />
-              ) : (
-                <Search className="w-4 h-4" />
-              )}
-              <span className="hidden sm:inline">
-                {searchOpen ? "Close" : "Search"}
-              </span>
-              {hasActiveSearch && !searchOpen && (
-                <span className="w-1.5 h-1.5 rounded-full bg-white flex-shrink-0" />
-              )}
-            </button>
-          </div>
-
-          {/* Mobile hamburger toggle */}
-          <button
-            onClick={() => setIsMobileMenuOpen((v) => !v)}
-            className="md:hidden p-2 ml-2 text-white hover:bg-white/10 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-            aria-label="Toggle menu"
-            aria-expanded={isMobileMenuOpen}
-          >
-            {isMobileMenuOpen ? (
-              <X className="h-6 w-6" />
-            ) : (
-              <Menu className="h-6 w-6" />
-            )}
-          </button>
-        </div>
-
-        {/* ── Expandable search row — desktop only ─────────────────────────── */}
-        {searchOpen && (
-          <div className="hidden md:flex pb-3 pt-1 flex-col gap-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 pointer-events-none" />
-              <input
-                ref={navInputRef}
-                type="text"
-                placeholder="Search by title, excerpt, author, or category…"
-                value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
-                className="w-full pl-9 pr-9 py-2.5 rounded-lg border border-white/20 bg-white/10 text-sm text-white focus:outline-none focus:border-white/40 focus:ring-2 focus:ring-white/10 placeholder:text-white/40 transition backdrop-blur-sm"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => onSearchChange("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors"
-                  aria-label="Clear search"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-
-            {/* Author filter pill — shown inside search row when active */}
-            {authorFilter && (
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="inline-flex items-center gap-2 rounded-full bg-white/15 border border-white/25 text-white text-xs px-3 py-1.5 font-medium">
-                  <Users className="w-3 h-3" />
-                  Articles by {authorFilter}
-                  <button
-                    onClick={onClearAuthor}
-                    className="ml-0.5 hover:text-white/60 transition-colors"
-                    aria-label="Clear author filter"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-
-      {/* ── Mobile menu scrim ─────────────────────────────────────────── */}
+      {/* ── Mobile menu scrim — fixed, covers the whole page ──────────── */}
       {isMobileMenuOpen && (
         <div
           className="menu-scrim md:hidden"
-          style={{ zIndex: 39 }}
+          style={{ zIndex: 49 }}
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
 
-      {/* ── Mobile menu panel ─────────────────────────────────────────── */}
-      <div
-        className={`mobile-menu-panel md:hidden fixed left-0 right-0 overflow-hidden transition-all ${
-          isMobileMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-        }`}
-        style={{
-          top: "var(--nav-h)",
-          transform: isMobileMenuOpen ? "translateY(0) scale(1)" : "translateY(6px) scale(0.98)",
-          zIndex: 40,
-          background: "rgba(44, 48, 114, 0.86)",
-          backdropFilter: "blur(10px) saturate(110%)",
-          WebkitBackdropFilter: "blur(10px) saturate(110%)",
-          borderTop: "1px solid rgba(255, 255, 255, 0.08)",
-          boxShadow: "0 24px 48px rgba(0, 0, 0, 0.2)",
-          transitionDuration: isMobileMenuOpen ? "160ms" : "150ms",
-          transitionTimingFunction: "cubic-bezier(0.2, 0.8, 0.2, 1)",
-        }}
-      >
-        <div className="max-h-[calc(100vh-var(--nav-h))] overflow-y-auto px-4 py-5">
-          {/* View All */}
-          <button
-            onClick={() => { onSelect("View All"); setIsMobileMenuOpen(false); }}
-            className={`mobile-menu-link w-full text-left py-4 text-white font-semibold flex items-center gap-3 ${
-              selected === "View All" ? "nav-glow-active" : ""
-            }`}
-          >
-            <Layers className="w-4 h-4 flex-shrink-0" />
-            View All
-          </button>
+      {/* ── Sticky nav bar ────────────────────────────────────────────── */}
+      <div className="sticky top-0 z-50 bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] backdrop-blur-md border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-          <div className="h-px bg-white/10 my-1" />
+          {/* ── Primary nav row ───────────────────────────────────────── */}
+          <div className="flex items-center h-[56px]">
 
-          {/* Category items */}
-          {NAV_CATEGORIES.map(({ id, label, icon: Icon }) => (
+            {/* Logo */}
             <button
-              key={id}
-              onClick={() => { onSelect(id); setIsMobileMenuOpen(false); }}
-              className={`mobile-menu-link w-full text-left py-4 text-white font-semibold flex items-center gap-3 ${
-                selected === id ? "nav-glow-active" : ""
-              }`}
+              onClick={() => navigate("/")}
+              className="flex items-center flex-shrink-0"
+              aria-label="Go to OnSpot homepage"
             >
-              <Icon className="w-4 h-4 flex-shrink-0" />
-              {label}
-            </button>
-          ))}
-
-          {/* Search inside mobile panel */}
-          <div className="mt-4 pt-4 border-t border-white/10">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 pointer-events-none" />
-              <input
-                ref={mobileSearchRef}
-                type="text"
-                placeholder="Search articles…"
-                value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
-                className="w-full pl-9 pr-9 py-2.5 rounded-lg border border-white/20 bg-white/10 text-sm text-white focus:outline-none focus:border-white/40 focus:ring-2 focus:ring-white/10 placeholder:text-white/40 transition backdrop-blur-sm"
+              <img
+                src={onspotLogo}
+                alt="OnSpot"
+                className="h-7 w-auto object-contain brightness-0 saturate-100 invert drop-shadow-sm"
               />
-              {searchQuery && (
-                <button
-                  onClick={() => onSearchChange("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors"
-                  aria-label="Clear search"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
+            </button>
+
+            {/* Divider — desktop only */}
+            <div className="hidden md:block w-px h-5 bg-white/20 flex-shrink-0 mx-3" />
+
+            {/* Category tabs — desktop only */}
+            <div className="hidden md:flex items-center overflow-x-auto scrollbar-hide flex-1 gap-0 -mb-px">
+              {NAV_CATEGORIES.map(({ id, label, icon: Icon }) => {
+                const active = selected === id;
+                return (
+                  <button
+                    key={id}
+                    onClick={() => onSelect(id)}
+                    className={`flex items-center gap-2 px-4 h-[56px] text-sm font-medium whitespace-nowrap border-b-2 transition-all duration-200 flex-shrink-0 ${
+                      active
+                        ? "border-white text-white"
+                        : "border-transparent text-white/70 hover:text-white hover:border-white/40"
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Spacer — mobile only */}
+            <div className="flex-1 md:hidden" />
+
+            {/* Desktop search toggle */}
+            <div className="hidden md:flex items-center flex-shrink-0 pl-2 ml-1 border-l border-white/20">
+              <button
+                onClick={toggleSearch}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
+                  searchOpen || hasActiveSearch
+                    ? "text-white bg-white/15"
+                    : "text-white/70 hover:text-white hover:bg-white/10"
+                }`}
+                aria-label={searchOpen ? "Close search" : "Open search"}
+              >
+                {searchOpen ? <X className="w-4 h-4" /> : <Search className="w-4 h-4" />}
+                <span className="hidden sm:inline">
+                  {searchOpen ? "Close" : "Search"}
+                </span>
+                {hasActiveSearch && !searchOpen && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-white flex-shrink-0" />
+                )}
+              </button>
+            </div>
+
+            {/* Mobile hamburger — right side, same sizing as TopNavigation */}
+            <button
+              onClick={() => setIsMobileMenuOpen((v) => !v)}
+              className="md:hidden flex items-center justify-center rounded-lg transition-colors text-white hover:bg-white/10"
+              style={{ width: 44, height: 44, marginLeft: 8, flexShrink: 0 }}
+              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={isMobileMenuOpen}
+            >
+              {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          </div>
+
+          {/* ── Desktop expandable search row ─────────────────────────── */}
+          {searchOpen && (
+            <div className="hidden md:flex pb-3 pt-1 flex-col gap-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 pointer-events-none" />
+                <input
+                  ref={navInputRef}
+                  type="text"
+                  placeholder="Search by title, excerpt, author, or category…"
+                  value={searchQuery}
+                  onChange={(e) => onSearchChange(e.target.value)}
+                  className="w-full pl-9 pr-9 py-2.5 rounded-lg border border-white/20 bg-white/10 text-sm text-white focus:outline-none focus:border-white/40 focus:ring-2 focus:ring-white/10 placeholder:text-white/40 transition backdrop-blur-sm"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => onSearchChange("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors"
+                    aria-label="Clear search"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+              {authorFilter && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-white/15 border border-white/25 text-white text-xs px-3 py-1.5 font-medium">
+                    <Users className="w-3 h-3" />
+                    Articles by {authorFilter}
+                    <button
+                      onClick={onClearAuthor}
+                      className="ml-0.5 hover:text-white/60 transition-colors"
+                      aria-label="Clear author filter"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                </div>
               )}
             </div>
-            {authorFilter && (
-              <div className="mt-2 flex items-center gap-2 flex-wrap">
-                <span className="inline-flex items-center gap-2 rounded-full bg-white/15 border border-white/25 text-white text-xs px-3 py-1.5 font-medium">
-                  <Users className="w-3 h-3" />
-                  Articles by {authorFilter}
+          )}
+        </div>
+
+        {/* ── Mobile menu panel — anchored below the sticky nav bar ───── */}
+        {/*   Uses absolute + top:100% so it always positions correctly    */}
+        {/*   regardless of the nav bar's actual rendered height.          */}
+        <div
+          className={`md:hidden absolute left-0 right-0 overflow-y-auto transition-all ${
+            isMobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          }`}
+          style={{
+            top: "100%",
+            zIndex: 50,
+            transform: isMobileMenuOpen ? "translateY(0) scale(1)" : "translateY(6px) scale(0.98)",
+            background: "rgba(44, 48, 114, 0.86)",
+            backdropFilter: "blur(10px) saturate(110%)",
+            WebkitBackdropFilter: "blur(10px) saturate(110%)",
+            borderTop: "1px solid rgba(255, 255, 255, 0.08)",
+            boxShadow: "0 24px 48px rgba(0, 0, 0, 0.2)",
+            maxHeight: "calc(100vh - 56px)",
+            transitionDuration: isMobileMenuOpen ? "160ms" : "150ms",
+            transitionTimingFunction: "cubic-bezier(0.2, 0.8, 0.2, 1)",
+            animation: isMobileMenuOpen ? "menuBreathe 4s ease-in-out 1s infinite" : "none",
+          }}
+        >
+          <div className="px-4 py-6 space-y-1">
+
+            {/* View All */}
+            <button
+              onClick={() => { onSelect("View All"); setIsMobileMenuOpen(false); }}
+              className={`mobile-menu-link w-full text-left py-4 text-white font-semibold flex items-center gap-3 ${
+                selected === "View All" ? "nav-glow-active" : ""
+              }`}
+              data-testid="mobile-insights-view-all"
+            >
+              <Layers className="w-4 h-4 flex-shrink-0" />
+              View All
+            </button>
+
+            <div className="h-px bg-white/10" />
+
+            {/* Category items */}
+            {NAV_CATEGORIES.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => { onSelect(id); setIsMobileMenuOpen(false); }}
+                className={`mobile-menu-link w-full text-left py-4 text-white font-semibold flex items-center gap-3 ${
+                  selected === id ? "nav-glow-active" : ""
+                }`}
+                data-testid={`mobile-insights-${id}`}
+              >
+                <Icon className="w-4 h-4 flex-shrink-0" />
+                {label}
+              </button>
+            ))}
+
+            {/* Search inside the mobile panel */}
+            <div className="pt-4 mt-2 border-t border-white/10">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 pointer-events-none" />
+                <input
+                  ref={mobileSearchRef}
+                  type="text"
+                  placeholder="Search articles…"
+                  value={searchQuery}
+                  onChange={(e) => onSearchChange(e.target.value)}
+                  className="w-full pl-9 pr-9 py-2.5 rounded-lg border border-white/20 bg-white/10 text-sm text-white focus:outline-none focus:border-white/40 focus:ring-2 focus:ring-white/10 placeholder:text-white/40 transition backdrop-blur-sm"
+                />
+                {searchQuery && (
                   <button
-                    onClick={() => { onClearAuthor(); }}
-                    className="ml-0.5 hover:text-white/60 transition-colors"
-                    aria-label="Clear author filter"
+                    onClick={() => onSearchChange("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors"
+                    aria-label="Clear search"
                   >
-                    <X className="w-3 h-3" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
-                </span>
+                )}
               </div>
-            )}
+              {authorFilter && (
+                <div className="mt-3 flex items-center gap-2 flex-wrap">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-white/15 border border-white/25 text-white text-xs px-3 py-1.5 font-medium">
+                    <Users className="w-3 h-3" />
+                    Articles by {authorFilter}
+                    <button
+                      onClick={onClearAuthor}
+                      className="ml-0.5 hover:text-white/60 transition-colors"
+                      aria-label="Clear author filter"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
