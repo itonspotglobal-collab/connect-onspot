@@ -161,7 +161,7 @@ const workCategories = {
     specialties: ["All Categories", "All Skill Levels", "All Locations"],
     demand: "Very High",
     averageRate: "$8-65/hr",
-    path: "/find-work",
+    path: "/find-work/jobs",
     popular: true,
   },
   development: {
@@ -352,7 +352,7 @@ const navigationItems = [
 ];
 
 export function TopNavigation() {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const { isAuthenticated, isLoading, user, logout } = useAuth();
   const { toast } = useToast();
   const [isVisible, setIsVisible] = useState(true);
@@ -688,6 +688,7 @@ export function TopNavigation() {
                           paddingRight: 'clamp(10px, 1.2vw, 16px)',
                         }}
                         data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
+                        onClick={() => navigate(item.path)}
                         onMouseEnter={() => handleMouseEnter(item.title)}
                         onFocus={() => handleMouseEnter(item.title)}
                         aria-expanded={activeDropdown === item.title}
