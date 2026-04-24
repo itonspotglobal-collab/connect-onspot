@@ -1,6 +1,30 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Sparkles, BriefcaseBusiness, Clock3, Globe2, ChevronRight, Star, ArrowRight, BadgeCheck, Filter, Zap, DollarSign, Building2, CheckCircle2, Users, Brain, TrendingUp, X, ListChecks, Maximize2, ChevronDown, MapPin, Layers } from "lucide-react";
+import {
+  Search,
+  Sparkles,
+  BriefcaseBusiness,
+  Clock3,
+  Globe2,
+  ChevronRight,
+  Star,
+  ArrowRight,
+  BadgeCheck,
+  Filter,
+  Zap,
+  DollarSign,
+  Building2,
+  CheckCircle2,
+  Users,
+  Brain,
+  TrendingUp,
+  X,
+  ListChecks,
+  Maximize2,
+  ChevronDown,
+  MapPin,
+  Layers,
+} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +35,8 @@ import { useLocation } from "wouter";
 import type { Job } from "@shared/schema";
 import { buildRateDisplay, getJobBadges, getTimeAgo } from "@/lib/jobUtils";
 
-const APPLY_URL = "https://api.leadconnectorhq.com/widget/form/36ljnIgIsA1xoBluXvSK?notrack=true";
+const APPLY_URL =
+  "https://api.leadconnectorhq.com/widget/form/36ljnIgIsA1xoBluXvSK?notrack=true";
 
 const roles = [
   {
@@ -27,8 +52,10 @@ const roles = [
     hook: "Support a fast-moving founder and become a key operator.",
     why: "Strong fit for admin-heavy, client-facing candidates who want ownership and growth in a premium client environment.",
     tags: ["Remote", "Growth path", "Premium client"],
-    overview: "A US-based founder scaling their business needs a sharp, proactive Executive VA to be the connective tissue that keeps everything moving — from inbox to special projects.",
-    description: "You'll manage communications, scheduling, research, and critical projects that require judgment and trust. This isn't a basic admin role — it's a high-ownership position where you'll interact with clients, vendors, and leadership daily. You'll have visibility across the business and direct impact on how efficiently the founder operates.",
+    overview:
+      "A US-based founder scaling their business needs a sharp, proactive Executive VA to be the connective tissue that keeps everything moving — from inbox to special projects.",
+    description:
+      "You'll manage communications, scheduling, research, and critical projects that require judgment and trust. This isn't a basic admin role — it's a high-ownership position where you'll interact with clients, vendors, and leadership daily. You'll have visibility across the business and direct impact on how efficiently the founder operates.",
     responsibilities: [
       "Manage the founder's inbox, calendar, and scheduling across time zones",
       "Coordinate meetings, prepare agendas, and take minutes",
@@ -72,8 +99,10 @@ const roles = [
     hook: "Join a scaling ecommerce brand with structured training.",
     why: "Great for strong communicators with service experience who want a well-supported, high-volume role.",
     tags: ["Remote", "Training provided", "High volume"],
-    overview: "A fast-growing US ecommerce brand needs a dedicated Customer Support Specialist for inbound queries, order resolution, and delivering an exceptional customer experience.",
-    description: "You'll be part of a structured support team with clear processes, escalation paths, and regular coaching. High-volume but highly organized — great for someone who thrives on people-first work with solid systems behind them. CSAT and resolution speed are the key metrics you'll own.",
+    overview:
+      "A fast-growing US ecommerce brand needs a dedicated Customer Support Specialist for inbound queries, order resolution, and delivering an exceptional customer experience.",
+    description:
+      "You'll be part of a structured support team with clear processes, escalation paths, and regular coaching. High-volume but highly organized — great for someone who thrives on people-first work with solid systems behind them. CSAT and resolution speed are the key metrics you'll own.",
     responsibilities: [
       "Respond to customer inquiries via email, chat, and ticketing systems",
       "Resolve order issues including refunds, replacements, and delivery disputes",
@@ -116,8 +145,10 @@ const roles = [
     hook: "Own reconciliations and reporting for a stable global business.",
     why: "Strong match for organized candidates with finance exposure who want stability and above-market pay.",
     tags: ["Remote", "Stable team", "Career track"],
-    overview: "A well-established Australian business needs an experienced Bookkeeper to own day-to-day financial records, reconciliations, and reporting with clear accountability.",
-    description: "You'll work closely with the finance lead and have full ownership of your accounts. Stable, long-term engagement with above-market compensation for candidates with solid accounting foundations. Day shift means a more normal schedule — a big quality-of-life advantage for the right candidate.",
+    overview:
+      "A well-established Australian business needs an experienced Bookkeeper to own day-to-day financial records, reconciliations, and reporting with clear accountability.",
+    description:
+      "You'll work closely with the finance lead and have full ownership of your accounts. Stable, long-term engagement with above-market compensation for candidates with solid accounting foundations. Day shift means a more normal schedule — a big quality-of-life advantage for the right candidate.",
     responsibilities: [
       "Perform daily bank reconciliations and transaction coding",
       "Manage accounts payable and receivable processes",
@@ -160,8 +191,10 @@ const roles = [
     hook: "Book meetings, drive pipeline, and earn in a performance culture.",
     why: "Best for confident communicators who like targets, want commission upside, and are ready for a B2B sales career.",
     tags: ["Commission upside", "Remote", "B2B"],
-    overview: "A high-growth B2B company in the US needs a motivated SDR to drive top-of-funnel pipeline through outbound prospecting, cold outreach, and lead qualification.",
-    description: "This role offers base plus performance commission — making it one of the best-paying opportunities for strong communicators in the Philippines. You'll work in a structured sales environment with clear targets, regular coaching, and real earning potential based on what you close.",
+    overview:
+      "A high-growth B2B company in the US needs a motivated SDR to drive top-of-funnel pipeline through outbound prospecting, cold outreach, and lead qualification.",
+    description:
+      "This role offers base plus performance commission — making it one of the best-paying opportunities for strong communicators in the Philippines. You'll work in a structured sales environment with clear targets, regular coaching, and real earning potential based on what you close.",
     responsibilities: [
       "Execute outbound prospecting via cold calls, emails, and LinkedIn",
       "Qualify inbound leads against defined ICP criteria",
@@ -204,8 +237,10 @@ const roles = [
     hook: "Create content systems for a modern digital brand.",
     why: "Great fit for organized creatives with execution skills who want to build their portfolio with a quality UK brand.",
     tags: ["Remote", "Portfolio builder", "Flexible"],
-    overview: "A UK-based digital brand needs a Content & Social Media Assistant to support their growing content operation — producing, scheduling, and tracking across platforms.",
-    description: "You'll work closely with the marketing lead to build consistent, high-quality content output across LinkedIn, Instagram, and other key channels. Strong creative direction is provided — your job is to execute it reliably, build efficient content systems, and bring your own ideas when you see opportunities.",
+    overview:
+      "A UK-based digital brand needs a Content & Social Media Assistant to support their growing content operation — producing, scheduling, and tracking across platforms.",
+    description:
+      "You'll work closely with the marketing lead to build consistent, high-quality content output across LinkedIn, Instagram, and other key channels. Strong creative direction is provided — your job is to execute it reliably, build efficient content systems, and bring your own ideas when you see opportunities.",
     responsibilities: [
       "Create and schedule content for LinkedIn, Instagram, and Facebook",
       "Draft captions, carousels, and short-form written content",
@@ -248,8 +283,10 @@ const roles = [
     hook: "Keep projects, people, and systems moving without chaos.",
     why: "Excellent for detail-driven candidates who thrive on structure and want high-visibility cross-functional work.",
     tags: ["Remote", "Process-driven", "Cross-functional"],
-    overview: "An Australian company with a multi-functional remote team needs an Operations Coordinator to manage workflows, track deliverables, and keep cross-functional projects on schedule.",
-    description: "You'll be the operational backbone — the person who ensures nothing falls through the cracks. This is a high-visibility role with access to leadership and real influence over how the team functions. Ideal for detail-driven professionals who love systems, structure, and helping teams perform at their best.",
+    overview:
+      "An Australian company with a multi-functional remote team needs an Operations Coordinator to manage workflows, track deliverables, and keep cross-functional projects on schedule.",
+    description:
+      "You'll be the operational backbone — the person who ensures nothing falls through the cracks. This is a high-visibility role with access to leadership and real influence over how the team functions. Ideal for detail-driven professionals who love systems, structure, and helping teams perform at their best.",
     responsibilities: [
       "Coordinate project timelines, milestones, and deliverables across teams",
       "Maintain and improve internal SOPs and documentation",
@@ -281,36 +318,32 @@ const roles = [
   },
 ];
 
-const trustStats = [
-  { label: "Candidates placed", value: "1,200+" },
-  { label: "Typical monthly roles", value: "₱45,000–₱140,000/mo" },
-  { label: "Global client markets", value: "US · AU · UK" },
-  { label: "Hiring speed", value: "3–10 days" },
-];
-
 const stories = [
   {
     name: "Maria",
     role: "Virtual Assistant",
-    quote: "I went from routine admin work to supporting a premium global client with better pay and clearer growth.",
+    quote:
+      "I went from routine admin work to supporting a premium global client with better pay and clearer growth.",
     outcome: "From ₱25K to ₱85K/month",
   },
   {
     name: "Paolo",
     role: "Customer Support Specialist",
-    quote: "The process felt faster and more human. I got matched to a role that actually fit my schedule and strengths.",
+    quote:
+      "The process felt faster and more human. I got matched to a role that actually fit my schedule and strengths.",
     outcome: "Hired in 5 days",
   },
   {
     name: "Andrea",
     role: "Bookkeeping Assistant",
-    quote: "What stood out was the quality of opportunities. It didn’t feel like random applications anymore.",
+    quote:
+      "What stood out was the quality of opportunities. It didn’t feel like random applications anymore.",
     outcome: "Moved into an AU role",
   },
 ];
 
 const prompts = [
-  "Virtual assistant, night shift, ₱50,000+",
+  "Virtual assistant, night shift, remote",
   "Customer support, remote, US client",
   "Accounting or finance role, day shift",
   "Social media assistant with flexible schedule",
@@ -325,7 +358,9 @@ function StatPill({ icon: Icon, label, value }) {
         </div>
         <div>
           <div className="text-xs text-slate-500">{label}</div>
-          <div className="text-sm font-semibold text-slate-900 dark:text-white">{value}</div>
+          <div className="text-sm font-semibold text-slate-900 dark:text-white">
+            {value}
+          </div>
         </div>
       </div>
     </div>
@@ -342,7 +377,9 @@ function RoleModal({ role, onClose }: { role: Role; onClose: () => void }) {
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
     document.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = prev;
@@ -395,35 +432,55 @@ function RoleModal({ role, onClose }: { role: Role; onClose: () => void }) {
           </button>
 
           <div className="relative mb-4 flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-[#474ead] px-3 py-1 text-[11px] font-bold text-white">{role.demand}</span>
-            <span className="rounded-full border border-white/15 bg-white/[0.08] px-3 py-1 text-[11px] text-white/60">{role.speed}</span>
-            <span className="ml-auto rounded-full bg-emerald-500/20 px-3 py-1 text-[11px] font-bold text-emerald-400">{role.fit}% match</span>
+            <span className="rounded-full bg-[#474ead] px-3 py-1 text-[11px] font-bold text-white">
+              {role.demand}
+            </span>
+            <span className="rounded-full border border-white/15 bg-white/[0.08] px-3 py-1 text-[11px] text-white/60">
+              {role.speed}
+            </span>
+            <span className="ml-auto rounded-full bg-emerald-500/20 px-3 py-1 text-[11px] font-bold text-emerald-400">
+              {role.fit}% match
+            </span>
           </div>
 
           <div className="relative">
-            <h2 className="text-2xl font-bold leading-tight text-white md:text-[28px]">{role.title}</h2>
+            <h2 className="text-2xl font-bold leading-tight text-white md:text-[28px]">
+              {role.title}
+            </h2>
             <p className="mt-1.5 text-sm text-slate-400">{role.hook}</p>
           </div>
 
           <div className="relative mt-4 inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.06] px-4 py-2.5">
             <DollarSign className="h-4 w-4 text-[#474ead]" />
             <div>
-              <div className="text-[10px] text-white/40">Monthly salary (PHP)</div>
+              <div className="text-[10px] text-white/40">
+                Monthly salary (PHP)
+              </div>
               <div className="text-sm font-bold text-white">{role.pay}</div>
             </div>
           </div>
 
           <div className="relative mt-4 grid grid-cols-3 gap-2 sm:grid-cols-3 md:flex md:gap-3">
             {[
-              { Icon: Clock3,            label: "Schedule",  value: role.shift    },
-              { Icon: Globe2,            label: "Market",    value: role.market   },
-              { Icon: BriefcaseBusiness, label: "Category",  value: role.category },
+              { Icon: Clock3, label: "Schedule", value: role.shift },
+              { Icon: Globe2, label: "Market", value: role.market },
+              {
+                Icon: BriefcaseBusiness,
+                label: "Category",
+                value: role.category,
+              },
             ].map(({ Icon, label, value }) => (
-              <div key={label} className="rounded-xl bg-white/[0.06] p-2.5 md:flex-1">
+              <div
+                key={label}
+                className="rounded-xl bg-white/[0.06] p-2.5 md:flex-1"
+              >
                 <div className="flex items-center gap-1 text-[10px] text-white/40">
-                  <Icon className="h-2.5 w-2.5" />{label}
+                  <Icon className="h-2.5 w-2.5" />
+                  {label}
                 </div>
-                <div className="mt-1 text-xs font-bold text-white/90">{value}</div>
+                <div className="mt-1 text-xs font-bold text-white/90">
+                  {value}
+                </div>
               </div>
             ))}
           </div>
@@ -431,22 +488,29 @@ function RoleModal({ role, onClose }: { role: Role; onClose: () => void }) {
 
         {/* ── SCROLLABLE BODY ── */}
         <div className="flex-1 divide-y divide-slate-100 overflow-y-auto dark:divide-white/10">
-
           {/* Why you're a fit */}
           <div className="bg-[#474ead]/[0.04] px-6 py-5 md:px-10">
             <div className="flex items-start gap-3">
               <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#474ead]" />
               <div>
-                <p className="mb-1 text-[11px] font-bold uppercase tracking-widest text-[#474ead]">Why you're a fit</p>
-                <p className="text-sm leading-6 text-slate-700 dark:text-slate-300">{role.why}</p>
+                <p className="mb-1 text-[11px] font-bold uppercase tracking-widest text-[#474ead]">
+                  Why you're a fit
+                </p>
+                <p className="text-sm leading-6 text-slate-700 dark:text-slate-300">
+                  {role.why}
+                </p>
               </div>
             </div>
           </div>
 
           {/* Overview */}
           <div className="px-6 py-5 md:px-10">
-            <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-slate-400">Overview</p>
-            <p className="text-sm leading-7 text-slate-600 dark:text-slate-300">{role.overview}</p>
+            <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+              Overview
+            </p>
+            <p className="text-sm leading-7 text-slate-600 dark:text-slate-300">
+              {role.overview}
+            </p>
           </div>
 
           {/* Responsibilities preview — first 3 */}
@@ -455,7 +519,9 @@ function RoleModal({ role, onClose }: { role: Role; onClose: () => void }) {
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-500 dark:bg-blue-900/30">
                 <ListChecks className="h-3.5 w-3.5" />
               </div>
-              <h3 className="text-sm font-bold uppercase tracking-wide text-slate-800 dark:text-slate-200">Responsibilities</h3>
+              <h3 className="text-sm font-bold uppercase tracking-wide text-slate-800 dark:text-slate-200">
+                Responsibilities
+              </h3>
             </div>
             <ul className="space-y-2.5">
               {role.responsibilities.slice(0, 3).map((item, i) => (
@@ -463,7 +529,10 @@ function RoleModal({ role, onClose }: { role: Role; onClose: () => void }) {
               ))}
             </ul>
             {role.responsibilities.length > 3 && (
-              <button onClick={openFullPage} className="mt-3 text-xs font-semibold text-[#474ead] underline-offset-2 hover:underline">
+              <button
+                onClick={openFullPage}
+                className="mt-3 text-xs font-semibold text-[#474ead] underline-offset-2 hover:underline"
+              >
                 +{role.responsibilities.length - 3} more — view full posting
               </button>
             )}
@@ -475,7 +544,9 @@ function RoleModal({ role, onClose }: { role: Role; onClose: () => void }) {
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30">
                 <CheckCircle2 className="h-3.5 w-3.5" />
               </div>
-              <h3 className="text-sm font-bold uppercase tracking-wide text-slate-800 dark:text-slate-200">Qualifications</h3>
+              <h3 className="text-sm font-bold uppercase tracking-wide text-slate-800 dark:text-slate-200">
+                Qualifications
+              </h3>
             </div>
             <ul className="space-y-2.5">
               {role.qualifications.slice(0, 3).map((item, i) => (
@@ -483,7 +554,10 @@ function RoleModal({ role, onClose }: { role: Role; onClose: () => void }) {
               ))}
             </ul>
             {role.qualifications.length > 3 && (
-              <button onClick={openFullPage} className="mt-3 text-xs font-semibold text-[#474ead] underline-offset-2 hover:underline">
+              <button
+                onClick={openFullPage}
+                className="mt-3 text-xs font-semibold text-[#474ead] underline-offset-2 hover:underline"
+              >
                 +{role.qualifications.length - 3} more — view full posting
               </button>
             )}
@@ -491,10 +565,15 @@ function RoleModal({ role, onClose }: { role: Role; onClose: () => void }) {
 
           {/* Tags */}
           <div className="px-6 py-5 md:px-10">
-            <p className="mb-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">Tags</p>
+            <p className="mb-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+              Tags
+            </p>
             <div className="flex flex-wrap gap-2">
               {role.tags.map((tag) => (
-                <span key={tag} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
+                <span
+                  key={tag}
+                  className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300"
+                >
                   {tag}
                 </span>
               ))}
@@ -512,14 +591,22 @@ function RoleModal({ role, onClose }: { role: Role; onClose: () => void }) {
               Apply Now <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
 
-            <Button variant="outline" className="rounded-full" onClick={openFullPage}>
+            <Button
+              variant="outline"
+              className="rounded-full"
+              onClick={openFullPage}
+            >
               <Maximize2 className="mr-2 h-4 w-4" />
               Show More
             </Button>
 
-            <Button variant="ghost" className="rounded-full" onClick={onClose}>Close</Button>
+            <Button variant="ghost" className="rounded-full" onClick={onClose}>
+              Close
+            </Button>
 
-            <span className="ml-auto hidden text-xs text-slate-400 sm:block">OnSpot Global · {role.market}</span>
+            <span className="ml-auto hidden text-xs text-slate-400 sm:block">
+              OnSpot Global · {role.market}
+            </span>
           </div>
         </div>
       </motion.div>
@@ -527,7 +614,13 @@ function RoleModal({ role, onClose }: { role: Role; onClose: () => void }) {
   );
 }
 
-function JobCard({ role, onViewDetails }: { role: Role; onViewDetails: (r: Role) => void }) {
+function JobCard({
+  role,
+  onViewDetails,
+}: {
+  role: Role;
+  onViewDetails: (r: Role) => void;
+}) {
   return (
     <motion.div
       layout
@@ -540,34 +633,60 @@ function JobCard({ role, onViewDetails }: { role: Role; onViewDetails: (r: Role)
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
               <div className="mb-2 flex flex-wrap gap-2">
-                <Badge className="rounded-full bg-[#474ead] px-3 py-1 text-white hover:bg-[#474ead]">{role.demand}</Badge>
-                <Badge variant="secondary" className="rounded-full">{role.speed}</Badge>
+                <Badge className="rounded-full bg-[#474ead] px-3 py-1 text-white hover:bg-[#474ead]">
+                  {role.demand}
+                </Badge>
+                <Badge variant="secondary" className="rounded-full">
+                  {role.speed}
+                </Badge>
               </div>
-              <h3 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-white">{role.title}</h3>
+              <h3 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-white">
+                {role.title}
+              </h3>
               <p className="mt-1 text-sm text-slate-500">{role.hook}</p>
             </div>
             <div className="rounded-2xl border border-[#474ead]/15 bg-[#474ead]/5 px-3 py-2 text-right">
-              <div className="text-[11px] uppercase tracking-[0.18em] text-[#474ead]">Match</div>
-              <div className="text-xl font-bold text-slate-900 dark:text-white">{role.fit}%</div>
+              <div className="text-[11px] uppercase tracking-[0.18em] text-[#474ead]">
+                Match
+              </div>
+              <div className="text-xl font-bold text-slate-900 dark:text-white">
+                {role.fit}%
+              </div>
             </div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-2xl bg-slate-50 p-3 dark:bg-white/[0.04]">
-              <div className="flex items-center gap-2 text-xs text-slate-500"><DollarSign className="h-3.5 w-3.5" /> Monthly pay</div>
-              <div className="mt-1 font-semibold text-slate-900 dark:text-white">{role.pay}</div>
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <DollarSign className="h-3.5 w-3.5" /> Monthly pay
+              </div>
+              <div className="mt-1 font-semibold text-slate-900 dark:text-white">
+                {role.pay}
+              </div>
             </div>
             <div className="rounded-2xl bg-slate-50 p-3 dark:bg-white/[0.04]">
-              <div className="flex items-center gap-2 text-xs text-slate-500"><Clock3 className="h-3.5 w-3.5" /> Schedule</div>
-              <div className="mt-1 font-semibold text-slate-900 dark:text-white">{role.shift}</div>
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <Clock3 className="h-3.5 w-3.5" /> Schedule
+              </div>
+              <div className="mt-1 font-semibold text-slate-900 dark:text-white">
+                {role.shift}
+              </div>
             </div>
             <div className="rounded-2xl bg-slate-50 p-3 dark:bg-white/[0.04]">
-              <div className="flex items-center gap-2 text-xs text-slate-500"><Globe2 className="h-3.5 w-3.5" /> Market</div>
-              <div className="mt-1 font-semibold text-slate-900 dark:text-white">{role.market}</div>
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <Globe2 className="h-3.5 w-3.5" /> Market
+              </div>
+              <div className="mt-1 font-semibold text-slate-900 dark:text-white">
+                {role.market}
+              </div>
             </div>
             <div className="rounded-2xl bg-slate-50 p-3 dark:bg-white/[0.04]">
-              <div className="flex items-center gap-2 text-xs text-slate-500"><BriefcaseBusiness className="h-3.5 w-3.5" /> Category</div>
-              <div className="mt-1 font-semibold text-slate-900 dark:text-white">{role.category}</div>
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <BriefcaseBusiness className="h-3.5 w-3.5" /> Category
+              </div>
+              <div className="mt-1 font-semibold text-slate-900 dark:text-white">
+                {role.category}
+              </div>
             </div>
           </div>
 
@@ -575,12 +694,17 @@ function JobCard({ role, onViewDetails }: { role: Role; onViewDetails: (r: Role)
             <div className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-white">
               <Sparkles className="h-4 w-4 text-[#474ead]" /> Why you’re a fit
             </div>
-            <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">{role.why}</p>
+            <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
+              {role.why}
+            </p>
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
             {role.tags.map((tag) => (
-              <span key={tag} className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700 dark:bg-white/[0.06] dark:text-slate-300">
+              <span
+                key={tag}
+                className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700 dark:bg-white/[0.06] dark:text-slate-300"
+              >
                 {tag}
               </span>
             ))}
@@ -606,14 +730,25 @@ function JobCard({ role, onViewDetails }: { role: Role; onViewDetails: (r: Role)
   );
 }
 
-function DbJobCard({ job, onNavigate }: { job: Job; onNavigate: (id: string) => void }) {
+function DbJobCard({
+  job,
+  onNavigate,
+}: {
+  job: Job;
+  onNavigate: (id: string) => void;
+}) {
   const pay = buildRateDisplay(job);
   const badges = getJobBadges(job);
   const timeAgo = getTimeAgo(job.createdAt);
   const tags = (job.skillTags ?? []).slice(0, 4);
 
   return (
-    <motion.div layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
       <Card className="group flex h-full flex-col rounded-3xl border-slate-200/70 bg-white/90 transition-all hover:border-[#474ead]/25 hover:shadow-[0_16px_48px_rgba(71,78,173,0.10)] dark:border-white/10 dark:bg-white/[0.03]">
         <CardContent className="flex flex-1 flex-col p-6">
           {/* Header */}
@@ -621,14 +756,25 @@ function DbJobCard({ job, onNavigate }: { job: Job; onNavigate: (id: string) => 
             <div className="flex-1">
               <div className="mb-2 flex flex-wrap gap-1.5">
                 {badges.map((b) => (
-                  <span key={b.key} className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${b.className}`}>{b.label}</span>
+                  <span
+                    key={b.key}
+                    className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${b.className}`}
+                  >
+                    {b.label}
+                  </span>
                 ))}
                 {badges.length === 0 && (
-                  <span className="rounded-full bg-[#474ead]/10 px-2.5 py-0.5 text-[11px] font-semibold text-[#474ead]">Open</span>
+                  <span className="rounded-full bg-[#474ead]/10 px-2.5 py-0.5 text-[11px] font-semibold text-[#474ead]">
+                    Open
+                  </span>
                 )}
               </div>
-              <h3 className="text-lg font-semibold leading-snug text-slate-900 dark:text-white">{job.title}</h3>
-              <p className="mt-0.5 text-sm text-slate-500">{job.company ?? "OnSpot Global"}</p>
+              <h3 className="text-lg font-semibold leading-snug text-slate-900 dark:text-white">
+                {job.title}
+              </h3>
+              <p className="mt-0.5 text-sm text-slate-500">
+                {job.company ?? "OnSpot Global"}
+              </p>
             </div>
             <span className="shrink-0 text-xs text-slate-400">{timeAgo}</span>
           </div>
@@ -636,33 +782,56 @@ function DbJobCard({ job, onNavigate }: { job: Job; onNavigate: (id: string) => 
           {/* Meta pills */}
           <div className="grid grid-cols-2 gap-2">
             <div className="rounded-xl bg-slate-50 p-2.5 dark:bg-white/[0.04]">
-              <div className="flex items-center gap-1.5 text-[11px] text-slate-500"><DollarSign className="h-3 w-3" /> Pay</div>
-              <div className="mt-0.5 text-sm font-semibold text-slate-900 dark:text-white">{pay}</div>
+              <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                <DollarSign className="h-3 w-3" /> Pay
+              </div>
+              <div className="mt-0.5 text-sm font-semibold text-slate-900 dark:text-white">
+                {pay}
+              </div>
             </div>
             <div className="rounded-xl bg-slate-50 p-2.5 dark:bg-white/[0.04]">
-              <div className="flex items-center gap-1.5 text-[11px] text-slate-500"><MapPin className="h-3 w-3" /> Location</div>
-              <div className="mt-0.5 text-sm font-semibold text-slate-900 dark:text-white">{job.location ?? "Remote"}</div>
+              <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                <MapPin className="h-3 w-3" /> Location
+              </div>
+              <div className="mt-0.5 text-sm font-semibold text-slate-900 dark:text-white">
+                {job.location ?? "Remote"}
+              </div>
             </div>
             <div className="rounded-xl bg-slate-50 p-2.5 dark:bg-white/[0.04]">
-              <div className="flex items-center gap-1.5 text-[11px] text-slate-500"><BriefcaseBusiness className="h-3 w-3" /> Category</div>
-              <div className="mt-0.5 text-sm font-semibold capitalize text-slate-900 dark:text-white">{job.category}</div>
+              <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                <BriefcaseBusiness className="h-3 w-3" /> Category
+              </div>
+              <div className="mt-0.5 text-sm font-semibold capitalize text-slate-900 dark:text-white">
+                {job.category}
+              </div>
             </div>
             <div className="rounded-xl bg-slate-50 p-2.5 dark:bg-white/[0.04]">
-              <div className="flex items-center gap-1.5 text-[11px] text-slate-500"><Layers className="h-3 w-3" /> Type</div>
-              <div className="mt-0.5 text-sm font-semibold capitalize text-slate-900 dark:text-white">{job.contractType?.replace(/-/g, " ") ?? "Full-time"}</div>
+              <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                <Layers className="h-3 w-3" /> Type
+              </div>
+              <div className="mt-0.5 text-sm font-semibold capitalize text-slate-900 dark:text-white">
+                {job.contractType?.replace(/-/g, " ") ?? "Full-time"}
+              </div>
             </div>
           </div>
 
           {/* Description excerpt */}
           {job.description && (
-            <p className="mt-4 line-clamp-2 text-sm leading-6 text-slate-600 dark:text-slate-400">{job.description}</p>
+            <p className="mt-4 line-clamp-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
+              {job.description}
+            </p>
           )}
 
           {/* Tags */}
           {tags.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-1.5">
               {tags.map((tag) => (
-                <span key={tag} className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700 dark:bg-white/[0.06] dark:text-slate-300">{tag}</span>
+                <span
+                  key={tag}
+                  className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700 dark:bg-white/[0.06] dark:text-slate-300"
+                >
+                  {tag}
+                </span>
               ))}
             </div>
           )}
@@ -671,7 +840,9 @@ function DbJobCard({ job, onNavigate }: { job: Job; onNavigate: (id: string) => 
           <div className="mt-5 flex items-center justify-between gap-3 pt-1">
             <Button
               className="rounded-full bg-[#474ead] px-5 text-white hover:bg-[#3d439c]"
-              onClick={() => window.open(APPLY_URL, "_blank", "noopener,noreferrer")}
+              onClick={() =>
+                window.open(APPLY_URL, "_blank", "noopener,noreferrer")
+              }
             >
               Apply in 30 seconds
             </Button>
@@ -690,11 +861,11 @@ function DbJobCard({ job, onNavigate }: { job: Job; onNavigate: (id: string) => 
 
 export default function OnSpotFindWorkRedesign() {
   const [, navigate] = useLocation();
-  const [query, setQuery] = useState("Virtual assistant, night shift, ₱50,000+");
+  const [query, setQuery] = useState("Virtual assistant, night shift, remote.");
   const [schedule, setSchedule] = useState("All schedules");
   const [earning, setEarning] = useState("Any pay");
   const [kind, setKind] = useState("All work");
-  const [profileStrength] = useState(68);  
+  const [profileStrength] = useState(68);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -728,7 +899,8 @@ export default function OnSpotFindWorkRedesign() {
   const filteredRoles = useMemo(() => {
     return roles.filter((role) => {
       const q = query.toLowerCase();
-      const schedulePass = schedule === "All schedules" || role.shift === schedule;
+      const schedulePass =
+        schedule === "All schedules" || role.shift === schedule;
       const kindPass = kind === "All work" || role.category === kind;
       const minPay = getMinimumPay(role.pay);
       const earningPass =
@@ -750,7 +922,10 @@ export default function OnSpotFindWorkRedesign() {
   }, [query, schedule, earning, kind]);
 
   // First 3 open DB jobs for the live preview — unaffected by search/filter state
-  const previewDbJobs = useMemo(() => dbJobs.filter((j) => j.status === "open").slice(0, 3), [dbJobs]);
+  const previewDbJobs = useMemo(
+    () => dbJobs.filter((j) => j.status === "open").slice(0, 3),
+    [dbJobs],
+  );
 
   const filteredDbJobs = useMemo(() => {
     return dbJobs.filter((job) => {
@@ -779,7 +954,6 @@ export default function OnSpotFindWorkRedesign() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(71,78,173,0.12),transparent_32%),linear-gradient(to_bottom,#f8fafc,white)] text-slate-900 dark:bg-[#060816] dark:text-white">
-
       {/* Role detail modal — z-[200] clears top nav */}
       <AnimatePresence>
         {isModalOpen && selectedRole && (
@@ -792,7 +966,11 @@ export default function OnSpotFindWorkRedesign() {
         <div className="relative mx-auto max-w-7xl px-6 pb-16 pt-10 md:px-8 md:pb-24 md:pt-14">
           <div className="grid items-center gap-10 lg:grid-cols-[1.15fr_0.85fr]">
             <div>
-              <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
                 <Badge className="mb-5 rounded-full bg-[#474ead]/10 px-4 py-1.5 text-[#474ead] hover:bg-[#474ead]/10">
                   Find work with global companies hiring now
                 </Badge>
@@ -800,7 +978,9 @@ export default function OnSpotFindWorkRedesign() {
                   Find work that pays well — and moves you forward.
                 </h1>
                 <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 md:text-lg dark:text-slate-300">
-                  Get matched to premium remote opportunities across admin, support, finance, sales, marketing, and operations. Faster, smarter, and more human than a typical job board.
+                  Get matched to premium remote opportunities across admin,
+                  support, finance, sales, marketing, and operations. Faster,
+                  smarter, and more human than a typical job board.
                 </p>
               </motion.div>
 
@@ -815,7 +995,9 @@ export default function OnSpotFindWorkRedesign() {
                     <Search className="h-4 w-4" />
                   </div>
                   <div className="w-full">
-                    <div className="mb-2 text-xs font-medium uppercase tracking-[0.2em] text-slate-500">Smart match input</div>
+                    <div className="mb-2 text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+                      Smart match input
+                    </div>
                     <Input
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
@@ -837,21 +1019,21 @@ export default function OnSpotFindWorkRedesign() {
                 </div>
 
                 <div className="mt-4 flex flex-wrap items-center gap-3">
-                  <Button className="rounded-full bg-[#474ead] px-6 text-white hover:bg-[#3d439c]" onClick={() => navigate("/find-best-matches")}>
+                  <Button
+                    className="rounded-full bg-[#474ead] px-6 text-white hover:bg-[#3d439c]"
+                    onClick={() => navigate("/find-best-matches")}
+                  >
                     Find My Best Matches
                   </Button>
-                  <Button variant="outline" className="rounded-full px-6" onClick={() => navigate("/find-work/jobs")}>
+                  <Button
+                    variant="outline"
+                    className="rounded-full px-6"
+                    onClick={() => navigate("/find-work/jobs")}
+                  >
                     Browse Roles
                   </Button>
                 </div>
               </motion.div>
-
-              <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <StatPill icon={Users} label="Candidates placed" value="1,200+" />
-                <StatPill icon={DollarSign} label="Typical roles" value="₱45,000–₱140,000/mo" />
-                <StatPill icon={Globe2} label="Client markets" value="US · AU · UK" />
-                <StatPill icon={Zap} label="Hiring speed" value="3–10 days" />
-              </div>
             </div>
 
             <motion.div
@@ -863,74 +1045,108 @@ export default function OnSpotFindWorkRedesign() {
               <div className="rounded-[32px] border border-slate-200/70 bg-white/85 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.10)] backdrop-blur dark:border-white/10 dark:bg-white/[0.04]">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
-                    <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Live preview</div>
-                    <div className="mt-1 text-lg font-semibold">Your best opportunities</div>
+                    <div className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                      Live preview
+                    </div>
+                    <div className="mt-1 text-lg font-semibold">
+                      Your best opportunities
+                    </div>
                   </div>
                   <Badge className="rounded-full bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-300">
-                    {dbJobs.filter((j) => j.status === "open").length || roles.length} open roles
+                    {dbJobs.filter((j) => j.status === "open").length ||
+                      roles.length}{" "}
+                    open roles
                   </Badge>
                 </div>
 
                 <div className="space-y-3">
                   {/* DB-powered preview (first 3 open jobs); falls back to static roles when DB is empty */}
-                  {(previewDbJobs.length > 0 ? previewDbJobs : roles).slice(0, 3).map((item, index) => {
-                    const isDbJob = previewDbJobs.length > 0;
-                    const job = item as Job;
-                    const role = item as Role;
+                  {(previewDbJobs.length > 0 ? previewDbJobs : roles)
+                    .slice(0, 3)
+                    .map((item, index) => {
+                      const isDbJob = previewDbJobs.length > 0;
+                      const job = item as Job;
+                      const role = item as Role;
 
-                    const title  = isDbJob ? job.title  : role.title;
-                    const pay    = isDbJob ? buildRateDisplay(job) : role.pay;
-                    const shift  = isDbJob ? (job.contractType?.replace(/-/g, " ") ?? "Full-time") : role.shift;
-                    const market = isDbJob ? (job.location ?? "Remote") : role.market;
-                    const fit    = isDbJob ? 90 : role.fit;
-                    const why    = isDbJob
-                      ? ((job.description ?? "").slice(0, 90) || "Matching your profile to this open role.")
-                      : role.why;
+                      const title = isDbJob ? job.title : role.title;
+                      const pay = isDbJob ? buildRateDisplay(job) : role.pay;
+                      const shift = isDbJob
+                        ? (job.contractType?.replace(/-/g, " ") ?? "Full-time")
+                        : role.shift;
+                      const market = isDbJob
+                        ? (job.location ?? "Remote")
+                        : role.market;
+                      const fit = isDbJob ? 90 : role.fit;
+                      const why = isDbJob
+                        ? (job.description ?? "").slice(0, 90) ||
+                          "Matching your profile to this open role."
+                        : role.why;
 
-                    const handleClick = isDbJob
-                      ? () => navigate(`/find-work/job/${job.id}`)
-                      : () => openModal(role);
+                      const handleClick = isDbJob
+                        ? () => navigate(`/find-work/job/${job.id}`)
+                        : () => openModal(role);
 
-                    return (
-                      <motion.button
-                        key={isDbJob ? job.id : role.id}
-                        initial={{ opacity: 0, y: 16 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.25 + index * 0.1, duration: 0.35 }}
-                        onClick={handleClick}
-                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClick(); } }}
-                        tabIndex={0}
-                        className="w-full cursor-pointer rounded-3xl border border-slate-200/80 bg-slate-50/80 p-4 text-left transition-all hover:border-[#474ead]/30 hover:shadow-[0_12px_40px_rgba(71,78,173,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#474ead]/30 dark:border-white/10 dark:bg-white/[0.03] dark:hover:border-[#474ead]/40"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-semibold">{title}</span>
-                              <span className="rounded-full bg-[#474ead]/10 px-2 py-1 text-[11px] font-medium text-[#474ead]">{fit}% match</span>
+                      return (
+                        <motion.button
+                          key={isDbJob ? job.id : role.id}
+                          initial={{ opacity: 0, y: 16 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{
+                            delay: 0.25 + index * 0.1,
+                            duration: 0.35,
+                          }}
+                          onClick={handleClick}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              handleClick();
+                            }
+                          }}
+                          tabIndex={0}
+                          className="w-full cursor-pointer rounded-3xl border border-slate-200/80 bg-slate-50/80 p-4 text-left transition-all hover:border-[#474ead]/30 hover:shadow-[0_12px_40px_rgba(71,78,173,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#474ead]/30 dark:border-white/10 dark:bg-white/[0.03] dark:hover:border-[#474ead]/40"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-semibold">
+                                  {title}
+                                </span>
+                                <span className="rounded-full bg-[#474ead]/10 px-2 py-1 text-[11px] font-medium text-[#474ead]">
+                                  {fit}% match
+                                </span>
+                              </div>
+                              <div className="mt-1 text-sm text-slate-500">
+                                {pay} · {shift} · {market}
+                              </div>
+                              <div className="mt-2 flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                                <Sparkles className="h-4 w-4 shrink-0 text-[#474ead]" />
+                                <span className="line-clamp-1">{why}</span>
+                              </div>
                             </div>
-                            <div className="mt-1 text-sm text-slate-500">{pay} · {shift} · {market}</div>
-                            <div className="mt-2 flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                              <Sparkles className="h-4 w-4 shrink-0 text-[#474ead]" />
-                              <span className="line-clamp-1">{why}</span>
-                            </div>
+                            <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-slate-400 transition-colors group-hover:text-[#474ead]" />
                           </div>
-                          <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-slate-400 transition-colors group-hover:text-[#474ead]" />
-                        </div>
-                      </motion.button>
-                    );
-                  })}
+                        </motion.button>
+                      );
+                    })}
                 </div>
 
                 <div className="mt-4 rounded-3xl bg-[#0f172a] p-5 text-white">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-xs uppercase tracking-[0.2em] text-white/60">Profile strength</div>
-                      <div className="mt-1 text-lg font-semibold">Complete your profile to unlock better matches</div>
+                      <div className="text-xs uppercase tracking-[0.2em] text-white/60">
+                        Profile strength
+                      </div>
+                      <div className="mt-1 text-lg font-semibold">
+                        Complete your profile to unlock better matches
+                      </div>
                     </div>
                     <div className="text-2xl font-bold">{profileStrength}%</div>
                   </div>
                   <Progress value={profileStrength} className="mt-4 h-2" />
-                  <div className="mt-3 text-sm text-white/70">Add your resume, work history, and preferred schedule to improve match quality.</div>
+                  <div className="mt-3 text-sm text-white/70">
+                    Add your resume, work history, and preferred schedule to
+                    improve match quality.
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -941,19 +1157,56 @@ export default function OnSpotFindWorkRedesign() {
       <section className="mx-auto max-w-7xl px-6 py-14 md:px-8 md:py-20">
         <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <Badge className="mb-4 rounded-full bg-slate-900 text-white hover:bg-slate-900 dark:bg-white dark:text-slate-900">Top matches for you</Badge>
-            <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">Roles that feel more like opportunities.</h2>
-            <p className="mt-3 max-w-2xl text-slate-600 dark:text-slate-300">Designed to reduce random scrolling and help applicants focus on roles that fit their pay goals, schedule, and strengths.</p>
+            <Badge className="mb-4 rounded-full bg-slate-900 text-white hover:bg-slate-900 dark:bg-white dark:text-slate-900">
+              Top matches for you
+            </Badge>
+            <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">
+              Roles that feel more like opportunities.
+            </h2>
+            <p className="mt-3 max-w-2xl text-slate-600 dark:text-slate-300">
+              Designed to reduce random scrolling and help applicants focus on
+              roles that fit their pay goals, schedule, and strengths.
+            </p>
           </div>
 
           <div className="flex flex-wrap gap-3">
             {[
-              { label: "How much do you want to earn?", value: earning, options: ["Any pay", "₱45,000+", "₱60,000+", "₱85,000+"] },
-              { label: "What schedule works for you?", value: schedule, options: ["All schedules", "Day shift", "Night shift", "Flexible"] },
-              { label: "What type of work do you enjoy?", value: kind, options: ["All work", "Admin", "Support", "Finance", "Sales", "Marketing", "Operations"] },
+              {
+                label: "How much do you want to earn?",
+                value: earning,
+                options: ["Any pay", "₱45,000+", "₱60,000+", "₱85,000+"],
+              },
+              {
+                label: "What schedule works for you?",
+                value: schedule,
+                options: [
+                  "All schedules",
+                  "Day shift",
+                  "Night shift",
+                  "Flexible",
+                ],
+              },
+              {
+                label: "What type of work do you enjoy?",
+                value: kind,
+                options: [
+                  "All work",
+                  "Admin",
+                  "Support",
+                  "Finance",
+                  "Sales",
+                  "Marketing",
+                  "Operations",
+                ],
+              },
             ].map((group, idx) => (
-              <div key={group.label} className="rounded-2xl border border-slate-200/70 bg-white/80 p-3 dark:border-white/10 dark:bg-white/[0.03]">
-                <div className="mb-2 flex items-center gap-2 text-xs text-slate-500"><Filter className="h-3.5 w-3.5" /> {group.label}</div>
+              <div
+                key={group.label}
+                className="rounded-2xl border border-slate-200/70 bg-white/80 p-3 dark:border-white/10 dark:bg-white/[0.03]"
+              >
+                <div className="mb-2 flex items-center gap-2 text-xs text-slate-500">
+                  <Filter className="h-3.5 w-3.5" /> {group.label}
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {group.options.map((option) => {
                     const active = group.value === option;
@@ -986,13 +1239,20 @@ export default function OnSpotFindWorkRedesign() {
         {isJobsLoading ? (
           <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
             {[1, 2, 3].map((n) => (
-              <div key={n} className="h-64 animate-pulse rounded-3xl bg-slate-100 dark:bg-white/[0.04]" />
+              <div
+                key={n}
+                className="h-64 animate-pulse rounded-3xl bg-slate-100 dark:bg-white/[0.04]"
+              />
             ))}
           </div>
         ) : filteredDbJobs.length > 0 ? (
           <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
             {filteredDbJobs.slice(0, 6).map((job) => (
-              <DbJobCard key={job.id} job={job} onNavigate={(id) => navigate(`/find-work/job/${id}`)} />
+              <DbJobCard
+                key={job.id}
+                job={job}
+                onNavigate={(id) => navigate(`/find-work/job/${id}`)}
+              />
             ))}
           </div>
         ) : (
@@ -1023,9 +1283,17 @@ export default function OnSpotFindWorkRedesign() {
         <div className="mx-auto max-w-7xl px-6 py-14 md:px-8 md:py-20">
           <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
             <div>
-              <Badge className="mb-4 rounded-full bg-[#474ead]/10 text-[#474ead] hover:bg-[#474ead]/10">Why OnSpot</Badge>
-              <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">More than listings. Better matching. Better outcomes.</h2>
-              <p className="mt-4 max-w-xl text-slate-600 dark:text-slate-300">This page is built for applicants, not for recruiters. The experience is designed to feel guided, high-trust, and momentum-driven from first click to application.</p>
+              <Badge className="mb-4 rounded-full bg-[#474ead]/10 text-[#474ead] hover:bg-[#474ead]/10">
+                Why OnSpot
+              </Badge>
+              <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">
+                More than listings. Better matching. Better outcomes.
+              </h2>
+              <p className="mt-4 max-w-xl text-slate-600 dark:text-slate-300">
+                This page is built for applicants, not for recruiters. The
+                experience is designed to feel guided, high-trust, and
+                momentum-driven from first click to application.
+              </p>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -1051,13 +1319,18 @@ export default function OnSpotFindWorkRedesign() {
                   copy: "Use fit reasoning, hiring signals, and outcomes to build confidence.",
                 },
               ].map((item) => (
-                <Card key={item.title} className="rounded-3xl border-slate-200/70 bg-white/90 dark:border-white/10 dark:bg-white/[0.03]">
+                <Card
+                  key={item.title}
+                  className="rounded-3xl border-slate-200/70 bg-white/90 dark:border-white/10 dark:bg-white/[0.03]"
+                >
                   <CardContent className="p-6">
                     <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#474ead]/10 text-[#474ead]">
                       <item.icon className="h-5 w-5" />
                     </div>
                     <h3 className="text-lg font-semibold">{item.title}</h3>
-                    <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{item.copy}</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                      {item.copy}
+                    </p>
                   </CardContent>
                 </Card>
               ))}
@@ -1069,24 +1342,39 @@ export default function OnSpotFindWorkRedesign() {
       <section className="mx-auto max-w-7xl px-6 py-14 md:px-8 md:py-20">
         <div className="mb-8 flex items-end justify-between gap-6">
           <div>
-            <Badge className="mb-4 rounded-full bg-slate-900 text-white hover:bg-slate-900 dark:bg-white dark:text-slate-900">Proof it works</Badge>
-            <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">Applicant stories that create trust instantly.</h2>
+            <Badge className="mb-4 rounded-full bg-slate-900 text-white hover:bg-slate-900 dark:bg-white dark:text-slate-900">
+              Proof it works
+            </Badge>
+            <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">
+              Applicant stories that create trust instantly.
+            </h2>
           </div>
-          <div className="hidden text-sm text-slate-500 md:block">Use real placement stories here once approved.</div>
+          <div className="hidden text-sm text-slate-500 md:block">
+            Use real placement stories here once approved.
+          </div>
         </div>
 
         <div className="grid gap-5 lg:grid-cols-3">
           {stories.map((story) => (
-            <Card key={story.name} className="rounded-3xl border-slate-200/70 bg-white/90 shadow-[0_10px_40px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-white/[0.03]">
+            <Card
+              key={story.name}
+              className="rounded-3xl border-slate-200/70 bg-white/90 shadow-[0_10px_40px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-white/[0.03]"
+            >
               <CardContent className="p-6">
                 <div className="mb-5 flex items-center gap-1 text-[#474ead]">
-                  {[0, 1, 2, 3, 4].map((i) => <Star key={i} className="h-4 w-4 fill-current" />)}
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <Star key={i} className="h-4 w-4 fill-current" />
+                  ))}
                 </div>
-                <p className="text-base leading-7 text-slate-700 dark:text-slate-300">“{story.quote}”</p>
+                <p className="text-base leading-7 text-slate-700 dark:text-slate-300">
+                  “{story.quote}”
+                </p>
                 <div className="mt-6 border-t border-slate-200/80 pt-4 dark:border-white/10">
                   <div className="font-semibold">{story.name}</div>
                   <div className="text-sm text-slate-500">{story.role}</div>
-                  <div className="mt-2 inline-flex rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">{story.outcome}</div>
+                  <div className="mt-2 inline-flex rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                    {story.outcome}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -1105,13 +1393,18 @@ export default function OnSpotFindWorkRedesign() {
                 Your next opportunity is already here. Take the step.
               </h2>
               <p className="mt-4 max-w-2xl text-base leading-7 text-white/75 md:text-lg">
-                New roles are added regularly. Strong applicants move faster. Start with a quick application, then complete your profile to improve your match quality.
+                New roles are added regularly. Strong applicants move faster.
+                Start with a quick application, then complete your profile to
+                improve your match quality.
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
                 <Button className="rounded-full bg-white px-6 text-slate-900 hover:bg-white/90">
                   Start Matching
                 </Button>
-                <Button variant="outline" className="rounded-full border-white/20 bg-white/5 px-6 text-white hover:bg-white/10 hover:text-white">
+                <Button
+                  variant="outline"
+                  className="rounded-full border-white/20 bg-white/5 px-6 text-white hover:bg-white/10 hover:text-white"
+                >
                   Upload Resume
                 </Button>
               </div>
@@ -1124,7 +1417,10 @@ export default function OnSpotFindWorkRedesign() {
                 "Complete your profile for stronger opportunities",
                 "Stay visible for active hiring teams",
               ].map((step) => (
-                <div key={step} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
+                <div
+                  key={step}
+                  className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur"
+                >
                   <CheckCircle2 className="h-5 w-5 text-emerald-300" />
                   <span className="text-sm md:text-base">{step}</span>
                 </div>
