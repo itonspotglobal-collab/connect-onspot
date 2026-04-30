@@ -28,7 +28,7 @@ const roles = [
     why: "Your background in calendar management, executive coordination, and proactive communication makes you a strong candidate for this high-trust role.",
     tags: ["Remote", "Night shift", "Admin", "Executive support", "High demand"],
     overview:
-      "Executive Virtual Assistants at OnSpot Global work directly with C-suite and senior executives across fast-growing US companies. You will be the operational anchor that keeps leaders focused, informed, and efficient — managing everything from scheduling and communications to research and project coordination.",
+      "Executive Virtual Assistants at OnSpot work directly with C-suite and senior executives across fast-growing US companies. You will be the operational anchor that keeps leaders focused, informed, and efficient — managing everything from scheduling and communications to research and project coordination.",
     description:
       "This role requires someone who thrives in ambiguity, can switch contexts rapidly, and builds trust quickly with high-achieving principals. You'll be embedded in fast-paced business environments where attention to detail and discretion are non-negotiable.",
     responsibilities: [
@@ -83,7 +83,7 @@ const roles = [
     why: "Your ability to build long-term client relationships while driving measurable outcomes aligns precisely with what our US clients need from this high-value role.",
     tags: ["Remote", "Night shift", "Customer success", "B2B SaaS", "Critical hire"],
     overview:
-      "Customer Success Managers at OnSpot Global partner with US-based SaaS companies to ensure their clients achieve meaningful outcomes. You act as the primary relationship owner post-sale — driving adoption, reducing churn, and expanding accounts.",
+      "Customer Success Managers at OnSpot partner with US-based SaaS companies to ensure their clients achieve meaningful outcomes. You act as the primary relationship owner post-sale — driving adoption, reducing churn, and expanding accounts.",
     description:
       "You'll work with a portfolio of mid-market and enterprise accounts, conducting regular business reviews, identifying at-risk customers, and collaborating with product and sales teams to deliver value at scale. This is a high-visibility, high-impact role where your work directly affects revenue.",
     responsibilities: [
@@ -137,7 +137,7 @@ const roles = [
     why: "Your performance marketing background and multi-channel expertise put you in a strong position for AU/UK clients scaling digital acquisition.",
     tags: ["Remote", "Flexible hours", "Marketing", "Paid media", "AU/UK"],
     overview:
-      "Digital Marketing Specialists at OnSpot Global execute and optimize performance marketing campaigns for AU and UK brands across paid, organic, and social channels. You're not just running ads — you're building growth engines.",
+      "Digital Marketing Specialists at OnSpot execute and optimize performance marketing campaigns for AU and UK brands across paid, organic, and social channels. You're not just running ads — you're building growth engines.",
     description:
       "You'll work closely with client marketing teams to plan, launch, and iterate campaigns. From Meta and Google Ads to email sequences and SEO content briefs, you bring tactical precision and strategic thinking to every channel you manage.",
     responsibilities: [
@@ -190,7 +190,7 @@ const roles = [
     why: "Your Xero/QuickBooks expertise and detail-oriented approach to financial reporting directly match what US and AU SMBs need in a trusted bookkeeping partner.",
     tags: ["Remote", "Day shift", "Finance", "Bookkeeping", "Xero/QB"],
     overview:
-      "Bookkeepers and Financial VAs at OnSpot Global maintain accurate financial records for US and Australian small-to-mid businesses. You ensure month-end closes are clean, reconciliations are timely, and owners always have the numbers they need.",
+      "Bookkeepers and Financial VAs at OnSpot maintain accurate financial records for US and Australian small-to-mid businesses. You ensure month-end closes are clean, reconciliations are timely, and owners always have the numbers they need.",
     description:
       "You'll be embedded in the client's finance workflow, owning accounts payable/receivable, bank reconciliations, payroll support, and basic financial reporting. Precision and consistency are your trademarks.",
     responsibilities: [
@@ -244,7 +244,7 @@ const roles = [
     why: "Your technical troubleshooting skills and calm customer-facing communication style are exactly what high-volume US tech companies need in a Tier 1–2 support specialist.",
     tags: ["Remote", "Rotating shifts", "Tech support", "SaaS", "Always hiring"],
     overview:
-      "Technical Support Specialists at OnSpot Global serve as the front line of support for US and global SaaS, hardware, and tech product companies. You resolve tickets fast, communicate clearly, and escalate intelligently.",
+      "Technical Support Specialists at OnSpot serve as the front line of support for US and global SaaS, hardware, and tech product companies. You resolve tickets fast, communicate clearly, and escalate intelligently.",
     description:
       "You'll handle inbound tickets across email, chat, and phone, diagnosing issues, walking customers through solutions, and documenting cases. You're the customer's trusted guide through every technical challenge they face.",
     responsibilities: [
@@ -297,7 +297,7 @@ const roles = [
     why: "Your outbound prospecting experience and high-energy approach to cold outreach align with what fast-growing US sales teams need to scale their top-of-funnel.",
     tags: ["Remote", "Night shift", "Sales", "SDR", "Commission", "High demand"],
     overview:
-      "Sales Development Representatives at OnSpot Global generate qualified pipeline for US B2B companies through outbound prospecting via cold calls, LinkedIn, and email. You're the engine that starts every revenue conversation.",
+      "Sales Development Representatives at OnSpot generate qualified pipeline for US B2B companies through outbound prospecting via cold calls, LinkedIn, and email. You're the engine that starts every revenue conversation.",
     description:
       "You'll work closely with Account Executives and sales leadership to identify target accounts, personalize outreach sequences, and book high-quality discovery calls. This is a metrics-driven role with real commission upside.",
     responsibilities: [
@@ -464,7 +464,7 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
           </div>
 
           <h1 className="text-3xl font-bold leading-tight text-white md:text-4xl lg:text-[42px]">{job.title}</h1>
-          <p className="mt-2 text-base text-slate-400">{job.company ?? "OnSpot Global"}</p>
+          <p className="mt-2 text-base text-slate-400">{job.company ?? "OnSpot"}</p>
 
           <div className="mt-6 inline-flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.06] px-5 py-3">
             <DollarSign className="h-4 w-4 text-[#474ead]" />
@@ -931,7 +931,7 @@ export default function FindWorkJob() {
               View all roles
             </Button>
           </div>
-          <p className="mt-6 text-xs text-slate-400">OnSpot Global · Philippines · {role.market}</p>
+          <p className="mt-6 text-xs text-slate-400">OnSpot · Philippines · {role.market}</p>
         </div>
       </motion.div>
     </div>

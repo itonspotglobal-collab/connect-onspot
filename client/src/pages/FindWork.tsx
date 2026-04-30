@@ -605,7 +605,7 @@ function RoleModal({ role, onClose }: { role: Role; onClose: () => void }) {
             </Button>
 
             <span className="ml-auto hidden text-xs text-slate-400 sm:block">
-              OnSpot Global · {role.market}
+              OnSpot · {role.market}
             </span>
           </div>
         </div>
@@ -773,7 +773,7 @@ function DbJobCard({
                 {job.title}
               </h3>
               <p className="mt-0.5 text-sm text-slate-500">
-                {job.company ?? "OnSpot Global"}
+                {job.company ?? "OnSpot"}
               </p>
             </div>
             <span className="shrink-0 text-xs text-slate-400">{timeAgo}</span>

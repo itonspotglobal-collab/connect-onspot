@@ -776,7 +776,7 @@ export class MemStorage implements IStorage {
     const job: Job = {
       ...insertJob,
       id,
-      company: insertJob.company ?? "OnSpot Global",
+      company: insertJob.company ?? "OnSpot",
       location: insertJob.location ?? "Remote",
       budget: insertJob.budget ?? null,
       budgetCurrency: insertJob.budgetCurrency ?? "USD",

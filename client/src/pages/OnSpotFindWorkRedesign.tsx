@@ -777,7 +777,7 @@ function RoleDetailModal({ role, onClose }: { role: Role; onClose: () => void })
             </Button>
 
             <span className="ml-auto hidden text-xs text-stone-400 sm:block">
-              OnSpot Global · {role.market}
+              OnSpot · {role.market}
             </span>
           </div>
         </div>

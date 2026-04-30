@@ -124,7 +124,7 @@ function JobCard({ job, onNavigate }: { job: Job; onNavigate: (id: string) => vo
                 <h3 className="text-base font-bold leading-tight text-white truncate">{job.title}</h3>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs text-white/70">{job.company ?? "OnSpot Global"}</span>
+                <span className="text-xs text-white/70">{job.company ?? "OnSpot"}</span>
                 <span className="text-white/30 text-xs">·</span>
                 {badges.length > 0
                   ? badges.map((b) => (
@@ -354,8 +354,8 @@ export default function FindWorkAllJobs() {
             </h1>
             <p className="mt-3 max-w-2xl text-base text-slate-400">
               {navGroup && navSlug !== "all"
-                ? `Showing ${navGroup.label} positions managed by OnSpot Global. Updated in real time — apply before they fill.`
-                : "Browse every open role managed by OnSpot Global. Roles are updated in real time — apply before they fill."}
+                ? `Showing ${navGroup.label} positions managed by OnSpot. Updated in real time — apply before they fill.`
+                : "Browse every open role managed by OnSpot. Roles are updated in real time — apply before they fill."}
             </p>
           </motion.div>
 

@@ -53,7 +53,7 @@ const BADGE_ICONS: Record<string, React.ElementType> = {
 // ─── Default / reset state ────────────────────────────────────────────────────
 export const defaultFormData = {
   title: "",
-  company: "OnSpot Global",
+  company: "OnSpot",
   location: "Remote",
   category: "support",
   contractType: "full-time",
@@ -96,7 +96,7 @@ export type JobFormData = typeof defaultFormData;
 export function jobToFormData(job: Job): JobFormData {
   return {
     title: job.title || "",
-    company: job.company || "OnSpot Global",
+    company: job.company || "OnSpot",
     location: job.location || "Remote",
     category: job.category || "support",
     contractType: job.contractType || "full-time",
@@ -233,7 +233,7 @@ export function JobFormModal({ open, onClose, job, onSuccess }: JobFormModalProp
 
     const payload: any = {
       title: formData.title.trim(),
-      company: formData.company.trim() || "OnSpot Global",
+      company: formData.company.trim() || "OnSpot",
       location: formData.location,
       category: formData.category,
       contractType: formData.contractType,
@@ -350,7 +350,7 @@ export function JobFormModal({ open, onClose, job, onSuccess }: JobFormModalProp
                   id="modal-company"
                   value={formData.company}
                   onChange={(e) => updateField("company", e.target.value)}
-                  placeholder="OnSpot Global"
+                  placeholder="OnSpot"
                 />
               </div>
             </div>

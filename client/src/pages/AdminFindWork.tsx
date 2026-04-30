@@ -841,7 +841,7 @@ export default function AdminFindWork() {
               </h3>
               <p className="mb-6 max-w-xs text-slate-500 dark:text-slate-400">
                 Create your first job posting to start attracting talent to
-                OnSpot Global.
+                OnSpot.
               </p>
               <Button
                 onClick={openCreate}
