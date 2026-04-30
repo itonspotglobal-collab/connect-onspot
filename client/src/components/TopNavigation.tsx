@@ -330,6 +330,7 @@ const whyOnSpotSections = {
 
 const navigationItems = [
   { title: "Hire Talent", path: "/hire-talent" },
+  { title: "Talent Pool", path: "/talent-pool" },
   {
     title: "Find Work",
     path: "/find-work",

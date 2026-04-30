@@ -62,6 +62,7 @@ import ResourcedServicesPage from "@/pages/ResourcedServicesPage";
 import EnterpriseServicesPage from "@/pages/EnterpriseServicesPage";
 import HumanVirtualAssistantPage from "@/pages/HumanVirtualAssistantPage";
 import HireTalentPage from "@/pages/HireTalentPage";
+import TalentPool from "@/pages/TalentPool";
 
 // Immersive Page Wrapper - Full screen without navigation (for campaigns and reveals)
 function ImmersivePage() {
@@ -111,6 +112,7 @@ function PublicRouter() {
             return <Home />;
           }} />
           <Route path="/hire-talent" component={HireTalentPage} />
+          <Route path="/talent-pool" component={TalentPool} />
           <Route path="/find-work" component={FindWork} />
           <Route path="/find-best-matches" component={FindBestMatches} />
           <Route path="/find-work/jobs" component={FindWorkAllJobs} />
@@ -194,6 +196,7 @@ function ClientRouter() {
           <Route path="/settings" component={ProfileSettings} />
           {/* Public routes accessible from client dashboard */}
           <Route path="/hire-talent" component={HireTalentPage} />
+          <Route path="/talent-pool" component={TalentPool} />
           <Route path="/find-work" component={FindWork} />
           <Route path="/find-best-matches" component={FindBestMatches} />
           <Route path="/find-work/jobs" component={FindWorkAllJobs} />
@@ -253,6 +256,7 @@ function AppContent() {
       {/* Public Routes - Always available */}
       <Route path="/" component={PublicRouter} />
       <Route path="/hire-talent" component={PublicRouter} />
+      <Route path="/talent-pool" component={PublicRouter} />
       <Route path="/find-work" component={PublicRouter} />
       <Route path="/find-best-matches" component={PublicRouter} />
       <Route path="/find-work/jobs" component={PublicRouter} />

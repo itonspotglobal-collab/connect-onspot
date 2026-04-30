@@ -1,0 +1,56 @@
+Create a new page inspired by the existing `FindWork.tsx` page, but instead of showing job openings, it should show registered employees from the database.
+
+This should not be a manual admin record creation page. The page should fetch employee accounts that were created when users registered on the site, especially employees who completed the “Find Best Matches” flow. These employee records should include profile details and the attached resume.
+
+The purpose of this page is to help Talent Acquisition users and Clients find the best matching employees based on what they are looking for.
+
+Page name suggestion:
+`FindTalent.tsx` or `TalentPool.tsx`
+
+Requirements:
+
+1. Reuse the layout, styling, and structure of `FindWork.tsx` where applicable.
+2. Replace job opening cards with employee/talent cards.
+3. Fetch employee records from the database through an API.
+4. Display employees who registered and completed their profile.
+5. Show relevant employee details:
+
+   * Full name or candidate code
+   * Desired role
+   * Skills
+   * Years of experience
+   * Location
+   * Work setup preference
+   * Availability status
+   * Profile summary
+   * Resume attachment or resume URL
+6. Add a search/filter section where TA or Client can specify what they are looking for:
+
+   * Role
+   * Skills
+   * Experience level
+   * Location
+   * Work setup
+   * Availability
+7. Display best matches first based on the search criteria.
+8. Add a simple match score or match label, such as:
+
+   * Best Match
+   * Strong Match
+   * Possible Match
+   * Match percentage
+9. Add actions for each employee:
+
+   * View Profile
+   * View Resume
+   * Download Resume
+   * Shortlist
+   * Contact or Request Interview
+10. Add loading, empty, and no-results states.
+11. Apply role-based visibility:
+
+* Talent Acquisition/Admin users can see full details, contact info, and resume.
+* Clients can see limited candidate information depending on permission.
+
+12. Keep the code clean, reusable, and consistent with the current React/TypeScript project structure.
+13. If `FindWork.tsx` uses existing hooks, components, API services, routing, or styling patterns, follow the same approach and rename the logic appropriately for employee matching.
