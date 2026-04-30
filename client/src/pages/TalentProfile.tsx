@@ -357,6 +357,7 @@ function EditField({
   multiline = false,
   placeholder,
   canEdit = true,
+  nameMode = false,
 }: {
   label: string;
   value: string;
@@ -364,9 +365,14 @@ function EditField({
   multiline?: boolean;
   placeholder?: string;
   canEdit?: boolean;
+  nameMode?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
+  // Sync draft when the server value changes after a successful save
+  useEffect(() => {
+    if (!editing) setDraft(value);
+  }, [value, editing]);
   function commit() {
     onSave(draft);
     setEditing(false);
@@ -376,6 +382,23 @@ function EditField({
     setEditing(false);
   }
   if (!editing) {
+    if (nameMode) {
+      return (
+        <div className="group flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white md:text-3xl">
+            {value || <span className="text-slate-400">{placeholder ?? "Your name"}</span>}
+          </h1>
+          {canEdit && (
+            <button
+              onClick={() => setEditing(true)}
+              className="invisible shrink-0 rounded p-1 text-slate-400 transition hover:text-[#474ead] group-hover:visible"
+            >
+              <Pencil className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      );
+    }
     return (
       <div className="group flex items-start gap-2">
         <span className="flex-1 text-sm text-slate-700 dark:text-slate-300">
@@ -407,7 +430,7 @@ function EditField({
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder={placeholder}
-          className="h-9 text-sm"
+          className={nameMode ? "h-10 text-xl font-bold" : "h-9 text-sm"}
           autoFocus
         />
       )}
@@ -569,7 +592,9 @@ export default function TalentProfile() {
       return res.json();
     },
     onSuccess: () => {
+      // Invalidate both the individual profile and the talent list so TalentPool reflects changes
       qc.invalidateQueries({ queryKey: ["/api/candidates", id] });
+      qc.invalidateQueries({ queryKey: ["/api/candidates"] });
     },
     onError: (err: any) => {
       if (err?.status === 401 || err?.status === 403) {
@@ -684,9 +709,22 @@ export default function TalentProfile() {
           <div className="flex-1 pb-1">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-white md:text-3xl">
-                  {displayName}
-                </h1>
+                {canEdit ? (
+                  <div className="group flex items-center gap-2">
+                    <EditField
+                      label="Full Name"
+                      value={candidate.fullName || ""}
+                      placeholder="Your full name"
+                      onSave={(v) => save("fullName", v.trim() || candidate.fullName || "")}
+                      canEdit={canEdit}
+                      nameMode
+                    />
+                  </div>
+                ) : (
+                  <h1 className="text-2xl font-bold text-slate-900 dark:text-white md:text-3xl">
+                    {displayName}
+                  </h1>
+                )}
                 <div className="mt-1 min-h-[1.5rem]">
                   <EditField
                     label="Headline"

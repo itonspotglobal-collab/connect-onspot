@@ -1,0 +1,183 @@
+Update the Talent Profile and Find Talent integration.
+
+Current issue:
+
+* The Talent Profile Page now allows profile photo changes.
+* However, the updated profile photo and talent name are not showing on the Find Talent page.
+* The Find Talent page is still showing fallback initials/candidate code instead of the updated name and uploaded photo.
+* Also, the talent should be able to update their name from their own Profile Page.
+
+Main requirements:
+
+1. Allow the profile owner to edit their name.
+2. Connect Talent Profile changes to the Find Talent page.
+3. Make sure the Find Talent talent cards display the latest saved profile name and profile photo from the database.
+
+Authentication rule:
+
+* Only the profile owner can edit the profile.
+* Continue using the existing authentication system only for the Talent Profile edit flow.
+* Do not enable authentication globally yet.
+* Other pages should remain accessible during development.
+
+Feature 1: Editable Name on Talent Profile Page
+
+Add support for editing the talent’s display name or full name from the Talent Profile Page.
+
+Requirements:
+
+1. Add the name field to the editable profile form.
+2. The owner should be able to update:
+
+   * first name
+   * last name
+   * or full name/display name, depending on the existing data model.
+3. If the project currently uses candidate code as fallback, keep that only as fallback.
+4. Once the name is saved, update the database.
+5. Refresh the profile page state after saving so the updated name appears immediately.
+6. The update endpoint must validate ownership before saving.
+7. Do not allow non-owners to edit the name.
+
+Suggested fields:
+
+```ts
+firstName?: string;
+lastName?: string;
+fullName?: string;
+displayName?: string;
+profilePhotoUrl?: string;
+```
+
+Recommended display priority:
+
+```ts
+const talentDisplayName =
+  talent.fullName ||
+  talent.displayName ||
+  [talent.firstName, talent.lastName].filter(Boolean).join(" ") ||
+  `Candidate ${talent.candidateCode}`;
+```
+
+Feature 2: Show Updated Name and Photo in Find Talent Page
+
+Update the Find Talent page so it displays the saved profile name and profile photo from the database.
+
+Requirements:
+
+1. Update the employee/talent list API response to include:
+
+   * profile photo URL
+   * full name or display name
+   * first name
+   * last name
+   * candidate code fallback
+2. Update the frontend talent card mapping so it uses the same display name logic as the Talent Profile Page.
+3. Update the talent card avatar logic:
+
+   * If `profilePhotoUrl` exists, show the uploaded photo.
+   * If no photo exists, show initials from the talent’s name.
+   * If no name exists, show initials from candidate code.
+4. Remove any hardcoded fallback that always shows `Candidate DB1DE6` when a real name exists.
+5. Ensure the card updates after returning from the Talent Profile Page.
+6. If data is cached, invalidate/refetch the talent list after profile updates.
+7. Make sure the Quick View modal also shows the latest name and profile photo.
+
+Suggested display logic:
+
+```ts
+const getTalentDisplayName = (talent) => {
+  const fullName =
+    talent.fullName ||
+    talent.displayName ||
+    [talent.firstName, talent.lastName].filter(Boolean).join(" ");
+
+  return fullName?.trim() || `Candidate ${talent.candidateCode}`;
+};
+
+const getTalentInitials = (talent) => {
+  const name = getTalentDisplayName(talent);
+
+  if (name.startsWith("Candidate")) {
+    return talent.candidateCode?.slice(0, 2)?.toUpperCase() || "TA";
+  }
+
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+};
+```
+
+Suggested avatar logic:
+
+```tsx
+{talent.profilePhotoUrl ? (
+  <img
+    src={talent.profilePhotoUrl}
+    alt={getTalentDisplayName(talent)}
+    className="talent-avatar-image"
+  />
+) : (
+  <div className="talent-avatar-fallback">
+    {getTalentInitials(talent)}
+  </div>
+)}
+```
+
+Feature 3: Backend/API Integration
+
+Make sure the backend sends the updated fields to both pages.
+
+Requirements:
+
+1. Talent Profile API should return:
+
+   * user/profile ID
+   * profile owner ID
+   * first name
+   * last name
+   * full name/display name
+   * profile photo URL
+   * other profile details
+2. Find Talent list API should also return:
+
+   * first name
+   * last name
+   * full name/display name
+   * profile photo URL
+   * candidate code
+   * match score
+   * skills
+   * experience
+   * location
+   * work setup
+3. Profile update API should allow the owner to update name fields and profile photo.
+4. After updating the profile, return the updated talent profile object from the API.
+5. Do not return password or sensitive auth fields in any profile/list API response.
+
+Feature 4: State Refresh
+
+Fix the issue where Find Talent does not show the latest profile changes.
+
+Requirements:
+
+1. After saving name or profile photo on the Talent Profile Page, update local state immediately.
+2. When navigating back to Find Talent, refetch the talent list.
+3. If React Query/SWR is used, invalidate the talent list query.
+4. If local state/context is used, update the cached talent record there.
+5. Avoid stale fallback values from previous data.
+
+Expected result:
+
+* Talent owner can edit their name from the Profile Page.
+* Updated name appears immediately on the Talent Profile Page.
+* Updated name appears on the Find Talent page card.
+* Uploaded profile photo appears on the Talent Profile Page.
+* Uploaded profile photo also appears on the Find Talent page card.
+* If no photo exists, initials are shown.
+* If no name exists, candidate code is used as fallback.
+* Only the owner can edit name and profile photo.
+* Other pages remain unauthenticated during development.

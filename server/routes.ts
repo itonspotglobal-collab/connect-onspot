@@ -3512,10 +3512,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Strip sensitive auth fields before sending candidate data to clients
+  function sanitizeCandidate(c: any) {
+    const { passwordHash: _ph, ...safe } = c;
+    return safe;
+  }
+
   app.get("/api/candidates", async (req, res) => {
     try {
       const candidates = await storage.getCandidates();
-      res.json(candidates);
+      res.json(candidates.map(sanitizeCandidate));
     } catch (error) {
       console.error("GET /api/candidates error:", error);
       res.status(500).json({ error: "Failed to fetch candidates" });
@@ -3526,7 +3532,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const candidate = await storage.getCandidate(req.params.id);
       if (!candidate) return res.status(404).json({ error: "Candidate not found" });
-      res.json(candidate);
+      res.json(sanitizeCandidate(candidate));
     } catch (error) {
       console.error("GET /api/candidates/:id error:", error);
       res.status(500).json({ error: "Failed to fetch candidate" });
@@ -3560,7 +3566,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { passwordHash: _stripped, ...safeBody } = req.body;
       const updated = await storage.updateCandidate(profileId, safeBody);
       if (!updated) return res.status(404).json({ error: "Candidate not found" });
-      res.json(updated);
+      res.json(sanitizeCandidate(updated));
     } catch (error) {
       console.error("PATCH /api/candidates/:id error:", error);
       res.status(500).json({ error: "Failed to update candidate" });

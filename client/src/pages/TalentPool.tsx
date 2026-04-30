@@ -49,8 +49,27 @@ function candidatePhotoSrc(url: string | null | undefined): string {
   return url;
 }
 
-function candidateInitials(name: string) {
-  return name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
+function getTalentDisplayName(candidate: Candidate, canSeeContact: boolean): string {
+  if (canSeeContact) {
+    const name = candidate.fullName?.trim();
+    if (name) return name;
+  }
+  const shortId = (candidate.id ?? "").slice(0, 6).toUpperCase();
+  return `Candidate ${shortId || "—"}`;
+}
+
+function candidateInitials(candidate: Candidate, canSeeContact: boolean): string {
+  const name = getTalentDisplayName(candidate, canSeeContact);
+  if (name.startsWith("Candidate ")) {
+    const code = name.replace("Candidate ", "");
+    return code.slice(0, 2).toUpperCase() || "TA";
+  }
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("") || "TA";
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -238,7 +257,7 @@ function ProfileModal({
           </div>
 
           <h2 className="relative text-2xl font-bold leading-tight text-white md:text-[28px]">
-            {canSeeContact ? candidate.fullName : `Candidate ${candidate.id.slice(0, 6).toUpperCase()}`}
+            {getTalentDisplayName(candidate, canSeeContact)}
           </h2>
           <p className="mt-1.5 text-sm text-slate-400">{candidate.targetPosition}</p>
 
@@ -477,10 +496,8 @@ function TalentCard({
   const displaySkills = allSkills.slice(0, 4);
   const prefs = candidate.preferences as Record<string, string> | null;
   const workSetup = prefs?.workSetup ?? prefs?.setup ?? null;
-  const displayName = canSeeContact
-    ? candidate.fullName || "Unnamed Candidate"
-    : `Candidate ${candidate.id.slice(0, 6).toUpperCase()}`;
-  const photoUrl = candidatePhotoSrc((candidate as any).profilePhotoUrl);
+  const displayName = getTalentDisplayName(candidate, canSeeContact);
+  const photoUrl = candidatePhotoSrc(candidate.profilePhotoUrl);
 
   return (
     <motion.div
@@ -498,7 +515,7 @@ function TalentCard({
               <Avatar className="h-11 w-11 shrink-0 rounded-full border border-slate-200 dark:border-white/10">
                 <AvatarImage src={photoUrl} alt={displayName} className="rounded-full object-cover" />
                 <AvatarFallback className="rounded-full bg-[#474ead]/10 text-sm font-semibold text-[#474ead]">
-                  {candidateInitials(candidate.fullName || "?")}
+                  {candidateInitials(candidate, canSeeContact)}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
@@ -662,7 +679,7 @@ export default function TalentPool() {
     return () => clearTimeout(timer);
   }, [searchQuery, activeCategory]);
 
-  // Fetch candidates
+  // Fetch candidates — always refetch when page gains focus so profile edits reflect immediately
   const { data: candidates = [], isLoading, isError } = useQuery<Candidate[]>({
     queryKey: ["/api/candidates"],
     queryFn: async () => {
@@ -670,7 +687,8 @@ export default function TalentPool() {
       if (!res.ok) throw new Error("Failed to fetch candidates");
       return res.json();
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   // Only show candidates who have at least completed their basic profile
