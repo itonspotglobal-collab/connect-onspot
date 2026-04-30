@@ -647,7 +647,8 @@ export default function TalentProfile() {
   const education = (candidate.education ?? []) as EduEntry[];
   const certifications = (candidate.certifications ?? []) as CertEntry[];
   const allSkills = [...(candidate.coreSkills ?? []), ...(candidate.secondarySkills ?? [])];
-  const displayName = (canSeeContact || isOwner) ? candidate.fullName || "Unnamed" : `Candidate ${candidate.id.slice(0, 6).toUpperCase()}`;
+  // Always show the real name; fall back to "Candidate XXXXXX" only when no name is saved
+  const displayName = candidate.fullName?.trim() || `Candidate ${(candidate.id ?? "").slice(0, 6).toUpperCase()}`;
   const displayPhoto = localPhoto || candidate.profilePhotoUrl;
   const photoUrl = photoSrc(displayPhoto);
   const completion = completionItems(candidate);

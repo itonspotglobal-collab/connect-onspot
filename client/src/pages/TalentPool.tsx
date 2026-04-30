@@ -49,27 +49,28 @@ function candidatePhotoSrc(url: string | null | undefined): string {
   return url;
 }
 
-function getTalentDisplayName(candidate: Candidate, canSeeContact: boolean): string {
-  if (canSeeContact) {
-    const name = candidate.fullName?.trim();
-    if (name) return name;
-  }
+// Always shows the real saved name; only falls back to "Candidate XXXXXX" when no name exists
+function getTalentDisplayName(candidate: Candidate): string {
+  const name = candidate.fullName?.trim();
+  if (name) return name;
   const shortId = (candidate.id ?? "").slice(0, 6).toUpperCase();
   return `Candidate ${shortId || "—"}`;
 }
 
-function candidateInitials(candidate: Candidate, canSeeContact: boolean): string {
-  const name = getTalentDisplayName(candidate, canSeeContact);
+function getTalentInitials(candidate: Candidate): string {
+  const name = getTalentDisplayName(candidate);
   if (name.startsWith("Candidate ")) {
     const code = name.replace("Candidate ", "");
     return code.slice(0, 2).toUpperCase() || "TA";
   }
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
-    .join("") || "TA";
+  return (
+    name
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0].toUpperCase())
+      .join("") || "TA"
+  );
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -257,7 +258,7 @@ function ProfileModal({
           </div>
 
           <h2 className="relative text-2xl font-bold leading-tight text-white md:text-[28px]">
-            {getTalentDisplayName(candidate, canSeeContact)}
+            {getTalentDisplayName(candidate)}
           </h2>
           <p className="mt-1.5 text-sm text-slate-400">{candidate.targetPosition}</p>
 
@@ -496,7 +497,7 @@ function TalentCard({
   const displaySkills = allSkills.slice(0, 4);
   const prefs = candidate.preferences as Record<string, string> | null;
   const workSetup = prefs?.workSetup ?? prefs?.setup ?? null;
-  const displayName = getTalentDisplayName(candidate, canSeeContact);
+  const displayName = getTalentDisplayName(candidate);
   const photoUrl = candidatePhotoSrc(candidate.profilePhotoUrl);
 
   return (
@@ -515,7 +516,7 @@ function TalentCard({
               <Avatar className="h-11 w-11 shrink-0 rounded-full border border-slate-200 dark:border-white/10">
                 <AvatarImage src={photoUrl} alt={displayName} className="rounded-full object-cover" />
                 <AvatarFallback className="rounded-full bg-[#474ead]/10 text-sm font-semibold text-[#474ead]">
-                  {candidateInitials(candidate, canSeeContact)}
+                  {getTalentInitials(candidate)}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">

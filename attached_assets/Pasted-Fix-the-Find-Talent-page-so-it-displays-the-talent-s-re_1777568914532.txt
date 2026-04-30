@@ -1,0 +1,118 @@
+Fix the Find Talent page so it displays the talent’s real saved name instead of always showing the candidate fallback name like `Candidate DB1BE6`.
+
+Current issue:
+
+* The Talent Profile Page has the talent’s profile photo and profile information.
+* The Find Talent page is showing the profile photo correctly.
+* However, the talent name is still displayed as `Candidate DB1BE6`.
+* It should display the real saved name of the talent when available.
+* Candidate code should only be used as fallback when no real name exists.
+
+Expected behavior:
+
+1. If the talent has a saved full name, display the full name.
+2. If there is no full name, display first name + last name.
+3. If there is no first name or last name, display display name.
+4. If no name exists at all, only then display `Candidate {candidateCode}`.
+5. The same display name logic should be used in:
+
+   * Find Talent card
+   * Quick View modal
+   * Full Talent Profile page
+   * Any shortlist display
+
+Recommended display priority:
+
+```ts
+const getTalentDisplayName = (talent) => {
+  const name =
+    talent.fullName ||
+    [talent.firstName, talent.lastName].filter(Boolean).join(" ") ||
+    talent.displayName ||
+    talent.name ||
+    talent.user?.fullName ||
+    [talent.user?.firstName, talent.user?.lastName].filter(Boolean).join(" ") ||
+    talent.profile?.fullName ||
+    [talent.profile?.firstName, talent.profile?.lastName].filter(Boolean).join(" ");
+
+  return name?.trim() || `Candidate ${talent.candidateCode}`;
+};
+```
+
+Important:
+
+* Do not hardcode `Candidate ${candidateCode}` as the primary name.
+* Use it only as the final fallback.
+
+Frontend requirements:
+
+1. Find the Talent Pool card component in `TalentPool.tsx`.
+2. Locate the heading currently rendering:
+
+```tsx
+<h3>Candidate {candidateCode}</h3>
+```
+
+or similar.
+3. Replace it with:
+
+```tsx
+<h3>{getTalentDisplayName(talent)}</h3>
+```
+
+4. Also update the avatar initials logic to use the real name first.
+5. Update Quick View modal and Full Profile button data mapping to use the same helper.
+6. Avoid duplicating different name logic in multiple places. Create a shared helper if possible:
+
+   * `getTalentDisplayName`
+   * `getTalentInitials`
+
+Backend/API requirements:
+
+1. Check the API used by the Find Talent page.
+2. Make sure the talent list response includes the saved name fields.
+3. Include any available name data from the related user/profile table:
+
+   * `fullName`
+   * `firstName`
+   * `lastName`
+   * `displayName`
+   * `name`
+   * `user.fullName`
+   * `user.firstName`
+   * `user.lastName`
+4. If the name is stored in a related table, update the query/include/join so Find Talent receives it.
+5. Do not return password or sensitive authentication fields.
+6. Make sure the response still includes:
+
+   * candidateCode
+   * profilePhotoUrl
+   * role/headline
+   * skills
+   * experience
+   * location
+   * work setup
+   * match score
+
+Possible source of the bug:
+The Talent Profile page may be reading the profile from one endpoint, while the Find Talent page uses a talent list endpoint that only returns `candidateCode`. Update the talent list endpoint to include the same profile name fields.
+
+Debugging instructions:
+
+1. Add a temporary console log in the Find Talent page:
+
+```ts
+console.log("Talent card data:", talent);
+```
+
+2. Check whether the returned talent object contains real name fields.
+3. If the object contains the real name, fix the frontend display logic.
+4. If the object does not contain the real name, fix the backend API response or database query.
+5. Remove the temporary console log after fixing.
+
+Expected result:
+
+* The Find Talent card should display the real talent name.
+* `Candidate DB1BE6` should only appear when the talent has no saved name.
+* The uploaded profile photo should continue to display.
+* The Talent Profile page and Find Talent card should show consistent identity information.
