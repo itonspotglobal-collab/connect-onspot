@@ -1,0 +1,202 @@
+Enhance the Talent Pool / Find Talent feature by adding employee profile photos and a dedicated Talent Profile Page inspired by LinkedIn.
+
+Current context:
+
+* We already have a Talent Pool / Find Talent page that displays registered employees from the database.
+* Employee records are created when users register and complete their profile setup manually or through the “Find Best Matches” flow.
+* The page currently shows candidate details, match score, skills, preferences, resume, and profile details.
+* The next improvement is to make talent profiles more personal and professional by adding profile photos and a full profile page.
+
+Feature 1: Employee Profile Photo
+
+Add support for uploading and displaying a profile photo for each employee/talent.
+
+Requirements:
+
+1. Add a profile photo field to the employee/talent profile data.
+
+   * Example field names:
+
+     * `profilePhotoUrl`
+     * `avatarUrl`
+     * `profileImage`
+2. Allow employees to upload or update their profile photo during profile setup.
+3. Allow employees to update their profile photo from their Talent Profile Page.
+4. Display the profile photo on:
+
+   * Talent Pool employee cards
+   * Employee details modal
+   * Talent Profile Page
+5. If no profile photo is uploaded, show a fallback avatar using:
+
+   * employee initials
+   * default avatar icon
+   * candidate code initials
+6. Validate uploads:
+
+   * allow image files only: JPG, PNG, WEBP
+   * set maximum file size
+   * show error message for invalid files
+7. Store the uploaded image using the existing project file upload/storage pattern.
+8. Save the uploaded image URL or path in the employee profile record.
+9. Keep the UI responsive and consistent with the current design.
+
+Feature 2: Talent Profile Page
+
+Create a dedicated profile page for each employee/talent, inspired by LinkedIn.
+
+Suggested page name:
+`TalentProfile.tsx`
+
+Suggested route examples:
+
+* `/talents/:id`
+* `/talent-profile/:id`
+* `/profile/talent/:id`
+
+The Talent Profile Page should allow employees to personalize their profile after completing setup manually or through the Find Best Matches page.
+
+The profile page should include these sections:
+
+1. Profile Header
+
+   * cover/banner area
+   * profile photo
+   * full name or candidate display name
+   * current title or desired role
+   * location
+   * work setup preference
+   * availability status
+   * match badge if viewed from Talent Pool
+   * resume button
+   * edit profile button if the logged-in user owns the profile
+
+2. About / Profile Summary
+
+   * professional summary
+   * career objective
+   * short introduction
+
+3. Skills
+
+   * core skills
+   * secondary skills
+   * tools and technologies
+   * skill tags
+
+4. Experience
+
+   * job title
+   * company name
+   * employment duration
+   * work setup
+   * responsibilities or achievements
+
+5. Education
+
+   * school name
+   * degree/course
+   * year graduated or attendance dates
+
+6. Certifications
+
+   * certificate name
+   * issuing organization
+   * issue date
+   * certificate link if available
+
+7. Resume
+
+   * uploaded resume file
+   * view resume
+   * download resume
+   * replace resume if owner/admin
+
+8. Preferences
+
+   * desired role
+   * preferred work setup
+   * preferred schedule
+   * expected salary range if applicable
+   * availability
+
+9. Portfolio / Links
+
+   * LinkedIn URL
+   * GitHub URL
+   * portfolio URL
+   * personal website
+   * other relevant links
+
+10. Contact Visibility
+
+* Talent Acquisition/Admin users can see full contact details.
+* Clients should only see limited contact details depending on permission.
+* Public or unauthorized users should not see sensitive information.
+
+11. Profile Completion Indicator
+
+* show profile completion percentage
+* suggest missing sections such as photo, resume, skills, experience, or summary
+
+12. Edit Profile Mode
+
+* allow the employee to update:
+
+  * profile photo
+  * cover photo
+  * headline/title
+  * location
+  * summary
+  * skills
+  * experience
+  * education
+  * certifications
+  * resume
+  * portfolio links
+  * preferences
+* allow inline editing or modal-based editing
+* save changes to the database
+
+Feature 3: Talent Pool Integration
+
+Update the existing Talent Pool / Find Talent page to use the new profile photo and profile page.
+
+Requirements:
+
+1. Show the talent profile photo on each employee card.
+2. If no uploaded photo exists, show a fallback avatar.
+3. Update the “View Profile” button so it navigates to the new Talent Profile Page.
+4. Keep the existing details modal if needed, but the full profile page should be the main profile view.
+5. The card should still show:
+
+   * match label or match percentage
+   * desired role
+   * experience
+   * location
+   * work setup
+   * skills
+   * summary
+   * shortlist button
+6. Add route handling for the new Talent Profile Page.
+7. Make sure the page works for both Talent Acquisition users and Clients, with correct role-based visibility.
+
+Design inspiration:
+
+* Take inspiration from LinkedIn’s profile layout.
+* Include a large cover/banner section.
+* Show the profile photo overlapping the banner and profile header.
+* Include clean profile sections in cards.
+* Use edit icons/buttons for editable sections.
+* Keep the design consistent with the current app’s branding and existing Talent Pool page.
+
+Expected output:
+
+* Updated Talent Pool / Find Talent card UI with profile photo
+* New Talent Profile Page component
+* Profile photo upload/update UI
+* Data model/interface updates for profile photo and profile page fields
+* API integration for fetching and updating talent profile data
+* Route setup for viewing a talent profile
+* Loading, empty, error, and unauthorized states
+* Clean and reusable React/TypeScript code consistent with the existing project structure

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -27,16 +28,30 @@ import {
   ShieldCheck,
   Eye,
   EyeOff,
+  ExternalLink,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAdmin, isClient } from "@/lib/authUtils";
 import type { Candidate } from "@shared/schema";
 import { saveUserActivity } from "@/lib/userActivityMemory";
+
+function candidatePhotoSrc(url: string | null | undefined): string {
+  if (!url) return "";
+  if (url.startsWith("/objects/candidate-photos/")) {
+    return url.replace("/objects/candidate-photos/", "/api/candidate-photos/");
+  }
+  return url;
+}
+
+function candidateInitials(name: string) {
+  return name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -456,11 +471,16 @@ function TalentCard({
   onToggleShortlist: (id: string) => void;
   canSeeContact: boolean;
 }) {
+  const [, navigate] = useLocation();
   const { candidate } = result;
   const allSkills = [...(candidate.coreSkills ?? []), ...(candidate.secondarySkills ?? [])];
   const displaySkills = allSkills.slice(0, 4);
   const prefs = candidate.preferences as Record<string, string> | null;
   const workSetup = prefs?.workSetup ?? prefs?.setup ?? null;
+  const displayName = canSeeContact
+    ? candidate.fullName || "Unnamed Candidate"
+    : `Candidate ${candidate.id.slice(0, 6).toUpperCase()}`;
+  const photoUrl = candidatePhotoSrc((candidate as any).profilePhotoUrl);
 
   return (
     <motion.div
@@ -473,27 +493,34 @@ function TalentCard({
         <CardContent className="flex flex-1 flex-col p-6">
           {/* Header */}
           <div className="mb-4 flex items-start justify-between gap-3">
-            <div className="flex-1">
-              {/* Match label */}
-              <div className="mb-2 flex flex-wrap items-center gap-1.5">
-                {result.label && (
-                  <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${LABEL_COLORS[result.label]}`}>
-                    {result.label}
-                  </span>
-                )}
-                {candidate.cultureScore != null && (
-                  <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                    {candidate.cultureScore}% values fit
-                  </span>
-                )}
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              {/* Avatar */}
+              <Avatar className="h-11 w-11 shrink-0 rounded-full border border-slate-200 dark:border-white/10">
+                <AvatarImage src={photoUrl} alt={displayName} className="rounded-full object-cover" />
+                <AvatarFallback className="rounded-full bg-[#474ead]/10 text-sm font-semibold text-[#474ead]">
+                  {candidateInitials(candidate.fullName || "?")}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                {/* Match label */}
+                <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
+                  {result.label && (
+                    <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${LABEL_COLORS[result.label]}`}>
+                      {result.label}
+                    </span>
+                  )}
+                  {candidate.cultureScore != null && (
+                    <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                      {candidate.cultureScore}% values fit
+                    </span>
+                  )}
+                </div>
+                {/* Name / Position */}
+                <h3 className="text-base font-semibold leading-snug text-slate-900 dark:text-white">
+                  {displayName}
+                </h3>
+                <p className="mt-0.5 text-sm text-slate-500">{candidate.targetPosition || "Open to Opportunities"}</p>
               </div>
-              {/* Name / Position */}
-              <h3 className="text-lg font-semibold leading-snug text-slate-900 dark:text-white">
-                {canSeeContact
-                  ? candidate.fullName || "Unnamed Candidate"
-                  : `Candidate ${candidate.id.slice(0, 6).toUpperCase()}`}
-              </h3>
-              <p className="mt-0.5 text-sm text-slate-500">{candidate.targetPosition || "Open to Opportunities"}</p>
             </div>
 
             {/* Shortlist toggle */}
@@ -577,18 +604,18 @@ function TalentCard({
           )}
 
           {/* Actions */}
-          <div className="mt-5 flex items-center justify-between gap-3 pt-1">
+          <div className="mt-5 flex flex-wrap items-center gap-2 pt-1">
             <Button
-              className="rounded-full bg-[#474ead] px-5 text-white hover:bg-[#3d439c]"
-              onClick={() => onViewProfile(result)}
+              className="rounded-full bg-[#474ead] px-5 text-white"
+              onClick={() => navigate(`/talent-profile/${candidate.id}`)}
             >
-              View Profile
+              <ExternalLink className="mr-1.5 h-4 w-4" /> Full Profile
             </Button>
             <button
               onClick={() => onViewProfile(result)}
               className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition-colors hover:text-[#474ead] dark:text-slate-300"
             >
-              Details <ChevronRight className="h-4 w-4" />
+              Quick View <ChevronRight className="h-4 w-4" />
             </button>
           </div>
         </CardContent>

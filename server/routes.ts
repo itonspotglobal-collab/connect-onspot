@@ -3406,6 +3406,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/candidates/:id/photo — Upload profile photo (no auth in test-mode)
+  app.post("/api/candidates/:id/photo", upload.single("photo"), async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const file = req.file;
+      if (!file) return res.status(400).json({ error: "No file uploaded" });
+
+      const allowedMimes = ["image/jpeg", "image/png", "image/webp"];
+      if (!allowedMimes.includes(file.mimetype)) {
+        return res.status(400).json({ error: "Only JPG, PNG, and WEBP images are allowed" });
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        return res.status(400).json({ error: "File too large — max 5 MB" });
+      }
+
+      const objectStorageService = new ObjectStorageService();
+      const objectId = randomUUID();
+      const ext = file.mimetype === "image/png" ? "png" : file.mimetype === "image/webp" ? "webp" : "jpg";
+      const privateObjectDir = objectStorageService.getPrivateObjectDir();
+      const fullPath = `${privateObjectDir}/candidate-photos/${objectId}.${ext}`;
+      const parts = fullPath.split("/").filter((p: string) => p);
+      const bucketName = parts[0];
+      const objectName = parts.slice(1).join("/");
+
+      const bucket = objectStorageClient.bucket(bucketName);
+      const objectFile = bucket.file(objectName);
+      await objectFile.save(file.buffer, {
+        metadata: { contentType: file.mimetype },
+      });
+      await setObjectAclPolicy(objectFile, { visibility: "public" });
+
+      const photoUrl = `/objects/candidate-photos/${objectId}.${ext}`;
+      await storage.updateCandidate(id, { profilePhotoUrl: photoUrl } as any);
+
+      res.json({ success: true, profilePhotoUrl: photoUrl });
+    } catch (error: any) {
+      console.error("POST /api/candidates/:id/photo error:", error);
+      res.status(500).json({ error: "Failed to upload photo" });
+    }
+  });
+
+  // GET /api/candidate-photos/:path(*) — Publicly serve candidate profile photos
+  app.get("/api/candidate-photos/:photoPath(*)", async (req: any, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const canonicalPath = `/objects/candidate-photos/${req.params.photoPath}`;
+      const objectFile = await objectStorageService.getObjectEntityFile(canonicalPath);
+      await objectStorageService.downloadObject(objectFile, res, 86400);
+    } catch (error: any) {
+      if (error.name === "ObjectNotFoundError") return res.status(404).send("Not found");
+      console.error("GET /api/candidate-photos error:", error);
+      res.status(500).send("Error serving photo");
+    }
+  });
+
+  // POST /api/candidates/:id/resume — Upload or replace resume (no auth in test-mode)
+  app.post("/api/candidates/:id/resume", upload.single("resume"), async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const file = req.file;
+      if (!file) return res.status(400).json({ error: "No file uploaded" });
+
+      const allowedMimes = [
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ];
+      if (!allowedMimes.includes(file.mimetype)) {
+        return res.status(400).json({ error: "Only PDF or Word documents are allowed" });
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        return res.status(400).json({ error: "File too large — max 10 MB" });
+      }
+
+      const objectStorageService = new ObjectStorageService();
+      const objectId = randomUUID();
+      const privateObjectDir = objectStorageService.getPrivateObjectDir();
+      const fullPath = `${privateObjectDir}/candidate-resumes/${objectId}`;
+      const parts = fullPath.split("/").filter((p: string) => p);
+      const bucketName = parts[0];
+      const objectName = parts.slice(1).join("/");
+
+      const bucket = objectStorageClient.bucket(bucketName);
+      const objectFile = bucket.file(objectName);
+      await objectFile.save(file.buffer, {
+        metadata: { contentType: file.mimetype, metadata: { originalName: file.originalname } },
+      });
+      await setObjectAclPolicy(objectFile, { visibility: "private" });
+
+      const resumeUrl = `/objects/candidate-resumes/${objectId}`;
+      await storage.updateCandidate(id, { resumeUrl, resumeFileName: file.originalname } as any);
+
+      res.json({ success: true, resumeUrl, resumeFileName: file.originalname });
+    } catch (error: any) {
+      console.error("POST /api/candidates/:id/resume error:", error);
+      res.status(500).json({ error: "Failed to upload resume" });
+    }
+  });
+
   // ==================== CULTURE EVALUATIONS ====================
 
   /**

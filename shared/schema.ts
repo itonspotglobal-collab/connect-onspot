@@ -1023,6 +1023,23 @@ export const candidates = pgTable("candidates", {
   profileCompleted: boolean("profile_completed").default(false),
   accountCreated: boolean("account_created").default(false),
   cultureScore: integer("culture_score"),
+  // Profile photo & media
+  profilePhotoUrl: text("profile_photo_url"),
+  // Resume
+  resumeUrl: text("resume_url"),
+  resumeFileName: text("resume_file_name"),
+  // Professional headline
+  headline: text("headline"),
+  // Portfolio / Social links
+  linkedinUrl: text("linkedin_url"),
+  githubUrl: text("github_url"),
+  portfolioUrl: text("portfolio_url"),
+  websiteUrl: text("website_url"),
+  // Availability
+  availability: text("availability"),
+  // Education & Certifications (jsonb arrays)
+  education: jsonb("education").default([]),
+  certifications: jsonb("certifications").default([]),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
