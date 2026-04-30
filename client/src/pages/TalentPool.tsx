@@ -50,8 +50,9 @@ function candidatePhotoSrc(url: string | null | undefined): string {
 }
 
 // Always shows the real saved name; only falls back to "Candidate XXXXXX" when no name exists
+// Priority: displayName (custom public name) → fullName (registered name) → id fallback
 function getTalentDisplayName(candidate: Candidate): string {
-  const name = candidate.fullName?.trim();
+  const name = (candidate.displayName?.trim()) || (candidate.fullName?.trim());
   if (name) return name;
   const shortId = (candidate.id ?? "").slice(0, 6).toUpperCase();
   return `Candidate ${shortId || "—"}`;

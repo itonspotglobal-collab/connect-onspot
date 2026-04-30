@@ -1,0 +1,125 @@
+Update the Talent Profile Page so the talent’s name is clearly displayed in the profile header and can be edited by the profile owner.
+
+Current issue:
+
+* The Talent Profile Page does not clearly display the talent’s name in the main header area.
+* The talent should be able to customize how their name appears publicly.
+* Example: the registered full name may be `Frenzy Val Eloise Legaspi`, but the talent may want the displayed name to be `Frenzy Val Legaspi`.
+
+Main requirement:
+Add an editable display name field for the Talent Profile Page.
+
+Expected behavior:
+
+1. The Talent Profile Page should display the talent’s name prominently near the profile photo, similar to LinkedIn.
+2. The profile owner should be able to edit the displayed name.
+3. The edited name should be saved to the database.
+4. The updated display name should appear on:
+
+   * Talent Profile Page
+   * Find Talent card
+   * Quick View modal
+   * Shortlisted talents list, if applicable
+5. Candidate code should only be used as fallback if no name or display name exists.
+
+Recommended field:
+Use a separate editable field called:
+
+```ts
+displayName
+```
+
+This allows the system to keep the original registered full name while letting the user customize their public-facing profile name.
+
+Example:
+
+```ts
+registeredFullName: "Frenzy Val Eloise Legaspi"
+displayName: "Frenzy Val Legaspi"
+```
+
+Display priority:
+
+```ts
+const talentDisplayName =
+  talent.displayName ||
+  talent.fullName ||
+  [talent.firstName, talent.lastName].filter(Boolean).join(" ") ||
+  `Candidate ${talent.candidateCode}`;
+```
+
+Profile Header UI:
+Add the display name in the Talent Profile header area.
+
+Suggested layout:
+
+```txt
+Cover Banner
+Profile Photo
+
+Frenzy Val Legaspi
+Developer
+Cebu City · Remote · Available
+[Contact] [Resume] [Edit Profile]
+```
+
+Editing behavior:
+
+1. Only the profile owner can edit the display name.
+2. Keep the existing rule that authentication is only required for Talent Profile editing.
+3. Do not enable authentication globally.
+4. When the owner enters edit mode, show an input field for display name.
+5. Add validation:
+
+   * display name is required
+   * trim extra spaces
+   * max length, for example 80 characters
+6. On save, update the profile record in the database.
+7. After successful save, update local profile state immediately.
+8. Refetch or invalidate the Find Talent list so the updated name appears on the card.
+
+Backend/API requirements:
+
+1. Add or expose `displayName` in the talent profile data model/API response.
+2. Allow `displayName` to be updated through the Talent Profile update endpoint.
+3. Protect the update endpoint with the existing auth system.
+4. Verify that the authenticated user owns the profile before saving.
+5. Include `displayName` in the Find Talent list API response.
+6. Do not return passwords or sensitive auth fields.
+
+Frontend requirements:
+
+1. Update `TalentProfile.tsx` to show the display name in the profile header.
+2. Add display name to the editable profile form.
+3. Update `TalentPool.tsx` so the card title uses `displayName` first.
+4. Update Quick View modal to use the same display name helper.
+5. Create or reuse a shared helper like:
+
+```ts
+export const getTalentDisplayName = (talent) => {
+  const name =
+    talent.displayName ||
+    talent.fullName ||
+    [talent.firstName, talent.lastName].filter(Boolean).join(" ") ||
+    talent.user?.displayName ||
+    talent.user?.fullName ||
+    [talent.user?.firstName, talent.user?.lastName].filter(Boolean).join(" ");
+
+  return name?.trim() || `Candidate ${talent.candidateCode}`;
+};
+```
+
+Important:
+
+* Do not overwrite the registered legal/full name unless the existing project only has one name field.
+* Prefer adding `displayName` for public profile display.
+* Use `Candidate ${candidateCode}` only as the final fallback.
+* Make sure the profile page and Find Talent page use the same display name logic.
+
+Expected result:
+
+* Talent Profile Page displays the talent’s name clearly.
+* The owner can edit their public display name.
+* Example: `Frenzy Val Eloise Legaspi` can be displayed as `Frenzy Val Legaspi`.
+* The updated name appears in both the Talent Profile Page and the Find Talent page.
+* Only the profile owner can edit the name.

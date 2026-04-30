@@ -305,7 +305,7 @@ function completionItems(c: Candidate) {
   const edu = (c.education ?? []) as EduEntry[];
   return [
     { label: "Photo", done: !!c.profilePhotoUrl },
-    { label: "Name", done: !!c.fullName },
+    { label: "Name", done: !!(c.displayName || c.fullName) },
     { label: "Headline", done: !!c.headline },
     { label: "Summary", done: !!c.summary },
     { label: "Email", done: !!c.email },
@@ -647,8 +647,11 @@ export default function TalentProfile() {
   const education = (candidate.education ?? []) as EduEntry[];
   const certifications = (candidate.certifications ?? []) as CertEntry[];
   const allSkills = [...(candidate.coreSkills ?? []), ...(candidate.secondarySkills ?? [])];
-  // Always show the real name; fall back to "Candidate XXXXXX" only when no name is saved
-  const displayName = candidate.fullName?.trim() || `Candidate ${(candidate.id ?? "").slice(0, 6).toUpperCase()}`;
+  // Display name priority: displayName (custom public name) → fullName (registered) → fallback
+  const displayName =
+    candidate.displayName?.trim() ||
+    candidate.fullName?.trim() ||
+    `Candidate ${(candidate.id ?? "").slice(0, 6).toUpperCase()}`;
   const displayPhoto = localPhoto || candidate.profilePhotoUrl;
   const photoUrl = photoSrc(displayPhoto);
   const completion = completionItems(candidate);
@@ -675,14 +678,14 @@ export default function TalentProfile() {
 
       {/* ── Profile header ── */}
       <div className="mx-auto max-w-4xl px-4 md:px-8">
-        <div className="-mt-20 flex flex-col gap-4 md:-mt-24 md:flex-row md:items-end">
-          {/* Avatar */}
-          <div className="relative shrink-0">
+        {/* Row 1: Avatar overlapping cover */}
+        <div className="-mt-20 md:-mt-24">
+          <div className="relative inline-block">
             <div className="relative h-32 w-32 rounded-full border-4 border-slate-50 shadow-lg dark:border-[#060816] md:h-36 md:w-36">
               <Avatar className="h-full w-full rounded-full">
                 <AvatarImage src={photoUrl} alt={displayName} className="rounded-full object-cover" />
                 <AvatarFallback className="rounded-full bg-[#474ead] text-3xl font-bold text-white">
-                  {initials(candidate.fullName || "?")}
+                  {initials(displayName)}
                 </AvatarFallback>
               </Avatar>
               {canEdit && talentAuth?.token && (
@@ -705,71 +708,80 @@ export default function TalentProfile() {
               {completionPct}%
             </div>
           </div>
+        </div>
 
-          {/* Name + headline */}
-          <div className="flex-1 pb-1">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                {canEdit ? (
-                  <div className="group flex items-center gap-2">
-                    <EditField
-                      label="Full Name"
-                      value={candidate.fullName || ""}
-                      placeholder="Your full name"
-                      onSave={(v) => save("fullName", v.trim() || candidate.fullName || "")}
-                      canEdit={canEdit}
-                      nameMode
-                    />
-                  </div>
-                ) : (
-                  <h1 className="text-2xl font-bold text-slate-900 dark:text-white md:text-3xl">
-                    {displayName}
-                  </h1>
-                )}
-                <div className="mt-1 min-h-[1.5rem]">
-                  <EditField
-                    label="Headline"
-                    value={candidate.headline ?? ""}
-                    placeholder="e.g. Senior Virtual Assistant | Remote-ready"
-                    onSave={(v) => save("headline", v)}
-                    canEdit={canEdit}
-                  />
-                </div>
-                <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-500">
-                  {candidate.location && (
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-3.5 w-3.5" /> {candidate.location}
-                    </span>
-                  )}
-                  {candidate.availability && (
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5" /> {candidate.availability}
-                    </span>
-                  )}
-                  {pref(prefs, "workSetup") && (
-                    <span className="flex items-center gap-1">
-                      <Globe2 className="h-3.5 w-3.5" /> {pref(prefs, "workSetup")}
-                    </span>
-                  )}
-                </div>
-              </div>
-              {/* Badges */}
-              <div className="flex flex-wrap items-center gap-2">
-                {candidate.seniority && (
-                  <Badge className="rounded-full border-[#474ead]/20 bg-[#474ead]/10 text-[#474ead]">
-                    {candidate.seniority}
-                  </Badge>
-                )}
-                {candidate.cultureScore != null && (
-                  <Badge className="rounded-full border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800/30 dark:bg-emerald-900/20 dark:text-emerald-400">
-                    {candidate.cultureScore}% values fit
-                  </Badge>
-                )}
-              </div>
+        {/* Row 2: Name + meta + action buttons */}
+        <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
+          {/* Left: name, headline, location tags, badges */}
+          <div className="min-w-0">
+            {/* Display name — editable for owner, static otherwise */}
+            {canEdit ? (
+              <EditField
+                label="Display Name"
+                value={candidate.displayName || candidate.fullName || ""}
+                placeholder="How you want your name to appear publicly"
+                onSave={(v) => {
+                  const trimmed = v.trim().slice(0, 80);
+                  if (trimmed) save("displayName", trimmed);
+                }}
+                canEdit={canEdit}
+                nameMode
+              />
+            ) : (
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white md:text-3xl">
+                {displayName}
+              </h1>
+            )}
+            {/* Show registered name as a subtle note when a custom display name differs */}
+            {canEdit && candidate.displayName?.trim() && candidate.fullName?.trim() &&
+              candidate.displayName.trim() !== candidate.fullName.trim() && (
+              <p className="mt-0.5 text-xs text-slate-400">
+                Registered: {candidate.fullName}
+              </p>
+            )}
+            <div className="mt-1 min-h-[1.5rem]">
+              <EditField
+                label="Headline"
+                value={candidate.headline ?? ""}
+                placeholder="e.g. Senior Virtual Assistant | Remote-ready"
+                onSave={(v) => save("headline", v)}
+                canEdit={canEdit}
+              />
             </div>
+            <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-500">
+              {candidate.location && (
+                <span className="flex items-center gap-1">
+                  <MapPin className="h-3.5 w-3.5" /> {candidate.location}
+                </span>
+              )}
+              {candidate.availability && (
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5" /> {candidate.availability}
+                </span>
+              )}
+              {pref(prefs, "workSetup") && (
+                <span className="flex items-center gap-1">
+                  <Globe2 className="h-3.5 w-3.5" /> {pref(prefs, "workSetup")}
+                </span>
+              )}
+            </div>
+            {/* Badges */}
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {candidate.seniority && (
+                <Badge className="rounded-full border-[#474ead]/20 bg-[#474ead]/10 text-[#474ead]">
+                  {candidate.seniority}
+                </Badge>
+              )}
+              {candidate.cultureScore != null && (
+                <Badge className="rounded-full border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800/30 dark:bg-emerald-900/20 dark:text-emerald-400">
+                  {candidate.cultureScore}% values fit
+                </Badge>
+              )}
+            </div>
+          </div>
 
-            {/* Action bar */}
-            <div className="mt-4 flex flex-wrap gap-2">
+          {/* Right: action buttons */}
+          <div className="flex flex-wrap gap-2 pt-1">
               <Button
                 onClick={() => navigate("/talent-pool")}
                 variant="outline"
@@ -816,7 +828,6 @@ export default function TalentProfile() {
               )}
             </div>
           </div>
-        </div>
       </div>
 
       {/* ── Body content ── */}
