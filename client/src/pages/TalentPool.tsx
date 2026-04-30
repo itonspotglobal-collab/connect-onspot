@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -29,7 +30,15 @@ import {
   Eye,
   EyeOff,
   ExternalLink,
+  UserPlus,
+  LogIn,
+  Minimize2,
 } from "lucide-react";
+import {
+  TalentLoginModal,
+  loadTalentAuth,
+  type TalentAuthState,
+} from "@/components/TalentLoginModal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -645,6 +654,139 @@ function TalentCard({
 
 // ─── Category filter chips ─────────────────────────────────────────────────────
 
+// ─── Talent Account Prompt ─────────────────────────────────────────────────────
+
+const PROMPT_DELAY_MS = 5 * 60 * 1000; // 5 minutes
+const PROMPT_DISMISSED_KEY = "talentAccountPromptDismissed";
+
+function TalentAccountPrompt() {
+  const [, navigate] = useLocation();
+  const [visible, setVisible] = useState(false);
+  const [minimized, setMinimized] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    // Skip if already authenticated as talent
+    if (loadTalentAuth()) return;
+    // Skip if previously dismissed
+    if (sessionStorage.getItem(PROMPT_DISMISSED_KEY)) return;
+
+    timerRef.current = setTimeout(() => {
+      // Re-check in case they logged in while on the page
+      if (!loadTalentAuth()) setVisible(true);
+    }, PROMPT_DELAY_MS);
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  function dismiss() {
+    sessionStorage.setItem(PROMPT_DISMISSED_KEY, "1");
+    setVisible(false);
+    setMinimized(false);
+  }
+
+  function minimize() {
+    setMinimized(true);
+  }
+
+  function handleLoginSuccess(auth: TalentAuthState) {
+    setShowLogin(false);
+    setVisible(false);
+    navigate(`/talent-profile/${auth.candidateId}`);
+  }
+
+  const prompt = (
+    <>
+      <AnimatePresence>
+        {visible && !minimized && (
+          <motion.div
+            key="talent-prompt-modal"
+            initial={{ opacity: 0, y: 40, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 40, scale: 0.96 }}
+            transition={{ duration: 0.28, ease: "easeOut" }}
+            className="fixed bottom-6 right-6 z-[9999] w-80 rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between rounded-t-xl bg-gradient-to-r from-[#474ead] to-[#6366f1] px-4 py-3">
+              <span className="text-sm font-semibold text-white">Are you a talent?</span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={minimize}
+                  className="rounded p-1 text-white/70 transition-colors hover:text-white"
+                  aria-label="Minimize"
+                >
+                  <Minimize2 className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  onClick={dismiss}
+                  className="rounded p-1 text-white/70 transition-colors hover:text-white"
+                  aria-label="Close"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+            {/* Body */}
+            <div className="px-4 py-4">
+              <p className="mb-4 text-sm text-slate-600 dark:text-slate-300">
+                Create a free talent account to get discovered by top clients and get matched to the best opportunities.
+              </p>
+              <div className="flex flex-col gap-2">
+                <Button
+                  className="w-full rounded-full"
+                  onClick={() => { dismiss(); navigate("/find-best-matches"); }}
+                >
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Create Talent Account
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full rounded-full"
+                  onClick={() => setShowLogin(true)}
+                >
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Sign in
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Floating pill when minimized */}
+      <AnimatePresence>
+        {visible && minimized && (
+          <motion.button
+            key="talent-prompt-pill"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setMinimized(false)}
+            className="fixed bottom-6 right-6 z-[9999] flex items-center gap-2 rounded-full bg-gradient-to-r from-[#474ead] to-[#6366f1] px-4 py-2.5 text-sm font-medium text-white shadow-lg"
+          >
+            <UserPlus className="h-4 w-4" />
+            Join as Talent
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      {/* Sign-in modal (no profileId = sign-in only mode) */}
+      <TalentLoginModal
+        open={showLogin}
+        onClose={() => setShowLogin(false)}
+        onSuccess={handleLoginSuccess}
+      />
+    </>
+  );
+
+  return createPortal(prompt, document.body);
+}
+
 const CATEGORIES = ["All", "Admin", "Support", "Finance", "Sales", "Marketing", "Technical", "Operations", "Design", "Writing"];
 const EXPERIENCE_LEVELS = ["Any", "Entry", "Mid", "Senior"];
 const WORK_SETUPS = ["Any", "Remote", "Hybrid", "Onsite"];
@@ -737,6 +879,9 @@ export default function TalentPool() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(71,78,173,0.12),transparent_32%),linear-gradient(to_bottom,#f8fafc,white)] text-slate-900 dark:bg-[#060816] dark:text-white">
+      {/* Talent account prompt (after 5 min, for non-authenticated visitors) */}
+      <TalentAccountPrompt />
+
       {/* Profile modal */}
       <AnimatePresence>
         {selectedResult && (

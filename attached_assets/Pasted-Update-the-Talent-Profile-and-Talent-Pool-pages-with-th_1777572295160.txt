@@ -1,0 +1,192 @@
+Update the Talent Profile and Talent Pool pages with the following changes.
+
+Current context:
+
+* The Talent Profile Page now displays the talent’s name, profile photo, headline, location, skills, preferences, and profile strength.
+* The profile owner can edit their profile.
+* However, the “Edit my profile” button should not be visible to users who do not own the profile.
+* The Talent Pool page should also encourage visitors to create or sign in to a Talent Account using a popup similar to the existing Weekly Notes popup on the Insights page.
+
+Feature 1: Show “Edit my profile” only to the profile owner
+
+Requirement:
+The “Edit my profile” button should only be visible if the logged-in user is the owner of the profile being viewed.
+
+Expected behavior:
+
+1. If the viewer is not logged in:
+
+   * Hide the “Edit my profile” button.
+   * Do not show a disabled edit button.
+   * The profile should be read-only.
+
+2. If the viewer is logged in but does not own the profile:
+
+   * Hide the “Edit my profile” button.
+   * The profile should remain read-only.
+
+3. If the viewer is logged in and owns the profile:
+
+   * Show the “Edit my profile” button.
+   * Allow edit mode.
+
+Ownership check:
+Use the existing authentication system, but keep authentication limited to the Talent Profile edit flow for now.
+
+Example logic:
+
+```ts
+const isOwner =
+  Boolean(authUser?.id) &&
+  Boolean(talentProfile?.userId) &&
+  authUser.id === talentProfile.userId;
+```
+
+UI logic:
+
+```tsx
+{isOwner && (
+  <button onClick={handleEditProfile}>
+    Edit my profile
+  </button>
+)}
+```
+
+Important:
+
+* Do not show the edit button just because the profile page is open.
+* Do not show the edit button to clients, TA users, or other talents viewing someone else’s profile.
+* Do not enable global authentication yet.
+* Keep the rest of the site accessible during development.
+* Backend update endpoints must still verify ownership before saving changes.
+
+Feature 2: Add Talent Account popup on Talent Pool page
+
+Add a popup on the Talent Pool / Find Talent page that encourages visitors to create or sign in to a Talent Account.
+
+Purpose:
+When users are browsing the Talent Pool, they may not have a Talent Account yet. The popup should guide them to either create an account or sign in if they already have one.
+
+Popup message:
+Title:
+`Don’t have a Talent Account yet?`
+
+Body:
+`Create your Talent Account so you can build your profile, upload your resume, and appear in the Talent Pool for matching opportunities.`
+
+Primary button:
+`Create Talent Account`
+
+Secondary button:
+`Sign in`
+
+Optional smaller text:
+`Already have an account? Sign in to update your profile.`
+
+Behavior:
+
+1. The popup should appear within 5 minutes of accessing the Talent Pool page.
+2. Use a delay timer. Suggested default:
+
+```ts
+const TALENT_ACCOUNT_POPUP_DELAY = 5 * 60 * 1000;
+```
+
+3. For development/testing, allow this delay to be temporarily shortened through a constant or config.
+4. The popup should not appear immediately on page load unless configured for testing.
+5. If the visitor is already authenticated as a talent/account owner, do not show the popup.
+6. If the visitor has dismissed the popup, remember the dismissal in local storage or session storage.
+7. If the visitor closes or minimizes the popup, show a small floating toggle/button within the screen so they can reopen it.
+8. The floating toggle should behave similarly to the Weekly Notes popup/toggle on the Insights page.
+9. The floating toggle should stay visible on the Talent Pool page after minimizing or closing the popup.
+10. The popup should not block the user permanently from browsing the Talent Pool.
+
+Suggested component names:
+
+* `TalentAccountPrompt`
+* `TalentAccountPromptModal`
+* `TalentAccountFloatingToggle`
+
+Suggested local storage keys:
+
+```ts
+talentAccountPromptDismissed
+talentAccountPromptMinimized
+talentAccountPromptLastShownAt
+```
+
+Suggested UI states:
+
+```ts
+const [showTalentPrompt, setShowTalentPrompt] = useState(false);
+const [isTalentPromptMinimized, setIsTalentPromptMinimized] = useState(false);
+```
+
+Suggested flow:
+
+1. User opens Talent Pool page.
+2. Start a timer for 5 minutes.
+3. If user is not authenticated and has not permanently dismissed the prompt, show popup.
+4. If user clicks close/minimize:
+
+   * hide the popup
+   * show floating toggle button
+5. If user clicks the floating toggle:
+
+   * reopen popup
+6. If user clicks “Create Talent Account”:
+
+   * navigate to the talent registration/profile setup flow
+7. If user clicks “Sign in”:
+
+   * open the existing sign-in flow or navigate to login
+8. After successful sign-in, hide the popup.
+
+Design inspiration:
+Use the existing Weekly Notes popup on the Insights page as reference.
+
+Popup design should include:
+
+* centered modal
+* dimmed backdrop
+* icon at the top
+* clear title
+* short description
+* bullet points or benefits
+* primary CTA button
+* secondary CTA button
+* close/minimize icon
+* floating pill/button at bottom-right when minimized
+
+Example benefits:
+
+* `Create a professional talent profile`
+* `Upload your resume and profile photo`
+* `Get matched with client opportunities`
+* `Update your profile anytime`
+
+Floating toggle text:
+`Create Talent Account`
+
+or:
+
+`Talent Account`
+
+Feature 3: Create/sign-in actions
+
+Add routing or actions for the popup buttons.
+
+Requirements:
+
+1. `Create Talent Account` should route to the existing talent account creation or Find Best Matches profile setup flow.
+2. `Sign in` should use the existing authentication system.
+3. Do not enable auth globally.
+4. The sign-in should only be used for talent account/profile access for now.
+
+Expected result:
+
+* Other users viewing a Talent Profile will not see “Edit my profile.”
+* Only the account/profile owner sees and can use “Edit my profile.”
+* Talent Pool page shows a delayed account prompt after up to 5 minutes.
+* The prompt can be minimized or closed and reopened through a floating toggle.
+* The popup follows the same behavior style as the Insights page Weekly Notes popup.
