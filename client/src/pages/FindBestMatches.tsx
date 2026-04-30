@@ -1893,6 +1893,7 @@ export default function FindBestMatches() {
   // ── Candidate persistence state ──────────────────────────────────────────
   const [candidateId, setCandidateId] = useState<string | null>(null);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
 
   // ── Work history form state ──────────────────────────────────────────────
   const [showWorkForm, setShowWorkForm] = useState(false);
@@ -2066,6 +2067,7 @@ export default function FindBestMatches() {
     // ── Step 1 → 2: Save profile to DB, pre-fill account email ──────────────
     if (flowStep === 1) {
       setIsSavingProfile(true);
+      let savedOk = false;
       try {
         const payload = {
           fullName: profile.fullName,
@@ -2099,6 +2101,7 @@ export default function FindBestMatches() {
         if (res.ok) {
           const data = await res.json();
           if (!candidateId) setCandidateId(data.id);
+          savedOk = true;
         }
       } catch {
         // Non-blocking — proceed even if save fails
@@ -2113,6 +2116,12 @@ export default function FindBestMatches() {
       // Reset account mode so the user starts at the choice screen
       setAccountMode(null);
       setLoginError(null);
+      // On successful save, show Profile Saved confirmation instead of auto-advancing
+      if (savedOk) {
+        setProfileSaved(true);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
     }
 
     // ── Step 2: Account Access — handles both login and signup ───────────────
@@ -2298,6 +2307,12 @@ export default function FindBestMatches() {
   }
 
   function handleBack() {
+    // On the Profile Saved confirmation screen, go back to the profile form
+    if (profileSaved) {
+      setProfileSaved(false);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
     if (flowStep > 0) {
       setFlowStep((s) => s - 1);
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -2312,6 +2327,7 @@ export default function FindBestMatches() {
     setExtractParseError(null);
     setExtracting(false);
     setCandidateId(null);
+    setProfileSaved(false);
     setShowWorkForm(false);
     setEditWorkIdx(null);
     setWorkEntry({ ...EMPTY_WORK_ENTRY });
@@ -3149,6 +3165,90 @@ export default function FindBestMatches() {
             </p>
           </div>
         )}
+      </div>
+    );
+  }
+
+  // ── Profile Saved Confirmation (shown after step 1 saves successfully) ───────
+  function ProfileSavedStep() {
+    const idForProfile = candidateId;
+    return (
+      <div className="flex flex-col items-center text-center py-4">
+        {/* Icon */}
+        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#474ead]/10">
+          <CheckCircle2 className="h-10 w-10 text-[#474ead]" />
+        </div>
+
+        {/* Heading */}
+        <h2 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+          Your profile has been saved.
+        </h2>
+        <p className="mt-3 max-w-md text-slate-500 leading-relaxed">
+          We've saved your candidate profile. You can continue setting up your
+          application journey, or view your profile page to review and complete
+          your details.
+        </p>
+
+        {/* Profile summary pills */}
+        <div className="mt-6 flex flex-wrap justify-center gap-2">
+          {profile.targetPosition && (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-700">
+              <BriefcaseBusiness className="h-3.5 w-3.5 text-[#474ead]" />
+              {profile.targetPosition}
+            </span>
+          )}
+          {profile.jobCategory && (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-700">
+              <Tag className="h-3.5 w-3.5 text-[#474ead]" />
+              {profile.jobCategory}
+            </span>
+          )}
+          {profile.yearsOfExperience && (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-700">
+              <Clock className="h-3.5 w-3.5 text-[#474ead]" />
+              {profile.yearsOfExperience} exp
+            </span>
+          )}
+          {profile.coreSkills.slice(0, 3).map((sk) => (
+            <span
+              key={sk}
+              className="inline-flex items-center gap-1.5 rounded-full border border-[#474ead]/20 bg-[#474ead]/5 px-3 py-1 text-sm text-[#474ead]"
+            >
+              {sk}
+            </span>
+          ))}
+        </div>
+
+        {/* CTAs */}
+        <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+          {/* Primary: continue the journey */}
+          <Button
+            className="w-full rounded-full bg-[#474ead] px-8 text-white sm:w-auto"
+            onClick={() => {
+              setProfileSaved(false);
+              setFlowStep(2);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+          >
+            Continue Setup <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+
+          {/* Secondary: go to profile page */}
+          {idForProfile && (
+            <Button
+              variant="outline"
+              className="w-full rounded-full border-slate-300 px-8 sm:w-auto"
+              onClick={() => navigate(`/candidate-profile/${idForProfile}`)}
+            >
+              <User className="mr-2 h-4 w-4" /> View My Profile
+            </Button>
+          )}
+        </div>
+
+        {/* Subtle note */}
+        <p className="mt-6 text-xs text-slate-400">
+          Your progress is saved — you can always return to complete the setup.
+        </p>
       </div>
     );
   }
@@ -4094,7 +4194,7 @@ export default function FindBestMatches() {
   // which causes focus loss on every keystroke.
   function renderStep() {
     if (flowStep === 0) return UploadResumeStep();
-    if (flowStep === 1) return FinalizeInformationStep();
+    if (flowStep === 1) return profileSaved ? ProfileSavedStep() : FinalizeInformationStep();
     if (flowStep === 2) return AccountAccessStep();
     if (flowStep === 3) return AccountSuccessStep();
     if (flowStep === 4) return CultureEvaluationStep();
@@ -4158,7 +4258,8 @@ export default function FindBestMatches() {
                     - step 2 signup with duplicate email (inline CTAs handle it)
                     - step 2 existing account confirmed via login (handled inline during login flow via setFlowStep)
                     Always show for login/signup form buttons */}
-                {!(flowStep === 2 && (!accountMode || accountMode === "choice")) &&
+                {!(flowStep === 1 && profileSaved) &&
+                  !(flowStep === 2 && (!accountMode || accountMode === "choice")) &&
                   !(flowStep === 2 && accountMode === "signup" && accountCheckResult === "existing") && (
                   <Button
                     onClick={handleNext}

@@ -35,6 +35,7 @@ import FindWork from "@/pages/FindWork";
 import FindWorkJob from "@/pages/FindWorkJob";
 import FindWorkAllJobs from "@/pages/FindWorkAllJobs";
 import FindBestMatches from "@/pages/FindBestMatches";
+import CandidateProfile from "@/pages/CandidateProfile";
 import Insights from "@/pages/Insights";
 import InsightPost from "@/pages/InsightPost";
 import NotFound from "@/pages/not-found";
@@ -115,6 +116,7 @@ function PublicRouter() {
           <Route path="/talent-pool" component={TalentPool} />
           <Route path="/find-work" component={FindWork} />
           <Route path="/find-best-matches" component={FindBestMatches} />
+          <Route path="/candidate-profile/:candidateId" component={CandidateProfile} />
           <Route path="/find-work/jobs" component={FindWorkAllJobs} />
           <Route path="/find-work/job/:jobId" component={FindWorkJob} />
           <Route path="/find-work/:category" component={FindWork} />
@@ -259,6 +261,7 @@ function AppContent() {
       <Route path="/talent-pool" component={PublicRouter} />
       <Route path="/find-work" component={PublicRouter} />
       <Route path="/find-best-matches" component={PublicRouter} />
+      <Route path="/candidate-profile/:candidateId" component={CandidateProfile} />
       <Route path="/find-work/jobs" component={PublicRouter} />
       <Route path="/find-work/job/:jobId" component={PublicRouter} />
       <Route path="/find-work/:category" component={PublicRouter} />

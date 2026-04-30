@@ -1,0 +1,144 @@
+Update the Find Best Matches flow so that after a user finishes creating or updating their candidate profile, they are given a choice to view their profile page and finish setting it up.
+
+Current context:
+The user uploads a resume, reviews/finalizes their extracted profile, then proceeds to account access and cultural evaluation.
+
+New requirement:
+After the candidate profile is successfully saved, show a choice screen or confirmation section that lets the user choose:
+
+1. Continue to Account Access / Cultural Evaluation
+2. View My Profile / Finish Setting Up My Profile
+
+If the user chooses “View My Profile”, redirect them to their candidate profile page.
+
+Expected updated flow:
+1. Resume Upload
+2. Review / Finalize Extracted Profile
+3. Profile Saved Confirmation
+   - Continue setup
+   - View My Profile
+4. Account Access
+5. Account Confirmation
+6. Cultural Evaluation
+7. Culture Result
+8. Relevant Job Openings
+
+Profile saved confirmation screen:
+After the candidate clicks “Save Profile” or “Finish Profile”, show a polished confirmation screen/card.
+
+Suggested copy:
+Title:
+“Your profile has been saved.”
+
+Body:
+“We’ve saved your candidate profile. You can continue setting up your application journey or view your profile page to review and complete your details.”
+
+Primary CTA:
+“Continue Setup”
+
+Secondary CTA:
+“View My Profile”
+
+Behavior:
+- Continue Setup → proceeds to Account Access step
+- View My Profile → redirects to the candidate profile page
+
+Profile page requirement:
+Create or update a candidate profile page route.
+
+Suggested routes:
+- /candidate-profile/:candidateId
+or
+- /profile/:candidateId
+
+Since authentication is not enabled yet, use candidateId in the route for test purposes.
+
+Example:
+navigate(`/candidate-profile/${candidateId}`)
+
+Candidate profile page should display:
+- Full Name
+- Email
+- Phone
+- Location
+- Target Job Position
+- Job Category / Niche
+- Years of Experience
+- Seniority Level
+- Core Skills
+- Secondary Skills
+- Work History
+- Professional Summary
+- Work Preferences
+- Culture Evaluation status if available
+
+Profile page actions:
+Add buttons such as:
+- Edit Profile
+- Continue Setup
+- Continue to Cultural Evaluation
+
+Because this is still test mode without full authentication:
+- fetch the candidate profile by candidateId
+- do not require login yet
+- structure the code so auth can be added later
+
+Database/API requirements:
+Ensure the profile is saved before redirecting.
+
+Suggested endpoint:
+GET /api/candidates/:candidateId
+
+Optional endpoint:
+PUT /api/candidates/:candidateId
+
+Important:
+The View My Profile button should only be available after the candidate profile has been successfully saved and candidateId exists.
+
+Error handling:
+If profile save fails:
+- do not show the View My Profile button
+- show an error and allow retry
+
+If candidateId is missing:
+- do not redirect
+- show a clear error state
+
+UI requirements:
+The confirmation screen and profile page must match the visual style of:
+- Insights.tsx
+- FindWork.tsx
+- WhyOnSpotAbout.tsx
+
+Use the same:
+- colors
+- rounded cards
+- buttons
+- typography
+- spacing
+- clean premium layout
+
+Important implementation details:
+- do not lose candidate state after redirect
+- use candidateId from the saved database record
+- make profile page reload-safe by fetching from the backend
+- no authentication required yet
+- keep the structure ready for future authenticated profile access
+
+Suggested components:
+- ProfileSavedStep
+- CandidateProfilePage
+- ProfileSummaryCard
+- WorkHistorySection
+- SkillsSection
+- ProfileCompletionStatus
+
+Final output expected:
+- updated FindBestMatches.tsx flow
+- new Profile Saved confirmation step
+- View My Profile CTA
+- redirect to profile page
+- candidate profile route/page
+- backend fetch endpoint if missing
+- reload-safe profile display
+- clean test-mode implementation
