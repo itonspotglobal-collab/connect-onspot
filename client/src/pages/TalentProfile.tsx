@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -6,7 +6,7 @@ import {
   MapPin, Briefcase, Calendar, Globe2, Mail, Phone, Linkedin,
   Github, Link2, Star, ChevronRight, Upload, Pencil, Check,
   X, Plus, Trash2, Award, BookOpen, User, FileText, ExternalLink,
-  Clock, ChevronDown, Camera, Shield, AlertCircle, Download,
+  Clock, ChevronDown, Camera, Shield, AlertCircle, Download, Lock, LogOut, Eye, EyeOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -14,6 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAdmin } from "@/lib/authUtils";
@@ -46,6 +48,255 @@ function pref(prefs: Record<string, string> | null, key: string) {
 type WorkEntry = { title: string; company: string; duration: string; setup?: string; responsibilities?: string };
 type EduEntry = { school: string; degree: string; yearStart?: string; yearEnd?: string };
 type CertEntry = { name: string; issuer?: string; date?: string; link?: string };
+
+// ─── Talent Auth utilities ────────────────────────────────────────────────────
+
+const TOKEN_KEY = "talent_profile_token";
+
+interface TalentAuthState {
+  token: string;
+  candidateId: string;
+  email: string;
+  fullName: string;
+}
+
+function loadTalentAuth(): TalentAuthState | null {
+  try {
+    const raw = localStorage.getItem(TOKEN_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as TalentAuthState;
+    if (!parsed.token || !parsed.candidateId) return null;
+    // Quick expiry check by decoding JWT header.payload (no crypto verification here)
+    const parts = parsed.token.split(".");
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(atob(parts[1]));
+    if (payload.exp && Date.now() / 1000 > payload.exp) {
+      localStorage.removeItem(TOKEN_KEY);
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function saveTalentAuth(state: TalentAuthState) {
+  localStorage.setItem(TOKEN_KEY, JSON.stringify(state));
+}
+
+function clearTalentAuth() {
+  localStorage.removeItem(TOKEN_KEY);
+}
+
+// ─── Login Modal ──────────────────────────────────────────────────────────────
+
+function TalentLoginModal({
+  profileId,
+  open,
+  onClose,
+  onSuccess,
+}: {
+  profileId: string;
+  open: boolean;
+  onClose: () => void;
+  onSuccess: (auth: TalentAuthState) => void;
+}) {
+  const { toast } = useToast();
+  const [mode, setMode] = useState<"login" | "set-password">("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  async function handleLogin() {
+    if (!email || !password) {
+      toast({ title: "Missing fields", description: "Enter your email and password.", variant: "destructive" });
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch("/api/talent-auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.error === "no_password") {
+          // Switch to set-password mode
+          setMode("set-password");
+          toast({ title: "Set a password", description: "You haven't set a password yet. Please create one now." });
+          return;
+        }
+        toast({ title: "Login failed", description: data.error || "Invalid credentials.", variant: "destructive" });
+        return;
+      }
+      const auth: TalentAuthState = {
+        token: data.token,
+        candidateId: data.candidate.id,
+        email: data.candidate.email,
+        fullName: data.candidate.fullName || data.candidate.email,
+      };
+      saveTalentAuth(auth);
+      onSuccess(auth);
+      onClose();
+      toast({ title: "Signed in", description: `Welcome back, ${auth.fullName}!` });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleSetPassword() {
+    if (!email || !password || !confirmPassword) {
+      toast({ title: "Missing fields", description: "Fill in all fields.", variant: "destructive" });
+      return;
+    }
+    if (password.length < 8) {
+      toast({ title: "Password too short", description: "Must be at least 8 characters.", variant: "destructive" });
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast({ title: "Passwords don't match", variant: "destructive" });
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch("/api/talent-auth/set-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, candidateId: profileId, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast({ title: "Failed", description: data.error || "Could not set password.", variant: "destructive" });
+        return;
+      }
+      // Fetch candidate name for display
+      const meRes = await fetch("/api/talent-auth/me", {
+        headers: { Authorization: `Bearer ${data.token}` },
+      });
+      const me = meRes.ok ? await meRes.json() : { fullName: email };
+      const auth: TalentAuthState = {
+        token: data.token,
+        candidateId: data.candidateId,
+        email,
+        fullName: me.fullName || email,
+      };
+      saveTalentAuth(auth);
+      onSuccess(auth);
+      onClose();
+      toast({ title: "Password set", description: "You're now signed in to your profile." });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-lg font-bold">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#474ead]/10">
+              <Lock className="h-4 w-4 text-[#474ead]" />
+            </div>
+            {mode === "login" ? "Sign in to edit your profile" : "Create a password"}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 pt-2">
+          {mode === "set-password" && (
+            <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
+              This is your first time signing in. Create a password to protect your profile.
+            </p>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="talent-email">Email address</Label>
+            <Input
+              id="talent-email"
+              type="email"
+              placeholder="your@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && (mode === "login" ? handleLogin() : handleSetPassword())}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="talent-pw">{mode === "login" ? "Password" : "New password"}</Label>
+            <div className="relative">
+              <Input
+                id="talent-pw"
+                type={showPw ? "text" : "password"}
+                placeholder={mode === "login" ? "Your password" : "Min. 8 characters"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && mode === "login" && handleLogin()}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPw((p) => !p)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          {mode === "set-password" && (
+            <div className="space-y-2">
+              <Label htmlFor="talent-pw-confirm">Confirm password</Label>
+              <Input
+                id="talent-pw-confirm"
+                type={showPw ? "text" : "password"}
+                placeholder="Repeat password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSetPassword()}
+              />
+            </div>
+          )}
+
+          <div className="flex gap-2 pt-1">
+            {mode === "login" ? (
+              <>
+                <Button
+                  className="flex-1 rounded-full bg-[#474ead] text-white"
+                  onClick={handleLogin}
+                  disabled={loading}
+                >
+                  {loading ? "Signing in…" : "Sign in"}
+                </Button>
+                <Button variant="outline" className="rounded-full" onClick={() => setMode("set-password")}>
+                  No password yet?
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  className="flex-1 rounded-full bg-[#474ead] text-white"
+                  onClick={handleSetPassword}
+                  disabled={loading}
+                >
+                  {loading ? "Setting…" : "Set password & sign in"}
+                </Button>
+                <Button variant="outline" className="rounded-full" onClick={() => setMode("login")}>
+                  Back
+                </Button>
+              </>
+            )}
+          </div>
+
+          <p className="text-center text-xs text-slate-400">
+            Only the profile owner can sign in. Your email must match this candidate profile.
+          </p>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 // ─── Completion score ─────────────────────────────────────────────────────────
 
@@ -105,12 +356,14 @@ function EditField({
   onSave,
   multiline = false,
   placeholder,
+  canEdit = true,
 }: {
   label: string;
   value: string;
   onSave: (v: string) => void;
   multiline?: boolean;
   placeholder?: string;
+  canEdit?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
@@ -128,12 +381,14 @@ function EditField({
         <span className="flex-1 text-sm text-slate-700 dark:text-slate-300">
           {value || <span className="text-slate-400">{placeholder ?? `Add ${label.toLowerCase()}…`}</span>}
         </span>
-        <button
-          onClick={() => setEditing(true)}
-          className="invisible mt-0.5 rounded p-1 text-slate-400 transition hover:text-[#474ead] group-hover:visible"
-        >
-          <Pencil className="h-3.5 w-3.5" />
-        </button>
+        {canEdit && (
+          <button
+            onClick={() => setEditing(true)}
+            className="invisible mt-0.5 rounded p-1 text-slate-400 transition hover:text-[#474ead] group-hover:visible"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+        )}
       </div>
     );
   }
@@ -173,10 +428,12 @@ function EditField({
 function PhotoUploader({
   candidateId,
   current,
+  talentToken,
   onUploaded,
 }: {
   candidateId: string;
   current: string;
+  talentToken: string;
   onUploaded: (url: string) => void;
 }) {
   const { toast } = useToast();
@@ -197,7 +454,11 @@ function PhotoUploader({
     try {
       const form = new FormData();
       form.append("photo", file);
-      const res = await fetch(`/api/candidates/${candidateId}/photo`, { method: "POST", body: form });
+      const res = await fetch(`/api/candidates/${candidateId}/photo`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${talentToken}` },
+        body: form,
+      });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
       onUploaded(data.profilePhotoUrl);
@@ -245,6 +506,27 @@ export default function TalentProfile() {
   const isTalentAcquisition = user?.role === "talent_acquisition";
   const canSeeContact = isAdminUser || isTalentAcquisition;
 
+  // ── Talent auth state ──────────────────────────────────────────────────────
+  const [talentAuth, setTalentAuth] = useState<TalentAuthState | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+
+  useEffect(() => {
+    const stored = loadTalentAuth();
+    if (stored && stored.candidateId === id) {
+      setTalentAuth(stored);
+    }
+  }, [id]);
+
+  const isOwner = talentAuth?.candidateId === id;
+  // Admins can also edit; otherwise must be the authenticated owner
+  const canEdit = isOwner || isAdminUser;
+
+  function handleLogout() {
+    clearTalentAuth();
+    setTalentAuth(null);
+    toast({ title: "Signed out", description: "You've been signed out of your profile." });
+  }
+
   // Local state for optimistic photo update
   const [localPhoto, setLocalPhoto] = useState<string | null>(null);
 
@@ -269,17 +551,43 @@ export default function TalentProfile() {
   });
 
   const patchMutation = useMutation({
-    mutationFn: (updates: Partial<Candidate>) =>
-      apiRequest("PATCH", `/api/candidates/${id}`, updates),
+    mutationFn: async (updates: Partial<Candidate>) => {
+      // Talent owners send their talent JWT; admins fallback to their session JWT
+      const authHeader = talentAuth?.token
+        ? `Bearer ${talentAuth.token}`
+        : `Bearer ${localStorage.getItem("onspot_jwt_token") || ""}`;
+      const res = await fetch(`/api/candidates/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: authHeader },
+        body: JSON.stringify(updates),
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Unknown error" }));
+        throw Object.assign(new Error(err.error || `HTTP ${res.status}`), { status: res.status });
+      }
+      return res.json();
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/candidates", id] });
     },
-    onError: () => {
+    onError: (err: any) => {
+      if (err?.status === 401 || err?.status === 403) {
+        toast({ title: "Session expired", description: "Please sign in again to edit.", variant: "destructive" });
+        setTalentAuth(null);
+        clearTalentAuth();
+        setShowLoginModal(true);
+        return;
+      }
       toast({ title: "Save failed", description: "Could not save changes.", variant: "destructive" });
     },
   });
 
   function save(field: string, value: unknown) {
+    if (!canEdit) {
+      setShowLoginModal(true);
+      return;
+    }
     patchMutation.mutate({ [field]: value } as any);
   }
 
@@ -314,7 +622,7 @@ export default function TalentProfile() {
   const education = (candidate.education ?? []) as EduEntry[];
   const certifications = (candidate.certifications ?? []) as CertEntry[];
   const allSkills = [...(candidate.coreSkills ?? []), ...(candidate.secondarySkills ?? [])];
-  const displayName = canSeeContact ? candidate.fullName || "Unnamed" : `Candidate ${candidate.id.slice(0, 6).toUpperCase()}`;
+  const displayName = (canSeeContact || isOwner) ? candidate.fullName || "Unnamed" : `Candidate ${candidate.id.slice(0, 6).toUpperCase()}`;
   const displayPhoto = localPhoto || candidate.profilePhotoUrl;
   const photoUrl = photoSrc(displayPhoto);
   const completion = completionItems(candidate);
@@ -322,6 +630,16 @@ export default function TalentProfile() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-[#060816] dark:text-white">
+
+      {/* ── Talent Login Modal ── */}
+      {id && (
+        <TalentLoginModal
+          profileId={id}
+          open={showLoginModal}
+          onClose={() => setShowLoginModal(false)}
+          onSuccess={(auth) => setTalentAuth(auth)}
+        />
+      )}
       {/* ── Cover Banner ── */}
       <div className="relative h-48 overflow-hidden bg-gradient-to-br from-[#474ead] via-[#5b61c0] to-[#6366f1] md:h-64">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.12),transparent_55%)]" />
@@ -341,14 +659,17 @@ export default function TalentProfile() {
                   {initials(candidate.fullName || "?")}
                 </AvatarFallback>
               </Avatar>
-              <PhotoUploader
-                candidateId={candidate.id}
-                current={photoUrl}
-                onUploaded={(url) => {
-                  setLocalPhoto(url);
-                  qc.invalidateQueries({ queryKey: ["/api/candidates", id] });
-                }}
-              />
+              {canEdit && talentAuth?.token && (
+                <PhotoUploader
+                  candidateId={candidate.id}
+                  current={photoUrl}
+                  talentToken={talentAuth.token}
+                  onUploaded={(url) => {
+                    setLocalPhoto(url);
+                    qc.invalidateQueries({ queryKey: ["/api/candidates", id] });
+                  }}
+                />
+              )}
             </div>
             {/* Completion ring indicator */}
             <div
@@ -372,6 +693,7 @@ export default function TalentProfile() {
                     value={candidate.headline ?? ""}
                     placeholder="e.g. Senior Virtual Assistant | Remote-ready"
                     onSave={(v) => save("headline", v)}
+                    canEdit={canEdit}
                   />
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-500">
@@ -425,12 +747,33 @@ export default function TalentProfile() {
                   <FileText className="mr-1.5 h-4 w-4" /> View Resume
                 </Button>
               )}
-              {canSeeContact && candidate.email && (
+              {(canSeeContact || isOwner) && candidate.email && (
                 <Button className="rounded-full bg-[#474ead] text-sm text-white" asChild>
                   <a href={`mailto:${candidate.email}`}>
                     <Mail className="mr-1.5 h-4 w-4" /> Contact
                   </a>
                 </Button>
+              )}
+
+              {/* Owner auth controls */}
+              {!isAdminUser && (
+                isOwner ? (
+                  <Button
+                    variant="outline"
+                    className="ml-auto rounded-full text-sm text-slate-600"
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="mr-1.5 h-4 w-4" /> Sign out
+                  </Button>
+                ) : (
+                  <Button
+                    className="ml-auto rounded-full bg-[#474ead]/10 text-sm text-[#474ead] hover:bg-[#474ead]/20"
+                    variant="ghost"
+                    onClick={() => setShowLoginModal(true)}
+                  >
+                    <Lock className="mr-1.5 h-4 w-4" /> Edit my profile
+                  </Button>
+                )
               )}
             </div>
           </div>
@@ -451,6 +794,7 @@ export default function TalentProfile() {
                 multiline
                 placeholder="Write a short professional summary…"
                 onSave={(v) => save("summary", v)}
+                canEdit={canEdit}
               />
             </Section>
 
@@ -492,7 +836,7 @@ export default function TalentProfile() {
             <Section
               title="Experience"
               icon={Briefcase}
-              action={
+              action={canEdit ? (
                 <Button
                   size="sm"
                   variant="ghost"
@@ -504,7 +848,7 @@ export default function TalentProfile() {
                 >
                   <Plus className="mr-1 h-3.5 w-3.5" /> Add
                 </Button>
-              }
+              ) : undefined}
             >
               {workHistory.length === 0 ? (
                 <p className="text-sm text-slate-400">No work history added yet.</p>
@@ -514,6 +858,7 @@ export default function TalentProfile() {
                     <WorkEntryCard
                       key={idx}
                       entry={job}
+                      canEdit={canEdit}
                       onSave={(updated) => {
                         const next = [...workHistory];
                         next[idx] = updated;
@@ -533,7 +878,7 @@ export default function TalentProfile() {
             <Section
               title="Education"
               icon={BookOpen}
-              action={
+              action={canEdit ? (
                 <Button
                   size="sm"
                   variant="ghost"
@@ -545,7 +890,7 @@ export default function TalentProfile() {
                 >
                   <Plus className="mr-1 h-3.5 w-3.5" /> Add
                 </Button>
-              }
+              ) : undefined}
             >
               {education.length === 0 ? (
                 <p className="text-sm text-slate-400">No education added yet.</p>
@@ -555,6 +900,7 @@ export default function TalentProfile() {
                     <EduEntryCard
                       key={idx}
                       entry={edu}
+                      canEdit={canEdit}
                       onSave={(updated) => {
                         const next = [...education];
                         next[idx] = updated;
@@ -574,7 +920,7 @@ export default function TalentProfile() {
             <Section
               title="Certifications"
               icon={Award}
-              action={
+              action={canEdit ? (
                 <Button
                   size="sm"
                   variant="ghost"
@@ -586,7 +932,7 @@ export default function TalentProfile() {
                 >
                   <Plus className="mr-1 h-3.5 w-3.5" /> Add
                 </Button>
-              }
+              ) : undefined}
             >
               {certifications.length === 0 ? (
                 <p className="text-sm text-slate-400">No certifications added yet.</p>
@@ -596,6 +942,7 @@ export default function TalentProfile() {
                     <CertCard
                       key={idx}
                       entry={cert}
+                      canEdit={canEdit}
                       onSave={(updated) => {
                         const next = [...certifications];
                         next[idx] = updated;
@@ -677,6 +1024,7 @@ export default function TalentProfile() {
               <PreferencesDisplay
                 prefs={prefs}
                 availability={candidate.availability ?? null}
+                canEdit={canEdit}
                 onSave={(field, val) => {
                   if (field === "availability") {
                     save("availability", val);
@@ -696,6 +1044,7 @@ export default function TalentProfile() {
                   value={candidate.linkedinUrl ?? ""}
                   onSave={(v) => save("linkedinUrl", v)}
                   placeholder="https://linkedin.com/in/…"
+                  canEdit={canEdit}
                 />
                 <LinkField
                   icon={Github}
@@ -703,6 +1052,7 @@ export default function TalentProfile() {
                   value={candidate.githubUrl ?? ""}
                   onSave={(v) => save("githubUrl", v)}
                   placeholder="https://github.com/…"
+                  canEdit={canEdit}
                 />
                 <LinkField
                   icon={Globe2}
@@ -710,6 +1060,7 @@ export default function TalentProfile() {
                   value={candidate.portfolioUrl ?? ""}
                   onSave={(v) => save("portfolioUrl", v)}
                   placeholder="https://portfolio.com"
+                  canEdit={canEdit}
                 />
                 <LinkField
                   icon={Link2}
@@ -717,13 +1068,14 @@ export default function TalentProfile() {
                   value={candidate.websiteUrl ?? ""}
                   onSave={(v) => save("websiteUrl", v)}
                   placeholder="https://website.com"
+                  canEdit={canEdit}
                 />
               </div>
             </Section>
 
             {/* Resume */}
             <Section title="Resume" icon={FileText}>
-              <ResumeSection candidateId={candidate.id} candidate={candidate} />
+              <ResumeSection candidateId={candidate.id} candidate={candidate} canEdit={canEdit} talentToken={talentAuth?.token} />
             </Section>
 
             {/* Contact (role-gated) */}
@@ -759,10 +1111,12 @@ function WorkEntryCard({
   entry,
   onSave,
   onDelete,
+  canEdit = true,
 }: {
   entry: WorkEntry;
   onSave: (e: WorkEntry) => void;
   onDelete: () => void;
+  canEdit?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState({ ...entry });
@@ -781,14 +1135,16 @@ function WorkEntryCard({
               <p className="mt-0.5 text-xs text-slate-400">{entry.duration}</p>
               {entry.setup && <p className="text-xs text-slate-400">{entry.setup}</p>}
             </div>
-            <div className="invisible flex gap-1 group-hover:visible">
-              <button onClick={() => setEditing(true)} className="rounded p-1 text-slate-400 hover:text-[#474ead]">
-                <Pencil className="h-3.5 w-3.5" />
-              </button>
-              <button onClick={onDelete} className="rounded p-1 text-slate-400 hover:text-red-500">
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
+            {canEdit && (
+              <div className="invisible flex gap-1 group-hover:visible">
+                <button onClick={() => setEditing(true)} className="rounded p-1 text-slate-400 hover:text-[#474ead]">
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+                <button onClick={onDelete} className="rounded p-1 text-slate-400 hover:text-red-500">
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
           </div>
           {entry.responsibilities && (
             <p className="mt-1.5 text-sm text-slate-500">{entry.responsibilities}</p>
@@ -826,7 +1182,7 @@ function WorkEntryCard({
   );
 }
 
-function EduEntryCard({ entry, onSave, onDelete }: { entry: EduEntry; onSave: (e: EduEntry) => void; onDelete: () => void }) {
+function EduEntryCard({ entry, onSave, onDelete, canEdit = true }: { entry: EduEntry; onSave: (e: EduEntry) => void; onDelete: () => void; canEdit?: boolean }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState({ ...entry });
 
@@ -847,14 +1203,16 @@ function EduEntryCard({ entry, onSave, onDelete }: { entry: EduEntry; onSave: (e
                 </p>
               )}
             </div>
-            <div className="invisible flex gap-1 group-hover:visible">
-              <button onClick={() => setEditing(true)} className="rounded p-1 text-slate-400 hover:text-[#474ead]">
-                <Pencil className="h-3.5 w-3.5" />
-              </button>
-              <button onClick={onDelete} className="rounded p-1 text-slate-400 hover:text-red-500">
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
+            {canEdit && (
+              <div className="invisible flex gap-1 group-hover:visible">
+                <button onClick={() => setEditing(true)} className="rounded p-1 text-slate-400 hover:text-[#474ead]">
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+                <button onClick={onDelete} className="rounded p-1 text-slate-400 hover:text-red-500">
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -883,7 +1241,7 @@ function EduEntryCard({ entry, onSave, onDelete }: { entry: EduEntry; onSave: (e
   );
 }
 
-function CertCard({ entry, onSave, onDelete }: { entry: CertEntry; onSave: (e: CertEntry) => void; onDelete: () => void }) {
+function CertCard({ entry, onSave, onDelete, canEdit = true }: { entry: CertEntry; onSave: (e: CertEntry) => void; onDelete: () => void; canEdit?: boolean }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState({ ...entry });
 
@@ -905,14 +1263,16 @@ function CertCard({ entry, onSave, onDelete }: { entry: CertEntry; onSave: (e: C
                 </a>
               )}
             </div>
-            <div className="invisible flex gap-1 group-hover:visible">
-              <button onClick={() => setEditing(true)} className="rounded p-1 text-slate-400 hover:text-[#474ead]">
-                <Pencil className="h-3.5 w-3.5" />
-              </button>
-              <button onClick={onDelete} className="rounded p-1 text-slate-400 hover:text-red-500">
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
+            {canEdit && (
+              <div className="invisible flex gap-1 group-hover:visible">
+                <button onClick={() => setEditing(true)} className="rounded p-1 text-slate-400 hover:text-[#474ead]">
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+                <button onClick={onDelete} className="rounded p-1 text-slate-400 hover:text-red-500">
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -947,12 +1307,14 @@ function LinkField({
   value,
   onSave,
   placeholder,
+  canEdit = true,
 }: {
   icon: React.ElementType;
   label: string;
   value: string;
   onSave: (v: string) => void;
   placeholder: string;
+  canEdit?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
@@ -966,14 +1328,16 @@ function LinkField({
             {label}
           </a>
         ) : (
-          <span className="flex-1 text-sm text-slate-400">Add {label}</span>
+          <span className="flex-1 text-sm text-slate-400">{canEdit ? `Add ${label}` : `—`}</span>
         )}
-        <button
-          onClick={() => setEditing(true)}
-          className="invisible shrink-0 rounded p-1 text-slate-400 hover:text-[#474ead] group-hover:visible"
-        >
-          <Pencil className="h-3.5 w-3.5" />
-        </button>
+        {canEdit && (
+          <button
+            onClick={() => setEditing(true)}
+            className="invisible shrink-0 rounded p-1 text-slate-400 hover:text-[#474ead] group-hover:visible"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+        )}
       </div>
     );
   }
@@ -1003,10 +1367,12 @@ function PreferencesDisplay({
   prefs,
   availability,
   onSave,
+  canEdit = true,
 }: {
   prefs: Record<string, string> | null;
   availability: string | null;
   onSave: (field: string, val: string) => void;
+  canEdit?: boolean;
 }) {
   const fields: Array<{ key: string; label: string; placeholder: string }> = [
     { key: "workSetup", label: "Work Setup", placeholder: "Remote / Hybrid / Onsite" },
@@ -1023,6 +1389,7 @@ function PreferencesDisplay({
           value={availability ?? ""}
           placeholder="e.g. Immediately available, 2 weeks notice"
           onSave={(v) => onSave("availability", v)}
+          canEdit={canEdit}
         />
       </div>
       {fields.map(({ key, label, placeholder }) => (
@@ -1033,6 +1400,7 @@ function PreferencesDisplay({
             value={prefs?.[key] ?? ""}
             placeholder={placeholder}
             onSave={(v) => onSave(key, v)}
+            canEdit={canEdit}
           />
         </div>
       ))}
@@ -1040,7 +1408,17 @@ function PreferencesDisplay({
   );
 }
 
-function ResumeSection({ candidateId, candidate }: { candidateId: string; candidate: Candidate }) {
+function ResumeSection({
+  candidateId,
+  candidate,
+  canEdit = true,
+  talentToken,
+}: {
+  candidateId: string;
+  candidate: Candidate;
+  canEdit?: boolean;
+  talentToken?: string;
+}) {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [uploading, setUploading] = useState(false);
@@ -1060,7 +1438,9 @@ function ResumeSection({ candidateId, candidate }: { candidateId: string; candid
     try {
       const form = new FormData();
       form.append("resume", file);
-      const res = await fetch(`/api/candidates/${candidateId}/resume`, { method: "POST", body: form });
+      const headers: HeadersInit = {};
+      if (talentToken) headers["Authorization"] = `Bearer ${talentToken}`;
+      const res = await fetch(`/api/candidates/${candidateId}/resume`, { method: "POST", headers, body: form });
       if (!res.ok) throw new Error(await res.text());
       qc.invalidateQueries({ queryKey: ["/api/candidates", candidateId] });
       toast({ title: "Resume uploaded", description: "Your resume has been saved." });
@@ -1073,13 +1453,15 @@ function ResumeSection({ candidateId, candidate }: { candidateId: string; candid
 
   return (
     <div className="space-y-3">
-      <input
-        ref={inputRef}
-        type="file"
-        accept=".pdf,.doc,.docx"
-        className="hidden"
-        onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
-      />
+      {canEdit && (
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".pdf,.doc,.docx"
+          className="hidden"
+          onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+        />
+      )}
       {candidate.resumeUrl ? (
         <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3 dark:bg-white/[0.04]">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#474ead]/10">
@@ -1095,16 +1477,18 @@ function ResumeSection({ candidateId, candidate }: { candidateId: string; candid
       ) : (
         <p className="text-sm text-slate-400">No resume uploaded yet.</p>
       )}
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={() => inputRef.current?.click()}
-        disabled={uploading}
-        className="w-full rounded-full text-xs"
-      >
-        <Upload className="mr-1.5 h-3.5 w-3.5" />
-        {uploading ? "Uploading…" : candidate.resumeUrl ? "Replace Resume" : "Upload Resume"}
-      </Button>
+      {canEdit && (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => inputRef.current?.click()}
+          disabled={uploading}
+          className="w-full rounded-full text-xs"
+        >
+          <Upload className="mr-1.5 h-3.5 w-3.5" />
+          {uploading ? "Uploading…" : candidate.resumeUrl ? "Replace Resume" : "Upload Resume"}
+        </Button>
+      )}
     </div>
   );
 }

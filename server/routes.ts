@@ -205,6 +205,35 @@ const authenticateJWT = async (
   }
 };
 
+// Middleware: verify a Talent Profile JWT (type: "candidate")
+const authenticateTalentJWT = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const token = req.headers["authorization"]?.split(" ")[1];
+    if (!token) return res.status(401).json({ error: "Talent auth required" });
+    const jwtSecret = process.env.JWT_SECRET || "dev-fallback-secret";
+    const decoded = jwt.verify(token, jwtSecret) as any;
+    if (decoded.type !== "candidate" || !decoded.candidateId) {
+      return res.status(401).json({ error: "Invalid talent token" });
+    }
+    (req as any).talentAuth = { candidateId: decoded.candidateId, email: decoded.email };
+    next();
+  } catch (error: any) {
+    if (error.name === "TokenExpiredError") return res.status(401).json({ error: "Session expired — please log in again" });
+    return res.status(401).json({ error: "Invalid talent auth token" });
+  }
+};
+
+// Helper: ensure the authenticated talent owns the profile in :id param
+function requireTalentOwns(req: Request, res: Response, paramKey = "id"): boolean {
+  const profileId = req.params[paramKey];
+  const talentAuth = (req as any).talentAuth;
+  if (!talentAuth || talentAuth.candidateId !== profileId) {
+    res.status(403).json({ error: "You are not authorized to edit this profile" });
+    return false;
+  }
+  return true;
+}
+
 // Role-Based Access Control Middleware
 const requireRole = (allowedRoles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
@@ -3361,6 +3390,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Talent Profile Auth ───────────────────────────────────────────────────────
+
+  /**
+   * POST /api/talent-auth/login
+   * Email + password → JWT token for talent profile ownership.
+   */
+  app.post("/api/talent-auth/login", async (req, res) => {
+    try {
+      const { email, password } = req.body as { email?: string; password?: string };
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password are required" });
+      }
+      const candidate = await storage.getCandidateByEmail(email.toLowerCase().trim());
+      if (!candidate) {
+        return res.status(401).json({ error: "Invalid email or password" });
+      }
+      if (!candidate.passwordHash) {
+        return res.status(403).json({ error: "no_password", message: "No password set. Please set a password for your profile." });
+      }
+      const valid = await verifyPassword(password, candidate.passwordHash);
+      if (!valid) {
+        return res.status(401).json({ error: "Invalid email or password" });
+      }
+      let jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) {
+        if (process.env.NODE_ENV === "production") return res.status(500).json({ error: "Auth not configured" });
+        jwtSecret = "dev-fallback-secret";
+      }
+      const token = jwt.sign(
+        { type: "candidate", candidateId: candidate.id, email: candidate.email },
+        jwtSecret,
+        { expiresIn: "30d" },
+      );
+      return res.json({
+        success: true,
+        token,
+        candidate: {
+          id: candidate.id,
+          fullName: candidate.fullName,
+          email: candidate.email,
+          targetPosition: candidate.targetPosition,
+        },
+      });
+    } catch (error: any) {
+      console.error("POST /api/talent-auth/login error:", error);
+      return res.status(500).json({ error: "Login failed" });
+    }
+  });
+
+  /**
+   * POST /api/talent-auth/set-password
+   * First-time password setup for a candidate (requires knowing their email + candidateId).
+   */
+  app.post("/api/talent-auth/set-password", async (req, res) => {
+    try {
+      const { email, candidateId, password } = req.body as {
+        email?: string;
+        candidateId?: string;
+        password?: string;
+      };
+      if (!email || !candidateId || !password) {
+        return res.status(400).json({ error: "email, candidateId, and password are required" });
+      }
+      if (password.length < 8) {
+        return res.status(400).json({ error: "Password must be at least 8 characters" });
+      }
+      const candidate = await storage.getCandidateByEmail(email.toLowerCase().trim());
+      if (!candidate || candidate.id !== candidateId) {
+        return res.status(403).json({ error: "Invalid credentials" });
+      }
+      const hash = await hashPassword(password);
+      await storage.updateCandidate(candidateId, { passwordHash: hash } as any);
+
+      // Issue a token immediately after setting password
+      let jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) {
+        jwtSecret = process.env.NODE_ENV === "production" ? null as any : "dev-fallback-secret";
+        if (!jwtSecret) return res.status(500).json({ error: "Auth not configured" });
+      }
+      const token = jwt.sign(
+        { type: "candidate", candidateId: candidate.id, email: candidate.email },
+        jwtSecret,
+        { expiresIn: "30d" },
+      );
+      return res.json({ success: true, token, candidateId: candidate.id });
+    } catch (error: any) {
+      console.error("POST /api/talent-auth/set-password error:", error);
+      return res.status(500).json({ error: "Failed to set password" });
+    }
+  });
+
+  /**
+   * GET /api/talent-auth/me
+   * Verifies the talent JWT and returns basic identity info.
+   */
+  app.get("/api/talent-auth/me", authenticateTalentJWT, async (req: any, res) => {
+    try {
+      const candidate = await storage.getCandidate(req.talentAuth.candidateId);
+      if (!candidate) return res.status(404).json({ error: "Candidate not found" });
+      res.json({
+        candidateId: candidate.id,
+        fullName: candidate.fullName,
+        email: candidate.email,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to verify session" });
+    }
+  });
+
   app.post("/api/candidates", async (req, res) => {
     try {
       const { insertCandidateSchema } = await import("@shared/schema");
@@ -3395,9 +3533,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/candidates/:id", async (req, res) => {
+  app.patch("/api/candidates/:id", async (req: any, res) => {
     try {
-      const updated = await storage.updateCandidate(req.params.id, req.body);
+      // Accept either a talent JWT (owner) or an admin/TA user JWT
+      const authHeader = req.headers["authorization"];
+      const token = authHeader?.split(" ")[1];
+      if (!token) return res.status(401).json({ error: "Authentication required" });
+
+      const jwtSecret = process.env.JWT_SECRET || "dev-fallback-secret";
+      let decoded: any;
+      try {
+        decoded = jwt.verify(token, jwtSecret);
+      } catch {
+        return res.status(401).json({ error: "Invalid or expired token" });
+      }
+
+      const profileId = req.params.id;
+      const isTalentOwner = decoded.type === "candidate" && decoded.candidateId === profileId;
+      const isStaffUser = decoded.userId && ["admin", "talent_acquisition", "client"].includes(decoded.role);
+
+      if (!isTalentOwner && !isStaffUser) {
+        return res.status(403).json({ error: "You are not authorized to edit this profile" });
+      }
+
+      // Never allow overwriting passwordHash through PATCH
+      const { passwordHash: _stripped, ...safeBody } = req.body;
+      const updated = await storage.updateCandidate(profileId, safeBody);
       if (!updated) return res.status(404).json({ error: "Candidate not found" });
       res.json(updated);
     } catch (error) {
@@ -3406,9 +3567,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // POST /api/candidates/:id/photo — Upload profile photo (no auth in test-mode)
-  app.post("/api/candidates/:id/photo", upload.single("photo"), async (req: any, res) => {
+  // POST /api/candidates/:id/photo — Upload profile photo (requires talent auth + ownership)
+  app.post("/api/candidates/:id/photo", authenticateTalentJWT, upload.single("photo"), async (req: any, res) => {
     try {
+      if (!requireTalentOwns(req, res)) return;
       const { id } = req.params;
       const file = req.file;
       if (!file) return res.status(400).json({ error: "No file uploaded" });
@@ -3461,9 +3623,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // POST /api/candidates/:id/resume — Upload or replace resume (no auth in test-mode)
-  app.post("/api/candidates/:id/resume", upload.single("resume"), async (req: any, res) => {
+  // POST /api/candidates/:id/resume — Upload or replace resume (requires talent auth + ownership)
+  app.post("/api/candidates/:id/resume", authenticateTalentJWT, upload.single("resume"), async (req: any, res) => {
     try {
+      if (!requireTalentOwns(req, res)) return;
       const { id } = req.params;
       const file = req.file;
       if (!file) return res.status(400).json({ error: "No file uploaded" });

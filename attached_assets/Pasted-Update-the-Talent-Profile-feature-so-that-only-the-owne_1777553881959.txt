@@ -1,0 +1,152 @@
+Update the Talent Profile feature so that only the owner of the profile is allowed to edit their own profile.
+
+Current context:
+
+* There is a Talent Pool / Find Talent page that displays registered talents.
+* There is a LinkedIn-inspired Talent Profile Page where talents can view their full profile.
+* The profile includes details such as profile photo, cover photo, summary, skills, experience, education, resume, preferences, and portfolio links.
+* The next requirement is to add authentication and ownership-based editing.
+
+Main requirement:
+Only the owner of the talent profile can edit the profile. Editing should require the talent to authenticate using email and password.
+
+Authentication scope:
+For now, only implement authentication for the Talent Profile feature. Do not add full system-wide authentication yet unless the project already has it.
+
+Expected flow:
+
+1. Anyone with permission can view a Talent Profile, depending on role-based visibility.
+2. Only the profile owner can edit the Talent Profile.
+3. When a talent wants to edit their profile, require them to log in using email and password.
+4. After successful login, verify that the logged-in talent owns the profile being edited.
+5. If the logged-in talent owns the profile, show edit buttons and allow profile updates.
+6. If the logged-in talent does not own the profile, keep the page view-only and hide or disable edit actions.
+7. If the user is not authenticated, show a login prompt before allowing editing.
+
+Implementation requirements:
+
+1. Add Talent Profile authentication
+
+   * Add an email and password login form for talent profile editing.
+   * The login can appear as:
+
+     * a modal when clicking “Edit Profile”
+     * or a separate login page before entering edit mode.
+   * Suggested component names:
+
+     * `TalentLoginModal`
+     * `TalentProfileAuth`
+     * `TalentEditLoginForm`
+
+2. Validate login credentials
+
+   * Authenticate using the talent’s registered email and password.
+   * Use the existing user/employee account records from the database.
+   * Passwords must not be stored or compared as plain text.
+   * Use the project’s existing password hashing/authentication pattern if available.
+
+3. Ownership check
+
+   * After login, compare the authenticated talent user ID with the profile owner ID.
+   * Example:
+
+     * logged-in user ID: `authUser.id`
+     * profile owner ID: `talentProfile.userId`
+   * Only allow editing when they match.
+
+4. UI behavior
+
+   * If the viewer is not authenticated:
+
+     * show “Edit Profile”
+     * clicking it opens the login modal/form.
+   * If login succeeds and the logged-in user owns the profile:
+
+     * enable edit mode
+     * show edit icons/buttons on editable sections.
+   * If login succeeds but the logged-in user does not own the profile:
+
+     * show an error message such as “You are not authorized to edit this profile.”
+     * keep the profile in read-only mode.
+   * If the authenticated user owns the profile:
+
+     * show “Edit Profile”
+     * show “Save Changes” and “Cancel” during edit mode.
+   * If the viewer is not the owner:
+
+     * hide edit controls or keep them disabled.
+
+5. Protect API endpoints
+
+   * Do not rely only on frontend hiding of buttons.
+   * Backend update endpoints must also verify ownership before saving changes.
+   * Any update request should require authentication.
+   * The backend should reject unauthorized updates with `401 Unauthorized` or `403 Forbidden`.
+
+6. Suggested API endpoints
+
+   * `POST /api/talent-auth/login`
+
+     * accepts email and password
+     * returns authenticated talent info and token/session if valid
+   * `GET /api/talents/:id`
+
+     * fetches public/profile-safe talent details
+   * `GET /api/talents/:id/me`
+
+     * optional endpoint to check if the authenticated user owns this profile
+   * `PUT /api/talents/:id`
+
+     * updates profile details
+     * must require authentication
+     * must verify that authenticated user owns the profile
+   * `POST /api/talents/:id/profile-photo`
+
+     * uploads profile photo
+     * must require authentication
+     * must verify that authenticated user owns the profile
+   * `POST /api/talents/:id/resume`
+
+     * uploads/replaces resume
+     * must require authentication
+     * must verify that authenticated user owns the profile
+
+7. Frontend state
+
+   * Track authentication state for the talent profile feature.
+   * Suggested state:
+
+     * `isAuthenticated`
+     * `authTalent`
+     * `isOwner`
+     * `isEditMode`
+     * `authToken`
+   * Store authentication securely.
+   * Avoid exposing sensitive user information in the browser.
+
+8. Error states
+
+   * Invalid email or password
+   * Profile not found
+   * Unauthorized to edit this profile
+   * Session expired
+   * Failed to save profile changes
+   * Failed to upload profile photo
+   * Failed to upload resume
+
+9. Security reminders
+
+   * Never allow profile updates without backend ownership validation.
+   * Never trust the profile ID from the frontend alone.
+   * Never store plain text passwords.
+   * Do not expose password fields when fetching profile data.
+   * Keep contact details protected based on viewer role.
+
+Expected output:
+
+* Add talent profile login/authentication flow using email and password.
+* Add ownership validation so only the profile owner can edit.
+* Update the Talent Profile Page to show edit controls only when the authenticated talent owns the profile.
+* Protect all talent profile update, resume upload, and profile photo upload endpoints.
+* Keep non-owner viewers in read-only mode.
+* Keep the current Talent Pool browsing feature working as view-only.

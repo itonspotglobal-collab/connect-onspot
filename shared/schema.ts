@@ -1040,6 +1040,8 @@ export const candidates = pgTable("candidates", {
   // Education & Certifications (jsonb arrays)
   education: jsonb("education").default([]),
   certifications: jsonb("certifications").default([]),
+  // Auth — bcrypt hash, nullable until candidate sets a password
+  passwordHash: text("password_hash"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
