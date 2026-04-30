@@ -656,7 +656,7 @@ function TalentCard({
 
 // ─── Talent Account Prompt ─────────────────────────────────────────────────────
 
-const PROMPT_DELAY_MS = 5 * 60 * 1000; // 5 minutes
+const PROMPT_DELAY_MS = 5 * 1000; // 5 seconds
 const PROMPT_DISMISSED_KEY = "talentAccountPromptDismissed";
 
 function TalentAccountPrompt() {
