@@ -1,0 +1,102 @@
+Update the Talent Account prompt behavior on the Talent Pool page.
+
+Current issue:
+
+* The Talent Account popup appears correctly.
+* The floating “Join as Talent” toggle appears correctly when minimized.
+* However, when clicking the close button, the popup disappears completely.
+* This is not the desired behavior.
+
+Required behavior:
+
+1. Clicking the close button should minimize the popup, not permanently dismiss it.
+2. Clicking the minimize button should also minimize the popup.
+3. When minimized or closed, show the floating “Join as Talent” toggle within the screen.
+4. Clicking the floating “Join as Talent” toggle should reopen the popup.
+5. The popup/toggle should only disappear completely when the user is logged in as a talent.
+6. Once the user successfully signs in as a talent, hide both:
+
+   * the Talent Account popup
+   * the floating “Join as Talent” toggle
+7. If the user is already logged in as a talent when accessing the Talent Pool page, do not show the popup or toggle at all.
+
+Important behavior change:
+Do not treat the close button as permanent dismissal.
+
+Replace this type of behavior:
+
+```ts
+handleClose = () => {
+  setShowTalentPrompt(false);
+  localStorage.setItem("talentAccountPromptDismissed", "true");
+};
+```
+
+With this behavior:
+
+```ts
+handleClose = () => {
+  setShowTalentPrompt(false);
+  setIsTalentPromptMinimized(true);
+};
+```
+
+Recommended state:
+
+```ts
+const [showTalentPrompt, setShowTalentPrompt] = useState(false);
+const [isTalentPromptMinimized, setIsTalentPromptMinimized] = useState(false);
+const isLoggedInAsTalent = authUser?.role === "talent" || Boolean(authTalent?.id);
+```
+
+Suggested logic:
+
+```ts
+const shouldShowTalentPrompt =
+  !isLoggedInAsTalent &&
+  showTalentPrompt;
+
+const shouldShowTalentToggle =
+  !isLoggedInAsTalent &&
+  isTalentPromptMinimized &&
+  !showTalentPrompt;
+```
+
+Close/minimize logic:
+
+```ts
+const minimizeTalentPrompt = () => {
+  setShowTalentPrompt(false);
+  setIsTalentPromptMinimized(true);
+};
+
+const reopenTalentPrompt = () => {
+  setShowTalentPrompt(true);
+  setIsTalentPromptMinimized(false);
+};
+```
+
+After successful talent sign-in:
+
+```ts
+setShowTalentPrompt(false);
+setIsTalentPromptMinimized(false);
+```
+
+Also update any localStorage/sessionStorage logic:
+
+1. Do not set `talentAccountPromptDismissed` when clicking close.
+2. Do not permanently hide the prompt just because the user clicked X.
+3. Only hide the prompt permanently for the current authenticated session if the user is logged in as a talent.
+4. If localStorage currently stores dismissal on close, remove or ignore that behavior.
+5. If there is an existing dismissed value from previous testing, clear it or stop using it for this prompt.
+
+Expected result:
+
+* Popup appears after 5 seconds.
+* Clicking X minimizes the popup.
+* Clicking minimize minimizes the popup.
+* Floating “Join as Talent” toggle appears after close/minimize.
+* Clicking the floating toggle reopens the popup.
+* Once logged in as talent, both popup and toggle disappear.
+* Logged-in talent users do not see the popup or toggle.

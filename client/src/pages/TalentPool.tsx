@@ -657,24 +657,24 @@ function TalentCard({
 // ─── Talent Account Prompt ─────────────────────────────────────────────────────
 
 const PROMPT_DELAY_MS = 5 * 1000; // 5 seconds
-const PROMPT_DISMISSED_KEY = "talentAccountPromptDismissed";
 
 function TalentAccountPrompt() {
   const [, navigate] = useLocation();
-  const [visible, setVisible] = useState(false);
+  // showPopup: full card is visible | minimized: only floating pill is visible
+  const [showPopup, setShowPopup] = useState(false);
   const [minimized, setMinimized] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const isAuthenticated = Boolean(loadTalentAuth());
+
   useEffect(() => {
-    // Skip if already authenticated as talent
-    if (loadTalentAuth()) return;
-    // Skip if previously dismissed
-    if (sessionStorage.getItem(PROMPT_DISMISSED_KEY)) return;
+    // Never show for already-authenticated talent users
+    if (isAuthenticated) return;
 
     timerRef.current = setTimeout(() => {
-      // Re-check in case they logged in while on the page
-      if (!loadTalentAuth()) setVisible(true);
+      // Re-check at trigger time in case they authenticated while the timer ran
+      if (!loadTalentAuth()) setShowPopup(true);
     }, PROMPT_DELAY_MS);
 
     return () => {
@@ -682,26 +682,33 @@ function TalentAccountPrompt() {
     };
   }, []);
 
-  function dismiss() {
-    sessionStorage.setItem(PROMPT_DISMISSED_KEY, "1");
-    setVisible(false);
-    setMinimized(false);
+  // Minimize (both X and minimize button do the same thing — never permanently dismiss)
+  function minimize() {
+    setShowPopup(false);
+    setMinimized(true);
   }
 
-  function minimize() {
-    setMinimized(true);
+  // Reopen from floating pill
+  function reopen() {
+    setMinimized(false);
+    setShowPopup(true);
   }
 
   function handleLoginSuccess(auth: TalentAuthState) {
     setShowLogin(false);
-    setVisible(false);
+    setShowPopup(false);
+    setMinimized(false);
     navigate(`/talent-profile/${auth.candidateId}`);
   }
 
+  // Never render anything for authenticated users
+  if (isAuthenticated) return null;
+
   const prompt = (
     <>
+      {/* Full popup card */}
       <AnimatePresence>
-        {visible && !minimized && (
+        {showPopup && (
           <motion.div
             key="talent-prompt-modal"
             initial={{ opacity: 0, y: 40, scale: 0.96 }}
@@ -722,7 +729,7 @@ function TalentAccountPrompt() {
                   <Minimize2 className="h-3.5 w-3.5" />
                 </button>
                 <button
-                  onClick={dismiss}
+                  onClick={minimize}
                   className="rounded p-1 text-white/70 transition-colors hover:text-white"
                   aria-label="Close"
                 >
@@ -738,7 +745,7 @@ function TalentAccountPrompt() {
               <div className="flex flex-col gap-2">
                 <Button
                   className="w-full rounded-full"
-                  onClick={() => { dismiss(); navigate("/find-best-matches"); }}
+                  onClick={() => { minimize(); navigate("/find-best-matches"); }}
                 >
                   <UserPlus className="mr-2 h-4 w-4" />
                   Create Talent Account
@@ -757,16 +764,16 @@ function TalentAccountPrompt() {
         )}
       </AnimatePresence>
 
-      {/* Floating pill when minimized */}
+      {/* Floating pill — shown when minimized (whether via minimize or close button) */}
       <AnimatePresence>
-        {visible && minimized && (
+        {minimized && !showPopup && (
           <motion.button
             key="talent-prompt-pill"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ duration: 0.2 }}
-            onClick={() => setMinimized(false)}
+            onClick={reopen}
             className="fixed bottom-6 right-6 z-[9999] flex items-center gap-2 rounded-full bg-gradient-to-r from-[#474ead] to-[#6366f1] px-4 py-2.5 text-sm font-medium text-white shadow-lg"
           >
             <UserPlus className="h-4 w-4" />
