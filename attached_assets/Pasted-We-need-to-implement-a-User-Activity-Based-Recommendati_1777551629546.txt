@@ -1,0 +1,390 @@
+We need to implement a “User Activity-Based Recommendations” feature in this existing site.
+
+Goal:
+The site should remember user activity and use it to recommend relevant Job Openings or Talent results. This should not be limited to searches. It should also consider clicks, viewed pages, read articles, selected categories, viewed job posts, viewed talent profiles, saved jobs, applied jobs, and any existing site activity that indicates interest.
+
+Important:
+Use existing features, components, routes, APIs, and existing FindBestMatches logic as much as possible. Do not rebuild the matching system from scratch if FindBestMatches or an existing search/filter/recommendation function already exists. Extend it minimally.
+
+Current limitation:
+The login system is not fully working yet. So for now, store user activity in the browser using localStorage. Later this can be migrated to the database once login is ready.
+
+Expected behavior:
+1. When a visitor searches for a job or talent, save that search activity.
+2. When a visitor clicks a job opening, save that click activity.
+3. When a visitor views a job detail page, save that view activity.
+4. When a visitor views a talent/profile page, save that view activity.
+5. When a visitor reads an article, save that article view activity.
+6. When a visitor clicks a category, tag, or filter, save that activity.
+7. Use the saved activities to build an interest profile.
+8. Use the interest profile to show recommended job openings on the Find Work page.
+9. If there is a Find Talent page, use the same activity system to recommend matching talents.
+10. Recommendations should be based on tags, category, title, keywords, skills, and recent activity.
+
+Please first inspect the project structure and identify:
+- Existing FindBestMatches implementation
+- Existing job search or job listing components
+- Existing talent search/listing components
+- Existing article/blog components
+- Existing job detail pages
+- Existing talent detail/profile pages
+- Existing categories/tags/filter logic
+- Existing API/service/helper files
+
+Then implement the feature using the existing architecture.
+
+Implementation requirements:
+
+Create or reuse a frontend helper/service for user activity tracking.
+
+Suggested file name:
+src/utils/userActivityMemory.js
+or place it in the project’s existing utils/services/helper folder if there is already one.
+
+The helper should support:
+
+saveUserActivity(activity)
+getUserActivities()
+clearUserActivities()
+getUserInterestProfile()
+getTopUserInterests()
+getRecommendedSearchTerms()
+
+Activity object format:
+
+{
+  activityType: "JobSearch" | "TalentSearch" | "JobClick" | "JobView" | "TalentView" | "ArticleView" | "CategoryClick" | "FilterClick" | "SavedJob" | "AppliedJob",
+  keyword: string optional,
+  title: string optional,
+  category: string optional,
+  tags: string[] optional,
+  skills: string[] optional,
+  referenceId: string or number optional,
+  page: string optional,
+  createdAt: ISO string
+}
+
+Use localStorage key:
+"userActivityMemory"
+
+Limit stored activities to the most recent 50 to avoid bloating localStorage.
+
+Deduplicate where reasonable:
+- Do not repeatedly save the exact same activity many times within a very short period.
+- For example, if the same user views the same job several times in a minute, store it once.
+
+Scoring:
+Build an interest profile based on activity weight.
+
+Suggested weights:
+JobSearch = 5
+TalentSearch = 5
+JobClick = 4
+JobView = 4
+TalentView = 4
+ArticleView = 2
+CategoryClick = 3
+FilterClick = 3
+SavedJob = 7
+AppliedJob = 8
+
+Interest terms should come from:
+- keyword
+- title
+- category
+- tags
+- skills
+
+Normalize terms:
+- trim
+- lowercase for scoring
+- remove empty values
+- preserve display label if possible
+
+Recent activities should matter more than old activities.
+Apply a simple recency bonus if possible:
+- activities from the last 24 hours get full score
+- activities from the last 7 days get 75% score
+- older activities get 50% score
+
+Integrate with existing FindBestMatches:
+- Locate the current FindBestMatches feature/function/component/API.
+- Do not replace it unless necessary.
+- Feed top interests from getTopUserInterests() into the existing FindBestMatches logic.
+- If FindBestMatches currently expects a keyword/search string, join the top 3 interests into a search query.
+- If FindBestMatches accepts tags/categories/skills, pass those fields properly.
+
+Find Work page:
+- Add a “Recommended for You” or “Recommended Job Openings” section.
+- Use the existing job card/list component if available.
+- Use the existing job fetching/search/matching logic if available.
+- Show recommendations based on the user’s activity memory.
+- If no activity exists yet, hide the section or show existing default/trending/recent jobs if the site already has that feature.
+- Do not create a completely different UI if there is already a job listing/card component.
+
+Find Talent page:
+- If the site has a Find Talent page, add a similar “Recommended Talents” section.
+- Use the same activity memory and existing talent card/list component.
+- If no existing talent recommendation/search function exists, keep the implementation minimal and reuse existing talent search/filter logic.
+
+Article/blog pages:
+- When a user opens or reads an article, save an ArticleView activity.
+- Use the article title, category, and tags if available.
+- If articles do not have tags, use title/category as the main interest terms.
+
+Job cards/details:
+- When user clicks a job card, save JobClick.
+- When user opens job details, save JobView.
+- Include job title, category, tags, skills, and job id if available.
+
+Talent cards/details:
+- When user clicks/views a talent profile, save TalentView.
+- Include profile title/name, skills, category, and talent id if available.
+
+Search inputs:
+- When user searches from Find Work, save JobSearch.
+- When user searches from Find Talent, save TalentSearch.
+- Include the search keyword and selected filters/categories/tags if available.
+
+Categories and filters:
+- When user clicks a category/filter/tag, save CategoryClick or FilterClick.
+- Include the selected category/filter/tag as a term.
+
+Code quality:
+- Keep changes small and consistent with the current project style.
+- Use existing components and APIs whenever possible.
+- Avoid adding new dependencies unless absolutely necessary.
+- Add comments only where helpful.
+- Make sure the site still works if localStorage is unavailable, such as during SSR or private mode.
+- Add safe guards around JSON.parse.
+- Do not break existing search, FindBestMatches, Find Work, Find Talent, article, job detail, or talent detail behavior.
+
+Suggested helper implementation:
+
+const STORAGE_KEY = "userActivityMemory";
+const MAX_ACTIVITIES = 50;
+
+export function saveUserActivity(activity) {
+  try {
+    if (typeof window === "undefined") return;
+
+    const activities = getUserActivities();
+
+    const newActivity = {
+      ...activity,
+      createdAt: activity.createdAt || new Date().toISOString(),
+    };
+
+    const isDuplicate = activities.some(existing => {
+      const sameType = existing.activityType === newActivity.activityType;
+      const sameReference = existing.referenceId && newActivity.referenceId && existing.referenceId === newActivity.referenceId;
+      const sameKeyword = existing.keyword && newActivity.keyword && existing.keyword.toLowerCase() === newActivity.keyword.toLowerCase();
+
+      const existingTime = new Date(existing.createdAt).getTime();
+      const newTime = new Date(newActivity.createdAt).getTime();
+      const withinOneMinute = Math.abs(newTime - existingTime) < 60 * 1000;
+
+      return sameType && withinOneMinute && (sameReference || sameKeyword);
+    });
+
+    if (isDuplicate) return;
+
+    const updated = [newActivity, ...activities].slice(0, MAX_ACTIVITIES);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  } catch (error) {
+    console.warn("Unable to save user activity", error);
+  }
+}
+
+export function getUserActivities() {
+  try {
+    if (typeof window === "undefined") return [];
+
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    console.warn("Unable to read user activities", error);
+    return [];
+  }
+}
+
+export function clearUserActivities() {
+  try {
+    if (typeof window === "undefined") return;
+    localStorage.removeItem(STORAGE_KEY);
+  } catch (error) {
+    console.warn("Unable to clear user activities", error);
+  }
+}
+
+function normalizeTerm(term) {
+  if (!term || typeof term !== "string") return "";
+  return term.trim().toLowerCase();
+}
+
+function getActivityWeight(activityType) {
+  const weights = {
+    JobSearch: 5,
+    TalentSearch: 5,
+    JobClick: 4,
+    JobView: 4,
+    TalentView: 4,
+    ArticleView: 2,
+    CategoryClick: 3,
+    FilterClick: 3,
+    SavedJob: 7,
+    AppliedJob: 8,
+  };
+
+  return weights[activityType] || 1;
+}
+
+function getRecencyMultiplier(createdAt) {
+  const created = new Date(createdAt).getTime();
+  if (!created) return 0.5;
+
+  const now = Date.now();
+  const ageInMs = now - created;
+  const oneDay = 24 * 60 * 60 * 1000;
+  const sevenDays = 7 * oneDay;
+
+  if (ageInMs <= oneDay) return 1;
+  if (ageInMs <= sevenDays) return 0.75;
+  return 0.5;
+}
+
+function extractTerms(activity) {
+  const terms = [];
+
+  if (activity.keyword) terms.push(activity.keyword);
+  if (activity.title) terms.push(activity.title);
+  if (activity.category) terms.push(activity.category);
+
+  if (Array.isArray(activity.tags)) {
+    terms.push(...activity.tags);
+  }
+
+  if (Array.isArray(activity.skills)) {
+    terms.push(...activity.skills);
+  }
+
+  return terms
+    .map(normalizeTerm)
+    .filter(Boolean);
+}
+
+export function getUserInterestProfile() {
+  const activities = getUserActivities();
+  const profile = {};
+
+  activities.forEach(activity => {
+    const weight = getActivityWeight(activity.activityType);
+    const recencyMultiplier = getRecencyMultiplier(activity.createdAt);
+    const score = weight * recencyMultiplier;
+    const terms = extractTerms(activity);
+
+    terms.forEach(term => {
+      profile[term] = (profile[term] || 0) + score;
+    });
+  });
+
+  return Object.entries(profile)
+    .sort((a, b) => b[1] - a[1])
+    .map(([term, score]) => ({
+      term,
+      score,
+    }));
+}
+
+export function getTopUserInterests(limit = 5) {
+  return getUserInterestProfile()
+    .slice(0, limit)
+    .map(item => item.term);
+}
+
+export function getRecommendedSearchTerms(limit = 3) {
+  return getTopUserInterests(limit).join(" ");
+}
+
+Recommended integration pattern:
+
+On Find Work page:
+- Read recommended terms using getRecommendedSearchTerms()
+- If terms exist, call existing FindBestMatches/search logic using those terms
+- Render results using the existing JobCard or JobList component
+
+Example:
+
+useEffect(() => {
+  const recommendedTerms = getRecommendedSearchTerms(3);
+
+  if (!recommendedTerms) return;
+
+  // Reuse existing FindBestMatches or job search API here
+  // Example:
+  // fetchBestMatches({ keyword: recommendedTerms })
+  // setRecommendedJobs(response.data)
+
+}, []);
+
+When search is submitted:
+
+saveUserActivity({
+  activityType: "JobSearch",
+  keyword: searchKeyword,
+  category: selectedCategory,
+  tags: selectedTags,
+  page: "FindWork",
+});
+
+When job card is clicked:
+
+saveUserActivity({
+  activityType: "JobClick",
+  referenceId: job.id,
+  title: job.title,
+  category: job.category,
+  tags: job.tags,
+  skills: job.skills,
+  page: "FindWork",
+});
+
+When job detail is viewed:
+
+saveUserActivity({
+  activityType: "JobView",
+  referenceId: job.id,
+  title: job.title,
+  category: job.category,
+  tags: job.tags,
+  skills: job.skills,
+  page: "JobDetails",
+});
+
+When article is viewed:
+
+saveUserActivity({
+  activityType: "ArticleView",
+  referenceId: article.id,
+  title: article.title,
+  category: article.category,
+  tags: article.tags,
+  page: "ArticleDetails",
+});
+
+Acceptance criteria:
+1. User can search for “Customer Service Representative” and the activity is saved.
+2. User can click/view CSR-related jobs and the activity is saved.
+3. User can read a customer-service-related article and the activity is saved.
+4. Returning to Find Work shows recommended job openings related to the saved interests.
+5. Recommendation logic uses existing FindBestMatches/search functionality where possible.
+6. No login is required.
+7. Activity persists after refresh because it is stored in localStorage.
+8. If localStorage has no activity, the page should not crash.
+9. Existing Find Work, Find Talent, job details, talent details, and article pages still work normally.
+10. The implementation is ready to later migrate localStorage activities to a database once login is working.
+
+Please implement this feature now with the smallest safe changes possible.

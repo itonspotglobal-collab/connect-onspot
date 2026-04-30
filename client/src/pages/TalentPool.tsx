@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -36,6 +36,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAdmin, isClient } from "@/lib/authUtils";
 import type { Candidate } from "@shared/schema";
+import { saveUserActivity } from "@/lib/userActivityMemory";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -620,6 +621,20 @@ export default function TalentPool() {
   const [selectedResult, setSelectedResult] = useState<MatchResult | null>(null);
   const [showShortlistedOnly, setShowShortlistedOnly] = useState(false);
 
+  // Debounced talent search tracking
+  useEffect(() => {
+    if (!searchQuery.trim()) return;
+    const timer = setTimeout(() => {
+      saveUserActivity({
+        activityType: "TalentSearch",
+        keyword: searchQuery.trim(),
+        category: activeCategory !== "All" ? activeCategory : undefined,
+        page: "TalentPool",
+      });
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [searchQuery, activeCategory]);
+
   // Fetch candidates
   const { data: candidates = [], isLoading, isError } = useQuery<Candidate[]>({
     queryKey: ["/api/candidates"],
@@ -803,7 +818,16 @@ export default function TalentPool() {
             {CATEGORIES.map((cat) => (
               <button
                 key={cat}
-                onClick={() => setActiveCategory(cat)}
+                onClick={() => {
+                  setActiveCategory(cat);
+                  if (cat !== "All") {
+                    saveUserActivity({
+                      activityType: "CategoryClick",
+                      category: cat,
+                      page: "TalentPool",
+                    });
+                  }
+                }}
                 className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
                   activeCategory === cat
                     ? "bg-[#474ead] text-white shadow-sm"
@@ -984,7 +1008,20 @@ export default function TalentPool() {
               <TalentCard
                 key={result.candidate.id}
                 result={result}
-                onViewProfile={setSelectedResult}
+                onViewProfile={(r) => {
+                  saveUserActivity({
+                    activityType: "TalentView",
+                    referenceId: r.candidate.id,
+                    title: r.candidate.targetPosition ?? undefined,
+                    category: r.candidate.category ?? undefined,
+                    skills: [
+                      ...(r.candidate.coreSkills ?? []),
+                      ...(r.candidate.secondarySkills ?? []),
+                    ].slice(0, 5),
+                    page: "TalentPool",
+                  });
+                  setSelectedResult(r);
+                }}
                 isShortlisted={shortlisted.has(result.candidate.id)}
                 onToggleShortlist={toggleShortlist}
                 canSeeContact={canSeeContact}

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import {
@@ -10,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import type { Job } from "@shared/schema";
 import { buildRateDisplay, getJobBadges, getTimeAgo } from "@/lib/jobUtils";
+import { saveUserActivity } from "@/lib/userActivityMemory";
 
 const APPLY_URL = "https://api.leadconnectorhq.com/widget/form/36ljnIgIsA1xoBluXvSK?notrack=true";
 
@@ -674,6 +676,32 @@ export default function FindWorkJob() {
     staleTime: 5 * 60 * 1000,
     retry: 1,
   });
+
+  // Track job view once the job details are available
+  useEffect(() => {
+    if (isStaticId) {
+      const staticRole = roles.find((r) => r.id === numericId);
+      if (!staticRole) return;
+      saveUserActivity({
+        activityType: "JobView",
+        referenceId: rawId,
+        title: staticRole.title,
+        category: staticRole.category,
+        tags: staticRole.tags,
+        page: "FindWorkJob",
+      });
+    } else if (dbJob) {
+      saveUserActivity({
+        activityType: "JobView",
+        referenceId: dbJob.id,
+        title: dbJob.title,
+        category: dbJob.category ?? undefined,
+        tags: dbJob.skillTags ?? undefined,
+        page: "FindWorkJob",
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dbJob, isStaticId, rawId]);
 
   // Loading state for DB jobs
   if (!isStaticId && isLoading) {

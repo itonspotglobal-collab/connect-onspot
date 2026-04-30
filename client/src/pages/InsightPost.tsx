@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Calendar, User, Clock, Heart, Eye } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import type { Post } from "@shared/schema";
+import { saveUserActivity } from "@/lib/userActivityMemory";
 
 export default function InsightPost() {
   const { slug } = useParams<{ slug: string }>();
@@ -49,8 +50,16 @@ export default function InsightPost() {
     if (post && viewRecordedRef.current !== post.id) {
       viewRecordedRef.current = post.id;
       viewMutation.mutate(post.id);
+      // Track article view for recommendation engine
+      saveUserActivity({
+        activityType: "ArticleView",
+        referenceId: post.id,
+        title: post.title,
+        category: post.category,
+        page: "InsightPost",
+      });
     }
-  }, [post?.id]);
+  }, [post?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (post && localLikes === null) {

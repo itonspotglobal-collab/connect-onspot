@@ -34,6 +34,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import type { Job } from "@shared/schema";
 import { buildRateDisplay, getJobBadges, getTimeAgo } from "@/lib/jobUtils";
+import {
+  saveUserActivity,
+  getTopUserInterests,
+  scoreJobsAgainstInterests,
+} from "@/lib/userActivityMemory";
 
 const APPLY_URL =
   "https://api.leadconnectorhq.com/widget/form/36ljnIgIsA1xoBluXvSK?notrack=true";
@@ -868,6 +873,13 @@ export default function OnSpotFindWorkRedesign() {
   const [profileStrength] = useState(68);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // Activity-based recommendations — computed from localStorage interest profile
+  const [recInterests, setRecInterests] = useState<string[]>([]);
+
+  // Refresh interest profile on mount (after hydration)
+  useEffect(() => {
+    setRecInterests(getTopUserInterests(5));
+  }, []);
 
   const { data: dbJobs = [], isLoading: isJobsLoading } = useQuery<Job[]>({
     queryKey: ["/api/admin/jobs"],
@@ -888,6 +900,30 @@ export default function OnSpotFindWorkRedesign() {
     setIsModalOpen(false);
     setTimeout(() => setSelectedRole(null), 300);
   }
+
+  // Debounced search tracking — fires 1.5 s after the user stops typing
+  useEffect(() => {
+    const defaultQuery = "Virtual assistant, night shift, remote.";
+    if (!query.trim() || query === defaultQuery) return;
+    const timer = setTimeout(() => {
+      saveUserActivity({
+        activityType: "JobSearch",
+        keyword: query.trim(),
+        category: kind !== "All work" ? kind : undefined,
+        page: "FindWork",
+      });
+      // Refresh recommendations after a new search
+      setRecInterests(getTopUserInterests(5));
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [query, kind]);
+
+  // Recommendations derived from the interest profile + open DB jobs
+  const recommendedJobs = useMemo<Job[]>(() => {
+    if (recInterests.length === 0) return [];
+    const openJobs = dbJobs.filter((j) => j.status === "open");
+    return scoreJobsAgainstInterests(openJobs).slice(0, 3) as Job[];
+  }, [recInterests, dbJobs]);
 
   // Extracts the minimum peso value from strings like "₱50,000–₱78,000/mo"
   function getMinimumPay(payRange: string): number {
@@ -1214,6 +1250,20 @@ export default function OnSpotFindWorkRedesign() {
                       if (idx === 0) setEarning(option);
                       if (idx === 1) setSchedule(option);
                       if (idx === 2) setKind(option);
+                      // Track filter/category selection
+                      const isDefault =
+                        option === "Any pay" ||
+                        option === "All schedules" ||
+                        option === "All work";
+                      if (!isDefault) {
+                        saveUserActivity({
+                          activityType: idx === 2 ? "CategoryClick" : "FilterClick",
+                          category: idx === 2 ? option : undefined,
+                          keyword: idx !== 2 ? option : undefined,
+                          page: "FindWork",
+                        });
+                        setRecInterests(getTopUserInterests(5));
+                      }
                     };
                     return (
                       <button
@@ -1235,6 +1285,40 @@ export default function OnSpotFindWorkRedesign() {
           </div>
         </div>
 
+        {/* Recommended for You — shown when the visitor has a stored interest profile */}
+        {recommendedJobs.length > 0 && (
+          <div className="mb-10">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex items-center gap-2 rounded-full bg-[#474ead]/10 px-3.5 py-1.5 text-sm font-medium text-[#474ead] dark:bg-[#474ead]/20 dark:text-indigo-300">
+                <Sparkles className="h-4 w-4" />
+                Recommended for you
+              </div>
+              <span className="text-sm text-slate-500 dark:text-slate-400">
+                Based on your recent activity
+              </span>
+            </div>
+            <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
+              {recommendedJobs.map((job) => (
+                <DbJobCard
+                  key={`rec-${job.id}`}
+                  job={job}
+                  onNavigate={(id) => {
+                    saveUserActivity({
+                      activityType: "JobClick",
+                      referenceId: id,
+                      title: job.title,
+                      category: job.category ?? undefined,
+                      tags: job.skillTags ?? undefined,
+                      page: "FindWork-Recommended",
+                    });
+                    navigate(`/find-work/job/${id}`);
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Job cards — DB-powered when available, static fallback when DB is empty */}
         {isJobsLoading ? (
           <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
@@ -1251,14 +1335,38 @@ export default function OnSpotFindWorkRedesign() {
               <DbJobCard
                 key={job.id}
                 job={job}
-                onNavigate={(id) => navigate(`/find-work/job/${id}`)}
+                onNavigate={(id) => {
+                  saveUserActivity({
+                    activityType: "JobClick",
+                    referenceId: id,
+                    title: job.title,
+                    category: job.category ?? undefined,
+                    tags: job.skillTags ?? undefined,
+                    page: "FindWork",
+                  });
+                  navigate(`/find-work/job/${id}`);
+                }}
               />
             ))}
           </div>
         ) : (
           <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
             {filteredRoles.map((role) => (
-              <JobCard key={role.id} role={role} onViewDetails={openModal} />
+              <JobCard
+                key={role.id}
+                role={role}
+                onViewDetails={(r) => {
+                  saveUserActivity({
+                    activityType: "JobClick",
+                    referenceId: String(r.id),
+                    title: r.title,
+                    category: r.category,
+                    tags: r.tags,
+                    page: "FindWork",
+                  });
+                  openModal(r);
+                }}
+              />
             ))}
           </div>
         )}

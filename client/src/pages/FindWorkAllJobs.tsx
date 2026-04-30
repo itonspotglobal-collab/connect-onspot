@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import type { Job } from "@shared/schema";
 import { buildRateDisplay, getJobBadges, getTimeAgo, sortJobs, type SortOption } from "@/lib/jobUtils";
+import { saveUserActivity, getTopUserInterests, scoreJobsAgainstInterests } from "@/lib/userActivityMemory";
 
 const APPLY_URL = "https://api.leadconnectorhq.com/widget/form/36ljnIgIsA1xoBluXvSK?notrack=true";
 
@@ -260,6 +261,28 @@ export default function FindWorkAllJobs() {
 
   const openJobs = useMemo(() => allJobs.filter((j) => j.status === "open"), [allJobs]);
 
+  // Debounced search tracking
+  useEffect(() => {
+    if (!search.trim()) return;
+    const timer = setTimeout(() => {
+      saveUserActivity({
+        activityType: "JobSearch",
+        keyword: search.trim(),
+        category: category !== "All Categories" ? category : undefined,
+        page: "FindWorkAllJobs",
+      });
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [search, category]);
+
+  // Activity-based recommendations
+  const [recInterests, setRecInterests] = useState<string[]>([]);
+  useEffect(() => { setRecInterests(getTopUserInterests(5)); }, []);
+  const recommendedJobs = useMemo<Job[]>(() => {
+    if (recInterests.length === 0 || search.trim()) return [];
+    return scoreJobsAgainstInterests(openJobs).slice(0, 3) as Job[];
+  }, [recInterests, openJobs, search]);
+
   const filtered = useMemo(() => {
     let list = openJobs.filter((job) => {
       const q = search.toLowerCase();
@@ -469,7 +492,17 @@ export default function FindWorkAllJobs() {
                     {CATEGORIES.map((cat) => (
                       <button
                         key={cat}
-                        onClick={() => setCategory(cat)}
+                        onClick={() => {
+                          setCategory(cat);
+                          if (cat !== "All Categories") {
+                            saveUserActivity({
+                              activityType: "CategoryClick",
+                              category: cat,
+                              page: "FindWorkAllJobs",
+                            });
+                            setRecInterests(getTopUserInterests(5));
+                          }
+                        }}
                         className={`rounded-full px-3 py-1.5 text-xs transition ${
                           category === cat
                             ? "bg-[#474ead] text-white"
@@ -642,11 +675,55 @@ export default function FindWorkAllJobs() {
           </div>
         )}
 
+        {/* Recommended for You */}
+        {!isLoading && recommendedJobs.length > 0 && (
+          <div className="mb-6">
+            <div className="mb-3 flex items-center gap-2 text-sm font-medium text-[#474ead]">
+              <Zap className="h-4 w-4" />
+              Recommended for you — based on your recent activity
+            </div>
+            <div className="space-y-3">
+              {recommendedJobs.map((job) => (
+                <JobCard
+                  key={`rec-${job.id}`}
+                  job={job}
+                  onNavigate={(id) => {
+                    saveUserActivity({
+                      activityType: "JobClick",
+                      referenceId: id,
+                      title: job.title,
+                      category: job.category ?? undefined,
+                      tags: job.skillTags ?? undefined,
+                      page: "FindWorkAllJobs-Recommended",
+                    });
+                    navigate(`/find-work/job/${id}`);
+                  }}
+                />
+              ))}
+            </div>
+            <div className="my-6 border-t border-slate-200/60 dark:border-white/[0.07]" />
+          </div>
+        )}
+
         {/* Job list */}
         {!isLoading && filtered.length > 0 && (
           <div className="space-y-4">
             {filtered.map((job) => (
-              <JobCard key={job.id} job={job} onNavigate={(id) => navigate(`/find-work/job/${id}`)} />
+              <JobCard
+                key={job.id}
+                job={job}
+                onNavigate={(id) => {
+                  saveUserActivity({
+                    activityType: "JobClick",
+                    referenceId: id,
+                    title: job.title,
+                    category: job.category ?? undefined,
+                    tags: job.skillTags ?? undefined,
+                    page: "FindWorkAllJobs",
+                  });
+                  navigate(`/find-work/job/${id}`);
+                }}
+              />
             ))}
           </div>
         )}
