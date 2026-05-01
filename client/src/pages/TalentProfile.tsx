@@ -7,6 +7,7 @@ import {
   Github, Link2, Star, ChevronRight, Upload, Pencil, Check,
   X, Plus, Trash2, Award, BookOpen, User, FileText, ExternalLink,
   Clock, ChevronDown, Camera, Shield, AlertCircle, Download, Lock, LogOut, Eye, EyeOff,
+  Home, Layers, Compass, Menu,
 } from "lucide-react";
 import {
   TalentLoginModal,
@@ -78,18 +79,20 @@ function completionItems(c: Candidate) {
 // ─── Section wrapper ──────────────────────────────────────────────────────────
 
 function Section({
+  id,
   title,
   icon: Icon,
   children,
   action,
 }: {
+  id?: string;
   title: string;
   icon: React.ElementType;
   children: React.ReactNode;
   action?: React.ReactNode;
 }) {
   return (
-    <Card className="rounded-2xl border-slate-200/70 bg-white dark:border-white/10 dark:bg-white/[0.03]">
+    <Card id={id} className="scroll-mt-28 rounded-2xl border-slate-200/70 bg-white dark:border-white/10 dark:bg-white/[0.03]">
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 pb-3">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#474ead]/10">
@@ -273,6 +276,198 @@ function PhotoUploader({
   );
 }
 
+// ─── Profile Navbar ───────────────────────────────────────────────────────────
+
+function ProfileNavbar({
+  displayName,
+  photoUrl,
+  isOwner,
+  onSignOut,
+  onSignIn,
+}: {
+  displayName: string;
+  photoUrl: string;
+  isOwner: boolean;
+  onSignOut: () => void;
+  onSignIn: () => void;
+}) {
+  const [, navigate] = useLocation();
+  const { user } = useAuth();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const navLinks = [
+    { label: "Home", icon: Home, href: "/" },
+    { label: "Talent Pool", icon: Layers, href: "/talent-pool" },
+    { label: "Find Work", icon: Compass, href: "/find-work" },
+    { label: "Insights", icon: BookOpen, href: "/insights" },
+  ];
+
+  return (
+    <header className="sticky top-0 z-50 border-b border-slate-200/60 bg-white/90 backdrop-blur-md dark:border-white/10 dark:bg-[#060816]/90">
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 md:px-8">
+        {/* Logo */}
+        <button
+          onClick={() => navigate("/")}
+          className="shrink-0 text-xl font-bold tracking-tight text-[#474ead]"
+        >
+          OnSpot
+        </button>
+
+        {/* Desktop nav links */}
+        <nav className="hidden items-center gap-1 md:flex">
+          {navLinks.map((link) => (
+            <button
+              key={link.label}
+              onClick={() => navigate(link.href)}
+              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-white"
+            >
+              <link.icon className="h-3.5 w-3.5" />
+              {link.label}
+            </button>
+          ))}
+        </nav>
+
+        {/* Right: auth controls */}
+        <div className="flex items-center gap-2">
+          {isOwner ? (
+            <Button size="sm" variant="outline" className="hidden rounded-full md:flex" onClick={onSignOut}>
+              <LogOut className="mr-1.5 h-3.5 w-3.5" /> Sign out
+            </Button>
+          ) : !user && (
+            <Button size="sm" className="hidden rounded-full bg-[#474ead] text-white md:flex" onClick={onSignIn}>
+              <Lock className="mr-1.5 h-3.5 w-3.5" /> Sign in
+            </Button>
+          )}
+
+          {/* Mobile menu toggle */}
+          <button
+            className="rounded-full p-2 text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/[0.06] md:hidden"
+            onClick={() => setMobileOpen((v) => !v)}
+            aria-label="Menu"
+          >
+            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile dropdown */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.18 }}
+            className="overflow-hidden border-t border-slate-100 bg-white dark:border-white/10 dark:bg-[#060816] md:hidden"
+          >
+            <div className="flex flex-col gap-1 px-4 py-3">
+              {navLinks.map((link) => (
+                <button
+                  key={link.label}
+                  onClick={() => { navigate(link.href); setMobileOpen(false); }}
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/[0.04]"
+                >
+                  <link.icon className="h-4 w-4 text-[#474ead]" /> {link.label}
+                </button>
+              ))}
+              <div className="mt-2 border-t border-slate-100 pt-2 dark:border-white/10">
+                {isOwner ? (
+                  <button
+                    onClick={() => { onSignOut(); setMobileOpen(false); }}
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/[0.04]"
+                  >
+                    <LogOut className="h-4 w-4" /> Sign out of profile
+                  </button>
+                ) : !user && (
+                  <button
+                    onClick={() => { onSignIn(); setMobileOpen(false); }}
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-[#474ead] hover:bg-[#474ead]/5"
+                  >
+                    <Lock className="h-4 w-4" /> Sign in to edit
+                  </button>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </header>
+  );
+}
+
+// ─── Section Tabs ──────────────────────────────────────────────────────────────
+
+const SECTION_TABS = [
+  { id: "section-overview", label: "Overview" },
+  { id: "section-about",    label: "About" },
+  { id: "section-skills",   label: "Skills" },
+  { id: "section-experience", label: "Experience" },
+  { id: "section-education", label: "Education" },
+  { id: "section-certifications", label: "Certifications" },
+  { id: "section-portfolio", label: "Portfolio" },
+  { id: "section-resume",   label: "Resume" },
+  { id: "section-preferences", label: "Preferences" },
+  { id: "section-contact",  label: "Contact" },
+];
+
+function SectionTabs({ visibleIds }: { visibleIds: Set<string> }) {
+  const [active, setActive] = useState("section-overview");
+  const tabsRef = useRef<HTMLDivElement>(null);
+
+  // Track which section is in view
+  useEffect(() => {
+    const observers: IntersectionObserver[] = [];
+    SECTION_TABS.forEach(({ id }) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const obs = new IntersectionObserver(
+        ([entry]) => { if (entry.isIntersecting) setActive(id); },
+        { rootMargin: "-30% 0px -60% 0px", threshold: 0 }
+      );
+      obs.observe(el);
+      observers.push(obs);
+    });
+    return () => observers.forEach((o) => o.disconnect());
+  }, []);
+
+  function scrollTo(id: string) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      setActive(id);
+    }
+    // Scroll tab button into view
+    const btn = tabsRef.current?.querySelector(`[data-tab="${id}"]`);
+    btn?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  }
+
+  const tabs = SECTION_TABS.filter((t) => visibleIds.has(t.id));
+
+  return (
+    <div className="sticky top-14 z-40 border-b border-slate-200/60 bg-white/90 backdrop-blur-md dark:border-white/10 dark:bg-[#060816]/90">
+      <div
+        ref={tabsRef}
+        className="mx-auto flex max-w-6xl gap-0.5 overflow-x-auto px-4 py-1 scrollbar-none md:px-8"
+      >
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            data-tab={tab.id}
+            onClick={() => scrollTo(tab.id)}
+            className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
+              active === tab.id
+                ? "bg-[#474ead]/10 text-[#474ead]"
+                : "text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-white"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main page ─────────────────────────────────────────────────────────────────
 
 export default function TalentProfile() {
@@ -413,6 +608,20 @@ export default function TalentProfile() {
   const completion = completionItems(candidate);
   const completionPct = Math.round((completion.filter((i) => i.done).length / completion.length) * 100);
 
+  // Determine which section tabs are visible
+  const visibleSectionIds = new Set([
+    "section-overview",
+    "section-about",
+    "section-skills",
+    "section-experience",
+    "section-education",
+    "section-certifications",
+    "section-portfolio",
+    "section-resume",
+    "section-preferences",
+    ...(canSeeContact || isOwner ? ["section-contact"] : []),
+  ]);
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-[#060816] dark:text-white">
 
@@ -425,8 +634,18 @@ export default function TalentProfile() {
           onSuccess={(auth) => setTalentAuth(auth)}
         />
       )}
+
+      {/* ── Profile Navbar ── */}
+      <ProfileNavbar
+        displayName={displayName}
+        photoUrl={photoUrl}
+        isOwner={isOwner}
+        onSignOut={handleLogout}
+        onSignIn={() => setShowLoginModal(true)}
+      />
+
       {/* ── Cover Banner ── */}
-      <div className="relative h-48 overflow-hidden bg-gradient-to-br from-[#474ead] via-[#5b61c0] to-[#6366f1] md:h-64">
+      <div id="section-overview" className="relative h-48 overflow-hidden bg-gradient-to-br from-[#474ead] via-[#5b61c0] to-[#6366f1] md:h-64">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.12),transparent_55%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(99,102,241,0.35),transparent_55%)]" />
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-slate-50 dark:from-[#060816]" />
@@ -562,19 +781,12 @@ export default function TalentProfile() {
                 </Button>
               )}
 
-              {/* Owner auth controls — only shown to the authenticated profile owner */}
-              {isOwner && (
-                <Button
-                  variant="outline"
-                  className="ml-auto rounded-full text-sm text-slate-600"
-                  onClick={handleLogout}
-                >
-                  <LogOut className="mr-1.5 h-4 w-4" /> Sign out
-                </Button>
-              )}
             </div>
           </div>
       </div>
+
+      {/* ── Section Tabs ── */}
+      <SectionTabs visibleIds={visibleSectionIds} />
 
       {/* ── Body content ── */}
       <div className="mx-auto mt-6 max-w-4xl px-4 pb-20 md:px-8">
@@ -583,7 +795,7 @@ export default function TalentProfile() {
           <div className="space-y-4">
 
             {/* About */}
-            <Section title="About" icon={User}>
+            <Section id="section-about" title="About" icon={User}>
               <EditField
                 label="Summary"
                 value={candidate.summary ?? ""}
@@ -595,7 +807,7 @@ export default function TalentProfile() {
             </Section>
 
             {/* Skills */}
-            <Section title="Skills" icon={Star}>
+            <Section id="section-skills" title="Skills" icon={Star}>
               {allSkills.length === 0 ? (
                 <p className="text-sm text-slate-400">No skills added yet.</p>
               ) : (
@@ -630,6 +842,7 @@ export default function TalentProfile() {
 
             {/* Experience */}
             <Section
+              id="section-experience"
               title="Experience"
               icon={Briefcase}
               action={canEdit ? (
@@ -672,6 +885,7 @@ export default function TalentProfile() {
 
             {/* Education */}
             <Section
+              id="section-education"
               title="Education"
               icon={BookOpen}
               action={canEdit ? (
@@ -714,6 +928,7 @@ export default function TalentProfile() {
 
             {/* Certifications */}
             <Section
+              id="section-certifications"
               title="Certifications"
               icon={Award}
               action={canEdit ? (
@@ -816,7 +1031,7 @@ export default function TalentProfile() {
             </Card>
 
             {/* Preferences */}
-            <Section title="Preferences" icon={Globe2}>
+            <Section id="section-preferences" title="Preferences" icon={Globe2}>
               <PreferencesDisplay
                 prefs={prefs}
                 availability={candidate.availability ?? null}
@@ -832,7 +1047,7 @@ export default function TalentProfile() {
             </Section>
 
             {/* Portfolio & Links */}
-            <Section title="Portfolio & Links" icon={Link2}>
+            <Section id="section-portfolio" title="Portfolio & Links" icon={Link2}>
               <div className="space-y-2">
                 <LinkField
                   icon={Linkedin}
@@ -870,13 +1085,13 @@ export default function TalentProfile() {
             </Section>
 
             {/* Resume */}
-            <Section title="Resume" icon={FileText}>
+            <Section id="section-resume" title="Resume" icon={FileText}>
               <ResumeSection candidateId={candidate.id} candidate={candidate} canEdit={canEdit} talentToken={talentAuth?.token} />
             </Section>
 
             {/* Contact (role-gated) */}
             {canSeeContact && (
-              <Section title="Contact" icon={Shield}>
+              <Section id="section-contact" title="Contact" icon={Shield}>
                 <div className="space-y-2 text-sm">
                   {candidate.email && (
                     <a href={`mailto:${candidate.email}`} className="flex items-center gap-2 text-slate-700 hover:text-[#474ead] dark:text-slate-300">

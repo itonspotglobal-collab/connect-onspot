@@ -1,0 +1,276 @@
+Enhance the Talent Profile Page by adding a dedicated profile navigation bar and additional profile features.
+
+Current context:
+
+* The Talent Profile Page is inspired by LinkedIn.
+* It already displays:
+
+  * cover/banner area
+  * profile photo
+  * talent display name
+  * headline
+  * location
+  * work setup
+  * profile strength
+  * about section
+  * skills section
+  * preferences section
+* The “Edit my profile” button should only be visible to the logged-in profile owner.
+* Authentication should still only be active for the Talent Profile edit flow, not globally.
+
+Main requirement:
+Add a navigation bar to the Talent Profile Page, inspired by LinkedIn but visually different and consistent with OnSpot branding.
+
+Feature 1: Talent Profile Navigation Bar
+
+Add a top navigation bar for the Talent Profile Page.
+
+Design requirements:
+
+1. Use OnSpot branding, not LinkedIn branding.
+2. Do not copy LinkedIn’s exact layout, icons, or colors.
+3. The navbar should feel professional, clean, and consistent with the current purple/blue OnSpot design.
+4. It should be sticky or fixed at the top if it improves navigation.
+5. It should work well on desktop and mobile.
+
+Suggested navbar contents:
+
+* OnSpot logo or wordmark
+* Search input or search icon
+* Navigation links:
+
+  * Home
+  * Talent Pool
+  * Find Work
+  * Insights
+  * Messages or Contact
+* Profile menu/avatar on the right
+* Optional sign-in/sign-out button depending on auth state
+
+Suggested profile-specific secondary navigation:
+Below the main navbar, add a section/tab navigation for the profile page:
+
+* Overview
+* About
+* Skills
+* Experience
+* Education
+* Resume
+* Preferences
+* Portfolio
+* Contact
+
+When clicked, each tab should scroll to the corresponding profile section.
+
+Example:
+
+```tsx id="3txgy8"
+<nav className="profile-section-tabs">
+  <button onClick={() => scrollToSection("overview")}>Overview</button>
+  <button onClick={() => scrollToSection("about")}>About</button>
+  <button onClick={() => scrollToSection("skills")}>Skills</button>
+  <button onClick={() => scrollToSection("experience")}>Experience</button>
+  <button onClick={() => scrollToSection("education")}>Education</button>
+  <button onClick={() => scrollToSection("resume")}>Resume</button>
+  <button onClick={() => scrollToSection("portfolio")}>Portfolio</button>
+</nav>
+```
+
+Feature 2: Profile sections to add or improve
+
+Add or improve these Talent Profile sections:
+
+1. Overview/Header
+
+   * profile photo
+   * cover banner
+   * display name
+   * headline
+   * location
+   * work setup
+   * availability
+   * profile strength badge
+   * contact button
+   * resume button
+   * edit button only for owner
+
+2. About
+
+   * summary/bio
+   * career objective
+   * editable only by owner
+
+3. Skills
+
+   * core skills
+   * secondary skills
+   * tools/technologies
+   * highlight top skills
+
+4. Experience
+
+   * job title
+   * company
+   * employment period
+   * work setup
+   * responsibilities
+   * achievements
+
+5. Education
+
+   * school
+   * degree/course
+   * year graduated
+   * honors or achievements if available
+
+6. Resume
+
+   * show uploaded resume status
+   * view resume
+   * download resume
+   * replace resume only if owner
+
+7. Preferences
+
+   * preferred role
+   * availability
+   * work setup
+   * shift preference
+   * employment type
+   * expected salary if applicable
+
+8. Portfolio / Links
+
+   * LinkedIn URL
+   * GitHub URL
+   * portfolio website
+   * personal website
+   * other links
+
+9. Certifications
+
+   * certificate name
+   * issuing organization
+   * issue date
+   * credential link
+
+10. Contact
+
+* contact info should follow role-based visibility
+* owners and authorized admins can see full contact details
+* clients should only see allowed contact/request-interview options
+* public users should not see sensitive details
+
+Feature 3: Owner-only edit controls
+
+Make sure edit controls are only visible to the profile owner.
+
+Requirements:
+
+1. If the logged-in user owns the profile:
+
+   * show “Edit my profile”
+   * show section edit buttons/icons
+   * allow photo, name, headline, summary, skills, resume, and profile section updates
+
+2. If the user is not logged in:
+
+   * hide all edit buttons
+   * show read-only profile
+
+3. If the user is logged in but does not own the profile:
+
+   * hide all edit buttons
+   * show read-only profile
+
+Use this rule:
+
+```ts id="7jr0pl"
+const isOwner =
+  Boolean(authUser?.id) &&
+  Boolean(talentProfile?.userId) &&
+  authUser.id === talentProfile.userId;
+```
+
+Important:
+
+```tsx id="qwkmit"
+{isOwner && <EditProfileButton />}
+```
+
+Do not use:
+
+```tsx id="o5848p"
+{isAuthenticated && <EditProfileButton />}
+```
+
+Feature 4: Profile page actions
+
+Add useful action buttons in the profile header.
+
+For owner:
+
+* Edit my profile
+* Upload/change profile photo
+* Upload/change cover photo
+* Replace resume
+* Preview public profile
+* Back to Talent Pool
+
+For non-owner:
+
+* Contact
+* Request interview
+* Save/Shortlist
+* Download resume if allowed
+* Back to Talent Pool
+
+Feature 5: Responsive behavior
+
+Make the profile navigation and sections responsive.
+
+Desktop:
+
+* navbar at top
+* profile content in two columns
+* main profile sections on the left
+* profile strength/preferences/contact card on the right
+
+Mobile:
+
+* navbar collapses into menu
+* profile tabs become horizontal scroll tabs
+* profile content becomes single column
+* action buttons stack cleanly
+
+Feature 6: Visual direction
+
+Take inspiration from LinkedIn only for structure, not exact design.
+
+Use OnSpot style:
+
+* purple/blue gradient accents
+* rounded cards
+* soft shadows
+* clean white background
+* pill badges
+* subtle borders
+* professional but modern layout
+
+Avoid:
+
+* LinkedIn blue branding
+* exact LinkedIn icons
+* exact LinkedIn header layout
+* copied visual details
+
+Expected output:
+
+* Add a Talent Profile navbar/header.
+* Add profile section tabs with scroll behavior.
+* Add or improve missing profile sections.
+* Keep edit controls owner-only.
+* Keep Talent Profile view accessible in read-only mode.
+* Keep authentication limited to Talent Profile editing only.
+* Make the page responsive.
+* Keep design consistent with OnSpot branding.
