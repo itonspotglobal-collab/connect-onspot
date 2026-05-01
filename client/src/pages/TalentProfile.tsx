@@ -499,6 +499,223 @@ function SectionTabs({ visibleIds }: { visibleIds: Set<string> }) {
   );
 }
 
+// ─── EditSkillsModal ───────────────────────────────────────────────────────────
+
+const MAX_CORE = 10;
+const MAX_SKILL_LEN = 50;
+
+function normalizeSkill(s: string) { return s.trim(); }
+
+function EditSkillsModal({
+  open,
+  onClose,
+  initialCore,
+  initialSecondary,
+  onSave,
+  saving,
+}: {
+  open: boolean;
+  onClose: () => void;
+  initialCore: string[];
+  initialSecondary: string[];
+  onSave: (core: string[], secondary: string[]) => void;
+  saving: boolean;
+}) {
+  const [coreSkills, setCoreSkills] = useState<string[]>([]);
+  const [secondarySkills, setSecondarySkills] = useState<string[]>([]);
+  const [coreInput, setCoreInput] = useState("");
+  const [secInput, setSecInput] = useState("");
+  const coreRef = useRef<HTMLInputElement>(null);
+  const secRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open) {
+      setCoreSkills(initialCore);
+      setSecondarySkills(initialSecondary);
+      setCoreInput("");
+      setSecInput("");
+    }
+  }, [open, initialCore, initialSecondary]);
+
+  function allLower() {
+    return [...coreSkills, ...secondarySkills].map((s) => s.toLowerCase());
+  }
+
+  function addSkill(raw: string, type: "core" | "secondary") {
+    const val = normalizeSkill(raw);
+    if (!val || val.length > MAX_SKILL_LEN) return false;
+    if (allLower().includes(val.toLowerCase())) return false;
+    if (type === "core") {
+      if (coreSkills.length >= MAX_CORE) return false;
+      setCoreSkills((p) => [...p, val]);
+    } else {
+      setSecondarySkills((p) => [...p, val]);
+    }
+    return true;
+  }
+
+  function removeSkill(skill: string, type: "core" | "secondary") {
+    if (type === "core") setCoreSkills((p) => p.filter((s) => s !== skill));
+    else setSecondarySkills((p) => p.filter((s) => s !== skill));
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>, type: "core" | "secondary") {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      const raw = type === "core" ? coreInput : secInput;
+      if (addSkill(raw, type)) {
+        if (type === "core") setCoreInput("");
+        else setSecInput("");
+      }
+    }
+    if (e.key === "Backspace") {
+      const raw = type === "core" ? coreInput : secInput;
+      if (!raw) {
+        if (type === "core" && coreSkills.length > 0)
+          setCoreSkills((p) => p.slice(0, -1));
+        else if (type === "secondary" && secondarySkills.length > 0)
+          setSecondarySkills((p) => p.slice(0, -1));
+      }
+    }
+  }
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center">
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={onClose}
+          />
+          {/* Panel */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 12 }}
+            transition={{ duration: 0.18 }}
+            className="relative z-10 mx-4 w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl dark:bg-slate-900"
+          >
+            {/* Header */}
+            <div className="mb-5 flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-semibold text-slate-900 dark:text-white">Edit Skills</h2>
+                <p className="mt-0.5 text-xs text-slate-500">Type a skill and press Enter to add it.</p>
+              </div>
+              <button
+                onClick={onClose}
+                className="rounded-full p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-white/10"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Core Skills */}
+            <div className="mb-4">
+              <div className="mb-1.5 flex items-center justify-between">
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  Core Skills <span className="ml-1 text-slate-300">({coreSkills.length}/{MAX_CORE})</span>
+                </label>
+              </div>
+              <div
+                className="flex min-h-[44px] cursor-text flex-wrap gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-white/5"
+                onClick={() => coreRef.current?.focus()}
+              >
+                {coreSkills.map((sk) => (
+                  <span
+                    key={sk}
+                    className="flex items-center gap-1 rounded-full bg-[#474ead]/10 px-2.5 py-0.5 text-xs font-medium text-[#474ead]"
+                  >
+                    {sk}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); removeSkill(sk, "core"); }}
+                      className="ml-0.5 rounded-full p-0.5 hover:bg-[#474ead]/20"
+                    >
+                      <X className="h-2.5 w-2.5" />
+                    </button>
+                  </span>
+                ))}
+                {coreSkills.length < MAX_CORE && (
+                  <input
+                    ref={coreRef}
+                    value={coreInput}
+                    onChange={(e) => setCoreInput(e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(e, "core")}
+                    onBlur={() => { if (coreInput.trim()) { addSkill(coreInput, "core"); setCoreInput(""); }}}
+                    placeholder={coreSkills.length === 0 ? "e.g. React, TypeScript…" : ""}
+                    maxLength={MAX_SKILL_LEN}
+                    className="min-w-[120px] flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-300 dark:text-slate-200"
+                  />
+                )}
+              </div>
+              <p className="mt-1 text-[11px] text-slate-400">Your top skills — highlight what you do best (max {MAX_CORE}).</p>
+            </div>
+
+            {/* Secondary Skills */}
+            <div className="mb-6">
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                Secondary Skills
+              </label>
+              <div
+                className="flex min-h-[44px] cursor-text flex-wrap gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-white/5"
+                onClick={() => secRef.current?.focus()}
+              >
+                {secondarySkills.map((sk) => (
+                  <span
+                    key={sk}
+                    className="flex items-center gap-1 rounded-full bg-slate-200/70 px-2.5 py-0.5 text-xs font-medium text-slate-700 dark:bg-white/10 dark:text-slate-300"
+                  >
+                    {sk}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); removeSkill(sk, "secondary"); }}
+                      className="ml-0.5 rounded-full p-0.5 hover:bg-slate-300 dark:hover:bg-white/20"
+                    >
+                      <X className="h-2.5 w-2.5" />
+                    </button>
+                  </span>
+                ))}
+                <input
+                  ref={secRef}
+                  value={secInput}
+                  onChange={(e) => setSecInput(e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(e, "secondary")}
+                  onBlur={() => { if (secInput.trim()) { addSkill(secInput, "secondary"); setSecInput(""); }}}
+                  placeholder={secondarySkills.length === 0 ? "e.g. Git, Agile, Figma…" : ""}
+                  maxLength={MAX_SKILL_LEN}
+                  className="min-w-[120px] flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-300 dark:text-slate-200"
+                />
+              </div>
+              <p className="mt-1 text-[11px] text-slate-400">Supporting skills, tools, and technologies.</p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-2">
+              <Button variant="ghost" size="sm" onClick={onClose} disabled={saving}>
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                disabled={saving}
+                onClick={() => onSave(coreSkills, secondarySkills)}
+                className="bg-[#474ead] text-white hover:bg-[#3a3e99]"
+              >
+                {saving ? (
+                  <><span className="mr-2 inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" /> Saving…</>
+                ) : (
+                  <><Check className="mr-1.5 h-3.5 w-3.5" /> Save Skills</>
+                )}
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 // ─── Main page ─────────────────────────────────────────────────────────────────
 
 export default function TalentProfile() {
@@ -514,6 +731,7 @@ export default function TalentProfile() {
   // ── Talent auth state ──────────────────────────────────────────────────────
   const [talentAuth, setTalentAuth] = useState<TalentAuthState | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showSkillsModal, setShowSkillsModal] = useState(false);
 
   useEffect(() => {
     const stored = loadTalentAuth();
@@ -598,6 +816,18 @@ export default function TalentProfile() {
     patchMutation.mutate({ [field]: value } as any);
   }
 
+  function handleSaveSkills(core: string[], secondary: string[]) {
+    patchMutation.mutate(
+      { coreSkills: core, secondarySkills: secondary } as any,
+      {
+        onSuccess: () => {
+          setShowSkillsModal(false);
+          toast({ title: "Skills saved", description: "Your skills have been updated." });
+        },
+      }
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-[#060816]">
@@ -663,6 +893,18 @@ export default function TalentProfile() {
           open={showLoginModal}
           onClose={() => setShowLoginModal(false)}
           onSuccess={(auth) => setTalentAuth(auth)}
+        />
+      )}
+
+      {/* ── Edit Skills Modal ── */}
+      {canEdit && (
+        <EditSkillsModal
+          open={showSkillsModal}
+          onClose={() => setShowSkillsModal(false)}
+          initialCore={candidate.coreSkills ?? []}
+          initialSecondary={candidate.secondarySkills ?? []}
+          onSave={handleSaveSkills}
+          saving={patchMutation.isPending}
         />
       )}
 
@@ -837,9 +1079,35 @@ export default function TalentProfile() {
             </Section>
 
             {/* Skills */}
-            <Section id="section-skills" title="Skills" icon={Star}>
+            <Section
+              id="section-skills"
+              title="Skills"
+              icon={Star}
+              action={canEdit ? (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 rounded-full text-xs"
+                  onClick={() => setShowSkillsModal(true)}
+                >
+                  <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
+                </Button>
+              ) : undefined}
+            >
               {allSkills.length === 0 ? (
-                <p className="text-sm text-slate-400">No skills added yet.</p>
+                <div className="flex flex-col items-start gap-3">
+                  <p className="text-sm text-slate-400">No skills added yet.</p>
+                  {canEdit && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-full text-xs"
+                      onClick={() => setShowSkillsModal(true)}
+                    >
+                      <Plus className="mr-1 h-3.5 w-3.5" /> Add Skills
+                    </Button>
+                  )}
+                </div>
               ) : (
                 <div className="space-y-4">
                   {(candidate.coreSkills?.length ?? 0) > 0 && (

@@ -1,0 +1,186 @@
+Update the Talent Profile Page so the Skills section is editable by the profile owner.
+
+Current issue:
+
+* The Skills section displays core skills and secondary skills.
+* However, during testing, skills cannot be edited from the Talent Profile Page.
+* Talents should be able to add, remove, and update their skills as they see fit.
+
+Main requirement:
+Make the Skills section editable, but only for the logged-in profile owner.
+
+Expected behavior:
+
+1. If the viewer is the profile owner:
+
+   * Show an edit button/icon on the Skills section.
+   * Allow adding new skills.
+   * Allow removing existing skills.
+   * Allow moving or classifying skills as core skills or secondary skills.
+   * Save changes to the database.
+2. If the viewer is not the owner:
+
+   * Hide the edit button.
+   * Show the Skills section in read-only mode.
+3. If the viewer is not logged in:
+
+   * Hide the edit button.
+   * Show the Skills section in read-only mode.
+
+Ownership rule:
+
+```ts
+const isOwner =
+  Boolean(authUser?.id) &&
+  Boolean(talentProfile?.userId) &&
+  authUser.id === talentProfile.userId;
+```
+
+Render edit controls only when:
+
+```tsx
+{isOwner && <EditSkillsButton />}
+```
+
+Do not use:
+
+```tsx
+{isAuthenticated && <EditSkillsButton />}
+```
+
+Editable Skills UI requirements:
+
+1. Add an `Edit Skills` button/icon in the Skills card header.
+2. When clicked, open either:
+
+   * an edit modal, or
+   * inline edit mode inside the Skills card.
+3. The edit UI should support:
+
+   * adding a skill by typing and pressing Enter
+   * removing a skill using an `x` button on each skill pill
+   * editing core skills separately from secondary skills
+   * preventing duplicate skills
+   * trimming extra spaces
+   * limiting max character length per skill
+4. Optional but recommended:
+
+   * allow selecting from suggested skills
+   * allow promoting a secondary skill to core skill
+   * allow demoting a core skill to secondary skill
+   * limit core skills to a reasonable number, such as 5 to 10
+
+Suggested data model:
+
+```ts
+coreSkills: string[];
+secondarySkills: string[];
+```
+
+Suggested component names:
+
+* `EditableSkillsSection`
+* `EditSkillsModal`
+* `SkillTagInput`
+* `SkillPill`
+
+Suggested UI flow:
+
+1. Owner clicks `Edit` on the Skills section.
+2. Modal opens with two editable tag inputs:
+
+   * Core Skills
+   * Secondary Skills
+3. Owner can add/remove skills.
+4. Owner clicks `Save`.
+5. Call the profile update API.
+6. Update local profile state immediately after successful save.
+7. Close the modal.
+8. Updated skills should appear in the Skills section and Talent Pool card.
+
+Backend/API requirements:
+
+1. Update the Talent Profile update endpoint to accept:
+
+```ts
+coreSkills: string[];
+secondarySkills: string[];
+```
+
+2. The update endpoint must require authentication.
+3. The update endpoint must verify the authenticated user owns the profile.
+4. Reject unauthorized updates with `401 Unauthorized` or `403 Forbidden`.
+5. Validate skills on the backend:
+
+   * array of strings
+   * no empty values
+   * remove duplicates
+   * trim whitespace
+   * enforce maximum length
+6. Return the updated talent profile object after saving.
+7. Do not expose password or sensitive auth fields.
+
+Frontend update requirements:
+
+1. Add skills to the editable profile form/state.
+2. Add local validation before saving:
+
+   * no empty skills
+   * no duplicates
+   * max length per skill
+3. Show loading state while saving.
+4. Show success message after saving.
+5. Show error message if saving fails.
+6. After saving, update the local `talentProfile` state.
+7. If React Query/SWR is used, invalidate:
+
+   * the individual talent profile query
+   * the Talent Pool list query
+8. Make sure the Talent Pool card also reflects updated skills after navigating back.
+
+Suggested helper for adding skills:
+
+```ts
+const normalizeSkill = (skill: string) => skill.trim();
+
+const addSkill = (skill: string, type: "core" | "secondary") => {
+  const normalized = normalizeSkill(skill);
+
+  if (!normalized) return;
+  if (normalized.length > 50) return;
+
+  const allSkills = [...coreSkills, ...secondarySkills].map((s) =>
+    s.toLowerCase()
+  );
+
+  if (allSkills.includes(normalized.toLowerCase())) return;
+
+  if (type === "core") {
+    setCoreSkills((prev) => [...prev, normalized]);
+  } else {
+    setSecondarySkills((prev) => [...prev, normalized]);
+  }
+};
+```
+
+Suggested remove skill helper:
+
+```ts
+const removeSkill = (skill: string, type: "core" | "secondary") => {
+  if (type === "core") {
+    setCoreSkills((prev) => prev.filter((s) => s !== skill));
+  } else {
+    setSecondarySkills((prev) => prev.filter((s) => s !== skill));
+  }
+};
+```
+
+Expected result:
+
+* Profile owner can edit core and secondary skills.
+* Profile owner can add and remove skills.
+* Non-owners cannot see edit controls.
+* Updated skills are saved to the database.
+* Updated skills display immediately on the Talent Profile Page.
+* Updated skills also appear in the Talent Pool card after refresh/refetch.
+* Authentication remains limited to the Talent Profile edit flow only.
