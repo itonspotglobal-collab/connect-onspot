@@ -7,7 +7,7 @@ import {
   Github, Link2, Star, ChevronRight, Upload, Pencil, Check,
   X, Plus, Trash2, Award, BookOpen, User, FileText, ExternalLink,
   Clock, ChevronDown, Camera, Shield, AlertCircle, Download, Lock, LogOut, Eye, EyeOff,
-  Home, Layers, Compass, Menu,
+  Menu,
 } from "lucide-react";
 import {
   TalentLoginModal,
@@ -25,6 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAdmin } from "@/lib/authUtils";
+import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
 import { apiRequest } from "@/lib/queryClient";
 import type { Candidate } from "@shared/schema";
 
@@ -278,70 +279,97 @@ function PhotoUploader({
 
 // ─── Profile Navbar ───────────────────────────────────────────────────────────
 
+const PROFILE_NAV_LINKS = [
+  { label: "Hire Talent", href: "/hire-talent" },
+  { label: "Talent Pool", href: "/talent-pool" },
+  { label: "Find Work", href: "/find-work" },
+  { label: "Why OnSpot", href: "/why-onspot" },
+  { label: "Solutions", href: "/solutions" },
+];
+
 function ProfileNavbar({
   displayName,
-  photoUrl,
   isOwner,
   onSignOut,
   onSignIn,
 }: {
   displayName: string;
-  photoUrl: string;
   isOwner: boolean;
   onSignOut: () => void;
   onSignIn: () => void;
 }) {
   const [, navigate] = useLocation();
-  const { user } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const navLinks = [
-    { label: "Home", icon: Home, href: "/" },
-    { label: "Talent Pool", icon: Layers, href: "/talent-pool" },
-    { label: "Find Work", icon: Compass, href: "/find-work" },
-    { label: "Insights", icon: BookOpen, href: "/insights" },
-  ];
-
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200/60 bg-white/90 backdrop-blur-md dark:border-white/10 dark:bg-[#060816]/90">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 md:px-8">
+    <header
+      className="sticky top-0 z-50 backdrop-blur-md"
+      style={{ background: "linear-gradient(90deg, #3A3AF8 0%, #7F3DF4 100%)" }}
+    >
+      <div
+        className="mx-auto flex items-center justify-between"
+        style={{
+          height: "64px",
+          paddingLeft: "clamp(16px, 4vw, 24px)",
+          paddingRight: "clamp(16px, 4vw, 24px)",
+          maxWidth: "min(1200px, 92vw)",
+          width: "100%",
+        }}
+      >
         {/* Logo */}
-        <button
-          onClick={() => navigate("/")}
-          className="shrink-0 text-xl font-bold tracking-tight text-[#474ead]"
-        >
-          OnSpot
+        <button onClick={() => navigate("/")} className="shrink-0 transition-opacity hover:opacity-80">
+          <img
+            src={onspotLogo}
+            alt="OnSpot"
+            className="h-7 w-auto brightness-0 saturate-100 invert drop-shadow-sm"
+          />
         </button>
 
         {/* Desktop nav links */}
         <nav className="hidden items-center gap-1 md:flex">
-          {navLinks.map((link) => (
+          {PROFILE_NAV_LINKS.map((link) => (
             <button
               key={link.label}
               onClick={() => navigate(link.href)}
-              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-white"
+              className="rounded-lg px-3 py-2 text-sm font-medium text-white/80 transition-all duration-200 hover:bg-white/10 hover:text-white"
             >
-              <link.icon className="h-3.5 w-3.5" />
               {link.label}
             </button>
           ))}
         </nav>
 
-        {/* Right: auth controls */}
-        <div className="flex items-center gap-2">
+        {/* Right: CTA / auth */}
+        <div className="flex items-center gap-3">
           {isOwner ? (
-            <Button size="sm" variant="outline" className="hidden rounded-full md:flex" onClick={onSignOut}>
-              <LogOut className="mr-1.5 h-3.5 w-3.5" /> Sign out
-            </Button>
-          ) : !user && (
-            <Button size="sm" className="hidden rounded-full bg-[#474ead] text-white md:flex" onClick={onSignIn}>
-              <Lock className="mr-1.5 h-3.5 w-3.5" /> Sign in
-            </Button>
+            <>
+              {/* My Profile indicator + Sign out */}
+              <span className="hidden text-sm font-medium text-white/80 md:block">
+                {displayName}
+              </span>
+              <button
+                onClick={onSignOut}
+                className="hidden items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:bg-white/10 md:flex"
+              >
+                <LogOut className="h-3.5 w-3.5" /> Sign out
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={onSignIn}
+              className="relative hidden items-center gap-2 overflow-hidden rounded-lg px-5 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:scale-105 md:flex"
+              style={{
+                background: "linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)",
+                boxShadow: "0 4px 15px rgba(58,58,248,0.4), inset 0 1px 0 rgba(255,255,255,0.2)",
+              }}
+            >
+              <Lock className="h-3.5 w-3.5" />
+              Access Portal
+            </button>
           )}
 
-          {/* Mobile menu toggle */}
+          {/* Mobile hamburger */}
           <button
-            className="rounded-full p-2 text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/[0.06] md:hidden"
+            className="rounded-lg p-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white md:hidden"
             onClick={() => setMobileOpen((v) => !v)}
             aria-label="Menu"
           >
@@ -358,32 +386,33 @@ function ProfileNavbar({
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.18 }}
-            className="overflow-hidden border-t border-slate-100 bg-white dark:border-white/10 dark:bg-[#060816] md:hidden"
+            className="overflow-hidden border-t border-white/10 md:hidden"
+            style={{ background: "linear-gradient(180deg, #4F40F0 0%, #7F3DF4 100%)" }}
           >
-            <div className="flex flex-col gap-1 px-4 py-3">
-              {navLinks.map((link) => (
+            <div className="flex flex-col gap-0.5 px-4 py-3">
+              {PROFILE_NAV_LINKS.map((link) => (
                 <button
                   key={link.label}
                   onClick={() => { navigate(link.href); setMobileOpen(false); }}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/[0.04]"
+                  className="rounded-lg px-3 py-2.5 text-left text-sm font-medium text-white/80 transition-colors hover:bg-white/10 hover:text-white"
                 >
-                  <link.icon className="h-4 w-4 text-[#474ead]" /> {link.label}
+                  {link.label}
                 </button>
               ))}
-              <div className="mt-2 border-t border-slate-100 pt-2 dark:border-white/10">
+              <div className="mt-2 border-t border-white/10 pt-2">
                 {isOwner ? (
                   <button
                     onClick={() => { onSignOut(); setMobileOpen(false); }}
-                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/[0.04]"
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white"
                   >
                     <LogOut className="h-4 w-4" /> Sign out of profile
                   </button>
-                ) : !user && (
+                ) : (
                   <button
                     onClick={() => { onSignIn(); setMobileOpen(false); }}
-                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-[#474ead] hover:bg-[#474ead]/5"
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
                   >
-                    <Lock className="h-4 w-4" /> Sign in to edit
+                    <Lock className="h-4 w-4" /> Access Portal
                   </button>
                 )}
               </div>
@@ -444,7 +473,7 @@ function SectionTabs({ visibleIds }: { visibleIds: Set<string> }) {
   const tabs = SECTION_TABS.filter((t) => visibleIds.has(t.id));
 
   return (
-    <div className="sticky top-14 z-40 border-b border-slate-200/60 bg-white/90 backdrop-blur-md dark:border-white/10 dark:bg-[#060816]/90">
+    <div className="sticky top-16 z-40 border-b border-slate-200/60 bg-white/90 backdrop-blur-md dark:border-white/10 dark:bg-[#060816]/90">
       <div
         ref={tabsRef}
         className="mx-auto flex max-w-6xl gap-0.5 overflow-x-auto px-4 py-1 scrollbar-none md:px-8"
@@ -638,7 +667,6 @@ export default function TalentProfile() {
       {/* ── Profile Navbar ── */}
       <ProfileNavbar
         displayName={displayName}
-        photoUrl={photoUrl}
         isOwner={isOwner}
         onSignOut={handleLogout}
         onSignIn={() => setShowLoginModal(true)}

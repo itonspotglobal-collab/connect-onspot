@@ -1,0 +1,88 @@
+Update the Talent Profile Page navigation bar so it matches the main OnSpot branding design.
+
+Current issue:
+
+* The Talent Profile navigation bar works and looks clean.
+* However, it does not fully match the current OnSpot brand/navbar style.
+* It should look more consistent with the main website navbar shown on the Find Work / landing page.
+
+Branding direction:
+Use the main OnSpot navbar as the visual reference:
+
+* purple gradient background
+* white OnSpot logo
+* clean centered navigation links
+* modern rounded CTA button
+* premium/light glow effect
+* consistent spacing and typography
+* polished SaaS-style layout
+
+Do not copy LinkedIn styling. The profile page navbar should look like it belongs to OnSpot.
+
+Required updates:
+
+1. Change the Talent Profile navbar background from white to the OnSpot purple gradient style.
+2. Use the white OnSpot logo/wordmark instead of the small plain text logo.
+3. Match the main website navbar spacing and layout.
+4. Use similar navigation items as the branded navbar:
+
+   * Hire Talent
+   * Find Work
+   * Why OnSpot
+   * Solutions
+   * Amazing
+5. Add a right-side CTA button similar to the main website:
+
+   * If not logged in: `Access Portal` or `Sign in`
+   * If logged in as talent: show avatar/profile menu or `My Profile`
+6. Use icons only if they match the brand style. Avoid mismatched thin/gray icons if they make the navbar feel different.
+7. Keep the navbar responsive.
+8. On mobile, collapse links into a menu button.
+
+Suggested desktop layout:
+
+```txt
+[OnSpot Logo]      Hire Talent | Find Work | Why OnSpot | Solutions | Amazing      [Access Portal]
+```
+
+Suggested styling:
+
+```tsx
+<header className="bg-gradient-to-r from-[#312E91] via-[#4F46E5] to-[#7C3AED] text-white">
+  <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+    ...
+  </nav>
+</header>
+```
+
+CTA button style:
+
+```tsx
+<button className="rounded-xl bg-white/15 px-5 py-3 text-white shadow-lg ring-1 ring-white/20 backdrop-blur hover:bg-white/25">
+  Access Portal
+</button>
+```
+
+Alternative CTA style:
+
+```tsx
+<button className="rounded-xl bg-gradient-to-r from-blue-500 to-violet-500 px-5 py-3 text-white shadow-lg hover:opacity-90">
+  Access Portal
+</button>
+```
+
+Important:
+
+* The Talent Profile navbar should visually match the main OnSpot navbar.
+* Keep the profile page section tabs below the profile header or below the navbar.
+* The profile section tabs can remain light/white because they are profile-specific navigation.
+* Do not make the section tabs look like the main navbar.
+* Keep “Edit my profile” visible only to the profile owner.
+* Do not enable authentication globally.
+
+Expected result:
+
+* Talent Profile Page navbar matches the OnSpot website branding.
+* The page feels like part of the same product and brand.
+* Main navbar uses purple gradient, white logo, white links, and branded CTA.
+* Profile-specific tabs remain separate and clean.
