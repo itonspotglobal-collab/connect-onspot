@@ -363,7 +363,7 @@ function ProfileNavbar({
               }}
             >
               <Lock className="h-3.5 w-3.5" />
-              Access Portal
+              Sign in
             </button>
           )}
 
@@ -412,7 +412,7 @@ function ProfileNavbar({
                     onClick={() => { onSignIn(); setMobileOpen(false); }}
                     className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
                   >
-                    <Lock className="h-4 w-4" /> Access Portal
+                    <Lock className="h-4 w-4" /> Sign in
                   </button>
                 )}
               </div>
@@ -474,10 +474,11 @@ function SectionTabs({ visibleIds }: { visibleIds: Set<string> }) {
 
   return (
     <div className="sticky top-16 z-40 border-b border-slate-200/60 bg-white/90 backdrop-blur-md dark:border-white/10 dark:bg-[#060816]/90">
-      <div
-        ref={tabsRef}
-        className="mx-auto flex max-w-6xl gap-0.5 overflow-x-auto px-4 py-1 scrollbar-none md:px-8"
-      >
+      <div className="mx-auto max-w-4xl px-4 md:px-8">
+        <div
+          ref={tabsRef}
+          className="flex items-center gap-0.5 overflow-x-auto py-1.5 scrollbar-none"
+        >
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -492,6 +493,7 @@ function SectionTabs({ visibleIds }: { visibleIds: Set<string> }) {
             {tab.label}
           </button>
         ))}
+        </div>
       </div>
     </div>
   );

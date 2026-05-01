@@ -1,0 +1,119 @@
+Update the Talent Profile navigation UI.
+
+Current issues:
+
+1. The top navbar CTA still says `Access Portal`.
+2. It should say `Sign in`.
+3. The profile section navigation bar with `Overview`, `About`, `Skills`, `Experience`, etc. is not visually centered/aligned with the profile content.
+
+Required changes:
+
+1. Rename CTA button
+
+* Change the top navbar button text from:
+
+```txt
+Access Portal
+```
+
+to:
+
+```txt
+Sign in
+```
+
+* Keep the same branded button styling.
+* If the user is already logged in, the button can show the logged-in profile/avatar/menu instead, but for unauthenticated users it should say `Sign in`.
+
+2. Center the profile section navigation bar
+   The section navigation containing:
+
+```txt
+Overview | About | Skills | Experience | Education | Certifications | Portfolio | Resume | Preferences
+```
+
+should be horizontally aligned with the main profile content container.
+
+Current problem:
+
+* The tabs appear shifted left.
+* They do not visually line up with the profile header/content width.
+
+Expected behavior:
+
+* The section tabs should sit inside the same max-width container as the profile header and content.
+* The tabs should be horizontally centered within the page.
+* The left edge of the tabs should align with the left edge of the profile content/header container.
+* On desktop, the tabs should look balanced and centered.
+* On mobile, the tabs should be horizontally scrollable.
+
+Recommended structure:
+
+```tsx
+<div className="border-y border-slate-200 bg-white/90 backdrop-blur">
+  <div className="mx-auto max-w-7xl px-6">
+    <nav className="flex items-center justify-center gap-2 overflow-x-auto py-3">
+      {tabs.map((tab) => (
+        <button>
+          {tab.label}
+        </button>
+      ))}
+    </nav>
+  </div>
+</div>
+```
+
+If the profile content uses a narrower container, use the same container width. For example:
+
+```tsx
+<div className="mx-auto max-w-5xl px-6">
+```
+
+Important:
+Use the same `max-w-*` and `px-*` values for:
+
+* profile header content
+* profile section tabs
+* profile body content
+
+Example:
+
+```tsx
+const PROFILE_CONTAINER_CLASS = "mx-auto max-w-6xl px-6";
+```
+
+Then reuse it:
+
+```tsx
+<div className={PROFILE_CONTAINER_CLASS}>Profile header</div>
+<div className={PROFILE_CONTAINER_CLASS}>Profile tabs</div>
+<div className={PROFILE_CONTAINER_CLASS}>Profile body</div>
+```
+
+3. Improve tab visual alignment
+
+* Keep `Overview` active pill styling.
+* Make tab spacing consistent.
+* Avoid tabs stretching full width unevenly.
+* Do not let the nav start from the far left of the screen.
+* Do not use arbitrary margins that only work on one screen size.
+
+Suggested tab nav style:
+
+```tsx
+<nav className="flex w-full items-center justify-center gap-3 overflow-x-auto whitespace-nowrap py-3">
+```
+
+For mobile:
+
+```tsx
+<nav className="flex items-center gap-2 overflow-x-auto whitespace-nowrap py-3 sm:justify-center">
+```
+
+4. Expected result
+
+* Top button says `Sign in`, not `Access Portal`.
+* Profile section tabs are centered and aligned with the profile content.
+* The tabs no longer look shifted to the left.
+* The navbar remains consistent with OnSpot branding.
+* The layout stays responsive.
