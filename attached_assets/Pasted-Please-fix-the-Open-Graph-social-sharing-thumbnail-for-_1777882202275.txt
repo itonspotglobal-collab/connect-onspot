@@ -1,0 +1,65 @@
+Please fix the Open Graph/social sharing thumbnail for individual Insights blog posts.
+
+Current issue:
+When sharing a specific published blog post to Facebook or other social platforms, the preview image is using the generic OnSpot Insights thumbnail instead of the actual blog post thumbnail.
+
+Example:
+If I share the blog post “Checklist for Winning Virtual Interviews,” the Facebook preview should use that article’s thumbnail image, not the generic Insights page image.
+
+Requirements:
+
+1. Use article-specific Open Graph images
+For each individual blog post page, set:
+- `og:title` = article title
+- `og:description` = article excerpt/synopsis
+- `og:image` = article thumbnail/cover image
+- `og:url` = the specific article URL
+- `twitter:title` = article title
+- `twitter:description` = article excerpt/synopsis
+- `twitter:image` = article thumbnail/cover image
+- canonical URL = the specific article URL
+
+2. Keep generic metadata only for the main Insights page
+The main `/insights` page can keep the generic OnSpot Insights thumbnail and title.
+
+But individual article pages like:
+- `/insights/checklist-for-winning-virtual-interviews`
+- `/insights/:slug`
+
+must override the generic metadata with the article’s own metadata.
+
+3. Ensure the image URL is valid for social crawlers
+- `og:image` must be an absolute public URL, not a relative path
+- It should use the post’s uploaded thumbnail/cover image
+- If the post image is missing, then use a fallback image
+- But only use the generic Insights image as fallback, not as the default for all posts
+
+4. Fix share/copy link behavior
+- Any share button or copied URL from an article should use the article detail URL, not `/insights`
+- Make sure article cards and carousel “Read Article” links point to the correct slug route
+
+5. Support existing and future posts
+- Existing published posts should show their own thumbnails when shared
+- Newly published posts should automatically use their uploaded thumbnail as the social preview image
+- Admin-created thumbnails should flow through to social metadata
+
+6. Check server/head rendering
+Social platforms scrape HTML metadata before client-side JavaScript runs.
+Please make sure article-specific metadata is available in the initial HTML response or handled by the app’s SEO/meta system in a way social crawlers can read.
+
+Implementation guidance:
+- Inspect the article detail route/component, likely `InsightPost.tsx` or similar
+- Inspect any SEO/Helmet/meta component currently used
+- Check whether generic Insights metadata is being applied globally and overriding post metadata
+- Add or restore article-specific SEO metadata on the post detail page
+- Ensure the post data fetch by slug provides thumbnail/cover image before metadata is set
+- If the app is SPA-only, check whether server-side meta injection or route-specific meta handling is needed for social previews
+
+Expected result:
+When sharing “Checklist for Winning Virtual Interviews,” Facebook preview shows:
+- that article title
+- that article description
+- that article thumbnail image
+- that article URL
+
+It should no longer show the generic “Insights – Outsourcing Intelligence | OnSpot Global” preview image for individual posts.
