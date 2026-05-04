@@ -2498,8 +2498,115 @@
 .blog-content img {
   max-width: 100%;
   height: auto;
-  border-radius: 6px;
+  border-radius: 8px;
   margin: 16px 0;
+}
+
+/* ── Image wrap / alignment classes ─────────────────────────────────────────
+   Applied inside both .ql-editor (admin live preview) and
+   .blog-content (published article page).
+   On mobile (≤640px) all floats reset to full-width stacked blocks.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Float left — text wraps on the right */
+.ql-editor img.image-wrap-left,
+.blog-content img.image-wrap-left {
+  float: left;
+  max-width: 42%;
+  width: auto;
+  height: auto;
+  margin: 0.25em 1.75em 1.25em 0;
+  border-radius: 8px;
+  clear: left;
+}
+
+/* Float right — text wraps on the left */
+.ql-editor img.image-wrap-right,
+.blog-content img.image-wrap-right {
+  float: right;
+  max-width: 42%;
+  width: auto;
+  height: auto;
+  margin: 0.25em 0 1.25em 1.75em;
+  border-radius: 8px;
+  clear: right;
+}
+
+/* Centered block */
+.ql-editor img.image-center,
+.blog-content img.image-center {
+  display: block;
+  float: none;
+  max-width: 75%;
+  height: auto;
+  margin: 1.5em auto;
+  border-radius: 8px;
+}
+
+/* Full-width block (default when no wrap chosen) */
+.ql-editor img.image-full,
+.blog-content img.image-full {
+  display: block;
+  float: none;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5em 0;
+  border-radius: 8px;
+}
+
+/* Inline — sits at natural size within text flow */
+.ql-editor img.image-inline,
+.blog-content img.image-inline {
+  display: inline;
+  float: none;
+  max-width: 50%;
+  height: auto;
+  vertical-align: middle;
+  border-radius: 6px;
+  margin: 0 0.5em;
+}
+
+/* Headings and block elements always start below any float */
+.ql-editor h1, .ql-editor h2, .ql-editor h3, .ql-editor h4,
+.blog-content h1, .blog-content h2, .blog-content h3, .blog-content h4 {
+  clear: both;
+}
+
+/* Clearfix — ensures the blog-content container wraps its floated children */
+.blog-content::after,
+.ql-editor::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+/* ── Mobile: reset all floats, stack images full-width ───────────────────── */
+@media (max-width: 640px) {
+  .ql-editor img.image-wrap-left,
+  .ql-editor img.image-wrap-right,
+  .blog-content img.image-wrap-left,
+  .blog-content img.image-wrap-right {
+    float: none;
+    clear: none;
+    max-width: 100%;
+    width: 100%;
+    height: auto;
+    margin: 1em 0;
+    display: block;
+  }
+
+  .ql-editor img.image-center,
+  .blog-content img.image-center {
+    max-width: 100%;
+  }
+
+  .ql-editor img.image-inline,
+  .blog-content img.image-inline {
+    display: block;
+    max-width: 100%;
+    margin: 0.75em 0;
+  }
 }
 
 .blog-content {

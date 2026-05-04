@@ -1,0 +1,74 @@
+Please add image text-wrapping support to the Insights admin editor.
+
+Goal:
+In the Admin Insights create/edit post page, we need a feature similar to Word’s “Wrap Text” behavior. Admins should be able to insert an image inside the article body and have text flow around it, instead of the image always appearing as a full-width block.
+
+Feature requirements:
+1. Add image alignment / text-wrap options in the editor
+When an image is inserted into the post body, allow the admin to choose:
+- Inline with text
+- Full width / block
+- Float left with text wrapping
+- Float right with text wrapping
+- Centered image
+- Optional: small / medium / large image size
+
+2. Text should wrap around floated images
+For float-left:
+- image appears on the left
+- paragraph text flows around the right side
+
+For float-right:
+- image appears on the right
+- paragraph text flows around the left side
+
+3. Admin editor preview should match the published article
+- The editor/preview should show the wrapped text behavior accurately
+- What admins see while editing should closely match what appears on the public published blog page
+
+4. Published article page must support wrapped images
+- Update the public Insights post renderer so wrapped images display correctly after publishing
+- Existing and future posts should render image alignment/wrap classes properly
+- Ensure saved content preserves the selected image layout
+
+5. Mobile behavior
+- On desktop/tablet, allow float-left and float-right text wrapping
+- On mobile, stacked layout is preferred for readability:
+  - image should become full-width or centered
+  - text should flow normally below/above the image
+- Avoid narrow text columns around images on small screens
+
+6. Styling expectations
+- Images should have rounded corners
+- Add proper margins around wrapped images so text does not touch the image
+- Keep spacing clean and editorial
+- Avoid breaking paragraph spacing or article typography
+
+7. Content storage
+- Ensure image wrap/alignment settings are saved as part of the post content
+- If the editor stores HTML, preserve safe classes/attributes for image alignment
+- If the editor stores JSON/blocks, add image alignment/wrap metadata
+- Make sure sanitization does not strip the required alignment/wrap classes
+
+Suggested class behavior:
+- `image-wrap-left`: float left, max-width around 40%, margin-right, margin-bottom
+- `image-wrap-right`: float right, max-width around 40%, margin-left, margin-bottom
+- `image-center`: centered block
+- `image-full`: full-width block
+- On mobile, all floated images should reset to:
+  - float: none
+  - max-width: 100%
+  - width: 100%
+  - margin-left/right: 0
+
+Implementation guidance:
+- Inspect the current rich text editor used in AdminInsights.tsx
+- Add image toolbar controls or image settings after insertion
+- Add CSS styles for wrapped images in both admin editor preview and public post content
+- Keep the implementation safe and maintainable
+- Do not break existing images already inserted into old posts
+
+Expected result:
+- Admins can insert an image into a blog post and choose whether text wraps left/right around it
+- The editor preview and published post look consistent
+- Wrapped images work on desktop and gracefully stack on mobile
