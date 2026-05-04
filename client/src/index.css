@@ -2669,6 +2669,17 @@
     max-width: 100%;
     margin: 0.75em 0;
   }
+
+  /* Override any inline style="width:X%" on mobile so images don't overflow */
+  .ql-editor img[style],
+  .blog-content img[style] {
+    width: 100% !important;
+    max-width: 100% !important;
+    float: none !important;
+    height: auto !important;
+    margin: 1em 0 !important;
+    display: block !important;
+  }
 }
 
 .blog-content {

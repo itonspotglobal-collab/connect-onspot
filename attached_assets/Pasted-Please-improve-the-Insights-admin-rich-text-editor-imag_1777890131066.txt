@@ -1,0 +1,81 @@
+Please improve the Insights admin rich text editor image resizing so images can be resized freely by dragging, similar to Microsoft Word.
+
+Current issue:
+The image resize feature is too limited. Admins can only choose preset sizes like S, M, and L. We need the image to be stretchable/resizable to any custom size by dragging handles.
+
+Goal:
+When an image is inserted into the Insights admin editor, the admin should be able to click/select the image and drag resize handles to make it larger or smaller freely, while preserving aspect ratio by default.
+
+Requirements:
+
+1. Add drag-to-resize handles
+- When an inserted image is selected, show visible resize handles around the image
+- Admin should be able to drag corners or edges to resize
+- Corner handles should resize proportionally by default
+- Avoid image distortion unless intentionally supported
+
+2. Allow larger expansion
+- Images should not be restricted only to S/M/L sizes
+- Admins should be able to expand the image up to the article editor/content width
+- Prevent overflow outside the editor container
+- Minimum size should also be enforced so images do not become unusably tiny
+
+3. Save custom image dimensions
+- Save the resized width/height or width percentage with the post content
+- Reopening an existing post should preserve the custom image size
+- Published article page should render the same image size as configured in admin
+
+4. Keep existing alignment/wrap controls
+Preserve the existing image settings:
+- Inline
+- Center
+- Full
+- Float left
+- Float right
+- Size presets if still useful
+
+But add custom resizing on top of these.
+
+5. Improve image settings UI
+- Keep S/M/L buttons if needed, but also support custom width
+- Optional: add a width input or slider, for example:
+  - Width: 65%
+  - Width: 520px
+- Dragging the image should update the custom width value
+
+6. Public post rendering must match admin editor
+- If an admin resizes an image in the editor, the published blog should show that same size
+- If the image is floated left/right, text wrapping should still work with the custom width
+- If the image is centered or inline, it should respect the saved custom width
+
+7. Mobile behavior
+- On mobile, prevent custom widths from breaking readability
+- Large or floated images should stack cleanly
+- Images should not overflow the screen
+- Use responsive rules like:
+  - max-width: 100%
+  - height: auto
+  - floated images reset to block/full-width when needed
+
+Implementation guidance:
+- Inspect the current editor implementation in AdminInsights.tsx
+- If using Tiptap/ProseMirror, consider adding or extending a custom Image node with attributes:
+  - src
+  - alt
+  - width
+  - height
+  - alignment
+  - float
+  - wrap
+- Use a resizable wrapper/component around selected images
+- Save width as a style, class, or node attribute
+- Ensure sanitization allows safe width styles/attributes
+- Apply matching CSS in both admin editor and published article renderer
+- Do not break existing posts with old image layouts
+
+Expected result:
+- Admins can click an inserted image and drag it larger or smaller freely
+- Images can expand much larger than the current L size, up to the editor width
+- Custom size is saved and reflected on the published article
+- Text wrapping and alignment still work correctly
+- Mobile rendering remains clean and responsive

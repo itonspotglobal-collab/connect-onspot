@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import ReactQuill, { Quill } from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,7 @@ import {
   X, AlignLeft, AlignCenter, AlignRight, Maximize2, Columns2, Trash2,
 } from "lucide-react";
 
-// ── Extended Image Blot: preserves `class` attribute through Quill serialisation ──
+// ── Extended Image Blot: preserves class + style attributes ───────────────────
 const BaseImage = (Quill as any).import("formats/image");
 
 class ExtendedImageBlot extends BaseImage {
@@ -17,6 +18,7 @@ class ExtendedImageBlot extends BaseImage {
     if (typeof value === "object") {
       if (value.class) node.setAttribute("class", value.class);
       if (value.alt)   node.setAttribute("alt",   value.alt);
+      if (value.style) node.setAttribute("style", value.style);
     }
     return node;
   }
@@ -26,6 +28,7 @@ class ExtendedImageBlot extends BaseImage {
       src:   node.getAttribute("src")   ?? "",
       class: node.getAttribute("class") ?? "",
       alt:   node.getAttribute("alt")   ?? "",
+      style: node.getAttribute("style") ?? "",
     };
   }
 
@@ -34,14 +37,15 @@ class ExtendedImageBlot extends BaseImage {
       src:   node.getAttribute("src")   ?? "",
       class: node.getAttribute("class") ?? "",
       alt:   node.getAttribute("alt")   ?? "",
+      style: node.getAttribute("style") ?? "",
     };
   }
 
   format(name: string, value: string) {
-    if (name === "class") {
+    if (name === "class" || name === "style") {
       value
-        ? this.domNode.setAttribute("class", value)
-        : this.domNode.removeAttribute("class");
+        ? this.domNode.setAttribute(name, value)
+        : this.domNode.removeAttribute(name);
     } else {
       super.format(name, value);
     }
@@ -54,65 +58,27 @@ ExtendedImageBlot.tagName  = "img";
 try {
   (Quill as any).register(ExtendedImageBlot, true);
 } catch {
-  // already registered on HMR reload — safe to ignore
+  // already registered on HMR reload
 }
 
-// ── Class name constants ───────────────────────────────────────────────────────
+// ── Constants ─────────────────────────────────────────────────────────────────
 const POSITION_CLASSES = [
-  "image-full",
-  "image-wrap-left",
-  "image-wrap-right",
-  "image-center",
-  "image-inline",
+  "image-full", "image-wrap-left", "image-wrap-right", "image-center", "image-inline",
 ];
 const SIZE_CLASSES = ["image-size-sm", "image-size-md", "image-size-lg"];
+const MIN_W_PX   = 60;
+const HANDLE_PX  = 10;
 
-// ── Option definitions ────────────────────────────────────────────────────────
-type PosOption = {
-  id: string;
-  label: string;
-  className: string;
-  icon: React.ReactNode;
-  description: string;
-};
+// ── Types ─────────────────────────────────────────────────────────────────────
+type PosOption  = { id: string; label: string; className: string; icon: React.ReactNode; description: string };
 type SizeOption = { id: string; label: string; className: string };
 
 const POS_OPTIONS: PosOption[] = [
-  {
-    id: "full",
-    label: "Full",
-    className: "image-full",
-    icon: <Maximize2 className="h-3.5 w-3.5" />,
-    description: "Spans the full column width",
-  },
-  {
-    id: "center",
-    label: "Center",
-    className: "image-center",
-    icon: <AlignCenter className="h-3.5 w-3.5" />,
-    description: "Centered block — text resumes below",
-  },
-  {
-    id: "left",
-    label: "Float L",
-    className: "image-wrap-left",
-    icon: <AlignLeft className="h-3.5 w-3.5" />,
-    description: "Floats left — text wraps on the right",
-  },
-  {
-    id: "right",
-    label: "Float R",
-    className: "image-wrap-right",
-    icon: <AlignRight className="h-3.5 w-3.5" />,
-    description: "Floats right — text wraps on the left",
-  },
-  {
-    id: "inline",
-    label: "Inline",
-    className: "image-inline",
-    icon: <Columns2 className="h-3.5 w-3.5" />,
-    description: "Sits inline at natural size within text",
-  },
+  { id: "full",   label: "Full",    className: "image-full",        icon: <Maximize2 className="h-3.5 w-3.5" />, description: "Spans the full column width" },
+  { id: "center", label: "Center",  className: "image-center",      icon: <AlignCenter className="h-3.5 w-3.5" />, description: "Centered block — text resumes below" },
+  { id: "left",   label: "Float L", className: "image-wrap-left",   icon: <AlignLeft className="h-3.5 w-3.5" />, description: "Floats left — text wraps on the right" },
+  { id: "right",  label: "Float R", className: "image-wrap-right",  icon: <AlignRight className="h-3.5 w-3.5" />, description: "Floats right — text wraps on the left" },
+  { id: "inline", label: "Inline",  className: "image-inline",      icon: <Columns2 className="h-3.5 w-3.5" />, description: "Sits inline at natural size within text" },
 ];
 
 const SIZE_OPTIONS: SizeOption[] = [
@@ -131,14 +97,78 @@ function buildClassString(pos: string, size: string | null): string {
 function parseImageClasses(el: HTMLElement): { pos: string; size: string | null } {
   const classes = (el.getAttribute("class") || "").split(/\s+/).filter(Boolean);
   const pos  = classes.find((c) => POSITION_CLASSES.includes(c)) ?? "image-full";
-  const size = classes.find((c) => SIZE_CLASSES.includes(c)) ?? null;
+  const size = classes.find((c) => SIZE_CLASSES.includes(c))     ?? null;
   return { pos, size };
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
+function parseCustomWidth(el: HTMLElement): string | null {
+  const style = el.getAttribute("style") || "";
+  const m = style.match(/width\s*:\s*([^;]+)/i);
+  return m ? m[1].trim() : null;
+}
+
+// ── Drag data ref shape ────────────────────────────────────────────────────────
+interface DragData {
+  handle:     string;
+  startX:     number;
+  startY:     number;
+  startW_px:  number;
+  editorW_px: number;
+  imgEl:      HTMLImageElement;
+}
+
+// ── Resize handle component ────────────────────────────────────────────────────
+const HANDLE_CURSORS: Record<string, string> = {
+  nw: "nw-resize", n: "n-resize",  ne: "ne-resize",
+  e:  "e-resize",  se: "se-resize", s:  "s-resize",
+  sw: "sw-resize", w:  "w-resize",
+};
+const HANDLE_OFFSETS: Record<string, React.CSSProperties> = {
+  nw: { top: -5,              left: -5 },
+  n:  { top: -5,              left: "calc(50% - 5px)" },
+  ne: { top: -5,              right: -5 },
+  e:  { top: "calc(50% - 5px)", right: -5 },
+  se: { bottom: -5,           right: -5 },
+  s:  { bottom: -5,           left: "calc(50% - 5px)" },
+  sw: { bottom: -5,           left: -5 },
+  w:  { top: "calc(50% - 5px)", left: -5 },
+};
+
+function ResizeHandle({
+  handle,
+  onPointerDown,
+}: {
+  handle: string;
+  onPointerDown: (handle: string, e: React.PointerEvent<HTMLDivElement>) => void;
+}) {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        width:  HANDLE_PX,
+        height: HANDLE_PX,
+        background: "#ffffff",
+        border: "1.5px solid #4f46e5",
+        borderRadius: 2,
+        cursor: HANDLE_CURSORS[handle],
+        pointerEvents: "auto",
+        zIndex: 60,
+        boxShadow: "0 1px 3px rgba(0,0,0,0.25)",
+        ...HANDLE_OFFSETS[handle],
+      }}
+      onPointerDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onPointerDown(handle, e);
+      }}
+    />
+  );
+}
+
+// ── Component props ───────────────────────────────────────────────────────────
 interface RichTextEditorProps {
-  value: string;
-  onChange: (value: string) => void;
+  value:        string;
+  onChange:     (value: string) => void;
   placeholder?: string;
   linkedInStyle?: boolean;
 }
@@ -149,32 +179,46 @@ export default function RichTextEditor({
   placeholder,
   linkedInStyle,
 }: RichTextEditorProps) {
-  const quillRef    = useRef<ReactQuill>(null);
+  const quillRef     = useRef<ReactQuill>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const savedRange  = useRef<{ index: number; length: number } | null>(null);
-  const selectedImg = useRef<HTMLElement | null>(null);
+  const savedRange   = useRef<{ index: number; length: number } | null>(null);
+  const selectedImg  = useRef<HTMLElement | null>(null);
+  const dragDataRef  = useRef<DragData | null>(null);
 
   // ── Insert dialog state ────────────────────────────────────────────────────
-  const [showDialog, setShowDialog] = useState(false);
-  const [imgUrl,     setImgUrl]     = useState("");
-  const [insertPos,  setInsertPos]  = useState("image-full");
-  const [insertSize, setInsertSize] = useState<string | null>(null);
+  const [showDialog,        setShowDialog]        = useState(false);
+  const [imgUrl,            setImgUrl]            = useState("");
+  const [insertPos,         setInsertPos]         = useState("image-full");
+  const [insertSize,        setInsertSize]        = useState<string | null>(null);
+  const [insertCustomWidth, setInsertCustomWidth] = useState("");
 
-  // ── Floating image-toolbar state ───────────────────────────────────────────
-  const [showToolbar, setShowToolbar]   = useState(false);
-  const [toolbarPos,  setToolbarPos]    = useState({ top: 0, left: 0 });
-  const [activePos,   setActivePos]     = useState("image-full");
-  const [activeSize,  setActiveSize]    = useState<string | null>(null);
+  // ── Floating toolbar state ─────────────────────────────────────────────────
+  const [showToolbar,   setShowToolbar]   = useState(false);
+  const [toolbarPos,    setToolbarPos]    = useState({ top: 0, left: 0 });
+  const [activePos,     setActivePos]     = useState("image-full");
+  const [activeSize,    setActiveSize]    = useState<string | null>(null);
+  const [activeCustomW, setActiveCustomW] = useState<string | null>(null);
+  const [widthInput,    setWidthInput]    = useState("");
 
-  // ── Sync quill content, stripping any stale selection markers ─────────────
-  const handleQuillChange = useCallback(
-    (html: string) => {
-      onChange(html);
-    },
-    [onChange]
-  );
+  // ── Resize overlay state (position: fixed via portal) ─────────────────────
+  const [resizeOverlay, setResizeOverlay] = useState<{
+    top: number; left: number; width: number; height: number;
+  } | null>(null);
+  const [isDragging,  setIsDragging]  = useState(false);
+  const [dragLabel,   setDragLabel]   = useState("");
 
-  // ── Position the floating toolbar relative to clicked image ───────────────
+  // ── Quill change handler ───────────────────────────────────────────────────
+  const handleQuillChange = useCallback((html: string) => { onChange(html); }, [onChange]);
+
+  // ── Update resize overlay from img's current bounding rect ────────────────
+  const updateResizeOverlay = useCallback((img: HTMLElement) => {
+    const rect = img.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      setResizeOverlay({ top: rect.top, left: rect.left, width: rect.width, height: rect.height });
+    }
+  }, []);
+
+  // ── Position the floating toolbar ─────────────────────────────────────────
   const positionToolbar = useCallback((img: HTMLElement) => {
     const container = containerRef.current;
     if (!container) return;
@@ -185,38 +229,58 @@ export default function RichTextEditor({
     const topBelow  = iRect.bottom - cRect.top + 6;
     const left      = Math.min(
       Math.max(0, iRect.left - cRect.left),
-      Math.max(0, container.clientWidth - 348)
+      Math.max(0, container.clientWidth - 360)
     );
     setToolbarPos({ top: topAbove >= 8 ? topAbove : topBelow, left });
   }, []);
 
+  // ── Sync toolbar state from selected image ─────────────────────────────────
+  const syncToolbarState = useCallback((img: HTMLElement) => {
+    const { pos, size } = parseImageClasses(img);
+    const cw = parseCustomWidth(img);
+    setActivePos(pos);
+    setActiveSize(size);
+    setActiveCustomW(cw);
+    setWidthInput(cw ? cw.replace(/%$/, "") : "");
+  }, []);
+
   // ── Click listener on the Quill editor root ────────────────────────────────
   useEffect(() => {
-    // Poll briefly to ensure Quill has mounted (ReactQuill mounts async in Strict Mode)
     const attach = () => {
       const quill = quillRef.current?.getEditor();
       if (!quill) return false;
-
       const editorEl = quill.root;
 
       const onClick = (e: MouseEvent) => {
         const target = e.target as HTMLElement;
         if (target.tagName === "IMG") {
           selectedImg.current = target;
-          const { pos, size } = parseImageClasses(target);
-          setActivePos(pos);
-          setActiveSize(size);
+          syncToolbarState(target);
           positionToolbar(target);
+          updateResizeOverlay(target);
           setShowToolbar(true);
-          setShowDialog(false); // close insert dialog if open
+          setShowDialog(false);
         } else {
           setShowToolbar(false);
+          setResizeOverlay(null);
           selectedImg.current = null;
         }
       };
 
-      editorEl.addEventListener("click", onClick);
-      return () => editorEl.removeEventListener("click", onClick);
+      // Reposition overlay on editor scroll
+      const onScroll = () => {
+        if (selectedImg.current) {
+          updateResizeOverlay(selectedImg.current);
+          positionToolbar(selectedImg.current);
+        }
+      };
+
+      editorEl.addEventListener("click",  onClick);
+      editorEl.addEventListener("scroll", onScroll);
+      return () => {
+        editorEl.removeEventListener("click",  onClick);
+        editorEl.removeEventListener("scroll", onScroll);
+      };
     };
 
     let cleanup: (() => void) | false = attach();
@@ -225,11 +289,105 @@ export default function RichTextEditor({
       return () => { clearTimeout(t); if (cleanup) cleanup(); };
     }
     return cleanup as () => void;
-  }, [positionToolbar]);
+  }, [positionToolbar, updateResizeOverlay, syncToolbarState]);
 
-  // ── Apply position/size to the currently-selected image ───────────────────
+  // ── Window resize: reposition overlay ─────────────────────────────────────
+  useEffect(() => {
+    const onWindowResize = () => {
+      if (selectedImg.current) updateResizeOverlay(selectedImg.current);
+    };
+    window.addEventListener("resize", onWindowResize);
+    return () => window.removeEventListener("resize", onWindowResize);
+  }, [updateResizeOverlay]);
+
+  // ── Drag resize start ──────────────────────────────────────────────────────
+  const handleResizeStart = useCallback(
+    (handle: string, e: React.PointerEvent<HTMLDivElement>) => {
+      const img   = selectedImg.current as HTMLImageElement | null;
+      const quill = quillRef.current?.getEditor();
+      if (!img || !quill) return;
+
+      const startW_px  = img.getBoundingClientRect().width;
+      const editorW_px = quill.root.offsetWidth;
+
+      dragDataRef.current = {
+        handle,
+        startX:     e.clientX,
+        startY:     e.clientY,
+        startW_px,
+        editorW_px,
+        imgEl:      img,
+      };
+      setIsDragging(true);
+      setShowToolbar(false);
+
+      const initPct = Math.round((startW_px / editorW_px) * 100);
+      setDragLabel(`${initPct}%`);
+
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    },
+    []
+  );
+
+  // ── Drag pointer move / up ─────────────────────────────────────────────────
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const onMove = (e: PointerEvent) => {
+      const d = dragDataRef.current;
+      if (!d) return;
+
+      const deltaX = e.clientX - d.startX;
+      const deltaY = e.clientY - d.startY;
+
+      // Determine effective delta by handle direction
+      let delta: number;
+      switch (d.handle) {
+        case "e": case "ne": case "se": delta =  deltaX; break;
+        case "w": case "nw": case "sw": delta = -deltaX; break;
+        case "s": delta =  deltaY; break;
+        case "n": delta = -deltaY; break;
+        default:  delta =  deltaX;
+      }
+
+      const newW_px = Math.min(Math.max(d.startW_px + delta, MIN_W_PX), d.editorW_px);
+      const newPct  = Math.round((newW_px / d.editorW_px) * 100);
+
+      // Apply directly to DOM (no Quill API — avoids losing cursor)
+      d.imgEl.style.width = `${newPct}%`;
+      d.imgEl.style.height = "auto";
+
+      setDragLabel(`${newPct}%`);
+      updateResizeOverlay(d.imgEl);
+    };
+
+    const onUp = (e: PointerEvent) => {
+      const d = dragDataRef.current;
+      if (!d) return;
+
+      // Finalize width in %
+      const quill = quillRef.current?.getEditor();
+      if (quill) onChange(quill.root.innerHTML);
+
+      // Refresh toolbar state
+      syncToolbarState(d.imgEl);
+      positionToolbar(d.imgEl);
+      setShowToolbar(true);
+      setIsDragging(false);
+      dragDataRef.current = null;
+    };
+
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup",   onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup",   onUp);
+    };
+  }, [isDragging, onChange, updateResizeOverlay, syncToolbarState, positionToolbar]);
+
+  // ── Apply position / size / custom width to selected image ────────────────
   const applyToSelected = useCallback(
-    (newPos: string | null, newSize: string | null | undefined) => {
+    (newPos: string | null, newSize: string | null | undefined, newCustomW?: string | null) => {
       const img   = selectedImg.current;
       const quill = quillRef.current?.getEditor();
       if (!img || !quill) return;
@@ -239,14 +397,37 @@ export default function RichTextEditor({
       const size = newSize === undefined ? curSize : newSize;
 
       img.setAttribute("class", buildClassString(pos, size));
+
+      // Handle custom width
+      if (newCustomW !== undefined) {
+        if (newCustomW) {
+          const pct = newCustomW.replace(/%$/, "").trim();
+          const num = parseInt(pct, 10);
+          if (!isNaN(num) && num > 0 && num <= 100) {
+            img.style.width  = `${num}%`;
+            img.style.height = "auto";
+          }
+        } else {
+          img.style.removeProperty("width");
+          img.style.removeProperty("height");
+        }
+      } else if (newSize !== undefined && newSize !== null) {
+        // Choosing a size preset clears custom width
+        img.style.removeProperty("width");
+        img.style.removeProperty("height");
+      }
+
       setActivePos(pos);
       setActiveSize(size);
+      const cw = parseCustomWidth(img);
+      setActiveCustomW(cw);
+      setWidthInput(cw ? cw.replace(/%$/, "") : "");
       onChange(quill.root.innerHTML);
     },
     [onChange]
   );
 
-  // ── Delete the selected image ──────────────────────────────────────────────
+  // ── Delete selected image ──────────────────────────────────────────────────
   const deleteSelectedImage = useCallback(() => {
     const img   = selectedImg.current;
     const quill = quillRef.current?.getEditor();
@@ -261,10 +442,11 @@ export default function RichTextEditor({
       onChange(quill.root.innerHTML);
     }
     setShowToolbar(false);
+    setResizeOverlay(null);
     selectedImg.current = null;
   }, [onChange]);
 
-  // ── Image toolbar handler (opens insert dialog) ───────────────────────────
+  // ── Image insert handler (opens dialog) ───────────────────────────────────
   const imageHandler = useCallback(() => {
     const quill = quillRef.current?.getEditor();
     if (!quill) return;
@@ -272,27 +454,34 @@ export default function RichTextEditor({
     setImgUrl("");
     setInsertPos("image-full");
     setInsertSize(null);
+    setInsertCustomWidth("");
     setShowToolbar(false);
+    setResizeOverlay(null);
     setShowDialog(true);
   }, []);
 
-  // ── Insert image at saved cursor position ─────────────────────────────────
+  // ── Insert image at cursor ─────────────────────────────────────────────────
   const insertImage = useCallback(() => {
     const url = imgUrl.trim();
     if (!url) return;
     const quill = quillRef.current?.getEditor();
     if (!quill) return;
+
     const range = savedRange.current ?? { index: quill.getLength(), length: 0 };
-    quill.insertEmbed(
-      range.index,
-      "image",
-      { src: url, class: buildClassString(insertPos, insertSize) }
-    );
+    const cls   = buildClassString(insertPos, insertSize);
+
+    // Build inline style if custom width is set
+    const cwNum = parseInt(insertCustomWidth.trim(), 10);
+    const styleAttr = (!isNaN(cwNum) && cwNum > 0 && cwNum <= 100)
+      ? `width: ${cwNum}%; height: auto;`
+      : "";
+
+    quill.insertEmbed(range.index, "image", { src: url, class: cls, style: styleAttr });
     quill.setSelection(range.index + 1, 0);
     setShowDialog(false);
-  }, [imgUrl, insertPos, insertSize]);
+  }, [imgUrl, insertPos, insertSize, insertCustomWidth]);
 
-  // ── Quill module config ────────────────────────────────────────────────────
+  // ── Quill modules ──────────────────────────────────────────────────────────
   const modules = useMemo(
     () => ({
       toolbar: {
@@ -321,6 +510,51 @@ export default function RichTextEditor({
   ];
 
   const activePosOpt = POS_OPTIONS.find((o) => o.className === insertPos);
+
+  // ── Resize overlay portal ──────────────────────────────────────────────────
+  const resizePortal = resizeOverlay
+    ? createPortal(
+        <div
+          style={{
+            position: "fixed",
+            top:    resizeOverlay.top,
+            left:   resizeOverlay.left,
+            width:  resizeOverlay.width,
+            height: resizeOverlay.height,
+            border: "1.5px solid #4f46e5",
+            pointerEvents: "none",
+            zIndex: 9999,
+            boxSizing: "border-box",
+          }}
+        >
+          {(["nw","n","ne","e","se","s","sw","w"] as const).map((h) => (
+            <ResizeHandle key={h} handle={h} onPointerDown={handleResizeStart} />
+          ))}
+          {isDragging && dragLabel && (
+            <div
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                background: "#4f46e5",
+                color: "#ffffff",
+                fontSize: 11,
+                fontWeight: 600,
+                padding: "2px 7px",
+                borderRadius: 4,
+                pointerEvents: "none",
+                whiteSpace: "nowrap",
+                boxShadow: "0 1px 4px rgba(0,0,0,0.3)",
+              }}
+            >
+              {dragLabel}
+            </div>
+          )}
+        </div>,
+        document.body
+      )
+    : null;
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -377,21 +611,24 @@ export default function RichTextEditor({
             )}
           </div>
 
-          {/* Size picker — hidden when Full is chosen */}
+          {/* Size + custom width — hidden when Full is chosen */}
           {insertPos !== "image-full" && (
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Size</Label>
-              <div className="flex items-center gap-2">
+
+              {/* Preset S / M / L */}
+              <div className="flex items-center gap-2 flex-wrap">
                 {SIZE_OPTIONS.map((opt) => (
                   <button
                     key={opt.id}
                     type="button"
-                    onClick={() =>
-                      setInsertSize(insertSize === opt.className ? null : opt.className)
-                    }
+                    onClick={() => {
+                      setInsertSize(insertSize === opt.className ? null : opt.className);
+                      setInsertCustomWidth(""); // clear custom if preset chosen
+                    }}
                     className={[
                       "w-10 h-8 rounded-md border text-xs font-medium transition-colors",
-                      insertSize === opt.className
+                      insertSize === opt.className && !insertCustomWidth
                         ? "border-primary bg-primary/10 text-primary"
                         : "border-border hover-elevate",
                     ].join(" ")}
@@ -399,23 +636,37 @@ export default function RichTextEditor({
                     {opt.label}
                   </button>
                 ))}
-                {insertSize && (
+                {(insertSize || insertCustomWidth) && (
                   <button
                     type="button"
-                    onClick={() => setInsertSize(null)}
+                    onClick={() => { setInsertSize(null); setInsertCustomWidth(""); }}
                     className="text-xs text-muted-foreground underline"
                   >
                     Reset
                   </button>
                 )}
-                <span className="text-xs text-muted-foreground ml-1">
-                  {insertSize === "image-size-sm"
-                    ? "Small"
-                    : insertSize === "image-size-md"
-                    ? "Medium"
-                    : insertSize === "image-size-lg"
-                    ? "Large"
-                    : "Default"}
+              </div>
+
+              {/* Custom width % input */}
+              <div className="flex items-center gap-2">
+                <Label className="text-xs text-muted-foreground w-24 shrink-0">Custom width %</Label>
+                <div className="flex items-center gap-1">
+                  <Input
+                    type="number"
+                    min={5}
+                    max={100}
+                    value={insertCustomWidth}
+                    onChange={(e) => {
+                      setInsertCustomWidth(e.target.value);
+                      if (e.target.value) setInsertSize(null); // clear preset
+                    }}
+                    placeholder="e.g. 65"
+                    className="h-8 w-20 text-xs"
+                  />
+                  <span className="text-xs text-muted-foreground">%</span>
+                </div>
+                <span className="text-xs text-muted-foreground italic">
+                  {insertCustomWidth ? `Will insert at ${insertCustomWidth}% width` : "or drag to resize after inserting"}
                 </span>
               </div>
             </div>
@@ -425,18 +676,10 @@ export default function RichTextEditor({
           <div className="rounded-md bg-muted p-3 text-xs text-muted-foreground select-none">
             {insertPos === "image-wrap-left" && (
               <div className="flex gap-2 items-start">
-                <div
-                  className={[
-                    "shrink-0 rounded bg-border/60 flex items-center justify-center text-[9px]",
-                    insertSize === "image-size-sm"
-                      ? "w-8 h-7"
-                      : insertSize === "image-size-lg"
-                      ? "w-16 h-10"
-                      : "w-12 h-8",
-                  ].join(" ")}
-                >
-                  IMG
-                </div>
+                <div className={[
+                  "shrink-0 rounded bg-border/60 flex items-center justify-center text-[9px]",
+                  insertSize === "image-size-sm" ? "w-8 h-7" : insertSize === "image-size-lg" ? "w-16 h-10" : "w-12 h-8",
+                ].join(" ")}>IMG</div>
                 <div className="space-y-1 flex-1">
                   <div className="h-1.5 bg-border/60 rounded w-full" />
                   <div className="h-1.5 bg-border/60 rounded w-5/6" />
@@ -451,92 +694,60 @@ export default function RichTextEditor({
                   <div className="h-1.5 bg-border/60 rounded w-5/6" />
                   <div className="h-1.5 bg-border/60 rounded w-full" />
                 </div>
-                <div
-                  className={[
-                    "shrink-0 rounded bg-border/60 flex items-center justify-center text-[9px]",
-                    insertSize === "image-size-sm"
-                      ? "w-8 h-7"
-                      : insertSize === "image-size-lg"
-                      ? "w-16 h-10"
-                      : "w-12 h-8",
-                  ].join(" ")}
-                >
-                  IMG
-                </div>
+                <div className={[
+                  "shrink-0 rounded bg-border/60 flex items-center justify-center text-[9px]",
+                  insertSize === "image-size-sm" ? "w-8 h-7" : insertSize === "image-size-lg" ? "w-16 h-10" : "w-12 h-8",
+                ].join(" ")}>IMG</div>
               </div>
             )}
             {insertPos === "image-full" && (
               <div className="space-y-1">
-                <div className="h-8 bg-border/60 rounded w-full flex items-center justify-center text-[9px]">
-                  IMG — full width
-                </div>
+                <div className="h-8 bg-border/60 rounded w-full flex items-center justify-center text-[9px]">IMG — full width</div>
                 <div className="h-1.5 bg-border/60 rounded w-full" />
                 <div className="h-1.5 bg-border/60 rounded w-4/5" />
               </div>
             )}
             {insertPos === "image-center" && (
               <div className="space-y-1 flex flex-col items-center">
-                <div
-                  className={[
-                    "rounded bg-border/60 flex items-center justify-center text-[9px]",
-                    insertSize === "image-size-sm"
-                      ? "h-6 w-14"
-                      : insertSize === "image-size-lg"
-                      ? "h-10 w-36"
-                      : "h-8 w-24",
-                  ].join(" ")}
-                >
-                  IMG
-                </div>
+                <div className={[
+                  "rounded bg-border/60 flex items-center justify-center text-[9px]",
+                  insertSize === "image-size-sm" ? "h-6 w-14" : insertSize === "image-size-lg" ? "h-10 w-36" : "h-8 w-24",
+                ].join(" ")}>IMG</div>
                 <div className="h-1.5 bg-border/60 rounded w-full" />
                 <div className="h-1.5 bg-border/60 rounded w-4/5" />
               </div>
             )}
             {insertPos === "image-inline" && (
               <div className="flex gap-2 items-center">
-                <div
-                  className={[
-                    "shrink-0 rounded bg-border/60 flex items-center justify-center text-[9px]",
-                    insertSize === "image-size-sm"
-                      ? "w-8 h-5"
-                      : insertSize === "image-size-lg"
-                      ? "w-16 h-9"
-                      : "w-10 h-6",
-                  ].join(" ")}
-                >
-                  IMG
-                </div>
+                <div className={[
+                  "shrink-0 rounded bg-border/60 flex items-center justify-center text-[9px]",
+                  insertSize === "image-size-sm" ? "w-8 h-5" : insertSize === "image-size-lg" ? "w-16 h-9" : "w-10 h-6",
+                ].join(" ")}>IMG</div>
                 <div className="h-1.5 bg-border/60 rounded flex-1" />
               </div>
             )}
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button size="sm" variant="outline" onClick={() => setShowDialog(false)}>
-              Cancel
-            </Button>
-            <Button size="sm" onClick={insertImage} disabled={!imgUrl.trim()}>
-              Insert Image
-            </Button>
+            <Button size="sm" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
+            <Button size="sm" onClick={insertImage} disabled={!imgUrl.trim()}>Insert Image</Button>
           </div>
         </div>
       )}
 
-      {/* ── Floating Image Toolbar (shown on image click) ─────────────────────── */}
+      {/* ── Floating Image Toolbar ────────────────────────────────────────────── */}
       {showToolbar && (
         <div
           style={{ top: toolbarPos.top, left: toolbarPos.left }}
-          className="absolute z-40 bg-popover border border-border rounded-lg shadow-lg p-2 space-y-1.5 w-auto min-w-[320px]"
-          onMouseDown={(e) => e.preventDefault()} // prevent editor losing focus
+          className="absolute z-40 bg-popover border border-border rounded-lg shadow-lg p-2 space-y-1.5 w-auto min-w-[340px]"
+          onMouseDown={(e) => e.preventDefault()}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-0.5 pb-0.5">
             <span className="text-xs font-medium text-muted-foreground">Image settings</span>
             <Button
-              size="icon"
-              variant="ghost"
-              className="h-5 w-5"
-              onClick={() => { setShowToolbar(false); selectedImg.current = null; }}
+              size="icon" variant="ghost" className="h-5 w-5"
+              onClick={() => { setShowToolbar(false); selectedImg.current = null; setResizeOverlay(null); }}
             >
               <X className="h-3 w-3" />
             </Button>
@@ -566,7 +777,7 @@ export default function RichTextEditor({
             </div>
           </div>
 
-          {/* Size row + Delete */}
+          {/* Size row */}
           <div className="flex items-center gap-1">
             <span className="text-[10px] text-muted-foreground w-12 shrink-0">Size</span>
             <div className="flex items-center gap-1 flex-1">
@@ -576,13 +787,10 @@ export default function RichTextEditor({
                     <button
                       key={opt.id}
                       type="button"
-                      title={`${opt.id === "sm" ? "Small" : opt.id === "md" ? "Medium" : "Large"}`}
-                      onClick={() =>
-                        applyToSelected(null, activeSize === opt.className ? null : opt.className)
-                      }
+                      onClick={() => applyToSelected(null, activeSize === opt.className ? null : opt.className)}
                       className={[
                         "w-8 h-7 rounded-md border text-xs font-medium transition-colors",
-                        activeSize === opt.className
+                        activeSize === opt.className && !activeCustomW
                           ? "border-primary bg-primary/10 text-primary"
                           : "border-border hover-elevate",
                       ].join(" ")}
@@ -596,15 +804,60 @@ export default function RichTextEditor({
               )}
             </div>
             <Button
-              size="icon"
-              variant="ghost"
-              title="Remove image"
+              size="icon" variant="ghost" title="Remove image"
               className="h-7 w-7 ml-auto text-destructive"
               onClick={deleteSelectedImage}
             >
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
           </div>
+
+          {/* Custom width row */}
+          {activePos !== "image-full" && (
+            <div className="flex items-center gap-1 pt-0.5 border-t border-border/40">
+              <span className="text-[10px] text-muted-foreground w-12 shrink-0">Width</span>
+              <div className="flex items-center gap-1.5 flex-1">
+                <Input
+                  type="number"
+                  min={5}
+                  max={100}
+                  value={widthInput}
+                  onChange={(e) => setWidthInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      applyToSelected(null, null, widthInput || null);
+                    }
+                  }}
+                  onBlur={() => applyToSelected(null, null, widthInput || null)}
+                  placeholder="custom"
+                  className="h-7 w-20 text-xs"
+                />
+                <span className="text-xs text-muted-foreground">%</span>
+                {activeCustomW && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      applyToSelected(null, null, "");
+                      setWidthInput("");
+                    }}
+                    className="text-xs text-muted-foreground underline"
+                  >
+                    Clear
+                  </button>
+                )}
+                <span className="text-xs text-muted-foreground italic ml-1">
+                  {activeCustomW
+                    ? <span className="text-primary font-medium">{activeCustomW}</span>
+                    : "or drag handles"}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Drag hint */}
+          <p className="text-[9px] text-muted-foreground px-0.5">
+            Drag the blue handles around the image to resize freely.
+          </p>
         </div>
       )}
 
@@ -618,6 +871,9 @@ export default function RichTextEditor({
         formats={formats}
         placeholder={placeholder || "Write your content here..."}
       />
+
+      {/* ── Resize overlay (portal to document.body) ─────────────────────────── */}
+      {resizePortal}
     </div>
   );
 }
