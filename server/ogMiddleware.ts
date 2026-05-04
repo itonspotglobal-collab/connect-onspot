@@ -75,6 +75,42 @@ const DEFAULT_IMAGE = "https://onspotglobal.com/heart.png";
 const INSIGHTS_FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&h=630&fit=crop";
 
+/**
+ * Normalize a stored image URL so it always points to the production domain.
+ *
+ * During development, admin users upload images while running on the Replit
+ * dev server (*.worf.replit.dev / *.replit.dev).  The uploader displays the
+ * absolute URL for convenience, and that hostname sometimes gets pasted into
+ * the "Cover Image URL" field and saved to the database.  Those dev-server
+ * URLs are unreachable by external crawlers (Facebook, Slack, etc.).
+ *
+ * This function rewrites any such URL to use the production origin so that
+ * og:image is always publicly accessible.
+ */
+function normalizeImageUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+
+  // Already production or an external CDN (Unsplash, etc.) — leave as-is
+  if (
+    trimmed.startsWith(`${SITE}/`) ||
+    trimmed.startsWith("https://www.onspotglobal.com/") ||
+    (!trimmed.includes(".replit.dev") && !trimmed.includes(".worf.replit.dev"))
+  ) {
+    return trimmed;
+  }
+
+  // Replit dev hostname: extract the pathname and rebase onto production
+  try {
+    const parsed = new URL(trimmed);
+    return `${SITE}${parsed.pathname}`;
+  } catch {
+    // Malformed URL — return as-is and let the fallback handle it
+    return trimmed;
+  }
+}
+
 // ── OG Meta type ──────────────────────────────────────────────────────────────
 interface OGMeta {
   title: string;
@@ -99,7 +135,8 @@ async function resolveOGMeta(
       const post = await storage.getPostBySlug(slug);
       if (post && post.status === "published") {
         const articleUrl = `${SITE}/insights/${post.slug}`;
-        const coverImage = post.coverImageUrl || INSIGHTS_FALLBACK_IMAGE;
+        const coverImage =
+          normalizeImageUrl(post.coverImageUrl) || INSIGHTS_FALLBACK_IMAGE;
 
         // Strip any HTML tags from excerpt for clean plain-text description
         const rawExcerpt = (post.excerpt || post.title || "").replace(/<[^>]+>/g, "").trim();

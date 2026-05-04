@@ -42,9 +42,12 @@ export default function AdminImageUploader() {
         throw new Error("Server response missing proxyUrl field");
       }
 
-      // If proxyUrl is relative ("/public/blog-images/..."), keep it that way.
-      // Browser will request it from our server, which proxies to GCS.
-      setImageUrl(json.proxyUrl);
+      // Always convert to an absolute production URL so the value copied into
+      // the editor is publicly reachable by Facebook / Slack crawlers.
+      const proxyPath = json.proxyUrl.startsWith("/")
+        ? json.proxyUrl
+        : `/${json.proxyUrl}`;
+      setImageUrl(`https://www.onspotglobal.com${proxyPath}`);
     } catch (err: any) {
       console.error("Image upload error", err);
       setError(err.message || "Upload failed");
@@ -59,12 +62,7 @@ export default function AdminImageUploader() {
   async function handleCopy() {
     if (!imageUrl) return;
     try {
-      await navigator.clipboard.writeText(
-        // In case you want an absolute URL when copying:
-        imageUrl.startsWith("http")
-          ? imageUrl
-          : `${window.location.origin}${imageUrl}`
-      );
+      await navigator.clipboard.writeText(imageUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -126,11 +124,7 @@ export default function AdminImageUploader() {
                 <input
                   readOnly
                   className="w-full rounded-md border px-2 py-1 text-xs font-mono bg-neutral-50"
-                  value={
-                    imageUrl.startsWith("http")
-                      ? imageUrl
-                      : `${window.location.origin}${imageUrl}`
-                  }
+                  value={imageUrl}
                 />
                 <button
                   type="button"

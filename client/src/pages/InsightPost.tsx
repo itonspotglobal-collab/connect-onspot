@@ -14,6 +14,23 @@ import { useToast } from "@/hooks/use-toast";
 
 const DOMAIN = "https://www.onspotglobal.com";
 
+/** Rewrite any dev-server image URL to the production domain so HeadSEO
+ *  og:image tags point to a publicly accessible URL. */
+function normalizeImageUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+  if (!trimmed.includes(".replit.dev") && !trimmed.includes(".worf.replit.dev")) {
+    return trimmed;
+  }
+  try {
+    const parsed = new URL(trimmed);
+    return `${DOMAIN}${parsed.pathname}`;
+  } catch {
+    return trimmed;
+  }
+}
+
 const placeholderImages: Record<string, string> = {
   "Global Outsourcing": "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=1200&h=600&fit=crop",
   "Technology": "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=1200&h=600&fit=crop",
@@ -120,7 +137,7 @@ export default function InsightPost() {
 
   // ── Derived SEO values ────────────────────────────────────────────────────
   const coverImage = post
-    ? (post.coverImageUrl || placeholderImages[post.category] || placeholderImages["Industry Trends"])
+    ? (normalizeImageUrl(post.coverImageUrl) || placeholderImages[post.category] || placeholderImages["Industry Trends"])
     : placeholderImages["Industry Trends"];
 
   const seoTitle = post

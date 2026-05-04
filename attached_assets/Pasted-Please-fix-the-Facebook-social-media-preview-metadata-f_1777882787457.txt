@@ -1,0 +1,76 @@
+Please fix the Facebook/social media preview metadata for individual Insights blog posts.
+
+Current issue:
+The shared link now opens the correct blog post, but the social preview still shows the generic Insights page metadata:
+- generic OnSpot thumbnail
+- title: “Insights – Outsourcing Intelligence | OnSpot Global”
+
+Example:
+When sharing “Checklist for Winning Virtual Interviews,” the Facebook preview should show:
+- title: “Checklist for Winning Virtual Interviews”
+- image: that blog post’s actual thumbnail
+- description: that blog post’s excerpt/synopsis
+- URL: the specific blog post URL
+
+What to fix:
+
+1. Article detail pages must output article-specific Open Graph metadata
+For every `/insights/:slug` or article detail route, set:
+- `og:title` = post.title
+- `og:description` = post.excerpt or post.summary
+- `og:image` = post.thumbnail / coverImage
+- `og:url` = full canonical URL of the specific article
+- `og:type` = article
+- `twitter:card` = summary_large_image
+- `twitter:title` = post.title
+- `twitter:description` = post.excerpt or post.summary
+- `twitter:image` = post.thumbnail / coverImage
+- canonical link = specific article URL
+
+2. Do not let the generic Insights metadata override article metadata
+The main `/insights` page can use:
+- “Insights – Outsourcing Intelligence | OnSpot Global”
+- generic OnSpot image
+
+But individual article pages must override that with article-specific metadata.
+
+3. Ensure metadata is available to Facebook crawlers
+Facebook reads the initial HTML response. Client-side React Helmet updates may not be enough if the app is SPA-only.
+
+Please check whether the app needs:
+- server-side meta injection for `/insights/:slug`
+- prerendered metadata
+- dynamic HTML response from backend
+- or route-specific meta tags before the React app hydrates
+
+Important:
+If the metadata is only updated after JavaScript loads, Facebook may still see only the generic `/insights` metadata. Please make sure crawlers can see the article title/image in the raw page HTML.
+
+4. Use absolute public image URLs
+The `og:image` must be:
+- absolute URL
+- publicly accessible
+- not relative
+- not requiring authentication
+- using the actual article thumbnail
+
+Example:
+Use `https://onspotglobal.com/uploads/.../checklist-thumbnail.jpg`
+not `/uploads/...`
+
+5. Fix fallback logic
+Only use the generic OnSpot Insights image if the article has no thumbnail.
+Do not use the generic image as the default for every article.
+
+6. Verify share/copy links
+Make sure:
+- article cards link to `/insights/:slug`
+- carousel “Read Article” links to `/insights/:slug`
+- copy/share buttons use the specific article URL
+- no share helper is hardcoded to `/insights`
+
+7. Add cache-busting/testing guidance
+Facebook may cache previews. After changing metadata, verify using Facebook Sharing Debugger and scrape again.
+
+Expected result:
+When sharing “Checklist for Winning Virtual Interviews” to Facebook, the preview should display that article’s actual title, thumbnail, description, and URL instead of the generic Insights page preview.
