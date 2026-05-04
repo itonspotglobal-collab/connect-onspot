@@ -1,0 +1,99 @@
+Please enhance the Insights admin rich text editor image controls so admins can resize, expand, and move inserted images more freely, similar to Microsoft Word.
+
+Current issue:
+We can insert images and apply some wrapping, but we need more control. Admins should be able to resize/expand the image and position it within the article body more intuitively.
+
+Goal:
+Make inserted article images easier to manipulate inside the Admin Insights create/edit editor while preserving clean published output.
+
+Required features:
+
+1. Image resizing
+- Allow admins to resize inserted images directly in the editor
+- Support drag handles or an image settings control for width/size
+- Suggested options:
+  - Small
+  - Medium
+  - Large
+  - Full width
+  - Custom width percentage or pixel width
+- Preserve aspect ratio by default
+- Avoid image distortion
+
+2. Image positioning / movement
+Allow admins to choose how the image is positioned relative to text:
+- Inline with text
+- Centered block
+- Full-width block
+- Float left with text wrapping
+- Float right with text wrapping
+
+The image should be movable/repositionable within the article body:
+- Admins should be able to place it between paragraphs
+- Admins should be able to align it left/right/center
+- Admins should be able to float it with surrounding text, like Word wrap options
+
+3. Better selected-image toolbar
+When an image is selected, show image-specific controls such as:
+- Resize / width
+- Align left
+- Align center
+- Align right
+- Float left
+- Float right
+- Full width
+- Remove image
+- Replace image if supported
+
+4. Save image layout settings
+The selected image size and position must be saved with the post content.
+
+If the editor stores HTML:
+- preserve safe classes or inline styles for width/alignment
+- sanitize safely without stripping required image layout attributes
+
+If the editor stores JSON/blocks:
+- store image metadata such as width, alignment, float, and wrap type
+
+5. Published post rendering must match admin preview
+The public Insights post page must render the image exactly as configured in admin:
+- same width
+- same alignment
+- same float/wrap behavior
+- same spacing
+- same rounded corners/styling
+
+6. Mobile behavior
+On mobile:
+- floated images should automatically stack cleanly
+- image should become centered or full-width for readability
+- avoid narrow text wrapping around images on small screens
+- preserve clean paragraph spacing
+
+7. Styling expectations
+- Keep image styling polished and editorial
+- Add margins around floated images so text does not touch the image
+- Use rounded corners where appropriate
+- Avoid broken layouts when images are resized or floated
+- Prevent images from overflowing the content container
+
+Implementation guidance:
+- Inspect the current rich text editor used in AdminInsights.tsx
+- Add or improve image node/extension controls if using Tiptap/ProseMirror/Slate/Quill/etc.
+- Add selected-image UI controls instead of relying only on browser default behavior
+- Add CSS classes for image sizes and alignment:
+  - image-size-sm
+  - image-size-md
+  - image-size-lg
+  - image-full
+  - image-center
+  - image-float-left
+  - image-float-right
+- Make sure these styles exist in both the admin editor preview and public article renderer
+- Keep existing inserted images backward compatible
+
+Expected result:
+- Admins can insert an image, resize it, expand it, align it, and move it inside the article
+- Text can wrap around left/right floated images
+- Admin editor view closely matches the published blog page
+- Mobile rendering remains readable and clean

@@ -2581,6 +2581,68 @@
   clear: both;
 }
 
+/* ── Image size modifier classes ─────────────────────────────────────────────
+   Combine with position classes to control width.
+   image-size-sm / image-size-md / image-size-lg
+   image-full always wins and ignores size modifiers.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Float left + sizes */
+.ql-editor img.image-wrap-left.image-size-sm,
+.blog-content img.image-wrap-left.image-size-sm {
+  max-width: 26%;
+}
+.ql-editor img.image-wrap-left.image-size-md,
+.blog-content img.image-wrap-left.image-size-md {
+  max-width: 42%;
+}
+.ql-editor img.image-wrap-left.image-size-lg,
+.blog-content img.image-wrap-left.image-size-lg {
+  max-width: 62%;
+}
+
+/* Float right + sizes */
+.ql-editor img.image-wrap-right.image-size-sm,
+.blog-content img.image-wrap-right.image-size-sm {
+  max-width: 26%;
+}
+.ql-editor img.image-wrap-right.image-size-md,
+.blog-content img.image-wrap-right.image-size-md {
+  max-width: 42%;
+}
+.ql-editor img.image-wrap-right.image-size-lg,
+.blog-content img.image-wrap-right.image-size-lg {
+  max-width: 62%;
+}
+
+/* Centered + sizes */
+.ql-editor img.image-center.image-size-sm,
+.blog-content img.image-center.image-size-sm {
+  max-width: 28%;
+}
+.ql-editor img.image-center.image-size-md,
+.blog-content img.image-center.image-size-md {
+  max-width: 55%;
+}
+.ql-editor img.image-center.image-size-lg,
+.blog-content img.image-center.image-size-lg {
+  max-width: 82%;
+}
+
+/* Inline + sizes */
+.ql-editor img.image-inline.image-size-sm,
+.blog-content img.image-inline.image-size-sm {
+  max-width: 18%;
+}
+.ql-editor img.image-inline.image-size-md,
+.blog-content img.image-inline.image-size-md {
+  max-width: 34%;
+}
+.ql-editor img.image-inline.image-size-lg,
+.blog-content img.image-inline.image-size-lg {
+  max-width: 52%;
+}
+
 /* ── Mobile: reset all floats, stack images full-width ───────────────────── */
 @media (max-width: 640px) {
   .ql-editor img.image-wrap-left,
