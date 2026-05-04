@@ -1,0 +1,75 @@
+Please restore/fix the social sharing behavior for published Insights blog posts.
+
+Current issue:
+Recent Insights page changes broke the old sharing behavior. When I copy and share a published blog/article URL to social media, the link preview redirects to or represents the main Insights page instead of the specific published blog post.
+
+Example problem:
+- Sharing a specific blog post URL should preview and open that exact blog post
+- Instead, the social preview/link points to the general Insights page
+- This affects social media sharing, including Facebook/link preview cards
+
+What to fix:
+1. Restore unique article URLs
+- Each published Insights post must have its own shareable URL
+- The URL should route directly to the specific article/blog post
+- Copying the article URL should not redirect to `/insights` unless the article does not exist
+
+2. Fix routing behavior
+- Check the Insights post route/page, such as:
+  - `/insights/:slug`
+  - `/insights/[slug]`
+  - or the current routing setup
+- Make sure article detail routes still work after the Insights.tsx redesign
+- Ensure no redirect logic is sending valid post URLs back to the main Insights page
+- Validate that old existing published posts still resolve correctly by slug
+
+3. Fix social media metadata per article
+Each blog post detail page should generate article-specific metadata:
+- page title should be the article title
+- meta description should be the article synopsis/excerpt
+- Open Graph title should be article title
+- Open Graph description should be article synopsis/excerpt
+- Open Graph image should be the article thumbnail/cover image
+- canonical URL should be the article’s own URL, not the main Insights page
+- Twitter/X card metadata should also use the article-specific data
+
+4. Fix shared link preview image/title
+When sharing a blog post URL, social platforms should show:
+- correct article title
+- correct article preview/description
+- correct article thumbnail
+- correct article URL
+
+It should not show:
+- “Insights – Outsourcing Intelligence | OnSpot Global”
+- the generic Insights page image
+- the generic `/insights` URL
+
+5. Preserve main Insights page metadata separately
+- The main `/insights` page should keep its own generic metadata
+- But individual article pages must override it with article-specific metadata
+
+6. Check API/data usage
+- Ensure the detail page fetches the correct post by slug
+- Ensure the slug used in cards, carousel, admin, and share links matches the detail route
+- If old posts have legacy slugs, support them or map them correctly
+- Do not generate share links using only `/insights`
+
+7. Verify social sharing buttons if they exist
+- If there are share buttons for Facebook, LinkedIn, X/Twitter, or copy link, make sure they use the article detail URL, not the Insights index URL
+- Copy link should copy the current article URL
+- Share URLs should encode the correct article URL
+
+Implementation guidance:
+- Inspect recent changes in Insights.tsx and the article detail page component
+- Check App.tsx/routes for article detail route regressions
+- Check SEO/meta component usage
+- Check whether generic Insights metadata is being applied globally and overriding article pages
+- Add or restore a reusable article SEO/meta helper if needed
+
+Expected result:
+- Existing published blog URLs open the correct article page
+- New blog URLs open their own article pages
+- Social media link previews show the correct article-specific title, description, image, and URL
+- Main Insights page sharing still shows the generic Insights metadata
+- Article sharing no longer redirects to the Insights homepage

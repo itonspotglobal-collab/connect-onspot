@@ -17,12 +17,29 @@ interface HeadSEOProps {
   title?: string;
   description?: string;
   ogImage?: string;
+  /** Override og:type (default "website"). Use "article" for blog posts. */
+  ogType?: string;
+  /** Explicit canonical URL override. Falls back to domain + current location. */
+  canonical?: string;
+  /** Optional Article JSON-LD data for blog posts */
+  articleSchema?: {
+    headline: string;
+    description: string;
+    image: string;
+    datePublished: string;
+    dateModified?: string;
+    author: string;
+    url: string;
+  };
 }
 
 export function HeadSEO({ 
   title = "OnSpot — The Superhuman Outsourcing System",
   description = "The growth engine of modern business. Built by entrepreneurs, for entrepreneurs—our Superhuman Outsourcing System fuses AI-first infrastructure with human excellence to scale businesses and empower people to perform beyond limits.",
-  ogImage = "https://www.onspotglobal.com/assets/og/onspot-home.jpg"
+  ogImage = "https://www.onspotglobal.com/assets/og/onspot-home.jpg",
+  ogType = "website",
+  canonical,
+  articleSchema,
 }: HeadSEOProps) {
   const [location] = useLocation();
   const region = getRegionForPath(location);
@@ -52,14 +69,17 @@ export function HeadSEO({
       meta.setAttribute("content", content);
     };
 
-    // Update canonical URL
-    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
-    if (!canonical) {
-      canonical = document.createElement("link");
-      canonical.setAttribute("rel", "canonical");
-      document.head.appendChild(canonical);
+    // Resolve canonical URL: explicit override wins, otherwise derive from domain + path
+    const canonicalHref = canonical ?? `https://www.onspotglobal.com${location}`;
+
+    // Update canonical link tag
+    let canonicalEl = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+    if (!canonicalEl) {
+      canonicalEl = document.createElement("link");
+      canonicalEl.setAttribute("rel", "canonical");
+      document.head.appendChild(canonicalEl);
     }
-    canonical.setAttribute("href", `https://www.onspotglobal.com${location}`);
+    canonicalEl.setAttribute("href", canonicalHref);
 
     // Update basic meta tags
     updateMetaName("description", description);
@@ -69,8 +89,8 @@ export function HeadSEO({
     updateMetaTag("og:site_name", "OnSpot");
     updateMetaTag("og:title", title);
     updateMetaTag("og:description", description);
-    updateMetaTag("og:type", "website");
-    updateMetaTag("og:url", `https://www.onspotglobal.com${location}`);
+    updateMetaTag("og:type", ogType);
+    updateMetaTag("og:url", canonicalHref);
     updateMetaTag("og:image", ogImage);
     
     // Update Twitter Card tags
@@ -184,7 +204,41 @@ export function HeadSEO({
       });
       document.head.appendChild(employmentSchema);
     }
-  }, [location, region, title, description, ogImage]);
+
+    // Inject Article schema for blog posts when articleSchema is provided
+    if (articleSchema) {
+      const artSchema = document.createElement('script');
+      artSchema.type = 'application/ld+json';
+      artSchema.setAttribute('data-schema-type', 'article');
+      artSchema.textContent = JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "headline": articleSchema.headline,
+        "description": articleSchema.description,
+        "image": articleSchema.image,
+        "datePublished": articleSchema.datePublished,
+        "dateModified": articleSchema.dateModified ?? articleSchema.datePublished,
+        "author": {
+          "@type": "Person",
+          "name": articleSchema.author
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "OnSpot",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://www.onspotglobal.com/assets/onspot-logo.png"
+          }
+        },
+        "mainEntityOfPage": {
+          "@type": "WebPage",
+          "@id": articleSchema.url
+        },
+        "url": articleSchema.url
+      });
+      document.head.appendChild(artSchema);
+    }
+  }, [location, region, title, description, ogImage, ogType, canonical, articleSchema]);
 
   // This component only manages <head> - no visible output
   return null;

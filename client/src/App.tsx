@@ -274,6 +274,7 @@ function AppContent() {
       <Route path="/why-onspot/:page" component={PublicRouter} />
       <Route path="/amazing" component={PublicRouter} />
       <Route path="/insights" component={PublicRouter} />
+      <Route path="/insights/:slug" component={PublicRouter} />
       <Route path="/payment-protection" component={PublicRouter} />
       <Route path="/client-verification" component={PublicRouter} />
       <Route path="/trust-safety" component={PublicRouter} />
