@@ -330,7 +330,6 @@ const whyOnSpotSections = {
 
 const navigationItems = [
   { title: "Hire Talent", path: "/hire-talent" },
-  { title: "Talent Pool", path: "/talent-pool" },
   {
     title: "Find Work",
     path: "/find-work",
@@ -659,6 +658,7 @@ export function TopNavigation() {
               const hasMegaMenu = "megaMenu" in item && item.megaMenu;
               const isActive =
                 location === item.path ||
+                (item.path === "/hire-talent" && location === "/talent-pool") ||
                 (hasMegaMenu &&
                   item.services &&
                   Object.values(item.services).some(

@@ -356,7 +356,7 @@ export default function HireTalentPage() {
                   className="min-h-[72px] flex-1 resize-none bg-transparent text-sm leading-7 text-slate-800 outline-none placeholder:text-slate-400"
                   placeholder="Tell us what you need… e.g. I need someone to handle customer support for my e-commerce store"
                 />
-                <Button className="self-end rounded-2xl shadow-md" size="sm">
+                <Button className="self-end rounded-2xl shadow-md" size="sm" onClick={() => navigate("/talent-pool")}>
                   Find talent
                 </Button>
               </div>
@@ -388,7 +388,7 @@ export default function HireTalentPage() {
             <Button
               size="lg"
               className="rounded-2xl px-6 shadow-lg"
-              onClick={() => navigate("/lead-intake")}
+              onClick={() => navigate("/talent-pool")}
             >
               Hire talent now
             </Button>

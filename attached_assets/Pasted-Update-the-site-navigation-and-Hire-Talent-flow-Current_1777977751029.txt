@@ -1,0 +1,87 @@
+Update the site navigation and Hire Talent flow.
+
+Current issue:
+
+* The main navigation bar currently has both `Hire Talent` and `Talent Pool`.
+* This feels redundant because the Talent Pool should be accessed through the Hire Talent flow.
+* The `Talent Pool` navigation item should be removed from the main navbar.
+
+Required changes:
+
+1. Remove `Talent Pool` from the main navigation bar
+
+* Remove the `Talent Pool` menu item from the top navbar.
+* Keep `Hire Talent` as the main entry point for clients or users looking for talent.
+* The navbar should only show relevant primary pages, for example:
+
+```txt
+Hire Talent | Find Work | Why OnSpot | Solutions
+```
+
+2. Keep the Talent Pool route/page active
+
+* Do not delete the Talent Pool page.
+* Do not remove the Talent Pool route.
+* The page should still be accessible internally through buttons from the Hire Talent page.
+* Example route can remain:
+
+```txt
+/talent-pool
+```
+
+3. Link Hire Talent buttons to Talent Pool
+   On the Hire Talent page, update these buttons so they navigate to the Talent Pool page:
+
+* `Hire talent now`
+* `Find talent`
+
+Both buttons should route to the Talent Pool page.
+
+Example:
+
+```tsx
+navigate("/talent-pool");
+```
+
+or:
+
+```tsx
+<Link to="/talent-pool">Hire talent now</Link>
+<Link to="/talent-pool">Find talent</Link>
+```
+
+4. Preserve existing Hire Talent page behavior
+
+* Keep the Hire Talent page design and hero section.
+* Keep the search/input field.
+* Keep the suggestion chips.
+* Keep the `Request a shortlist` button behavior unchanged unless it currently also needs to go to Talent Pool.
+* Only change the buttons that should lead users to browsing/searching talents.
+
+5. Update active nav state
+
+* Since `Talent Pool` is removed from the navbar, when users are on `/talent-pool`, the navbar can highlight `Hire Talent`.
+* This makes Talent Pool feel like part of the Hire Talent flow.
+
+Suggested active logic:
+
+```ts
+const isHireTalentActive =
+  location.pathname === "/hire-talent" ||
+  location.pathname === "/talent-pool";
+```
+
+6. Check all nav instances
+   Apply this change to all navbar components if there are multiple versions, such as:
+
+* main public navbar
+* Talent Profile navbar
+* mobile navbar
+* shared layout navbar
+
+Expected result:
+
+* `Talent Pool` no longer appears in the main navigation bar.
+* Users access Talent Pool by going to `Hire Talent`, then clicking `Hire talent now` or `Find talent`.
+* The Talent Pool page still exists and works normally.
+* When viewing Talent Pool, `Hire Talent` can be highlighted as the active nav item.

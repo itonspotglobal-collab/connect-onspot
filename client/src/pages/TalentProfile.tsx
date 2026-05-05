@@ -281,7 +281,6 @@ function PhotoUploader({
 
 const PROFILE_NAV_LINKS = [
   { label: "Hire Talent", href: "/hire-talent" },
-  { label: "Talent Pool", href: "/talent-pool" },
   { label: "Find Work", href: "/find-work" },
   { label: "Why OnSpot", href: "/why-onspot" },
   { label: "Solutions", href: "/solutions" },
