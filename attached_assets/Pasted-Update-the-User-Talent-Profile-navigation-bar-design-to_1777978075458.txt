@@ -1,0 +1,138 @@
+Update the User/Talent Profile navigation bar design to look more like the Insights page navigation bar.
+
+Current issue:
+
+* The Talent Profile navbar already uses the OnSpot purple branding.
+* However, its layout still looks closer to a simple website navbar.
+* We want the Talent Profile navbar to feel more consistent with the Insights page navbar.
+
+Design reference:
+Use the Insights page navigation bar as the main inspiration:
+
+* solid purple/blue gradient background
+* white OnSpot logo on the left
+* compact horizontal navigation items
+* small icons beside navigation labels
+* subtle vertical divider after the logo
+* right-side search/sign-in/profile action area
+* clean, flat, professional header
+
+Do not copy the Insights navbar exactly, but make the Talent Profile navbar visually similar and consistent with it.
+
+Required changes:
+
+1. Update navbar layout
+   The Talent Profile navbar should use this general structure:
+
+```txt id="fcs86s"
+[OnSpot Logo] | [Hire Talent] [Find Work] [Why OnSpot] [Solutions]          [Search] [Sign in/Profile]
+```
+
+2. Logo section
+
+* Use the OnSpot white logo/wordmark.
+* Add a subtle vertical divider after the logo, similar to the Insights navbar.
+* Keep spacing compact.
+
+3. Navigation links
+   Use compact nav links with optional icons.
+
+Suggested links:
+
+```txt id="rlosja"
+Hire Talent
+Find Work
+Why OnSpot
+Solutions
+```
+
+Suggested optional icons:
+
+* Hire Talent: user/briefcase icon
+* Find Work: compass/search icon
+* Why OnSpot: info/spark icon
+* Solutions: grid/layers icon
+
+The icons should be small and white or white/80 opacity.
+
+4. Right-side area
+   For unauthenticated users:
+
+* Show `Sign in`
+* Optional search icon or search label
+
+For authenticated talent users:
+
+* Show talent name or avatar
+* Show `Sign out`
+
+Example:
+
+```txt id="q3z8s5"
+[Search] | [Frenzy Val Legaspi] [Sign out]
+```
+
+5. Visual style
+   Use styling similar to the Insights navbar:
+
+```tsx id="yn6ayd"
+<header className="bg-gradient-to-r from-[#3727f5] via-[#5637e8] to-[#7a35f2] text-white shadow-sm">
+  <nav className="mx-auto flex h-14 max-w-7xl items-center px-6">
+    ...
+  </nav>
+</header>
+```
+
+Suggested link style:
+
+```tsx id="h4j3ex"
+className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white/85 hover:text-white"
+```
+
+Suggested divider style:
+
+```tsx id="zydbke"
+<div className="mx-4 h-6 w-px bg-white/25" />
+```
+
+6. Keep it different from the Insights page
+
+* Do not use the exact Insights labels like CEO Insights, Talent Insights, Client Insights, etc.
+* Keep the Talent Profile links relevant to the main site.
+* Use the Insights page only as visual inspiration.
+
+7. Profile section tabs remain separate
+   Do not merge the profile tabs into the main navbar.
+
+The profile tabs should remain below the profile header:
+
+```txt id="q6nlnd"
+Overview | About | Skills | Experience | Education | Certifications | Portfolio | Resume | Preferences
+```
+
+Keep these tabs in the light profile section area.
+
+8. Responsive behavior
+   On mobile:
+
+* Collapse the main nav links into a menu button.
+* Keep the logo visible.
+* Keep Sign in/Profile action accessible.
+* Profile section tabs should remain horizontally scrollable.
+
+9. Auth behavior
+   Keep the existing rule:
+
+* Authentication is only required for Talent Profile editing.
+* Do not enable authentication globally.
+* If not logged in, show `Sign in`.
+* If logged in as talent, show the name/avatar and `Sign out`.
+* Edit profile controls should still only appear for the profile owner.
+
+Expected result:
+
+* Talent Profile navbar visually matches the Insights page branding style.
+* It uses the same compact purple header feeling.
+* It keeps relevant profile/main-site navigation links.
+* It does not look like LinkedIn.
+* Profile section tabs remain separate and centered below the profile header.

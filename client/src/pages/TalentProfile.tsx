@@ -7,7 +7,7 @@ import {
   Github, Link2, Star, ChevronRight, Upload, Pencil, Check,
   X, Plus, Trash2, Award, BookOpen, User, FileText, ExternalLink,
   Clock, ChevronDown, Camera, Shield, AlertCircle, Download, Lock, LogOut, Eye, EyeOff,
-  Menu,
+  Menu, Users, Compass, Sparkles, Layers, Search,
 } from "lucide-react";
 import {
   TalentLoginModal,
@@ -280,10 +280,10 @@ function PhotoUploader({
 // ─── Profile Navbar ───────────────────────────────────────────────────────────
 
 const PROFILE_NAV_LINKS = [
-  { label: "Hire Talent", href: "/hire-talent" },
-  { label: "Find Work", href: "/find-work" },
-  { label: "Why OnSpot", href: "/why-onspot" },
-  { label: "Solutions", href: "/solutions" },
+  { label: "Hire Talent", href: "/hire-talent",  icon: Users     },
+  { label: "Find Work",   href: "/find-work",    icon: Compass   },
+  { label: "Why OnSpot",  href: "/why-onspot",   icon: Sparkles  },
+  { label: "Solutions",   href: "/solutions",    icon: Layers    },
 ];
 
 function ProfileNavbar({
@@ -297,83 +297,111 @@ function ProfileNavbar({
   onSignOut: () => void;
   onSignIn: () => void;
 }) {
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header
-      className="sticky top-0 z-50 backdrop-blur-md"
-      style={{ background: "linear-gradient(90deg, #3A3AF8 0%, #7F3DF4 100%)" }}
-    >
-      <div
-        className="mx-auto flex items-center justify-between"
-        style={{
-          height: "64px",
-          paddingLeft: "clamp(16px, 4vw, 24px)",
-          paddingRight: "clamp(16px, 4vw, 24px)",
-          maxWidth: "min(1200px, 92vw)",
-          width: "100%",
-        }}
-      >
-        {/* Logo */}
-        <button onClick={() => navigate("/")} className="shrink-0 transition-opacity hover:opacity-80">
-          <img
-            src={onspotLogo}
-            alt="OnSpot"
-            className="h-7 w-auto brightness-0 saturate-100 invert drop-shadow-sm"
-          />
-        </button>
+    <header className="sticky top-0 z-50 bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] backdrop-blur-md border-b border-white/10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center h-14">
 
-        {/* Desktop nav links */}
-        <nav className="hidden items-center gap-1 md:flex">
-          {PROFILE_NAV_LINKS.map((link) => (
-            <button
-              key={link.label}
-              onClick={() => navigate(link.href)}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-white/80 transition-all duration-200 hover:bg-white/10 hover:text-white"
-            >
-              {link.label}
-            </button>
-          ))}
-        </nav>
+          {/* Logo */}
+          <button
+            onClick={() => navigate("/")}
+            className="flex items-center flex-shrink-0"
+            aria-label="Go to OnSpot homepage"
+          >
+            <img
+              src={onspotLogo}
+              alt="OnSpot"
+              className="h-7 w-auto object-contain brightness-0 saturate-100 invert drop-shadow-sm"
+            />
+          </button>
 
-        {/* Right: CTA / auth */}
-        <div className="flex items-center gap-3">
-          {isOwner ? (
-            <>
-              {/* My Profile indicator + Sign out */}
-              <span className="hidden text-sm font-medium text-white/80 md:block">
-                {displayName}
-              </span>
+          {/* Divider — desktop only */}
+          <div className="hidden md:block w-px h-5 bg-white/20 flex-shrink-0 mx-3" />
+
+          {/* Desktop nav links */}
+          <nav className="hidden md:flex items-center flex-1 gap-0">
+            {PROFILE_NAV_LINKS.map(({ label, href, icon: Icon }) => {
+              const active = location === href;
+              return (
+                <button
+                  key={label}
+                  onClick={() => navigate(href)}
+                  className={`flex items-center gap-2 px-4 h-14 text-sm font-medium whitespace-nowrap border-b-2 transition-all duration-200 flex-shrink-0 ${
+                    active
+                      ? "border-white text-white"
+                      : "border-transparent text-white/70 hover:text-white hover:border-white/40"
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {label}
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Spacer on mobile */}
+          <div className="flex-1 md:hidden" />
+
+          {/* Right-side: auth controls — desktop */}
+          <div className="hidden md:flex items-center flex-shrink-0 pl-2 ml-1 border-l border-white/20 gap-1">
+            {isOwner ? (
+              <>
+                <span className="px-3 text-sm font-medium text-white/80 max-w-[180px] truncate">
+                  {displayName}
+                </span>
+                <button
+                  onClick={onSignOut}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white/70 transition-all duration-200 hover:text-white hover:bg-white/10"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  Sign out
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={onSignIn}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white/70 transition-all duration-200 hover:text-white hover:bg-white/10"
+              >
+                <Lock className="w-3.5 h-3.5" />
+                Sign in
+              </button>
+            )}
+          </div>
+
+          {/* Mobile: auth shortcut + hamburger */}
+          <div className="flex items-center gap-1 md:hidden">
+            {isOwner ? (
               <button
                 onClick={onSignOut}
-                className="hidden items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:bg-white/10 md:flex"
+                className="flex items-center justify-center rounded-lg transition-colors text-white/80 hover:bg-white/10 hover:text-white"
+                style={{ width: 40, height: 40 }}
+                aria-label="Sign out"
               >
-                <LogOut className="h-3.5 w-3.5" /> Sign out
+                <LogOut className="h-4 w-4" />
               </button>
-            </>
-          ) : (
+            ) : (
+              <button
+                onClick={onSignIn}
+                className="flex items-center justify-center rounded-lg transition-colors text-white/80 hover:bg-white/10 hover:text-white"
+                style={{ width: 40, height: 40 }}
+                aria-label="Sign in"
+              >
+                <Lock className="h-4 w-4" />
+              </button>
+            )}
             <button
-              onClick={onSignIn}
-              className="relative hidden items-center gap-2 overflow-hidden rounded-lg px-5 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:scale-105 md:flex"
-              style={{
-                background: "linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)",
-                boxShadow: "0 4px 15px rgba(58,58,248,0.4), inset 0 1px 0 rgba(255,255,255,0.2)",
-              }}
+              className="flex items-center justify-center rounded-lg transition-colors text-white/80 hover:bg-white/10 hover:text-white"
+              style={{ width: 40, height: 40 }}
+              onClick={() => setMobileOpen((v) => !v)}
+              aria-label="Menu"
             >
-              <Lock className="h-3.5 w-3.5" />
-              Sign in
+              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
-          )}
+          </div>
 
-          {/* Mobile hamburger */}
-          <button
-            className="rounded-lg p-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white md:hidden"
-            onClick={() => setMobileOpen((v) => !v)}
-            aria-label="Menu"
-          >
-            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
         </div>
       </div>
 
@@ -385,17 +413,17 @@ function ProfileNavbar({
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.18 }}
-            className="overflow-hidden border-t border-white/10 md:hidden"
-            style={{ background: "linear-gradient(180deg, #4F40F0 0%, #7F3DF4 100%)" }}
+            className="overflow-hidden border-t border-white/10 md:hidden bg-gradient-to-b from-[#4F40F0] to-[#7F3DF4]"
           >
             <div className="flex flex-col gap-0.5 px-4 py-3">
-              {PROFILE_NAV_LINKS.map((link) => (
+              {PROFILE_NAV_LINKS.map(({ label, href, icon: Icon }) => (
                 <button
-                  key={link.label}
-                  onClick={() => { navigate(link.href); setMobileOpen(false); }}
-                  className="rounded-lg px-3 py-2.5 text-left text-sm font-medium text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                  key={label}
+                  onClick={() => { navigate(href); setMobileOpen(false); }}
+                  className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-white/80 transition-colors hover:bg-white/10 hover:text-white"
                 >
-                  {link.label}
+                  <Icon className="w-3.5 h-3.5" />
+                  {label}
                 </button>
               ))}
               <div className="mt-2 border-t border-white/10 pt-2">
@@ -404,14 +432,16 @@ function ProfileNavbar({
                     onClick={() => { onSignOut(); setMobileOpen(false); }}
                     className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white"
                   >
-                    <LogOut className="h-4 w-4" /> Sign out of profile
+                    <LogOut className="h-4 w-4" />
+                    Sign out of profile
                   </button>
                 ) : (
                   <button
                     onClick={() => { onSignIn(); setMobileOpen(false); }}
                     className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
                   >
-                    <Lock className="h-4 w-4" /> Sign in
+                    <Lock className="h-4 w-4" />
+                    Sign in
                   </button>
                 )}
               </div>
