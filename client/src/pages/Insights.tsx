@@ -1089,20 +1089,19 @@ function HighlightCard({ article }: { article: ArticleItem }) {
           (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
         }}
       />
-      {/* Softer base gradient — the panel handles the primary readability */}
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-900/30 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-r from-slate-950/50 via-slate-900/10 to-transparent" />
+      {/* Light vignette — just enough to anchor the panel without hiding the photo */}
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-slate-900/10 to-transparent" />
       <div className="absolute inset-0 flex flex-col justify-end p-5 sm:p-7 md:p-9">
-        {/* Editorial frosted-glass text panel */}
+        {/* Frosted-glass text panel */}
         <div
           className="rounded-xl w-full sm:max-w-2xl"
           style={{
-            background: "rgba(6, 8, 22, 0.74)",
-            backdropFilter: "blur(16px)",
-            WebkitBackdropFilter: "blur(16px)",
-            border: "1px solid rgba(255,255,255,0.08)",
+            background: "rgba(12, 18, 52, 0.38)",
+            backdropFilter: "blur(22px) saturate(140%)",
+            WebkitBackdropFilter: "blur(22px) saturate(140%)",
+            border: "1px solid rgba(255,255,255,0.16)",
             boxShadow:
-              "0 8px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)",
+              "0 4px 24px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.10)",
             padding: "clamp(16px, 2.5vw, 28px)",
           }}
         >
