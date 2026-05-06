@@ -1,0 +1,116 @@
+We need to reactivate the existing login/signup portal flow in development, but DO NOT implement real authentication yet.
+
+Current behavior:
+- The navigation bar has an “Access Portal” button.
+- Clicking it currently opens a popup/modal with the “The first Superhuman BPO is awakening” marketing content.
+
+Goal:
+Replace or extend the current Access Portal popup so it becomes a development-only portal entry modal.
+
+Important:
+Do NOT implement real authentication, JWT validation, protected routes, backend login, password hashing, or database auth yet.
+This is only a frontend/dev flow so we can access and test the Client and Talent pages freely.
+
+Requirements:
+
+1. Access Portal button behavior
+- When the user clicks “Access Portal” in the navigation bar, show a modal popup.
+- The popup should provide two main choices:
+  - Sign In
+  - Sign Up
+- Keep the UI aligned with the existing OnSpot design: dark/purple gradient, modern cards, rounded buttons, and existing shadcn/ui components.
+
+2. Sign In flow
+- When clicking “Sign In”, show a simple form:
+  - Email
+  - Password
+  - Button: Continue
+- Since authentication is not implemented yet, clicking Continue should NOT call any backend auth endpoint.
+- Instead, allow the user to choose or confirm the portal type:
+  - Client
+  - Talent
+- After selecting Client, redirect to the existing Client page/dashboard route.
+- After selecting Talent, redirect to the existing Talent page/dashboard route.
+- Use the existing routes if already available, such as:
+  - /client-dashboard or /dashboard for Client
+  - /talent-dashboard or /talent-portal for Talent
+- If the exact routes differ, inspect App.tsx/router and use the currently existing route names.
+
+3. Sign Up flow
+- When clicking “Sign Up”, show a simple registration form:
+  - First Name
+  - Last Name
+  - Email
+  - Password
+  - Account Type selection:
+    - I’m a Client looking for talent
+    - I’m a Talent looking for jobs
+  - Button: Create Account
+- Do NOT call the backend signup endpoint yet.
+- Store the temporary selected user data only in local state or localStorage for development testing.
+- Example localStorage keys can be:
+  - dev_portal_user
+  - dev_portal_role
+- After Create Account:
+  - If Client was selected, redirect to the Client page/dashboard.
+  - If Talent was selected, redirect to the Talent page/dashboard.
+
+4. Separate Client and Talent purpose clearly
+- Client page is for clients looking for talent.
+- Talent page is for talents searching for jobs.
+- Make this clear in the UI copy.
+- Suggested modal copy:
+  - Client: “Find and manage top outsourcing talent.”
+  - Talent: “Find jobs and manage your career profile.”
+
+5. Development-only access
+- Do not block any routes based on authentication.
+- Temporarily disable or bypass any components that force authenticated users only.
+- If PostLoginPortalSelection, AuthContext, or protected route logic blocks access, adjust it so that during development users can access all pages.
+- Do not remove the existing authentication code permanently.
+- Instead, isolate the dev bypass clearly with comments like:
+  // DEV ONLY: temporary portal flow without authentication
+- Make it easy to replace with real authentication later.
+
+6. Existing components to inspect/reuse
+Please inspect and reuse existing components where possible:
+- client/src/components/TopNavigation.tsx
+- client/src/components/LoginDialog.tsx
+- client/src/components/SignUpDialog.tsx
+- client/src/components/PostLoginPortalSelection.tsx
+- client/src/components/PortalSelectionDialog.tsx
+- client/src/contexts/AuthContext.tsx
+- client/src/App.tsx
+- client/src/lib/api.ts
+
+7. Expected UX flow
+Access Portal → Modal opens → User chooses Sign In or Sign Up
+
+Sign In:
+Sign In → enter email/password → choose Client or Talent → redirect to correct page
+
+Sign Up:
+Sign Up → fill form → choose Client or Talent → Create Account → redirect to correct page
+
+8. Do not connect to backend auth yet
+Avoid these for now:
+- /api/login
+- /api/signup
+- /login
+- /signup
+- JWT token validation
+- password hashing
+- role-based API protection
+- database user creation
+
+9. Acceptance criteria
+- Clicking “Access Portal” opens the new portal modal.
+- Modal includes Sign In and Sign Up options.
+- Sign Up allows choosing Client or Talent.
+- Sign In allows choosing Client or Talent for dev testing.
+- Client redirects to the client-facing page/dashboard.
+- Talent redirects to the talent-facing page/dashboard.
+- No authentication is required to access pages.
+- No backend auth request is triggered.
+- Existing real auth-related code is not deleted, only bypassed or left unused for now.
+- Code is commented clearly where dev-only behavior is added.

@@ -59,6 +59,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
 import { VanessaChat } from "@/components/VanessaChat";
+import { DevPortalModal } from "@/components/DevPortalModal";
 
 // Service definitions for mega menu
 const serviceDetails = {
@@ -360,6 +361,8 @@ export function TopNavigation() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showPortal, setShowPortal] = useState(false);
+  // DEV ONLY: replaced Access Portal button with DevPortalModal. Remove when real auth is ready.
+  const [showDevPortal, setShowDevPortal] = useState(false);
   const [showVanessaChat, setShowVanessaChat] = useState(false);
   const [modalStep, setModalStep] = useState<1 | 2 | 3 | 4>(1);
   const [selectedPortal, setSelectedPortal] = useState<
@@ -807,8 +810,9 @@ export function TopNavigation() {
             </button>
 
             {/* Access Portal Button - Intelligent Design */}
+            {/* DEV ONLY: onClick now opens DevPortalModal instead of marketing modal */}
             <button
-              onClick={() => setShowPortal(true)}
+              onClick={() => setShowDevPortal(true)}
               className="relative group hidden md:flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm text-white whitespace-nowrap overflow-hidden transition-all duration-300 hover:scale-105"
               style={{
                 background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)',
@@ -1123,8 +1127,9 @@ export function TopNavigation() {
           </div>
         </div>
         <div className="px-4 py-3 border-t border-white/10">
+          {/* DEV ONLY: onClick now opens DevPortalModal instead of marketing modal */}
           <button
-            onClick={() => { setShowPortal(true); setIsMobileMenuOpen(false); }}
+            onClick={() => { setShowDevPortal(true); setIsMobileMenuOpen(false); }}
             className="relative group w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-lg font-bold text-base text-white overflow-hidden transition-all duration-300"
             style={{
               background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)',
@@ -1771,6 +1776,9 @@ export function TopNavigation() {
           </DialogPortal>
         )}
       </Dialog>
+
+      {/* DEV ONLY: dev portal modal — replaces real auth flow for development testing */}
+      <DevPortalModal open={showDevPortal} onOpenChange={setShowDevPortal} />
     </>
   );
 }

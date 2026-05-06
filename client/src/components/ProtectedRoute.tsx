@@ -19,7 +19,15 @@ export function ProtectedRoute({
   const { isAuthenticated, isLoading, user } = useAuth();
   const [, setLocation] = useLocation();
 
+  // DEV ONLY: bypass auth checks if dev_portal_role is set in localStorage.
+  // Remove this block when real authentication is implemented.
+  const devRole = localStorage.getItem('dev_portal_role');
+  const devPassthrough = Boolean(devRole && (!requiredRole || devRole === requiredRole));
+
+  // Hooks must always be called — conditional return comes after useEffect below.
   useEffect(() => {
+    // DEV ONLY: skip real auth redirects when bypassing
+    if (devPassthrough) return;
     // Only redirect after loading is complete
     if (!isLoading) {
       if (!isAuthenticated) {
