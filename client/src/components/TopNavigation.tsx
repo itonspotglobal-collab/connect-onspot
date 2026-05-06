@@ -30,6 +30,10 @@ import {
   Sparkles,
   Menu,
   X,
+  LogIn,
+  UserPlus,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { NeuralBrain } from "@/components/NeuralBrain";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -59,7 +63,6 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
 import { VanessaChat } from "@/components/VanessaChat";
-import { DevPortalModal } from "@/components/DevPortalModal";
 
 // Service definitions for mega menu
 const serviceDetails = {
@@ -361,10 +364,8 @@ export function TopNavigation() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showPortal, setShowPortal] = useState(false);
-  // DEV ONLY: replaced Access Portal button with DevPortalModal. Remove when real auth is ready.
-  const [showDevPortal, setShowDevPortal] = useState(false);
   const [showVanessaChat, setShowVanessaChat] = useState(false);
-  const [modalStep, setModalStep] = useState<1 | 2 | 3 | 4>(1);
+  const [modalStep, setModalStep] = useState<1 | 2 | 3 | 4 | "signin" | "signup">(1);
   const [selectedPortal, setSelectedPortal] = useState<
     "client" | "talent" | null
   >(null);
@@ -374,6 +375,16 @@ export function TopNavigation() {
     businessName: "",
     phone: "",
   });
+  // DEV ONLY: auth form state — remove when real auth is implemented
+  const [signinEmail, setSigninEmail] = useState("");
+  const [signinPassword, setSigninPassword] = useState("");
+  const [signinPortal, setSigninPortal] = useState<"client" | "talent" | null>(null);
+  const [signupFirstName, setSignupFirstName] = useState("");
+  const [signupLastName, setSignupLastName] = useState("");
+  const [signupEmail, setSignupEmail] = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
+  const [signupRole, setSignupRole] = useState<"client" | "talent" | null>(null);
+  const [showAuthPassword, setShowAuthPassword] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mobileAccordionOpen, setMobileAccordionOpen] = useState<string | null>(null);
   const [visibleItems, setVisibleItems] = useState<number>(navigationItems.length);
@@ -810,9 +821,8 @@ export function TopNavigation() {
             </button>
 
             {/* Access Portal Button - Intelligent Design */}
-            {/* DEV ONLY: onClick now opens DevPortalModal instead of marketing modal */}
             <button
-              onClick={() => setShowDevPortal(true)}
+              onClick={() => setShowPortal(true)}
               className="relative group hidden md:flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm text-white whitespace-nowrap overflow-hidden transition-all duration-300 hover:scale-105"
               style={{
                 background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)',
@@ -1127,9 +1137,8 @@ export function TopNavigation() {
           </div>
         </div>
         <div className="px-4 py-3 border-t border-white/10">
-          {/* DEV ONLY: onClick now opens DevPortalModal instead of marketing modal */}
           <button
-            onClick={() => { setShowDevPortal(true); setIsMobileMenuOpen(false); }}
+            onClick={() => { setShowPortal(true); setIsMobileMenuOpen(false); }}
             className="relative group w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-lg font-bold text-base text-white overflow-hidden transition-all duration-300"
             style={{
               background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)',
@@ -1173,6 +1182,10 @@ export function TopNavigation() {
             // Reset modal state when closing
             setModalStep(1);
             setSelectedPortal(null);
+            // DEV ONLY: reset auth form state
+            setSigninEmail(""); setSigninPassword(""); setSigninPortal(null);
+            setSignupFirstName(""); setSignupLastName(""); setSignupEmail(""); setSignupPassword(""); setSignupRole(null);
+            setShowAuthPassword(false);
           }
         }}
       >
@@ -1333,17 +1346,55 @@ export function TopNavigation() {
                       </button>
                     </div>
 
-                    {/* Microtext */}
-                    <p
-                      className="text-sm text-white/40 animate-in fade-in duration-1000"
+                    {/* Sign In / Sign Up buttons + Microtext — DEV ONLY: temporary portal access */}
+                    <div
+                      className="flex flex-col items-center gap-4 animate-in fade-in duration-1000"
                       style={{
-                        fontFamily: "Inter, sans-serif",
                         animationDelay: "1700ms",
                         animationFillMode: "backwards",
                       }}
                     >
-                      Your AI-powered outsourcing revolution starts now
-                    </p>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => setModalStep("signin")}
+                          className="relative group px-7 py-2.5 text-sm font-semibold text-white rounded-xl overflow-hidden transition-all duration-300 hover:scale-105"
+                          style={{
+                            background: 'rgba(255,255,255,0.1)',
+                            border: '1px solid rgba(255,255,255,0.25)',
+                            backdropFilter: 'blur(10px)',
+                            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1)',
+                          }}
+                          data-testid="button-signin-step1"
+                        >
+                          <span className="relative z-10 flex items-center gap-2">
+                            <LogIn className="w-4 h-4" />
+                            Sign In
+                          </span>
+                        </button>
+                        <button
+                          onClick={() => setModalStep("signup")}
+                          className="relative group px-7 py-2.5 text-sm font-semibold text-white rounded-xl overflow-hidden transition-all duration-300 hover:scale-105"
+                          style={{
+                            background: 'linear-gradient(135deg, rgba(58,58,248,0.5) 0%, rgba(127,61,244,0.5) 100%)',
+                            border: '1px solid rgba(91,124,255,0.45)',
+                            backdropFilter: 'blur(10px)',
+                            boxShadow: '0 4px 15px rgba(58,58,248,0.3), inset 0 1px 0 rgba(255,255,255,0.15)',
+                          }}
+                          data-testid="button-signup-step1"
+                        >
+                          <span className="relative z-10 flex items-center gap-2">
+                            <UserPlus className="w-4 h-4" />
+                            Sign Up
+                          </span>
+                        </button>
+                      </div>
+                      <p
+                        className="text-sm text-white/40"
+                        style={{ fontFamily: "Inter, sans-serif" }}
+                      >
+                        Your AI-powered outsourcing revolution starts now
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1592,6 +1643,208 @@ export function TopNavigation() {
               </div>
             </div>
           </DialogPortal>
+        ) : modalStep === "signin" ? (
+          /* DEV ONLY: Sign In — dark futuristic style, no backend auth */
+          <DialogPortal>
+            <DialogOverlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-300" />
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto"
+              style={{ padding: 'clamp(2rem, 5vh, 4rem)', minHeight: '100vh' }}
+            >
+              <div
+                className="relative animate-in fade-in slide-in-from-bottom-6 duration-500 my-auto"
+                style={{ width: 'min(90%, 520px)', maxHeight: '90vh' }}
+              >
+                <DialogTitle className="sr-only">Sign In</DialogTitle>
+                <button
+                  onClick={() => setShowPortal(false)}
+                  className="absolute right-4 top-4 z-50 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-white"
+                >
+                  <X className="h-6 w-6" />
+                  <span className="sr-only">Close</span>
+                </button>
+                <div
+                  className="relative flex flex-col rounded-2xl overflow-hidden"
+                  style={{
+                    background: 'linear-gradient(135deg, #0f0f3c 0%, #1a1a4e 25%, #252560 50%, #1a1a4e 75%, #0f0f3c 100%)',
+                    minHeight: 'min(600px, 80vh)',
+                  }}
+                >
+                  <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(91,124,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(91,124,255,0.3) 1px, transparent 1px)', backgroundSize: '50px 50px' }} />
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="w-[400px] h-[400px] rounded-full bg-gradient-to-r from-[#3A3AF8]/15 to-[#7F3DF4]/15 blur-3xl animate-pulse" style={{ animationDuration: '4s' }} />
+                  </div>
+                  <div className="relative z-10 flex flex-col px-8 py-10 w-full">
+                    <button
+                      onClick={() => setModalStep(1)}
+                      className="flex items-center gap-1.5 text-white/60 hover:text-white/90 text-sm mb-8 w-fit transition-colors duration-200"
+                    >
+                      <ArrowRight className="w-3.5 h-3.5 rotate-180" /> Back
+                    </button>
+                    <h2 className="text-3xl font-light text-white mb-2" style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '-0.02em' }}>Sign In</h2>
+                    <p className="text-white/60 mb-7 text-sm">Welcome back to OnSpot. Choose your portal below.</p>
+                    <div className="space-y-2 mb-4">
+                      <Label className="text-white/90 text-sm font-medium">Email Address</Label>
+                      <Input type="email" placeholder="you@example.com" value={signinEmail} onChange={(e) => setSigninEmail(e.target.value)} autoComplete="email" className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12" />
+                    </div>
+                    <div className="space-y-2 mb-6">
+                      <Label className="text-white/90 text-sm font-medium">Password</Label>
+                      <div className="relative">
+                        <Input type={showAuthPassword ? "text" : "password"} placeholder="••••••••" value={signinPassword} onChange={(e) => setSigninPassword(e.target.value)} autoComplete="current-password" className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12 pr-10" />
+                        <button type="button" onClick={() => setShowAuthPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/90 transition-colors">
+                          {showAuthPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="mb-6">
+                      <p className="text-white/90 text-sm font-medium mb-3">Select Your Portal</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button type="button" onClick={() => setSigninPortal("client")} className={`relative flex flex-col items-center gap-2 rounded-xl p-4 text-sm transition-all duration-200 ${signinPortal === "client" ? 'border-2 border-[#5B7CFF] bg-[#3A3AF8]/20' : 'border border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/40'}`}>
+                          <Building className="w-6 h-6 text-white" />
+                          <span className="font-semibold text-white text-xs">Client Portal</span>
+                          <span className="text-white/50 text-xs leading-tight text-center">Find and manage top outsourcing talent</span>
+                          {signinPortal === "client" && <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[#5B7CFF] flex items-center justify-center"><CheckCircle2 className="w-3 h-3 text-white" /></div>}
+                        </button>
+                        <button type="button" onClick={() => setSigninPortal("talent")} className={`relative flex flex-col items-center gap-2 rounded-xl p-4 text-sm transition-all duration-200 ${signinPortal === "talent" ? 'border-2 border-[hsl(var(--gold-yellow)/0.8)] bg-[hsl(var(--gold-yellow)/0.1)]' : 'border border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/40'}`}>
+                          <User className="w-6 h-6 text-white" />
+                          <span className="font-semibold text-white text-xs">Talent Portal</span>
+                          <span className="text-white/50 text-xs leading-tight text-center">Find jobs and manage your career profile</span>
+                          {signinPortal === "talent" && <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[hsl(var(--gold-yellow)/0.8)] flex items-center justify-center"><CheckCircle2 className="w-3 h-3 text-white" /></div>}
+                        </button>
+                      </div>
+                    </div>
+                    {/* DEV ONLY: saves to localStorage, no API call */}
+                    <button
+                      onClick={() => {
+                        if (!signinPortal || !signinEmail) return;
+                        localStorage.setItem("dev_portal_role", signinPortal);
+                        localStorage.setItem("dev_portal_email", signinEmail);
+                        setShowPortal(false);
+                        setModalStep(1);
+                        navigate(signinPortal === "client" ? "/dashboard" : "/talent-portal");
+                      }}
+                      disabled={!signinPortal || !signinEmail}
+                      className="relative group w-full px-8 py-4 text-base font-semibold text-white rounded-xl overflow-hidden transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+                      style={{ background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)', boxShadow: '0 8px 30px rgba(58,58,248,0.35), inset 0 1px 0 rgba(255,255,255,0.2)' }}
+                    >
+                      <span className="relative z-10 flex items-center justify-center gap-2">Continue <ArrowRight className="w-4 h-4" /></span>
+                    </button>
+                    <p className="text-center text-xs text-white/40 mt-4">
+                      Don't have an account?{' '}
+                      <button className="text-white/60 hover:text-white underline transition-colors" onClick={() => setModalStep("signup")}>Sign Up</button>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </DialogPortal>
+        ) : modalStep === "signup" ? (
+          /* DEV ONLY: Sign Up — dark futuristic style, no backend auth */
+          <DialogPortal>
+            <DialogOverlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-300" />
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto"
+              style={{ padding: 'clamp(2rem, 5vh, 4rem)', minHeight: '100vh' }}
+            >
+              <div
+                className="relative animate-in fade-in slide-in-from-bottom-6 duration-500 my-auto"
+                style={{ width: 'min(90%, 520px)', maxHeight: '90vh' }}
+              >
+                <DialogTitle className="sr-only">Create Account</DialogTitle>
+                <button
+                  onClick={() => setShowPortal(false)}
+                  className="absolute right-4 top-4 z-50 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-white"
+                >
+                  <X className="h-6 w-6" />
+                  <span className="sr-only">Close</span>
+                </button>
+                <div
+                  className="relative flex flex-col rounded-2xl overflow-hidden"
+                  style={{
+                    background: 'linear-gradient(135deg, #0f0f3c 0%, #1a1a4e 25%, #252560 50%, #1a1a4e 75%, #0f0f3c 100%)',
+                    minHeight: 'min(680px, 88vh)',
+                  }}
+                >
+                  <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(91,124,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(91,124,255,0.3) 1px, transparent 1px)', backgroundSize: '50px 50px' }} />
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="w-[400px] h-[400px] rounded-full bg-gradient-to-r from-[#3A3AF8]/15 to-[#7F3DF4]/15 blur-3xl animate-pulse" style={{ animationDuration: '4s' }} />
+                  </div>
+                  <div className="relative z-10 flex flex-col px-8 py-10 w-full">
+                    <button
+                      onClick={() => setModalStep(1)}
+                      className="flex items-center gap-1.5 text-white/60 hover:text-white/90 text-sm mb-8 w-fit transition-colors duration-200"
+                    >
+                      <ArrowRight className="w-3.5 h-3.5 rotate-180" /> Back
+                    </button>
+                    <h2 className="text-3xl font-light text-white mb-2" style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '-0.02em' }}>Create Account</h2>
+                    <p className="text-white/60 mb-7 text-sm">Join OnSpot and experience AI-powered outsourcing.</p>
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div className="space-y-2">
+                        <Label className="text-white/90 text-sm font-medium">First Name</Label>
+                        <Input placeholder="John" value={signupFirstName} onChange={(e) => setSignupFirstName(e.target.value)} className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-white/90 text-sm font-medium">Last Name</Label>
+                        <Input placeholder="Doe" value={signupLastName} onChange={(e) => setSignupLastName(e.target.value)} className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12" />
+                      </div>
+                    </div>
+                    <div className="space-y-2 mb-4">
+                      <Label className="text-white/90 text-sm font-medium">Email Address</Label>
+                      <Input type="email" placeholder="you@example.com" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} autoComplete="email" className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12" />
+                    </div>
+                    <div className="space-y-2 mb-6">
+                      <Label className="text-white/90 text-sm font-medium">Password</Label>
+                      <div className="relative">
+                        <Input type={showAuthPassword ? "text" : "password"} placeholder="••••••••" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} autoComplete="new-password" className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12 pr-10" />
+                        <button type="button" onClick={() => setShowAuthPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/90 transition-colors">
+                          {showAuthPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="mb-6">
+                      <p className="text-white/90 text-sm font-medium mb-3">I am a...</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button type="button" onClick={() => setSignupRole("client")} className={`relative flex flex-col items-center gap-2 rounded-xl p-4 text-sm transition-all duration-200 ${signupRole === "client" ? 'border-2 border-[#5B7CFF] bg-[#3A3AF8]/20' : 'border border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/40'}`}>
+                          <Building className="w-6 h-6 text-white" />
+                          <span className="font-semibold text-white text-xs">Client</span>
+                          <span className="text-white/50 text-xs leading-tight text-center">Looking for talent</span>
+                          {signupRole === "client" && <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[#5B7CFF] flex items-center justify-center"><CheckCircle2 className="w-3 h-3 text-white" /></div>}
+                        </button>
+                        <button type="button" onClick={() => setSignupRole("talent")} className={`relative flex flex-col items-center gap-2 rounded-xl p-4 text-sm transition-all duration-200 ${signupRole === "talent" ? 'border-2 border-[hsl(var(--gold-yellow)/0.8)] bg-[hsl(var(--gold-yellow)/0.1)]' : 'border border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/40'}`}>
+                          <User className="w-6 h-6 text-white" />
+                          <span className="font-semibold text-white text-xs">Talent</span>
+                          <span className="text-white/50 text-xs leading-tight text-center">Looking for jobs</span>
+                          {signupRole === "talent" && <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[hsl(var(--gold-yellow)/0.8)] flex items-center justify-center"><CheckCircle2 className="w-3 h-3 text-white" /></div>}
+                        </button>
+                      </div>
+                    </div>
+                    {/* DEV ONLY: saves to localStorage, no API call */}
+                    <button
+                      onClick={() => {
+                        if (!signupRole || !signupFirstName || !signupEmail) return;
+                        localStorage.setItem("dev_portal_role", signupRole);
+                        localStorage.setItem("dev_portal_email", signupEmail);
+                        localStorage.setItem("dev_portal_first_name", signupFirstName);
+                        localStorage.setItem("dev_portal_last_name", signupLastName);
+                        setShowPortal(false);
+                        setModalStep(1);
+                        navigate(signupRole === "client" ? "/dashboard" : "/talent-portal");
+                      }}
+                      disabled={!signupRole || !signupFirstName || !signupEmail}
+                      className="relative group w-full px-8 py-4 text-base font-semibold text-white rounded-xl overflow-hidden transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+                      style={{ background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)', boxShadow: '0 8px 30px rgba(58,58,248,0.35), inset 0 1px 0 rgba(255,255,255,0.2)' }}
+                    >
+                      <span className="relative z-10 flex items-center justify-center gap-2">Create Account <ArrowRight className="w-4 h-4" /></span>
+                    </button>
+                    <p className="text-center text-xs text-white/40 mt-4">
+                      Already have an account?{' '}
+                      <button className="text-white/60 hover:text-white underline transition-colors" onClick={() => setModalStep("signin")}>Sign In</button>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </DialogPortal>
         ) : (
           <DialogPortal>
             <DialogOverlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-300" />
@@ -1777,8 +2030,6 @@ export function TopNavigation() {
         )}
       </Dialog>
 
-      {/* DEV ONLY: dev portal modal — replaces real auth flow for development testing */}
-      <DevPortalModal open={showDevPortal} onOpenChange={setShowDevPortal} />
     </>
   );
 }

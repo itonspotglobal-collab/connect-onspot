@@ -1,0 +1,154 @@
+Please undo the boring replacement modal and restore the original Access Portal popup design.
+
+Current issue:
+The Access Portal button now opens a plain white “Access Your Portal” modal. That is wrong.
+
+What we actually want:
+When clicking “Access Portal” in the navigation bar, keep the existing full-screen/dark purple futuristic popup that says:
+
+“The first Superhuman BPO is awakening.”
+“AI first. Humans when it matters.”
+
+Inside that same popup, add login/signup functionality as additional buttons or a secondary section.
+
+Do NOT replace the current popup design.
+
+Main goal:
+Add Sign In and Sign Up options inside the existing Access Portal popup while preserving the current futuristic marketing design.
+
+Important:
+Do NOT implement real authentication yet.
+This is development/testing only.
+No backend login/signup calls.
+No JWT.
+No protected routes.
+No database user creation.
+No password hashing.
+No route blocking.
+
+Files to inspect:
+- client/src/components/TopNavigation.tsx
+- client/src/components/LoginDialog.tsx
+- client/src/components/SignUpDialog.tsx
+- client/src/components/PortalSelectionDialog.tsx
+- client/src/components/PostLoginPortalSelection.tsx
+- client/src/contexts/AuthContext.tsx
+- client/src/App.tsx
+
+Expected Access Portal popup behavior:
+1. User clicks “Access Portal” in the navigation bar.
+2. The existing large futuristic popup opens.
+3. Keep the original headline:
+   “The first Superhuman BPO is awakening.”
+4. Keep the original subheadline:
+   “AI first. Humans when it matters.”
+5. Keep the original CTA:
+   “Be the first to experience it”
+6. Add two new buttons in the same popup:
+   - Sign In
+   - Sign Up
+
+Suggested placement:
+Place the new Sign In and Sign Up buttons below the existing “Be the first to experience it” button, or beside it if the layout still looks good.
+Do not remove the original CTA unless necessary.
+Make the new buttons visually match the existing futuristic style:
+- gradient purple/blue for primary
+- glass/dark outline for secondary
+- rounded corners
+- glowing hover states
+- white text
+
+Flow:
+Access Portal popup → user sees:
+- Existing marketing content
+- Be the first to experience it
+- Sign In
+- Sign Up
+
+Sign In behavior:
+- Clicking Sign In should not close the whole popup.
+- It should switch the popup content into a sign-in step while keeping the same dark/purple futuristic modal shell/background.
+- Show:
+  - Back button
+  - Email input
+  - Password input
+  - Portal type selection:
+    - Client Portal
+    - Talent Portal
+  - Continue button
+
+Since authentication is not active:
+- Do not call any API.
+- On Continue, save temporary dev info to localStorage only:
+  - dev_portal_email
+  - dev_portal_role
+- If Client is selected, redirect to the existing client page/dashboard.
+- If Talent is selected, redirect to the existing talent page/dashboard.
+
+Sign Up behavior:
+- Clicking Sign Up should switch the popup content into a sign-up step while keeping the same modal design.
+- Show:
+  - Back button
+  - First Name
+  - Last Name
+  - Email
+  - Password
+  - Account Type selection:
+    - Client — looking for talent
+    - Talent — looking for jobs
+  - Create Account button
+
+Since authentication is not active:
+- Do not call /api/signup, /signup, or any backend route.
+- Save temporary dev data to localStorage only:
+  - dev_portal_first_name
+  - dev_portal_last_name
+  - dev_portal_email
+  - dev_portal_role
+- If Client is selected, redirect to the existing client page/dashboard.
+- If Talent is selected, redirect to the existing talent page/dashboard.
+
+Client/Talent page purpose:
+- Client page is for clients who are looking for talent.
+- Talent page is for talents searching for jobs.
+- Make the descriptions clear in the UI:
+  - Client Portal: “Find and manage top outsourcing talent.”
+  - Talent Portal: “Find jobs and manage your career profile.”
+
+Development-only route access:
+- Do not require authentication to view pages during development.
+- If any current logic blocks pages because the user is not authenticated, temporarily bypass that logic.
+- Do not delete real authentication code.
+- Add comments:
+  // DEV ONLY: temporary portal access without authentication
+
+Routing:
+- Inspect App.tsx and existing routes.
+- Use the actual existing route for the Client page/dashboard.
+- Use the actual existing route for the Talent page/dashboard.
+- Likely routes may include:
+  - /client-dashboard
+  - /dashboard
+  - /talent-dashboard
+  - /talent-portal
+But do not guess if App.tsx shows different routes.
+
+UI requirements:
+- Do not use a plain white dialog.
+- Do not create a separate boring modal.
+- Keep the full-screen cinematic purple/blue grid/starfield popup.
+- Keep the large close “X” in the top-right.
+- Preserve the current animation/background styling.
+- Sign In and Sign Up should feel integrated into the existing popup, not pasted on.
+
+Acceptance criteria:
+- Clicking Access Portal opens the original futuristic popup, not a white modal.
+- Original headline/subheadline/CTA are still visible.
+- Sign In and Sign Up buttons are added inside the original popup.
+- Sign In flow works without backend auth.
+- Sign Up flow works without backend auth.
+- Client selection redirects to the client page.
+- Talent selection redirects to the talent page.
+- No backend auth request is made.
+- No real route protection is enabled yet.
+- Existing authentication files are not deleted.
