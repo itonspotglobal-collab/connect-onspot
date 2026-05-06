@@ -1056,42 +1056,56 @@ function HighlightCard({ article }: { article: ArticleItem }) {
           (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
         }}
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/96 via-slate-900/55 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-r from-slate-900/72 via-slate-900/20 to-transparent" />
-      <div className="absolute inset-0 flex flex-col justify-end p-7 sm:p-10">
-        <span className="inline-flex self-start mb-3 text-[10px] uppercase tracking-[0.22em] font-semibold px-3 py-1 rounded-full bg-[#474ead] text-white">
-          {article.category}
-        </span>
-        <h3 className="text-2xl sm:text-3xl font-bold text-white leading-tight mb-3 tracking-tight">
-          {article.title}
-        </h3>
-        {article.excerpt && (
-          <p className="text-slate-300 text-sm leading-relaxed mb-5 line-clamp-3 max-w-xl">
-            {article.excerpt}
-          </p>
-        )}
-        <div className="flex items-center gap-4 flex-wrap mb-5">
-          <span className="flex items-center gap-1.5 text-xs">
-            <span className="w-6 h-6 rounded-full bg-[#474ead]/30 text-[#474ead] text-[9px] font-bold flex items-center justify-center flex-shrink-0">
-              {getInitials(article.author)}
-            </span>
-            <span className="text-slate-300 font-medium">{article.author}</span>
+      {/* Softer base gradient — the panel handles the primary readability */}
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-900/30 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-r from-slate-950/50 via-slate-900/10 to-transparent" />
+      <div className="absolute inset-0 flex flex-col justify-end p-5 sm:p-7 md:p-9">
+        {/* Editorial frosted-glass text panel */}
+        <div
+          className="rounded-xl w-full sm:max-w-2xl"
+          style={{
+            background: "rgba(6, 8, 22, 0.74)",
+            backdropFilter: "blur(16px)",
+            WebkitBackdropFilter: "blur(16px)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            boxShadow: "0 8px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)",
+            padding: "clamp(16px, 2.5vw, 28px)",
+          }}
+        >
+          <span className="inline-flex self-start mb-3 text-[10px] uppercase tracking-[0.22em] font-semibold px-3 py-1 rounded-full bg-[#474ead] text-white">
+            {article.category}
           </span>
-          <span className="flex items-center gap-1 text-xs text-slate-400">
-            <Calendar className="w-3 h-3" /> {article.date}
-          </span>
-          <span className="flex items-center gap-1 text-xs text-slate-400">
-            <Clock className="w-3 h-3" /> {article.readTime}
-          </span>
-          {article.views > 0 && (
-            <span className="flex items-center gap-1 text-xs text-slate-400">
-              <Eye className="w-3 h-3" /> {article.views.toLocaleString()}
-            </span>
+          <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white leading-tight mb-3 tracking-tight">
+            {article.title}
+          </h3>
+          {article.excerpt && (
+            <p className="text-white/75 text-sm leading-relaxed mb-4 line-clamp-2">
+              {article.excerpt}
+            </p>
           )}
-        </div>
-        <div className="inline-flex items-center gap-2 text-sm font-semibold text-white group-hover:text-[#474ead] transition-colors">
-          Read Article{" "}
-          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+          <div className="flex items-center gap-4 flex-wrap mb-4">
+            <span className="flex items-center gap-1.5 text-xs">
+              <span className="w-6 h-6 rounded-full bg-white/15 text-white text-[9px] font-bold flex items-center justify-center flex-shrink-0 border border-white/20">
+                {getInitials(article.author)}
+              </span>
+              <span className="text-white/85 font-medium">{article.author}</span>
+            </span>
+            <span className="flex items-center gap-1 text-xs text-white/55">
+              <Calendar className="w-3 h-3" /> {article.date}
+            </span>
+            <span className="flex items-center gap-1 text-xs text-white/55">
+              <Clock className="w-3 h-3" /> {article.readTime}
+            </span>
+            {article.views > 0 && (
+              <span className="flex items-center gap-1 text-xs text-white/55">
+                <Eye className="w-3 h-3" /> {article.views.toLocaleString()}
+              </span>
+            )}
+          </div>
+          <div className="inline-flex items-center gap-2 text-sm font-semibold text-white group-hover:text-[#7b82f0] transition-colors duration-200">
+            Read Article{" "}
+            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+          </div>
         </div>
       </div>
     </div>

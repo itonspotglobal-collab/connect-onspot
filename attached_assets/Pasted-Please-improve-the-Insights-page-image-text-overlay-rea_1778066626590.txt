@@ -1,0 +1,50 @@
+Please improve the Insights page image text overlay readability, especially in the “Explore the full knowledge base” section.
+
+Current issue:
+Some insight cards use the article thumbnail as a background image with white text over it. On lighter images, the title, excerpt, author, metadata, and CTA are hard to read.
+
+Goal:
+Add a readable text panel/box overlay similar to the attached reference, so the text remains visible regardless of the background image.
+
+What to change:
+1. Add a semi-transparent text overlay box
+- Place the card text content inside a dark translucent panel
+- The panel should sit over the image background
+- Use something like:
+  - dark navy/black with opacity
+  - subtle backdrop blur
+  - rounded corners
+  - soft shadow if needed
+- The text panel should make the title and description clearly readable
+
+2. Apply this to image-background insight cards
+- Especially the large card in the “All Insights / Explore the full knowledge base” section
+- Also check any other cards using text over images
+- Keep normal white cards unchanged if they do not need overlay treatment
+
+3. Improve text contrast
+- Title should be highly readable
+- Excerpt should be readable, not washed out
+- Metadata and “Read Article” CTA should have enough contrast
+- Maintain accessible contrast as much as possible
+
+4. Keep the visual style premium
+- The box should look intentional and editorial, not heavy or clunky
+- Use clean spacing and alignment
+- Keep it consistent with OnSpot branding
+
+5. Responsive behavior
+- On desktop, the overlay box can sit near the lower-left area of the image
+- On mobile, make sure the overlay box does not overflow or cover too much of the image
+- Keep padding and font sizes balanced on smaller screens
+
+Implementation guidance:
+- Add the overlay panel around the text content, not over the entire card only
+- Keep the existing image dark gradient if useful, but do not rely on it alone
+- Use a reusable class/component if multiple cards need this treatment
+- Avoid making the full card too dark unless necessary
+
+Expected result:
+- Article titles and descriptions are clearly visible on all thumbnails
+- The large insight card feels polished and readable
+- The overlay looks similar in purpose to the attached reference: a readable text box over an image
