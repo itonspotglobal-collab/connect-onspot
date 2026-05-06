@@ -1,0 +1,184 @@
+Please update the Access Portal account flow so created accounts are saved in the database.
+
+Important context:
+We are still in development, but now Sign Up should create real database records.
+Login can remain simple/dev-friendly for now, but account creation must persist.
+
+Current database schema already has:
+- users table
+- users.role field with values like client, talent, admin
+- users.password_hash
+- users.email
+- users.first_name
+- users.last_name
+- users.company
+- profiles table for talent profiles
+
+Goal:
+When a user creates an account from the Access Portal popup:
+- Save the account in the users table.
+- Separate Client and Talent accounts by the users.role field.
+- Client accounts should have role = "client".
+- Talent accounts should have role = "talent".
+- Existing accounts should also be recognized/separated by their existing users.role value.
+
+Do NOT create completely separate unrelated auth systems.
+Use the existing users.role field as the separation point unless there is already a better existing table design.
+
+Frontend requirements:
+
+1. Create Account form
+Keep the existing futuristic Access Portal popup design.
+
+Create Account form should include:
+- First Name
+- Last Name
+- Email Address
+- Password
+- Confirm Password
+- Account Type:
+  - Client — Looking for talent
+  - Talent — Looking for jobs
+- Create Account button
+
+2. Confirm password validation
+- Password and Confirm Password are both required.
+- Confirm Password must match Password.
+- If not matching, show a clear validation message or toast:
+  “Passwords do not match.”
+- Do not submit until passwords match.
+
+3. Submit behavior
+On Create Account:
+- Call the backend signup endpoint.
+- Send:
+  - first_name
+  - last_name
+  - email
+  - password
+  - role: "client" or "talent"
+  - company if available; optional for now
+- Do not send confirmPassword to the database.
+- Do not store plaintext password in localStorage.
+
+4. Redirect after successful signup
+- If role = "talent", redirect the user to the existing Find Best Matches page where they upload their resume.
+  - Inspect client/src/App.tsx and use the existing route for client/src/pages/FindBestMatches.tsx.
+- If role = "client", redirect the user to the existing client-facing page/dashboard where clients look for talent.
+  - Inspect App.tsx and use the best existing client route.
+
+5. Existing accounts
+If the email already exists:
+- Do not create a duplicate.
+- Show a user-friendly message:
+  “An account with this email already exists. Please sign in instead.”
+- Existing accounts should be separated by users.role:
+  - client users go to the client flow
+  - talent users go to the Find Best Matches / talent flow
+- Do not overwrite existing account role without explicit admin action.
+
+Backend requirements:
+
+1. Use or fix existing signup endpoint
+There is already a backend signup route in server/routes.ts, likely:
+POST /api/signup
+
+Use that if possible instead of creating a duplicate endpoint.
+
+Expected request:
+{
+  "email": "user@example.com",
+  "password": "password123",
+  "first_name": "John",
+  "last_name": "Doe",
+  "role": "client" or "talent",
+  "company": optional
+}
+
+Expected behavior:
+- Validate required fields.
+- Validate email format.
+- Validate password strength using existing auth-utils.
+- Reject invalid role values. Only allow:
+  - client
+  - talent
+- Do not allow admin signup from public form.
+- Check duplicate email.
+- Hash password using existing hashPassword.
+- Insert into users table.
+- Save role correctly.
+- Return the created user data without password_hash.
+
+2. Talent profile creation
+If role = "talent":
+- Create a matching row in profiles table if it does not already exist.
+- Link profiles.user_id to users.id.
+- Fill first_name and last_name.
+- Use sensible defaults for required fields, like:
+  - location = "Global"
+  - languages = ["English"]
+  - timezone = "Asia/Manila"
+
+3. Client account handling
+If role = "client":
+- Create the users record with role = "client".
+- Do not create a talent profile.
+- If there is an existing client profile/company table, inspect and use it.
+- If no separate client table exists, keep separation through users.role for now.
+
+4. Login behavior for existing accounts
+Sign In should call the backend login endpoint if it is already available:
+POST /api/login
+
+On successful login:
+- Read user.role from the response.
+- If user.role = "talent", redirect to the existing Find Best Matches page.
+- If user.role = "client", redirect to the existing client-facing page/dashboard.
+- If user.role = "admin", keep current admin behavior if it exists.
+- Store token/user only if the current app already does that.
+- Do not block pages with auth yet during development.
+
+5. Fix route mismatch if needed
+Check client/src/lib/api.ts.
+If frontend is calling /signup or /login but backend routes are /api/signup and /api/login, fix the frontend to call:
+- /api/signup
+- /api/login
+
+6. Account separation
+Do not create duplicate separate tables unless required.
+Use users.role for account separation:
+- role = client
+- role = talent
+
+For convenience, add helper queries or comments where needed:
+- Get clients: SELECT * FROM users WHERE role = 'client'
+- Get talents: SELECT * FROM users WHERE role = 'talent'
+
+If there are existing users with missing or incorrect roles:
+- Do not automatically change them blindly.
+- Add a safe development/admin utility endpoint or script only if needed.
+- It should list counts:
+  - total clients
+  - total talents
+  - users with missing/unknown roles
+- Optional: provide a clearly commented migration or SQL snippet to review manually.
+
+7. Security/development note
+This can use real database signup/login, but keep route access relaxed for development.
+Do not fully enforce protected routes yet.
+Add comments:
+  // DEV ONLY: routes are still accessible during development even without auth
+
+8. Acceptance criteria
+- Create Account saves a real user in the users table.
+- Client accounts are saved with role = "client".
+- Talent accounts are saved with role = "talent".
+- Talent signup also creates a profiles row.
+- Existing email cannot create duplicate users.
+- Existing users are recognized by users.role.
+- Sign In uses the existing database account if login endpoint works.
+- Talent users are redirected to Find Best Matches resume upload.
+- Client users are redirected to the client-facing dashboard/page.
+- No plaintext passwords are stored.
+- Confirm Password is validated on frontend and not stored.
+- Existing futuristic Access Portal popup design is preserved.

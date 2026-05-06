@@ -575,6 +575,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Validate role — only client and talent are allowed from the public signup form
+      const allowedPublicRoles = ["client", "talent"];
+      if (!allowedPublicRoles.includes(role)) {
+        console.error(`❌ Invalid role [${requestId}]: "${role}"`);
+        return res.status(400).json({
+          success: false,
+          message: "Invalid account type. Please select Client or Talent.",
+          requestId,
+        });
+      }
+
       // Check if user already exists
       const existingUserQuery =
         "SELECT id, email, username FROM users WHERE email = $1 OR username = $2";

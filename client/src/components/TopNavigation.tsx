@@ -387,6 +387,8 @@ export function TopNavigation() {
   const [showAuthPassword, setShowAuthPassword] = useState(false);
   const [signupConfirmPassword, setSignupConfirmPassword] = useState("");
   const [showSignupConfirm, setShowSignupConfirm] = useState(false);
+  const [signinLoading, setSigninLoading] = useState(false);
+  const [signupLoading, setSignupLoading] = useState(false);
   // DEV ONLY: forgot-password flow state — remove when real password-reset email is implemented
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotNewPassword, setForgotNewPassword] = useState("");
@@ -1731,21 +1733,44 @@ export function TopNavigation() {
                         </button>
                       </div>
                     </div>
-                    {/* DEV ONLY: saves to localStorage, no API call */}
+                    {/* Sign In — calls POST /api/login, stores JWT, redirects by DB role */}
                     <button
-                      onClick={() => {
-                        if (!signinPortal || !signinEmail) return;
-                        localStorage.setItem("dev_portal_role", signinPortal);
-                        localStorage.setItem("dev_portal_email", signinEmail);
-                        setShowPortal(false);
-                        setModalStep(1);
-                        navigate(signinPortal === "client" ? "/hire-talent" : "/find-best-matches");
+                      onClick={async () => {
+                        if (!signinEmail || !signinPassword || !signinPortal) return;
+                        setSigninLoading(true);
+                        try {
+                          const res = await fetch("/api/login", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ email: signinEmail, password: signinPassword }),
+                          });
+                          const data = await res.json();
+                          if (data.success) {
+                            localStorage.setItem("onspot_jwt_token", data.token);
+                            localStorage.setItem("onspot_user", JSON.stringify(data.user));
+                            localStorage.setItem("dev_portal_role", data.user.role);
+                            localStorage.setItem("dev_portal_email", data.user.email);
+                            setShowPortal(false);
+                            setModalStep(1);
+                            const role = data.user.role;
+                            navigate(role === "client" ? "/hire-talent" : "/find-best-matches");
+                          } else {
+                            toast({ variant: "destructive", title: "Sign in failed", description: data.message || "Invalid email or password." });
+                          }
+                        } catch {
+                          toast({ variant: "destructive", title: "Network error", description: "Could not reach the server. Please try again." });
+                        } finally {
+                          setSigninLoading(false);
+                        }
                       }}
-                      disabled={!signinPortal || !signinEmail}
+                      disabled={signinLoading || !signinPortal || !signinEmail || !signinPassword}
                       className="relative group w-full px-8 py-4 text-base font-semibold text-white rounded-xl overflow-hidden transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
                       style={{ background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)', boxShadow: '0 8px 30px rgba(58,58,248,0.35), inset 0 1px 0 rgba(255,255,255,0.2)' }}
                     >
-                      <span className="relative z-10 flex items-center justify-center gap-2">Continue <ArrowRight className="w-4 h-4" /></span>
+                      <span className="relative z-10 flex items-center justify-center gap-2">
+                        {signinLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                        {signinLoading ? "Signing in…" : <><span>Continue</span> <ArrowRight className="w-4 h-4" /></>}
+                      </span>
                     </button>
                     <p className="text-center text-xs text-white/40 mt-4">
                       Don't have an account?{' '}
@@ -1863,23 +1888,51 @@ export function TopNavigation() {
                           : "Client accounts will continue to the hiring portal."}
                       </p>
                     )}
-                    {/* DEV ONLY: saves to localStorage, no API call */}
+                    {/* Create Account — calls POST /api/signup, creates real DB record */}
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         if (!signupRole || !signupFirstName || !signupEmail || !signupPassword || !signupConfirmPassword) return;
                         if (signupPassword !== signupConfirmPassword) {
                           toast({ variant: "destructive", title: "Passwords do not match", description: "Please make sure both password fields are identical." });
                           return;
                         }
-                        localStorage.setItem("dev_portal_role", signupRole);
-                        localStorage.setItem("dev_portal_email", signupEmail);
-                        localStorage.setItem("dev_portal_first_name", signupFirstName);
-                        localStorage.setItem("dev_portal_last_name", signupLastName);
-                        setShowPortal(false);
-                        setModalStep(1);
-                        navigate(signupRole === "client" ? "/hire-talent" : "/find-best-matches");
+                        setSignupLoading(true);
+                        try {
+                          const res = await fetch("/api/signup", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              email: signupEmail,
+                              password: signupPassword,
+                              first_name: signupFirstName,
+                              last_name: signupLastName,
+                              role: signupRole,
+                            }),
+                          });
+                          const data = await res.json();
+                          if (data.success) {
+                            localStorage.setItem("dev_portal_role", signupRole);
+                            localStorage.setItem("dev_portal_email", signupEmail);
+                            localStorage.setItem("dev_portal_first_name", signupFirstName);
+                            localStorage.setItem("dev_portal_last_name", signupLastName);
+                            setShowPortal(false);
+                            setModalStep(1);
+                            navigate(signupRole === "client" ? "/hire-talent" : "/find-best-matches");
+                          } else if (res.status === 409) {
+                            toast({ variant: "destructive", title: "Account already exists", description: "An account with this email already exists. Please sign in instead." });
+                            setSigninEmail(signupEmail);
+                            setModalStep("signin");
+                          } else {
+                            toast({ variant: "destructive", title: "Sign up failed", description: data.message || "Could not create account. Please try again." });
+                          }
+                        } catch {
+                          toast({ variant: "destructive", title: "Network error", description: "Could not reach the server. Please try again." });
+                        } finally {
+                          setSignupLoading(false);
+                        }
                       }}
                       disabled={
+                        signupLoading ||
                         !signupRole ||
                         !signupFirstName ||
                         !signupEmail ||
@@ -1890,7 +1943,10 @@ export function TopNavigation() {
                       className="relative group w-full px-8 py-4 text-base font-semibold text-white rounded-xl overflow-hidden transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
                       style={{ background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)', boxShadow: '0 8px 30px rgba(58,58,248,0.35), inset 0 1px 0 rgba(255,255,255,0.2)' }}
                     >
-                      <span className="relative z-10 flex items-center justify-center gap-2">Create Account <ArrowRight className="w-4 h-4" /></span>
+                      <span className="relative z-10 flex items-center justify-center gap-2">
+                        {signupLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                        {signupLoading ? "Creating account…" : <><span>Create Account</span> <ArrowRight className="w-4 h-4" /></>}
+                      </span>
                     </button>
                     <p className="text-center text-xs text-white/40 mt-4">
                       Already have an account?{' '}
