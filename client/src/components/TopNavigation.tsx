@@ -365,7 +365,7 @@ export function TopNavigation() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showPortal, setShowPortal] = useState(false);
   const [showVanessaChat, setShowVanessaChat] = useState(false);
-  const [modalStep, setModalStep] = useState<1 | 2 | 3 | 4 | "signin" | "signup">(1);
+  const [modalStep, setModalStep] = useState<1 | 2 | 3 | 4 | "signin" | "signup" | "forgot">(1);
   const [selectedPortal, setSelectedPortal] = useState<
     "client" | "talent" | null
   >(null);
@@ -385,6 +385,13 @@ export function TopNavigation() {
   const [signupPassword, setSignupPassword] = useState("");
   const [signupRole, setSignupRole] = useState<"client" | "talent" | null>(null);
   const [showAuthPassword, setShowAuthPassword] = useState(false);
+  // DEV ONLY: forgot-password flow state — remove when real password-reset email is implemented
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotNewPassword, setForgotNewPassword] = useState("");
+  const [forgotConfirmPassword, setForgotConfirmPassword] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [showForgotPwd, setShowForgotPwd] = useState(false);
+  const [showForgotConfirm, setShowForgotConfirm] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mobileAccordionOpen, setMobileAccordionOpen] = useState<string | null>(null);
   const [visibleItems, setVisibleItems] = useState<number>(navigationItems.length);
@@ -1696,6 +1703,15 @@ export function TopNavigation() {
                         </button>
                       </div>
                     </div>
+                    <div className="flex justify-end -mt-3 mb-4">
+                      <button
+                        type="button"
+                        onClick={() => { setForgotEmail(signinEmail); setModalStep("forgot"); }}
+                        className="text-xs text-[#7b82f0] hover:text-white transition-colors duration-200 underline underline-offset-2"
+                      >
+                        Forgot password?
+                      </button>
+                    </div>
                     <div className="mb-6">
                       <p className="text-white/90 text-sm font-medium mb-3">Select Your Portal</p>
                       <div className="grid grid-cols-2 gap-3">
@@ -1838,6 +1854,153 @@ export function TopNavigation() {
                     </button>
                     <p className="text-center text-xs text-white/40 mt-4">
                       Already have an account?{' '}
+                      <button className="text-white/60 hover:text-white underline transition-colors" onClick={() => setModalStep("signin")}>Sign In</button>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </DialogPortal>
+        ) : modalStep === "forgot" ? (
+          /* DEV ONLY: Forgot Password step — same dark futuristic shell as signin/signup */
+          <DialogPortal>
+            <DialogOverlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-300" />
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto"
+              style={{ padding: 'clamp(2rem, 5vh, 4rem)', minHeight: '100vh' }}
+            >
+              <div
+                className="relative animate-in fade-in slide-in-from-bottom-6 duration-500 my-auto"
+                style={{ width: 'min(90%, 520px)', maxHeight: '90vh' }}
+              >
+                <DialogTitle className="sr-only">Reset Password</DialogTitle>
+                <button
+                  onClick={() => setShowPortal(false)}
+                  className="absolute right-4 top-4 z-50 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-white"
+                >
+                  <X className="h-6 w-6" />
+                  <span className="sr-only">Close</span>
+                </button>
+                <div
+                  className="relative flex flex-col rounded-2xl overflow-hidden"
+                  style={{
+                    background: 'linear-gradient(135deg, #0f0f3c 0%, #1a1a4e 25%, #252560 50%, #1a1a4e 75%, #0f0f3c 100%)',
+                    minHeight: 'min(560px, 80vh)',
+                  }}
+                >
+                  <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(91,124,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(91,124,255,0.3) 1px, transparent 1px)', backgroundSize: '50px 50px' }} />
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="w-[400px] h-[400px] rounded-full bg-gradient-to-r from-[#3A3AF8]/15 to-[#7F3DF4]/15 blur-3xl animate-pulse" style={{ animationDuration: '4s' }} />
+                  </div>
+                  <div className="relative z-10 flex flex-col px-8 py-10 w-full">
+                    <button
+                      onClick={() => setModalStep("signin")}
+                      className="flex items-center gap-1.5 text-white/60 hover:text-white/90 text-sm mb-8 w-fit transition-colors duration-200"
+                    >
+                      <ArrowRight className="w-3.5 h-3.5 rotate-180" /> Back to Sign In
+                    </button>
+                    <h2 className="text-3xl font-light text-white mb-2" style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '-0.02em' }}>Reset Password</h2>
+                    <p className="text-white/60 mb-7 text-sm">Enter the email used for your account and choose a new password.</p>
+
+                    {/* Email */}
+                    <div className="space-y-2 mb-4">
+                      <Label className="text-white/90 text-sm font-medium">Email Address</Label>
+                      <Input
+                        type="email"
+                        placeholder="you@example.com"
+                        value={forgotEmail}
+                        onChange={(e) => setForgotEmail(e.target.value)}
+                        autoComplete="email"
+                        className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12"
+                      />
+                    </div>
+
+                    {/* New Password */}
+                    <div className="space-y-2 mb-4">
+                      <Label className="text-white/90 text-sm font-medium">New Password</Label>
+                      <div className="relative">
+                        <Input
+                          type={showForgotPwd ? "text" : "password"}
+                          placeholder="Min 8 chars, upper, lower, number, symbol"
+                          value={forgotNewPassword}
+                          onChange={(e) => setForgotNewPassword(e.target.value)}
+                          autoComplete="new-password"
+                          className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12 pr-10"
+                        />
+                        <button type="button" onClick={() => setShowForgotPwd(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/90 transition-colors">
+                          {showForgotPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Confirm Password */}
+                    <div className="space-y-2 mb-7">
+                      <Label className="text-white/90 text-sm font-medium">Confirm New Password</Label>
+                      <div className="relative">
+                        <Input
+                          type={showForgotConfirm ? "text" : "password"}
+                          placeholder="Repeat your new password"
+                          value={forgotConfirmPassword}
+                          onChange={(e) => setForgotConfirmPassword(e.target.value)}
+                          autoComplete="new-password"
+                          className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12 pr-10"
+                        />
+                        <button type="button" onClick={() => setShowForgotConfirm(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/90 transition-colors">
+                          {showForgotConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                      {forgotConfirmPassword && forgotNewPassword !== forgotConfirmPassword && (
+                        <p className="text-xs text-red-400 mt-1">Passwords do not match.</p>
+                      )}
+                    </div>
+
+                    {/* Submit */}
+                    <button
+                      onClick={async () => {
+                        if (!forgotEmail || !forgotNewPassword || !forgotConfirmPassword) {
+                          toast({ variant: "destructive", title: "Missing fields", description: "Please fill in all fields." });
+                          return;
+                        }
+                        if (forgotNewPassword !== forgotConfirmPassword) {
+                          toast({ variant: "destructive", title: "Passwords don't match", description: "New password and confirmation must be the same." });
+                          return;
+                        }
+                        setForgotLoading(true);
+                        try {
+                          const res = await fetch("/api/dev/reset-password", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ email: forgotEmail, newPassword: forgotNewPassword }),
+                          });
+                          const data = await res.json();
+                          if (data.success) {
+                            toast({ title: "Password reset", description: data.message });
+                            setSigninEmail(forgotEmail);
+                            setForgotEmail("");
+                            setForgotNewPassword("");
+                            setForgotConfirmPassword("");
+                            setModalStep("signin");
+                          } else {
+                            toast({ variant: "destructive", title: "Reset failed", description: data.message || "Could not reset password." });
+                          }
+                        } catch {
+                          toast({ variant: "destructive", title: "Network error", description: "Please try again." });
+                        } finally {
+                          setForgotLoading(false);
+                        }
+                      }}
+                      disabled={forgotLoading || !forgotEmail || !forgotNewPassword || !forgotConfirmPassword || forgotNewPassword !== forgotConfirmPassword}
+                      className="relative group w-full px-8 py-4 text-base font-semibold text-white rounded-xl overflow-hidden transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+                      style={{ background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)', boxShadow: '0 8px 30px rgba(58,58,248,0.35), inset 0 1px 0 rgba(255,255,255,0.2)' }}
+                    >
+                      <span className="relative z-10 flex items-center justify-center gap-2">
+                        {forgotLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                        {forgotLoading ? "Resetting…" : "Reset Password"}
+                      </span>
+                    </button>
+
+                    <p className="text-center text-xs text-white/40 mt-4">
+                      Remembered it?{' '}
                       <button className="text-white/60 hover:text-white underline transition-colors" onClick={() => setModalStep("signin")}>Sign In</button>
                     </p>
                   </div>

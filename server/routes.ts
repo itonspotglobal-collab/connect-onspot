@@ -6376,6 +6376,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+  // ─────────────────────────────────────────────────────────────────────────
+  // DEV ONLY: Temporary password reset endpoint for testing accounts.
+  // Enabled when NODE_ENV !== "production" OR ENABLE_DEV_PASSWORD_RESET=true.
+  //
+  // SECURITY NOTE — replace before going to production with:
+  //   - One-time reset token (UUID stored in DB with expiry)
+  //   - Email delivery / verification
+  //   - Token expiration (15–60 min)
+  //   - Rate limiting per email address
+  //   - No user enumeration (return 200 regardless of email existence)
+  // ─────────────────────────────────────────────────────────────────────────
+  app.post("/api/dev/reset-password", async (req: Request, res: Response) => {
+    const isEnabled =
+      process.env.NODE_ENV !== "production" ||
+      process.env.ENABLE_DEV_PASSWORD_RESET === "true";
+
+    if (!isEnabled) {
+      return res.status(403).json({
+        success: false,
+        message: "Password reset is disabled in this environment.",
+      });
+    }
+
+    try {
+      const { email, newPassword } = req.body;
+
+      if (!email || !newPassword) {
+        return res.status(400).json({
+          success: false,
+          message: "Email and newPassword are required.",
+        });
+      }
+
+      if (!validateEmail(email)) {
+        return res.status(400).json({
+          success: false,
+          message: "Please enter a valid email address.",
+        });
+      }
+
+      const strengthCheck = validatePasswordStrength(newPassword);
+      if (!strengthCheck.isValid) {
+        return res.status(400).json({
+          success: false,
+          message: strengthCheck.errors.join(", "),
+        });
+      }
+
+      const userResult = await query(
+        "SELECT id, email FROM users WHERE email = $1",
+        [email]
+      );
+
+      if (userResult.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "No account found with that email address.",
+        });
+      }
+
+      const newHash = await hashPassword(newPassword);
+
+      await query(
+        'UPDATE users SET "password_hash" = $1, "updated_at" = NOW() WHERE email = $2',
+        [newHash, email]
+      );
+
+      console.log(`🔑 [DEV] Password reset for: ***@${email.split("@")[1]}`);
+
+      return res.json({
+        success: true,
+        message:
+          "Password reset successfully. You can now sign in with your new password.",
+      });
+    } catch (error) {
+      console.error("[DEV] Reset password error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "An error occurred while resetting the password.",
+      });
+    }
+  });
+
   return httpServer;
 }
 
