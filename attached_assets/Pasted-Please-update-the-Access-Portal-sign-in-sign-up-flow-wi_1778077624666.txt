@@ -1,0 +1,107 @@
+Please update the Access Portal sign-in/sign-up flow with the following changes.
+
+Context:
+The Access Portal popup already has Sign In and Create Account flows inside the existing futuristic purple modal. Keep that design.
+
+New requirements:
+
+1. Add Confirm Password field
+
+In the Create Account form, add another password field:
+- Password
+- Confirm Password
+
+Validation:
+- Both fields are required.
+- Confirm Password must match Password.
+- If they do not match, show a clear error/toast:
+  “Passwords do not match.”
+- Disable or prevent Create Account until the passwords match.
+
+Also add Confirm Password to the Sign In flow only if the current development flow is actually creating or resetting a password.
+For normal Sign In, do NOT require Confirm Password because users only sign in with:
+- Email
+- Password
+
+So:
+- Sign Up/Create Account: must have Confirm Password.
+- Forgot Password/Reset Password: must have Confirm Password.
+- Sign In: should only have Email and Password.
+
+2. Talent redirect behavior
+
+When the user creates an account or signs in as Talent, do not redirect them to the generic Talent Dashboard yet.
+
+Instead, redirect Talent users to the existing “Find Best Matches” feature where they upload their resume.
+
+Please inspect the router in:
+- client/src/App.tsx
+
+And inspect the existing page/component:
+- client/src/pages/FindBestMatches.tsx
+
+Use the actual route that renders FindBestMatches.
+Likely route may be something like:
+- /find-best-matches
+- /find-best-matches/:something
+- /talent-pool/find-best-matches
+
+Do not guess. Use the existing route from App.tsx.
+
+3. Client redirect behavior
+
+Client users should still redirect to the existing client-facing page/dashboard for clients looking for talent.
+
+Use the current existing route from App.tsx, likely:
+- /client-dashboard
+- /dashboard
+- /hire-talent
+
+Use the best existing client page route.
+
+4. Development-only behavior
+
+Keep this as development/testing only.
+Do not implement real authentication yet unless already requested separately.
+No JWT validation.
+No route blocking.
+No backend auth call unless the current dev implementation already uses a temporary endpoint.
+
+For the dev flow:
+- Save role to localStorage:
+  - dev_portal_role = "client" or "talent"
+- Save email to localStorage:
+  - dev_portal_email
+- For sign-up, save first name and last name too:
+  - dev_portal_first_name
+  - dev_portal_last_name
+
+5. UX updates
+
+Create Account screen should show:
+- First Name
+- Last Name
+- Email Address
+- Password
+- Confirm Password
+- “I am a...”
+  - Client — Looking for talent
+  - Talent — Looking for jobs
+- Create Account button
+
+When Talent is selected, add small helper text near the Create Account button:
+“Talent accounts will continue to resume upload and matching.”
+
+When Client is selected, helper text:
+“Client accounts will continue to the hiring portal.”
+
+6. Acceptance criteria
+
+- Create Account has Confirm Password.
+- Forgot Password/Reset Password has Confirm Password if that feature exists.
+- Sign In does not require Confirm Password.
+- Password mismatch shows a validation message and blocks continue/create.
+- Talent Sign In redirects to the existing Find Best Matches resume upload page.
+- Talent Create Account redirects to the existing Find Best Matches resume upload page.
+- Client Sign In/Create Account redirects to the existing client-facing page.
+- Existing futuristic Access Portal modal design is preserved.

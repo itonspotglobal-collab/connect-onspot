@@ -385,6 +385,8 @@ export function TopNavigation() {
   const [signupPassword, setSignupPassword] = useState("");
   const [signupRole, setSignupRole] = useState<"client" | "talent" | null>(null);
   const [showAuthPassword, setShowAuthPassword] = useState(false);
+  const [signupConfirmPassword, setSignupConfirmPassword] = useState("");
+  const [showSignupConfirm, setShowSignupConfirm] = useState(false);
   // DEV ONLY: forgot-password flow state — remove when real password-reset email is implemented
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotNewPassword, setForgotNewPassword] = useState("");
@@ -1737,7 +1739,7 @@ export function TopNavigation() {
                         localStorage.setItem("dev_portal_email", signinEmail);
                         setShowPortal(false);
                         setModalStep(1);
-                        navigate(signinPortal === "client" ? "/dashboard" : "/talent-portal");
+                        navigate(signinPortal === "client" ? "/hire-talent" : "/find-best-matches");
                       }}
                       disabled={!signinPortal || !signinEmail}
                       className="relative group w-full px-8 py-4 text-base font-semibold text-white rounded-xl overflow-hidden transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
@@ -1808,7 +1810,7 @@ export function TopNavigation() {
                       <Label className="text-white/90 text-sm font-medium">Email Address</Label>
                       <Input type="email" placeholder="you@example.com" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} autoComplete="email" className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12" />
                     </div>
-                    <div className="space-y-2 mb-6">
+                    <div className="space-y-2 mb-4">
                       <Label className="text-white/90 text-sm font-medium">Password</Label>
                       <div className="relative">
                         <Input type={showAuthPassword ? "text" : "password"} placeholder="••••••••" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} autoComplete="new-password" className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12 pr-10" />
@@ -1816,6 +1818,25 @@ export function TopNavigation() {
                           {showAuthPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                       </div>
+                    </div>
+                    <div className="space-y-2 mb-6">
+                      <Label className="text-white/90 text-sm font-medium">Confirm Password</Label>
+                      <div className="relative">
+                        <Input
+                          type={showSignupConfirm ? "text" : "password"}
+                          placeholder="••••••••"
+                          value={signupConfirmPassword}
+                          onChange={(e) => setSignupConfirmPassword(e.target.value)}
+                          autoComplete="new-password"
+                          className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12 pr-10"
+                        />
+                        <button type="button" onClick={() => setShowSignupConfirm(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/90 transition-colors">
+                          {showSignupConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                      {signupConfirmPassword && signupPassword !== signupConfirmPassword && (
+                        <p className="text-xs text-red-400 mt-1">Passwords do not match.</p>
+                      )}
                     </div>
                     <div className="mb-6">
                       <p className="text-white/90 text-sm font-medium mb-3">I am a...</p>
@@ -1834,19 +1855,38 @@ export function TopNavigation() {
                         </button>
                       </div>
                     </div>
+                    {/* Role-specific helper text */}
+                    {signupRole && (
+                      <p className="text-xs text-white/50 text-center mb-3 leading-relaxed">
+                        {signupRole === "talent"
+                          ? "Talent accounts will continue to resume upload and matching."
+                          : "Client accounts will continue to the hiring portal."}
+                      </p>
+                    )}
                     {/* DEV ONLY: saves to localStorage, no API call */}
                     <button
                       onClick={() => {
-                        if (!signupRole || !signupFirstName || !signupEmail) return;
+                        if (!signupRole || !signupFirstName || !signupEmail || !signupPassword || !signupConfirmPassword) return;
+                        if (signupPassword !== signupConfirmPassword) {
+                          toast({ variant: "destructive", title: "Passwords do not match", description: "Please make sure both password fields are identical." });
+                          return;
+                        }
                         localStorage.setItem("dev_portal_role", signupRole);
                         localStorage.setItem("dev_portal_email", signupEmail);
                         localStorage.setItem("dev_portal_first_name", signupFirstName);
                         localStorage.setItem("dev_portal_last_name", signupLastName);
                         setShowPortal(false);
                         setModalStep(1);
-                        navigate(signupRole === "client" ? "/dashboard" : "/talent-portal");
+                        navigate(signupRole === "client" ? "/hire-talent" : "/find-best-matches");
                       }}
-                      disabled={!signupRole || !signupFirstName || !signupEmail}
+                      disabled={
+                        !signupRole ||
+                        !signupFirstName ||
+                        !signupEmail ||
+                        !signupPassword ||
+                        !signupConfirmPassword ||
+                        signupPassword !== signupConfirmPassword
+                      }
                       className="relative group w-full px-8 py-4 text-base font-semibold text-white rounded-xl overflow-hidden transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
                       style={{ background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)', boxShadow: '0 8px 30px rgba(58,58,248,0.35), inset 0 1px 0 rgba(255,255,255,0.2)' }}
                     >
