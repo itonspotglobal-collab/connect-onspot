@@ -571,7 +571,10 @@ function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
         {/* ── Content ───────────────────────────────────────────────────── */}
         <div
           className="relative z-[2] flex flex-col justify-end h-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-12"
-          style={{ paddingBottom: "clamp(28px, 3vw, 44px)", minHeight: "inherit" }}
+          style={{
+            paddingBottom: "clamp(28px, 3vw, 44px)",
+            minHeight: "inherit",
+          }}
         >
           {/* Eyebrow label */}
           <div className="flex items-center gap-3 mb-2">
@@ -646,14 +649,20 @@ function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
         {total > 1 && (
           <>
             <button
-              onClick={(e) => { e.stopPropagation(); goTo(active - 1); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                goTo(active - 1);
+              }}
               className="absolute left-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/40 border border-white/15 backdrop-blur-sm flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/60"
               aria-label="Previous article"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); goTo(active + 1); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                goTo(active + 1);
+              }}
               className="absolute right-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/40 border border-white/15 backdrop-blur-sm flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/60"
               aria-label="Next article"
             >
@@ -668,7 +677,10 @@ function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
             {articles.map((_, i) => (
               <button
                 key={i}
-                onClick={(e) => { e.stopPropagation(); goTo(i); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  goTo(i);
+                }}
                 className={`rounded-full transition-all duration-300 ${
                   i === active
                     ? "w-6 h-2 bg-white"
@@ -683,7 +695,10 @@ function FeaturedCarousel({ articles }: { articles: ArticleItem[] }) {
         {/* ── Progress bar ───────────────────────────────────────────────── */}
         {total > 1 && !paused && (
           <div className="absolute bottom-0 left-0 right-0 z-20 h-[2px] bg-white/10">
-            <div key={`${active}-progress`} className="h-full bg-white/60 carousel-bar" />
+            <div
+              key={`${active}-progress`}
+              className="h-full bg-white/60 carousel-bar"
+            />
           </div>
         )}
       </div>
@@ -721,7 +736,8 @@ function CategoryNav({
   // Close mobile menu when resizing to desktop
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 768 && isMobileMenuOpen) setIsMobileMenuOpen(false);
+      if (window.innerWidth >= 768 && isMobileMenuOpen)
+        setIsMobileMenuOpen(false);
     };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
@@ -759,10 +775,8 @@ function CategoryNav({
       {/* ── Sticky nav bar ────────────────────────────────────────────── */}
       <div className="sticky top-0 z-50 bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] backdrop-blur-md border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
           {/* ── Primary nav row ───────────────────────────────────────── */}
           <div className="flex items-center h-[56px]">
-
             {/* ── MOBILE LEFT: Search icon tap → opens panel + focuses search ── */}
             <button
               onClick={handleMobileSearchTap}
@@ -828,7 +842,11 @@ function CategoryNav({
                 }`}
                 aria-label={searchOpen ? "Close search" : "Open search"}
               >
-                {searchOpen ? <X className="w-4 h-4" /> : <Search className="w-4 h-4" />}
+                {searchOpen ? (
+                  <X className="w-4 h-4" />
+                ) : (
+                  <Search className="w-4 h-4" />
+                )}
                 <span className="hidden sm:inline">
                   {searchOpen ? "Close" : "Search"}
                 </span>
@@ -856,7 +874,11 @@ function CategoryNav({
               aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
               aria-expanded={isMobileMenuOpen}
             >
-              {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {isMobileMenuOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
             </button>
           </div>
 
@@ -907,12 +929,16 @@ function CategoryNav({
         {/*   regardless of the nav bar's actual rendered height.          */}
         <div
           className={`md:hidden absolute left-0 right-0 overflow-y-auto transition-all ${
-            isMobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+            isMobileMenuOpen
+              ? "opacity-100 pointer-events-auto"
+              : "opacity-0 pointer-events-none"
           }`}
           style={{
             top: "100%",
             zIndex: 50,
-            transform: isMobileMenuOpen ? "translateY(0) scale(1)" : "translateY(6px) scale(0.98)",
+            transform: isMobileMenuOpen
+              ? "translateY(0) scale(1)"
+              : "translateY(6px) scale(0.98)",
             background: "rgba(44, 48, 114, 0.86)",
             backdropFilter: "blur(10px) saturate(110%)",
             WebkitBackdropFilter: "blur(10px) saturate(110%)",
@@ -921,14 +947,18 @@ function CategoryNav({
             maxHeight: "calc(100vh - 56px)",
             transitionDuration: isMobileMenuOpen ? "160ms" : "150ms",
             transitionTimingFunction: "cubic-bezier(0.2, 0.8, 0.2, 1)",
-            animation: isMobileMenuOpen ? "menuBreathe 4s ease-in-out 1s infinite" : "none",
+            animation: isMobileMenuOpen
+              ? "menuBreathe 4s ease-in-out 1s infinite"
+              : "none",
           }}
         >
           <div className="px-4 py-6 space-y-1">
-
             {/* View All */}
             <button
-              onClick={() => { onSelect("View All"); setIsMobileMenuOpen(false); }}
+              onClick={() => {
+                onSelect("View All");
+                setIsMobileMenuOpen(false);
+              }}
               className={`mobile-menu-link w-full text-left py-4 text-white font-semibold flex items-center gap-3 ${
                 selected === "View All" ? "nav-glow-active" : ""
               }`}
@@ -944,7 +974,10 @@ function CategoryNav({
             {NAV_CATEGORIES.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
-                onClick={() => { onSelect(id); setIsMobileMenuOpen(false); }}
+                onClick={() => {
+                  onSelect(id);
+                  setIsMobileMenuOpen(false);
+                }}
                 className={`mobile-menu-link w-full text-left py-4 text-white font-semibold flex items-center gap-3 ${
                   selected === id ? "nav-glow-active" : ""
                 }`}
@@ -1068,7 +1101,8 @@ function HighlightCard({ article }: { article: ArticleItem }) {
             backdropFilter: "blur(16px)",
             WebkitBackdropFilter: "blur(16px)",
             border: "1px solid rgba(255,255,255,0.08)",
-            boxShadow: "0 8px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)",
+            boxShadow:
+              "0 8px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)",
             padding: "clamp(16px, 2.5vw, 28px)",
           }}
         >
@@ -1088,7 +1122,9 @@ function HighlightCard({ article }: { article: ArticleItem }) {
               <span className="w-6 h-6 rounded-full bg-white/15 text-white text-[9px] font-bold flex items-center justify-center flex-shrink-0 border border-white/20">
                 {getInitials(article.author)}
               </span>
-              <span className="text-white/85 font-medium">{article.author}</span>
+              <span className="text-white/85 font-medium">
+                {article.author}
+              </span>
             </span>
             <span className="flex items-center gap-1 text-xs text-white/55">
               <Calendar className="w-3 h-3" /> {article.date}
@@ -1285,7 +1321,7 @@ function EditorialSection({
         </p>
         <div className="flex items-end justify-between gap-6 flex-wrap">
           <h2 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight leading-tight">
-            Explore the full knowledge base.
+            Explore Insights.
           </h2>
           <p className="text-sm text-slate-500 max-w-xs leading-relaxed hidden sm:block">
             Deep dives, expert analysis, and industry perspectives — curated by

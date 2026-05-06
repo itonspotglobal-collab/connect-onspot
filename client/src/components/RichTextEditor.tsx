@@ -354,8 +354,10 @@ export default function RichTextEditor({
       const newPct  = Math.round((newW_px / d.editorW_px) * 100);
 
       // Apply directly to DOM (no Quill API — avoids losing cursor)
-      d.imgEl.style.width = `${newPct}%`;
-      d.imgEl.style.height = "auto";
+      // Set both width AND max-width so class-based max-width constraints don't cap the drag size
+      d.imgEl.style.width    = `${newPct}%`;
+      d.imgEl.style.maxWidth = `${newPct}%`;
+      d.imgEl.style.height   = "auto";
 
       setDragLabel(`${newPct}%`);
       updateResizeOverlay(d.imgEl);
@@ -404,16 +406,19 @@ export default function RichTextEditor({
           const pct = newCustomW.replace(/%$/, "").trim();
           const num = parseInt(pct, 10);
           if (!isNaN(num) && num > 0 && num <= 100) {
-            img.style.width  = `${num}%`;
-            img.style.height = "auto";
+            img.style.width    = `${num}%`;
+            img.style.maxWidth = `${num}%`;
+            img.style.height   = "auto";
           }
         } else {
           img.style.removeProperty("width");
+          img.style.removeProperty("max-width");
           img.style.removeProperty("height");
         }
       } else if (newSize !== undefined && newSize !== null) {
         // Choosing a size preset clears custom width
         img.style.removeProperty("width");
+        img.style.removeProperty("max-width");
         img.style.removeProperty("height");
       }
 
@@ -473,7 +478,7 @@ export default function RichTextEditor({
     // Build inline style if custom width is set
     const cwNum = parseInt(insertCustomWidth.trim(), 10);
     const styleAttr = (!isNaN(cwNum) && cwNum > 0 && cwNum <= 100)
-      ? `width: ${cwNum}%; height: auto;`
+      ? `width: ${cwNum}%; max-width: ${cwNum}%; height: auto;`
       : "";
 
     quill.insertEmbed(range.index, "image", { src: url, class: cls, style: styleAttr });
@@ -611,12 +616,12 @@ export default function RichTextEditor({
             )}
           </div>
 
-          {/* Size + custom width — hidden when Full is chosen */}
-          {insertPos !== "image-full" && (
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Size</Label>
+          {/* Size + custom width */}
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Size</Label>
 
-              {/* Preset S / M / L */}
+            {/* Preset S / M / L — only relevant for non-full positions */}
+            {insertPos !== "image-full" && (
               <div className="flex items-center gap-2 flex-wrap">
                 {SIZE_OPTIONS.map((opt) => (
                   <button
@@ -646,31 +651,31 @@ export default function RichTextEditor({
                   </button>
                 )}
               </div>
+            )}
 
-              {/* Custom width % input */}
-              <div className="flex items-center gap-2">
-                <Label className="text-xs text-muted-foreground w-24 shrink-0">Custom width %</Label>
-                <div className="flex items-center gap-1">
-                  <Input
-                    type="number"
-                    min={5}
-                    max={100}
-                    value={insertCustomWidth}
-                    onChange={(e) => {
-                      setInsertCustomWidth(e.target.value);
-                      if (e.target.value) setInsertSize(null); // clear preset
-                    }}
-                    placeholder="e.g. 65"
-                    className="h-8 w-20 text-xs"
-                  />
-                  <span className="text-xs text-muted-foreground">%</span>
-                </div>
-                <span className="text-xs text-muted-foreground italic">
-                  {insertCustomWidth ? `Will insert at ${insertCustomWidth}% width` : "or drag to resize after inserting"}
-                </span>
+            {/* Custom width % input — available for all positions */}
+            <div className="flex items-center gap-2">
+              <Label className="text-xs text-muted-foreground w-24 shrink-0">Custom width %</Label>
+              <div className="flex items-center gap-1">
+                <Input
+                  type="number"
+                  min={5}
+                  max={100}
+                  value={insertCustomWidth}
+                  onChange={(e) => {
+                    setInsertCustomWidth(e.target.value);
+                    if (e.target.value) setInsertSize(null); // clear preset
+                  }}
+                  placeholder="e.g. 65"
+                  className="h-8 w-20 text-xs"
+                />
+                <span className="text-xs text-muted-foreground">%</span>
               </div>
+              <span className="text-xs text-muted-foreground italic">
+                {insertCustomWidth ? `Will insert at ${insertCustomWidth}% width` : "or drag handles after inserting"}
+              </span>
             </div>
-          )}
+          </div>
 
           {/* Visual preview */}
           <div className="rounded-md bg-muted p-3 text-xs text-muted-foreground select-none">
@@ -800,7 +805,7 @@ export default function RichTextEditor({
                   ))}
                 </>
               ) : (
-                <span className="text-xs text-muted-foreground italic">Full width — size N/A</span>
+                <span className="text-xs text-muted-foreground italic">Drag handles or set Width below</span>
               )}
             </div>
             <Button
@@ -812,47 +817,45 @@ export default function RichTextEditor({
             </Button>
           </div>
 
-          {/* Custom width row */}
-          {activePos !== "image-full" && (
-            <div className="flex items-center gap-1 pt-0.5 border-t border-border/40">
-              <span className="text-[10px] text-muted-foreground w-12 shrink-0">Width</span>
-              <div className="flex items-center gap-1.5 flex-1">
-                <Input
-                  type="number"
-                  min={5}
-                  max={100}
-                  value={widthInput}
-                  onChange={(e) => setWidthInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      applyToSelected(null, null, widthInput || null);
-                    }
+          {/* Custom width row — visible for all positions */}
+          <div className="flex items-center gap-1 pt-0.5 border-t border-border/40">
+            <span className="text-[10px] text-muted-foreground w-12 shrink-0">Width</span>
+            <div className="flex items-center gap-1.5 flex-1">
+              <Input
+                type="number"
+                min={5}
+                max={100}
+                value={widthInput}
+                onChange={(e) => setWidthInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    applyToSelected(null, null, widthInput || null);
+                  }
+                }}
+                onBlur={() => applyToSelected(null, null, widthInput || null)}
+                placeholder="custom"
+                className="h-7 w-20 text-xs"
+              />
+              <span className="text-xs text-muted-foreground">%</span>
+              {activeCustomW && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    applyToSelected(null, null, "");
+                    setWidthInput("");
                   }}
-                  onBlur={() => applyToSelected(null, null, widthInput || null)}
-                  placeholder="custom"
-                  className="h-7 w-20 text-xs"
-                />
-                <span className="text-xs text-muted-foreground">%</span>
-                {activeCustomW && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      applyToSelected(null, null, "");
-                      setWidthInput("");
-                    }}
-                    className="text-xs text-muted-foreground underline"
-                  >
-                    Clear
-                  </button>
-                )}
-                <span className="text-xs text-muted-foreground italic ml-1">
-                  {activeCustomW
-                    ? <span className="text-primary font-medium">{activeCustomW}</span>
-                    : "or drag handles"}
-                </span>
-              </div>
+                  className="text-xs text-muted-foreground underline"
+                >
+                  Clear
+                </button>
+              )}
+              <span className="text-xs text-muted-foreground italic ml-1">
+                {activeCustomW
+                  ? <span className="text-primary font-medium">{activeCustomW}</span>
+                  : "or drag blue handles"}
+              </span>
             </div>
-          )}
+          </div>
 
           {/* Drag hint */}
           <p className="text-[9px] text-muted-foreground px-0.5">
