@@ -1,0 +1,56 @@
+Please make one final adjustment to the large Insights image card glass overlay.
+
+Current issue:
+- The glass text box position is good now.
+- However, it does not occupy the full lower portion of the card.
+- We want it to stretch across the full bottom area, more like a bottom information panel.
+
+What to change:
+1. Make the glass overlay occupy the full bottom width
+- The overlay should span from the left edge to the right edge of the card/image area.
+- It should sit flush against the bottom of the image card.
+- Remove side gaps if present.
+- Remove bottom gaps if present.
+
+2. Keep it as a glass panel
+- Do not make it white.
+- Keep the frosted/glass style:
+  - translucent gray/navy background
+  - backdrop blur
+  - subtle border or top border
+  - readable white text
+- The image should still be slightly visible behind the panel.
+
+3. Make it look like a lower caption panel
+- The panel should feel integrated with the card, not like a floating box in the middle.
+- Bottom corners should align with the card’s bottom corners.
+- Top corners can remain softly rounded if it looks good.
+- The overlay should cover only the lower content portion, not the whole image.
+
+4. Preserve readability
+- Title, excerpt, metadata, and Read Article CTA should remain clear.
+- Keep enough internal padding.
+- Maintain the current text hierarchy.
+
+Implementation guidance:
+- Change the overlay positioning to something like:
+  - `absolute left-0 right-0 bottom-0`
+- Remove classes causing inset spacing like:
+  - `left-6`
+  - `right-6`
+  - `bottom-6`
+  - `mx-*`
+  - `rounded-xl` if it conflicts with full-width bottom alignment
+- Consider using:
+  - `rounded-b-xl`
+  - `rounded-t-2xl`
+  - `border-t border-white/15`
+  - `bg-slate-900/35 backdrop-blur-md`
+- Keep the card/image wrapper `overflow-hidden` so the overlay follows the card radius.
+
+Expected result:
+- The glass overlay fills the entire bottom portion of the large image card.
+- No visible space at the bottom.
+- No side gaps.
+- The image remains visible above and subtly behind the glass panel.
+- The layout looks polished and intentional.

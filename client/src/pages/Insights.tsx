@@ -1094,7 +1094,7 @@ function HighlightCard({ article }: { article: ArticleItem }) {
       {/* Frosted-glass text panel — flush to the bottom edge, clipped by card's overflow-hidden */}
       <div className="absolute bottom-0 left-0 right-0">
         <div
-          className="rounded-t-xl w-full sm:max-w-2xl"
+          className="rounded-t-xl w-full"
           style={{
             background: "rgba(12, 18, 52, 0.45)",
             backdropFilter: "blur(22px) saturate(140%)",
