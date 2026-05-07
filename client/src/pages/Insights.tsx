@@ -1091,18 +1091,19 @@ function HighlightCard({ article }: { article: ArticleItem }) {
       />
       {/* Bottom vignette — darkens just the lower strip so the panel reads clearly */}
       <div className="absolute inset-0 bg-gradient-to-t from-slate-950/55 via-slate-950/15 to-transparent" />
-      {/* Frosted-glass text panel — anchored to bottom, not full-height wrapper */}
-      <div className="absolute bottom-5 left-5 right-5 sm:bottom-7 sm:left-7 sm:right-7 md:bottom-8 md:left-8 md:right-8">
+      {/* Frosted-glass text panel — flush to the bottom edge, clipped by card's overflow-hidden */}
+      <div className="absolute bottom-0 left-0 right-0">
         <div
-          className="rounded-xl w-full sm:max-w-2xl"
+          className="rounded-t-xl w-full sm:max-w-2xl"
           style={{
-            background: "rgba(12, 18, 52, 0.38)",
+            background: "rgba(12, 18, 52, 0.45)",
             backdropFilter: "blur(22px) saturate(140%)",
             WebkitBackdropFilter: "blur(22px) saturate(140%)",
             border: "1px solid rgba(255,255,255,0.16)",
+            borderBottom: "none",
             boxShadow:
-              "0 4px 24px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.10)",
-            padding: "clamp(14px, 2vw, 24px)",
+              "0 -4px 24px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.10)",
+            padding: "clamp(14px, 2vw, 22px) clamp(16px, 3vw, 28px)",
           }}
         >
           <span className="inline-flex self-start mb-2.5 text-[10px] uppercase tracking-[0.22em] font-semibold px-3 py-1 rounded-full bg-[#474ead] text-white">
