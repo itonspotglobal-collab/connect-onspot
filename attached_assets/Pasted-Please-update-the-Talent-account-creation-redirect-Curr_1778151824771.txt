@@ -1,0 +1,71 @@
+Please update the Talent account creation redirect.
+
+Current behavior:
+After a user selects Talent during Create Account, they should not go to the generic Talent Dashboard yet.
+
+Required behavior:
+After a Talent account is successfully created and saved in the database, redirect the user to the existing Find Best Matches flow.
+
+The existing route is:
+
+/find-best-matches
+
+This route renders:
+
+client/src/pages/FindBestMatches.tsx
+
+This is the correct page because it starts at Step 1 — Resume Upload, where the talent uploads their resume and begins setting up their profile.
+
+Implementation details:
+
+1. Talent Create Account redirect
+After successful signup where role === "talent":
+- Save the created user/session data as currently implemented.
+- Then navigate to:
+  /find-best-matches
+
+Do not redirect Talent users to:
+- /talent-dashboard
+- /talent-portal
+- /get-hired
+
+2. Talent Sign In redirect
+If an existing account signs in and user.role === "talent":
+- Redirect to:
+  /find-best-matches
+
+This is for now during development because we want talents to always start with resume upload/profile setup.
+
+3. Client redirect
+If role === "client":
+- Continue redirecting to the existing client-facing page/dashboard.
+- Use the current selected client route already implemented.
+
+4. Preserve database save
+Do not remove the database account creation.
+Create Account should still call the backend signup endpoint and save:
+- first_name
+- last_name
+- email
+- password_hash
+- role = "talent" or "client"
+
+5. Talent profile setup
+For role === "talent":
+- Keep creating the related profiles row if the backend already does it.
+- The user should still land on /find-best-matches after signup so they can upload a resume and complete their profile setup.
+
+6. Route confirmation
+App.tsx already has the public route:
+<Route path="/find-best-matches" component={FindBestMatches} />
+
+So use exactly:
+/find-best-matches
+
+7. Acceptance criteria
+- Talent Create Account → saves account in DB → redirects to /find-best-matches.
+- Talent Sign In → redirects to /find-best-matches.
+- /find-best-matches opens Step 1 — Resume Upload.
+- Client Create Account still redirects to the client page.
+- Client Sign In still redirects to the client page.
+- The Access Portal modal design remains unchanged.
