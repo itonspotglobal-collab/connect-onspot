@@ -1089,10 +1089,10 @@ function HighlightCard({ article }: { article: ArticleItem }) {
           (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
         }}
       />
-      {/* Light vignette — just enough to anchor the panel without hiding the photo */}
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-slate-900/10 to-transparent" />
-      <div className="absolute inset-0 flex flex-col justify-end p-5 sm:p-7 md:p-9">
-        {/* Frosted-glass text panel */}
+      {/* Bottom vignette — darkens just the lower strip so the panel reads clearly */}
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/55 via-slate-950/15 to-transparent" />
+      {/* Frosted-glass text panel — anchored to bottom, not full-height wrapper */}
+      <div className="absolute bottom-5 left-5 right-5 sm:bottom-7 sm:left-7 sm:right-7 md:bottom-8 md:left-8 md:right-8">
         <div
           className="rounded-xl w-full sm:max-w-2xl"
           style={{
@@ -1102,21 +1102,21 @@ function HighlightCard({ article }: { article: ArticleItem }) {
             border: "1px solid rgba(255,255,255,0.16)",
             boxShadow:
               "0 4px 24px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.10)",
-            padding: "clamp(16px, 2.5vw, 28px)",
+            padding: "clamp(14px, 2vw, 24px)",
           }}
         >
-          <span className="inline-flex self-start mb-3 text-[10px] uppercase tracking-[0.22em] font-semibold px-3 py-1 rounded-full bg-[#474ead] text-white">
+          <span className="inline-flex self-start mb-2.5 text-[10px] uppercase tracking-[0.22em] font-semibold px-3 py-1 rounded-full bg-[#474ead] text-white">
             {article.category}
           </span>
-          <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white leading-tight mb-3 tracking-tight">
+          <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white leading-tight mb-2.5 tracking-tight">
             {article.title}
           </h3>
           {article.excerpt && (
-            <p className="text-white/75 text-sm leading-relaxed mb-4 line-clamp-2">
+            <p className="text-white/75 text-sm leading-relaxed mb-3 line-clamp-2">
               {article.excerpt}
             </p>
           )}
-          <div className="flex items-center gap-4 flex-wrap mb-4">
+          <div className="flex items-center gap-4 flex-wrap mb-3">
             <span className="flex items-center gap-1.5 text-xs">
               <span className="w-6 h-6 rounded-full bg-white/15 text-white text-[9px] font-bold flex items-center justify-center flex-shrink-0 border border-white/20">
                 {getInitials(article.author)}
