@@ -104,14 +104,52 @@ When users ask for navigation help:
 - Respond in natural conversational text, not JSON format
 `.trim();
 
-// Build enhanced instructions with knowledge, learning insights, and memories
-async function buildEnhancedInstructions(): Promise<string> {
+/**
+ * Build enhanced instructions for Vanessa.
+ *
+ * When a userMessage is provided the function runs a RAG semantic search
+ * and injects the most relevant website content chunks into the prompt.
+ * This replaces the old approach of blindly injecting all 30 page summaries.
+ */
+async function buildEnhancedInstructions(userMessage?: string): Promise<string> {
   // Dynamically reload knowledge base for instant updates
   const currentKnowledge = loadVanessaKnowledge();
   
   let instructions = currentKnowledge
     ? `${VANESSA_PERSONA}\n\n[Company Knowledge Base]\n${currentKnowledge}`
     : VANESSA_PERSONA;
+
+  // ── RAG: semantic retrieval of the most relevant website chunks ────────────
+  // This is the core upgrade: instead of injecting all page summaries we embed
+  // the user's question and retrieve only the chunks that actually answer it.
+  if (userMessage) {
+    try {
+      const { searchRag } = await import("./ragService");
+      const relevantChunks = await searchRag(userMessage, 6);
+
+      if (relevantChunks.length > 0) {
+        instructions += `\n\n[Relevant Website Content — Semantic Search Results]\n`;
+        instructions += `The following excerpts from onspotglobal.com are the most relevant to the user's question. `;
+        instructions += `Use them as your primary source when answering. `;
+        instructions += `Always cite the source URL when referencing this content.\n\n`;
+
+        relevantChunks.forEach((chunk, idx) => {
+          instructions += `--- Excerpt ${idx + 1} ---\n`;
+          instructions += `Source: ${chunk.url}\n`;
+          instructions += `Page: ${chunk.title}\n`;
+          instructions += `Content: ${chunk.content}\n\n`;
+        });
+
+        // Collect unique URLs for the navigation section
+        const ragUrls = [...new Set(relevantChunks.map((c) => c.url))];
+        console.log(`🔍 RAG retrieved ${relevantChunks.length} chunks from ${ragUrls.length} page(s)`);
+      } else {
+        console.log(`🔍 RAG found no high-similarity chunks for this query`);
+      }
+    } catch (ragError) {
+      console.error("❌ RAG retrieval error (non-fatal):", ragError);
+    }
+  }
 
   // Add stored memories (short-term corrections)
   try {
@@ -146,26 +184,25 @@ async function buildEnhancedInstructions(): Promise<string> {
     console.error("❌ Error loading learning summary:", error);
   }
 
-  // Add website navigation context from site index
+  // Add website navigation context (page list) from site index for URL references
   try {
     const { loadSiteIndex } = await import("./siteCrawler");
     const siteIndex = await loadSiteIndex();
     
     if (siteIndex && siteIndex.pages.length > 0) {
-      instructions += `\n\n[OnSpotGlobal.com Website Pages - AUTHORITATIVE SOURCE]\n`;
-      instructions += `These are the ONLY valid URLs you may reference. Do NOT invent or guess URLs:\n`;
+      instructions += `\n\n[OnSpotGlobal.com — All Indexed Pages (for URL references)]\n`;
+      instructions += `These are the ONLY valid URLs you may share with users. Do NOT invent URLs:\n`;
       instructions += siteIndex.pages
-        .slice(0, 30) // Limit to top 30 pages for comprehensive coverage
-        .map((page, idx) => `${idx + 1}. "${page.title}" → ${page.url}\n   Summary: ${page.summary}`)
-        .join("\n\n");
-      instructions += `\n\n[URL USAGE RULES]\n`;
-      instructions += `- ONLY provide URLs listed above\n`;
-      instructions += `- If asked about a page not listed, say: "I don't have a direct link to that page, but you can explore onspotglobal.com for more information."\n`;
-      instructions += `- When users ask to "go to" or "show" a page, provide the exact URL with a brief description`;
-      console.log(`🌐 Injected ${Math.min(siteIndex.pages.length, 30)} website pages into context`);
+        .slice(0, 40)
+        .map((page, idx) => `${idx + 1}. ${page.url}  —  ${page.title}`)
+        .join("\n");
+      instructions += `\n\n[URL RULES]\n`;
+      instructions += `- Only provide URLs from the list above.\n`;
+      instructions += `- If no matching page exists, say: "I don't have a direct link, but visit onspotglobal.com for more information."`;
+      console.log(`🌐 Injected ${Math.min(siteIndex.pages.length, 40)} page URLs into nav context`);
     } else {
       instructions += `\n\n[Website Navigation]\n`;
-      instructions += `The website index is currently being updated. Direct users to https://onspotglobal.com for the most current information.`;
+      instructions += `The website index is currently being updated. Direct users to https://onspotglobal.com.`;
     }
   } catch (error) {
     console.error("❌ Error loading site index:", error);
@@ -175,9 +212,9 @@ async function buildEnhancedInstructions(): Promise<string> {
   instructions += `\n\n[CRITICAL REMINDER]\n`;
   instructions += `Your knowledge is LIMITED to:\n`;
   instructions += `1. The Company Knowledge Base above\n`;
-  instructions += `2. The indexed website pages above\n`;
+  instructions += `2. The Relevant Website Content excerpts retrieved for this question\n`;
   instructions += `3. User corrections you've remembered\n`;
-  instructions += `If information is not in these sources, respond: "That information is not currently available on onspotglobal.com. Would you like me to help you find something else?"`;
+  instructions += `If the answer is not in these sources, say: "I couldn't find that on onspotglobal.com. For the most accurate answer, please contact the team directly."`;
 
   return instructions;
 }
@@ -324,8 +361,9 @@ export async function* streamWithAssistant(
       content: userMessage,
     });
 
-    // Build enhanced instructions with learning insights
-    const enhancedInstructions = await buildEnhancedInstructions();
+    // Build enhanced instructions with RAG semantic retrieval + learning insights
+    // Pass userMessage so the RAG service can embed it and find relevant chunks
+    const enhancedInstructions = await buildEnhancedInstructions(userMessage);
 
     // Start a streaming run with the assistant
     // Use additional_instructions to reinforce Vanessa's persona and inject local knowledge + learning
@@ -421,8 +459,8 @@ export async function sendMessageToAssistant(
       await waitForRunCompletion(client, currentThreadId);
     }
 
-    // Build enhanced instructions with learning insights
-    const enhancedInstructions = await buildEnhancedInstructions();
+    // Build enhanced instructions with RAG semantic retrieval + learning insights
+    const enhancedInstructions = await buildEnhancedInstructions(userMessage);
 
     // Add the user's message to the thread
     await client.beta.threads.messages.create(currentThreadId, {

@@ -48,6 +48,7 @@ import AdminCSVImport from "@/pages/AdminCSVImport";
 import AdminDashboard from "@/pages/AdminDashboard";
 import VanessaResponses from "@/pages/VanessaResponses";
 import VanessaLearningDashboard from "@/pages/VanessaLearningDashboard";
+import AdminVanessaRAG from "@/pages/AdminVanessaRAG";
 import InvestorsCorner from "@/pages/InvestorsCorner";
 import ProfileSettings from "@/pages/ProfileSettings";
 import Powerapp from "@/pages/Powerapp";
@@ -151,6 +152,7 @@ function PublicRouter() {
           <Route path="/operations-playbook" component={OperationsPlaybook} />
           <Route path="/admin/vanessa-responses" component={VanessaResponses} />
           <Route path="/admin/vanessa-learning" component={VanessaLearningDashboard} />
+          <Route path="/admin/vanessa-rag" component={AdminVanessaRAG} />
           <Route path="/admin/insights" component={AdminInsights} />
           <Route path="/admin/insights/create" component={AdminInsightEditor} />
           <Route path="/admin/insights/:id/edit" component={AdminInsightEditor} />

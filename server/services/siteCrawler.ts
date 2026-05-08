@@ -12,6 +12,7 @@ interface CrawledPage {
   url: string;
   title: string;
   summary: string;
+  fullText: string;   // full extracted text for RAG chunking + embedding
   lastCrawled: string;
 }
 
@@ -151,6 +152,32 @@ Provide a clear, user-friendly summary of what this page is about.`;
 }
 
 /**
+ * Extracts clean body text from a page, stripping nav/footer boilerplate.
+ * Returns a single string suitable for RAG chunking.
+ */
+function extractFullText($: cheerio.CheerioAPI): string {
+  // Remove boilerplate elements before extracting text
+  $(
+    "nav, footer, header, script, style, noscript, iframe, " +
+    "[class*='nav'], [class*='footer'], [class*='cookie'], " +
+    "[class*='banner'], [id*='nav'], [id*='footer']"
+  ).remove();
+
+  // Prefer main/article content if available, fall back to body
+  const mainEl = $("main, article, [role='main']");
+  const root = mainEl.length ? mainEl : $("body");
+
+  return root
+    .find("h1, h2, h3, h4, h5, h6, p, li, td, th, dt, dd, blockquote, figcaption")
+    .map((_, el) => $(el).text().trim())
+    .get()
+    .filter(Boolean)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
  * Crawls a single page and extracts content
  */
 async function crawlPage(url: string): Promise<CrawledPage | null> {
@@ -169,11 +196,14 @@ async function crawlPage(url: string): Promise<CrawledPage | null> {
     // Extract page title
     const title = $("title").text().trim() || $("h1").first().text().trim() || "Untitled Page";
 
-    // Extract headings
+    // Extract headings for summarization
     const headings = extractText($, "h1, h2, h3");
 
-    // Extract paragraph content
+    // Extract paragraph content for summarization
     const paragraphs = extractText($, "p");
+
+    // Extract full clean text for RAG (before $ is mutated by summarization)
+    const fullText = extractFullText($);
 
     // Combine content for summarization
     const contentPreview = `${headings} ${paragraphs}`.substring(0, 2000);
@@ -185,6 +215,7 @@ async function crawlPage(url: string): Promise<CrawledPage | null> {
       url: normalizeUrl(url),
       title,
       summary,
+      fullText,
       lastCrawled: new Date().toISOString(),
     };
   } catch (error: any) {
@@ -437,6 +468,31 @@ export async function crawlWebsite(): Promise<SiteIndex> {
     // Save to file
     await saveSiteIndex(siteIndex);
 
+    // ── RAG: build / update embedding index after every crawl ──────────────
+    // This runs in the background so it doesn't block the crawl response.
+    // The RAG service will reuse existing embeddings for unchanged chunks.
+    try {
+      const { buildRagIndex, invalidateRagCache } = await import("./ragService");
+      invalidateRagCache(); // flush old in-memory cache before rebuild
+
+      const pageContents = crawledPages.map((p) => ({
+        url: p.url,
+        title: p.title,
+        fullText: p.fullText,
+      }));
+
+      console.log(`🧩 Starting RAG index build for ${pageContents.length} pages…`);
+      buildRagIndex(pageContents)
+        .then((ragIdx) =>
+          console.log(`✅ RAG index ready: ${ragIdx.totalChunks} chunks`)
+        )
+        .catch((err) =>
+          console.error("❌ RAG index build failed:", err.message)
+        );
+    } catch (ragErr: any) {
+      console.error("❌ Failed to start RAG index build:", ragErr.message);
+    }
+
     return siteIndex;
   } catch (error: any) {
     console.error(`❌ Crawl failed:`, error);
@@ -454,8 +510,14 @@ async function saveSiteIndex(siteIndex: SiteIndex): Promise<void> {
     // Ensure directory exists
     await fs.mkdir(dirPath, { recursive: true });
 
-    // Write to file
-    await fs.writeFile(SITE_INDEX_PATH, JSON.stringify(siteIndex, null, 2), "utf-8");
+    // Strip fullText before saving — it's large and only needed during RAG build.
+    // The site_index.json stays compact (title + summary + url) for navigation context.
+    const compactIndex = {
+      ...siteIndex,
+      pages: siteIndex.pages.map(({ fullText: _ft, ...rest }) => rest),
+    };
+
+    await fs.writeFile(SITE_INDEX_PATH, JSON.stringify(compactIndex, null, 2), "utf-8");
 
     console.log(`💾 Site index saved to ${SITE_INDEX_PATH}`);
   } catch (error: any) {

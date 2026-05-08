@@ -1,0 +1,104 @@
+You are an expert full-stack developer and AI integration specialist.
+
+I have a website with an AI chat widget named Vanessa. I want Vanessa to become a “super AI” for the website, meaning she should know and understand every page on the site, including old pages, newly added pages, hidden/internal content pages if publicly accessible, blog posts, service pages, FAQs, pricing pages, contact pages, landing pages, and any future pages added to the website.
+
+Goal:
+Upgrade Vanessa so she can answer user questions in the chat widget with accurate, precise, website-specific answers based only on the actual website content.
+
+Requirements:
+
+1. Website-wide knowledge access
+- Create a system that allows Vanessa to access and understand all website pages.
+- Vanessa must be able to read existing pages and newly added pages automatically.
+- The solution should include crawling, indexing, or loading all website content into a searchable knowledge base.
+- Include support for pages added in the future without needing manual updates every time.
+
+2. Page discovery
+- Use sitemap.xml if available.
+- Also crawl internal links from the homepage and discovered pages.
+- Avoid crawling external websites.
+- Avoid duplicate URLs.
+- Respect robots.txt unless I explicitly configure otherwise.
+- Include canonical URL handling when possible.
+
+3. Content extraction
+- Extract meaningful text from each page.
+- Ignore headers, footers, navigation menus, cookie banners, ads, and repeated boilerplate where possible.
+- Preserve important structured content such as:
+  - Page title
+  - Headings
+  - Paragraphs
+  - FAQs
+  - Service descriptions
+  - Pricing details
+  - Contact information
+  - Blog content
+  - Metadata
+  - Internal links
+- Store the source URL for every content chunk so Vanessa can reference where the answer came from.
+
+4. Knowledge base / RAG
+- Implement a Retrieval-Augmented Generation approach.
+- Break page content into searchable chunks.
+- Generate embeddings for the chunks.
+- Store them in a vector database or a simple local vector store suitable for Replit.
+- When a user asks Vanessa a question, retrieve the most relevant chunks before generating an answer.
+- Vanessa should answer using retrieved website content, not guess.
+
+5. Chat widget behavior
+- Vanessa should answer clearly, confidently, and helpfully.
+- Vanessa should only answer from website content when the question is about the website, services, products, pricing, policies, company information, blogs, FAQs, or contact details.
+- If the information is not found in the website knowledge base, Vanessa should say something like:
+  “I couldn’t find that information on the website. Please contact the team for the most accurate answer.”
+- Vanessa should not invent details.
+- Vanessa should include helpful links to relevant pages when appropriate.
+- Vanessa should be able to summarize pages, compare services, answer FAQs, explain pricing or packages if available, and guide users to the correct page.
+
+6. Automatic updates
+- Add a way to re-index the website:
+  - Manually through an admin route or script
+  - Automatically on a schedule if possible
+- The system should detect new pages and updated page content.
+- Re-index only changed pages when practical.
+- Keep the knowledge base fresh.
+
+7. Admin / developer tools
+- Add a script or endpoint to:
+  - Crawl the website
+  - Show indexed URLs
+  - Re-index all pages
+  - Re-index a single URL
+  - Check when a page was last indexed
+- Add logs so I can see what pages were indexed and if any pages failed.
+
+8. Security and performance
+- Do not expose API keys to the frontend.
+- Keep AI calls on the backend.
+- Rate-limit the chat endpoint if possible.
+- Cache common responses where practical.
+- Make the crawler safe and avoid infinite loops.
+- Add limits for maximum pages, crawl depth, and request timeout.
+- Handle errors gracefully.
+
+9. Implementation expectations
+- Inspect the current Replit project structure first.
+- Identify the framework being used, such as React, Next.js, Express, Node, Python, Flask, or another stack.
+- Implement the solution using the existing stack and coding style.
+- Do not rewrite the entire app unless necessary.
+- Add clear comments where the AI knowledge system is implemented.
+- Update environment variable examples if needed.
+- Provide setup instructions after implementation.
+
+10. Vanessa’s personality
+- Vanessa should sound professional, friendly, and helpful.
+- She should act like a knowledgeable website assistant.
+- She should guide users toward taking action, such as booking, contacting, signing up, requesting a quote, or visiting the right page.
+- She should never claim to know something unless it exists in the indexed website content.
+
+Important:
+Please implement this carefully and make Vanessa capable of answering questions from all current and future website pages with high accuracy. After coding, explain:
+- What files were changed
+- How to run the crawler/indexer
+- How Vanessa retrieves website knowledge
+- How to test the chat widget
+- How to update the knowledge base when new pages are added

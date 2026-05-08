@@ -234,6 +234,21 @@ app.use((req, res, next) => {
   // Start site crawler service (automatic crawl daily at 3:00 AM)
   const { siteCrawlerService } = await import('./services/siteCrawlerService');
   siteCrawlerService.startCronJob();
+
+  // Pre-warm the RAG index into memory so the first chat request is instant.
+  // This just loads the existing rag_index.json; it does NOT crawl or embed.
+  if (process.env.OPENAI_API_KEY) {
+    import('./services/ragService')
+      .then(({ loadRagIndex }) => loadRagIndex())
+      .then((idx) => {
+        if (idx) {
+          console.log(`🧠 RAG index pre-warmed: ${idx.totalChunks} chunks across ${new Set(idx.chunks.map((c: any) => c.url)).size} pages`);
+        } else {
+          console.log(`ℹ️  No RAG index found — run POST /api/rag/reindex to build one`);
+        }
+      })
+      .catch((err: any) => console.warn(`⚠️ RAG pre-warm skipped: ${err.message}`));
+  }
   
   // Seed posts from legacy static content to database
   // NOTE: This migration is idempotent - uses slug uniqueness to prevent duplicates

@@ -1812,6 +1812,151 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── RAG Admin Endpoints ──────────────────────────────────────────────────────
+  // These endpoints allow admins to manage Vanessa's semantic knowledge base.
+
+  // GET /api/rag/status — check index health
+  app.get("/api/rag/status", async (req: any, res) => {
+    try {
+      const { getRagStatus } = await import("./services/ragService");
+      const status = await getRagStatus();
+      res.json({ success: true, ...status });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // POST /api/rag/reindex — full re-crawl + rebuild RAG index from scratch
+  app.post("/api/rag/reindex", async (req: any, res) => {
+    try {
+      console.log(`🔁 RAG full reindex triggered [${req.requestId}]`);
+      const { crawlWebsite } = await import("./services/siteCrawler");
+
+      // crawlWebsite() already triggers buildRagIndex internally at the end
+      crawlWebsite()
+        .then((siteIndex) =>
+          console.log(`🌐 RAG reindex crawl done: ${siteIndex.totalPages} pages`)
+        )
+        .catch((err) => console.error(`❌ RAG reindex failed:`, err.message));
+
+      res.json({
+        success: true,
+        message: "RAG reindex started — crawling site then building embeddings in background",
+      });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // POST /api/rag/reindex-url — add or re-index a single URL
+  app.post("/api/rag/reindex-url", async (req: any, res) => {
+    try {
+      const { url } = req.body;
+      if (!url || typeof url !== "string") {
+        return res.status(400).json({ success: false, error: "url is required" });
+      }
+
+      console.log(`🔁 Single-URL RAG reindex: ${url} [${req.requestId}]`);
+
+      const axios = (await import("axios")).default;
+      const cheerio = await import("cheerio");
+
+      const response = await axios.get(url, {
+        timeout: 12000,
+        headers: { "User-Agent": "OnSpot-Vanessa-Bot/1.0" },
+      });
+
+      const $ = cheerio.load(response.data);
+      const title = $("title").text().trim() || $("h1").first().text().trim() || url;
+
+      // Strip boilerplate before extracting full text
+      $(
+        "nav, footer, header, script, style, noscript, iframe, " +
+        "[class*='nav'], [class*='footer'], [class*='cookie'], [class*='banner']"
+      ).remove();
+      const root = $("main, article, [role='main']");
+      const fullText = (root.length ? root : $("body"))
+        .find("h1,h2,h3,h4,h5,h6,p,li,td,th,dt,dd,blockquote,figcaption")
+        .map((_: any, el: any) => $(el).text().trim())
+        .get()
+        .filter(Boolean)
+        .join(" ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      const { addPageToRagIndex } = await import("./services/ragService");
+      await addPageToRagIndex({ url, title, fullText });
+
+      res.json({ success: true, message: `Page indexed: ${url}`, title, chunksEstimate: Math.ceil(fullText.length / 600) });
+    } catch (error: any) {
+      console.error(`❌ Single-URL RAG reindex failed:`, error.message);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // GET /api/rag/pages — list all indexed pages and chunk counts
+  app.get("/api/rag/pages", async (req: any, res) => {
+    try {
+      const { loadRagIndex } = await import("./services/ragService");
+      const index = await loadRagIndex();
+      if (!index) {
+        return res.json({ success: true, pages: [], totalChunks: 0, lastUpdated: null });
+      }
+
+      // Group chunks by URL
+      const pageMap = new Map<string, { url: string; title: string; chunkCount: number; lastIndexed: string }>();
+      for (const chunk of index.chunks) {
+        const existing = pageMap.get(chunk.url);
+        if (existing) {
+          existing.chunkCount++;
+        } else {
+          pageMap.set(chunk.url, {
+            url: chunk.url,
+            title: chunk.title,
+            chunkCount: 1,
+            lastIndexed: chunk.lastIndexed,
+          });
+        }
+      }
+
+      res.json({
+        success: true,
+        lastUpdated: index.lastUpdated,
+        totalChunks: index.totalChunks,
+        embeddingModel: index.embeddingModel,
+        pages: [...pageMap.values()].sort((a, b) => a.url.localeCompare(b.url)),
+      });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // POST /api/rag/search — test semantic search (dev/admin tool)
+  app.post("/api/rag/search", async (req: any, res) => {
+    try {
+      const { query, topK = 5 } = req.body;
+      if (!query) return res.status(400).json({ success: false, error: "query is required" });
+
+      const { searchRag } = await import("./services/ragService");
+      const chunks = await searchRag(query, Number(topK));
+
+      res.json({
+        success: true,
+        query,
+        totalResults: chunks.length,
+        chunks: chunks.map((c) => ({
+          url: c.url,
+          title: c.title,
+          content: c.content,
+          chunkIndex: c.chunkIndex,
+          lastIndexed: c.lastIndexed,
+        })),
+      });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   // Enhanced development login endpoint with validation and monitoring
   app.post(
     "/api/dev/login",
