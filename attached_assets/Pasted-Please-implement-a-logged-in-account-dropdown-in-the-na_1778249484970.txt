@@ -1,0 +1,165 @@
+Please implement a logged-in account dropdown in the navbar.
+
+Current behavior:
+When a client is logged in, the top-right navbar button changes from “Access Portal” to “Client Profile”.
+But it is only a direct button and there is no logout option.
+
+Required behavior:
+When a user is logged in, replace the top-right button with an account dropdown.
+
+For logged-out users:
+- Keep showing “Access Portal”
+- Clicking it opens the existing Access Portal signup/signin popup
+
+For logged-in users:
+- Show a button with the user/account label:
+  - Client: “Client Profile”
+  - Talent: “Talent Profile”
+  - Admin: “Admin Dashboard”
+- Clicking the button should open a dropdown menu instead of immediately navigating.
+
+Dropdown items:
+
+For Client:
+- Client Profile → /client-profile
+- Hire Talent → /hire-talent
+- Settings → /settings or /profile-settings if that is the existing settings route
+- Sign Out
+
+For Talent:
+- Talent Profile → /find-best-matches or the existing talent profile route if available
+- Find Work → /find-work/jobs
+- Settings → /settings or /profile-settings
+- Sign Out
+
+For Admin:
+- Admin Dashboard → /admin/dashboard
+- Settings → /settings or /profile-settings
+- Sign Out
+
+Sign Out behavior:
+- Use the existing logout function from AuthContext.
+- TopNavigation already has access to:
+  const { isAuthenticated, isLoading, user, logout } = useAuth();
+- On Sign Out:
+  1. Call await logout()
+  2. Show a success toast: “Signed out successfully.”
+  3. Navigate to /hire-talent if the signed-out user was client, or / if role is unknown.
+     Preferred simple behavior: navigate("/")
+  4. After logout, navbar should show “Access Portal” again.
+
+Implementation details:
+
+1. Update client/src/components/TopNavigation.tsx
+
+Use the existing shadcn dropdown imports already present:
+- DropdownMenu
+- DropdownMenuTrigger
+- DropdownMenuContent
+- DropdownMenuItem
+- DropdownMenuLabel
+- DropdownMenuSeparator
+
+2. Add helper route functions
+
+Add something like:
+
+const getProfileRoute = () => {
+  if (user?.role === "client") return "/client-profile";
+  if (user?.role === "talent") return "/find-best-matches";
+  if (user?.role === "admin") return "/admin/dashboard";
+  return "/";
+};
+
+const getAccountLabel = () => {
+  if (user?.role === "client") return "Client Profile";
+  if (user?.role === "talent") return "Talent Profile";
+  if (user?.role === "admin") return "Admin Dashboard";
+  return "My Profile";
+};
+
+3. Add sign out handler
+
+Add:
+
+const handleSignOut = async () => {
+  const previousRole = user?.role;
+
+  try {
+    setIsLoggingOut(true);
+    await logout();
+
+    toast({
+      title: "Signed out",
+      description: "You have been signed out successfully.",
+    });
+
+    navigate("/");
+  } catch (error) {
+    toast({
+      title: "Sign out failed",
+      description: "Please try again.",
+      variant: "destructive",
+    });
+  } finally {
+    setIsLoggingOut(false);
+  }
+};
+
+4. Replace logged-in button only
+
+Keep the existing Access Portal button design for logged-out users.
+
+For logged-in users, use the same gradient/glow visual style but wrap it with DropdownMenuTrigger.
+
+Example structure:
+
+{!isAuthenticated || !user ? (
+  <button onClick={() => setShowPortal(true)}>Access Portal</button>
+) : (
+  <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <button>Client Profile / Talent Profile / Admin Dashboard</button>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent align="end">
+      ...
+    </DropdownMenuContent>
+  </DropdownMenu>
+)}
+
+5. Dropdown styling
+Make it clean and professional:
+- align="end"
+- label showing user email or company/name
+- separator before Sign Out
+- Sign Out should use LogOut icon
+- Disable Sign Out while isLoggingOut is true
+- Show “Signing out...” while loading if possible
+
+6. Make sure logout clears everything
+AuthContext logout already clears:
+- onspot_jwt_token
+- onspot_user
+- local auth state
+
+If there are development-only keys from the portal flow, also clear them on logout:
+- dev_portal_user
+- dev_portal_role
+- dev_portal_email
+- dev_portal_first_name
+- dev_portal_last_name
+
+Add this either in AuthContext.logout or in handleSignOut.
+
+7. Acceptance criteria
+- Logged-out users see “Access Portal”.
+- Logged-in client users see “Client Profile”.
+- Clicking “Client Profile” opens a dropdown.
+- Dropdown has Client Profile, Hire Talent, Settings, and Sign Out.
+- Clicking Client Profile goes to /client-profile.
+- Clicking Hire Talent goes to /hire-talent.
+- Clicking Sign Out logs the user out and returns to /.
+- After logout, navbar changes back to “Access Portal”.
+- Logged-in talent users get Talent-specific dropdown items.
+- Logged-in admin users get Admin-specific dropdown items.
+- Existing Access Portal modal still works for logged-out users.

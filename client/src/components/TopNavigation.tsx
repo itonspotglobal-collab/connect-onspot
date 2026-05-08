@@ -426,6 +426,41 @@ export function TopNavigation() {
     return <User className="w-4 h-4" />;
   };
 
+  // ── Role-based dropdown items ──────────────────────────────────────────────
+  const getDropdownItems = (): { label: string; route: string; icon: React.ElementType }[] => {
+    if (user?.role === "client") return [
+      { label: "Client Profile", route: "/client-profile", icon: Building },
+      { label: "Hire Talent",    route: "/hire-talent",    icon: Users },
+      { label: "Settings",       route: "/settings",       icon: Settings },
+    ];
+    if (user?.role === "admin") return [
+      { label: "Admin Dashboard", route: "/admin/dashboard", icon: Shield },
+      { label: "Settings",        route: "/settings",        icon: Settings },
+    ];
+    // talent / default
+    return [
+      { label: "Talent Profile", route: "/find-best-matches", icon: User },
+      { label: "Find Work",      route: "/find-work/jobs",    icon: Briefcase },
+      { label: "Settings",       route: "/settings",          icon: Settings },
+    ];
+  };
+
+  // ── Sign-out handler ───────────────────────────────────────────────────────
+  const handleSignOut = async () => {
+    try {
+      setIsLoggingOut(true);
+      // Clear any dev portal session keys
+      ["dev_portal_user","dev_portal_role","dev_portal_email","dev_portal_first_name","dev_portal_last_name"].forEach(k => localStorage.removeItem(k));
+      await logout();
+      toast({ title: "Signed out", description: "You have been signed out successfully." });
+      navigate("/");
+    } catch {
+      toast({ title: "Sign out failed", description: "Please try again.", variant: "destructive" });
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
   // Close mobile menu when resizing to desktop
   useEffect(() => {
     const handleResize = () => {
@@ -849,37 +884,66 @@ export function TopNavigation() {
               )}
             </button>
 
-            {/* Access Portal / Profile Button */}
+            {/* Access Portal / Account Dropdown */}
             {isAuthenticated && user ? (
-              <button
-                onClick={() => navigate(getProfileRoute())}
-                className="relative group hidden md:flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm text-white whitespace-nowrap overflow-hidden transition-all duration-300 hover:scale-105"
-                style={{
-                  background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)',
-                  boxShadow: '0 4px 15px rgba(58, 58, 248, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
-                }}
-                data-testid="profile-button"
-              >
-                <div
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                  style={{
-                    background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%)',
-                    animation: 'shimmer 2s infinite',
-                  }}
-                />
-                <div
-                  className="absolute inset-0 rounded-lg opacity-60 group-hover:opacity-100 blur-md transition-opacity duration-500"
-                  style={{
-                    background: 'linear-gradient(135deg, #3A3AF8 0%, #7F3DF4 100%)',
-                    animation: 'portal-breathe 3s ease-in-out infinite',
-                    zIndex: -1,
-                  }}
-                />
-                <span className="relative z-10 flex items-center gap-2">
-                  {getProfileIcon()}
-                  {getProfileLabel()}
-                </span>
-              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className="relative group hidden md:flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm text-white whitespace-nowrap overflow-hidden transition-all duration-300 hover:scale-105"
+                    style={{
+                      background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)',
+                      boxShadow: '0 4px 15px rgba(58, 58, 248, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                    }}
+                    data-testid="account-dropdown-trigger"
+                  >
+                    <div
+                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                      style={{
+                        background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%)',
+                        animation: 'shimmer 2s infinite',
+                      }}
+                    />
+                    <div
+                      className="absolute inset-0 rounded-lg opacity-60 group-hover:opacity-100 blur-md transition-opacity duration-500"
+                      style={{
+                        background: 'linear-gradient(135deg, #3A3AF8 0%, #7F3DF4 100%)',
+                        animation: 'portal-breathe 3s ease-in-out infinite',
+                        zIndex: -1,
+                      }}
+                    />
+                    <span className="relative z-10 flex items-center gap-2">
+                      {getProfileIcon()}
+                      {getProfileLabel()}
+                      <ChevronDown className="w-3.5 h-3.5 opacity-70" />
+                    </span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52">
+                  <DropdownMenuLabel className="font-normal">
+                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {getDropdownItems().map(({ label, route, icon: Icon }) => (
+                    <DropdownMenuItem key={route} onClick={() => navigate(route)} className="cursor-pointer gap-2">
+                      <Icon className="w-4 h-4 text-muted-foreground" />
+                      {label}
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={handleSignOut}
+                    disabled={isLoggingOut}
+                    className="cursor-pointer gap-2 text-red-500 focus:text-red-500"
+                  >
+                    {isLoggingOut ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <LogOut className="w-4 h-4" />
+                    )}
+                    {isLoggingOut ? "Signing out…" : "Sign Out"}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
               <button
                 onClick={() => setShowPortal(true)}
@@ -1195,35 +1259,35 @@ export function TopNavigation() {
         </div>
         <div className="px-4 py-3 border-t border-white/10">
           {isAuthenticated && user ? (
-            <button
-              onClick={() => { navigate(getProfileRoute()); setIsMobileMenuOpen(false); }}
-              className="relative group w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-lg font-bold text-base text-white overflow-hidden transition-all duration-300"
-              style={{
-                background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)',
-                boxShadow: '0 6px 20px rgba(58, 58, 248, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
-              }}
-              data-testid="mobile-profile-button"
-            >
-              <div
-                className="absolute inset-0 opacity-0 group-active:opacity-100 transition-opacity duration-300"
-                style={{
-                  background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%)',
-                  animation: 'shimmer 2s infinite',
-                }}
-              />
-              <div
-                className="absolute inset-0 rounded-lg opacity-70 blur-lg transition-opacity duration-500"
-                style={{
-                  background: 'linear-gradient(135deg, #3A3AF8 0%, #7F3DF4 100%)',
-                  animation: 'portal-breathe 3s ease-in-out infinite',
-                  zIndex: -1,
-                }}
-              />
-              <span className="relative z-10 flex items-center gap-2">
-                {getProfileIcon()}
-                {getProfileLabel()}
-              </span>
-            </button>
+            <div className="space-y-1">
+              {/* Account label */}
+              <p className="px-2 py-1 text-[11px] text-white/40 truncate">{user.email}</p>
+              {/* Role-based nav items */}
+              {getDropdownItems().map(({ label, route, icon: Icon }) => (
+                <button
+                  key={route}
+                  onClick={() => { navigate(route); setIsMobileMenuOpen(false); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors text-left"
+                >
+                  <Icon className="w-4 h-4 shrink-0 text-white/50" />
+                  {label}
+                </button>
+              ))}
+              {/* Sign Out */}
+              <button
+                onClick={() => { handleSignOut(); setIsMobileMenuOpen(false); }}
+                disabled={isLoggingOut}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors text-left disabled:opacity-50"
+                data-testid="mobile-sign-out"
+              >
+                {isLoggingOut ? (
+                  <Loader2 className="w-4 h-4 shrink-0 animate-spin" />
+                ) : (
+                  <LogOut className="w-4 h-4 shrink-0" />
+                )}
+                {isLoggingOut ? "Signing out…" : "Sign Out"}
+              </button>
+            </div>
           ) : (
             <button
               onClick={() => { setShowPortal(true); setIsMobileMenuOpen(false); }}
