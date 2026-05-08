@@ -54,6 +54,34 @@ export const profiles = pgTable("profiles", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Client Profiles — company/hiring details for users with role = "client"
+export const clientProfiles = pgTable("client_profiles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().unique().references(() => users.id),
+  companyName: text("company_name"),
+  contactPerson: text("contact_person"),
+  email: varchar("email"),
+  phoneNumber: text("phone_number"),
+  website: text("website"),
+  industry: text("industry"),
+  companySize: text("company_size"),
+  location: text("location"),
+  about: text("about"),
+  hiringNeeds: text("hiring_needs"),
+  preferredRoles: text("preferred_roles").array().default([]),
+  timezone: text("timezone"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertClientProfileSchema = createInsertSchema(clientProfiles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertClientProfile = z.infer<typeof insertClientProfileSchema>;
+export type ClientProfile = typeof clientProfiles.$inferSelect;
+
 // Skills
 export const skills = pgTable("skills", {
   id: serial("id").primaryKey(), // Keep serial for consistency with existing pattern

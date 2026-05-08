@@ -65,6 +65,7 @@ import HumanVirtualAssistantPage from "@/pages/HumanVirtualAssistantPage";
 import HireTalentPage from "@/pages/HireTalentPage";
 import TalentPool from "@/pages/TalentPool";
 import TalentProfile from "@/pages/TalentProfile";
+import ClientProfile from "@/pages/ClientProfile";
 
 // Immersive Page Wrapper - Full screen without navigation (for campaigns and reveals)
 function ImmersivePage() {
@@ -114,6 +115,7 @@ function PublicRouter() {
             return <Home />;
           }} />
           <Route path="/hire-talent" component={HireTalentPage} />
+          <Route path="/client-profile" component={ClientProfile} />
           <Route path="/talent-pool" component={TalentPool} />
           <Route path="/find-work" component={FindWork} />
           <Route path="/find-best-matches" component={FindBestMatches} />

@@ -1,0 +1,308 @@
+We need to add a Client Profile feature and client-owned job posting management.
+
+Context:
+We already have:
+- Talent accounts
+- Client accounts
+- Talent profile/resume flow
+- /talent-pool page for showing talent profiles
+- /find-work/jobs page for public job listings
+- /admin/find-work page with job posting/admin job management features
+- jobs table with client_id/clientId relation to users
+
+Goal:
+Create a separate Client Profile area that is different from Talent profiles.
+
+Important:
+Client profiles must NOT appear in the /talent-pool page.
+Only Talent profiles should appear in /talent-pool.
+
+Client profile should be for company/client-related details and their job postings/openings.
+
+High-level behavior:
+1. Client creates an account.
+2. Client is redirected to /hire-talent.
+3. Client can access their own Client Profile page.
+4. Client Profile contains client-only details.
+5. Client Profile contains a “Job Postings” or “Openings” section.
+6. Client can create/edit/delete only their own job postings.
+7. Jobs created by clients must appear on /find-work/jobs.
+8. Jobs created by clients must be linked to their account via clientId.
+9. Client cannot edit/access other clients’ job postings.
+
+Frontend requirements:
+
+1. Create Client Profile page
+Add a page such as:
+
+client/src/pages/ClientProfile.tsx
+
+Route:
+- /client-profile
+
+Optional future route:
+- /client-profile/:clientId
+
+For now, logged-in/current client should use:
+/client-profile
+
+2. Client Profile content
+The Client Profile should show client-only details, such as:
+- Company name
+- Contact person
+- Email
+- Phone number
+- Company website
+- Industry
+- Company size
+- Location
+- About the company
+- Hiring needs
+- Preferred roles
+- Timezone
+- Created date / member since
+
+Do NOT use Talent profile fields like:
+- resume
+- hourly rate
+- skills
+- portfolio
+- certifications
+- job success score
+- talent availability
+
+3. Client profile separation
+Make sure Client Profile is separate from Talent Profile.
+
+Talent profiles:
+- can appear in /talent-pool
+- use talent profile/resume/matching data
+
+Client profiles:
+- must NOT appear in /talent-pool
+- are only for client/company/hiring information
+
+4. Add Client Profile navigation
+After client signup/signin:
+- redirect to /hire-talent for now, as previously required
+
+But add a way for the client to access their profile:
+- Add “Client Profile” link/button in the client area/navigation if a client is logged in.
+- Or add a visible button on /hire-talent:
+  “Go to Client Profile”
+
+5. Job postings section inside Client Profile
+Inside Client Profile, add a section:
+“Job Postings” or “Openings”
+
+It should show jobs where:
+jobs.client_id === current client user id
+
+For each job:
+- title
+- company
+- category
+- status
+- budget/hourly rate
+- created date
+- Edit button
+- Delete/Close button
+- View public listing button
+
+6. Client job creation
+Add a “Post a Job” button in Client Profile.
+
+Reuse the same fields and behavior from:
+client/src/pages/AdminFindWork.tsx
+
+But this client version should be scoped to the current client only.
+
+Client job form should allow fields like:
+- Job title
+- Company
+- Category
+- Contract type
+- Budget or hourly rate range
+- Location
+- Experience level
+- Description
+- Responsibilities
+- Requirements
+- Skill tags
+- Status
+
+When creating a job:
+- Set clientId/client_id to the current client user's id.
+- Do not allow client to manually choose clientId.
+- Default company to the client profile/company name when available.
+- Default status to "open".
+
+7. Client job editing
+Client can edit only their own jobs.
+
+If the client tries to access/edit a job not owned by them:
+- return 403 from backend
+- show “You do not have permission to edit this job.”
+
+8. Client job deletion/closing
+Client can delete or close only their own jobs.
+
+Preferred behavior:
+- Do not hard delete immediately.
+- Set status = "closed" or "cancelled" if the schema supports it.
+- If the existing admin feature uses delete, reuse carefully but scope it to owner.
+
+9. Public job listing reflection
+Jobs created by clients must appear in:
+/find-work/jobs
+
+As long as:
+- status = "open"
+- job is saved in the jobs table
+
+Make sure /find-work/jobs fetches public open jobs from the same jobs table.
+Do not create a separate client-only job table unless absolutely necessary.
+
+Backend requirements:
+
+1. Client profile data
+Check current schema first.
+If there is no client_profiles table, add one.
+
+Recommended table:
+client_profiles
+
+Fields:
+- id
+- user_id unique references users.id
+- company_name
+- contact_person
+- email
+- phone_number
+- website
+- industry
+- company_size
+- location
+- about
+- hiring_needs
+- preferred_roles
+- timezone
+- created_at
+- updated_at
+
+Do not mix this with talent profiles table unless the current schema already has a suitable separate client table.
+
+2. Create client profile on signup
+When a user signs up with role = "client":
+- create a users row with role = "client"
+- create a client_profiles row linked to users.id
+- do NOT create a talent profiles row
+
+When a user signs up with role = "talent":
+- create users row with role = "talent"
+- create talent profiles row
+- do NOT create client_profiles row
+
+3. Existing client accounts
+For existing users where role = "client":
+- add a safe migration/backfill to create client_profiles rows if missing
+- do not create duplicate profiles
+
+Example logic:
+INSERT INTO client_profiles (user_id, email, company_name, contact_person, created_at, updated_at)
+SELECT id, email, company, TRIM(CONCAT(first_name, ' ', last_name)), NOW(), NOW()
+FROM users
+WHERE role = 'client'
+AND id NOT IN (SELECT user_id FROM client_profiles);
+
+4. Client profile API
+Add API endpoints:
+- GET /api/client-profile/me
+- PUT /api/client-profile/me
+
+Behavior:
+- Must use current authenticated/dev current user.
+- Only works for role = "client".
+- Return 403 if role is not client.
+- Create profile on first read if missing.
+
+5. Client-owned jobs API
+Add API endpoints:
+- GET /api/client/jobs
+- POST /api/client/jobs
+- GET /api/client/jobs/:jobId
+- PUT /api/client/jobs/:jobId
+- PATCH /api/client/jobs/:jobId/status
+- DELETE /api/client/jobs/:jobId or close job
+
+Ownership rules:
+- All endpoints must check jobs.client_id === current user id.
+- Client can only access/edit/delete their own jobs.
+- Admin can still access all jobs through /admin/find-work.
+
+6. Public jobs API
+Make sure public job listing endpoint for /find-work/jobs includes client-created open jobs:
+- SELECT jobs WHERE status = 'open'
+- Include company/title/category/rate fields as currently needed.
+
+7. Reuse AdminFindWork
+Inspect:
+client/src/pages/AdminFindWork.tsx
+
+Reuse:
+- form fields
+- validation
+- job card/list UI
+- create/edit logic
+
+But do not reuse admin permissions directly.
+Create a client-scoped version.
+
+Possible new component:
+client/src/components/JobPostingForm.tsx
+
+Use this shared component in:
+- AdminFindWork
+- ClientProfile
+
+AdminFindWork:
+- can view/edit all jobs
+
+ClientProfile:
+- can view/edit only jobs owned by current client
+
+8. Development authentication note
+During development, auth may still be relaxed.
+If there is no fully enforced auth yet, use the logged-in user from the current auth context/JWT if available.
+
+But still structure backend code so ownership checks are ready:
+- currentUser.id
+- currentUser.role
+
+If dev bypass is needed, clearly comment:
+  // DEV ONLY: temporary current user resolution for development
+
+9. Talent pool filter
+Audit /talent-pool data fetching.
+Make sure it only shows:
+- users.role = "talent"
+or
+- records from the talent profiles table joined with users.role = "talent"
+
+Client profiles must never show in talent pool.
+
+10. Acceptance criteria
+- Client signup creates users row with role = "client".
+- Client signup creates client_profiles row.
+- Talent signup creates users row with role = "talent".
+- Talent signup creates talent profiles row only.
+- Client profiles do not appear in /talent-pool.
+- Client can open /client-profile.
+- Client can edit client-only profile details.
+- Client can create a job posting from /client-profile.
+- Created job is saved with jobs.client_id = current client user id.
+- Created job appears on /find-work/jobs when status is open.
+- Client can edit only their own job postings.
+- Client cannot edit another client’s job posting.
+- Admin job management remains available in /admin/find-work.
+- Existing client accounts get client_profiles rows through a safe backfill/migration.

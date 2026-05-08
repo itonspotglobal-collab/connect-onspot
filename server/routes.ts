@@ -51,6 +51,8 @@ import {
   insertDocumentSchema,
   waitlist,
   users as usersTable,
+  clientProfiles,
+  insertClientProfileSchema,
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -650,6 +652,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(
         `🔍 Debug [${requestId}]: User inserted into database = true`,
       );
+
+      // If user is client, create client_profiles entry
+      if (role === "client") {
+        const cpId = `cp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        await query(
+          `INSERT INTO client_profiles (id, user_id, company_name, contact_person, email, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+           ON CONFLICT (user_id) DO NOTHING`,
+          [cpId, userId, company || null, `${first_name} ${last_name}`.trim(), email],
+        );
+        console.log(`✅ Client profile created [${requestId}]`);
+      }
 
       // If user is talent, create profile entry
       if (role === "talent") {
@@ -6383,6 +6397,157 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: error.message,
         requestId,
       });
+    }
+  });
+
+  // ── Client Profile ────────────────────────────────────────────────────────
+  app.get("/api/client-profile/me", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const r = await query("SELECT * FROM client_profiles WHERE user_id = $1", [userId]);
+      if (r.rows.length === 0) {
+        // Auto-create profile if missing
+        const cpId = `cp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const user = await query("SELECT * FROM users WHERE id = $1", [userId]);
+        const u = user.rows[0];
+        const ins = await query(
+          `INSERT INTO client_profiles (id, user_id, company_name, contact_person, email, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, $5, NOW(), NOW()) RETURNING *`,
+          [cpId, userId, u?.company || null, `${u?.first_name || ""} ${u?.last_name || ""}`.trim() || null, u?.email || null],
+        );
+        return res.json(ins.rows[0]);
+      }
+      return res.json(r.rows[0]);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.put("/api/client-profile/me", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const {
+        companyName, contactPerson, email, phoneNumber, website, industry,
+        companySize, location, about, hiringNeeds, timezone,
+      } = req.body;
+      const r = await query(
+        `UPDATE client_profiles
+         SET company_name = COALESCE($1, company_name),
+             contact_person = COALESCE($2, contact_person),
+             email = COALESCE($3, email),
+             phone_number = COALESCE($4, phone_number),
+             website = COALESCE($5, website),
+             industry = COALESCE($6, industry),
+             company_size = COALESCE($7, company_size),
+             location = COALESCE($8, location),
+             about = COALESCE($9, about),
+             hiring_needs = COALESCE($10, hiring_needs),
+             timezone = COALESCE($11, timezone),
+             updated_at = NOW()
+         WHERE user_id = $12
+         RETURNING *`,
+        [companyName, contactPerson, email, phoneNumber, website, industry, companySize, location, about, hiringNeeds, timezone, userId],
+      );
+      if (r.rows.length === 0) return res.status(404).json({ error: "Profile not found" });
+      return res.json(r.rows[0]);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── Client Jobs ───────────────────────────────────────────────────────────
+  app.get("/api/client/jobs", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const r = await query(
+        `SELECT j.*,
+          j.proposal_count AS "proposalCount"
+         FROM jobs j
+         WHERE j.client_id = $1
+         ORDER BY j.created_at DESC`,
+        [userId],
+      );
+      return res.json(r.rows);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/client/jobs", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      // Use the same storage.createJob() path as the admin route — just set clientId = current user
+      const body = { ...req.body, clientId: userId };
+      const validated = insertJobSchema.parse(body);
+      const job = await storage.createJob(validated);
+      return res.status(201).json(job);
+    } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation failed", details: err.errors });
+      }
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.patch("/api/client/jobs/:jobId", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const { jobId } = req.params;
+      // Ownership check using correct column
+      const check = await query("SELECT id FROM jobs WHERE id = $1 AND client_id = $2", [jobId, userId]);
+      if (check.rows.length === 0) return res.status(403).json({ error: "Forbidden" });
+      // Use same update path as admin
+      const { clientId: _strip, ...rest } = req.body;
+      const updates = insertJobSchema.partial().parse(rest);
+      const job = await storage.updateJob(jobId, updates);
+      if (!job) return res.status(404).json({ error: "Job not found" });
+      return res.json(job);
+    } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation failed", details: err.errors });
+      }
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.patch("/api/client/jobs/:jobId/status", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const { jobId } = req.params;
+      const { status } = req.body;
+      if (!["open", "closed", "cancelled"].includes(status)) {
+        return res.status(400).json({ error: "Invalid status. Must be open, closed, or cancelled" });
+      }
+      const r = await query(
+        "UPDATE jobs SET status = $1, updated_at = NOW() WHERE id = $2 AND client_id = $3 RETURNING *",
+        [status, jobId, userId],
+      );
+      if (r.rows.length === 0) return res.status(403).json({ error: "Forbidden" });
+      return res.json(r.rows[0]);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.delete("/api/client/jobs/:jobId", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const { jobId } = req.params;
+      const r = await query(
+        "UPDATE jobs SET status = 'closed', updated_at = NOW() WHERE id = $1 AND client_id = $2 RETURNING id",
+        [jobId, userId],
+      );
+      if (r.rows.length === 0) return res.status(403).json({ error: "Forbidden" });
+      return res.json({ success: true });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
     }
   });
 

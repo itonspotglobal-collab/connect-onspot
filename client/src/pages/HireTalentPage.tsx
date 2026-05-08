@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Search, Clock, CheckCircle2, Zap, Shield, Target, Award,
-  ChevronRight, Sparkles, LayoutGrid,
+  ChevronRight, Sparkles, LayoutGrid, UserCircle2,
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 // ─── Static data ─────────────────────────────────────────────────────────────
 
@@ -200,6 +201,7 @@ function FilterPill({
 
 export default function HireTalentPage() {
   const [, navigate] = useLocation();
+  const { isAuthenticated, user } = useAuth();
 
   // ── State ────────────────────────────────────────────────────────────────
   const [query, setQuery] = useState("");
@@ -400,6 +402,17 @@ export default function HireTalentPage() {
             >
               Request a shortlist
             </Button>
+            {isAuthenticated && user?.role === "client" && (
+              <Button
+                size="lg"
+                variant="outline"
+                className="rounded-2xl px-6"
+                onClick={() => navigate("/client-profile")}
+              >
+                <UserCircle2 className="w-4 h-4 mr-2" />
+                My Client Profile
+              </Button>
+            )}
           </div>
 
           {/* Trust sub-copy */}

@@ -143,36 +143,46 @@ interface JobFormModalProps {
   /** Pass null to create a new job; pass a Job to edit it */
   job: Job | null;
   onSuccess: () => void;
+  /** When true, posts to /api/client/jobs instead of /api/admin/jobs */
+  clientMode?: boolean;
+  /** Pre-fill the company name (used in client mode) */
+  defaultCompany?: string;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
-export function JobFormModal({ open, onClose, job, onSuccess }: JobFormModalProps) {
+export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false, defaultCompany }: JobFormModalProps) {
   const { toast } = useToast();
   const isEditing = job !== null;
 
-  const [formData, setFormData] = useState<JobFormData>(defaultFormData);
+  const baseDefault = clientMode && defaultCompany
+    ? { ...defaultFormData, company: defaultCompany }
+    : defaultFormData;
+
+  const [formData, setFormData] = useState<JobFormData>(baseDefault);
   const [errors, setErrors] = useState<Partial<Record<keyof JobFormData, string>>>({});
 
   // Only seed/reset the form when the modal transitions from closed → open.
-  // Using a ref prevents parent re-renders (which may produce a new `job`
-  // object reference with the same data) from wiping user input mid-session.
   const prevOpenRef = useRef(false);
   useEffect(() => {
     if (open && !prevOpenRef.current) {
-      setFormData(job ? jobToFormData(job) : defaultFormData);
+      const base = clientMode && defaultCompany ? { ...defaultFormData, company: defaultCompany } : defaultFormData;
+      setFormData(job ? jobToFormData(job) : base);
       setErrors({});
     }
     prevOpenRef.current = open;
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const apiBase = clientMode ? "/api/client/jobs" : "/api/admin/jobs";
+
   // ─── Mutations ───────────────────────────────────────────────────────────────
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["/api/admin/jobs"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/client/jobs"] });
     queryClient.invalidateQueries({ queryKey: ["/api/jobs/search"] });
   };
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => apiRequest("POST", "/api/admin/jobs", data),
+    mutationFn: (data: any) => apiRequest("POST", apiBase, data),
     onSuccess: () => {
       invalidate();
       toast({ title: "Job posting created" });
@@ -184,7 +194,7 @@ export function JobFormModal({ open, onClose, job, onSuccess }: JobFormModalProp
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) =>
-      apiRequest("PATCH", `/api/admin/jobs/${id}`, data),
+      apiRequest("PATCH", `${apiBase}/${id}`, data),
     onSuccess: () => {
       invalidate();
       toast({ title: "Job posting updated" });
