@@ -364,6 +364,7 @@ export function TopNavigation() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showPortal, setShowPortal] = useState(false);
+
   const [showVanessaChat, setShowVanessaChat] = useState(false);
   const [modalStep, setModalStep] = useState<1 | 2 | 3 | 4 | "signin" | "signup" | "forgot">(1);
   const [selectedPortal, setSelectedPortal] = useState<
@@ -407,6 +408,23 @@ export function TopNavigation() {
   const navRef = useRef<HTMLElement>(null);
   const navLinksRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // ── Profile route helpers ──────────────────────────────────────────────────
+  const getProfileRoute = () => {
+    if (user?.role === "client") return "/client-profile";
+    if (user?.role === "admin") return "/admin/dashboard";
+    return "/find-best-matches";
+  };
+  const getProfileLabel = () => {
+    if (user?.role === "client") return "Client Profile";
+    if (user?.role === "admin") return "Admin Dashboard";
+    return "Talent Profile";
+  };
+  const getProfileIcon = () => {
+    if (user?.role === "client") return <Building className="w-4 h-4" />;
+    if (user?.role === "admin") return <Shield className="w-4 h-4" />;
+    return <User className="w-4 h-4" />;
+  };
 
   // Close mobile menu when resizing to desktop
   useEffect(() => {
@@ -831,40 +849,68 @@ export function TopNavigation() {
               )}
             </button>
 
-            {/* Access Portal Button - Intelligent Design */}
-            <button
-              onClick={() => setShowPortal(true)}
-              className="relative group hidden md:flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm text-white whitespace-nowrap overflow-hidden transition-all duration-300 hover:scale-105"
-              style={{
-                background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)',
-                boxShadow: '0 4px 15px rgba(58, 58, 248, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
-              }}
-              data-testid="access-portal-button"
-            >
-              {/* Animated shimmer overlay */}
-              <div 
-                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+            {/* Access Portal / Profile Button */}
+            {isAuthenticated && user ? (
+              <button
+                onClick={() => navigate(getProfileRoute())}
+                className="relative group hidden md:flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm text-white whitespace-nowrap overflow-hidden transition-all duration-300 hover:scale-105"
                 style={{
-                  background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%)',
-                  animation: 'shimmer 2s infinite',
+                  background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)',
+                  boxShadow: '0 4px 15px rgba(58, 58, 248, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
                 }}
-              ></div>
-              
-              {/* Breathing glow effect */}
-              <div 
-                className="absolute inset-0 rounded-lg opacity-60 group-hover:opacity-100 blur-md transition-opacity duration-500"
+                data-testid="profile-button"
+              >
+                <div
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                  style={{
+                    background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%)',
+                    animation: 'shimmer 2s infinite',
+                  }}
+                />
+                <div
+                  className="absolute inset-0 rounded-lg opacity-60 group-hover:opacity-100 blur-md transition-opacity duration-500"
+                  style={{
+                    background: 'linear-gradient(135deg, #3A3AF8 0%, #7F3DF4 100%)',
+                    animation: 'portal-breathe 3s ease-in-out infinite',
+                    zIndex: -1,
+                  }}
+                />
+                <span className="relative z-10 flex items-center gap-2">
+                  {getProfileIcon()}
+                  {getProfileLabel()}
+                </span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowPortal(true)}
+                className="relative group hidden md:flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm text-white whitespace-nowrap overflow-hidden transition-all duration-300 hover:scale-105"
                 style={{
-                  background: 'linear-gradient(135deg, #3A3AF8 0%, #7F3DF4 100%)',
-                  animation: 'portal-breathe 3s ease-in-out infinite',
-                  zIndex: -1,
+                  background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)',
+                  boxShadow: '0 4px 15px rgba(58, 58, 248, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
                 }}
-              ></div>
-              
-              <span className="relative z-10 flex items-center gap-2">
-                <Zap className="w-4 h-4 animate-pulse" />
-                Access Portal
-              </span>
-            </button>
+                data-testid="access-portal-button"
+              >
+                <div
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                  style={{
+                    background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%)',
+                    animation: 'shimmer 2s infinite',
+                  }}
+                />
+                <div
+                  className="absolute inset-0 rounded-lg opacity-60 group-hover:opacity-100 blur-md transition-opacity duration-500"
+                  style={{
+                    background: 'linear-gradient(135deg, #3A3AF8 0%, #7F3DF4 100%)',
+                    animation: 'portal-breathe 3s ease-in-out infinite',
+                    zIndex: -1,
+                  }}
+                />
+                <span className="relative z-10 flex items-center gap-2">
+                  <Zap className="w-4 h-4 animate-pulse" />
+                  Access Portal
+                </span>
+              </button>
+            )}
           </div>
         </div>
       </nav>
@@ -1148,39 +1194,67 @@ export function TopNavigation() {
           </div>
         </div>
         <div className="px-4 py-3 border-t border-white/10">
-          <button
-            onClick={() => { setShowPortal(true); setIsMobileMenuOpen(false); }}
-            className="relative group w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-lg font-bold text-base text-white overflow-hidden transition-all duration-300"
-            style={{
-              background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)',
-              boxShadow: '0 6px 20px rgba(58, 58, 248, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
-            }}
-            data-testid="mobile-access-portal"
-          >
-            {/* Animated shimmer overlay */}
-            <div 
-              className="absolute inset-0 opacity-0 group-active:opacity-100 transition-opacity duration-300"
+          {isAuthenticated && user ? (
+            <button
+              onClick={() => { navigate(getProfileRoute()); setIsMobileMenuOpen(false); }}
+              className="relative group w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-lg font-bold text-base text-white overflow-hidden transition-all duration-300"
               style={{
-                background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%)',
-                animation: 'shimmer 2s infinite',
+                background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)',
+                boxShadow: '0 6px 20px rgba(58, 58, 248, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
               }}
-            ></div>
-            
-            {/* Breathing glow effect */}
-            <div 
-              className="absolute inset-0 rounded-lg opacity-70 blur-lg transition-opacity duration-500"
+              data-testid="mobile-profile-button"
+            >
+              <div
+                className="absolute inset-0 opacity-0 group-active:opacity-100 transition-opacity duration-300"
+                style={{
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%)',
+                  animation: 'shimmer 2s infinite',
+                }}
+              />
+              <div
+                className="absolute inset-0 rounded-lg opacity-70 blur-lg transition-opacity duration-500"
+                style={{
+                  background: 'linear-gradient(135deg, #3A3AF8 0%, #7F3DF4 100%)',
+                  animation: 'portal-breathe 3s ease-in-out infinite',
+                  zIndex: -1,
+                }}
+              />
+              <span className="relative z-10 flex items-center gap-2">
+                {getProfileIcon()}
+                {getProfileLabel()}
+              </span>
+            </button>
+          ) : (
+            <button
+              onClick={() => { setShowPortal(true); setIsMobileMenuOpen(false); }}
+              className="relative group w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-lg font-bold text-base text-white overflow-hidden transition-all duration-300"
               style={{
-                background: 'linear-gradient(135deg, #3A3AF8 0%, #7F3DF4 100%)',
-                animation: 'portal-breathe 3s ease-in-out infinite',
-                zIndex: -1,
+                background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)',
+                boxShadow: '0 6px 20px rgba(58, 58, 248, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
               }}
-            ></div>
-            
-            <span className="relative z-10 flex items-center gap-2">
-              <Zap className="w-5 h-5 animate-pulse" />
-              Access Portal
-            </span>
-          </button>
+              data-testid="mobile-access-portal"
+            >
+              <div
+                className="absolute inset-0 opacity-0 group-active:opacity-100 transition-opacity duration-300"
+                style={{
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%)',
+                  animation: 'shimmer 2s infinite',
+                }}
+              />
+              <div
+                className="absolute inset-0 rounded-lg opacity-70 blur-lg transition-opacity duration-500"
+                style={{
+                  background: 'linear-gradient(135deg, #3A3AF8 0%, #7F3DF4 100%)',
+                  animation: 'portal-breathe 3s ease-in-out infinite',
+                  zIndex: -1,
+                }}
+              />
+              <span className="relative z-10 flex items-center gap-2">
+                <Zap className="w-5 h-5 animate-pulse" />
+                Access Portal
+              </span>
+            </button>
+          )}
         </div>
       </div>
 

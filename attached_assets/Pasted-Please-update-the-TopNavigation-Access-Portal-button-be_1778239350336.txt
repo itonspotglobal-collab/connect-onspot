@@ -1,0 +1,132 @@
+Please update the TopNavigation Access Portal button behavior.
+
+Current behavior:
+The navigation bar always shows the “Access Portal” button.
+Clicking it opens the Access Portal signup/signin popup.
+
+Required behavior:
+If no user is logged in:
+- Show the existing “Access Portal” button.
+- Clicking it opens the current Access Portal popup.
+
+If a user is logged in:
+- Replace the “Access Portal” button with a profile/account button.
+- Clicking it should navigate to the logged-in user’s profile page.
+
+Role-based destination:
+
+1. Client user
+If user.role === "client":
+- Button text should be:
+  “My Profile”
+  or
+  “Client Profile”
+- Clicking it should navigate to:
+  /client-profile
+
+This is the client profile page where client-only details and client-owned job postings/openings are managed.
+
+2. Talent user
+If user.role === "talent":
+- Button text should be:
+  “My Profile”
+  or
+  “Talent Profile”
+- Clicking it should navigate to the talent profile/setup page.
+- If the talent profile setup is not complete yet, navigate to:
+  /find-best-matches
+- If there is an existing talent profile page route for the logged-in user, use that route.
+- Otherwise use:
+  /find-best-matches
+
+3. Admin user
+If user.role === "admin":
+- Button text should be:
+  “Admin”
+  or
+  “Admin Dashboard”
+- Clicking it should navigate to:
+  /admin/dashboard
+
+Implementation details:
+
+1. Use AuthContext
+In client/src/components/TopNavigation.tsx:
+- use the existing useAuth() values:
+  - isAuthenticated
+  - user
+  - logout if needed
+
+2. Add helper function
+Add a helper like:
+
+const getProfileRoute = () => {
+  if (user?.role === "client") return "/client-profile";
+  if (user?.role === "talent") return "/find-best-matches";
+  if (user?.role === "admin") return "/admin/dashboard";
+  return "/";
+};
+
+3. Button render logic
+Replace the static Access Portal button with conditional rendering:
+
+- If !isAuthenticated or !user:
+  show Access Portal button and open modal with setShowPortal(true)
+
+- If isAuthenticated and user exists:
+  show profile button and navigate(getProfileRoute())
+
+4. Button design
+Keep the same current gradient/glowing style.
+Only change:
+- label
+- icon if appropriate
+
+Suggested labels:
+- Client: “Client Profile”
+- Talent: “Talent Profile”
+- Admin: “Admin Dashboard”
+
+Suggested icons:
+- Client: Building or User
+- Talent: User
+- Admin: Shield
+
+5. Optional dropdown
+If simple button is easier, use a simple button first.
+Optional enhancement:
+When logged in, make it a small dropdown with:
+- My Profile
+- Logout
+
+But do not break the current navbar.
+
+6. Route requirements
+Make sure /client-profile route exists and renders the Client Profile page.
+If it does not exist yet, add it in App.tsx.
+
+Add:
+<Route path="/client-profile" component={ClientProfile} />
+
+Import:
+import ClientProfile from "@/pages/ClientProfile";
+
+7. Development auth note
+If current login state is stored in localStorage or AuthContext after signup/signin, make sure TopNavigation can detect it immediately after signup/signin.
+After successful signup/signin:
+- refresh auth state if needed
+- or set user in AuthContext
+- then redirect to the correct page
+
+8. Acceptance criteria
+- Logged-out users see “Access Portal”.
+- Clicking “Access Portal” opens the signup/signin popup.
+- Logged-in client users see “Client Profile”.
+- Clicking “Client Profile” goes to /client-profile.
+- Logged-in talent users see “Talent Profile”.
+- Clicking “Talent Profile” goes to /find-best-matches unless a better existing talent profile route is available.
+- Logged-in admin users see “Admin Dashboard”.
+- Clicking “Admin Dashboard” goes to /admin/dashboard.
+- The button keeps the same visual style as the existing Access Portal button.
+- Client users are not sent to /find-best-matches.
+- Talent users are not sent to /client-profile.
