@@ -6401,24 +6401,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ── Client Profile ────────────────────────────────────────────────────────
+  // Helper: map snake_case client_profiles row → camelCase
+  const mapClientProfileRow = (row: any) => ({
+    id: row.id,
+    userId: row.user_id,
+    companyName: row.company_name ?? null,
+    contactPerson: row.contact_person ?? null,
+    email: row.email ?? null,
+    phoneNumber: row.phone_number ?? null,
+    website: row.website ?? null,
+    industry: row.industry ?? null,
+    companySize: row.company_size ?? null,
+    location: row.location ?? null,
+    about: row.about ?? null,
+    hiringNeeds: row.hiring_needs ?? null,
+    preferredRoles: row.preferred_roles ?? [],
+    timezone: row.timezone ?? null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  });
+
   app.get("/api/client-profile/me", authenticateJWT, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
       const r = await query("SELECT * FROM client_profiles WHERE user_id = $1", [userId]);
       if (r.rows.length === 0) {
-        // Auto-create profile if missing
         const cpId = `cp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const user = await query("SELECT * FROM users WHERE id = $1", [userId]);
-        const u = user.rows[0];
+        const userRes = await query("SELECT * FROM users WHERE id = $1", [userId]);
+        const u = userRes.rows[0];
         const ins = await query(
           `INSERT INTO client_profiles (id, user_id, company_name, contact_person, email, created_at, updated_at)
            VALUES ($1, $2, $3, $4, $5, NOW(), NOW()) RETURNING *`,
           [cpId, userId, u?.company || null, `${u?.first_name || ""} ${u?.last_name || ""}`.trim() || null, u?.email || null],
         );
-        return res.json(ins.rows[0]);
+        return res.json(mapClientProfileRow(ins.rows[0]));
       }
-      return res.json(r.rows[0]);
+      return res.json(mapClientProfileRow(r.rows[0]));
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
     }
@@ -6432,26 +6451,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         companyName, contactPerson, email, phoneNumber, website, industry,
         companySize, location, about, hiringNeeds, timezone,
       } = req.body;
+      // Use $1::text so that empty strings are stored (not COALESCE'd away)
       const r = await query(
         `UPDATE client_profiles
-         SET company_name = COALESCE($1, company_name),
-             contact_person = COALESCE($2, contact_person),
-             email = COALESCE($3, email),
-             phone_number = COALESCE($4, phone_number),
-             website = COALESCE($5, website),
-             industry = COALESCE($6, industry),
-             company_size = COALESCE($7, company_size),
-             location = COALESCE($8, location),
-             about = COALESCE($9, about),
-             hiring_needs = COALESCE($10, hiring_needs),
-             timezone = COALESCE($11, timezone),
-             updated_at = NOW()
+         SET company_name   = $1,
+             contact_person = $2,
+             email          = $3,
+             phone_number   = $4,
+             website        = $5,
+             industry       = $6,
+             company_size   = $7,
+             location       = $8,
+             about          = $9,
+             hiring_needs   = $10,
+             timezone       = $11,
+             updated_at     = NOW()
          WHERE user_id = $12
          RETURNING *`,
-        [companyName, contactPerson, email, phoneNumber, website, industry, companySize, location, about, hiringNeeds, timezone, userId],
+        [
+          companyName   ?? null,
+          contactPerson ?? null,
+          email         ?? null,
+          phoneNumber   ?? null,
+          website       ?? null,
+          industry      ?? null,
+          companySize   ?? null,
+          location      ?? null,
+          about         ?? null,
+          hiringNeeds   ?? null,
+          timezone      ?? null,
+          userId,
+        ],
       );
       if (r.rows.length === 0) return res.status(404).json({ error: "Profile not found" });
-      return res.json(r.rows[0]);
+      return res.json(mapClientProfileRow(r.rows[0]));
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
     }

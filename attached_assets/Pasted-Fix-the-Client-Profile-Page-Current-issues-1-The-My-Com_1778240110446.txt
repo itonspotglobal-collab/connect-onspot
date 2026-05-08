@@ -1,0 +1,56 @@
+Fix the Client Profile Page.
+
+Current issues:
+1. The “My Company” text in the top header is hardcoded or not connected to saved company profile data.
+2. The company name should be editable from the “Edit Profile” modal/form.
+3. When I add or update company profile information, it does not persist after saving.
+4. After saving, the profile either remains blank or returns to the default value “Acme Corp”.
+5. The Company Profile card still shows “Your profile is empty” even after adding details.
+
+Expected behavior:
+- The “My Company” header should display the saved company name.
+- If no company name exists yet, show a fallback such as “My Company”.
+- The Edit Profile form should include an editable Company Name field.
+- When the user saves the profile, all fields should be persisted to the database/backend.
+- After saving, the page should immediately update without needing a refresh.
+- On page reload, the saved company profile data should still appear.
+- Do not use or fallback to “Acme Corp” unless it is actual saved data.
+- If profile information exists, do not show the empty-state message.
+- The email should remain displayed from the logged-in client account.
+- The page should support partial profile data, meaning if only the company name is saved, the header and profile card should still show it.
+
+Please inspect and fix the full data flow:
+- Client profile page component
+- Edit Profile modal/form
+- State management
+- API request used when saving profile
+- API request used when loading profile
+- Backend route/controller for updating client/company profile
+- Database model/schema if needed
+- Default seed or mock data that may be forcing “Acme Corp”
+- Any hardcoded values such as “My Company” or “Acme Corp”
+
+Implementation requirements:
+- Bind the header company name to the actual saved client/company profile data.
+- Add or fix the companyName field in the edit profile form.
+- Make sure the form initializes with the current saved profile data.
+- On submit, send companyName and the other profile fields to the backend.
+- Make sure the backend update endpoint saves the data for the currently logged-in client.
+- Make sure the frontend refetches or updates local state after a successful save.
+- Replace any hardcoded “Acme Corp” default with a safe fallback only when the database value is empty.
+- Update the empty-profile condition so it checks real saved fields instead of always showing empty.
+- Add basic loading and error handling for saving profile data.
+- Keep the existing UI style and layout as close as possible to the screenshot.
+
+Acceptance criteria:
+- I click “Edit Profile”.
+- I enter a company name and other company details.
+- I click Save.
+- The modal closes.
+- The header changes from “My Company” to the saved company name.
+- The Company Profile card shows the saved details.
+- The empty message disappears.
+- Refreshing the page still shows the saved company name and details.
+- “Acme Corp” no longer appears unless it was actually saved by the user.
+
+Please make the smallest safe changes necessary and do not redesign the whole page.

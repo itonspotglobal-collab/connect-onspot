@@ -311,7 +311,7 @@ export default function ClientProfile() {
 
   const openJobs = jobs.filter((j) => j.status === "open");
   const closedJobs = jobs.filter((j) => j.status !== "open");
-  const companyName = profile?.companyName || user?.company || "My Company";
+  const companyName = profile?.companyName || "My Company";
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#060816]">
@@ -446,11 +446,11 @@ export default function ClientProfile() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {([
-                  { key: "companyName", label: "Company Name", placeholder: "Acme Corp" },
-                  { key: "contactPerson", label: "Contact Person", placeholder: "Jane Smith" },
-                  { key: "email", label: "Business Email", placeholder: "hello@acme.com" },
+                  { key: "companyName", label: "Company Name", placeholder: "Your company name" },
+                  { key: "contactPerson", label: "Contact Person", placeholder: "Full name" },
+                  { key: "email", label: "Business Email", placeholder: "hello@yourcompany.com" },
                   { key: "phoneNumber", label: "Phone Number", placeholder: "+1 555 000 0000" },
-                  { key: "website", label: "Website", placeholder: "https://acme.com" },
+                  { key: "website", label: "Website", placeholder: "https://yourcompany.com" },
                   { key: "industry", label: "Industry", placeholder: "Technology, Healthcare…" },
                   { key: "companySize", label: "Company Size", placeholder: "1–10, 11–50, 51–200, 200+" },
                   { key: "location", label: "Location / Country", placeholder: "New York, US" },
