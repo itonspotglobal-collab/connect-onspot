@@ -1,0 +1,34 @@
+Important existing setup:
+There is already an existing knowledge base file located at:
+
+resources/vanessa_knowledge.txt
+
+Do not replace or ignore this file. Reuse everything already inside it.
+
+Upgrade requirements:
+- Treat resources/vanessa_knowledge.txt as Vanessa’s existing core knowledge and persona source.
+- Preserve Vanessa’s current persona, company information, leadership details, services, values, and any existing FAQs or business rules already written in the file.
+- Use this file as the base knowledge layer before adding website-wide crawling and indexing.
+- When building the new website knowledge system, combine:
+  1. Existing static knowledge from resources/vanessa_knowledge.txt
+  2. Crawled website page content from all current and future pages
+
+Implementation instructions:
+- First inspect how resources/vanessa_knowledge.txt is currently loaded by the chat widget/backend.
+- Do not break the current Vanessa behavior.
+- Refactor only if needed so the existing text file becomes part of the new RAG/knowledge retrieval system.
+- Index the contents of resources/vanessa_knowledge.txt into the same knowledge base/vector store as the crawled website pages.
+- Mark its source as “resources/vanessa_knowledge.txt” so it can be identified separately from crawled website URLs.
+- Give this file high priority for persona, tone, company identity, leadership, service descriptions, and business-specific rules.
+- For website page questions, retrieve both matching chunks from this file and matching chunks from crawled website pages.
+- If there is a conflict between the file and crawled content:
+  - Prefer resources/vanessa_knowledge.txt for Vanessa’s persona, brand voice, values, company identity, and internal business rules.
+  - Prefer the latest crawled website page content for page-specific details, pricing, blogs, service pages, and newly added content.
+- Keep the file editable so the team can continue updating Vanessa manually when needed.
+- Add a re-index command that can re-index:
+  - only resources/vanessa_knowledge.txt
+  - only website pages
+  - both the file and website pages
+
+Expected result:
+Vanessa should keep all her existing knowledge and personality from resources/vanessa_knowledge.txt, while also gaining access to every old, current, and future page on the website.

@@ -481,10 +481,18 @@ export async function crawlWebsite(): Promise<SiteIndex> {
         fullText: p.fullText,
       }));
 
-      console.log(`🧩 Starting RAG index build for ${pageContents.length} pages…`);
+      console.log(`🧩 Starting RAG site index build for ${pageContents.length} pages…`);
+
+      // Step 1: Rebuild site page embeddings (knowledge chunks are auto-preserved)
       buildRagIndex(pageContents)
-        .then((ragIdx) =>
-          console.log(`✅ RAG index ready: ${ragIdx.totalChunks} chunks`)
+        .then(async (ragIdx) => {
+          console.log(`✅ RAG site index ready: ${ragIdx.totalChunks} chunks`);
+          // Step 2: Also re-index the knowledge file to keep it in sync
+          const { indexKnowledgeFile } = await import("./ragService");
+          return indexKnowledgeFile();
+        })
+        .then((kResult) =>
+          console.log(`✅ Knowledge file indexed after crawl: ${kResult.chunksAdded} chunks`)
         )
         .catch((err) =>
           console.error("❌ RAG index build failed:", err.message)

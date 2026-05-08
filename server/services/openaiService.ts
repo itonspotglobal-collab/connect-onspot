@@ -119,30 +119,48 @@ async function buildEnhancedInstructions(userMessage?: string): Promise<string> 
     ? `${VANESSA_PERSONA}\n\n[Company Knowledge Base]\n${currentKnowledge}`
     : VANESSA_PERSONA;
 
-  // ── RAG: semantic retrieval of the most relevant website chunks ────────────
-  // This is the core upgrade: instead of injecting all page summaries we embed
-  // the user's question and retrieve only the chunks that actually answer it.
+  // ── RAG: semantic retrieval (knowledge file + website pages) ─────────────────
+  // Knowledge-file chunks carry HIGH PRIORITY; website chunks fill remaining slots.
   if (userMessage) {
     try {
-      const { searchRag } = await import("./ragService");
-      const relevantChunks = await searchRag(userMessage, 6);
+      const { searchRag, KNOWLEDGE_FILE_SOURCE } = await import("./ragService");
+      const relevantChunks = await searchRag(userMessage, 7);
 
       if (relevantChunks.length > 0) {
-        instructions += `\n\n[Relevant Website Content — Semantic Search Results]\n`;
-        instructions += `The following excerpts from onspotglobal.com are the most relevant to the user's question. `;
-        instructions += `Use them as your primary source when answering. `;
-        instructions += `Always cite the source URL when referencing this content.\n\n`;
+        const knowledgeHits = relevantChunks.filter(c => c.isKnowledge || c.url === KNOWLEDGE_FILE_SOURCE);
+        const siteHits = relevantChunks.filter(c => !c.isKnowledge && c.url !== KNOWLEDGE_FILE_SOURCE);
 
-        relevantChunks.forEach((chunk, idx) => {
-          instructions += `--- Excerpt ${idx + 1} ---\n`;
-          instructions += `Source: ${chunk.url}\n`;
-          instructions += `Page: ${chunk.title}\n`;
-          instructions += `Content: ${chunk.content}\n\n`;
-        });
+        // ── Knowledge file chunks (highest authority) ──
+        if (knowledgeHits.length > 0) {
+          instructions += `\n\n[HIGH PRIORITY — Core Knowledge Base Excerpts]\n`;
+          instructions += `These excerpts are from Vanessa's authoritative knowledge file. `;
+          instructions += `Always prefer this content for persona, company identity, values, leadership, `;
+          instructions += `pricing, services, and internal business rules.\n\n`;
+          knowledgeHits.forEach((chunk, idx) => {
+            instructions += `--- Knowledge Excerpt ${idx + 1} ---\n`;
+            instructions += `Content: ${chunk.content}\n\n`;
+          });
+        }
 
-        // Collect unique URLs for the navigation section
-        const ragUrls = [...new Set(relevantChunks.map((c) => c.url))];
-        console.log(`🔍 RAG retrieved ${relevantChunks.length} chunks from ${ragUrls.length} page(s)`);
+        // ── Website page chunks ──
+        if (siteHits.length > 0) {
+          instructions += `\n\n[Website Page Content — Semantic Search Results]\n`;
+          instructions += `These excerpts from onspotglobal.com are most relevant to the user's question. `;
+          instructions += `Use for page-specific details, blogs, newly published content, and service pages. `;
+          instructions += `Cite the source URL when referencing website content.\n\n`;
+          siteHits.forEach((chunk, idx) => {
+            instructions += `--- Website Excerpt ${idx + 1} ---\n`;
+            instructions += `Source: ${chunk.url}\n`;
+            instructions += `Page: ${chunk.title}\n`;
+            instructions += `Content: ${chunk.content}\n\n`;
+          });
+        }
+
+        const ragUrls = [...new Set(siteHits.map(c => c.url))];
+        console.log(
+          `🔍 RAG: ${knowledgeHits.length} knowledge + ${siteHits.length} site chunk(s)` +
+          ` from ${ragUrls.length} page(s)`
+        );
       } else {
         console.log(`🔍 RAG found no high-similarity chunks for this query`);
       }

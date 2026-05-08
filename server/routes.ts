@@ -1931,6 +1931,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/rag/reindex-knowledge — re-index only resources/vanessa_knowledge.txt
+  app.post("/api/rag/reindex-knowledge", async (req: any, res) => {
+    try {
+      console.log(`📖 Knowledge file reindex triggered [${req.requestId}]`);
+      const { indexKnowledgeFile, invalidateRagCache } = await import("./services/ragService");
+      invalidateRagCache();
+
+      // Run in background (embedding can take a few seconds)
+      indexKnowledgeFile()
+        .then(r => console.log(`✅ Knowledge file reindexed: ${r.chunksAdded} chunks`))
+        .catch(err => console.error(`❌ Knowledge reindex failed:`, err.message));
+
+      res.json({
+        success: true,
+        message: "Knowledge file reindexing started in background (vanessa_knowledge.txt)",
+      });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // POST /api/rag/reindex-site — re-index only website pages (preserves knowledge chunks)
+  app.post("/api/rag/reindex-site", async (req: any, res) => {
+    try {
+      console.log(`🌐 Site-only RAG reindex triggered [${req.requestId}]`);
+      const { crawlWebsite } = await import("./services/siteCrawler");
+
+      crawlWebsite()
+        .then(si => console.log(`🌐 Site reindex complete: ${si.totalPages} pages`))
+        .catch(err => console.error(`❌ Site reindex failed:`, err.message));
+
+      res.json({
+        success: true,
+        message: "Site reindex started — crawling pages and rebuilding embeddings in background",
+      });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   // POST /api/rag/search — test semantic search (dev/admin tool)
   app.post("/api/rag/search", async (req: any, res) => {
     try {
