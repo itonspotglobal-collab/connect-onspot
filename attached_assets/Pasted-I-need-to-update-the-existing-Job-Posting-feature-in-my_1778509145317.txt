@@ -1,0 +1,156 @@
+I need to update the existing Job Posting feature in my OnSpot application.
+
+Current behavior:
+- In the Add/Edit Job Posting modal, there is currently an "Apply Link" input field.
+- This link is used by the public job post "Apply Now" button.
+- The link usually points to an external form, such as another website’s application form.
+
+New requirement:
+Add support for two application methods:
+1. External Link
+2. Built-in Form
+
+Update the Add/Edit Job Posting form:
+- Add a dropdown field called "Application Method".
+- Options:
+  - External Link
+  - Built-in Form
+- Default should be "External Link" to preserve existing behavior.
+- If "External Link" is selected:
+  - Show the existing "Apply Link" input field.
+  - Require or allow the client to enter a URL.
+  - The Apply Now button should redirect to this URL.
+- If "Built-in Form" is selected:
+  - Hide or disable the "Apply Link" input field.
+  - The Apply Now button should route to an internal application form page.
+  - The form should be connected to the selected job posting.
+
+Database changes:
+Update the existing job postings table/model to include:
+- applicationMethod, string or enum
+  - possible values: "external_link", "built_in_form"
+- applyLink, nullable string
+
+Create a new job applications/submissions table/model:
+- id
+- jobPostingId
+- clientId
+- applicantName
+- email
+- phone
+- location
+- resumeUrl or resumeFilePath
+- portfolioUrl
+- coverLetter
+- expectedSalary
+- availability
+- status
+- submittedAt
+- createdAt
+- updatedAt
+
+Built-in application form page:
+Create a new public route/page:
+
+/jobs/:jobId/apply
+
+This page should:
+- Load the job posting by jobId.
+- Only allow access if the job posting uses applicationMethod = "built_in_form".
+- Display the job title and company name.
+- Show an application form with these fields:
+  - Full Name
+  - Email Address
+  - Phone Number
+  - Current Location
+  - Resume Upload
+  - Portfolio / LinkedIn URL
+  - Cover Letter / Message
+  - Expected Salary
+  - Availability
+- On submit:
+  - Save the data to the new job applications/submissions table.
+  - Set status to "new" by default.
+  - Link the submission to the jobPostingId and clientId.
+  - Show a success message after submission.
+
+Public job details page / job card behavior:
+Update the "Apply Now" button logic:
+- If applicationMethod is "external_link":
+  - Use the applyLink and open/redirect to that URL.
+- If applicationMethod is "built_in_form":
+  - Navigate to /jobs/:jobId/apply
+
+Example frontend logic:
+
+if (job.applicationMethod === "external_link") {
+  window.open(job.applyLink, "_blank");
+} else {
+  navigate(`/jobs/${job.id}/apply`);
+}
+
+Client profile page update:
+Add a new section called "Job Submissions" under the existing "Job Postings" section.
+
+The Job Submissions section should:
+- Show submissions for jobs posted by the logged-in client.
+- Display a table or card list with:
+  - Applicant Name
+  - Job Title
+  - Email
+  - Phone
+  - Date Submitted
+  - Status
+  - Actions
+- Actions should include:
+  - View Submission
+  - Download/View Resume
+  - Update Status
+
+Submission statuses:
+- New
+- Reviewed
+- Shortlisted
+- Rejected
+- Hired
+
+View Submission modal/page:
+When the client clicks "View Submission":
+- Show the complete applicant details:
+  - Full Name
+  - Email
+  - Phone
+  - Location
+  - Resume
+  - Portfolio / LinkedIn URL
+  - Cover Letter
+  - Expected Salary
+  - Availability
+  - Submitted Date
+  - Status
+- Allow the client to update the status.
+
+Validation:
+- For External Link:
+  - Validate URL format if applyLink is provided.
+- For Built-in Form:
+  - Do not require applyLink.
+- Application form required fields:
+  - Full Name
+  - Email
+  - Phone
+  - Resume Upload
+- Validate email format.
+- Prevent submission if the job posting is closed or inactive.
+
+UI notes:
+- In the Add/Edit Job Posting modal, place "Application Method" above the Apply Link field.
+- Add helper text:
+  - External Link: "Candidates will be redirected to your external application form."
+  - Built-in Form: "Candidates will apply using an OnSpot application form."
+- Keep the existing design style, spacing, colors, buttons, and modal layout.
+- Do not remove existing job posting functionality.
+- Make the changes backward compatible with existing job posts by treating missing applicationMethod as "external_link".
+
+Expected result:
+Clients can now choose whether applicants apply through an external link or through an OnSpot built-in form. Built-in form submissions are saved in the database and visible to the client inside the Client Profile page under a new Job Submissions section.

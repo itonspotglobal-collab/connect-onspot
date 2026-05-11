@@ -186,8 +186,14 @@ function JobCard({ job, onNavigate }: { job: Job; onNavigate: (id: string) => vo
           <div className="mt-4 flex items-center gap-3">
             <Button
               className="rounded-full bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] px-6 text-white border-0"
-              disabled={!job.applyLink}
-              onClick={() => job.applyLink && window.open(job.applyLink, "_blank", "noopener,noreferrer")}
+              disabled={(job as any).applicationMethod !== "built_in_form" && !job.applyLink}
+              onClick={() => {
+                if ((job as any).applicationMethod === "built_in_form") {
+                  navigate(`/jobs/${job.id}/apply`);
+                } else if (job.applyLink) {
+                  window.open(job.applyLink, "_blank", "noopener,noreferrer");
+                }
+              }}
             >
               Apply Now
             </Button>

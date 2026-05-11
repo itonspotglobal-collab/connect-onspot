@@ -6855,6 +6855,164 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== JOB SUBMISSIONS (Built-in Application Form) ====================
+
+  // POST /api/jobs/:jobId/apply — public endpoint, submit a built-in application
+  app.post("/api/jobs/:jobId/apply", upload.single("resume"), async (req: Request, res: Response) => {
+    try {
+      const { jobId } = req.params;
+      const job = await storage.getJob(jobId);
+      if (!job) return res.status(404).json({ error: "Job not found" });
+      if ((job as any).applicationMethod !== "built_in_form") {
+        return res.status(400).json({ error: "This job does not accept built-in form applications" });
+      }
+      if (job.status !== "open") {
+        return res.status(400).json({ error: "This job is no longer accepting applications" });
+      }
+
+      const { applicantName, email, phone, location, portfolioUrl, coverLetter, expectedSalary, availability } = req.body;
+      if (!applicantName?.trim()) return res.status(400).json({ error: "Full name is required" });
+      if (!email?.trim()) return res.status(400).json({ error: "Email is required" });
+      if (!phone?.trim()) return res.status(400).json({ error: "Phone is required" });
+
+      let resumeUrl: string | null = null;
+      let resumeFileName: string | null = null;
+
+      if (req.file) {
+        const allowedMimes = [
+          "application/pdf",
+          "application/msword",
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ];
+        if (!allowedMimes.includes(req.file.mimetype)) {
+          return res.status(400).json({ error: "Only PDF or Word documents are allowed" });
+        }
+        if (req.file.size > 10 * 1024 * 1024) {
+          return res.status(400).json({ error: "File too large — max 10 MB" });
+        }
+        const objectStorageService = new ObjectStorageService();
+        const objectId = randomUUID();
+        const privateObjectDir = objectStorageService.getPrivateObjectDir();
+        const fullPath = `${privateObjectDir}/job-resumes/${objectId}`;
+        const parts = fullPath.split("/").filter((p: string) => p);
+        const bucketName = parts[0];
+        const objectName = parts.slice(1).join("/");
+        const bucket = objectStorageClient.bucket(bucketName);
+        const objectFile = bucket.file(objectName);
+        await objectFile.save(req.file.buffer, {
+          metadata: { contentType: req.file.mimetype, metadata: { originalName: req.file.originalname } },
+        });
+        await setObjectAclPolicy(objectFile, { visibility: "private" });
+        resumeUrl = `/objects/job-resumes/${objectId}`;
+        resumeFileName = req.file.originalname;
+      }
+
+      const result = await query(
+        `INSERT INTO job_submissions (id, job_id, client_id, applicant_name, email, phone, location, resume_url, resume_file_name, portfolio_url, cover_letter, expected_salary, availability, status)
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'new')
+         RETURNING *`,
+        [
+          jobId, job.clientId,
+          applicantName.trim(), email.trim(),
+          phone?.trim() || null, location?.trim() || null,
+          resumeUrl, resumeFileName,
+          portfolioUrl?.trim() || null, coverLetter?.trim() || null,
+          expectedSalary?.trim() || null, availability?.trim() || null,
+        ],
+      );
+      return res.status(201).json(result.rows[0]);
+    } catch (err: any) {
+      console.error("POST /api/jobs/:jobId/apply error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/client/job-submissions — list submissions for all jobs posted by the authenticated client
+  app.get("/api/client/job-submissions", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const result = await query(
+        `SELECT js.*, j.title AS "jobTitle", j.company AS "jobCompany"
+         FROM job_submissions js
+         JOIN jobs j ON j.id = js.job_id
+         WHERE js.client_id = $1
+         ORDER BY js.submitted_at DESC`,
+        [userId],
+      );
+      return res.json(result.rows);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/client/job-submissions/:id — single submission detail
+  app.get("/api/client/job-submissions/:id", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const { id } = req.params;
+      const result = await query(
+        `SELECT js.*, j.title AS "jobTitle", j.company AS "jobCompany"
+         FROM job_submissions js
+         JOIN jobs j ON j.id = js.job_id
+         WHERE js.id = $1 AND js.client_id = $2`,
+        [id, userId],
+      );
+      if (result.rows.length === 0) return res.status(404).json({ error: "Submission not found" });
+      return res.json(result.rows[0]);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // PATCH /api/client/job-submissions/:id/status — update submission status
+  app.patch("/api/client/job-submissions/:id/status", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const { id } = req.params;
+      const { status } = req.body;
+      const validStatuses = ["new", "reviewed", "shortlisted", "rejected", "hired"];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ error: "Invalid status. Must be: new, reviewed, shortlisted, rejected, hired" });
+      }
+      const result = await query(
+        `UPDATE job_submissions SET status = $1, updated_at = NOW()
+         WHERE id = $2 AND client_id = $3
+         RETURNING *`,
+        [status, id, userId],
+      );
+      if (result.rows.length === 0) return res.status(404).json({ error: "Submission not found or forbidden" });
+      return res.json(result.rows[0]);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/job-resumes/:resumeId — serve job submission resume (client auth required)
+  app.get("/api/job-resumes/:resumeId", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      const { resumeId } = req.params;
+      const check = await query(
+        `SELECT js.resume_file_name FROM job_submissions js
+         WHERE js.resume_url = $1 AND js.client_id = $2`,
+        [`/objects/job-resumes/${resumeId}`, userId],
+      );
+      if (check.rows.length === 0) return res.status(403).json({ error: "Forbidden" });
+      const objectStorageService = new ObjectStorageService();
+      const canonicalPath = `/objects/job-resumes/${resumeId}`;
+      const objectFile = await objectStorageService.getObjectEntityFile(canonicalPath);
+      const fileName = check.rows[0].resume_file_name || "resume.pdf";
+      res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+      await objectStorageService.downloadObject(objectFile, res, 3600);
+    } catch (err: any) {
+      console.error("GET /api/job-resumes error:", err);
+      res.status(500).send("Error serving resume");
+    }
+  });
+
   const httpServer = createServer(app);
   // ─────────────────────────────────────────────────────────────────────────
   // DEV ONLY: Temporary password reset endpoint for testing accounts.

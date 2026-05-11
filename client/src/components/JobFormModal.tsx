@@ -88,7 +88,8 @@ export const defaultFormData = {
   // System requirements
   minimumInternetSpeed: "",
   systemRequirements: "",
-  // Application link
+  // Application link / method
+  applicationMethod: "external_link",
   applyLink: "",
 };
 
@@ -135,7 +136,8 @@ export function jobToFormData(job: Job): JobFormData {
     // System requirements
     minimumInternetSpeed: (job as any).minimumInternetSpeed || "",
     systemRequirements: (job as any).systemRequirements || "",
-    // Application link
+    // Application link / method
+    applicationMethod: (job as any).applicationMethod || "external_link",
     applyLink: (job as any).applyLink || "",
   };
 }
@@ -244,7 +246,7 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
     if (!formData.category) next.category = "Category is required";
     if (!formData.contractType) next.contractType = "Contract type is required";
     if (!formData.experienceLevel) next.experienceLevel = "Experience level is required";
-    if (formData.applyLink.trim()) {
+    if (formData.applicationMethod === "external_link" && formData.applyLink.trim()) {
       try { new URL(normalizeUrl(formData.applyLink)); }
       catch { next.applyLink = "Please enter a valid URL (e.g. https://example.com/apply)"; }
     }
@@ -310,10 +312,13 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
     if (formData.minimumInternetSpeed) payload.minimumInternetSpeed = formData.minimumInternetSpeed.trim();
     payload.systemRequirements = formData.systemRequirements.trim();
 
-    // Application link — normalize and save (or null to clear)
-    payload.applyLink = formData.applyLink.trim()
-      ? normalizeUrl(formData.applyLink)
-      : null;
+    // Application method + link
+    payload.applicationMethod = formData.applicationMethod;
+    if (formData.applicationMethod === "external_link") {
+      payload.applyLink = formData.applyLink.trim() ? normalizeUrl(formData.applyLink) : null;
+    } else {
+      payload.applyLink = null;
+    }
 
     if (isEditing && job) {
       updateMutation.mutate({ id: job.id, data: payload });
@@ -510,21 +515,46 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
               </div>
             </div>
 
-            {/* Apply Link — full width row */}
-            <div className="mt-4 space-y-2">
-              <Label htmlFor="modal-apply-link">Apply Link</Label>
-              <Input
-                id="modal-apply-link"
-                value={formData.applyLink}
-                onChange={(e) => updateField("applyLink", e.target.value)}
-                placeholder="https://example.com/apply"
-              />
-              {errors.applyLink ? (
-                <p className="text-xs text-red-500">{errors.applyLink}</p>
-              ) : (
+            {/* Application Method + Apply Link */}
+            <div className="mt-4 space-y-4">
+              <div className="space-y-2">
+                <Label>Application Method</Label>
+                <Select
+                  value={formData.applicationMethod}
+                  onValueChange={(v) => updateField("applicationMethod", v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="external_link">External Link</SelectItem>
+                    <SelectItem value="built_in_form">Built-in Form</SelectItem>
+                  </SelectContent>
+                </Select>
                 <p className="text-xs text-muted-foreground">
-                  Where candidates click "Apply Now". Leave blank to disable the button.
+                  {formData.applicationMethod === "built_in_form"
+                    ? "Candidates will apply using an OnSpot application form."
+                    : "Candidates will be redirected to your external application form."}
                 </p>
+              </div>
+
+              {formData.applicationMethod === "external_link" && (
+                <div className="space-y-2">
+                  <Label htmlFor="modal-apply-link">Apply Link</Label>
+                  <Input
+                    id="modal-apply-link"
+                    value={formData.applyLink}
+                    onChange={(e) => updateField("applyLink", e.target.value)}
+                    placeholder="https://example.com/apply"
+                  />
+                  {errors.applyLink ? (
+                    <p className="text-xs text-red-500">{errors.applyLink}</p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Where candidates click "Apply Now". Leave blank to disable the button.
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           </div>

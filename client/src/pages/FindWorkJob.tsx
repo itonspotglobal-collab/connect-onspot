@@ -496,7 +496,12 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
           </div>
 
           <div className="mt-6 flex gap-3">
-            {job.applyLink ? (
+            {(job as any).applicationMethod === "built_in_form" ? (
+              <Button className="rounded-full bg-[#474ead] px-7 text-white hover:bg-[#3d439c]"
+                onClick={() => navigate(`/jobs/${job.id}/apply`)}>
+                Apply in 30 seconds <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            ) : job.applyLink ? (
               <Button className="rounded-full bg-[#474ead] px-7 text-white hover:bg-[#3d439c]"
                 onClick={() => window.open(job.applyLink!, "_blank", "noopener,noreferrer")}>
                 Apply in 30 seconds <ArrowRight className="ml-2 h-4 w-4" />
@@ -649,7 +654,14 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
           <h2 className="mb-3 text-2xl font-bold text-slate-900 dark:text-white">Apply before this role fills.</h2>
           <p className="mb-8 text-slate-500">Takes under 30 seconds. Our team will reach out within 3 business days.</p>
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-            {job.applyLink ? (
+            {(job as any).applicationMethod === "built_in_form" ? (
+              <Button
+                className="rounded-full bg-[#474ead] px-10 py-2.5 text-white shadow-[0_8px_32px_rgba(71,78,173,0.25)] hover:bg-[#3d439c]"
+                onClick={() => navigate(`/jobs/${job.id}/apply`)}
+              >
+                Apply Now <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            ) : job.applyLink ? (
               <Button
                 className="rounded-full bg-[#474ead] px-10 py-2.5 text-white shadow-[0_8px_32px_rgba(71,78,173,0.25)] hover:bg-[#3d439c]"
                 onClick={() => window.open(job.applyLink!, "_blank", "noopener,noreferrer")}
@@ -822,7 +834,14 @@ export default function FindWorkJob() {
 
           {/* CTA */}
           <div className="mt-8 flex flex-wrap gap-3">
-            {job.applyLink ? (
+            {(job as any).applicationMethod === "built_in_form" ? (
+              <Button
+                className="rounded-full bg-[#474ead] px-8 py-2.5 text-white"
+                onClick={() => navigate(`/jobs/${job.id}/apply`)}
+              >
+                Apply Now <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            ) : job.applyLink ? (
               <Button
                 className="rounded-full bg-[#474ead] px-8 py-2.5 text-white"
                 onClick={() => window.open(job.applyLink!, "_blank", "noopener,noreferrer")}
@@ -977,7 +996,7 @@ export default function FindWorkJob() {
               </Button>
             ) : (
               <Button disabled variant="outline" className="rounded-full px-10">
-                Application link unavailable
+                Application not available
               </Button>
             )}
             <Button

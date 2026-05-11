@@ -141,8 +141,9 @@ export const jobs = pgTable("jobs", {
   // System requirements
   minimumInternetSpeed: text("minimum_internet_speed"),
   systemRequirements: text("system_requirements"),
-  // Application link (per-job — admin controlled)
+  // Application link / method (per-job — admin + client controlled)
   applyLink: text("apply_link"),
+  applicationMethod: text("application_method").default("external_link"), // external_link | built_in_form
   status: text("status").notNull().default("open"), // open, in_progress, completed, cancelled
   proposalCount: integer("proposal_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),
@@ -594,6 +595,35 @@ export const insertJobSchema = createInsertSchema(jobs).omit({
   createdAt: true,
   updatedAt: true,
 });
+// Job Submissions — built-in application form submissions
+export const jobSubmissions = pgTable("job_submissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  jobId: varchar("job_id").notNull().references(() => jobs.id),
+  clientId: varchar("client_id").notNull().references(() => users.id),
+  applicantName: text("applicant_name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  location: text("location"),
+  resumeUrl: text("resume_url"),
+  resumeFileName: text("resume_file_name"),
+  portfolioUrl: text("portfolio_url"),
+  coverLetter: text("cover_letter"),
+  expectedSalary: text("expected_salary"),
+  availability: text("availability"),
+  status: text("status").notNull().default("new"), // new, reviewed, shortlisted, rejected, hired
+  submittedAt: timestamp("submitted_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertJobSubmissionSchema = createInsertSchema(jobSubmissions).omit({
+  id: true,
+  submittedAt: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertJobSubmission = z.infer<typeof insertJobSubmissionSchema>;
+export type JobSubmission = typeof jobSubmissions.$inferSelect;
 
 export const insertProposalSchema = createInsertSchema(proposals).omit({
   id: true,
