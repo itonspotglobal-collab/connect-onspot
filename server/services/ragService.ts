@@ -1,26 +1,32 @@
 /**
  * RAG (Retrieval-Augmented Generation) Service for Vanessa
  *
- * Three-layer knowledge architecture:
+ * Four-layer knowledge architecture:
  *
  *  Layer 1 — Core Knowledge File (resources/vanessa_knowledge.txt)
  *    • Vanessa's persona, brand voice, company info, leadership, values, FAQs
  *    • Manually maintained by the team; always given HIGH PRIORITY in answers
  *    • Source identifier: knowledge://vanessa_knowledge.txt
  *
- *  Layer 2 — Crawled Website Pages (onspotglobal.com)
+ *  Layer 2 — Website Content Index (resources/website_content.txt)
+ *    • All React-rendered content: testimonials, people, magazine, team bios,
+ *      case studies, reviews — content the raw HTML crawler cannot reach
+ *    • Updated whenever source content changes; HIGH PRIORITY in answers
+ *    • Source identifier: content://website_content.txt
+ *
+ *  Layer 3 — Crawled Website Pages (onspotglobal.com)
  *    • Full content of every public page, auto-updated nightly and on demand
  *    • Preferred for page-specific details, pricing, blogs, new content
  *
- *  Layer 3 — Live Job Listings (database)
+ *  Layer 4 — Live Job Listings (database)
  *    • All open job postings read directly from the PostgreSQL jobs table
  *    • Updated automatically whenever admin creates/edits/deletes a job
  *    • Source identifier: jobs://<jobId>
  *
  * On each chat request:
  *  1. User question is embedded with text-embedding-3-small
- *  2. Cosine similarity ranks all chunks (all three layers)
- *  3. Knowledge chunks first, then job+site chunks fill remaining slots
+ *  2. Cosine similarity ranks all chunks (all four layers)
+ *  3. Knowledge + content chunks first, then job+site chunks fill remaining slots
  *  4. Vanessa answers with grounded, source-cited responses
  */
 
@@ -33,9 +39,13 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 // ── Constants ─────────────────────────────────────────────────────────────────
 const RAG_INDEX_PATH = path.join(process.cwd(), "resources", "rag_index.json");
 const KNOWLEDGE_FILE_PATH = path.join(process.cwd(), "resources", "vanessa_knowledge.txt");
+const CONTENT_FILE_PATH = path.join(process.cwd(), "resources", "website_content.txt");
 
 /** Special source URL used to identify knowledge-file chunks in the index */
 export const KNOWLEDGE_FILE_SOURCE = "knowledge://vanessa_knowledge.txt";
+
+/** Special source URL used to identify website content chunks in the index */
+export const CONTENT_FILE_SOURCE = "content://website_content.txt";
 
 /** Prefix used for job listing chunks in the index */
 export const JOB_SOURCE_PREFIX = "jobs://";
@@ -54,13 +64,14 @@ const EMBED_DELAY_MS = 120;         // delay between API calls (rate limiting)
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface RagChunk {
   id: string;
-  url: string;          // website URL  OR  KNOWLEDGE_FILE_SOURCE  OR  jobs://<id>
+  url: string;          // website URL  OR  KNOWLEDGE_FILE_SOURCE  OR  CONTENT_FILE_SOURCE  OR  jobs://<id>
   title: string;
   content: string;
   embedding: number[];
   chunkIndex: number;
   lastIndexed: string;
-  isKnowledge?: boolean; // true for knowledge-file chunks
+  isKnowledge?: boolean; // true for knowledge-file chunks (vanessa_knowledge.txt)
+  isContent?: boolean;   // true for website content index chunks (website_content.txt)
   isJob?: boolean;       // true for job-listing chunks
 }
 
@@ -71,6 +82,7 @@ export interface RagIndex {
   dimensions: number;
   chunks: RagChunk[];
   knowledgeLastIndexed?: string | null;
+  contentLastIndexed?: string | null;
   siteLastIndexed?: string | null;
   jobsLastIndexed?: string | null;
 }
@@ -130,12 +142,13 @@ export async function loadRagIndex(): Promise<RagIndex | null> {
     const data = await fs.readFile(RAG_INDEX_PATH, "utf-8");
     cachedIndex = JSON.parse(data);
     const knowledgeCount = cachedIndex!.chunks.filter(c => c.isKnowledge).length;
+    const contentCount = cachedIndex!.chunks.filter(c => c.isContent).length;
     const jobCount = cachedIndex!.chunks.filter(c => c.isJob).length;
-    const siteCount = cachedIndex!.chunks.length - knowledgeCount - jobCount;
+    const siteCount = cachedIndex!.chunks.length - knowledgeCount - contentCount - jobCount;
     console.log(
       `📚 RAG index loaded: ${cachedIndex!.totalChunks} chunks` +
-      ` (${knowledgeCount} knowledge + ${siteCount} site + ${jobCount} jobs, ` +
-      `${new Set(cachedIndex!.chunks.filter(c => !c.isKnowledge && !c.isJob).map(c => c.url)).size} pages)`
+      ` (${knowledgeCount} knowledge + ${contentCount} content + ${siteCount} site + ${jobCount} jobs, ` +
+      `${new Set(cachedIndex!.chunks.filter(c => !c.isKnowledge && !c.isContent && !c.isJob).map(c => c.url)).size} pages)`
     );
     return cachedIndex;
   } catch {
@@ -182,13 +195,17 @@ export async function searchRag(
     // Knowledge chunks always get priority (up to 2 slots)
     const knowledgeHits = relevant.filter(s => s.chunk.isKnowledge).slice(0, 2);
 
+    // Website content chunks (testimonials, people, magazine, etc.) get next priority (up to 2 slots)
+    const contentHits = relevant.filter(s => s.chunk.isContent).slice(0, 2);
+
     // Job and site chunks compete for the remaining slots by relevance score
-    const remainingSlots = topK - knowledgeHits.length;
+    const priorityCount = knowledgeHits.length + contentHits.length;
+    const remainingSlots = Math.max(topK - priorityCount, 2);
     const dynamicHits = relevant
-      .filter(s => !s.chunk.isKnowledge)
+      .filter(s => !s.chunk.isKnowledge && !s.chunk.isContent)
       .slice(0, remainingSlots);
 
-    return [...knowledgeHits, ...dynamicHits].map(s => s.chunk);
+    return [...knowledgeHits, ...contentHits, ...dynamicHits].map(s => s.chunk);
   } catch (error) {
     console.error("❌ RAG search error:", error);
     return [];
@@ -222,7 +239,7 @@ export async function indexKnowledgeFile(): Promise<{ chunksAdded: number }> {
     }
   }
 
-  // Preserve all non-knowledge chunks (site pages + job listings)
+  // Preserve all non-knowledge chunks (site pages + job listings + content)
   const preservedChunks: RagChunk[] = existingIndex
     ? existingIndex.chunks.filter(c => !c.isKnowledge)
     : [];
@@ -275,6 +292,7 @@ export async function indexKnowledgeFile(): Promise<{ chunksAdded: number }> {
     dimensions: EMBEDDING_DIMENSIONS,
     chunks: allChunks,
     knowledgeLastIndexed: now,
+    contentLastIndexed: existingIndex?.contentLastIndexed ?? null,
     siteLastIndexed: existingIndex?.siteLastIndexed ?? null,
     jobsLastIndexed: existingIndex?.jobsLastIndexed ?? null,
   };
@@ -286,6 +304,106 @@ export async function indexKnowledgeFile(): Promise<{ chunksAdded: number }> {
   );
 
   return { chunksAdded: knowledgeChunks.length };
+}
+
+// ── Website content indexer ───────────────────────────────────────────────────
+/**
+ * Read resources/website_content.txt, chunk it, embed each chunk,
+ * and upsert those chunks into the RAG index as Layer 2 (isContent=true).
+ *
+ * This file captures all React-rendered content that the raw HTML crawler
+ * misses: testimonials (Elad B., Eric M., Fernando C.), employee spotlights
+ * (Alyssa Mendoza), core value ambassadors, team bios, case studies, reviews.
+ *
+ * All existing knowledge, site-page, and job-listing chunks are preserved.
+ * Called at server startup and on demand via POST /api/rag/reindex-content.
+ */
+export async function indexWebsiteContent(): Promise<{ chunksAdded: number }> {
+  console.log(`📄 Indexing website content file: website_content.txt`);
+
+  let fileText: string;
+  try {
+    fileText = await fs.readFile(CONTENT_FILE_PATH, "utf-8");
+  } catch {
+    throw new Error(`Website content file not found at ${CONTENT_FILE_PATH}`);
+  }
+
+  const now = new Date().toISOString();
+
+  // Load existing index (preserving all other chunks)
+  const existingIndex = await loadRagIndex();
+  const existingContentMap = new Map<string, RagChunk>();
+  if (existingIndex) {
+    for (const chunk of existingIndex.chunks) {
+      if (chunk.isContent) existingContentMap.set(chunk.id, chunk);
+    }
+  }
+
+  // Preserve all non-content chunks (site pages + knowledge + job listings)
+  const preservedChunks: RagChunk[] = existingIndex
+    ? existingIndex.chunks.filter(c => !c.isContent)
+    : [];
+
+  // Chunk the content file — allow more chunks since it covers many people/topics
+  const textChunks = chunkText(fileText, 60);
+  console.log(`  📝 website_content.txt: ${textChunks.length} chunk(s)`);
+
+  const contentChunks: RagChunk[] = [];
+  let newEmbeddings = 0;
+  let reusedEmbeddings = 0;
+
+  for (let i = 0; i < textChunks.length; i++) {
+    const chunkId = `${CONTENT_FILE_SOURCE}#${i}`;
+    const content = textChunks[i];
+
+    // Reuse existing embedding if content hasn't changed
+    const existing = existingContentMap.get(chunkId);
+    if (existing && existing.content === content) {
+      contentChunks.push({ ...existing, lastIndexed: now });
+      reusedEmbeddings++;
+      continue;
+    }
+
+    try {
+      const embeddingInput = `OnSpot Website Content: People, Testimonials & Stories\n\n${content}`;
+      const embedding = await generateEmbedding(embeddingInput);
+      contentChunks.push({
+        id: chunkId,
+        url: CONTENT_FILE_SOURCE,
+        title: "OnSpot Website Content Index",
+        content,
+        embedding,
+        chunkIndex: i,
+        lastIndexed: now,
+        isContent: true,
+      });
+      newEmbeddings++;
+      await new Promise(r => setTimeout(r, EMBED_DELAY_MS));
+    } catch (error) {
+      console.error(`⚠️ Failed to embed content chunk ${chunkId}:`, error);
+    }
+  }
+
+  const allChunks = [...preservedChunks, ...contentChunks];
+  const newIndex: RagIndex = {
+    lastUpdated: now,
+    totalChunks: allChunks.length,
+    embeddingModel: EMBEDDING_MODEL,
+    dimensions: EMBEDDING_DIMENSIONS,
+    chunks: allChunks,
+    knowledgeLastIndexed: existingIndex?.knowledgeLastIndexed ?? null,
+    contentLastIndexed: now,
+    siteLastIndexed: existingIndex?.siteLastIndexed ?? null,
+    jobsLastIndexed: existingIndex?.jobsLastIndexed ?? null,
+  };
+
+  await saveRagIndex(newIndex);
+  console.log(
+    `✅ Website content indexed: ${contentChunks.length} chunks` +
+    ` (${newEmbeddings} new, ${reusedEmbeddings} reused)`
+  );
+
+  return { chunksAdded: contentChunks.length };
 }
 
 // ── Site-only reindex ─────────────────────────────────────────────────────────
@@ -307,9 +425,12 @@ export async function buildRagIndex(pages: PageContent[]): Promise<RagIndex> {
     }
   }
 
-  // Always preserve knowledge-file and job-listing chunks
+  // Always preserve knowledge-file, content, and job-listing chunks
   const knowledgeChunks: RagChunk[] = existingIndex
     ? existingIndex.chunks.filter(c => c.isKnowledge)
+    : [];
+  const contentChunksPreserved: RagChunk[] = existingIndex
+    ? existingIndex.chunks.filter(c => c.isContent)
     : [];
   const jobChunksPreserved: RagChunk[] = existingIndex
     ? existingIndex.chunks.filter(c => c.isJob)
@@ -357,7 +478,7 @@ export async function buildRagIndex(pages: PageContent[]): Promise<RagIndex> {
     }
   }
 
-  const allChunks = [...siteChunks, ...knowledgeChunks, ...jobChunksPreserved];
+  const allChunks = [...siteChunks, ...knowledgeChunks, ...contentChunksPreserved, ...jobChunksPreserved];
   const ragIndex: RagIndex = {
     lastUpdated: now,
     totalChunks: allChunks.length,
@@ -366,13 +487,14 @@ export async function buildRagIndex(pages: PageContent[]): Promise<RagIndex> {
     chunks: allChunks,
     siteLastIndexed: now,
     knowledgeLastIndexed: existingIndex?.knowledgeLastIndexed ?? null,
+    contentLastIndexed: existingIndex?.contentLastIndexed ?? null,
     jobsLastIndexed: existingIndex?.jobsLastIndexed ?? null,
   };
 
   await saveRagIndex(ragIndex);
   console.log(
     `✅ RAG site index built: ${siteChunks.length} site chunks (${newEmbeddings} new, ${reusedEmbeddings} reused)` +
-    ` + ${knowledgeChunks.length} knowledge + ${jobChunksPreserved.length} job chunks preserved`
+    ` + ${knowledgeChunks.length} knowledge + ${contentChunksPreserved.length} content + ${jobChunksPreserved.length} job chunks preserved`
   );
 
   return ragIndex;
@@ -390,6 +512,7 @@ export async function addPageToRagIndex(page: PageContent): Promise<void> {
     dimensions: EMBEDDING_DIMENSIONS,
     chunks: [],
     knowledgeLastIndexed: null,
+    contentLastIndexed: null,
     siteLastIndexed: null,
     jobsLastIndexed: null,
   };
@@ -533,7 +656,7 @@ export async function indexJobListings(): Promise<{ jobsIndexed: number; chunksA
     }
   }
 
-  // Preserve all non-job chunks (site pages + knowledge file)
+  // Preserve all non-job chunks (site pages + knowledge file + content)
   const nonJobChunks: RagChunk[] = existingIndex
     ? existingIndex.chunks.filter(c => !c.isJob)
     : [];
@@ -588,6 +711,7 @@ export async function indexJobListings(): Promise<{ jobsIndexed: number; chunksA
     dimensions: EMBEDDING_DIMENSIONS,
     chunks: allChunks,
     knowledgeLastIndexed: existingIndex?.knowledgeLastIndexed ?? null,
+    contentLastIndexed: existingIndex?.contentLastIndexed ?? null,
     siteLastIndexed: existingIndex?.siteLastIndexed ?? null,
     jobsLastIndexed: now,
   };
@@ -606,14 +730,17 @@ export async function getRagStatus(): Promise<{
   hasIndex: boolean;
   totalChunks: number;
   knowledgeChunks: number;
+  contentChunks: number;
   siteChunks: number;
   jobChunks: number;
   pagesIndexed: number;
   jobsIndexed: number;
   knowledgeIndexed: boolean;
+  contentIndexed: boolean;
   jobsIndexedFlag: boolean;
   lastUpdated: string | null;
   knowledgeLastIndexed: string | null;
+  contentLastIndexed: string | null;
   siteLastIndexed: string | null;
   jobsLastIndexed: string | null;
   embeddingModel: string;
@@ -624,14 +751,17 @@ export async function getRagStatus(): Promise<{
       hasIndex: false,
       totalChunks: 0,
       knowledgeChunks: 0,
+      contentChunks: 0,
       siteChunks: 0,
       jobChunks: 0,
       pagesIndexed: 0,
       jobsIndexed: 0,
       knowledgeIndexed: false,
+      contentIndexed: false,
       jobsIndexedFlag: false,
       lastUpdated: null,
       knowledgeLastIndexed: null,
+      contentLastIndexed: null,
       siteLastIndexed: null,
       jobsLastIndexed: null,
       embeddingModel: EMBEDDING_MODEL,
@@ -639,8 +769,9 @@ export async function getRagStatus(): Promise<{
   }
 
   const knowledgeChunks = index.chunks.filter(c => c.isKnowledge).length;
+  const contentChunks = index.chunks.filter(c => c.isContent).length;
   const jobChunks = index.chunks.filter(c => c.isJob).length;
-  const siteChunks = index.chunks.length - knowledgeChunks - jobChunks;
+  const siteChunks = index.chunks.length - knowledgeChunks - contentChunks - jobChunks;
   const jobsIndexed = new Set(
     index.chunks.filter(c => c.isJob).map(c => c.url)
   ).size;
@@ -649,16 +780,19 @@ export async function getRagStatus(): Promise<{
     hasIndex: true,
     totalChunks: index.totalChunks,
     knowledgeChunks,
+    contentChunks,
     siteChunks,
     jobChunks,
     pagesIndexed: new Set(
-      index.chunks.filter(c => !c.isKnowledge && !c.isJob).map(c => c.url)
+      index.chunks.filter(c => !c.isKnowledge && !c.isContent && !c.isJob).map(c => c.url)
     ).size,
     jobsIndexed,
     knowledgeIndexed: knowledgeChunks > 0,
+    contentIndexed: contentChunks > 0,
     jobsIndexedFlag: jobChunks > 0,
     lastUpdated: index.lastUpdated,
     knowledgeLastIndexed: index.knowledgeLastIndexed ?? null,
+    contentLastIndexed: index.contentLastIndexed ?? null,
     siteLastIndexed: index.siteLastIndexed ?? null,
     jobsLastIndexed: index.jobsLastIndexed ?? null,
     embeddingModel: index.embeddingModel,

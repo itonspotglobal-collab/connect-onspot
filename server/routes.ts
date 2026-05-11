@@ -1904,7 +1904,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Group chunks by URL, tagging type
-      const pageMap = new Map<string, { url: string; title: string; chunkCount: number; lastIndexed: string; isKnowledge?: boolean; isJob?: boolean }>();
+      const pageMap = new Map<string, { url: string; title: string; chunkCount: number; lastIndexed: string; isKnowledge?: boolean; isContent?: boolean; isJob?: boolean }>();
       for (const chunk of index.chunks) {
         const existing = pageMap.get(chunk.url);
         if (existing) {
@@ -1916,6 +1916,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             chunkCount: 1,
             lastIndexed: chunk.lastIndexed,
             isKnowledge: !!chunk.isKnowledge,
+            isContent: !!chunk.isContent,
             isJob: !!chunk.isJob,
           });
         }
@@ -1974,6 +1975,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/rag/reindex-content — re-index resources/website_content.txt (Layer 2)
+  app.post("/api/rag/reindex-content", async (req: any, res) => {
+    try {
+      console.log(`📄 Website content RAG reindex triggered [${req.requestId}]`);
+      const { indexWebsiteContent, invalidateRagCache } = await import("./services/ragService");
+      invalidateRagCache();
+
+      // Run in background (embedding can take a minute)
+      indexWebsiteContent()
+        .then(r => console.log(`✅ Website content reindexed: ${r.chunksAdded} chunks`))
+        .catch(err => console.error(`❌ Content reindex failed:`, err.message));
+
+      res.json({
+        success: true,
+        message: "Website content reindexing started in background (website_content.txt)",
+      });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   // POST /api/rag/reindex-jobs — re-index all open job listings from the database
   app.post("/api/rag/reindex-jobs", async (req: any, res) => {
     try {
@@ -2014,6 +2036,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           chunkIndex: c.chunkIndex,
           lastIndexed: c.lastIndexed,
           isKnowledge: !!c.isKnowledge,
+          isContent: !!(c as any).isContent,
           isJob: !!c.isJob,
         })),
       });

@@ -249,6 +249,16 @@ app.use((req, res, next) => {
       })
       .catch((err: any) => console.warn(`⚠️ RAG pre-warm skipped: ${err.message}`));
 
+    // Index website content (testimonials, people, magazine, team, case studies).
+    // This covers React-rendered content the HTML crawler misses.
+    // Runs in background; does not block startup.
+    import('./services/ragService')
+      .then(({ indexWebsiteContent }) => indexWebsiteContent())
+      .then((result) => {
+        console.log(`📄 Website content indexed at startup: ${result.chunksAdded} chunk(s)`);
+      })
+      .catch((err: any) => console.warn(`⚠️ Startup content indexing skipped: ${err.message}`));
+
     // Index live job listings from the database so Vanessa can answer job questions.
     // Runs in the background; does not block startup. Updates the RAG index with
     // all currently open jobs — preserving knowledge and site chunks.

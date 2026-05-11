@@ -1,0 +1,166 @@
+Vanessa still does not fully know the website content.
+
+I tested Vanessa again using real people that are visibly displayed on the website, including:
+- Elad B. (client testimonial section)
+- Eric M.
+- Alyssa Mendoza (employee feature / Amazing Page)
+
+Vanessa incorrectly said it could not find information about them, even though they are clearly present on the website.
+
+This means the crawler/indexer is still missing important website content.
+
+Please debug and fix the entire indexing pipeline so Vanessa can truly understand ALL website content.
+
+Critical fixes needed:
+
+1. Index ALL visible website sections
+The crawler/indexer must capture content from:
+- Testimonials
+- Client success stories
+- Employee spotlights
+- Magazine sections
+- Team/member profiles
+- Cards
+- Sliders/carousels
+- Dynamic sections
+- Modals
+- Hidden tabs that become visible on interaction
+- Components rendered client-side
+- CMS/API-fed sections
+- Lazy-loaded content
+
+Right now it appears the crawler is only indexing partial static HTML.
+
+2. Handle React-rendered content properly
+Inspect the site architecture carefully.
+
+If the site uses:
+- React
+- Next.js
+- client-side rendering
+- hydration
+- lazy loading
+- API-driven components
+
+then raw HTML crawling is NOT enough.
+
+You must:
+- Use a headless browser crawler (Playwright or Puppeteer)
+OR
+- Directly index the APIs/data sources feeding the frontend
+
+The crawler must wait for:
+- hydration
+- API responses
+- lazy-loaded sections
+before extracting content.
+
+3. Testimonial and people indexing
+Vanessa must understand people/entities shown on the site.
+
+Examples currently visible on the website:
+- Elad B. — CEO/Founder, PineTech
+- Eric M. — Operations Director, Flash Justice
+- Fernando C. — CTO, Pinetech
+- Alyssa Mendoza — Client Success Operator
+
+Vanessa should be able to answer:
+- “Who is Elad B.?”
+- “Who is Alyssa Mendoza?”
+- “Tell me about Eric M.”
+- “Who is featured in the magazine?”
+- “Who are the client testimonials from?”
+
+Vanessa should answer using indexed website content.
+
+4. Employee & magazine content
+The OnSpot Magazine section is not being indexed correctly.
+
+Example:
+- Alyssa Mendoza
+- “The Operator”
+- Client Success Operator
+- April Issue — Employee of the Month
+
+This content must become searchable and retrievable by Vanessa.
+
+5. Improve entity extraction
+Add entity recognition/indexing for:
+- People names
+- Job titles
+- Companies
+- Testimonials
+- Employee spotlights
+- Client stories
+- Roles
+- Departments
+- Locations
+
+Store these as searchable metadata.
+
+6. Improve chunking strategy
+The current chunking likely loses context.
+
+Instead:
+- Keep cards/components grouped logically
+- Preserve nearby headings and labels
+- Preserve relationships between:
+  - names
+  - titles
+  - descriptions
+  - companies
+  - testimonials
+
+For example:
+“Elad B.” should stay associated with:
+- CEO/Founder
+- PineTech
+- testimonial text
+
+7. Add screenshot/debug validation
+Create a debug route or admin page that shows:
+- Indexed pages
+- Extracted content preview
+- Indexed entities/people
+- Total chunks
+- Last crawl time
+- Failed pages/components
+
+I want to visually confirm that:
+- testimonials were indexed
+- magazine sections were indexed
+- Find Work jobs were indexed
+- people/entities were indexed
+
+8. Crawl deeper into components
+The crawler should not only scrape page text.
+
+It should also understand:
+- reusable components
+- cards
+- content blocks
+- grids
+- dynamically mounted sections
+
+9. Expected behavior
+When I ask:
+“Who is Alyssa Mendoza?”
+
+Vanessa should answer something similar to:
+“Alyssa Mendoza is featured in OnSpot Magazine as the April Employee of the Month. She is a Client Success Operator recognized for composure, discipline, and quiet excellence.”
+
+When I ask:
+“Who is Elad B.?”
+
+Vanessa should answer something similar to:
+“Elad B. is the CEO/Founder of PineTech and appears in the client testimonials section sharing his experience working with OnSpot Global.”
+
+10. Important
+Do NOT hardcode these examples.
+
+The responses must come from:
+- real indexed website content
+- retrieved chunks/entities
+- the live knowledge base
+
+Please inspect why these sections are not being indexed and fully fix the crawler, parser, retrieval, and entity extraction system so Vanessa truly knows EVERYTHING visible on the website.

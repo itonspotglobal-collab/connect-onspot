@@ -123,13 +123,18 @@ async function buildEnhancedInstructions(userMessage?: string): Promise<string> 
   // Knowledge-file chunks carry HIGH PRIORITY; website chunks fill remaining slots.
   if (userMessage) {
     try {
-      const { searchRag, KNOWLEDGE_FILE_SOURCE } = await import("./ragService");
-      const relevantChunks = await searchRag(userMessage, 7);
+      const { searchRag, KNOWLEDGE_FILE_SOURCE, CONTENT_FILE_SOURCE } = await import("./ragService");
+      const relevantChunks = await searchRag(userMessage, 8);
 
       if (relevantChunks.length > 0) {
         const knowledgeHits = relevantChunks.filter(c => c.isKnowledge || c.url === KNOWLEDGE_FILE_SOURCE);
+        const contentHits = relevantChunks.filter(c => (c as any).isContent || c.url === CONTENT_FILE_SOURCE);
         const jobHits = relevantChunks.filter(c => c.isJob);
-        const siteHits = relevantChunks.filter(c => !c.isKnowledge && c.url !== KNOWLEDGE_FILE_SOURCE && !c.isJob);
+        const siteHits = relevantChunks.filter(
+          c => !c.isKnowledge && c.url !== KNOWLEDGE_FILE_SOURCE &&
+               !(c as any).isContent && c.url !== CONTENT_FILE_SOURCE &&
+               !c.isJob
+        );
 
         // ── Knowledge file chunks (highest authority) ──
         if (knowledgeHits.length > 0) {
@@ -139,6 +144,20 @@ async function buildEnhancedInstructions(userMessage?: string): Promise<string> 
           instructions += `pricing, services, and internal business rules.\n\n`;
           knowledgeHits.forEach((chunk, idx) => {
             instructions += `--- Knowledge Excerpt ${idx + 1} ---\n`;
+            instructions += `Content: ${chunk.content}\n\n`;
+          });
+        }
+
+        // ── Website content chunks (people, testimonials, magazine, team, reviews) ──
+        if (contentHits.length > 0) {
+          instructions += `\n\n[HIGH PRIORITY — OnSpot People, Testimonials & Stories]\n`;
+          instructions += `These excerpts cover real people, client testimonials, employee spotlights, `;
+          instructions += `team bios, core value ambassadors, magazine features, case studies, and client reviews `;
+          instructions += `from the OnSpot Global website. Use this to answer questions about specific individuals `;
+          instructions += `(e.g. Elad B./Elad Badash, Eric M., Fernando C./Fernando Calderon, Alyssa Mendoza), `;
+          instructions += `client experiences, case studies, team members, and featured talent.\n\n`;
+          contentHits.forEach((chunk, idx) => {
+            instructions += `--- Content Excerpt ${idx + 1} ---\n`;
             instructions += `Content: ${chunk.content}\n\n`;
           });
         }
@@ -173,7 +192,8 @@ async function buildEnhancedInstructions(userMessage?: string): Promise<string> 
 
         const ragUrls = [...new Set(siteHits.map(c => c.url))];
         console.log(
-          `🔍 RAG: ${knowledgeHits.length} knowledge + ${jobHits.length} job + ${siteHits.length} site chunk(s)` +
+          `🔍 RAG: ${knowledgeHits.length} knowledge + ${contentHits.length} content + ` +
+          `${jobHits.length} job + ${siteHits.length} site chunk(s)` +
           ` from ${ragUrls.length} page(s)`
         );
       } else {
