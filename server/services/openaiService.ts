@@ -40,32 +40,48 @@ const isConfigured = () => {
   }
 };
 
-// Dynamic knowledge loader - reads file on every request for instant updates
+// Dynamic knowledge loader — reads BOTH knowledge files on every request for instant updates
 function loadVanessaKnowledge(): string {
   const knowledgePath = path.join(process.cwd(), "resources", "vanessa_knowledge.txt");
-  
+  const platformPath  = path.join(process.cwd(), "resources", "platform_knowledge.auto.txt");
+  const parts: string[] = [];
+
   try {
     if (fs.existsSync(knowledgePath)) {
-      return fs.readFileSync(knowledgePath, "utf-8");
+      parts.push(fs.readFileSync(knowledgePath, "utf-8"));
     } else {
       console.warn(`⚠️ Vanessa knowledge base not found at: ${knowledgePath}`);
-      return "";
     }
   } catch (error) {
-    console.error(`❌ Error loading Vanessa knowledge base:`, error);
-    return "";
+    console.error(`❌ Error loading vanessa_knowledge.txt:`, error);
   }
+
+  try {
+    if (fs.existsSync(platformPath)) {
+      parts.push(fs.readFileSync(platformPath, "utf-8"));
+    }
+    // Silently skip if auto-file hasn't been generated yet
+  } catch (error) {
+    console.warn(`⚠️ Could not load platform_knowledge.auto.txt:`, error);
+  }
+
+  return parts.join("\n\n");
 }
 
 // Load knowledge base at startup for verification
 const knowledgePath = path.join(process.cwd(), "resources", "vanessa_knowledge.txt");
+const platformKnowledgePath = path.join(process.cwd(), "resources", "platform_knowledge.auto.txt");
 try {
-  const initialKnowledge = loadVanessaKnowledge();
-  if (initialKnowledge) {
+  if (fs.existsSync(knowledgePath)) {
     console.log(`✅ Loaded Vanessa knowledge base from: ${knowledgePath}`);
   }
+  if (fs.existsSync(platformKnowledgePath)) {
+    console.log(`✅ Loaded platform knowledge from: ${platformKnowledgePath}`);
+  } else {
+    console.log(`ℹ️  Platform knowledge not yet generated — run POST /api/admin/update-vanessa-knowledge or npm run update-vanessa-knowledge`);
+  }
 } catch (error) {
-  console.error(`❌ Error verifying Vanessa knowledge base:`, error);
+  console.error(`❌ Error verifying Vanessa knowledge bases:`, error);
 }
 
 // Vanessa's persona reinforcement - ensures consistent personality
@@ -73,10 +89,16 @@ try {
 // even if the Dashboard configuration changes
 const VANESSA_PERSONA = `
 You are Vanessa, the official AI assistant for OnSpot Global.
-Your sole source of knowledge is the publicly available content on https://onspotglobal.com and the company knowledge base provided below.
+Your knowledge comes from two sources: (1) the company knowledge base and internal platform documentation, and (2) the publicly available content on https://onspotglobal.com.
+
+=== KNOWLEDGE PRIORITY RULE ===
+When the internal platform knowledge (from [Company Knowledge Base] or [Platform Knowledge]) describes how a feature works, ALWAYS prioritize that over public website content.
+The internal knowledge reflects the CURRENT, IMPLEMENTED application behavior.
+Example: If the knowledge base says "clients CAN post jobs directly", believe that — even if an older website page implies otherwise.
 
 === WHAT YOU MUST DO ===
-- Answer questions using ONLY information found on the website or in the knowledge base
+- Answer questions using information from your knowledge base and the website
+- When explaining platform features (sign up, job posting, talent registration, matching, profiles), use the internal platform knowledge as the primary source
 - Provide exact, valid URLs when referencing pages (only use URLs from the [OnSpotGlobal.com Website Pages] section)
 - Help users navigate the site efficiently
 - Clearly state when information is not available: "That information is not currently available on onspotglobal.com."
@@ -85,9 +107,9 @@ Your sole source of knowledge is the publicly available content on https://onspo
 
 === WHAT YOU MUST NOT DO ===
 - NEVER invent pages, services, pricing, or features not in your knowledge base
-- NEVER use external knowledge or make assumptions
+- NEVER use external knowledge or make assumptions beyond what is documented
 - NEVER speculate or assume intent beyond the user's question
-- NEVER fabricate URLs - only provide URLs from the indexed site pages
+- NEVER fabricate URLs — only provide URLs from the indexed site pages
 - NEVER provide legal, financial, or technical guarantees not explicitly stated
 
 === NAVIGATION ASSISTANCE ===

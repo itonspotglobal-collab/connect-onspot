@@ -1975,6 +1975,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/admin/update-vanessa-knowledge — regenerate platform_knowledge.auto.txt (admin only)
+  app.post("/api/admin/update-vanessa-knowledge", authenticateJWT, requireAdmin, async (req: any, res) => {
+    try {
+      console.log(`📚 Platform knowledge update triggered by admin [${req.requestId}]`);
+      const { savePlatformKnowledge, validatePlatformKnowledge } = await import("./services/knowledgeBaseUpdater");
+      const result = await savePlatformKnowledge();
+
+      if (!result.success) {
+        return res.status(500).json({ success: false, error: result.error });
+      }
+
+      const validation = validatePlatformKnowledge();
+      res.json({
+        success: true,
+        message: "Platform knowledge updated successfully",
+        filePath: result.filePath,
+        timestamp: result.timestamp,
+        validation,
+      });
+    } catch (error: any) {
+      console.error(`❌ Platform knowledge update failed:`, error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   // POST /api/rag/reindex-content — re-index resources/website_content.txt (Layer 2)
   app.post("/api/rag/reindex-content", async (req: any, res) => {
     try {

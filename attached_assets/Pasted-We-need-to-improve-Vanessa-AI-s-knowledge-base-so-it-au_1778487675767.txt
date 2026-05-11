@@ -1,0 +1,144 @@
+We need to improve Vanessa AI’s knowledge base so it automatically stays updated when relevant product changes are made in the project.
+
+Current context:
+- Vanessa AI uses OpenAI Assistant API.
+- The backend service is in `server/services/openaiService.ts`.
+- Vanessa currently loads knowledge from `resources/vanessa_knowledge.txt`.
+- The function `loadVanessaKnowledge()` reads this file dynamically on every request.
+- Vanessa’s enhanced instructions are built in `buildEnhancedInstructions()`.
+- There is already a learning/memory system and RAG-related services.
+- Vanessa currently answers based on the website and knowledge base, but she does not always know newly implemented platform features.
+- Example issue: Vanessa said clients cannot add job openings directly, but the current platform already supports client signup/login and client job posting under the Client Profile. Talent registration also supports Resume/CV upload, profile conversion, Find Best Matches, and Talent Pool visibility.
+
+Goal:
+Automatically update Vanessa’s knowledge base whenever relevant product workflows or application features change, especially changes involving:
+- client signup/login
+- talent signup/login
+- client profile
+- client job posting / job openings
+- talent Resume/CV upload
+- resume-to-profile conversion
+- Find Best Matches
+- Talent Pool
+- dashboard workflows
+- onboarding flows
+- permissions / roles
+- integrations
+- email/calendar/CRM actions
+- any feature that Vanessa may need to explain to users
+
+Please implement a safe automatic knowledge update system with these requirements:
+
+1. Create a new service:
+   `server/services/knowledgeBaseUpdater.ts`
+
+2. The service should scan relevant project files and extract product workflow knowledge.
+   Include files such as:
+   - `server/routes.ts`
+   - `shared/schema.ts`
+   - client dashboard/profile pages
+   - client job posting components
+   - talent registration/profile/resume upload components
+   - matching / Find Best Matches components
+   - Talent Pool components
+   - API route definitions related to clients, talents, jobs, profiles, resume upload, matching, and integrations
+
+3. Do not blindly dump source code into the knowledge base.
+   Instead, generate a clean human-readable summary in this format:
+
+   === Auto-Generated Platform Knowledge ===
+   Last Updated: <timestamp>
+
+   Client Workflow:
+   - ...
+
+   Talent Workflow:
+   - ...
+
+   Job Posting Workflow:
+   - ...
+
+   Resume/CV and Profile Workflow:
+   - ...
+
+   Talent Pool and Matching Workflow:
+   - ...
+
+   Integration/Automation Workflow:
+   - ...
+
+   Important User Guidance:
+   - ...
+
+   === End Auto-Generated Platform Knowledge ===
+
+4. Save the generated output to:
+   `resources/platform_knowledge.auto.txt`
+
+5. Update `server/services/openaiService.ts` so Vanessa loads BOTH:
+   - `resources/vanessa_knowledge.txt`
+   - `resources/platform_knowledge.auto.txt`
+
+6. Update Vanessa’s instruction priority.
+   The internal platform knowledge should take priority over public website content when explaining product features.
+
+   Add this rule to Vanessa’s instructions:
+   “When internal platform knowledge differs from public website information, prioritize the internal platform knowledge because it reflects the current implemented application behavior.”
+
+7. Add a script command that can regenerate the platform knowledge manually:
+   Example:
+   `npm run update-vanessa-knowledge`
+
+8. Add a route that only admins can call:
+   `POST /api/admin/update-vanessa-knowledge`
+
+   This route should:
+   - require admin authentication
+   - run the knowledge base updater
+   - return success/failure
+   - include the generated timestamp and file path
+
+9. Add an optional development-only startup behavior:
+   If `AUTO_UPDATE_VANESSA_KNOWLEDGE=true`, regenerate the platform knowledge when the server starts.
+   This should not block server startup if it fails. It should log a warning instead.
+
+10. Add safeguards:
+   - Do not include secrets, API keys, tokens, passwords, database URLs, environment variables, or private credentials in the generated knowledge file.
+   - Do not include raw source code.
+   - Do not include personal user data.
+   - Only summarize workflows and product behavior.
+   - If a file cannot be read, skip it and log a warning.
+   - Keep the generated knowledge concise.
+
+11. Add logging:
+   - log when knowledge generation starts
+   - log how many relevant files were scanned
+   - log where the generated file was saved
+   - log errors clearly
+
+12. Add a small test or validation function that confirms:
+   - `platform_knowledge.auto.txt` exists after generation
+   - it contains sections for Client Workflow, Talent Workflow, Job Posting Workflow, Resume/CV and Profile Workflow, and Talent Pool and Matching Workflow
+   - it does not contain common secret patterns like `OPENAI_API_KEY`, `DATABASE_URL`, `JWT_SECRET`, `password_hash`, or `Bearer`
+
+13. Update Vanessa’s knowledge immediately with the following correct current platform behavior:
+
+   Client Workflow:
+   - Clients can sign up or log in.
+   - After logging in, clients can access their Client Profile or Client Dashboard.
+   - Clients can create/post job openings directly from the Client Profile.
+   - Clients do not only need to contact OnSpot manually to start a job opening, although guided support may still be available.
+
+   Talent Workflow:
+   - Talents can sign up or register.
+   - After registration, talents must submit/upload their Resume/CV.
+   - The Resume/CV is processed and converted into profile details.
+   - These profile details are used by Find Best Matches.
+   - Once processed, the talent can appear in the Talent Pool.
+
+14. After implementation, please show:
+   - files changed
+   - the new script command
+   - the new admin route
+   - how Vanessa now loads both knowledge files
+   - how to test the update by asking Vanessa: “As a client, how do I add a job opening?”

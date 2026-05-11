@@ -249,6 +249,22 @@ app.use((req, res, next) => {
       })
       .catch((err: any) => console.warn(`⚠️ RAG pre-warm skipped: ${err.message}`));
 
+    // Auto-generate platform knowledge if AUTO_UPDATE_VANESSA_KNOWLEDGE=true
+    // This keeps Vanessa's understanding of platform features current on each restart.
+    // Non-blocking — logs warning if it fails, never blocks server startup.
+    if (process.env.AUTO_UPDATE_VANESSA_KNOWLEDGE === 'true') {
+      import('./services/knowledgeBaseUpdater')
+        .then(({ savePlatformKnowledge }) => savePlatformKnowledge())
+        .then((result) => {
+          if (result.success) {
+            console.log(`📚 Platform knowledge auto-updated at startup → ${result.filePath}`);
+          } else {
+            console.warn(`⚠️ Platform knowledge auto-update failed: ${result.error}`);
+          }
+        })
+        .catch((err: any) => console.warn(`⚠️ Platform knowledge auto-update skipped: ${err.message}`));
+    }
+
     // Index website content (testimonials, people, magazine, team, case studies).
     // This covers React-rendered content the HTML crawler misses.
     // Runs in background; does not block startup.
