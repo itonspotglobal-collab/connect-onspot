@@ -4169,7 +4169,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const body = { ...req.body, clientId };
+      // Admin-created jobs are pre-approved
+      const body = { ...req.body, clientId, approvalStatus: "approved" };
       console.log("Admin job create - request body:", JSON.stringify(body));
 
       const validated = insertJobSchema.parse(body);
@@ -4246,6 +4247,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Admin job delete error:", error);
       res.status(500).json({ error: "Failed to delete job" });
+    }
+  });
+
+  // ─── Admin: Approve a job posting ─────────────────────────────────────────
+  app.post("/api/admin/jobs/:id/approve", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const adminId = (req as any).user?.id;
+      const result = await query(
+        `UPDATE jobs SET
+          approval_status = 'approved',
+          approved_by = $1,
+          approved_at = NOW(),
+          rejected_by = NULL,
+          rejected_at = NULL,
+          rejection_reason = NULL,
+          updated_at = NOW()
+         WHERE id = $2
+         RETURNING *`,
+        [adminId, req.params.id],
+      );
+      if (result.rows.length === 0) return res.status(404).json({ error: "Job not found" });
+      res.json(result.rows[0]);
+      import("./services/ragService")
+        .then(({ indexJobListings }) => indexJobListings())
+        .catch((err: any) => console.error("❌ Background job reindex failed:", err.message));
+    } catch (error) {
+      console.error("Admin job approve error:", error);
+      res.status(500).json({ error: "Failed to approve job" });
+    }
+  });
+
+  // ─── Admin: Reject a job posting ──────────────────────────────────────────
+  app.post("/api/admin/jobs/:id/reject", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const adminId = (req as any).user?.id;
+      const { rejectionReason } = req.body;
+      const result = await query(
+        `UPDATE jobs SET
+          approval_status = 'rejected',
+          rejected_by = $1,
+          rejected_at = NOW(),
+          rejection_reason = $2,
+          approved_by = NULL,
+          approved_at = NULL,
+          updated_at = NOW()
+         WHERE id = $3
+         RETURNING *`,
+        [adminId, rejectionReason || null, req.params.id],
+      );
+      if (result.rows.length === 0) return res.status(404).json({ error: "Job not found" });
+      res.json(result.rows[0]);
+      import("./services/ragService")
+        .then(({ indexJobListings }) => indexJobListings())
+        .catch((err: any) => console.error("❌ Background job reindex failed:", err.message));
+    } catch (error) {
+      console.error("Admin job reject error:", error);
+      res.status(500).json({ error: "Failed to reject job" });
+    }
+  });
+
+  // ─── Admin: Move approved/rejected job back to pending ────────────────────
+  app.post("/api/admin/jobs/:id/pending", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const result = await query(
+        `UPDATE jobs SET
+          approval_status = 'pending',
+          approved_by = NULL,
+          approved_at = NULL,
+          rejected_by = NULL,
+          rejected_at = NULL,
+          rejection_reason = NULL,
+          updated_at = NOW()
+         WHERE id = $1
+         RETURNING *`,
+        [req.params.id],
+      );
+      if (result.rows.length === 0) return res.status(404).json({ error: "Job not found" });
+      res.json(result.rows[0]);
+    } catch (error) {
+      console.error("Admin job pending error:", error);
+      res.status(500).json({ error: "Failed to reset job approval" });
     }
   });
 
@@ -6784,8 +6866,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
-      // Use the same storage.createJob() path as the admin route — just set clientId = current user
-      const body = { ...req.body, clientId: userId };
+      // Client-created jobs always start as pending approval
+      const body = { ...req.body, clientId: userId, approvalStatus: "pending" };
       const validated = insertJobSchema.parse(body);
       const job = await storage.createJob(validated);
       return res.status(201).json(job);
@@ -6802,12 +6884,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
       const { jobId } = req.params;
-      // Ownership check using correct column
-      const check = await query("SELECT id FROM jobs WHERE id = $1 AND client_id = $2", [jobId, userId]);
+      // Ownership check
+      const check = await query("SELECT id, approval_status FROM jobs WHERE id = $1 AND client_id = $2", [jobId, userId]);
       if (check.rows.length === 0) return res.status(403).json({ error: "Forbidden" });
-      // Use same update path as admin
       const { clientId: _strip, ...rest } = req.body;
       const updates = insertJobSchema.partial().parse(rest);
+      // Editing an approved job resets it to pending — must be re-reviewed
+      const currentApproval = check.rows[0].approval_status;
+      if (currentApproval === "approved") {
+        (updates as any).approvalStatus = "pending";
+        (updates as any).approvedBy = null;
+        (updates as any).approvedAt = null;
+      }
       const job = await storage.updateJob(jobId, updates);
       if (!job) return res.status(404).json({ error: "Job not found" });
       return res.json(job);

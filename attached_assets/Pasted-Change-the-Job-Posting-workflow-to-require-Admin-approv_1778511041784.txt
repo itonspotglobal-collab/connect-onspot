@@ -1,0 +1,132 @@
+Change the Job Posting workflow to require Admin approval before a client job post becomes public.
+
+Current behavior:
+- Client can create a job posting from the Client Profile page.
+- Job postings are shown under the Client Profile Job Postings section.
+- Approved/open jobs appear on the public Find Work jobs page.
+
+New requirement:
+When a client submits a new job posting, it should NOT immediately appear on the public find-work/jobs page.
+
+Instead:
+1. Client creates/submits a job posting.
+2. The job post is saved in the database with approval status: "pending".
+3. The job post appears in the Client Profile under Job Postings with a visible badge/status: "Pending for Approval".
+4. The job post appears in the Admin Find Work page: admin/find-work.
+5. Admin can review the job post.
+6. Admin can approve or reject the job post.
+7. Once approved:
+   - Status changes to "approved".
+   - The client sees it as "Approved".
+   - The job becomes visible on find-work/jobs.
+8. If rejected:
+   - Status changes to "rejected".
+   - The client sees it as "Rejected".
+   - The job does NOT appear on find-work/jobs.
+
+Database changes:
+Update the existing job postings table/model and add:
+
+approvalStatus: string or enum
+Possible values:
+- pending
+- approved
+- rejected
+
+approvedBy: nullable admin user id
+approvedAt: nullable datetime
+rejectedBy: nullable admin user id
+rejectedAt: nullable datetime
+rejectionReason: nullable string
+
+Default value:
+approvalStatus = "pending"
+
+Important:
+- Existing job posts without approvalStatus should be treated as "approved" only if they were already public before this change.
+- New client-created job posts should always be "pending".
+
+Client Profile Job Postings section:
+- Continue showing the client’s submitted job posts.
+- Add a status badge on each job card/table row:
+  - Pending for Approval
+  - Approved
+  - Rejected
+- Pending jobs should still be visible to the client.
+- Pending jobs should not be visible publicly.
+- Rejected jobs should still be visible to the client with the rejected status.
+- Keep the existing design and empty-state UI.
+
+Public Find Work Jobs page:
+Update query/filter logic:
+- Only display jobs where:
+  approvalStatus = "approved"
+  and status = "open" or active
+- Do not show pending or rejected jobs.
+
+Admin Find Work page: admin/find-work
+Update this page to show all submitted job postings from clients, including:
+- Pending
+- Approved
+- Rejected
+
+Admin table/card fields:
+- Job Title
+- Company
+- Client Name / Client Email
+- Category
+- Work Setup
+- Contract Type
+- Status
+- Approval Status
+- Date Submitted
+- Actions
+
+Admin actions:
+For pending jobs:
+- View Details
+- Approve
+- Reject
+
+For approved jobs:
+- View Details
+- Optional: Unapprove / Move back to Pending
+
+For rejected jobs:
+- View Details
+- Optional: Approve
+
+Approve behavior:
+- Set approvalStatus = "approved"
+- Set approvedAt = current datetime
+- Set approvedBy = current admin user id
+- Clear rejectionReason, rejectedAt, rejectedBy if previously rejected
+- Job becomes visible on find-work/jobs
+
+Reject behavior:
+- Ask admin for an optional rejection reason.
+- Set approvalStatus = "rejected"
+- Set rejectedAt = current datetime
+- Set rejectedBy = current admin user id
+- Store rejectionReason
+- Job remains hidden from find-work/jobs
+
+Client edit behavior:
+If a client edits an already approved job post:
+- Set approvalStatus back to "pending"
+- Hide it from find-work/jobs until Admin approves again.
+- Show status in Client Profile as "Pending for Approval".
+
+UI notes:
+- Use badge colors:
+  - Pending for Approval: yellow/orange
+  - Approved: green
+  - Rejected: red
+- Add helper text after client submits a job:
+  "Your job posting has been submitted and is pending Admin approval."
+- Keep all existing Add/Edit Job Posting fields and styling.
+- Do not remove the existing Job Submissions section.
+- Do not add the built-in form feature for now.
+
+Expected result:
+Clients can submit job postings, but they require Admin approval before becoming visible publicly. Admin manages all submitted jobs from admin/find-work, and clients can track approval status from their Client Profile.

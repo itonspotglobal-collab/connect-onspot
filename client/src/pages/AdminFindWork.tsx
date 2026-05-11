@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Plus,
   ArrowLeft,
@@ -46,6 +47,10 @@ import {
   Clock,
   BookOpen,
   Upload,
+  ThumbsUp,
+  ThumbsDown,
+  RotateCcw,
+  AlertCircle,
 } from "lucide-react";
 import type { Job } from "@shared/schema";
 import { JobFormModal } from "@/components/JobFormModal";
@@ -108,6 +113,25 @@ function StatPill({
   );
 }
 
+// ─── Approval status config ───────────────────────────────────────────────────
+const APPROVAL_CONFIG: Record<string, { label: string; strip: string; badge: string }> = {
+  pending: {
+    label: "Pending Approval",
+    strip: "bg-amber-400",
+    badge: "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400",
+  },
+  approved: {
+    label: "Approved",
+    strip: "bg-emerald-400",
+    badge: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+  },
+  rejected: {
+    label: "Rejected",
+    strip: "bg-red-400",
+    badge: "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400",
+  },
+};
+
 // ─── Admin job row ────────────────────────────────────────────────────────────
 function AdminJobRow({
   job,
@@ -115,32 +139,40 @@ function AdminJobRow({
   onToggle,
   onDelete,
   onCopy,
+  onApprove,
+  onReject,
+  onMoveToPending,
   copiedId,
   isToggling,
   isDeleting,
+  isApproving,
+  isRejecting,
 }: {
   job: Job;
   onEdit: () => void;
   onToggle: () => void;
   onDelete: () => void;
   onCopy: () => void;
+  onApprove: () => void;
+  onReject: () => void;
+  onMoveToPending: () => void;
   copiedId: string | null;
   isToggling: boolean;
   isDeleting: boolean;
+  isApproving: boolean;
+  isRejecting: boolean;
 }) {
   const badges = getJobBadges(job as any);
   const isOpen = job.status === "open";
   const pay = buildRateDisplay(job);
   const timeAgo = getTimeAgo(job.createdAt);
+  const approvalStatus = (job as any).approvalStatus ?? "approved";
+  const approvalCfg = APPROVAL_CONFIG[approvalStatus] ?? APPROVAL_CONFIG.pending;
 
   return (
     <div className="group relative rounded-2xl border border-slate-200/70 bg-white transition-shadow hover:shadow-md dark:border-white/[0.08] dark:bg-[#0f172a]/60">
-      {/* Status strip */}
-      <div
-        className={`absolute left-0 top-4 bottom-4 w-1 rounded-full ${
-          isOpen ? "bg-emerald-400" : "bg-slate-300 dark:bg-white/20"
-        }`}
-      />
+      {/* Status strip — colour reflects approval state */}
+      <div className={`absolute left-0 top-4 bottom-4 w-1 rounded-full ${approvalCfg.strip}`} />
 
       <div className="flex flex-col gap-4 px-6 py-5 pl-8 sm:flex-row sm:items-start sm:justify-between">
         {/* Left: title + meta */}
@@ -149,6 +181,7 @@ function AdminJobRow({
             <h3 className="text-base font-bold text-slate-900 dark:text-white truncate">
               {job.title}
             </h3>
+            {/* Job open/closed badge */}
             <span
               className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
                 isOpen
@@ -156,26 +189,30 @@ function AdminJobRow({
                   : "bg-slate-100 text-slate-500 dark:bg-white/[0.06] dark:text-white/40"
               }`}
             >
-              {isOpen
-                ? "Open"
-                : job.status === "closed"
-                  ? "Closed"
-                  : job.status}
+              {isOpen ? "Open" : job.status === "closed" ? "Closed" : job.status}
+            </span>
+            {/* Approval badge */}
+            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${approvalCfg.badge}`}>
+              {approvalCfg.label}
             </span>
           </div>
 
+          {/* Rejection reason */}
+          {approvalStatus === "rejected" && (job as any).rejectionReason && (
+            <p className="mb-1.5 flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+              <AlertCircle className="h-3 w-3 shrink-0" />
+              {(job as any).rejectionReason}
+            </p>
+          )}
+
           <div className="flex flex-wrap items-center gap-3 text-[13px] text-slate-500 dark:text-slate-400">
-            <span className="capitalize">
-              {job.category?.replace(/-/g, " ")}
-            </span>
+            <span className="capitalize">{job.category?.replace(/-/g, " ")}</span>
             <span className="text-slate-300 dark:text-white/20">·</span>
             <span>{job.location || "Remote"}</span>
             {pay && (
               <>
                 <span className="text-slate-300 dark:text-white/20">·</span>
-                <span className="font-medium text-[#474ead] dark:text-indigo-400">
-                  {pay}
-                </span>
+                <span className="font-medium text-[#474ead] dark:text-indigo-400">{pay}</span>
               </>
             )}
             <span className="text-slate-300 dark:text-white/20">·</span>
@@ -188,8 +225,7 @@ function AdminJobRow({
                 <span className="text-slate-300 dark:text-white/20">·</span>
                 <span className="flex items-center gap-1">
                   <Users className="h-3 w-3" />
-                  {job.proposalCount} application
-                  {job.proposalCount !== 1 ? "s" : ""}
+                  {job.proposalCount} application{job.proposalCount !== 1 ? "s" : ""}
                 </span>
               </>
             )}
@@ -216,52 +252,77 @@ function AdminJobRow({
 
         {/* Right: action buttons */}
         <div className="flex flex-wrap items-center gap-2 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onToggle}
-            disabled={isToggling}
-          >
+          {/* ── Approval actions ── */}
+          {approvalStatus === "pending" && (
+            <>
+              <Button
+                size="sm"
+                className="bg-emerald-600 text-white hover:bg-emerald-700"
+                onClick={onApprove}
+                disabled={isApproving}
+              >
+                <ThumbsUp className="w-3.5 h-3.5 mr-1.5" />
+                Approve
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-red-200 text-red-600 hover:border-red-400 hover:bg-red-50 dark:border-red-900/40 dark:text-red-400"
+                onClick={onReject}
+                disabled={isRejecting}
+              >
+                <ThumbsDown className="w-3.5 h-3.5 mr-1.5" />
+                Reject
+              </Button>
+            </>
+          )}
+          {approvalStatus === "approved" && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-amber-200 text-amber-700 hover:border-amber-400 hover:bg-amber-50 dark:border-amber-900/40 dark:text-amber-400"
+              onClick={onMoveToPending}
+            >
+              <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+              Unapprove
+            </Button>
+          )}
+          {approvalStatus === "rejected" && (
+            <Button
+              size="sm"
+              className="bg-emerald-600 text-white hover:bg-emerald-700"
+              onClick={onApprove}
+              disabled={isApproving}
+            >
+              <ThumbsUp className="w-3.5 h-3.5 mr-1.5" />
+              Approve
+            </Button>
+          )}
+
+          {/* ── Standard actions ── */}
+          <Button variant="outline" size="sm" onClick={onToggle} disabled={isToggling}>
             {isOpen ? (
-              <>
-                <EyeOff className="w-3.5 h-3.5 mr-1.5" />
-                Close
-              </>
+              <><EyeOff className="w-3.5 h-3.5 mr-1.5" />Close</>
             ) : (
-              <>
-                <Eye className="w-3.5 h-3.5 mr-1.5" />
-                Reopen
-              </>
+              <><Eye className="w-3.5 h-3.5 mr-1.5" />Reopen</>
             )}
           </Button>
 
           <Button variant="outline" size="sm" onClick={onEdit}>
-            <Pencil className="w-3.5 h-3.5 mr-1.5" />
-            Edit
+            <Pencil className="w-3.5 h-3.5 mr-1.5" />Edit
           </Button>
 
           <Button variant="outline" size="sm" asChild>
-            <a
-              href={`/find-work/job/${job.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-              Preview
+            <a href={`/find-work/job/${job.id}`} target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="w-3.5 h-3.5 mr-1.5" />Preview
             </a>
           </Button>
 
           <Button variant="outline" size="sm" onClick={onCopy}>
             {copiedId === job.id ? (
-              <>
-                <Check className="w-3.5 h-3.5 mr-1.5 text-emerald-500" />
-                Copied
-              </>
+              <><Check className="w-3.5 h-3.5 mr-1.5 text-emerald-500" />Copied</>
             ) : (
-              <>
-                <Copy className="w-3.5 h-3.5 mr-1.5" />
-                Share
-              </>
+              <><Copy className="w-3.5 h-3.5 mr-1.5" />Share</>
             )}
           </Button>
 
@@ -275,8 +336,7 @@ function AdminJobRow({
               <AlertDialogHeader>
                 <AlertDialogTitle>Remove job posting?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will cancel &ldquo;{job.title}&rdquo;. It will no longer
-                  appear on the Find Work page.
+                  This will cancel &ldquo;{job.title}&rdquo;. It will no longer appear on the Find Work page.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -430,6 +490,8 @@ export default function AdminFindWork() {
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [rejectModalJobId, setRejectModalJobId] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
 
   const openCreate = () => {
     setEditingJob(null);
@@ -477,23 +539,42 @@ export default function AdminFindWork() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/admin/jobs/${id}`),
+    onSuccess: () => { invalidate(); toast({ title: "Job posting removed" }); },
+    onError: (err: any) =>
+      toast({ title: "Failed to remove job", description: err.message, variant: "destructive" }),
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("POST", `/api/admin/jobs/${id}/approve`),
+    onSuccess: () => { invalidate(); toast({ title: "Job approved — now visible publicly" }); },
+    onError: (err: any) =>
+      toast({ title: "Approval failed", description: err.message, variant: "destructive" }),
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      apiRequest("POST", `/api/admin/jobs/${id}/reject`, { rejectionReason: reason }),
     onSuccess: () => {
       invalidate();
-      toast({ title: "Job posting removed" });
+      setRejectModalJobId(null);
+      setRejectionReason("");
+      toast({ title: "Job rejected" });
     },
     onError: (err: any) =>
-      toast({
-        title: "Failed to remove job",
-        description: err.message,
-        variant: "destructive",
-      }),
+      toast({ title: "Rejection failed", description: err.message, variant: "destructive" }),
+  });
+
+  const pendingMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("POST", `/api/admin/jobs/${id}/pending`),
+    onSuccess: () => { invalidate(); toast({ title: "Job moved back to pending" }); },
+    onError: (err: any) =>
+      toast({ title: "Failed", description: err.message, variant: "destructive" }),
   });
 
   // ─── Derived stats ────────────────────────────────────────────────────────
   const openJobs = jobs.filter((j) => j.status === "open");
-  const closedJobs = jobs.filter(
-    (j) => j.status === "closed" || j.status === "cancelled",
-  );
+  const closedJobs = jobs.filter((j) => j.status === "closed" || j.status === "cancelled");
+  const pendingJobs = jobs.filter((j) => (j as any).approvalStatus === "pending");
   const totalApps = jobs.reduce((sum, j) => sum + (j.proposalCount || 0), 0);
 
   // ─── Render ───────────────────────────────────────────────────────────────
@@ -787,6 +868,11 @@ export default function AdminFindWork() {
                 label="Closed"
                 value={closedJobs.length}
               />
+              <StatPill
+                icon={AlertCircle}
+                label="Pending"
+                value={pendingJobs.length}
+              />
               <StatPill icon={Users} label="Applications" value={totalApps} />
             </div>
           </div>
@@ -866,15 +952,65 @@ export default function AdminFindWork() {
                   }
                   onDelete={() => deleteMutation.mutate(job.id)}
                   onCopy={() => copy(job.id)}
+                  onApprove={() => approveMutation.mutate(job.id)}
+                  onReject={() => { setRejectModalJobId(job.id); setRejectionReason(""); }}
+                  onMoveToPending={() => pendingMutation.mutate(job.id)}
                   copiedId={copiedId}
                   isToggling={toggleStatusMutation.isPending}
                   isDeleting={deleteMutation.isPending}
+                  isApproving={approveMutation.isPending}
+                  isRejecting={rejectMutation.isPending}
                 />
               ))}
             </div>
           )}
         </div>
       </div>
+
+      {/* ── Reject reason modal ── */}
+      <Dialog open={!!rejectModalJobId} onOpenChange={(open) => { if (!open) setRejectModalJobId(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ThumbsDown className="h-5 w-5 text-red-500" />
+              Reject Job Posting
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-slate-600 dark:text-slate-300">
+              The client will see this job as Rejected. You can optionally provide a reason.
+            </p>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                Rejection Reason (optional)
+              </label>
+              <Textarea
+                rows={3}
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                placeholder="e.g. Incomplete job description, missing budget information..."
+                className="resize-none"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="outline" onClick={() => setRejectModalJobId(null)}>
+                Cancel
+              </Button>
+              <Button
+                className="bg-red-600 text-white hover:bg-red-700"
+                disabled={rejectMutation.isPending}
+                onClick={() => {
+                  if (rejectModalJobId) {
+                    rejectMutation.mutate({ id: rejectModalJobId, reason: rejectionReason });
+                  }
+                }}
+              >
+                {rejectMutation.isPending ? "Rejecting..." : "Confirm Reject"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
