@@ -355,7 +355,7 @@ function AppContent() {
 }
 
 function GlobalVanessaWidget() {
-  const { showVanessaChat, hasInteractedWithVanessa, isMinimized, openVanessa, closeVanessa } = useVanessa();
+  const { showVanessaChat, isMinimized, openVanessa, closeVanessa } = useVanessa();
 
   return (
     <>
@@ -366,8 +366,8 @@ function GlobalVanessaWidget() {
         isSticky={true}
       />
       
-      {/* Global Persistent Floating Button (shows when minimized or chat closed, after first interaction) */}
-      {hasInteractedWithVanessa && (!showVanessaChat || isMinimized) && (
+      {/* Global Persistent Floating Button — always visible when chat is closed */}
+      {(!showVanessaChat || isMinimized) && (
         <Button
           size="icon"
           onClick={openVanessa}

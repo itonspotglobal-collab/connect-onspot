@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -46,11 +46,7 @@ import {
   SiYoutube,
 } from "react-icons/si";
 import { Link } from "wouter";
-const VanessaChat = lazy(() =>
-  import("@/components/VanessaChat").then((module) => ({
-    default: module.VanessaChat,
-  })),
-);
+import { useVanessa } from "@/contexts/VanessaContext";
 import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
 
 import FlashLogo from "../assets/logos/Flash.png";
@@ -325,27 +321,13 @@ const talentProfiles = [
 ];
 
 export default function Home() {
-  const [showVanessaChat, setShowVanessaChat] = useState(false);
-  const [isScrolledPastHero, setIsScrolledPastHero] = useState(false);
+  const { openVanessa } = useVanessa();
   const [expandedFooterSection, setExpandedFooterSection] = useState<
     string | null
   >(null);
   const [isDesktop, setIsDesktop] = useState(
     typeof window !== "undefined" && window.innerWidth >= 1024,
   );
-
-  // Track scroll position to determine if past hero section
-  useEffect(() => {
-    const handleScroll = () => {
-      // Hero section is min-h-screen, so check if scrolled past viewport height
-      const scrollPosition = window.scrollY;
-      const heroHeight = window.innerHeight;
-      setIsScrolledPastHero(scrollPosition > heroHeight * 0.8); // Trigger at 80% of hero height
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   // Track window size for responsive footer
   useEffect(() => {
@@ -407,7 +389,7 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 hero-fade-up-delay px-4">
               <Button
                 size="lg"
-                onClick={() => setShowVanessaChat(true)}
+                onClick={openVanessa}
                 className="relative group text-sm sm:text-base px-6 sm:px-8 h-auto bg-gradient-to-r from-violet-600 to-blue-600 text-white font-semibold hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] transition-all duration-300 hover-elevate rounded-2xl w-full sm:w-auto sm:min-w-[220px] py-3.5 sm:py-4 min-h-[48px]"
                 data-testid="button-launch-ai"
               >
@@ -1136,7 +1118,7 @@ export default function Home() {
                       className={`w-full min-h-[48px] ${index === 0 ? "bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700" : ""}`}
                       onClick={
                         mode.link === "#"
-                          ? () => setShowVanessaChat(true)
+                          ? openVanessa
                           : undefined
                       }
                       asChild={mode.link !== "#"}
@@ -1480,7 +1462,7 @@ export default function Home() {
               <Button
                 size="lg"
                 className="min-h-[56px] px-8 text-base sm:text-lg w-full sm:w-auto bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700"
-                onClick={() => setShowVanessaChat(true)}
+                onClick={openVanessa}
                 data-testid="button-launch-ai"
               >
                 <Bot className="w-5 h-5 mr-2" />
@@ -2013,32 +1995,6 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* Vanessa AI Assistant Chat */}
-      {showVanessaChat ? (
-        <Suspense
-          fallback={
-            <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-gradient-to-r from-violet-600 to-blue-600 animate-pulse" />
-          }
-        >
-          <VanessaChat
-            isOpen={showVanessaChat}
-            onClose={() => setShowVanessaChat(false)}
-            isSticky={isScrolledPastHero}
-          />
-        </Suspense>
-      ) : (
-        // Minimized Chat Bubble Button (matches VanessaChat design)
-        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 animate-in slide-in-from-bottom-4 duration-500">
-          <Button
-            size="icon"
-            onClick={() => setShowVanessaChat(true)}
-            className="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-gradient-to-r from-violet-600 to-blue-600 text-white shadow-2xl hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] hover-elevate transition-transform hover:scale-105"
-            data-testid="button-open-chat"
-          >
-            <MessageCircle className="h-6 w-6 sm:h-7 sm:w-7" />
-          </Button>
-        </div>
-      )}
     </div>
   );
 }
