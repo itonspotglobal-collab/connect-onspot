@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import type { Post } from "@shared/schema";
 import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
+import { useReserveBottomRight } from "@/hooks/useReserveBottomRight";
 
 // ─── Shared Case Studies data (sourced from WhyOnSpot Success Stories) ───────
 const CASE_STUDIES = [
@@ -1604,6 +1605,10 @@ const CEO_POPUP_DISMISSED_KEY = "onspot_ceo_popup_dismissed";
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function Insights() {
+  // Reserve the bottom-right corner so Vanessa's launcher shifts upward
+  // whenever the CEO Weekly Notes pill is (or could be) visible.
+  useReserveBottomRight();
+
   const [location] = useLocation();
   const [selectedCategory, setSelectedCategory] =
     useState<NavCategoryId>("View All");
@@ -1722,7 +1727,7 @@ export default function Insights() {
             onClick={handleReopenCeoModal}
             aria-label="Reopen CEO Weekly Notes"
             title="Weekly Notes from our CEO"
-            className="fixed bottom-6 right-6 z-40 flex items-center gap-2.5 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-[#474ead] shadow-lg shadow-slate-900/8 transition-all duration-200 hover:border-[#474ead]/25 hover:shadow-xl hover:shadow-[#474ead]/8"
+            className="fixed bottom-6 right-6 z-[8000] flex items-center gap-2.5 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-[#474ead] shadow-lg shadow-slate-900/8 transition-all duration-200 hover:border-[#474ead]/25 hover:shadow-xl hover:shadow-[#474ead]/8"
           >
             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#474ead]/10">
               <PenLine className="h-3 w-3 text-[#474ead]" />

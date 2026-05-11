@@ -1,0 +1,161 @@
+The global Vanessa AI chat widget is overlapping other floating/minimized widgets on some pages.
+
+Example:
+- On the Insights page, there is a minimized popup/card near the bottom-right area, such as “CEO Weekly”.
+- Vanessa’s floating chat bubble appears on top of it or too close to it.
+- This should be fixed globally, not only for the Insights page.
+
+Goal:
+Make Vanessa’s global floating chat widget smart/responsive so it does not overlap other floating page widgets, minimized popups, sticky CTAs, or bottom-right UI elements.
+
+Please implement a reusable fix.
+
+Requirements:
+
+1. Locate the Vanessa floating chat widget component and its CSS/styling.
+   Search for:
+   - VanessaChat
+   - VanessaWidget
+   - ChatWidget
+   - AIChat
+   - floating chat
+   - position: fixed
+   - bottom:
+   - right:
+   - z-index
+
+2. Locate existing floating/minimized popup components.
+   Search for:
+   - CEO Weekly
+   - minimized
+   - popup
+   - floating
+   - sticky
+   - bottom-right
+   - position: fixed
+   - z-index
+
+3. Do not solve this with a one-page-only condition.
+   Create a global approach that works on every page.
+
+4. Preferred solution:
+   Create a shared floating UI layout system using CSS variables.
+
+   Example global CSS variables:
+
+   ```css
+   :root {
+     --floating-safe-bottom: 24px;
+     --floating-safe-right: 24px;
+     --vanessa-chat-size: 72px;
+     --vanessa-chat-gap: 20px;
+     --vanessa-chat-bottom: var(--floating-safe-bottom);
+     --vanessa-chat-right: var(--floating-safe-right);
+   }
+
+Vanessa should use:
+
+position: fixed;
+right: var(--vanessa-chat-right);
+bottom: var(--vanessa-chat-bottom);
+z-index: 9000;
+
+If another floating component exists on the same bottom-right side, Vanessa should be offset upward or sideways instead of overlapping.
+
+Example:
+If a page has a minimized popup at bottom-right, set:
+
+--vanessa-chat-bottom: 120px;
+
+or apply a class to the page/root:
+
+<main className="has-bottom-right-floating-panel">
+
+with:
+
+.has-bottom-right-floating-panel {
+  --vanessa-chat-bottom: 130px;
+}
+
+Better reusable option:
+Add a utility class for pages/components that have bottom-right floating UI:
+
+.floating-ui-reserved-bottom-right {
+  --vanessa-chat-bottom: 130px;
+}
+
+Any page with its own floating/minimized widget can use this class to reserve space for Vanessa.
+
+If the app layout has a root wrapper, support route-level reservation:
+
+Detect whether the current page has a floating widget.
+Add a class to the root container/body such as:
+has-floating-bottom-right-ui
+Vanessa uses that class to change its bottom position.
+
+Example:
+
+body.has-floating-bottom-right-ui .vanessa-chat-launcher {
+  bottom: 130px;
+}
+Avoid using an extremely high z-index as the only fix.
+Vanessa should not simply cover everything.
+It should be layered properly and positioned so it does not block other UI.
+
+Set z-index rules clearly:
+Suggested layering:
+
+normal page content: default
+sticky page widgets/popups: 8000
+Vanessa collapsed launcher: 8500 or 9000
+Vanessa open chat window: 9500
+modals/dialogs: 10000+
+
+Adjust based on the current project.
+
+Responsive behavior:
+On mobile, avoid covering bottom navigation, sticky CTAs, or minimized popups.
+Use safe area insets:
+bottom: calc(var(--vanessa-chat-bottom) + env(safe-area-inset-bottom));
+
+On small screens, if another bottom widget exists, Vanessa can move slightly higher:
+
+@media (max-width: 768px) {
+  body.has-floating-bottom-right-ui .vanessa-chat-launcher {
+    bottom: 150px;
+  }
+}
+When Vanessa chat is open:
+The full chat panel should not cover important minimized widgets unless necessary.
+On desktop, keep it above the bottom-right area with enough spacing.
+On mobile, the open chat may occupy most of the screen, but it should still have close/minimize controls.
+Apply the reserved-space class or route-level flag to all pages that currently have floating/minimized widgets, including but not limited to:
+Insights page
+pages with “CEO Weekly” minimized popup
+pages with sticky lead/contact widgets
+pages with floating newsletter or article widgets
+pages with bottom-right CTAs
+Add regression checks:
+Test Vanessa on:
+Home/Landing page
+Insights page
+Individual article/case study page
+Login
+Signup
+Client Dashboard
+Talent Dashboard
+Client Profile
+Talent Pool
+Find Best Matches
+After implementation, report:
+root cause
+files changed
+Vanessa launcher CSS updated
+global floating UI reservation class added
+pages/components updated with reserved bottom-right space
+routes tested
+
+Add this at the end so Replit does not just hide Vanessa:
+
+```text id="62640"
+Important: Do not remove or hide Vanessa to fix the overlap. Vanessa should remain globally available, but it must reposition itself when another bottom-right floating widget exists.

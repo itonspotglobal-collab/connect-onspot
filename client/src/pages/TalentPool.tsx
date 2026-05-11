@@ -49,6 +49,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { isAdmin, isClient } from "@/lib/authUtils";
 import type { Candidate } from "@shared/schema";
 import { saveUserActivity } from "@/lib/userActivityMemory";
+import { useReserveBottomRight } from "@/hooks/useReserveBottomRight";
 
 function candidatePhotoSrc(url: string | null | undefined): string {
   if (!url) return "";
@@ -715,7 +716,7 @@ function TalentAccountPrompt() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 40, scale: 0.96 }}
             transition={{ duration: 0.28, ease: "easeOut" }}
-            className="fixed bottom-6 right-6 z-[9999] w-80 rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900"
+            className="fixed bottom-6 right-6 z-[8000] w-80 rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900"
           >
             {/* Header */}
             <div className="flex items-center justify-between rounded-t-xl bg-gradient-to-r from-[#474ead] to-[#6366f1] px-4 py-3">
@@ -774,7 +775,7 @@ function TalentAccountPrompt() {
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ duration: 0.2 }}
             onClick={reopen}
-            className="fixed bottom-6 right-6 z-[9999] flex items-center gap-2 rounded-full bg-gradient-to-r from-[#474ead] to-[#6366f1] px-4 py-2.5 text-sm font-medium text-white shadow-lg"
+            className="fixed bottom-6 right-6 z-[8000] flex items-center gap-2 rounded-full bg-gradient-to-r from-[#474ead] to-[#6366f1] px-4 py-2.5 text-sm font-medium text-white shadow-lg"
           >
             <UserPlus className="h-4 w-4" />
             Join as Talent
@@ -801,6 +802,10 @@ const WORK_SETUPS = ["Any", "Remote", "Hybrid", "Onsite"];
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function TalentPool() {
+  // Reserve the bottom-right corner so Vanessa's launcher shifts upward
+  // whenever the TalentAccountPrompt pill/popup is (or could be) visible.
+  useReserveBottomRight();
+
   const { user } = useAuth();
   const canSeeContact = isAdmin(user) || user?.role === "talent_acquisition";
   const isClientUser = isClient(user);

@@ -652,7 +652,7 @@ export function VanessaChat({
   // Sticky chat widget mode (lower right corner) - optimized for mobile
   if (isSticky) {
     return (
-      <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-[9999]">
+      <div style={{ position: "fixed", bottom: "var(--vanessa-widget-bottom, 16px)", right: "var(--vanessa-widget-right, 16px)", zIndex: 9500, transition: "bottom 0.3s ease" }}>
         {isMinimized ? (
           // Minimized floating button with luminous gradient
           <Button

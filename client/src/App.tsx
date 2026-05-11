@@ -374,9 +374,9 @@ function GlobalVanessaWidget() {
           data-testid="button-open-vanessa-global"
           style={{
             position: "fixed",
-            bottom: "24px",
-            right: "24px",
-            zIndex: 9999,
+            bottom: "var(--vanessa-launcher-bottom, 24px)",
+            right: "var(--vanessa-launcher-right, 24px)",
+            zIndex: 9000,
             width: "64px",
             height: "64px",
             borderRadius: "50%",
@@ -388,7 +388,7 @@ function GlobalVanessaWidget() {
             border: "none",
             cursor: "pointer",
             boxShadow: "0 8px 32px rgba(124, 58, 237, 0.45)",
-            transition: "box-shadow 0.2s ease, transform 0.15s ease",
+            transition: "box-shadow 0.2s ease, transform 0.15s ease, bottom 0.3s ease",
           }}
           onMouseEnter={e => {
             (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 0 40px rgba(124, 58, 237, 0.7)";

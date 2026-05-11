@@ -30,6 +30,58 @@
 }
 
 /* LIGHT MODE */
+/* ─── Floating UI Layout System ───────────────────────────────────────────────
+ * CSS variables that control where Vanessa's launcher and chat widget sit.
+ * Pages that own a bottom-right floating widget should add the body class
+ * "has-floating-bottom-right" (via the useReserveBottomRight hook) so Vanessa
+ * shifts upward and the two never overlap.
+ * ─────────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Vanessa floating launcher button */
+  --vanessa-launcher-bottom: 24px;
+  --vanessa-launcher-right:  24px;
+
+  /* Vanessa sticky chat-widget container (mobile-first) */
+  --vanessa-widget-bottom: 16px;
+  --vanessa-widget-right:  16px;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --vanessa-widget-bottom: 24px;
+    --vanessa-widget-right:  24px;
+  }
+}
+
+/* When a page reserves the bottom-right corner for its own floating widget,
+   Vanessa shifts up so neither element overlaps the other. */
+body.has-floating-bottom-right {
+  --vanessa-launcher-bottom: 88px;
+  --vanessa-widget-bottom:   80px;
+}
+
+@media (min-width: 768px) {
+  body.has-floating-bottom-right {
+    --vanessa-launcher-bottom: 96px;
+    --vanessa-widget-bottom:   88px;
+  }
+}
+
+@media (max-width: 767px) {
+  body.has-floating-bottom-right {
+    --vanessa-launcher-bottom: 100px;
+    --vanessa-widget-bottom:    92px;
+  }
+}
+
+/* Z-index layering reference (use these, don't invent new values):
+ *   Normal page content          → default (auto)
+ *   Sticky page widgets / pills  → 8 000
+ *   Vanessa collapsed launcher   → 9 000
+ *   Vanessa open chat panel      → 9 500
+ *   Modals / dialogs             → 10 000 +
+ */
+
 :root {
   --button-outline: rgba(0,0,0, .10);
   --badge-outline: rgba(0,0,0, .05);
