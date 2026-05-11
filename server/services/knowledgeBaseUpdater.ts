@@ -138,14 +138,14 @@ export async function generatePlatformKnowledge(): Promise<string> {
   const knowledge = `=== Auto-Generated Platform Knowledge ===
 Last Updated: ${timestamp}
 
-IMPORTANT: This file documents the CURRENTLY IMPLEMENTED behavior of the OnSpot Global platform.
+IMPORTANT: This file documents the CURRENTLY IMPLEMENTED behavior of the OnSpot platform.
 When this internal platform knowledge differs from public website information, PRIORITIZE THIS FILE
 because it reflects the actual, current state of the application — not marketing copy.
 
 ─────────────────────────────────────────────
 Client Workflow:
 ─────────────────────────────────────────────
-- Clients can sign up or log in directly on the OnSpot Global platform (no manual contact required to get started).
+- Clients can sign up or log in directly on the OnSpot platform (no manual contact required to get started).
 - Client signup uses email and password. The role is set to "client" during registration.
 - After logging in, clients land on their Client Profile (accessible at /client-profile).
 - The Client Profile page shows: company name, contact person, email, phone, website, industry, company size, location, about, hiring needs, preferred roles, and timezone.
