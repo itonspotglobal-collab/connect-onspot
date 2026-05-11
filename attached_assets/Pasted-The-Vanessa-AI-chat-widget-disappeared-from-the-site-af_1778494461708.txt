@@ -1,0 +1,111 @@
+The Vanessa AI chat widget disappeared from the site after the recent changes. Please debug and restore it.
+
+Current issue:
+- On the landing page, the “Launch AI Assistant” button is visible.
+- But the Vanessa chat widget/window is no longer appearing.
+- We need Vanessa AI chat to be available globally across the project and also launch correctly when the user clicks “Launch AI Assistant”.
+
+Goal:
+Restore Vanessa AI chat and make sure it appears on all pages without duplicate instances.
+
+Please investigate and fix the following:
+
+1. Find the existing Vanessa chat component.
+   Search for:
+   - Vanessa
+   - VanessaChat
+   - ChatWidget
+   - AIChat
+   - AssistantWidget
+   - Launch AI Assistant
+   - /api/vanessa
+   - /api/chat
+   - streamWithAssistant
+
+2. Check whether the component was removed from page-level rendering but not added correctly to the app root.
+
+3. Mount the Vanessa chat component globally in the highest shared frontend component, likely:
+   - `client/src/App.tsx`
+   - or the main layout/root provider file
+
+   It should be rendered once, outside the route switch, for example:
+
+   ```tsx
+   <>
+     <AppRoutes />
+     <VanessaChat />
+   </>
+
+Adjust this to match the actual project structure.
+
+Make sure the widget is not hidden by CSS.
+Check:
+display: none
+visibility: hidden
+opacity: 0
+wrong z-index
+parent container overflow clipping
+conditional rendering based on route/auth
+missing isOpen state
+missing provider/context
+
+The floating launcher/chat should have a high z-index.
+Example:
+
+z-index: 9999;
+position: fixed;
+bottom: 24px;
+right: 24px;
+
+Connect the landing page “Launch AI Assistant” button to open Vanessa.
+If Vanessa has a global open state, clicking this button should trigger the widget to open.
+
+Recommended approach:
+
+Create or reuse a global Vanessa chat context/store.
+Expose methods like openVanessaChat() and closeVanessaChat().
+The floating widget and “Launch AI Assistant” button should use the same state.
+
+If a global context is too much, use a simple custom event:
+
+Landing button:
+
+window.dispatchEvent(new CustomEvent("open-vanessa-chat"));
+
+Vanessa component:
+
+useEffect(() => {
+  const handler = () => setIsOpen(true);
+  window.addEventListener("open-vanessa-chat", handler);
+  return () => window.removeEventListener("open-vanessa-chat", handler);
+}, []);
+Do not create multiple Vanessa widgets.
+After adding global rendering, remove duplicate page-level widgets if they exist.
+Ensure Vanessa is visible on:
+landing page
+login page
+signup page
+client dashboard
+client profile
+job posting page
+talent profile
+resume/CV upload page
+Find Best Matches
+Talent Pool
+Preserve existing Vanessa API behavior.
+Do not rewrite the backend chat logic unless needed.
+The backend uses server/services/openaiService.ts and OpenAI Assistant integration.
+Add a simple fallback floating button if the full widget is collapsed.
+The user should always see a way to open Vanessa unless intentionally hidden.
+After fixing, provide:
+root cause of why the widget disappeared
+files changed
+where Vanessa is mounted globally
+how the “Launch AI Assistant” button opens the chat
+confirmation that no duplicate widgets exist
+routes tested
+
+Also add this note:
+
+```text id="65813"
+Important: The desired behavior is not only to show the chat after clicking “Launch AI Assistant”. There should also be a floating Vanessa launcher available globally, so users can open the chat from any page.

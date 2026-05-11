@@ -366,16 +366,41 @@ function GlobalVanessaWidget() {
         isSticky={true}
       />
       
-      {/* Global Persistent Floating Button — always visible when chat is closed */}
-      {(!showVanessaChat || isMinimized) && (
-        <Button
-          size="icon"
+      {/* Global Persistent Floating Button — visible whenever chat is fully closed */}
+      {!showVanessaChat && (
+        <button
           onClick={openVanessa}
-          className="fixed bottom-6 right-6 z-50 h-16 w-16 rounded-full bg-gradient-to-r from-violet-600 to-blue-600 text-white shadow-2xl hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] hover-elevate animate-in slide-in-from-bottom-4 duration-500"
+          aria-label="Open Vanessa AI assistant"
           data-testid="button-open-vanessa-global"
+          style={{
+            position: "fixed",
+            bottom: "24px",
+            right: "24px",
+            zIndex: 9999,
+            width: "64px",
+            height: "64px",
+            borderRadius: "50%",
+            background: "linear-gradient(135deg, #7c3aed 0%, #2563eb 100%)",
+            color: "white",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            border: "none",
+            cursor: "pointer",
+            boxShadow: "0 8px 32px rgba(124, 58, 237, 0.45)",
+            transition: "box-shadow 0.2s ease, transform 0.15s ease",
+          }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 0 40px rgba(124, 58, 237, 0.7)";
+            (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.05)";
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 8px 32px rgba(124, 58, 237, 0.45)";
+            (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
+          }}
         >
-          <MessageCircle className="h-7 w-7" />
-        </Button>
+          <MessageCircle size={28} />
+        </button>
       )}
     </>
   );
