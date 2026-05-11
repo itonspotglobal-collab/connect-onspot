@@ -1,0 +1,99 @@
+Before adding the new admin Apply Link field, fix the existing hardcoded Apply Now link behavior.
+
+Current issue
+The `Apply Now` button was previously hardcoded to one specific URL. Since job postings are now dynamic and shown through the popup/job details flow, that hardcoded link should no longer live directly on the button as a static value.
+
+Goal
+Move the application link handling into the job popup/job details flow so the Apply Now button can use the link from the selected job posting. This prepares the code for the new admin-controlled Apply Link field.
+
+What to change
+
+1. Find and remove the hardcoded Apply Now URL
+Search the project for the current hardcoded application URL used by `Apply Now`.
+
+Likely places to check:
+- `FindWork.tsx`
+- job details popup/modal component
+- `FindWorkJobs.tsx`
+- `FindWorkAllJobs.tsx`
+- any reusable JobDetailsModal / JobPopup component
+- any shared Button handler for Apply Now
+
+Remove the static hardcoded URL from the button.
+
+2. Move the link into the job data/popup data
+Add an `applyLink` field to the job object used by the popup/details modal.
+
+Example:
+```ts
+{
+  id: 1,
+  title: "Accounting Manager",
+  ...
+  applyLink: "https://existing-hardcoded-link.com"
+}
+
+For now:
+
+transfer the old hardcoded URL into each existing sample/shared job object as applyLink
+do this so all current job postings still use the same existing link temporarily
+later, this field will be editable from /admin/find-work
+Update the popup Apply Now button
+In the popup/job details modal:
+Apply Now should use selectedRole.applyLink or selectedJob.applyLink
+it should no longer use a static URL
+
+Expected behavior:
+
+const handleApplyNow = () => {
+  if (!selectedJob?.applyLink) return;
+  window.open(selectedJob.applyLink, "_blank", "noopener,noreferrer");
+};
+Apply Now fallback
+If a selected job has no applyLink:
+either disable the Apply Now button
+or show a small message like Application link unavailable
+do not redirect to the old hardcoded link automatically unless it exists in the job’s applyLink
+Keep behavior uniform for latest job postings
+The Apply Now button should be uniform for all current and future job postings:
+popup opens for selected job
+Apply Now reads that selected job’s applyLink
+new job postings will later store their own applyLink
+no button should rely on one global static link
+Update all public Apply Now buttons
+Make sure every Apply Now button uses the job’s own applyLink, including:
+popup modal in FindWork.tsx
+full job details page, if it has Apply Now
+all jobs listing/job card popup, if it has Apply Now
+Keep UI unchanged
+Do not redesign the popup or the page.
+Only change the link source/handler.
+
+Keep:
+
+existing popup design
+existing button style
+existing job detail content
+existing peso salary display
+existing routing
+Shared job type/schema
+Update the shared job type/interface to include:
+applyLink?: string;
+
+Make sure this does not break existing jobs.
+
+Output expectation
+Return updated code for:
+shared job data/type with applyLink
+popup Apply Now button handler
+any full job page Apply Now handler
+removal of the old hardcoded URL from button-level logic
+
+Important:
+The old hardcoded application URL should be transferred into the job data as applyLink, not left directly inside the Apply Now button. This makes the popup ready for admin-posted job-specific links.
+
+
+Add this note too:
+
+```txt id="73520"
+Important: after this update, the Apply Now button must always read the selected job’s `applyLink`. The only temporary hardcoded value allowed is inside the existing job data objects as their initial `applyLink`.

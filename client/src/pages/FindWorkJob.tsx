@@ -70,6 +70,7 @@ const roles = [
       "Comfortable working US night shift hours (Pacific or Eastern time)",
       "Values long-term partnerships and takes ownership of outcomes",
     ],
+    applyLink: APPLY_URL,
   },
   {
     id: 2,
@@ -124,6 +125,7 @@ const roles = [
       "Comfortable working US night shift hours",
       "Long-term relationship builder, not a transactional thinker",
     ],
+    applyLink: APPLY_URL,
   },
   {
     id: 3,
@@ -177,6 +179,7 @@ const roles = [
       "Stays current with digital marketing trends and platform changes",
       "Flexible communicator who adapts to AU/UK client culture",
     ],
+    applyLink: APPLY_URL,
   },
   {
     id: 4,
@@ -231,6 +234,7 @@ const roles = [
       "Comfortable in day-shift schedules aligned to US/AU business hours",
       "Values accuracy and process discipline over shortcuts",
     ],
+    applyLink: APPLY_URL,
   },
   {
     id: 5,
@@ -284,6 +288,7 @@ const roles = [
       "Documents processes clearly so the whole team benefits",
       "Genuinely curious about how technology works under the hood",
     ],
+    applyLink: APPLY_URL,
   },
   {
     id: 6,
@@ -339,6 +344,7 @@ const roles = [
       "Organized and disciplined with CRM hygiene and follow-up",
       "Team player who shares playbooks and celebrates wins together",
     ],
+    applyLink: APPLY_URL,
   },
 ];
 
@@ -490,9 +496,9 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
           </div>
 
           <div className="mt-6 flex gap-3">
-            {(job.applyLink || APPLY_URL) ? (
+            {job.applyLink ? (
               <Button className="rounded-full bg-[#474ead] px-7 text-white hover:bg-[#3d439c]"
-                onClick={() => window.open(job.applyLink || APPLY_URL, "_blank", "noopener,noreferrer")}>
+                onClick={() => window.open(job.applyLink!, "_blank", "noopener,noreferrer")}>
                 Apply in 30 seconds <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             ) : (
@@ -643,12 +649,18 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
           <h2 className="mb-3 text-2xl font-bold text-slate-900 dark:text-white">Apply before this role fills.</h2>
           <p className="mb-8 text-slate-500">Takes under 30 seconds. Our team will reach out within 3 business days.</p>
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-            <Button
-              className="rounded-full bg-[#474ead] px-10 py-2.5 text-white shadow-[0_8px_32px_rgba(71,78,173,0.25)] hover:bg-[#3d439c]"
-              onClick={() => window.open(job.applyLink || APPLY_URL, "_blank", "noopener,noreferrer")}
-            >
-              Apply Now <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+            {job.applyLink ? (
+              <Button
+                className="rounded-full bg-[#474ead] px-10 py-2.5 text-white shadow-[0_8px_32px_rgba(71,78,173,0.25)] hover:bg-[#3d439c]"
+                onClick={() => window.open(job.applyLink!, "_blank", "noopener,noreferrer")}
+              >
+                Apply Now <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            ) : (
+              <Button disabled variant="outline" className="rounded-full px-10">
+                Application link unavailable
+              </Button>
+            )}
             <Button variant="outline" className="rounded-full px-6" onClick={() => navigate("/find-work/jobs")}>
               <ArrowLeft className="mr-2 h-4 w-4" /> View all roles
             </Button>
@@ -810,12 +822,18 @@ export default function FindWorkJob() {
 
           {/* CTA */}
           <div className="mt-8 flex flex-wrap gap-3">
-            <Button
-              className="rounded-full bg-[#474ead] px-8 py-2.5 text-white"
-              onClick={() => window.open(job.applyLink || APPLY_URL, "_blank", "noopener,noreferrer")}
-            >
-              Apply Now <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+            {job.applyLink ? (
+              <Button
+                className="rounded-full bg-[#474ead] px-8 py-2.5 text-white"
+                onClick={() => window.open(job.applyLink!, "_blank", "noopener,noreferrer")}
+              >
+                Apply Now <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            ) : (
+              <Button disabled variant="outline" className="rounded-full px-8">
+                Application link unavailable
+              </Button>
+            )}
           </div>
         </div>
       </motion.div>
@@ -950,12 +968,18 @@ export default function FindWorkJob() {
           </h2>
           <p className="mb-8 text-slate-500">Don't wait — top candidates are already in the process.</p>
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-            <Button
-              className="rounded-full bg-[#474ead] px-10 py-2.5 text-white"
-              onClick={() => window.open(APPLY_URL, "_blank", "noopener,noreferrer")}
-            >
-              Apply in 30 seconds <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+            {role.applyLink ? (
+              <Button
+                className="rounded-full bg-[#474ead] px-10 py-2.5 text-white"
+                onClick={() => window.open(role.applyLink!, "_blank", "noopener,noreferrer")}
+              >
+                Apply in 30 seconds <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            ) : (
+              <Button disabled variant="outline" className="rounded-full px-10">
+                Application link unavailable
+              </Button>
+            )}
             <Button
               variant="outline"
               className="rounded-full px-6"
