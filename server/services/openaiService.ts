@@ -128,7 +128,8 @@ async function buildEnhancedInstructions(userMessage?: string): Promise<string> 
 
       if (relevantChunks.length > 0) {
         const knowledgeHits = relevantChunks.filter(c => c.isKnowledge || c.url === KNOWLEDGE_FILE_SOURCE);
-        const siteHits = relevantChunks.filter(c => !c.isKnowledge && c.url !== KNOWLEDGE_FILE_SOURCE);
+        const jobHits = relevantChunks.filter(c => c.isJob);
+        const siteHits = relevantChunks.filter(c => !c.isKnowledge && c.url !== KNOWLEDGE_FILE_SOURCE && !c.isJob);
 
         // ── Knowledge file chunks (highest authority) ──
         if (knowledgeHits.length > 0) {
@@ -139,6 +140,20 @@ async function buildEnhancedInstructions(userMessage?: string): Promise<string> 
           knowledgeHits.forEach((chunk, idx) => {
             instructions += `--- Knowledge Excerpt ${idx + 1} ---\n`;
             instructions += `Content: ${chunk.content}\n\n`;
+          });
+        }
+
+        // ── Live job listing chunks ──
+        if (jobHits.length > 0) {
+          instructions += `\n\n[LIVE JOB LISTINGS — Current Open Positions]\n`;
+          instructions += `The following job openings are pulled directly from the OnSpot Global database. `;
+          instructions += `These are real, currently active positions. When a user asks about job openings, `;
+          instructions += `available roles, salaries, locations, or anything about careers at OnSpot Global, `;
+          instructions += `answer from this data. Always list the key details (title, location, contract type, `;
+          instructions += `salary/rate, and how to apply). Direct users to the Find Work page to apply.\n\n`;
+          jobHits.forEach((chunk, idx) => {
+            instructions += `--- Job Listing ${idx + 1} ---\n`;
+            instructions += `${chunk.content}\n\n`;
           });
         }
 
@@ -158,7 +173,7 @@ async function buildEnhancedInstructions(userMessage?: string): Promise<string> 
 
         const ragUrls = [...new Set(siteHits.map(c => c.url))];
         console.log(
-          `🔍 RAG: ${knowledgeHits.length} knowledge + ${siteHits.length} site chunk(s)` +
+          `🔍 RAG: ${knowledgeHits.length} knowledge + ${jobHits.length} job + ${siteHits.length} site chunk(s)` +
           ` from ${ragUrls.length} page(s)`
         );
       } else {

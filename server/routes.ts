@@ -1903,8 +1903,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ success: true, pages: [], totalChunks: 0, lastUpdated: null });
       }
 
-      // Group chunks by URL
-      const pageMap = new Map<string, { url: string; title: string; chunkCount: number; lastIndexed: string }>();
+      // Group chunks by URL, tagging type
+      const pageMap = new Map<string, { url: string; title: string; chunkCount: number; lastIndexed: string; isKnowledge?: boolean; isJob?: boolean }>();
       for (const chunk of index.chunks) {
         const existing = pageMap.get(chunk.url);
         if (existing) {
@@ -1915,6 +1915,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             title: chunk.title,
             chunkCount: 1,
             lastIndexed: chunk.lastIndexed,
+            isKnowledge: !!chunk.isKnowledge,
+            isJob: !!chunk.isJob,
           });
         }
       }
@@ -1924,6 +1926,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastUpdated: index.lastUpdated,
         totalChunks: index.totalChunks,
         embeddingModel: index.embeddingModel,
+        jobsLastIndexed: index.jobsLastIndexed ?? null,
         pages: [...pageMap.values()].sort((a, b) => a.url.localeCompare(b.url)),
       });
     } catch (error: any) {
@@ -1971,6 +1974,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/rag/reindex-jobs — re-index all open job listings from the database
+  app.post("/api/rag/reindex-jobs", async (req: any, res) => {
+    try {
+      console.log(`💼 Job listings RAG reindex triggered [${req.requestId}]`);
+      const { indexJobListings, invalidateRagCache } = await import("./services/ragService");
+      invalidateRagCache();
+
+      indexJobListings()
+        .then(r => console.log(`💼 Job reindex complete: ${r.jobsIndexed} jobs, ${r.chunksAdded} chunks`))
+        .catch(err => console.error(`❌ Job reindex failed:`, err.message));
+
+      res.json({
+        success: true,
+        message: "Job listings reindex started — reading from database and rebuilding embeddings in background",
+      });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   // POST /api/rag/search — test semantic search (dev/admin tool)
   app.post("/api/rag/search", async (req: any, res) => {
     try {
@@ -1990,6 +2013,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           content: c.content,
           chunkIndex: c.chunkIndex,
           lastIndexed: c.lastIndexed,
+          isKnowledge: !!c.isKnowledge,
+          isJob: !!c.isJob,
         })),
       });
     } catch (error: any) {
@@ -4102,6 +4127,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validated = insertJobSchema.parse(body);
       const job = await storage.createJob(validated);
       res.status(201).json(job);
+      // Keep Vanessa's job knowledge current after every change
+      import("./services/ragService")
+        .then(({ indexJobListings }) => indexJobListings())
+        .catch((err: any) => console.error("❌ Background job reindex failed:", err.message));
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         console.error("Admin job create - validation error:", error.errors);
@@ -4124,6 +4153,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Job not found" });
       }
       res.json(job);
+      import("./services/ragService")
+        .then(({ indexJobListings }) => indexJobListings())
+        .catch((err: any) => console.error("❌ Background job reindex failed:", err.message));
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Validation failed", details: error.errors });
@@ -4144,6 +4176,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Job not found" });
       }
       res.json(job);
+      import("./services/ragService")
+        .then(({ indexJobListings }) => indexJobListings())
+        .catch((err: any) => console.error("❌ Background job reindex failed:", err.message));
     } catch (error) {
       console.error("Admin job status update error:", error);
       res.status(500).json({ error: "Failed to update job status" });
@@ -4157,6 +4192,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Job not found" });
       }
       res.json({ success: true });
+      import("./services/ragService")
+        .then(({ indexJobListings }) => indexJobListings())
+        .catch((err: any) => console.error("❌ Background job reindex failed:", err.message));
     } catch (error) {
       console.error("Admin job delete error:", error);
       res.status(500).json({ error: "Failed to delete job" });

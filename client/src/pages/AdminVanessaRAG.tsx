@@ -27,6 +27,7 @@ import {
   Layers,
   BookOpen,
   Zap,
+  Briefcase,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -35,11 +36,15 @@ interface RagStatus {
   totalChunks: number;
   knowledgeChunks: number;
   siteChunks: number;
+  jobChunks: number;
   pagesIndexed: number;
+  jobsIndexed: number;
   knowledgeIndexed: boolean;
+  jobsIndexedFlag: boolean;
   lastUpdated: string | null;
   knowledgeLastIndexed: string | null;
   siteLastIndexed: string | null;
+  jobsLastIndexed: string | null;
   embeddingModel: string;
 }
 
@@ -48,12 +53,15 @@ interface RagPage {
   title: string;
   chunkCount: number;
   lastIndexed: string;
+  isKnowledge?: boolean;
+  isJob?: boolean;
 }
 
 interface RagPagesResponse {
   lastUpdated: string | null;
   totalChunks: number;
   embeddingModel: string;
+  jobsLastIndexed: string | null;
   pages: RagPage[];
 }
 
@@ -64,6 +72,7 @@ interface SearchChunk {
   chunkIndex: number;
   lastIndexed: string;
   isKnowledge?: boolean;
+  isJob?: boolean;
 }
 
 interface SearchResult {
@@ -74,6 +83,7 @@ interface SearchResult {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const KNOWLEDGE_SOURCE = "knowledge://vanessa_knowledge.txt";
+const JOB_SOURCE_PREFIX = "jobs://";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const apiRequest = async (method: string, path: string, body?: object) => {
@@ -163,6 +173,20 @@ export default function AdminVanessaRAG() {
       toast({ title: "Site reindex failed", description: err.message, variant: "destructive" }),
   });
 
+  const reindexJobs = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/rag/reindex-jobs"),
+    onSuccess: () => {
+      toast({
+        title: "Job listings reindex started",
+        description:
+          "Reading all open jobs from the database and rebuilding embeddings. Takes ~30 seconds.",
+      });
+      invalidateAfter(8000);
+    },
+    onError: (err: Error) =>
+      toast({ title: "Job reindex failed", description: err.message, variant: "destructive" }),
+  });
+
   const reindexUrl = useMutation({
     mutationFn: (url: string) => apiRequest("POST", "/api/rag/reindex-url", { url }),
     onSuccess: (data) => {
@@ -185,11 +209,12 @@ export default function AdminVanessaRAG() {
   // ── Render ─────────────────────────────────────────────────────────────────
   const status = statusQuery.data;
   const isAnyReindexPending =
-    reindexBoth.isPending || reindexKnowledge.isPending || reindexSite.isPending;
+    reindexBoth.isPending || reindexKnowledge.isPending || reindexSite.isPending || reindexJobs.isPending;
 
-  // Separate knowledge page entry from site pages
+  // Separate chunk sources
   const knowledgePage = pagesQuery.data?.pages.find(p => p.url === KNOWLEDGE_SOURCE);
-  const sitePages = pagesQuery.data?.pages.filter(p => p.url !== KNOWLEDGE_SOURCE) ?? [];
+  const jobPages = pagesQuery.data?.pages.filter(p => p.isJob) ?? [];
+  const sitePages = pagesQuery.data?.pages.filter(p => !p.isKnowledge && !p.isJob) ?? [];
 
   return (
     <div className="min-h-screen bg-background p-6 space-y-6">
@@ -200,11 +225,11 @@ export default function AdminVanessaRAG() {
           <h1 className="text-2xl font-semibold tracking-tight">Vanessa RAG Knowledge Base</h1>
         </div>
         <p className="text-sm text-muted-foreground">
-          Two-layer semantic search index — core knowledge file (high priority) + crawled website pages.
+          Three-layer semantic index — core knowledge file (high priority) + crawled website pages + live job listings.
         </p>
       </div>
 
-      {/* Status cards — 6 cards in 2 rows */}
+      {/* Status cards — 3 rows of 3 */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
         {/* Overall status */}
         <Card>
@@ -278,6 +303,42 @@ export default function AdminVanessaRAG() {
           </CardContent>
         </Card>
 
+        {/* Job listings */}
+        <Card>
+          <CardContent className="pt-5 pb-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Briefcase className="w-4 h-4 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground uppercase tracking-wide">Job listings</span>
+            </div>
+            {statusQuery.isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : status?.jobsIndexedFlag ? (
+              <div className="flex items-center gap-1.5">
+                <CheckCircle className="w-4 h-4 text-green-500" />
+                <span className="font-medium text-sm">{status.jobsIndexed} jobs · {status.jobChunks} chunks</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <AlertCircle className="w-4 h-4 text-amber-500" />
+                <span className="font-medium text-sm">Not indexed</span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Jobs last indexed */}
+        <Card>
+          <CardContent className="pt-5 pb-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Briefcase className="w-4 h-4 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground uppercase tracking-wide">Jobs updated</span>
+            </div>
+            <span className="text-xs text-foreground font-medium leading-tight">
+              {statusQuery.isLoading ? "—" : fmtDate(status?.jobsLastIndexed ?? null)}
+            </span>
+          </CardContent>
+        </Card>
+
         {/* Knowledge last indexed */}
         <Card>
           <CardContent className="pt-5 pb-4">
@@ -303,11 +364,24 @@ export default function AdminVanessaRAG() {
             </span>
           </CardContent>
         </Card>
+
+        {/* Last overall update */}
+        <Card>
+          <CardContent className="pt-5 pb-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Database className="w-4 h-4 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground uppercase tracking-wide">Index updated</span>
+            </div>
+            <span className="text-xs text-foreground font-medium leading-tight">
+              {statusQuery.isLoading ? "—" : fmtDate(status?.lastUpdated ?? null)}
+            </span>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Model badge */}
+      {/* Model + chunk badges */}
       {status?.embeddingModel && (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs text-muted-foreground">Embedding model:</span>
           <Badge variant="secondary">{status.embeddingModel}</Badge>
           {status.knowledgeChunks > 0 && (
@@ -320,6 +394,12 @@ export default function AdminVanessaRAG() {
             <Badge variant="outline" className="text-xs gap-1">
               <Globe className="w-3 h-3" />
               {status.siteChunks} site
+            </Badge>
+          )}
+          {status.jobChunks > 0 && (
+            <Badge variant="outline" className="text-xs gap-1">
+              <Briefcase className="w-3 h-3" />
+              {status.jobChunks} jobs
             </Badge>
           )}
         </div>
@@ -336,8 +416,8 @@ export default function AdminVanessaRAG() {
         {/* ── Actions tab ─────────────────────────────────────────────────── */}
         <TabsContent value="actions" className="space-y-4 mt-4">
 
-          {/* Selective reindex cards — 3-up grid */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          {/* Selective reindex cards — 2×2 grid */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {/* Knowledge file only */}
             <Card className="border-purple-200 dark:border-purple-800">
               <CardHeader className="pb-3">
@@ -347,7 +427,7 @@ export default function AdminVanessaRAG() {
                 </CardTitle>
                 <CardDescription className="text-xs">
                   Re-embed <code className="bg-muted px-1 rounded">vanessa_knowledge.txt</code> without
-                  touching site pages. Use after manually editing Vanessa's persona or adding new FAQs.
+                  touching site pages or jobs. Use after manually editing Vanessa's persona or adding new FAQs.
                   Takes ~30 seconds.
                 </CardDescription>
               </CardHeader>
@@ -368,6 +448,35 @@ export default function AdminVanessaRAG() {
               </CardContent>
             </Card>
 
+            {/* Job listings only */}
+            <Card className="border-green-200 dark:border-green-800">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Briefcase className="w-4 h-4 text-green-600" />
+                  Job Listings Only
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Read all open jobs directly from the database and rebuild their embeddings. Knowledge
+                  and site chunks are preserved. Use after adding or editing job postings. Takes ~30 seconds.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  onClick={() => reindexJobs.mutate()}
+                  disabled={isAnyReindexPending}
+                  variant="outline"
+                  className="gap-2 w-full"
+                >
+                  {reindexJobs.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Briefcase className="w-4 h-4 text-green-600" />
+                  )}
+                  {reindexJobs.isPending ? "Indexing…" : "Reindex Job Listings"}
+                </Button>
+              </CardContent>
+            </Card>
+
             {/* Site pages only */}
             <Card>
               <CardHeader className="pb-3">
@@ -376,7 +485,7 @@ export default function AdminVanessaRAG() {
                   Website Pages Only
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Re-crawl onspotglobal.com and rebuild site embeddings. Knowledge file chunks are
+                  Re-crawl onspotglobal.com and rebuild site embeddings. Knowledge file and job chunks are
                   preserved unchanged. Takes 5–15 minutes.
                 </CardDescription>
               </CardHeader>
@@ -397,7 +506,7 @@ export default function AdminVanessaRAG() {
               </CardContent>
             </Card>
 
-            {/* Both */}
+            {/* Reindex everything */}
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
@@ -405,8 +514,8 @@ export default function AdminVanessaRAG() {
                   Reindex Everything
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Full rebuild — crawl all site pages and re-embed the knowledge file from scratch.
-                  Use when doing a major update to both sources.
+                  Full rebuild — crawl all site pages, re-embed the knowledge file, and re-index all job
+                  listings from scratch. Use when doing a major update to all sources.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -434,8 +543,8 @@ export default function AdminVanessaRAG() {
                 Index a Single Page
               </CardTitle>
               <CardDescription>
-                Add or refresh one specific page without re-crawling the whole site. Knowledge file
-                chunks are untouched.
+                Add or refresh one specific page without re-crawling the whole site. Knowledge file and
+                job chunks are untouched.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -468,7 +577,7 @@ export default function AdminVanessaRAG() {
           {/* How it works */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">How the two-layer RAG works</CardTitle>
+              <CardTitle className="text-base">How the three-layer RAG works</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3 text-sm text-muted-foreground">
@@ -480,7 +589,18 @@ export default function AdminVanessaRAG() {
                     <span className="text-foreground font-medium">Layer 1 — Core Knowledge File (HIGH PRIORITY):</span>{" "}
                     <code className="text-xs bg-muted px-1 rounded">resources/vanessa_knowledge.txt</code> is always
                     indexed into RAG. When a question matches this file (persona, values, leadership, pricing, FAQs),
-                    those chunks are injected first with HIGH PRIORITY instructions — Vanessa prefers them over website content.
+                    those chunks are injected first with HIGH PRIORITY instructions.
+                  </div>
+                </div>
+                <div className="flex gap-3 items-start">
+                  <div className="rounded-full bg-green-100 dark:bg-green-900/40 p-1.5 shrink-0 mt-0.5">
+                    <Briefcase className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div>
+                    <span className="text-foreground font-medium">Layer 2 — Live Job Listings:</span>{" "}
+                    All open jobs are read directly from the database and embedded as structured text. Updated
+                    automatically when admins create, edit, or delete jobs. Vanessa uses this to answer
+                    "what jobs are open?", salary, location, and contract-type questions.
                   </div>
                 </div>
                 <div className="flex gap-3 items-start">
@@ -488,20 +608,21 @@ export default function AdminVanessaRAG() {
                     <Globe className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div>
-                    <span className="text-foreground font-medium">Layer 2 — Website Pages:</span>{" "}
+                    <span className="text-foreground font-medium">Layer 3 — Website Pages:</span>{" "}
                     onspotglobal.com is crawled nightly. Text is chunked (~700 chars, 100-char overlap) and embedded
-                    with <code className="text-xs bg-muted px-1 rounded">text-embedding-3-small</code> (512 dims). Website chunks fill
-                    the remaining context slots after knowledge hits.
+                    with <code className="text-xs bg-muted px-1 rounded">text-embedding-3-small</code> (512 dims).
+                    Used for service details, blog posts, and static marketing content.
                   </div>
                 </div>
                 <div className="flex gap-3 items-start">
-                  <div className="rounded-full bg-green-100 dark:bg-green-900/40 p-1.5 shrink-0 mt-0.5">
-                    <Zap className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
+                  <div className="rounded-full bg-gray-100 dark:bg-gray-800 p-1.5 shrink-0 mt-0.5">
+                    <Zap className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
                   </div>
                   <div>
-                    <span className="text-foreground font-medium">Conflict resolution:</span>{" "}
-                    For persona, brand voice, values, and internal rules — knowledge file always wins.
-                    For page-specific details, blog posts, and newly published content — website chunks take precedence.
+                    <span className="text-foreground font-medium">Retrieval:</span>{" "}
+                    Each user message is embedded and cosine-similarity is used to find the most relevant
+                    chunks. Knowledge chunks get priority slots; job and site chunks compete for the rest
+                    by relevance score. All matched context is injected into Vanessa's prompt before she answers.
                   </div>
                 </div>
               </div>
@@ -571,6 +692,90 @@ export default function AdminVanessaRAG() {
                     )}
                     Index Now
                   </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Job listings entry */}
+          <Card className="border-green-200 dark:border-green-800">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Briefcase className="w-4 h-4 text-green-600" />
+                Live Job Listings
+                <Badge variant="secondary" className="text-xs ml-1">From Database</Badge>
+              </CardTitle>
+              <CardDescription>
+                All open job postings read directly from the jobs table — title, location, contract type,
+                salary, description, requirements, and application link. Auto-updated when admin edits jobs.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {statusQuery.isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+              ) : status?.jobsIndexedFlag ? (
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-sm font-medium">
+                      {status.jobsIndexed} job(s) · {status.jobChunks} chunks indexed
+                    </span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    Last indexed: {fmtDate(status.jobsLastIndexed)}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => reindexJobs.mutate()}
+                    disabled={isAnyReindexPending}
+                    className="gap-1.5 ml-auto"
+                  >
+                    {reindexJobs.isPending ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-3 h-3" />
+                    )}
+                    Re-index Jobs
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <AlertCircle className="w-4 h-4 text-amber-500" />
+                    <span className="text-sm text-muted-foreground">Not indexed yet</span>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => reindexJobs.mutate()}
+                    disabled={isAnyReindexPending}
+                    className="gap-1.5 ml-auto"
+                  >
+                    {reindexJobs.isPending ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Briefcase className="w-3 h-3" />
+                    )}
+                    Index Jobs Now
+                  </Button>
+                </div>
+              )}
+
+              {/* Individual job entries */}
+              {jobPages.length > 0 && (
+                <div className="mt-4 divide-y border rounded-md">
+                  {jobPages.map((page) => (
+                    <div key={page.url} className="flex items-center gap-3 px-4 py-2.5">
+                      <Briefcase className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{page.title}</p>
+                        <span className="text-xs text-muted-foreground">{fmtDateShort(page.lastIndexed)}</span>
+                      </div>
+                      <Badge variant="secondary" className="text-xs shrink-0">
+                        {page.chunkCount} chunk{page.chunkCount !== 1 ? "s" : ""}
+                      </Badge>
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>
@@ -648,14 +853,14 @@ export default function AdminVanessaRAG() {
                 Test Semantic Search
               </CardTitle>
               <CardDescription>
-                Simulate a user question to see exactly which chunks Vanessa would retrieve —
-                knowledge file chunks are shown with a purple badge.
+                Simulate a user question to see exactly which chunks Vanessa would retrieve.
+                Try "What jobs are open?" to verify job indexing is working.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex gap-2">
                 <Input
-                  placeholder="e.g. Who is the CEO? What are your pricing plans?"
+                  placeholder='e.g. "What jobs are open?" or "What are your pricing plans?"'
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="flex-1"
@@ -688,12 +893,18 @@ export default function AdminVanessaRAG() {
                     </p>
                   ) : (
                     searchResults.chunks.map((chunk, idx) => {
-                      const isKnowledgeChunk =
-                        chunk.isKnowledge || chunk.url === KNOWLEDGE_SOURCE;
+                      const isKnowledgeChunk = chunk.isKnowledge || chunk.url === KNOWLEDGE_SOURCE;
+                      const isJobChunk = chunk.isJob || chunk.url.startsWith(JOB_SOURCE_PREFIX);
                       return (
                         <Card
                           key={`${chunk.url}-${chunk.chunkIndex}`}
-                          className={isKnowledgeChunk ? "border-purple-200 dark:border-purple-800" : ""}
+                          className={
+                            isKnowledgeChunk
+                              ? "border-purple-200 dark:border-purple-800"
+                              : isJobChunk
+                              ? "border-green-200 dark:border-green-800"
+                              : ""
+                          }
                         >
                           <CardContent className="pt-4 pb-4 space-y-2">
                             <div className="flex items-start justify-between gap-2 flex-wrap">
@@ -702,6 +913,11 @@ export default function AdminVanessaRAG() {
                                   <Badge className="text-xs gap-1 bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 hover:bg-purple-100">
                                     <BookOpen className="w-3 h-3" />
                                     HIGH PRIORITY — Knowledge
+                                  </Badge>
+                                ) : isJobChunk ? (
+                                  <Badge className="text-xs gap-1 bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 hover:bg-green-100">
+                                    <Briefcase className="w-3 h-3" />
+                                    Live Job Listing
                                   </Badge>
                                 ) : (
                                   <Badge variant="secondary" className="text-xs gap-1">
@@ -716,16 +932,9 @@ export default function AdminVanessaRAG() {
                               </Badge>
                             </div>
                             {!isKnowledgeChunk && (
-                              <a
-                                href={chunk.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs text-muted-foreground hover:underline block"
-                              >
-                                {chunk.url}
-                              </a>
+                              <p className="text-xs text-muted-foreground break-all">{chunk.url}</p>
                             )}
-                            <p className="text-sm text-foreground/80 leading-relaxed bg-muted rounded-md px-3 py-2">
+                            <p className="text-sm text-foreground/80 leading-relaxed bg-muted rounded-md px-3 py-2 whitespace-pre-line">
                               {chunk.content}
                             </p>
                           </CardContent>

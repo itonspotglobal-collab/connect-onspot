@@ -1,0 +1,84 @@
+Vanessa is still not reading live site data correctly.
+
+I tested the chat widget by asking:
+“What are the job openings here?”
+
+But Vanessa did not return the current job openings, even though the Find Work page already shows active jobs such as:
+- IT Administrator
+- Accounting Manager
+- Other posted jobs on the Find Work page
+
+Please debug and fix this.
+
+Important:
+Vanessa must know everything on the website, including dynamic pages and job listings.
+
+Specific requirements:
+
+1. Fix website crawling/indexing
+- Check whether the crawler is actually running.
+- Check whether it is indexing the Find Work page.
+- Check whether job listing pages/cards are being included.
+- Check whether dynamically rendered content is being missed.
+- If jobs are loaded from an API instead of static HTML, Vanessa must read from that API or backend data source directly.
+
+2. Job openings support
+Vanessa must be able to answer questions like:
+- “What jobs are open?”
+- “What are the job openings here?”
+- “Do you have remote jobs?”
+- “What is the salary for IT Administrator?”
+- “Where is the Accounting Manager job located?”
+- “Show me full-time jobs.”
+
+When answering job questions, Vanessa should return:
+- Job title
+- Contract type
+- Salary/rate
+- Location
+- Posted date
+- Short description
+- Link or instruction to apply/view details when available
+
+3. Dynamic content handling
+If the Find Work page is React-rendered or API-driven:
+- Do not rely only on raw page HTML.
+- Inspect network/backend/API routes used to load jobs.
+- Index job data directly from the source.
+- Add job listings as a dedicated knowledge source in Vanessa’s RAG/indexing system.
+
+4. Reuse existing knowledge base
+Keep using:
+resources/vanessa_knowledge.txt
+
+Do not remove or replace Vanessa’s existing persona and company knowledge.
+
+5. Add a job indexer
+Create or update an indexer that includes:
+- resources/vanessa_knowledge.txt
+- website static pages
+- dynamic job listings from Find Work
+- individual job detail pages if available
+
+6. Add debug/admin tools
+Add a way to verify:
+- Which URLs were indexed
+- Whether the Find Work page was indexed
+- How many job listings were indexed
+- Last indexed timestamp
+- Any failed crawl/API fetches
+
+7. Expected behavior
+When I ask Vanessa:
+“What are the job openings here?”
+
+She should answer with the current active job openings from the Find Work page, for example:
+
+“Here are some current openings:
+1. IT Administrator — Full Time, Remote, ₱10–₱15/month, posted 2 months ago.
+2. Accounting Manager — Full Time, Hybrid, Rate TBD, posted 3 weeks ago.
+You can click ‘View details’ or ‘Apply Now’ on the Find Work page to continue.”
+
+The exact answer should come from the real indexed site data, not hardcoded examples.
+
+Please inspect the existing implementation, find why Vanessa cannot see job listings, and fix it so she can answer from all site pages and dynamic job data accurately.

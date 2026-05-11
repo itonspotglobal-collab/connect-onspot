@@ -248,6 +248,16 @@ app.use((req, res, next) => {
         }
       })
       .catch((err: any) => console.warn(`⚠️ RAG pre-warm skipped: ${err.message}`));
+
+    // Index live job listings from the database so Vanessa can answer job questions.
+    // Runs in the background; does not block startup. Updates the RAG index with
+    // all currently open jobs — preserving knowledge and site chunks.
+    import('./services/ragService')
+      .then(({ indexJobListings }) => indexJobListings())
+      .then((result) => {
+        console.log(`💼 Job listings indexed at startup: ${result.jobsIndexed} job(s), ${result.chunksAdded} chunk(s)`);
+      })
+      .catch((err: any) => console.warn(`⚠️ Startup job indexing skipped: ${err.message}`));
   }
   
   // Seed posts from legacy static content to database
