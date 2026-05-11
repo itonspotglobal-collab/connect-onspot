@@ -71,6 +71,7 @@ export interface JobShape {
   createdAt?: string | Date | null;
   status?: string;
   proposalCount?: number | null;
+  applyLink?: string | null;
 }
 
 export interface ExpandableJobCardProps {
@@ -95,7 +96,11 @@ export function ExpandableJobCard({
 
   function handleApply(e: React.MouseEvent) {
     e.stopPropagation();
-    navigate(`/jobs/${job.id}`);
+    if (job.applyLink) {
+      window.open(job.applyLink, "_blank", "noopener,noreferrer");
+    } else {
+      navigate(`/find-work/job/${job.id}`);
+    }
   }
 
   return (
@@ -225,10 +230,17 @@ export function ExpandableJobCard({
                   View Details
                 </Button>
                 {showApply && (
-                  <Button size="sm" onClick={handleApply}>
-                    Apply Now
-                    <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
-                  </Button>
+                  job.applyLink ? (
+                    <Button size="sm" onClick={handleApply}>
+                      Apply Now
+                      <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                    </Button>
+                  ) : (
+                    <Button size="sm" variant="outline" onClick={handleApply}>
+                      View Role
+                      <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                    </Button>
+                  )
                 )}
               </div>
               {adminActions && (

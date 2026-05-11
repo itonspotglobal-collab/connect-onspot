@@ -186,7 +186,7 @@ function JobCard({ job, onNavigate }: { job: Job; onNavigate: (id: string) => vo
           <div className="mt-4 flex items-center gap-3">
             <Button
               className="rounded-full bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] px-6 text-white border-0"
-              onClick={() => window.open(APPLY_URL, "_blank", "noopener,noreferrer")}
+              onClick={() => window.open(job.applyLink || APPLY_URL, "_blank", "noopener,noreferrer")}
             >
               Apply Now
             </Button>

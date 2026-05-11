@@ -141,6 +141,8 @@ export const jobs = pgTable("jobs", {
   // System requirements
   minimumInternetSpeed: text("minimum_internet_speed"),
   systemRequirements: text("system_requirements"),
+  // Application link (per-job — admin controlled)
+  applyLink: text("apply_link"),
   status: text("status").notNull().default("open"), // open, in_progress, completed, cancelled
   proposalCount: integer("proposal_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),

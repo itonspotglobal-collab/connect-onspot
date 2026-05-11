@@ -88,6 +88,8 @@ export const defaultFormData = {
   // System requirements
   minimumInternetSpeed: "",
   systemRequirements: "",
+  // Application link
+  applyLink: "",
 };
 
 export type JobFormData = typeof defaultFormData;
@@ -133,6 +135,8 @@ export function jobToFormData(job: Job): JobFormData {
     // System requirements
     minimumInternetSpeed: (job as any).minimumInternetSpeed || "",
     systemRequirements: (job as any).systemRequirements || "",
+    // Application link
+    applyLink: (job as any).applyLink || "",
   };
 }
 
@@ -226,6 +230,13 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
     [formData, job]
   );
 
+  // Ensures apply links always have a protocol prefix
+  const normalizeUrl = (url: string): string => {
+    const trimmed = url.trim();
+    if (!trimmed) return "";
+    return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  };
+
   const validate = (): boolean => {
     const next: Partial<Record<keyof JobFormData, string>> = {};
     if (!formData.title.trim()) next.title = "Job title is required";
@@ -233,6 +244,10 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
     if (!formData.category) next.category = "Category is required";
     if (!formData.contractType) next.contractType = "Contract type is required";
     if (!formData.experienceLevel) next.experienceLevel = "Experience level is required";
+    if (formData.applyLink.trim()) {
+      try { new URL(normalizeUrl(formData.applyLink)); }
+      catch { next.applyLink = "Please enter a valid URL (e.g. https://example.com/apply)"; }
+    }
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -294,6 +309,11 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
     // System requirements
     if (formData.minimumInternetSpeed) payload.minimumInternetSpeed = formData.minimumInternetSpeed.trim();
     payload.systemRequirements = formData.systemRequirements.trim();
+
+    // Application link — normalize and save (or null to clear)
+    payload.applyLink = formData.applyLink.trim()
+      ? normalizeUrl(formData.applyLink)
+      : null;
 
     if (isEditing && job) {
       updateMutation.mutate({ id: job.id, data: payload });
@@ -488,6 +508,24 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            {/* Apply Link — full width row */}
+            <div className="mt-4 space-y-2">
+              <Label htmlFor="modal-apply-link">Apply Link</Label>
+              <Input
+                id="modal-apply-link"
+                value={formData.applyLink}
+                onChange={(e) => updateField("applyLink", e.target.value)}
+                placeholder="https://example.com/apply"
+              />
+              {errors.applyLink ? (
+                <p className="text-xs text-red-500">{errors.applyLink}</p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Where candidates click "Apply Now". Leave blank to disable the button.
+                </p>
+              )}
             </div>
           </div>
 

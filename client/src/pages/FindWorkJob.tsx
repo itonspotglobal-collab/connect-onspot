@@ -490,10 +490,16 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
           </div>
 
           <div className="mt-6 flex gap-3">
-            <Button className="rounded-full bg-[#474ead] px-7 text-white hover:bg-[#3d439c]"
-              onClick={() => window.open(APPLY_URL, "_blank", "noopener,noreferrer")}>
-              Apply in 30 seconds <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+            {(job.applyLink || APPLY_URL) ? (
+              <Button className="rounded-full bg-[#474ead] px-7 text-white hover:bg-[#3d439c]"
+                onClick={() => window.open(job.applyLink || APPLY_URL, "_blank", "noopener,noreferrer")}>
+                Apply in 30 seconds <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            ) : (
+              <Button disabled variant="outline" className="rounded-full px-7">
+                Application link unavailable
+              </Button>
+            )}
           </div>
         </div>
       </motion.div>
@@ -639,7 +645,7 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
             <Button
               className="rounded-full bg-[#474ead] px-10 py-2.5 text-white shadow-[0_8px_32px_rgba(71,78,173,0.25)] hover:bg-[#3d439c]"
-              onClick={() => window.open(APPLY_URL, "_blank", "noopener,noreferrer")}
+              onClick={() => window.open(job.applyLink || APPLY_URL, "_blank", "noopener,noreferrer")}
             >
               Apply Now <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
@@ -806,7 +812,7 @@ export default function FindWorkJob() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Button
               className="rounded-full bg-[#474ead] px-8 py-2.5 text-white"
-              onClick={() => window.open(APPLY_URL, "_blank", "noopener,noreferrer")}
+              onClick={() => window.open(job.applyLink || APPLY_URL, "_blank", "noopener,noreferrer")}
             >
               Apply Now <ArrowRight className="ml-2 h-4 w-4" />
             </Button>

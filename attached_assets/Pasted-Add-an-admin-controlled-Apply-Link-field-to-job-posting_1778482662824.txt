@@ -1,0 +1,100 @@
+Add an admin-controlled Apply Link field to job postings and connect it to every public “Apply Now” button.
+
+Goal
+When an admin adds or edits a job opening in `/admin/find-work`, they should be able to enter an application URL. On the public job posting pages/modals, clicking `Apply Now` should redirect the user to that specific URL.
+
+Required changes
+
+1. Add Apply Link field in admin Add/Edit Job Posting form
+In `/admin/find-work`, add a new input field:
+
+Label: `Apply Link`
+Placeholder: `https://example.com/apply`
+
+Where to place it:
+- preferably in the Basic Information section, or
+- near Status / Publishing settings, or
+- near the salary/rate section
+
+Field behavior:
+- editable when adding a new job
+- editable when editing an existing job
+- saved with the job posting data
+- prefilled when editing an existing job
+- optional, but validate format if a value is entered
+
+2. Update shared job data shape
+Add this field to the shared job object:
+
+```ts
+applyLink?: string;
+
+Make sure this field is supported wherever jobs are stored/read:
+
+AdminFindWork.tsx
+FindWork.tsx
+FindWorkJobs.tsx
+FindWorkAllJobs.tsx, if used
+job detail modal/popup
+Save and preserve applyLink
+When admin creates a job:
+include applyLink in the new job object
+
+When admin edits a job:
+
+update applyLink
+do not lose existing applyLink values
+Connect public Apply Now buttons
+Update all public-facing Apply Now buttons so they use the selected job’s applyLink.
+
+Locations to check:
+
+job details popup in FindWork.tsx
+full job page FindWorkJobs.tsx
+all jobs listing page / job details view if it has Apply Now
+any preview/details modal that has an Apply Now button
+
+Expected behavior:
+
+if job.applyLink exists, clicking Apply Now opens that URL
+use window.open(job.applyLink, "_blank", "noopener,noreferrer") for external links
+if the link is internal, normal navigation is also acceptable
+if no applyLink exists, disable the button or show a fallback message like Application link unavailable
+URL handling
+If the admin enters a URL without https://, either:
+auto-prefix https://, or
+show validation requiring a valid URL
+
+Preferred:
+
+normalize before saving:
+example.com/apply becomes https://example.com/apply
+Keep design consistent
+Style the new Apply Link input like the existing form inputs.
+Do not redesign the admin modal.
+Keep:
+current spacing
+current labels
+current input border/focus style
+current responsive layout
+Output expectation
+Return updated code for:
+admin add/edit form field
+shared job type/schema
+create job logic
+edit job logic
+public Apply Now button handlers
+URL normalization/validation helper if needed
+
+Important constraints
+
+Do not hardcode one global application link
+Each job posting must have its own applyLink
+Do not break existing admin fields
+Do not break existing popup/details behavior
+Keep Cultural Fit and other recently added fields intact
+
+Use this extra note too:
+
+```txt id="91429"
+Important: the Apply Now button must use the link entered by the admin for that specific job posting, not a fixed static URL.

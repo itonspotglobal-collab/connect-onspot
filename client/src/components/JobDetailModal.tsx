@@ -91,6 +91,7 @@ export interface JobDetailModalProps {
     skillTags?: string[] | null;
     createdAt?: string | Date | null;
     status?: string;
+    applyLink?: string | null;
   };
   open: boolean;
   onClose: () => void;
@@ -404,17 +405,20 @@ export function JobDetailModal({
         <div className="flex-shrink-0 border-t border-border px-6 py-4 flex items-center gap-3 flex-wrap bg-background">
           {showApply && (
             <>
-              <Button
-                onClick={() =>
-                  window.open(
-                    "https://api.leadconnectorhq.com/widget/form/36ljnIgIsA1xoBluXvSK?notrack=true",
-                    "_blank",
-                  )
-                }
-              >
-                Apply Now
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
+              {job.applyLink ? (
+                <Button
+                  onClick={() =>
+                    window.open(job.applyLink!, "_blank", "noopener,noreferrer")
+                  }
+                >
+                  Apply Now
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              ) : (
+                <Button disabled variant="outline">
+                  Application link unavailable
+                </Button>
+              )}
               <Button variant="outline" size="icon" aria-label="Save job">
                 <Heart className="w-4 h-4" />
               </Button>
