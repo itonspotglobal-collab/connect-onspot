@@ -146,12 +146,14 @@ export const jobs = pgTable("jobs", {
   applicationMethod: text("application_method").default("external_link"), // external_link | built_in_form
   status: text("status").notNull().default("open"), // open, in_progress, completed, cancelled
   // Approval workflow
-  approvalStatus: text("approval_status").notNull().default("pending"), // pending | approved | rejected
+  approvalStatus: text("approval_status").notNull().default("pending"), // pending | approved | rejected | linked_to_existing
   approvedBy: varchar("approved_by"),
   approvedAt: timestamp("approved_at"),
   rejectedBy: varchar("rejected_by"),
   rejectedAt: timestamp("rejected_at"),
   rejectionReason: text("rejection_reason"),
+  isClientSubmitted: boolean("is_client_submitted").notNull().default(false),
+  existingJobId: varchar("existing_job_id"), // set when approvalStatus = linked_to_existing
   proposalCount: integer("proposal_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

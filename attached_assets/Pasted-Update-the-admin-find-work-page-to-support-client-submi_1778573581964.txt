@@ -1,0 +1,140 @@
+Update the admin/find-work page to support client-submitted job posting approval and duplicate checking.
+
+Current admin/find-work page already manages job postings.
+
+New requirement:
+Add a new section/tab called "Client Job Requests" or "Pending Approvals".
+
+When a client submits a job posting:
+- Save it with approvalStatus = "pending"
+- Show it in admin/find-work under Pending Approvals
+- Do not show it yet on the public find-work/jobs page
+
+Admin Pending Approval UI:
+Display each pending client job request with:
+- Job Title
+- Company / Client Name
+- Category
+- Work Setup
+- Contract Type
+- Salary / Rate
+- Date Submitted
+- Possible Duplicate warning
+- Actions:
+  - View Details
+  - Approve
+  - Decline
+  - Merge with Existing Job / Use Existing Job
+
+Duplicate prevention logic:
+Before approval, compare the client-submitted job title with existing approved/open jobs.
+
+If a similar job already exists, show a warning badge:
+"Possible duplicate job posting"
+
+For example:
+- Existing approved job: Customer Service Representative
+- Client submitted: Customer Service Rep
+- Admin should see a duplicate warning.
+
+Duplicate matching can check:
+- normalized job title
+- category
+- work setup
+- contract type
+- company/client
+- active approved jobs
+
+Normalize job titles by:
+- lowercasing
+- trimming spaces
+- removing special characters
+- converting common abbreviations like:
+  - csr = customer service representative
+  - customer service rep = customer service representative
+
+Admin approval options:
+1. Approve as New Job
+- approvalStatus = "approved"
+- Job becomes visible on find-work/jobs
+
+2. Decline
+- approvalStatus = "declined" or "rejected"
+- Require or allow rejection reason
+- Job remains visible to client as Declined
+- Job does not appear publicly
+
+3. Link to Existing Job / Merge
+Use this if the submitted job is a duplicate.
+- Do not create another public job listing
+- Mark client submission as "linked_to_existing"
+- Store existingJobId
+- Client profile should show:
+  "Linked to existing approved job posting"
+- Public find-work/jobs page should only show one job post
+
+Database changes:
+Add or update fields in job postings table:
+- approvalStatus:
+  - pending
+  - approved
+  - rejected
+  - linked_to_existing
+- approvedBy
+- approvedAt
+- rejectedBy
+- rejectedAt
+- rejectionReason
+- existingJobId nullable
+- submittedByClientId nullable
+- isClientSubmitted boolean
+
+Public find-work/jobs page:
+Only show jobs where:
+- approvalStatus = "approved"
+- status = "open"
+
+Do not show:
+- pending
+- rejected
+- linked_to_existing duplicates
+
+Client Profile Job Postings:
+Show client-submitted jobs with badges:
+- Pending for Approval
+- Approved
+- Declined
+- Linked to Existing Job
+
+If linked to existing:
+Show message:
+"Your job request was linked to an existing active job posting to avoid duplicate listings."
+
+Admin duplicate warning:
+When viewing a pending job request, show a list of similar existing jobs:
+- Job Title
+- Company
+- Category
+- Work Setup
+- Status
+- Approval Status
+- Created Date
+- Button: Link to this existing job
+
+Recommended UX:
+In admin/find-work, add tabs:
+- All Jobs
+- Pending Approvals
+- Approved
+- Declined
+- Possible Duplicates
+
+Stats cards should include:
+- Total Jobs
+- Open
+- Closed
+- Pending Approval
+- Client Requests
+
+Expected result:
+Client-submitted jobs require admin approval. Admin can approve, decline, or link duplicate job requests to an existing job posting. This prevents duplicate public job posts such as multiple Customer Service Representative listings while still allowing clients to submit hiring requests.

@@ -51,6 +51,10 @@ import {
   ThumbsDown,
   RotateCcw,
   AlertCircle,
+  Building2,
+  Link2,
+  Search,
+  ListFilter,
 } from "lucide-react";
 import type { Job } from "@shared/schema";
 import { JobFormModal } from "@/components/JobFormModal";
@@ -130,7 +134,71 @@ const APPROVAL_CONFIG: Record<string, { label: string; strip: string; badge: str
     strip: "bg-red-400",
     badge: "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400",
   },
+  linked_to_existing: {
+    label: "Linked to Existing",
+    strip: "bg-violet-400",
+    badge: "bg-violet-50 text-violet-700 dark:bg-violet-900/20 dark:text-violet-400",
+  },
 };
+
+// ─── Duplicate detection ──────────────────────────────────────────────────────
+const ABBREVIATIONS: Record<string, string> = {
+  "csr": "customer service representative",
+  "customer service rep": "customer service representative",
+  "va": "virtual assistant",
+  "bpo": "business process outsourcing",
+  "qa": "quality assurance",
+  "pm": "project manager",
+  "hr": "human resources",
+  "it": "information technology",
+  "dev": "developer",
+  "seo": "search engine optimization",
+  "smm": "social media manager",
+  "smms": "social media manager",
+};
+
+function normalizeTitle(title: string): string {
+  let s = title.toLowerCase().trim().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+  for (const [abbr, full] of Object.entries(ABBREVIATIONS)) {
+    s = s.replace(new RegExp(`\\b${abbr}\\b`, "g"), full);
+  }
+  return s;
+}
+
+function titleSimilarity(a: string, b: string): number {
+  const na = normalizeTitle(a);
+  const nb = normalizeTitle(b);
+  if (na === nb) return 1;
+  const wa = new Set(na.split(" "));
+  const wb = new Set(nb.split(" "));
+  const intersection = [...wa].filter(w => wb.has(w) && w.length > 2);
+  const union = new Set([...wa, ...wb]);
+  return intersection.length / Math.max(union.size, 1);
+}
+
+type EnrichedJob = Job & {
+  clientCompanyName?: string | null;
+  clientContactName?: string | null;
+};
+
+function findDuplicates(job: EnrichedJob, allJobs: EnrichedJob[]): EnrichedJob[] {
+  return allJobs.filter(
+    (j) =>
+      j.id !== job.id &&
+      (j as any).approvalStatus === "approved" &&
+      j.status === "open" &&
+      titleSimilarity(job.title, j.title) >= 0.45,
+  );
+}
+
+// ─── Tabs config ──────────────────────────────────────────────────────────────
+type TabKey = "all" | "pending" | "approved" | "declined";
+const TABS: { key: TabKey; label: string }[] = [
+  { key: "all", label: "All Jobs" },
+  { key: "pending", label: "Pending Approvals" },
+  { key: "approved", label: "Approved" },
+  { key: "declined", label: "Declined" },
+];
 
 // ─── Admin job row ────────────────────────────────────────────────────────────
 function AdminJobRow({
@@ -351,6 +419,140 @@ function AdminJobRow({
   );
 }
 
+// ─── Pending Approval Card ────────────────────────────────────────────────────
+function PendingApprovalCard({
+  job,
+  allJobs,
+  onApprove,
+  onReject,
+  onLink,
+  onView,
+  isApproving,
+  isRejecting,
+}: {
+  job: EnrichedJob;
+  allJobs: EnrichedJob[];
+  onApprove: () => void;
+  onReject: () => void;
+  onLink: () => void;
+  onView: () => void;
+  isApproving: boolean;
+  isRejecting: boolean;
+}) {
+  const pay = buildRateDisplay(job);
+  const timeAgo = getTimeAgo(job.createdAt);
+  const duplicates = findDuplicates(job, allJobs);
+  const hasDuplicates = duplicates.length > 0;
+
+  return (
+    <div className={`relative rounded-2xl border bg-white dark:bg-[#0f172a]/60 transition-shadow hover:shadow-md ${hasDuplicates ? "border-amber-300 dark:border-amber-700/50" : "border-slate-200/70 dark:border-white/[0.08]"}`}>
+      {/* Amber left strip */}
+      <div className="absolute left-0 top-4 bottom-4 w-1 rounded-full bg-amber-400" />
+
+      <div className="px-6 py-5 pl-8 space-y-4">
+        {/* ── Header ── */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2 mb-1">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">{job.title}</h3>
+              <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
+                Pending Approval
+              </span>
+              {hasDuplicates && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-orange-700 dark:bg-orange-900/20 dark:text-orange-400">
+                  <AlertCircle className="h-3 w-3" />
+                  Possible Duplicate
+                </span>
+              )}
+            </div>
+
+            {/* Client info */}
+            <div className="flex flex-wrap items-center gap-3 text-[12px] text-slate-500 dark:text-slate-400">
+              {(job.clientCompanyName || job.clientContactName) && (
+                <>
+                  <span className="flex items-center gap-1">
+                    <Building2 className="h-3 w-3" />
+                    {job.clientCompanyName ?? job.clientContactName}
+                  </span>
+                  <span className="text-slate-300 dark:text-white/20">·</span>
+                </>
+              )}
+              <span className="capitalize">{job.category?.replace(/-/g, " ")}</span>
+              <span className="text-slate-300 dark:text-white/20">·</span>
+              <span>{job.contractType}</span>
+              {job.location && (
+                <>
+                  <span className="text-slate-300 dark:text-white/20">·</span>
+                  <span>{job.location}</span>
+                </>
+              )}
+              {pay && (
+                <>
+                  <span className="text-slate-300 dark:text-white/20">·</span>
+                  <span className="font-medium text-[#474ead] dark:text-indigo-400">{pay}</span>
+                </>
+              )}
+              <span className="text-slate-300 dark:text-white/20">·</span>
+              <span className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                Submitted {timeAgo}
+              </span>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <Button variant="outline" size="sm" onClick={onView}>
+              <Search className="w-3.5 h-3.5 mr-1.5" />
+              View Details
+            </Button>
+            <Button size="sm" className="bg-emerald-600 text-white hover:bg-emerald-700" onClick={onApprove} disabled={isApproving}>
+              <ThumbsUp className="w-3.5 h-3.5 mr-1.5" />
+              Approve
+            </Button>
+            <Button
+              size="sm" variant="outline"
+              className="border-red-200 text-red-600 dark:border-red-900/40 dark:text-red-400"
+              onClick={onReject} disabled={isRejecting}
+            >
+              <ThumbsDown className="w-3.5 h-3.5 mr-1.5" />
+              Decline
+            </Button>
+            {hasDuplicates && (
+              <Button
+                size="sm" variant="outline"
+                className="border-violet-200 text-violet-700 dark:border-violet-900/40 dark:text-violet-400"
+                onClick={onLink}
+              >
+                <Link2 className="w-3.5 h-3.5 mr-1.5" />
+                Link to Existing
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* ── Duplicate warning ── */}
+        {hasDuplicates && (
+          <div className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 dark:border-orange-700/30 dark:bg-orange-900/10">
+            <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-orange-700 dark:text-orange-400">
+              <AlertCircle className="h-3.5 w-3.5" />
+              Similar active job postings already exist:
+            </p>
+            <ul className="space-y-1.5">
+              {duplicates.slice(0, 3).map((dup) => (
+                <li key={dup.id} className="flex items-center justify-between gap-2 text-xs text-orange-700 dark:text-orange-300">
+                  <span className="font-medium">{dup.title}</span>
+                  <span className="text-orange-500 dark:text-orange-500 capitalize">{dup.category?.replace(/-/g, " ")}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Topgrading Guide — document-style content (mirrors TA-TGP-001 PDF) ────────
 
 const PROCEDURE_STAGES = [
@@ -492,6 +694,10 @@ export default function AdminFindWork() {
   const [bulkOpen, setBulkOpen] = useState(false);
   const [rejectModalJobId, setRejectModalJobId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [activeTab, setActiveTab] = useState<TabKey>("all");
+  const [linkModalJobId, setLinkModalJobId] = useState<string | null>(null);
+  const [linkTargetJobId, setLinkTargetJobId] = useState<string>("");
+  const [viewDetailJobId, setViewDetailJobId] = useState<string | null>(null);
 
   const openCreate = () => {
     setEditingJob(null);
@@ -571,11 +777,34 @@ export default function AdminFindWork() {
       toast({ title: "Failed", description: err.message, variant: "destructive" }),
   });
 
+  const linkMutation = useMutation({
+    mutationFn: ({ id, existingJobId }: { id: string; existingJobId: string }) =>
+      apiRequest("POST", `/api/admin/jobs/${id}/link`, { existingJobId }),
+    onSuccess: () => {
+      invalidate();
+      setLinkModalJobId(null);
+      setLinkTargetJobId("");
+      toast({ title: "Job linked — duplicate suppressed from public board" });
+    },
+    onError: (err: any) =>
+      toast({ title: "Link failed", description: err.message, variant: "destructive" }),
+  });
+
   // ─── Derived stats ────────────────────────────────────────────────────────
-  const openJobs = jobs.filter((j) => j.status === "open");
-  const closedJobs = jobs.filter((j) => j.status === "closed" || j.status === "cancelled");
-  const pendingJobs = jobs.filter((j) => (j as any).approvalStatus === "pending");
-  const totalApps = jobs.reduce((sum, j) => sum + (j.proposalCount || 0), 0);
+  const enrichedJobs = jobs as unknown as EnrichedJob[];
+  const openJobs = enrichedJobs.filter((j) => j.status === "open");
+  const closedJobs = enrichedJobs.filter((j) => j.status === "closed" || j.status === "cancelled");
+  const pendingJobs = enrichedJobs.filter((j) => (j as any).approvalStatus === "pending");
+  const clientRequests = enrichedJobs.filter((j) => (j as any).isClientSubmitted === true);
+  const totalApps = enrichedJobs.reduce((sum, j) => sum + (j.proposalCount || 0), 0);
+
+  // ─── Tab filtered views ───────────────────────────────────────────────────
+  const tabJobs: EnrichedJob[] = (() => {
+    if (activeTab === "pending") return pendingJobs;
+    if (activeTab === "approved") return enrichedJobs.filter((j) => (j as any).approvalStatus === "approved");
+    if (activeTab === "declined") return enrichedJobs.filter((j) => (j as any).approvalStatus === "rejected" || (j as any).approvalStatus === "linked_to_existing");
+    return enrichedJobs;
+  })();
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
@@ -851,105 +1080,139 @@ export default function AdminFindWork() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <StatPill
-                icon={Briefcase}
-                label="Total Jobs"
-                value={jobs.length}
-                accent
-              />
-              <StatPill
-                icon={CheckCircle2}
-                label="Open"
-                value={openJobs.length}
-              />
-              <StatPill
-                icon={XCircle}
-                label="Closed"
-                value={closedJobs.length}
-              />
-              <StatPill
-                icon={AlertCircle}
-                label="Pending"
-                value={pendingJobs.length}
-              />
-              <StatPill icon={Users} label="Applications" value={totalApps} />
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+              <StatPill icon={Briefcase} label="Total Jobs" value={enrichedJobs.length} accent />
+              <StatPill icon={CheckCircle2} label="Open" value={openJobs.length} />
+              <StatPill icon={XCircle} label="Closed" value={closedJobs.length} />
+              <StatPill icon={AlertCircle} label="Pending" value={pendingJobs.length} />
+              <StatPill icon={Users} label="Client Requests" value={clientRequests.length} />
             </div>
           </div>
         </div>
 
         {/* ── Body ─────────────────────────────────────────────────────────── */}
         <div className="mx-auto max-w-6xl px-6 py-10 md:px-10">
-          {/* Section header */}
-          <div className="mb-6 flex items-center justify-between gap-4 flex-wrap">
-            <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
-              <BarChart3 className="h-5 w-5 text-[#474ead]" />
-              Job Postings
-              <span className="ml-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600 dark:bg-white/[0.08] dark:text-slate-300">
-                {jobs.length}
-              </span>
-            </h2>
+
+          {/* ── Tab bar + actions header ── */}
+          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between flex-wrap">
+            {/* Tabs */}
+            <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 dark:border-white/[0.08] dark:bg-white/[0.04] flex-wrap">
+              {TABS.map((tab) => {
+                const count =
+                  tab.key === "pending" ? pendingJobs.length
+                  : tab.key === "approved" ? enrichedJobs.filter((j) => (j as any).approvalStatus === "approved").length
+                  : tab.key === "declined" ? enrichedJobs.filter((j) => (j as any).approvalStatus === "rejected" || (j as any).approvalStatus === "linked_to_existing").length
+                  : enrichedJobs.length;
+                const isActive = activeTab === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                      isActive
+                        ? "bg-[#474ead] text-white shadow-sm"
+                        : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/[0.06]"
+                    }`}
+                  >
+                    {tab.label}
+                    {tab.key === "pending" && count > 0 && (
+                      <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${isActive ? "bg-white/20 text-white" : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"}`}>
+                        {count}
+                      </span>
+                    )}
+                    {tab.key !== "pending" && (
+                      <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500 dark:bg-white/[0.06] dark:text-slate-400"}`}>
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Actions */}
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setBulkOpen(true)}
-                className="rounded-full"
-              >
+              <Button variant="outline" size="sm" onClick={() => setBulkOpen(true)} className="rounded-full">
                 <Upload className="w-3.5 h-3.5 mr-1.5" />
                 Bulk Upload
               </Button>
-              <Button
-                onClick={openCreate}
-                size="sm"
-                className="bg-[#474ead] text-white hover:bg-[#3d439c]"
-              >
+              <Button onClick={openCreate} size="sm" className="bg-[#474ead] text-white hover:bg-[#3d439c]">
                 <Plus className="w-4 h-4 mr-1.5" />
                 Add New Job
               </Button>
             </div>
           </div>
 
-          {/* Job list */}
+          {/* ── Pending approvals banner ── */}
+          {activeTab === "pending" && pendingJobs.length > 0 && (
+            <div className="mb-5 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-700/30 dark:bg-amber-900/10">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+              <div>
+                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                  {pendingJobs.length} job request{pendingJobs.length !== 1 ? "s" : ""} awaiting review
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-400">
+                  Pending jobs are not visible to candidates on the public Find Work page until approved.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* ── Job list ── */}
           {isLoading ? (
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
                 <Skeleton key={i} className="h-24 w-full rounded-2xl" />
               ))}
             </div>
-          ) : jobs.length === 0 ? (
+          ) : tabJobs.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white py-20 text-center dark:border-white/[0.08] dark:bg-[#0f172a]/60">
               <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#474ead]/10">
-                <Briefcase className="h-8 w-8 text-[#474ead]" />
+                {activeTab === "pending" ? <ListFilter className="h-8 w-8 text-[#474ead]" /> : <Briefcase className="h-8 w-8 text-[#474ead]" />}
               </div>
               <h3 className="mb-2 text-lg font-bold text-slate-900 dark:text-white">
-                No job postings yet
+                {activeTab === "pending" ? "No pending approvals" : activeTab === "approved" ? "No approved jobs" : activeTab === "declined" ? "No declined jobs" : "No job postings yet"}
               </h3>
               <p className="mb-6 max-w-xs text-slate-500 dark:text-slate-400">
-                Create your first job posting to start attracting talent to
-                OnSpot.
+                {activeTab === "all" ? "Create your first job posting to start attracting talent." : "Nothing in this category right now."}
               </p>
-              <Button
-                onClick={openCreate}
-                className="bg-[#474ead] text-white hover:bg-[#3d439c]"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Create First Job
-              </Button>
+              {activeTab === "all" && (
+                <Button onClick={openCreate} className="bg-[#474ead] text-white hover:bg-[#3d439c]">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create First Job
+                </Button>
+              )}
+            </div>
+          ) : activeTab === "pending" ? (
+            // ── Pending Approvals view ──
+            <div className="space-y-3">
+              {tabJobs.map((job) => (
+                <PendingApprovalCard
+                  key={job.id}
+                  job={job}
+                  allJobs={enrichedJobs}
+                  onApprove={() => approveMutation.mutate(job.id)}
+                  onReject={() => { setRejectModalJobId(job.id); setRejectionReason(""); }}
+                  onLink={() => {
+                    setLinkModalJobId(job.id);
+                    const firstDup = findDuplicates(job, enrichedJobs)[0];
+                    setLinkTargetJobId(firstDup?.id ?? "");
+                  }}
+                  onView={() => setViewDetailJobId(job.id)}
+                  isApproving={approveMutation.isPending}
+                  isRejecting={rejectMutation.isPending}
+                />
+              ))}
             </div>
           ) : (
+            // ── All / Approved / Declined view ──
             <div className="space-y-3">
-              {jobs.map((job) => (
+              {tabJobs.map((job) => (
                 <AdminJobRow
                   key={job.id}
                   job={job}
-                  onEdit={() => openEdit(job)}
-                  onToggle={() =>
-                    toggleStatusMutation.mutate({
-                      id: job.id,
-                      status: job.status === "open" ? "closed" : "open",
-                    })
-                  }
+                  onEdit={() => openEdit(job as unknown as Job)}
+                  onToggle={() => toggleStatusMutation.mutate({ id: job.id, status: job.status === "open" ? "closed" : "open" })}
                   onDelete={() => deleteMutation.mutate(job.id)}
                   onCopy={() => copy(job.id)}
                   onApprove={() => approveMutation.mutate(job.id)}
@@ -973,44 +1236,201 @@ export default function AdminFindWork() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ThumbsDown className="h-5 w-5 text-red-500" />
-              Reject Job Posting
+              Decline Job Request
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <p className="text-sm text-slate-600 dark:text-slate-300">
-              The client will see this job as Rejected. You can optionally provide a reason.
+              The client will see this job as Declined. You can optionally provide a reason.
             </p>
             <div className="space-y-1.5">
               <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Rejection Reason (optional)
+                Reason (optional)
               </label>
               <Textarea
                 rows={3}
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder="e.g. Incomplete job description, missing budget information..."
+                placeholder="e.g. Incomplete description, missing budget, duplicate posting..."
                 className="resize-none"
               />
             </div>
             <div className="flex justify-end gap-2 pt-1">
-              <Button variant="outline" onClick={() => setRejectModalJobId(null)}>
-                Cancel
-              </Button>
+              <Button variant="outline" onClick={() => setRejectModalJobId(null)}>Cancel</Button>
               <Button
                 className="bg-red-600 text-white hover:bg-red-700"
                 disabled={rejectMutation.isPending}
                 onClick={() => {
-                  if (rejectModalJobId) {
-                    rejectMutation.mutate({ id: rejectModalJobId, reason: rejectionReason });
-                  }
+                  if (rejectModalJobId) rejectMutation.mutate({ id: rejectModalJobId, reason: rejectionReason });
                 }}
               >
-                {rejectMutation.isPending ? "Rejecting..." : "Confirm Reject"}
+                {rejectMutation.isPending ? "Declining..." : "Confirm Decline"}
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* ── Link to existing job modal ── */}
+      <Dialog open={!!linkModalJobId} onOpenChange={(open) => { if (!open) { setLinkModalJobId(null); setLinkTargetJobId(""); } }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Link2 className="h-5 w-5 text-violet-500" />
+              Link to Existing Job
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-slate-600 dark:text-slate-300">
+              This client request will be marked as a duplicate and linked to an existing approved job. It will not appear separately on the public board.
+            </p>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                Select existing approved job
+              </label>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {enrichedJobs
+                  .filter((j) => (j as any).approvalStatus === "approved" && j.status === "open" && j.id !== linkModalJobId)
+                  .map((j) => (
+                    <button
+                      key={j.id}
+                      onClick={() => setLinkTargetJobId(j.id)}
+                      className={`w-full rounded-xl border p-3 text-left transition-colors ${
+                        linkTargetJobId === j.id
+                          ? "border-violet-400 bg-violet-50 dark:border-violet-600 dark:bg-violet-900/20"
+                          : "border-slate-200 bg-white hover:border-slate-300 dark:border-white/[0.08] dark:bg-white/[0.03] dark:hover:border-white/[0.15]"
+                      }`}
+                    >
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">{j.title}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 capitalize">{j.category?.replace(/-/g, " ")} · {j.location || "Remote"}</p>
+                    </button>
+                  ))
+                }
+                {enrichedJobs.filter((j) => (j as any).approvalStatus === "approved" && j.status === "open" && j.id !== linkModalJobId).length === 0 && (
+                  <p className="py-4 text-center text-sm text-slate-400">No approved open jobs available to link to.</p>
+                )}
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="outline" onClick={() => { setLinkModalJobId(null); setLinkTargetJobId(""); }}>Cancel</Button>
+              <Button
+                className="bg-violet-600 text-white hover:bg-violet-700"
+                disabled={!linkTargetJobId || linkMutation.isPending}
+                onClick={() => {
+                  if (linkModalJobId && linkTargetJobId)
+                    linkMutation.mutate({ id: linkModalJobId, existingJobId: linkTargetJobId });
+                }}
+              >
+                <Link2 className="w-3.5 h-3.5 mr-1.5" />
+                {linkMutation.isPending ? "Linking..." : "Link Job"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── View Detail modal ── */}
+      {viewDetailJobId && (() => {
+        const dj = enrichedJobs.find((j) => j.id === viewDetailJobId);
+        if (!dj) return null;
+        const pay = buildRateDisplay(dj);
+        const dups = findDuplicates(dj, enrichedJobs);
+        return (
+          <Dialog open={!!viewDetailJobId} onOpenChange={(open) => { if (!open) setViewDetailJobId(null); }}>
+            <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 flex-wrap">
+                  <span>{dj.title}</span>
+                  <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">Pending</span>
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-2">
+                {/* Meta */}
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  {dj.clientCompanyName && (
+                    <div>
+                      <p className="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Company</p>
+                      <p className="font-medium text-slate-800 dark:text-white">{dj.clientCompanyName}</p>
+                    </div>
+                  )}
+                  {dj.clientContactName && (
+                    <div>
+                      <p className="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Contact</p>
+                      <p className="font-medium text-slate-800 dark:text-white">{dj.clientContactName}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Category</p>
+                    <p className="font-medium text-slate-800 dark:text-white capitalize">{dj.category?.replace(/-/g, " ")}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Contract Type</p>
+                    <p className="font-medium text-slate-800 dark:text-white capitalize">{dj.contractType}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Location</p>
+                    <p className="font-medium text-slate-800 dark:text-white">{dj.location || "Remote"}</p>
+                  </div>
+                  {pay && (
+                    <div>
+                      <p className="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Rate / Salary</p>
+                      <p className="font-medium text-[#474ead] dark:text-indigo-400">{pay}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Description */}
+                {dj.description && (
+                  <div>
+                    <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Job Description</p>
+                    <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-line">{dj.description}</p>
+                  </div>
+                )}
+
+                {/* Duplicate warning */}
+                {dups.length > 0 && (
+                  <div className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 dark:border-orange-700/30 dark:bg-orange-900/10">
+                    <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-orange-700 dark:text-orange-400">
+                      <AlertCircle className="h-3.5 w-3.5" />
+                      Possible duplicate — similar active job postings:
+                    </p>
+                    <ul className="space-y-1">
+                      {dups.map((dup) => (
+                        <li key={dup.id} className="text-xs text-orange-700 dark:text-orange-300">
+                          <span className="font-medium">{dup.title}</span>
+                          <span className="text-orange-500"> · </span>
+                          <span className="capitalize">{dup.category?.replace(/-/g, " ")}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex flex-wrap gap-2 pt-1 border-t border-slate-100 dark:border-white/[0.06]">
+                  <Button size="sm" className="bg-emerald-600 text-white hover:bg-emerald-700"
+                    onClick={() => { approveMutation.mutate(dj.id); setViewDetailJobId(null); }}>
+                    <ThumbsUp className="w-3.5 h-3.5 mr-1.5" />Approve
+                  </Button>
+                  <Button size="sm" variant="outline"
+                    className="border-red-200 text-red-600 dark:border-red-900/40 dark:text-red-400"
+                    onClick={() => { setViewDetailJobId(null); setRejectModalJobId(dj.id); setRejectionReason(""); }}>
+                    <ThumbsDown className="w-3.5 h-3.5 mr-1.5" />Decline
+                  </Button>
+                  {dups.length > 0 && (
+                    <Button size="sm" variant="outline"
+                      className="border-violet-200 text-violet-700 dark:border-violet-900/40 dark:text-violet-400"
+                      onClick={() => { setViewDetailJobId(null); setLinkModalJobId(dj.id); setLinkTargetJobId(dups[0]?.id ?? ""); }}>
+                      <Link2 className="w-3.5 h-3.5 mr-1.5" />Link to Existing
+                    </Button>
+                  )}
+                  <Button size="sm" variant="outline" onClick={() => setViewDetailJobId(null)}>Close</Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
     </>
   );
 }

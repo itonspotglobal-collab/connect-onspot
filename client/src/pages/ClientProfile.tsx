@@ -264,11 +264,12 @@ function ClientJobRow({
   const timeAgo = getTimeAgo(job.createdAt);
   const approvalStatus = (job as any).approvalStatus ?? "approved";
 
-  const approvalBadge = {
+  const approvalBadge = ({
     pending: { label: "Pending Approval", className: "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400" },
     approved: { label: "Approved", className: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" },
-    rejected: { label: "Rejected", className: "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400" },
-  }[approvalStatus] ?? { label: approvalStatus, className: "bg-slate-100 text-slate-500" };
+    rejected: { label: "Declined", className: "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400" },
+    linked_to_existing: { label: "Linked to Existing", className: "bg-violet-50 text-violet-700 dark:bg-violet-900/20 dark:text-violet-400" },
+  } as Record<string, { label: string; className: string }>)[approvalStatus] ?? { label: approvalStatus, className: "bg-slate-100 text-slate-500" };
 
   return (
     <div className="group relative rounded-xl border border-slate-200 bg-white dark:border-white/[0.08] dark:bg-slate-900/60 transition-shadow hover:shadow-sm">
@@ -280,7 +281,9 @@ function ClientJobRow({
               ? "bg-amber-400"
               : approvalStatus === "rejected"
                 ? "bg-red-400"
-                : "bg-slate-300 dark:bg-white/20"
+                : approvalStatus === "linked_to_existing"
+                  ? "bg-violet-400"
+                  : "bg-slate-300 dark:bg-white/20"
         }`}
       />
       <div className="flex flex-col gap-3 px-5 py-4 pl-7 sm:flex-row sm:items-center sm:justify-between">
@@ -304,7 +307,7 @@ function ClientJobRow({
               {approvalBadge.label}
             </span>
           </div>
-          {/* Rejection reason if rejected */}
+          {/* Status messages */}
           {approvalStatus === "rejected" && (job as any).rejectionReason && (
             <p className="mb-1 text-xs text-red-600 dark:text-red-400">
               Reason: {(job as any).rejectionReason}
@@ -313,6 +316,11 @@ function ClientJobRow({
           {approvalStatus === "pending" && (
             <p className="mb-1 text-xs text-amber-600 dark:text-amber-400">
               Pending Admin review — not yet visible publicly
+            </p>
+          )}
+          {approvalStatus === "linked_to_existing" && (
+            <p className="mb-1 text-xs text-violet-600 dark:text-violet-400">
+              Your job request was linked to an existing active job posting to avoid duplicate listings.
             </p>
           )}
           <div className="flex flex-wrap items-center gap-2 text-[12px] text-slate-500 dark:text-slate-400">

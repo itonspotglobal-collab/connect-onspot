@@ -2800,7 +2800,7 @@ export class DbStorage extends MemStorage {
     if (filters.status) {
       jobs = jobs.filter(j => j.status === filters.status);
     }
-    // Public search always shows only approved jobs
+    // Public search always shows only approved jobs (not pending, rejected, or linked duplicates)
     jobs = jobs.filter(j => (j as any).approvalStatus === "approved" || (j as any).approvalStatus == null);
     if (filters.minBudget !== undefined) {
       jobs = jobs.filter(j => j.budget && parseFloat(j.budget) >= filters.minBudget!);

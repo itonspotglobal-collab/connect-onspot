@@ -4134,7 +4134,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/jobs", async (req: Request, res: Response) => {
     try {
       const allJobs = await storage.listAllJobs();
-      res.json(allJobs);
+      // Enrich each job with client profile data (company name, contact name)
+      const enriched = await Promise.all(
+        allJobs.map(async (job) => {
+          try {
+            const profileResult = await query(
+              `SELECT company_name, contact_person FROM client_profiles WHERE user_id = $1 LIMIT 1`,
+              [job.clientId],
+            );
+            const profile = profileResult.rows[0];
+            return {
+              ...job,
+              clientCompanyName: profile?.company_name ?? null,
+              clientContactName: profile?.contact_person ?? null,
+            };
+          } catch {
+            return { ...job, clientCompanyName: null, clientContactName: null };
+          }
+        }),
+      );
+      res.json(enriched);
     } catch (error) {
       console.error("Admin jobs list error:", error);
       res.status(500).json({ error: "Failed to list jobs" });
@@ -4304,6 +4323,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Admin job reject error:", error);
       res.status(500).json({ error: "Failed to reject job" });
+    }
+  });
+
+  // ─── Admin: Link a client job to an existing approved job ────────────────
+  app.post("/api/admin/jobs/:id/link", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const { existingJobId } = req.body;
+      if (!existingJobId) return res.status(400).json({ error: "existingJobId is required" });
+      const result = await query(
+        `UPDATE jobs SET
+          approval_status = 'linked_to_existing',
+          existing_job_id = $1,
+          approved_by = NULL,
+          approved_at = NULL,
+          rejected_by = NULL,
+          rejected_at = NULL,
+          rejection_reason = NULL,
+          updated_at = NOW()
+         WHERE id = $2
+         RETURNING *`,
+        [existingJobId, req.params.id],
+      );
+      if (result.rows.length === 0) return res.status(404).json({ error: "Job not found" });
+      res.json(result.rows[0]);
+    } catch (error) {
+      console.error("Admin job link error:", error);
+      res.status(500).json({ error: "Failed to link job" });
     }
   });
 
@@ -6867,7 +6913,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
       // Client-created jobs always start as pending approval
-      const body = { ...req.body, clientId: userId, approvalStatus: "pending" };
+      const body = { ...req.body, clientId: userId, approvalStatus: "pending", isClientSubmitted: true };
       const validated = insertJobSchema.parse(body);
       const job = await storage.createJob(validated);
       return res.status(201).json(job);
