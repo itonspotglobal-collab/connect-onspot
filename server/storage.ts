@@ -2800,8 +2800,12 @@ export class DbStorage extends MemStorage {
     if (filters.status) {
       jobs = jobs.filter(j => j.status === filters.status);
     }
-    // Public search always shows only approved jobs (not pending, rejected, or linked duplicates)
-    jobs = jobs.filter(j => (j as any).approvalStatus === "approved" || (j as any).approvalStatus == null);
+    // Public search: only show jobs that are explicitly approved (never pending/rejected/linked)
+    // Null is treated as approved for backward compatibility with pre-workflow records
+    jobs = jobs.filter(j => {
+      const status = (j as any).approvalStatus;
+      return status === "approved" || status == null;
+    });
     if (filters.minBudget !== undefined) {
       jobs = jobs.filter(j => j.budget && parseFloat(j.budget) >= filters.minBudget!);
     }

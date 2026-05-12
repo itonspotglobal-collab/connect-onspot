@@ -969,14 +969,20 @@ export default function OnSpotFindWorkRedesign() {
     });
   }, [query, schedule, earning, kind]);
 
-  // First 3 open DB jobs for the live preview — unaffected by search/filter state
-  const previewDbJobs = useMemo(
-    () => dbJobs.filter((j) => j.status === "open").slice(0, 3),
+  // Only show publicly approved jobs
+  const approvedDbJobs = useMemo(
+    () => dbJobs.filter((j) => (j as any).approvalStatus === "approved" || (j as any).approvalStatus == null),
     [dbJobs],
   );
 
+  // First 3 open approved DB jobs for the live preview — unaffected by search/filter state
+  const previewDbJobs = useMemo(
+    () => approvedDbJobs.filter((j) => j.status === "open").slice(0, 3),
+    [approvedDbJobs],
+  );
+
   const filteredDbJobs = useMemo(() => {
-    return dbJobs.filter((job) => {
+    return approvedDbJobs.filter((job) => {
       if (job.status !== "open") return false;
       const q = query.toLowerCase();
       const queryPass =
@@ -1101,7 +1107,7 @@ export default function OnSpotFindWorkRedesign() {
                     </div>
                   </div>
                   <Badge className="rounded-full bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-300">
-                    {dbJobs.filter((j) => j.status === "open").length ||
+                    {approvedDbJobs.filter((j) => j.status === "open").length ||
                       roles.length}{" "}
                     open roles
                   </Badge>

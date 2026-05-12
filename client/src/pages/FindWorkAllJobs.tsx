@@ -266,7 +266,14 @@ export default function FindWorkAllJobs() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const openJobs = useMemo(() => allJobs.filter((j) => j.status === "open"), [allJobs]);
+  const openJobs = useMemo(() =>
+    allJobs.filter((j) => {
+      if (j.status !== "open") return false;
+      const approval = (j as any).approvalStatus;
+      return approval === "approved" || approval == null;
+    }),
+    [allJobs]
+  );
 
   // Debounced search tracking
   useEffect(() => {

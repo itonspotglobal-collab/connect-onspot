@@ -698,7 +698,11 @@ export default function FindWorkJob() {
       const res = await fetch("/api/admin/jobs");
       if (!res.ok) throw new Error("Failed to fetch jobs");
       const jobs: Job[] = await res.json();
-      const found = jobs.find((j) => j.id === rawId);
+      const found = jobs.find((j) => {
+        if (j.id !== rawId) return false;
+        const approval = (j as any).approvalStatus;
+        return approval === "approved" || approval == null;
+      });
       if (!found) throw new Error("Job not found");
       return found;
     },

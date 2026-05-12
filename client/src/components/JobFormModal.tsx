@@ -91,6 +91,8 @@ export const defaultFormData = {
   // Application link / method
   applicationMethod: "external_link",
   applyLink: "",
+  // Urgently Hiring flag (manual, not auto-calculated)
+  urgentlyHiring: false,
 };
 
 export type JobFormData = typeof defaultFormData;
@@ -139,6 +141,8 @@ export function jobToFormData(job: Job): JobFormData {
     // Application link / method
     applicationMethod: (job as any).applicationMethod || "external_link",
     applyLink: (job as any).applyLink || "",
+    // Urgently Hiring flag
+    urgentlyHiring: (job as any).urgentlyHiring ?? false,
   };
 }
 
@@ -228,6 +232,7 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
         title: formData.title,
         location: formData.location,
         createdAt: job?.createdAt ?? new Date(),
+        urgentlyHiring: formData.urgentlyHiring,
       }),
     [formData, job]
   );
@@ -319,6 +324,9 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
     } else {
       payload.applyLink = null;
     }
+
+    // Urgently Hiring flag (always send so unchecking a previously set job clears it)
+    payload.urgentlyHiring = formData.urgentlyHiring;
 
     if (isEditing && job) {
       updateMutation.mutate({ id: job.id, data: payload });
@@ -619,10 +627,31 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
                   })}
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-2">
-                  Top Paying: ₱50k+ budget · Urgently Hiring: 0 applications + posted ≤14 days · Multiple Slots: team/agents in title
+                  Top Paying: ₱50k+ budget · Multiple Slots: team/agents in title
                 </p>
               </div>
             )}
+
+            {/* ── Urgently Hiring toggle ── */}
+            <div className="mt-4 flex items-start gap-3 rounded-md border border-border bg-muted/20 p-3">
+              <input
+                id="modal-urgently-hiring"
+                type="checkbox"
+                checked={formData.urgentlyHiring}
+                onChange={(e) => updateField("urgentlyHiring", e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-input accent-[#474ead] cursor-pointer"
+              />
+              <div>
+                <label htmlFor="modal-urgently-hiring" className="text-sm font-medium cursor-pointer select-none">
+                  Mark as Urgently Hiring
+                </label>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {formData.urgentlyHiring
+                    ? "This job will display the Urgently Hiring badge."
+                    : "This job will not display the Urgently Hiring badge."}
+                </p>
+              </div>
+            </div>
           </div>
 
           <Separator />

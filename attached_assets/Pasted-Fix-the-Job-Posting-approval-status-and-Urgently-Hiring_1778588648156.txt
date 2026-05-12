@@ -1,0 +1,91 @@
+Fix the Job Posting approval status and Urgently Hiring badge behavior.
+
+Issue 1: Client-created jobs are automatically marked as Approved
+Current problem:
+- When a client creates a job posting from the Client Profile page, the job immediately shows as APPROVED.
+- This is incorrect.
+- Client-submitted jobs must require Admin approval first.
+
+Required behavior:
+- When a CLIENT creates a job posting:
+  - approvalStatus must default to "pending"
+  - show badge: "PENDING APPROVAL"
+  - do not show it publicly on find-work/jobs
+  - show it in admin/find-work under Pending Approvals
+- When an ADMIN creates a job posting:
+  - approvalStatus can default to "approved"
+  - show badge: "APPROVED"
+  - show publicly on find-work/jobs if job status is open
+
+Important:
+- Do not use the job status "open" as approval status.
+- Job status and approval status must be separate.
+
+Example:
+status = "open"
+approvalStatus = "pending"
+
+Client Profile display:
+- If approvalStatus is pending, show "PENDING APPROVAL"
+- If approvalStatus is approved, show "APPROVED"
+- If approvalStatus is rejected/declined, show "DECLINED"
+
+Admin Find Work display:
+- Pending client jobs should show:
+  - OPEN
+  - PENDING APPROVAL
+  - Approve button
+  - Reject button
+- Approved jobs should show:
+  - OPEN
+  - APPROVED
+  - Unapprove button
+
+Public find-work/jobs page:
+Only show jobs where:
+- status = "open"
+- approvalStatus = "approved"
+
+Issue 2: Make Urgently Hiring optional
+Current problem:
+- The system automatically gives the "Urgently Hiring" badge based on rules.
+- Some jobs should not be marked urgent.
+- Sometimes jobs posted for a long time lose the badge, but we want the badge to stay if selected.
+
+Required behavior:
+Add a manual field in Add/Edit Job Posting:
+
+Urgently Hiring
+- Checkbox or toggle
+- Default: unchecked
+- Optional field
+
+When checked:
+- Save urgentlyHiring = true
+- Always show the "Urgently Hiring" badge, regardless of how long ago the job was posted
+
+When unchecked:
+- Save urgentlyHiring = false
+- Do not show the "Urgently Hiring" badge
+
+Remove or override the automatic logic that removes Urgently Hiring after 14 days.
+
+Database/model changes:
+Add or confirm field:
+urgentlyHiring: boolean
+default: false
+
+Update Add/Edit Job Posting modal:
+- Add checkbox/toggle near the badges or basic information section:
+  Label: "Mark as Urgently Hiring"
+  Helper text: "Show an Urgently Hiring badge on this job post."
+- Remove the automatic message that says:
+  "Urgently Hiring: 0 applications + posted ≤14 days"
+- Replace with:
+  If checked: "This job will display the Urgently Hiring badge."
+  If unchecked: "This job will not display the Urgently Hiring badge."
+
+Expected result:
+- Client-created jobs are Pending Approval until Admin approves them.
+- Admin-created jobs can still be approved immediately.
+- Urgently Hiring is fully controlled by the poster/admin and remains visible as long as it is enabled.

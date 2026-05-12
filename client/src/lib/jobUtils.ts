@@ -1,8 +1,5 @@
 // ─── Job Utility Helpers ─────────────────────────────────────────────────────
 // Reusable functions for sorting, badge derivation, and timestamp formatting.
-// All badge/sort logic is frontend-derived from existing DB fields.
-// TODO: when backend adds `isUrgent`, `isFeatured`, `isRemote` boolean columns,
-//       replace the heuristic checks below with direct field reads.
 
 // ── Sort Options ─────────────────────────────────────────────────────────────
 
@@ -67,20 +64,14 @@ export function getJobBadges(job: {
   title?: string | null;
   location?: string | null;
   createdAt?: string | Date | null;
+  urgentlyHiring?: boolean | null;
 }): JobBadge[] {
   const badges: JobBadge[] = [];
 
   const budget = parseFloat(
     job.budget || job.hourlyRateMax || job.hourlyRateMin || "0"
   );
-  const proposals = job.proposalCount ?? 0;
   const title = (job.title || "").toLowerCase();
-  const loc = (job.location || "").toLowerCase();
-
-  const createdAt = job.createdAt ? new Date(job.createdAt) : null;
-  const daysOld = createdAt
-    ? Math.floor((Date.now() - createdAt.getTime()) / 86400000)
-    : 999;
 
   // Top Paying: ₱50 000+ budget
   if (budget >= 50000) {
@@ -92,8 +83,8 @@ export function getJobBadges(job: {
     });
   }
 
-  // Urgently Hiring: no proposals yet AND posted within 14 days
-  if (proposals === 0 && daysOld <= 14) {
+  // Urgently Hiring: controlled by the urgentlyHiring boolean field only
+  if (job.urgentlyHiring === true) {
     badges.push({
       key: "urgent",
       label: "Urgently Hiring",
@@ -175,12 +166,7 @@ export function sortJobs(jobs: any[], sortBy: SortOption): any[] {
 
     case "urgently-hiring":
       return list
-        .filter((j) => {
-          const daysOld = j.createdAt
-            ? Math.floor((Date.now() - new Date(j.createdAt).getTime()) / 86400000)
-            : 999;
-          return (j.proposalCount || 0) === 0 && daysOld <= 14;
-        })
+        .filter((j) => j.urgentlyHiring === true)
         .sort((a, b) => toMs(b) - toMs(a));
 
     case "featured":
