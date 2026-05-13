@@ -1,0 +1,146 @@
+Please fix the Talent login flow from the Access Portal modal.
+
+Current problem:
+When signing in from the Access Portal modal and selecting “Talent Portal”, Talent login does not work correctly.
+
+However:
+Logging in from the Talent Profile page works successfully through the Talent Profile login modal.
+
+Goal:
+Make the Access Portal Talent login use the same working logic as the Talent Profile login.
+
+After successful Talent login:
+- Redirect the user to their own Talent Profile page.
+- Do not redirect to /find-best-matches if the talent already has a profile.
+- Only use /find-best-matches for new talents who still need resume upload/profile setup.
+
+Important files to inspect:
+- client/src/components/TopNavigation.tsx
+- client/src/components/TalentLoginModal.tsx
+- client/src/components/LoginDialog.tsx
+- client/src/contexts/AuthContext.tsx
+- client/src/lib/api.ts
+- client/src/App.tsx
+- client/src/pages/TalentProfile.tsx
+- client/src/pages/CandidateProfile.tsx
+- server/routes.ts
+
+Known working flow:
+The Talent Profile login modal works. Reuse its API endpoint, request body, response handling, localStorage/session handling, and redirect logic.
+
+Search for:
+- TalentLoginModal.tsx
+- “Sign in to your Talent Account”
+- talentAuth
+- candidateId
+- candidate profile token
+- candidate login
+- talent login
+
+Required behavior:
+
+1. Access Portal Talent Sign In
+When user opens:
+Access Portal → Sign In → selects Talent Portal → enters email/password → Continue
+
+The code should:
+- Use the same backend endpoint used by TalentLoginModal.tsx.
+- Use the same token/localStorage keys used by TalentLoginModal.tsx.
+- Use the same successful login state handling.
+- Close the modal after success.
+- Show success toast.
+
+2. Redirect after successful Talent login
+If the login response includes a candidateId/profileId/talentProfileId:
+- Redirect to the existing talent profile route for that candidate.
+
+Use the actual route from App.tsx.
+
+Current App.tsx has routes like:
+- /candidate-profile/:candidateId
+- /talent-profile/:id
+
+Use whichever route is used by the working Talent Profile flow.
+
+Preferred:
+If TalentLoginModal currently redirects or refreshes a specific profile route, follow that same route.
+
+3. Existing Talent with completed profile
+If Talent already has a profile:
+- Redirect to their profile page.
+Example:
+  /candidate-profile/{candidateId}
+or
+  /talent-profile/{id}
+
+4. New Talent or no profile yet
+If Talent login succeeds but no candidate/profile id is found:
+- Redirect to:
+  /find-best-matches
+
+This is the resume upload/profile setup flow.
+
+5. Access Portal Client Sign In should not be affected
+Client login should continue using the client/general login flow.
+Client successful login should redirect to:
+  /hire-talent
+or
+  /client-profile
+depending on the current implemented behavior.
+
+Do not route clients to Talent Profile pages.
+
+6. Avoid role mismatch issues
+When the Access Portal user selects Talent Portal:
+- The login must validate that the account is talent/candidate.
+- If the account is a client, show:
+  “This is a client account. Please use the Client Portal.”
+- If the account is talent, continue.
+
+When the user selects Client Portal:
+- Client login remains separate.
+- If account is talent, show:
+  “This is a talent account. Please use the Talent Portal.”
+
+7. Unify auth/session state if needed
+If the app now has two token systems:
+- general JWT auth for users
+- talent/candidate auth token for candidate profile editing
+
+Do not break the working Talent Profile login.
+Instead, make Access Portal Talent login write the same token/session data required by the Talent Profile page.
+
+If possible, also update AuthContext or a small helper so the navbar recognizes the logged-in Talent and changes from “Access Portal” to “Talent Profile”.
+
+8. Navbar after Talent login
+After successful Talent login from Access Portal:
+- Navbar should show “Talent Profile” instead of “Access Portal”.
+- Clicking it should navigate to the logged-in Talent’s profile page.
+- Dropdown should include:
+  - Talent Profile
+  - Find Work
+  - Settings
+  - Sign Out
+
+9. Sign Out
+Sign Out should clear both general and talent-specific auth storage keys.
+
+Clear keys such as:
+- onspot_jwt_token
+- onspot_user
+- any talent/candidate auth token used by TalentLoginModal
+- candidateId/profileId storage keys used by TalentLoginModal
+- dev portal keys if still present
+
+Do not leave the Talent Profile session active after signing out from navbar.
+
+10. Acceptance criteria
+- Talent login from Access Portal works.
+- Talent login from Talent Profile modal still works.
+- Successful Talent Access Portal login redirects to that talent’s actual profile page.
+- If no profile exists, redirect to /find-best-matches.
+- Client login is not broken.
+- Client accounts cannot sign in through Talent Portal.
+- Talent accounts cannot sign in through Client Portal.
+- Navbar updates to “Talent Profile” after Talent login.
+- Sign Out clears talent login state.

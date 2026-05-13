@@ -63,6 +63,13 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
 import { VanessaChat } from "@/components/VanessaChat";
+import {
+  TOKEN_KEY as TALENT_TOKEN_KEY,
+  loadTalentAuth,
+  saveTalentAuth,
+  clearTalentAuth,
+  type TalentAuthState,
+} from "@/components/TalentLoginModal";
 
 // Service definitions for mega menu
 const serviceDetails = {
@@ -390,6 +397,7 @@ export function TopNavigation() {
   const [showSignupConfirm, setShowSignupConfirm] = useState(false);
   const [signinLoading, setSigninLoading] = useState(false);
   const [signupLoading, setSignupLoading] = useState(false);
+  const [talentAuth, setTalentAuth] = useState<TalentAuthState | null>(() => loadTalentAuth());
   // DEV ONLY: forgot-password flow state — remove when real password-reset email is implemented
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotNewPassword, setForgotNewPassword] = useState("");
@@ -449,8 +457,12 @@ export function TopNavigation() {
   const handleSignOut = async () => {
     try {
       setIsLoggingOut(true);
-      // Clear any dev portal session keys
+      // Clear dev portal session keys
       ["dev_portal_user","dev_portal_role","dev_portal_email","dev_portal_first_name","dev_portal_last_name"].forEach(k => localStorage.removeItem(k));
+      // Clear talent-specific auth token
+      clearTalentAuth();
+      setTalentAuth(null);
+      // Clear general JWT auth
       await logout();
       toast({ title: "Signed out", description: "You have been signed out successfully." });
       navigate("/");
@@ -459,6 +471,14 @@ export function TopNavigation() {
     } finally {
       setIsLoggingOut(false);
     }
+  };
+
+  // Talent-only sign-out (when no general JWT session)
+  const handleTalentSignOut = () => {
+    clearTalentAuth();
+    setTalentAuth(null);
+    toast({ title: "Signed out", description: "You have been signed out successfully." });
+    navigate("/");
   };
 
   // Close mobile menu when resizing to desktop
@@ -886,6 +906,7 @@ export function TopNavigation() {
 
             {/* Access Portal / Account Dropdown */}
             {isAuthenticated && user ? (
+              /* ── General JWT session (client / admin / talent via general login) ── */
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
@@ -944,7 +965,70 @@ export function TopNavigation() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+            ) : talentAuth ? (
+              /* ── Talent-only session (talent_profile_token, no general JWT) ── */
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className="relative group hidden md:flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm text-white whitespace-nowrap overflow-hidden transition-all duration-300 hover:scale-105"
+                    style={{
+                      background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)',
+                      boxShadow: '0 4px 15px rgba(58, 58, 248, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                    }}
+                    data-testid="talent-account-dropdown-trigger"
+                  >
+                    <div
+                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                      style={{
+                        background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%)',
+                        animation: 'shimmer 2s infinite',
+                      }}
+                    />
+                    <div
+                      className="absolute inset-0 rounded-lg opacity-60 group-hover:opacity-100 blur-md transition-opacity duration-500"
+                      style={{
+                        background: 'linear-gradient(135deg, #3A3AF8 0%, #7F3DF4 100%)',
+                        animation: 'portal-breathe 3s ease-in-out infinite',
+                        zIndex: -1,
+                      }}
+                    />
+                    <span className="relative z-10 flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      Talent Profile
+                      <ChevronDown className="w-3.5 h-3.5 opacity-70" />
+                    </span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52">
+                  <DropdownMenuLabel className="font-normal">
+                    <p className="text-xs font-medium truncate">{talentAuth.fullName}</p>
+                    <p className="text-xs text-muted-foreground truncate">{talentAuth.email}</p>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate(`/talent-profile/${talentAuth.candidateId}`)} className="cursor-pointer gap-2">
+                    <User className="w-4 h-4 text-muted-foreground" />
+                    Talent Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/find-work/jobs")} className="cursor-pointer gap-2">
+                    <Briefcase className="w-4 h-4 text-muted-foreground" />
+                    Find Work
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/settings")} className="cursor-pointer gap-2">
+                    <Settings className="w-4 h-4 text-muted-foreground" />
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={handleTalentSignOut}
+                    className="cursor-pointer gap-2 text-red-500 focus:text-red-500"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
+              /* ── Not authenticated — show Access Portal button ── */
               <button
                 onClick={() => setShowPortal(true)}
                 className="relative group hidden md:flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm text-white whitespace-nowrap overflow-hidden transition-all duration-300 hover:scale-105"
@@ -1286,6 +1370,32 @@ export function TopNavigation() {
                   <LogOut className="w-4 h-4 shrink-0" />
                 )}
                 {isLoggingOut ? "Signing out…" : "Sign Out"}
+              </button>
+            </div>
+          ) : talentAuth ? (
+            /* ── Talent-only mobile session ── */
+            <div className="space-y-1">
+              <p className="px-2 py-1 text-[11px] text-white/40 truncate">{talentAuth.fullName}</p>
+              <button
+                onClick={() => { navigate(`/talent-profile/${talentAuth.candidateId}`); setIsMobileMenuOpen(false); }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors text-left"
+              >
+                <User className="w-4 h-4 shrink-0 text-white/50" />
+                Talent Profile
+              </button>
+              <button
+                onClick={() => { navigate("/find-work/jobs"); setIsMobileMenuOpen(false); }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors text-left"
+              >
+                <Briefcase className="w-4 h-4 shrink-0 text-white/50" />
+                Find Work
+              </button>
+              <button
+                onClick={() => { handleTalentSignOut(); setIsMobileMenuOpen(false); }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors text-left"
+              >
+                <LogOut className="w-4 h-4 shrink-0" />
+                Sign Out
               </button>
             </div>
           ) : (
@@ -1871,29 +1981,63 @@ export function TopNavigation() {
                         </button>
                       </div>
                     </div>
-                    {/* Sign In — calls POST /api/login, stores JWT, redirects by DB role */}
+                    {/* Sign In — talent uses /api/talent-auth/login, client uses /api/login */}
                     <button
                       onClick={async () => {
                         if (!signinEmail || !signinPassword || !signinPortal) return;
                         setSigninLoading(true);
                         try {
-                          const res = await fetch("/api/login", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ email: signinEmail, password: signinPassword }),
-                          });
-                          const data = await res.json();
-                          if (data.success) {
-                            localStorage.setItem("onspot_jwt_token", data.token);
-                            localStorage.setItem("onspot_user", JSON.stringify(data.user));
-                            localStorage.setItem("dev_portal_role", data.user.role);
-                            localStorage.setItem("dev_portal_email", data.user.email);
+                          if (signinPortal === "talent") {
+                            // ── Talent Portal login ──────────────────────────
+                            const res = await fetch("/api/talent-auth/login", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ email: signinEmail, password: signinPassword }),
+                            });
+                            const data = await res.json();
+                            if (!res.ok) {
+                              const msg = data.error === "no_password"
+                                ? "No password set for this account. Please visit your Talent Profile to set one."
+                                : data.error || "Invalid email or password.";
+                              toast({ variant: "destructive", title: "Sign in failed", description: msg });
+                              return;
+                            }
+                            const auth: TalentAuthState = {
+                              token: data.token,
+                              candidateId: data.candidate.id,
+                              email: data.candidate.email,
+                              fullName: data.candidate.fullName || data.candidate.email,
+                            };
+                            saveTalentAuth(auth);
+                            setTalentAuth(auth);
                             setShowPortal(false);
                             setModalStep(1);
-                            const role = data.user.role;
-                            navigate(role === "client" ? "/hire-talent" : "/find-best-matches");
+                            toast({ title: "Signed in", description: `Welcome back, ${auth.fullName}!` });
+                            navigate(`/talent-profile/${auth.candidateId}`);
                           } else {
-                            toast({ variant: "destructive", title: "Sign in failed", description: data.message || "Invalid email or password." });
+                            // ── Client Portal login ──────────────────────────
+                            const res = await fetch("/api/login", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ email: signinEmail, password: signinPassword }),
+                            });
+                            const data = await res.json();
+                            if (data.success) {
+                              const role = data.user.role;
+                              if (role === "talent") {
+                                toast({ variant: "destructive", title: "Wrong portal", description: "This is a Talent account. Please select the Talent Portal." });
+                                return;
+                              }
+                              localStorage.setItem("onspot_jwt_token", data.token);
+                              localStorage.setItem("onspot_user", JSON.stringify(data.user));
+                              localStorage.setItem("dev_portal_role", role);
+                              localStorage.setItem("dev_portal_email", data.user.email);
+                              setShowPortal(false);
+                              setModalStep(1);
+                              navigate(role === "client" ? "/hire-talent" : "/");
+                            } else {
+                              toast({ variant: "destructive", title: "Sign in failed", description: data.message || "Invalid email or password." });
+                            }
                           }
                         } catch {
                           toast({ variant: "destructive", title: "Network error", description: "Could not reach the server. Please try again." });
@@ -2322,7 +2466,8 @@ export function TopNavigation() {
                           className="relative cursor-pointer hover-elevate hover:scale-[1.02] transition-all duration-300 group border-2 hover:border-[hsl(var(--gold-yellow)/0.5)]"
                           onClick={() => {
                             setSelectedPortal("talent");
-                            setModalStep(4);
+                            setSigninPortal("talent");
+                            setModalStep("signin");
                           }}
                           data-testid="card-talent-portal"
                         >
