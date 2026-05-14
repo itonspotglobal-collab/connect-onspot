@@ -1,0 +1,180 @@
+We need to fix old candidate records that existed before the Talent login/password feature was added.
+
+Problem:
+Some records in the candidates table have:
+password_hash = NULL
+
+These candidates already have profile data, but they cannot log in because no password was ever set.
+Forgot Password also fails for them.
+
+Goal:
+Allow existing candidate records with NULL password_hash to set a password and access their existing profile.
+
+Important:
+Do NOT delete candidate records.
+Do NOT create duplicate candidate profiles.
+Do NOT overwrite existing candidate profile data.
+Do NOT require manually deleting records anymore.
+
+Database context:
+There is a candidates table.
+Some candidates have password_hash NULL.
+Some candidates already have password_hash populated.
+We need to support both.
+
+Required behavior:
+
+1. Login behavior for existing candidates
+When Talent login is attempted:
+- Find candidate by email.
+- If candidate exists but password_hash IS NULL:
+  - Do not return generic invalid password only.
+  - Return a clear response like:
+    {
+      success: false,
+      requiresPasswordSetup: true,
+      message: "This candidate profile needs a password setup before signing in."
+    }
+- Frontend should show a friendly message:
+  “This profile exists but does not have a password yet. Please set a password to continue.”
+
+2. Add password setup flow for existing candidates
+Add a flow from the Talent login modal and Access Portal Talent login:
+- If requiresPasswordSetup is true, show a “Set Password” form.
+- Fields:
+  - Email address, pre-filled
+  - New Password
+  - Confirm New Password
+- Validate:
+  - password required
+  - confirm password required
+  - passwords must match
+  - password follows existing password strength rules if available
+
+3. Backend endpoint
+Add an endpoint for existing candidate password setup:
+
+POST /api/candidates/setup-password
+
+Request body:
+{
+  "email": "candidate@example.com",
+  "newPassword": "password123"
+}
+
+Behavior:
+- Find candidate by email.
+- If no candidate exists, return 404.
+- If candidate already has password_hash:
+  - return 409 or a clear message:
+    "Password already exists. Please sign in or use Forgot Password."
+- Hash newPassword using the existing hashPassword utility.
+- Update candidates.password_hash.
+- Return success and candidate id/profile id:
+  {
+    success: true,
+    message: "Password created successfully. You can now sign in.",
+    candidateId: "...",
+    email: "..."
+  }
+
+4. Forgot Password should support candidates
+Update Forgot Password / Reset Password so it can work for candidates too.
+
+If the email belongs to a candidate:
+- Find candidate by email in candidates table.
+- Hash the new password.
+- Update candidates.password_hash.
+- Return success.
+
+If the email belongs to a user in users table:
+- Update users.password_hash.
+
+If email exists in both tables:
+- Prefer the selected portal type.
+- If user selected Talent Portal, update candidates.
+- If user selected Client Portal, update users/client account.
+
+5. Access Portal Talent login must use candidates
+When user selects Talent Portal from Access Portal:
+- Login should check the candidates table / existing working TalentLoginModal logic.
+- Do not only check users table.
+- Use the same successful login logic as TalentLoginModal.
+
+6. Redirect after candidate login
+After candidate successfully logs in:
+- Redirect to their existing profile page.
+- Use the route already used by the working Talent Profile login.
+- Likely:
+  /talent-profile/:id
+or
+  /candidate-profile/:candidateId
+
+Use the actual route from the current working TalentLoginModal.
+
+7. Do not create duplicate records
+For old candidates:
+- If a matching candidate exists by email, do not create a new candidate.
+- Just populate password_hash.
+
+8. Optional admin/dev utility
+Add a safe admin/dev endpoint or script to list candidates needing password setup:
+
+GET /api/admin/candidates/missing-passwords
+
+Return:
+- count
+- id
+- email
+- first name / last name if available
+- created_at
+
+Do NOT return password hashes.
+
+9. Optional one-time temporary password tool
+For development convenience only, add a protected/dev-only endpoint:
+
+POST /api/dev/candidates/set-temp-password
+
+Request:
+{
+  "email": "candidate@example.com",
+  "temporaryPassword": "Test123456!"
+}
+
+Only enable when:
+NODE_ENV !== "production"
+or
+ENABLE_DEV_PASSWORD_RESET=true
+
+This should:
+- hash the temporaryPassword
+- update candidates.password_hash
+- return success
+
+Clearly comment:
+  // DEV ONLY: temporary tool for fixing old candidate records
+
+10. SQL migration/backfill option
+Add a documented SQL helper for manual review, but do NOT set the same default password for everyone automatically in production.
+
+Recommended safer SQL query to find affected records:
+
+SELECT id, email, first_name, last_name, created_at
+FROM candidates
+WHERE password_hash IS NULL;
+
+If a one-time migration is needed in development only, provide a script that hashes a chosen temporary password and updates selected emails.
+
+Do NOT store plaintext passwords.
+
+11. Acceptance criteria
+- Candidate with password_hash can still log in.
+- Candidate with NULL password_hash gets a password setup prompt.
+- Candidate can set a password.
+- After setting password, candidate can log in.
+- Candidate is redirected to their existing profile, not a new empty profile.
+- Forgot Password works for both users and candidates.
+- No candidate profile data is lost.
+- No duplicate candidate records are created.
+- Access Portal Talent login works for old and new candidates.

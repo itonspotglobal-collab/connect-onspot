@@ -3690,7 +3690,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Invalid email or password" });
       }
       if (!candidate.passwordHash) {
-        return res.status(403).json({ error: "no_password", message: "No password set. Please set a password for your profile." });
+        return res.status(403).json({
+          error: "no_password",
+          requiresPasswordSetup: true,
+          message: "This profile exists but does not have a password yet. Please set a password to continue.",
+          candidateEmail: candidate.email,
+        });
       }
       const valid = await verifyPassword(password, candidate.passwordHash);
       if (!valid) {
@@ -3761,6 +3766,113 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("POST /api/talent-auth/set-password error:", error);
       return res.status(500).json({ error: "Failed to set password" });
+    }
+  });
+
+  /**
+   * POST /api/candidates/setup-password
+   * Allows an existing candidate with NULL password_hash to set a password for the first time.
+   * Does NOT require knowing candidateId — only email + chosen password.
+   */
+  app.post("/api/candidates/setup-password", async (req, res) => {
+    try {
+      const { email, newPassword } = req.body as { email?: string; newPassword?: string };
+      if (!email || !newPassword) {
+        return res.status(400).json({ error: "email and newPassword are required" });
+      }
+      if (newPassword.length < 8) {
+        return res.status(400).json({ error: "Password must be at least 8 characters" });
+      }
+      const candidate = await storage.getCandidateByEmail(email.toLowerCase().trim());
+      if (!candidate) {
+        return res.status(404).json({ error: "No candidate profile found with that email address." });
+      }
+      if (candidate.passwordHash) {
+        return res.status(409).json({
+          error: "password_exists",
+          message: "A password is already set for this profile. Please sign in or use Forgot Password.",
+        });
+      }
+      const hash = await hashPassword(newPassword);
+      await storage.updateCandidate(candidate.id, { passwordHash: hash } as any);
+
+      let jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) {
+        if (process.env.NODE_ENV === "production") return res.status(500).json({ error: "Auth not configured" });
+        jwtSecret = "dev-fallback-secret";
+      }
+      const token = jwt.sign(
+        { type: "candidate", candidateId: candidate.id, email: candidate.email },
+        jwtSecret,
+        { expiresIn: "30d" },
+      );
+      console.log(`🔑 Candidate password set for: ***@${email.split("@")[1]}`);
+      return res.json({
+        success: true,
+        message: "Password created successfully. You can now sign in.",
+        token,
+        candidate: {
+          id: candidate.id,
+          email: candidate.email,
+          fullName: candidate.fullName,
+          targetPosition: candidate.targetPosition,
+        },
+      });
+    } catch (error: any) {
+      console.error("POST /api/candidates/setup-password error:", error);
+      return res.status(500).json({ error: "Failed to set password" });
+    }
+  });
+
+  /**
+   * GET /api/admin/candidates/missing-passwords
+   * Lists candidate records that have no password set — admin/dev utility.
+   */
+  app.get("/api/admin/candidates/missing-passwords", authenticateJWT, requireAdmin, async (_req, res) => {
+    try {
+      const result = await query(
+        `SELECT id, email, full_name, first_name, last_name, created_at
+         FROM candidates
+         WHERE password_hash IS NULL
+         ORDER BY created_at DESC`,
+        [],
+      );
+      return res.json({ count: result.rows.length, candidates: result.rows });
+    } catch (error: any) {
+      console.error("GET /api/admin/candidates/missing-passwords error:", error);
+      return res.status(500).json({ error: "Failed to query candidates" });
+    }
+  });
+
+  /**
+   * POST /api/dev/candidates/set-temp-password
+   * DEV ONLY: temporary tool for fixing old candidate records that have no password_hash.
+   * Disabled in production unless ENABLE_DEV_PASSWORD_RESET=true.
+   */
+  app.post("/api/dev/candidates/set-temp-password", async (req: Request, res: Response) => {
+    // DEV ONLY: temporary tool for fixing old candidate records
+    const isEnabled =
+      process.env.NODE_ENV !== "production" ||
+      process.env.ENABLE_DEV_PASSWORD_RESET === "true";
+    if (!isEnabled) {
+      return res.status(403).json({ error: "Disabled in this environment." });
+    }
+    try {
+      const { email, temporaryPassword } = req.body as { email?: string; temporaryPassword?: string };
+      if (!email || !temporaryPassword) {
+        return res.status(400).json({ error: "email and temporaryPassword are required" });
+      }
+      const candidate = await storage.getCandidateByEmail(email.toLowerCase().trim());
+      if (!candidate) {
+        return res.status(404).json({ error: "No candidate found with that email." });
+      }
+      const hash = await hashPassword(temporaryPassword);
+      await storage.updateCandidate(candidate.id, { passwordHash: hash } as any);
+      console.log(`🔑 [DEV] Temp password set for candidate: ***@${email.split("@")[1]}`);
+      return res.json({ success: true, candidateId: candidate.id, email: candidate.email });
+    } catch (error: any) {
+      console.error("POST /api/dev/candidates/set-temp-password error:", error);
+      return res.status(500).json({ error: "Failed to set temporary password" });
     }
   });
 
@@ -7201,7 +7313,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         [email]
       );
 
-      if (userResult.rows.length === 0) {
+      // Also check candidates table for talent portal
+      const candidateForReset = await storage.getCandidateByEmail(email.toLowerCase().trim());
+
+      if (userResult.rows.length === 0 && !candidateForReset) {
         return res.status(404).json({
           success: false,
           message: "No account found with that email address.",
@@ -7210,10 +7325,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const newHash = await hashPassword(newPassword);
 
-      await query(
-        'UPDATE users SET "password_hash" = $1, "updated_at" = NOW() WHERE email = $2',
-        [newHash, email]
-      );
+      // Update users table if matched
+      if (userResult.rows.length > 0) {
+        await query(
+          'UPDATE users SET "password_hash" = $1, "updated_at" = NOW() WHERE email = $2',
+          [newHash, email]
+        );
+      }
+
+      // Update candidates table if matched (talent portal)
+      if (candidateForReset) {
+        await storage.updateCandidate(candidateForReset.id, { passwordHash: newHash } as any);
+      }
 
       console.log(`🔑 [DEV] Password reset for: ***@${email.split("@")[1]}`);
 

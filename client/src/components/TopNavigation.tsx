@@ -398,6 +398,13 @@ export function TopNavigation() {
   const [signinLoading, setSigninLoading] = useState(false);
   const [signupLoading, setSignupLoading] = useState(false);
   const [talentAuth, setTalentAuth] = useState<TalentAuthState | null>(() => loadTalentAuth());
+  // Talent sign-in — password setup flow (for existing candidates without a password)
+  const [signinNeedsSetup, setSigninNeedsSetup] = useState(false);
+  const [setupPassword, setSetupPassword] = useState("");
+  const [setupConfirmPassword, setSetupConfirmPassword] = useState("");
+  const [setupLoading, setSetupLoading] = useState(false);
+  const [showSetupPw, setShowSetupPw] = useState(false);
+  const [showSetupConfirm, setShowSetupConfirm] = useState(false);
   // DEV ONLY: forgot-password flow state — remove when real password-reset email is implemented
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotNewPassword, setForgotNewPassword] = useState("");
@@ -1445,6 +1452,8 @@ export function TopNavigation() {
             setSigninEmail(""); setSigninPassword(""); setSigninPortal(null);
             setSignupFirstName(""); setSignupLastName(""); setSignupEmail(""); setSignupPassword(""); setSignupRole(null);
             setShowAuthPassword(false);
+            // Reset password setup state
+            setSigninNeedsSetup(false); setSetupPassword(""); setSetupConfirmPassword(""); setShowSetupPw(false); setShowSetupConfirm(false);
           }
         }}
       >
@@ -1940,124 +1949,236 @@ export function TopNavigation() {
                     >
                       <ArrowRight className="w-3.5 h-3.5 rotate-180" /> Back
                     </button>
-                    <h2 className="text-3xl font-light text-white mb-2" style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '-0.02em' }}>Sign In</h2>
-                    <p className="text-white/60 mb-7 text-sm">Welcome back to OnSpot. Choose your portal below.</p>
-                    <div className="space-y-2 mb-4">
-                      <Label className="text-white/90 text-sm font-medium">Email Address</Label>
-                      <Input type="email" placeholder="you@example.com" value={signinEmail} onChange={(e) => setSigninEmail(e.target.value)} autoComplete="email" className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12" />
-                    </div>
-                    <div className="space-y-2 mb-6">
-                      <Label className="text-white/90 text-sm font-medium">Password</Label>
-                      <div className="relative">
-                        <Input type={showAuthPassword ? "text" : "password"} placeholder="••••••••" value={signinPassword} onChange={(e) => setSigninPassword(e.target.value)} autoComplete="current-password" className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12 pr-10" />
-                        <button type="button" onClick={() => setShowAuthPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/90 transition-colors">
-                          {showAuthPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                      </div>
-                    </div>
-                    <div className="flex justify-end -mt-3 mb-4">
-                      <button
-                        type="button"
-                        onClick={() => { setForgotEmail(signinEmail); setModalStep("forgot"); }}
-                        className="text-xs text-[#7b82f0] hover:text-white transition-colors duration-200 underline underline-offset-2"
-                      >
-                        Forgot password?
-                      </button>
-                    </div>
-                    <div className="mb-6">
-                      <p className="text-white/90 text-sm font-medium mb-3">Select Your Portal</p>
-                      <div className="grid grid-cols-2 gap-3">
-                        <button type="button" onClick={() => setSigninPortal("client")} className={`relative flex flex-col items-center gap-2 rounded-xl p-4 text-sm transition-all duration-200 ${signinPortal === "client" ? 'border-2 border-[#5B7CFF] bg-[#3A3AF8]/20' : 'border border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/40'}`}>
-                          <Building className="w-6 h-6 text-white" />
-                          <span className="font-semibold text-white text-xs">Client Portal</span>
-                          <span className="text-white/50 text-xs leading-tight text-center">Find and manage top outsourcing talent</span>
-                          {signinPortal === "client" && <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[#5B7CFF] flex items-center justify-center"><CheckCircle2 className="w-3 h-3 text-white" /></div>}
-                        </button>
-                        <button type="button" onClick={() => setSigninPortal("talent")} className={`relative flex flex-col items-center gap-2 rounded-xl p-4 text-sm transition-all duration-200 ${signinPortal === "talent" ? 'border-2 border-[hsl(var(--gold-yellow)/0.8)] bg-[hsl(var(--gold-yellow)/0.1)]' : 'border border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/40'}`}>
-                          <User className="w-6 h-6 text-white" />
-                          <span className="font-semibold text-white text-xs">Talent Portal</span>
-                          <span className="text-white/50 text-xs leading-tight text-center">Find jobs and manage your career profile</span>
-                          {signinPortal === "talent" && <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[hsl(var(--gold-yellow)/0.8)] flex items-center justify-center"><CheckCircle2 className="w-3 h-3 text-white" /></div>}
-                        </button>
-                      </div>
-                    </div>
-                    {/* Sign In — talent uses /api/talent-auth/login, client uses /api/login */}
-                    <button
-                      onClick={async () => {
-                        if (!signinEmail || !signinPassword || !signinPortal) return;
-                        setSigninLoading(true);
-                        try {
-                          if (signinPortal === "talent") {
-                            // ── Talent Portal login ──────────────────────────
-                            const res = await fetch("/api/talent-auth/login", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ email: signinEmail, password: signinPassword }),
-                            });
-                            const data = await res.json();
-                            if (!res.ok) {
-                              const msg = data.error === "no_password"
-                                ? "No password set for this account. Please visit your Talent Profile to set one."
-                                : data.error || "Invalid email or password.";
-                              toast({ variant: "destructive", title: "Sign in failed", description: msg });
+                    {signinNeedsSetup ? (
+                      /* ── Password Setup form (old candidate records with NULL password_hash) ── */
+                      <>
+                        <h2 className="text-3xl font-light text-white mb-2" style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '-0.02em' }}>Create a Password</h2>
+                        <p className="text-white/60 mb-6 text-sm">Your profile exists but has no password yet. Set one now to access the Talent Portal.</p>
+                        <div className="mb-5 px-4 py-3 rounded-xl border border-white/20 bg-white/5">
+                          <p className="text-white/50 text-xs mb-0.5">Signing in as</p>
+                          <p className="text-white text-sm font-medium truncate">{signinEmail}</p>
+                        </div>
+                        <div className="space-y-2 mb-4">
+                          <Label className="text-white/90 text-sm font-medium">New Password</Label>
+                          <div className="relative">
+                            <Input
+                              type={showSetupPw ? "text" : "password"}
+                              placeholder="Minimum 8 characters"
+                              value={setupPassword}
+                              onChange={(e) => setSetupPassword(e.target.value)}
+                              autoComplete="new-password"
+                              className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12 pr-10"
+                            />
+                            <button type="button" onClick={() => setShowSetupPw(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/90 transition-colors">
+                              {showSetupPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          </div>
+                        </div>
+                        <div className="space-y-2 mb-2">
+                          <Label className="text-white/90 text-sm font-medium">Confirm Password</Label>
+                          <div className="relative">
+                            <Input
+                              type={showSetupConfirm ? "text" : "password"}
+                              placeholder="Re-enter your new password"
+                              value={setupConfirmPassword}
+                              onChange={(e) => setSetupConfirmPassword(e.target.value)}
+                              autoComplete="new-password"
+                              className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12 pr-10"
+                            />
+                            <button type="button" onClick={() => setShowSetupConfirm(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/90 transition-colors">
+                              {showSetupConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          </div>
+                        </div>
+                        {setupConfirmPassword && setupPassword !== setupConfirmPassword && (
+                          <p className="text-red-400 text-xs mb-2">Passwords do not match.</p>
+                        )}
+                        <div className="mb-6" />
+                        <button
+                          onClick={async () => {
+                            if (!setupPassword || !setupConfirmPassword) return;
+                            if (setupPassword.length < 8) {
+                              toast({ variant: "destructive", title: "Password too short", description: "Must be at least 8 characters." });
                               return;
                             }
-                            const auth: TalentAuthState = {
-                              token: data.token,
-                              candidateId: data.candidate.id,
-                              email: data.candidate.email,
-                              fullName: data.candidate.fullName || data.candidate.email,
-                            };
-                            saveTalentAuth(auth);
-                            setTalentAuth(auth);
-                            setShowPortal(false);
-                            setModalStep(1);
-                            toast({ title: "Signed in", description: `Welcome back, ${auth.fullName}!` });
-                            navigate(`/talent-profile/${auth.candidateId}`);
-                          } else {
-                            // ── Client Portal login ──────────────────────────
-                            const res = await fetch("/api/login", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ email: signinEmail, password: signinPassword }),
-                            });
-                            const data = await res.json();
-                            if (data.success) {
-                              const role = data.user.role;
-                              if (role === "talent") {
-                                toast({ variant: "destructive", title: "Wrong portal", description: "This is a Talent account. Please select the Talent Portal." });
+                            if (setupPassword !== setupConfirmPassword) {
+                              toast({ variant: "destructive", title: "Passwords don't match" });
+                              return;
+                            }
+                            setSetupLoading(true);
+                            try {
+                              const res = await fetch("/api/candidates/setup-password", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ email: signinEmail, newPassword: setupPassword }),
+                              });
+                              const data = await res.json();
+                              if (!res.ok) {
+                                const msg = data.error === "password_exists"
+                                  ? "A password is already set. Please sign in or use Forgot Password."
+                                  : data.error || data.message || "Could not set password.";
+                                toast({ variant: "destructive", title: "Setup failed", description: msg });
                                 return;
                               }
-                              localStorage.setItem("onspot_jwt_token", data.token);
-                              localStorage.setItem("onspot_user", JSON.stringify(data.user));
-                              localStorage.setItem("dev_portal_role", role);
-                              localStorage.setItem("dev_portal_email", data.user.email);
+                              const auth: TalentAuthState = {
+                                token: data.token,
+                                candidateId: data.candidate.id,
+                                email: data.candidate.email,
+                                fullName: data.candidate.fullName || data.candidate.email,
+                              };
+                              saveTalentAuth(auth);
+                              setTalentAuth(auth);
                               setShowPortal(false);
                               setModalStep(1);
-                              navigate(role === "client" ? "/hire-talent" : "/");
-                            } else {
-                              toast({ variant: "destructive", title: "Sign in failed", description: data.message || "Invalid email or password." });
+                              setSigninNeedsSetup(false);
+                              toast({ title: "Password created!", description: `Welcome, ${auth.fullName}!` });
+                              navigate(`/talent-profile/${auth.candidateId}`);
+                            } catch {
+                              toast({ variant: "destructive", title: "Network error", description: "Could not reach the server. Please try again." });
+                            } finally {
+                              setSetupLoading(false);
                             }
-                          }
-                        } catch {
-                          toast({ variant: "destructive", title: "Network error", description: "Could not reach the server. Please try again." });
-                        } finally {
-                          setSigninLoading(false);
-                        }
-                      }}
-                      disabled={signinLoading || !signinPortal || !signinEmail || !signinPassword}
-                      className="relative group w-full px-8 py-4 text-base font-semibold text-white rounded-xl overflow-hidden transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
-                      style={{ background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)', boxShadow: '0 8px 30px rgba(58,58,248,0.35), inset 0 1px 0 rgba(255,255,255,0.2)' }}
-                    >
-                      <span className="relative z-10 flex items-center justify-center gap-2">
-                        {signinLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                        {signinLoading ? "Signing in…" : <><span>Continue</span> <ArrowRight className="w-4 h-4" /></>}
-                      </span>
-                    </button>
-                    <p className="text-center text-xs text-white/40 mt-4">
-                      Don't have an account?{' '}
-                      <button className="text-white/60 hover:text-white underline transition-colors" onClick={() => setModalStep("signup")}>Sign Up</button>
-                    </p>
+                          }}
+                          disabled={setupLoading || !setupPassword || !setupConfirmPassword || setupPassword !== setupConfirmPassword || setupPassword.length < 8}
+                          className="relative group w-full px-8 py-4 text-base font-semibold text-white rounded-xl overflow-hidden transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+                          style={{ background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)', boxShadow: '0 8px 30px rgba(58,58,248,0.35), inset 0 1px 0 rgba(255,255,255,0.2)' }}
+                        >
+                          <span className="relative z-10 flex items-center justify-center gap-2">
+                            {setupLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                            {setupLoading ? "Setting up…" : <><span>Create Password & Sign In</span> <ArrowRight className="w-4 h-4" /></>}
+                          </span>
+                        </button>
+                        <p className="text-center text-xs text-white/40 mt-4">
+                          <button className="text-white/60 hover:text-white underline transition-colors" onClick={() => { setSigninNeedsSetup(false); setSetupPassword(""); setSetupConfirmPassword(""); }}>
+                            Back to sign in
+                          </button>
+                        </p>
+                      </>
+                    ) : (
+                      /* ── Normal Sign In form ── */
+                      <>
+                        <h2 className="text-3xl font-light text-white mb-2" style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '-0.02em' }}>Sign In</h2>
+                        <p className="text-white/60 mb-7 text-sm">Welcome back to OnSpot. Choose your portal below.</p>
+                        <div className="space-y-2 mb-4">
+                          <Label className="text-white/90 text-sm font-medium">Email Address</Label>
+                          <Input type="email" placeholder="you@example.com" value={signinEmail} onChange={(e) => setSigninEmail(e.target.value)} autoComplete="email" className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12" />
+                        </div>
+                        <div className="space-y-2 mb-6">
+                          <Label className="text-white/90 text-sm font-medium">Password</Label>
+                          <div className="relative">
+                            <Input type={showAuthPassword ? "text" : "password"} placeholder="••••••••" value={signinPassword} onChange={(e) => setSigninPassword(e.target.value)} autoComplete="current-password" className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12 pr-10" />
+                            <button type="button" onClick={() => setShowAuthPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/90 transition-colors">
+                              {showAuthPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex justify-end -mt-3 mb-4">
+                          <button
+                            type="button"
+                            onClick={() => { setForgotEmail(signinEmail); setModalStep("forgot"); }}
+                            className="text-xs text-[#7b82f0] hover:text-white transition-colors duration-200 underline underline-offset-2"
+                          >
+                            Forgot password?
+                          </button>
+                        </div>
+                        <div className="mb-6">
+                          <p className="text-white/90 text-sm font-medium mb-3">Select Your Portal</p>
+                          <div className="grid grid-cols-2 gap-3">
+                            <button type="button" onClick={() => setSigninPortal("client")} className={`relative flex flex-col items-center gap-2 rounded-xl p-4 text-sm transition-all duration-200 ${signinPortal === "client" ? 'border-2 border-[#5B7CFF] bg-[#3A3AF8]/20' : 'border border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/40'}`}>
+                              <Building className="w-6 h-6 text-white" />
+                              <span className="font-semibold text-white text-xs">Client Portal</span>
+                              <span className="text-white/50 text-xs leading-tight text-center">Find and manage top outsourcing talent</span>
+                              {signinPortal === "client" && <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[#5B7CFF] flex items-center justify-center"><CheckCircle2 className="w-3 h-3 text-white" /></div>}
+                            </button>
+                            <button type="button" onClick={() => setSigninPortal("talent")} className={`relative flex flex-col items-center gap-2 rounded-xl p-4 text-sm transition-all duration-200 ${signinPortal === "talent" ? 'border-2 border-[hsl(var(--gold-yellow)/0.8)] bg-[hsl(var(--gold-yellow)/0.1)]' : 'border border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/40'}`}>
+                              <User className="w-6 h-6 text-white" />
+                              <span className="font-semibold text-white text-xs">Talent Portal</span>
+                              <span className="text-white/50 text-xs leading-tight text-center">Find jobs and manage your career profile</span>
+                              {signinPortal === "talent" && <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[hsl(var(--gold-yellow)/0.8)] flex items-center justify-center"><CheckCircle2 className="w-3 h-3 text-white" /></div>}
+                            </button>
+                          </div>
+                        </div>
+                        {/* Sign In — talent uses /api/talent-auth/login, client uses /api/login */}
+                        <button
+                          onClick={async () => {
+                            if (!signinEmail || !signinPassword || !signinPortal) return;
+                            setSigninLoading(true);
+                            try {
+                              if (signinPortal === "talent") {
+                                // ── Talent Portal login ──────────────────────────
+                                const res = await fetch("/api/talent-auth/login", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ email: signinEmail, password: signinPassword }),
+                                });
+                                const data = await res.json();
+                                if (!res.ok) {
+                                  if (data.error === "no_password" || data.requiresPasswordSetup) {
+                                    // Old record — no password set yet. Show inline setup form.
+                                    setSigninNeedsSetup(true);
+                                    return;
+                                  }
+                                  toast({ variant: "destructive", title: "Sign in failed", description: data.error || "Invalid email or password." });
+                                  return;
+                                }
+                                const auth: TalentAuthState = {
+                                  token: data.token,
+                                  candidateId: data.candidate.id,
+                                  email: data.candidate.email,
+                                  fullName: data.candidate.fullName || data.candidate.email,
+                                };
+                                saveTalentAuth(auth);
+                                setTalentAuth(auth);
+                                setShowPortal(false);
+                                setModalStep(1);
+                                toast({ title: "Signed in", description: `Welcome back, ${auth.fullName}!` });
+                                navigate(`/talent-profile/${auth.candidateId}`);
+                              } else {
+                                // ── Client Portal login ──────────────────────────
+                                const res = await fetch("/api/login", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ email: signinEmail, password: signinPassword }),
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                  const role = data.user.role;
+                                  if (role === "talent") {
+                                    toast({ variant: "destructive", title: "Wrong portal", description: "This is a Talent account. Please select the Talent Portal." });
+                                    return;
+                                  }
+                                  localStorage.setItem("onspot_jwt_token", data.token);
+                                  localStorage.setItem("onspot_user", JSON.stringify(data.user));
+                                  localStorage.setItem("dev_portal_role", role);
+                                  localStorage.setItem("dev_portal_email", data.user.email);
+                                  setShowPortal(false);
+                                  setModalStep(1);
+                                  navigate(role === "client" ? "/hire-talent" : "/");
+                                } else {
+                                  toast({ variant: "destructive", title: "Sign in failed", description: data.message || "Invalid email or password." });
+                                }
+                              }
+                            } catch {
+                              toast({ variant: "destructive", title: "Network error", description: "Could not reach the server. Please try again." });
+                            } finally {
+                              setSigninLoading(false);
+                            }
+                          }}
+                          disabled={signinLoading || !signinPortal || !signinEmail || !signinPassword}
+                          className="relative group w-full px-8 py-4 text-base font-semibold text-white rounded-xl overflow-hidden transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+                          style={{ background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)', boxShadow: '0 8px 30px rgba(58,58,248,0.35), inset 0 1px 0 rgba(255,255,255,0.2)' }}
+                        >
+                          <span className="relative z-10 flex items-center justify-center gap-2">
+                            {signinLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                            {signinLoading ? "Signing in…" : <><span>Continue</span> <ArrowRight className="w-4 h-4" /></>}
+                          </span>
+                        </button>
+                        <p className="text-center text-xs text-white/40 mt-4">
+                          Don't have an account?{' '}
+                          <button className="text-white/60 hover:text-white underline transition-colors" onClick={() => setModalStep("signup")}>Sign Up</button>
+                        </p>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

@@ -79,9 +79,10 @@ export function TalentLoginModal({
       });
       const data = await res.json();
       if (!res.ok) {
-        if (data.error === "no_password" && profileId) {
+        if (data.error === "no_password") {
+          // Works for both known-profile (profileId) and Access Portal (no profileId) flows
           setMode("set-password");
-          toast({ title: "Set a password", description: "You haven't set a password yet. Please create one now." });
+          toast({ title: "Set a password", description: "This profile exists but has no password yet. Please create one to continue." });
           return;
         }
         toast({ title: "Login failed", description: data.error || "Invalid credentials.", variant: "destructive" });
@@ -103,7 +104,6 @@ export function TalentLoginModal({
   }
 
   async function handleSetPassword() {
-    if (!profileId) return;
     if (!email || !password || !confirmPassword) {
       toast({ title: "Missing fields", description: "Fill in all fields.", variant: "destructive" });
       return;
@@ -118,25 +118,37 @@ export function TalentLoginModal({
     }
     setLoading(true);
     try {
-      const res = await fetch("/api/talent-auth/set-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, candidateId: profileId, password }),
-      });
+      // If we have a profileId use the old endpoint (requires candidateId); otherwise use the new email-only endpoint
+      let res: Response;
+      if (profileId) {
+        res = await fetch("/api/talent-auth/set-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, candidateId: profileId, password }),
+        });
+      } else {
+        res = await fetch("/api/candidates/setup-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, newPassword: password }),
+        });
+      }
       const data = await res.json();
       if (!res.ok) {
-        toast({ title: "Failed", description: data.error || "Could not set password.", variant: "destructive" });
+        const msg = data.error === "password_exists"
+          ? "A password already exists. Please sign in or use Forgot Password."
+          : data.error || "Could not set password.";
+        toast({ title: "Failed", description: msg, variant: "destructive" });
         return;
       }
-      const meRes = await fetch("/api/talent-auth/me", {
-        headers: { Authorization: `Bearer ${data.token}` },
-      });
-      const me = meRes.ok ? await meRes.json() : { fullName: email };
+      // Both endpoints return token + candidate info (slightly different shapes)
+      const candidateId = data.candidateId || data.candidate?.id;
+      const fullName = data.candidate?.fullName || email;
       const auth: TalentAuthState = {
         token: data.token,
-        candidateId: data.candidateId,
+        candidateId,
         email,
-        fullName: me.fullName || email,
+        fullName,
       };
       saveTalentAuth(auth);
       onSuccess(auth);
