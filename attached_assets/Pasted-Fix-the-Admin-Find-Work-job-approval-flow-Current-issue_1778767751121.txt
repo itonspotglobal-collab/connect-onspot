@@ -1,0 +1,81 @@
+Fix the Admin Find Work job approval flow.
+
+Current issue:
+On the admin Find Work page, clicking “Approve” on a pending job post fails with this error:
+
+401: {
+  "error": "Authentication required",
+  "message": "No authentication token provided"
+}
+
+Because approval fails, all existing job posts remain stuck as “Pending Approval”, and no approved/open jobs appear on the public Find Work page.
+
+Expected behavior:
+- Admin can approve a pending job post successfully.
+- Approved jobs should no longer appear as pending.
+- Approved jobs should become visible as active/open job openings on the public Find Work page.
+- The counts should update correctly:
+  - Pending decreases
+  - Approved/Open increases
+  - Total remains correct
+- Reject, Close, Edit, Preview, and Share should continue working as before.
+
+Please inspect and fix the full flow:
+- Admin Find Work page component
+- Approve button handler
+- API service/helper used by the approve action
+- Authentication/token handling
+- Backend approve endpoint
+- Middleware protecting the approve endpoint
+- Job status update logic
+- Public Find Work query/filter for approved/open jobs
+
+Main bug to fix:
+The approve request is being sent without an authentication token. Make sure the frontend includes the logged-in admin token in the request headers.
+
+Implementation requirements:
+1. Find the approve job function/API call.
+2. Ensure it sends the auth token, for example:
+
+   Authorization: Bearer <token>
+
+3. Use the same token source already used by other authenticated admin requests in the app.
+   Check localStorage, sessionStorage, auth context, or existing API client/interceptor.
+4. If there is already a central axios/fetch client, update the approve request to use that client instead of raw fetch/axios without headers.
+5. If the token is missing, show a clear message like:
+   “Your session expired. Please log in again.”
+6. Do not bypass authentication on the backend.
+7. Keep the backend endpoint protected for admin users only.
+8. Verify that the backend correctly changes the job status from pending/pending_approval to approved/open.
+9. Make sure approved jobs are included in the public Find Work listings.
+10. Make sure pending jobs are excluded from the public Find Work listings.
+11. Make sure the admin UI updates immediately after approval, either by refetching jobs or updating local state.
+
+Please check for status naming inconsistencies. The app may be using values such as:
+- pending
+- pending_approval
+- approved
+- open
+- active
+- closed
+- rejected
+
+Normalize the approval behavior so that:
+- Pending approval jobs are admin-review jobs.
+- Approved jobs become open/active public jobs.
+- Public Find Work only displays approved/open/active jobs.
+- Admin Pending Approvals tab only displays pending jobs.
+
+Acceptance criteria:
+- Log in as admin.
+- Go to Admin Find Work page.
+- Click Approve on a pending job post.
+- No 401 error appears.
+- The job moves out of Pending Approvals.
+- The approved/open count updates.
+- The job appears on the public Find Work page.
+- Refreshing the page keeps the job approved/open.
+- Existing pending jobs can all be approved one by one.
+- No hardcoded/mock job status overrides the database value.
+
+Please make the smallest safe changes necessary and do not redesign the page.

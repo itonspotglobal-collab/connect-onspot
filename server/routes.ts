@@ -283,6 +283,89 @@ const requireAdmin = requireRole(["admin"]);
 const requireClientOrTalent = requireRole(["client", "talent"]);
 const requireAnyRole = requireRole(["client", "talent", "admin"]);
 
+/**
+ * Flexible admin auth middleware — accepts either:
+ *   1. JWT Bearer token in Authorization header (portal / Access Portal login)
+ *   2. Valid Replit Auth session where the DB user has role = "admin"
+ * This allows admins who authenticated via Replit Auth (no onspot_jwt_token in
+ * localStorage) to still call protected admin endpoints.
+ */
+const authenticateAdminFlexible = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    // ── Path 1: JWT Bearer token ───────────────────────────────────────────
+    const authHeader = req.headers["authorization"];
+    const bearerToken = authHeader && authHeader.split(" ")[1];
+
+    if (bearerToken) {
+      let jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) {
+        if (process.env.NODE_ENV === "development") {
+          jwtSecret = "development-fallback-secret-not-for-production";
+        } else {
+          return res.status(500).json({ error: "Server configuration error" });
+        }
+      }
+      const decoded = jwt.verify(bearerToken, jwtSecret) as JWTPayload;
+      if (!decoded.userId || !decoded.email || !decoded.role) {
+        return res.status(401).json({ error: "Invalid token", message: "Token missing required claims" });
+      }
+      if (decoded.role !== "admin") {
+        return res.status(403).json({ error: "Forbidden", message: "Admin access required" });
+      }
+      const userResult = await query(
+        "SELECT id, email, role FROM users WHERE id = $1",
+        [decoded.userId],
+      );
+      if (userResult.rows.length === 0 || userResult.rows[0].role !== "admin") {
+        return res.status(403).json({ error: "Forbidden", message: "Admin access required" });
+      }
+      (req as any).user = { id: decoded.userId, email: decoded.email, role: "admin" };
+      return next();
+    }
+
+    // ── Path 2: Replit Auth / session cookie ──────────────────────────────
+    const reqAny = req as any;
+    if (typeof reqAny.isAuthenticated === "function" && reqAny.isAuthenticated()) {
+      let userId: string | undefined;
+      if (reqAny.user?.user?.id) {
+        userId = reqAny.user.user.id;
+      } else if (reqAny.user?.claims?.sub) {
+        userId = reqAny.user.claims.sub;
+      }
+      if (userId) {
+        const userResult = await query(
+          "SELECT id, email, role FROM users WHERE id = $1",
+          [userId],
+        );
+        if (userResult.rows.length > 0 && userResult.rows[0].role === "admin") {
+          reqAny.user = { id: userId, email: userResult.rows[0].email, role: "admin" };
+          return next();
+        }
+      }
+      return res.status(403).json({ error: "Forbidden", message: "Admin access required" });
+    }
+
+    // ── Neither auth method worked ─────────────────────────────────────────
+    return res.status(401).json({
+      error: "Authentication required",
+      message: "Please log in to perform this action",
+    });
+  } catch (error: any) {
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({ error: "Token expired", message: "Your session has expired, please log in again" });
+    }
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({ error: "Invalid token", message: "Authentication token is invalid" });
+    }
+    console.error("Admin flexible auth error:", error);
+    return res.status(500).json({ error: "Authentication error" });
+  }
+};
+
 // Enhanced validation middleware factory
 const validateRequest = (
   schema: z.ZodSchema,
@@ -4382,7 +4465,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ─── Admin: Approve a job posting ─────────────────────────────────────────
-  app.post("/api/admin/jobs/:id/approve", authenticateJWT, async (req: Request, res: Response) => {
+  app.post("/api/admin/jobs/:id/approve", authenticateAdminFlexible, async (req: Request, res: Response) => {
     try {
       const adminId = (req as any).user?.id;
       const result = await query(
@@ -4410,7 +4493,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ─── Admin: Reject a job posting ──────────────────────────────────────────
-  app.post("/api/admin/jobs/:id/reject", authenticateJWT, async (req: Request, res: Response) => {
+  app.post("/api/admin/jobs/:id/reject", authenticateAdminFlexible, async (req: Request, res: Response) => {
     try {
       const adminId = (req as any).user?.id;
       const { rejectionReason } = req.body;
@@ -4439,7 +4522,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ─── Admin: Link a client job to an existing approved job ────────────────
-  app.post("/api/admin/jobs/:id/link", authenticateJWT, async (req: Request, res: Response) => {
+  app.post("/api/admin/jobs/:id/link", authenticateAdminFlexible, async (req: Request, res: Response) => {
     try {
       const { existingJobId } = req.body;
       if (!existingJobId) return res.status(400).json({ error: "existingJobId is required" });
@@ -4466,7 +4549,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ─── Admin: Move approved/rejected job back to pending ────────────────────
-  app.post("/api/admin/jobs/:id/pending", authenticateJWT, async (req: Request, res: Response) => {
+  app.post("/api/admin/jobs/:id/pending", authenticateAdminFlexible, async (req: Request, res: Response) => {
     try {
       const result = await query(
         `UPDATE jobs SET
