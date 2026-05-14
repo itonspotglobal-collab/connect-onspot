@@ -286,6 +286,27 @@ app.use((req, res, next) => {
       .catch((err: any) => console.warn(`⚠️ Startup job indexing skipped: ${err.message}`));
   }
   
+  // Auto-approve all admin-created (non-client-submitted) jobs that are still
+  // in the default "pending" state. These were created before the approval
+  // workflow existed and should be publicly visible immediately.
+  // Idempotent: only updates rows that are genuinely still pending.
+  try {
+    const { query: dbQuery } = await import('./db');
+    const autoApproveResult = await dbQuery(
+      `UPDATE jobs
+         SET approval_status = 'approved',
+             status          = 'open',
+             updated_at      = NOW()
+       WHERE is_client_submitted = false
+         AND approval_status    = 'pending'`
+    );
+    if ((autoApproveResult.rowCount ?? 0) > 0) {
+      console.log(`✅ Auto-approved ${autoApproveResult.rowCount} admin-created job(s) that were pending`);
+    }
+  } catch (autoApproveErr: any) {
+    console.warn('⚠️  Auto-approve migration skipped:', autoApproveErr.message);
+  }
+
   // Seed posts from legacy static content to database
   // NOTE: This migration is idempotent - uses slug uniqueness to prevent duplicates
   // Safe to remove once production content is fully managed via admin UI

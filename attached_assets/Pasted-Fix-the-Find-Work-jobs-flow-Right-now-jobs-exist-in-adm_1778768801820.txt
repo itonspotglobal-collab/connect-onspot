@@ -1,0 +1,136 @@
+Fix the Find Work jobs flow. Right now, jobs exist in /admin/find-work, but /find-work/jobs shows 0 roles found. Also, approving jobs from admin fails with:
+
+401: Authentication required
+message: Please log in to perform this action
+
+Current symptoms:
+1. /admin/find-work shows many job posts.
+2. Most jobs show both OPEN and PENDING APPROVAL badges.
+3. Clicking Approve fails with 401 authentication error.
+4. /find-work/jobs shows 0 open roles.
+5. Public Find Work page is not displaying any jobs even though jobs exist in admin.
+
+Expected behavior:
+- Admin can approve pending job posts without a 401 error.
+- Approved jobs should appear on /find-work/jobs.
+- Pending approval jobs should NOT appear publicly.
+- Closed/rejected jobs should NOT appear publicly.
+- Admin page should accurately show each job’s workflow status.
+- A job should not show confusing combined statuses like OPEN + PENDING APPROVAL if it is not publicly visible yet.
+
+Important:
+Do NOT remove authentication protection from admin approval routes.
+Fix the frontend so the admin approval request sends the correct auth token.
+
+Please inspect and fix these areas:
+- Admin Find Work page
+- Approve button handler
+- API client/service used by admin job actions
+- Auth token storage and retrieval
+- Backend approve endpoint
+- Job model/status fields
+- Public /find-work/jobs page
+- Public jobs API endpoint
+- Any seed/mock/demo job data logic
+- Status filtering logic
+
+Likely root causes to check:
+1. Approve API call is using raw fetch/axios without Authorization headers.
+2. Token is stored under a different key than the approve function expects.
+3. Admin page may be loading jobs from a different endpoint than the public page.
+4. Public jobs endpoint may filter by the wrong status value.
+5. Job records may use multiple inconsistent fields such as:
+   - status
+   - approvalStatus
+   - isApproved
+   - isOpen
+   - visibility
+   - published
+6. Jobs may currently have status OPEN but approvalStatus PENDING, so they appear open in admin but are hidden publicly.
+
+Required fix:
+Create one clear status/approval rule:
+
+- Pending admin review:
+  status = "pending" or approvalStatus = "pending"
+  public visibility = false
+
+- Approved public job:
+  status = "open"
+  approvalStatus = "approved"
+  public visibility = true
+
+- Rejected job:
+  status = "rejected"
+  approvalStatus = "rejected"
+  public visibility = false
+
+- Closed job:
+  status = "closed"
+  public visibility = false
+
+If the existing database schema uses different field names, adapt the logic to the existing schema but keep the behavior consistent.
+
+Admin approval behavior:
+- When Approve is clicked:
+  - Send authenticated request with:
+    Authorization: Bearer <admin token>
+  - Update the selected job to approved/open/public.
+  - Refetch jobs or update local state immediately.
+  - Remove the job from Pending Approvals.
+  - Increase Approved/Open count.
+  - Show success feedback.
+  - Do not show 401 if the admin is logged in.
+
+Frontend auth requirements:
+- Find the existing working auth mechanism.
+- Use the same token source used by other protected admin requests.
+- Check localStorage/sessionStorage/AuthContext/API client/interceptors.
+- Do not create a second incompatible auth system.
+- If token is missing or expired, show:
+  “Your session expired. Please log in again.”
+- If the API client already attaches tokens automatically, use that client for approve/reject/close actions.
+
+Public jobs page behavior:
+- /find-work/jobs should fetch from the correct public jobs endpoint.
+- It should display jobs that are approved/open/public.
+- It should not require login.
+- It should not display pending approval jobs.
+- It should update counts:
+  - Open roles should equal approved/open/public jobs.
+  - Urgently hiring should count approved/open/public jobs marked urgent.
+  - Roles found should match the displayed list.
+
+Admin page display behavior:
+- Pending approval jobs should show Pending Approval clearly.
+- Approved jobs should show Open or Approved.
+- Do not show an OPEN badge on jobs that are still pending approval unless the app clearly distinguishes job availability from approval state.
+- Counts should be based on real backend data, not hardcoded values.
+
+Debugging steps to perform:
+1. Search the codebase for “approve”, “approval”, “pending approval”, “find-work”, “jobs”, “Acme”, “OPEN”, “PENDING_APPROVAL”.
+2. Identify the admin job list endpoint and the public job list endpoint.
+3. Compare how each endpoint filters jobs.
+4. Fix inconsistent status filtering.
+5. Confirm the approve API call includes the auth token.
+6. Confirm the backend saves the updated status to the database.
+7. Confirm the public endpoint returns the approved job after approval.
+8. Remove or fix any mock/demo fallback that overrides real database jobs.
+
+Acceptance criteria:
+- Login as admin.
+- Open /admin/find-work.
+- Click Approve on a pending job.
+- No 401 error appears.
+- The job status becomes approved/open.
+- The job is no longer counted as pending.
+- Open/Approved count increases.
+- Open /find-work/jobs.
+- The approved job appears there.
+- Refresh /find-work/jobs and the job still appears.
+- Pending approval jobs do not appear publicly.
+- Closed/rejected jobs do not appear publicly.
+- If no jobs are approved, /find-work/jobs correctly shows 0 roles.
+- Existing posted jobs can be approved and published successfully.
+
+Please make the smallest safe changes necessary. Do not redesign the UI.

@@ -337,12 +337,14 @@ const authenticateAdminFlexible = async (
         userId = reqAny.user.claims.sub;
       }
       if (userId) {
+        // The Replit Auth claims.sub is the Replit user ID, stored in the
+        // `replit_id` column — NOT the primary key `id`. Check both columns.
         const userResult = await query(
-          "SELECT id, email, role FROM users WHERE id = $1",
+          "SELECT id, email, role FROM users WHERE id = $1 OR replit_id = $1 LIMIT 1",
           [userId],
         );
         if (userResult.rows.length > 0 && userResult.rows[0].role === "admin") {
-          reqAny.user = { id: userId, email: userResult.rows[0].email, role: "admin" };
+          reqAny.user = { id: userResult.rows[0].id, email: userResult.rows[0].email, role: "admin" };
           return next();
         }
       }
@@ -4471,6 +4473,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await query(
         `UPDATE jobs SET
           approval_status = 'approved',
+          status = 'open',
           approved_by = $1,
           approved_at = NOW(),
           rejected_by = NULL,

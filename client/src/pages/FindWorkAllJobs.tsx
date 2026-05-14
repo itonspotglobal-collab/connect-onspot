@@ -256,24 +256,15 @@ export default function FindWorkAllJobs() {
     setShowFilters(!!navSlug && navSlug !== "all");
   }, [navSlug]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const { data: allJobs = [], isLoading } = useQuery<Job[]>({
-    queryKey: ["/api/admin/jobs"],
+  const { data: openJobs = [], isLoading } = useQuery<Job[]>({
+    queryKey: ["/api/jobs/search", { status: "open" }],
     queryFn: async () => {
-      const res = await fetch("/api/admin/jobs");
+      const res = await fetch("/api/jobs/search?status=open");
       if (!res.ok) throw new Error("Failed to load jobs");
       return res.json();
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 2 * 60 * 1000,
   });
-
-  const openJobs = useMemo(() =>
-    allJobs.filter((j) => {
-      if (j.status !== "open") return false;
-      const approval = (j as any).approvalStatus;
-      return approval === "approved" || approval == null;
-    }),
-    [allJobs]
-  );
 
   // Debounced search tracking
   useEffect(() => {
