@@ -289,11 +289,14 @@ const PROFILE_NAV_LINKS = [
 function ProfileNavbar({
   displayName,
   isOwner,
+  loggedInName,
   onSignOut,
   onSignIn,
 }: {
   displayName: string;
   isOwner: boolean;
+  /** Name of the currently logged-in viewer, or null if no one is logged in. */
+  loggedInName: string | null;
   onSignOut: () => void;
   onSignIn: () => void;
 }) {
@@ -347,10 +350,10 @@ function ProfileNavbar({
 
           {/* Right-side: auth controls — desktop */}
           <div className="hidden md:flex items-center flex-shrink-0 pl-2 ml-1 border-l border-white/20 gap-1">
-            {isOwner ? (
+            {loggedInName !== null ? (
               <>
                 <span className="px-3 text-sm font-medium text-white/80 max-w-[180px] truncate">
-                  {displayName}
+                  {loggedInName}
                 </span>
                 <button
                   onClick={onSignOut}
@@ -373,7 +376,7 @@ function ProfileNavbar({
 
           {/* Mobile: auth shortcut + hamburger */}
           <div className="flex items-center gap-1 md:hidden">
-            {isOwner ? (
+            {loggedInName !== null ? (
               <button
                 onClick={onSignOut}
                 className="flex items-center justify-center rounded-lg transition-colors text-white/80 hover:bg-white/10 hover:text-white"
@@ -427,13 +430,13 @@ function ProfileNavbar({
                 </button>
               ))}
               <div className="mt-2 border-t border-white/10 pt-2">
-                {isOwner ? (
+                {loggedInName !== null ? (
                   <button
                     onClick={() => { onSignOut(); setMobileOpen(false); }}
                     className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white"
                   >
                     <LogOut className="h-4 w-4" />
-                    Sign out of profile
+                    Sign out
                   </button>
                 ) : (
                   <button
@@ -763,8 +766,10 @@ export default function TalentProfile() {
   const [showSkillsModal, setShowSkillsModal] = useState(false);
 
   useEffect(() => {
+    // Always restore the viewer's own auth session — do not gate it on which
+    // profile is being viewed.  isOwner (below) controls edit permissions.
     const stored = loadTalentAuth();
-    if (stored && stored.candidateId === id) {
+    if (stored) {
       setTalentAuth(stored);
     }
   }, [id]);
@@ -941,6 +946,7 @@ export default function TalentProfile() {
       <ProfileNavbar
         displayName={displayName}
         isOwner={isOwner}
+        loggedInName={talentAuth?.fullName ?? null}
         onSignOut={handleLogout}
         onSignIn={() => setShowLoginModal(true)}
       />
@@ -1440,8 +1446,8 @@ export default function TalentProfile() {
         </div>
       </div>
 
-      {/* Discreet owner sign-in hint — only visible when not authenticated and not admin */}
-      {!isOwner && !isAdminUser && id && (
+      {/* Discreet owner sign-in hint — only visible to completely unauthenticated visitors */}
+      {!talentAuth && !isAdminUser && id && (
         <div className="mx-auto max-w-4xl px-4 pb-10 md:px-8">
           <p className="text-center text-xs text-slate-400">
             Own this profile?{" "}

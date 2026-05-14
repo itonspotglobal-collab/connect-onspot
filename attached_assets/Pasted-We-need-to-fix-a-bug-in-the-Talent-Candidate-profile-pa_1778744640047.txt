@@ -1,0 +1,109 @@
+We need to fix a bug in the Talent/Candidate profile page.
+
+Bug:
+When I am already logged in as one Talent account and I visit another candidate’s profile, the navbar changes to “Sign in” even though I am still logged in.
+
+Expected behavior:
+If I am logged in, I should stay logged in no matter whose candidate profile I view.
+
+Important distinction:
+- Viewing another candidate profile should be public/read-only.
+- Editing a candidate profile should only be available to the owner.
+- Visiting another candidate’s profile should NOT log me out.
+- Visiting another candidate’s profile should NOT replace my logged-in session.
+- Visiting another candidate’s profile should NOT make the navbar show “Sign in”.
+
+Files to inspect:
+- client/src/pages/TalentProfile.tsx
+- client/src/pages/CandidateProfile.tsx
+- client/src/components/TopNavigation.tsx
+- client/src/components/TalentLoginModal.tsx
+- client/src/contexts/AuthContext.tsx
+- client/src/lib/api.ts
+- server/routes.ts
+
+Likely cause:
+The profile page may be checking whether the current logged-in candidate id matches the candidate id in the URL, and if it does not match, it may be treating the viewer as unauthenticated.
+
+This logic is wrong.
+
+Required behavior:
+
+1. Preserve logged-in session globally
+When loading /talent-profile/:id or /candidate-profile/:candidateId:
+- Do not clear auth state.
+- Do not remove auth tokens.
+- Do not set current user to null.
+- Do not force navbar into signed-out mode.
+
+2. Separate viewer auth from profile ownership
+Add helper logic:
+
+const loggedInCandidateId = getLoggedInCandidateIdFromStorageOrAuth();
+const profileCandidateId = route param id/candidateId;
+const isOwner = loggedInCandidateId === profileCandidateId;
+
+Use this only for edit permissions.
+
+3. Public profile view
+If isOwner is false:
+- Show the candidate profile normally.
+- Hide edit buttons.
+- Hide owner-only controls.
+- Show public actions like:
+  - Back to Pool
+  - Contact, if available
+- Navbar should still show the logged-in user’s name/profile/sign out if user is logged in.
+
+4. Owner profile view
+If isOwner is true:
+- Show edit buttons.
+- Show owner-only controls.
+- Navbar should show logged-in user’s name/profile/sign out.
+
+5. Logged-out public profile view
+If no user is logged in:
+- Still allow profile view.
+- Navbar can show “Sign in”.
+- Editing should be disabled.
+- If user clicks an edit action, show login modal.
+
+6. Do not open TalentLoginModal automatically for non-owner visitors
+When a logged-in user visits another candidate profile:
+- Do not show the “Sign in to your Talent Account” modal.
+- Do not prompt for login.
+- Only show login modal if the user explicitly tries to edit and is not the owner.
+
+7. Fix navbar behavior
+TopNavigation should rely on global AuthContext or talent auth session, not on whether the current viewed profile belongs to the logged-in user.
+
+If Talent login uses separate candidate auth storage, make sure TopNavigation checks it consistently.
+
+Example:
+- If AuthContext user exists, show account dropdown.
+- Else if candidate/talent auth token exists, show Talent Profile dropdown.
+- Else show Sign in / Access Portal.
+
+8. Do not change logged-in identity when viewing another profile
+If I am logged in as Frenzy Val Legaspi and visit Esperidion Sanchez Jr.’s profile:
+- Navbar should still show “Frenzy Val Legaspi”.
+- Profile page should show Esperidion Sanchez Jr.’s profile.
+- Edit buttons should be hidden because I do not own Esperidion’s profile.
+- Sign out should still sign out Frenzy’s account.
+
+9. Route support
+Check both routes:
+- /candidate-profile/:candidateId
+- /talent-profile/:id
+
+Apply the fix to whichever route renders the public candidate profile.
+
+10. Acceptance criteria
+- Logged-in Talent can visit their own profile and edit it.
+- Logged-in Talent can visit another candidate’s profile and remains logged in.
+- Navbar still shows the logged-in user’s name when viewing another profile.
+- Another candidate’s profile is read-only unless the viewer owns it.
+- Visiting another profile does not open a sign-in modal.
+- Visiting another profile does not show “Sign in” in the navbar if the viewer is already logged in.
+- Logged-out visitors can still view public candidate profiles.
+- Edit actions require ownership.
