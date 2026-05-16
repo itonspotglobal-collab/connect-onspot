@@ -11,9 +11,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import type { Job } from "@shared/schema";
+import type { Job, Candidate } from "@shared/schema";
 import { buildRateDisplay, getJobBadges, getTimeAgo, sortJobs, type SortOption } from "@/lib/jobUtils";
 import { saveUserActivity, getTopUserInterests, scoreJobsAgainstInterests } from "@/lib/userActivityMemory";
+import { loadTalentAuth, type TalentAuthState } from "@/components/TalentLoginModal";
+import { buildTalentRecProfile, scoreJobForTalent } from "@/lib/talentRecommendations";
 
 const APPLY_URL = "https://api.leadconnectorhq.com/widget/form/36ljnIgIsA1xoBluXvSK?notrack=true";
 
@@ -287,6 +289,40 @@ export default function FindWorkAllJobs() {
     if (recInterests.length === 0 || search.trim()) return [];
     return scoreJobsAgainstInterests(openJobs).slice(0, 3) as Job[];
   }, [recInterests, openJobs, search]);
+
+  // Talent profile-based recommendations
+  const [talentAuth, setTalentAuth] = useState<TalentAuthState | null>(null);
+  useEffect(() => { setTalentAuth(loadTalentAuth()); }, []);
+
+  const { data: talentProfile, isLoading: isLoadingProfile } = useQuery<Candidate>({
+    queryKey: ["/api/candidates", talentAuth?.candidateId],
+    queryFn: async () => {
+      const res = await fetch(`/api/candidates/${talentAuth!.candidateId}`, {
+        headers: { Authorization: `Bearer ${talentAuth!.token}` },
+      });
+      if (!res.ok) throw new Error("Failed to load talent profile");
+      return res.json();
+    },
+    enabled: !!talentAuth?.candidateId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const talentRecs = useMemo(() => {
+    if (!talentAuth || !talentProfile) {
+      return { jobs: [] as Job[], hasProfile: false, hasEnoughData: false };
+    }
+    const recProfile = buildTalentRecProfile(talentProfile);
+    if (!recProfile.hasEnoughData) {
+      return { jobs: [] as Job[], hasProfile: true, hasEnoughData: false };
+    }
+    const scored = openJobs
+      .map((job) => ({ job, score: scoreJobForTalent(job, recProfile.keywords) }))
+      .filter(({ score }) => score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 6)
+      .map(({ job }) => job);
+    return { jobs: scored, hasProfile: true, hasEnoughData: true };
+  }, [talentAuth, talentProfile, openJobs]);
 
   const filtered = useMemo(() => {
     let list = openJobs.filter((job) => {
@@ -677,6 +713,55 @@ export default function FindWorkAllJobs() {
                 Clear all
               </Button>
             )}
+          </div>
+        )}
+
+        {/* Talent Profile-Based Recommendations */}
+        {!isLoading && !search.trim() && talentAuth && (
+          <div className="mb-6">
+            {isLoadingProfile ? (
+              <div className="flex items-center gap-2 py-2 text-sm text-slate-500 dark:text-slate-400">
+                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#474ead] border-t-transparent" />
+                Loading your profile recommendations…
+              </div>
+            ) : talentRecs.jobs.length > 0 ? (
+              <>
+                <div className="mb-3 flex items-center gap-2 text-sm font-medium text-[#474ead]">
+                  <Users className="h-4 w-4" />
+                  Recommended for you — based on your talent profile
+                </div>
+                <div className="space-y-3">
+                  {talentRecs.jobs.map((job) => (
+                    <JobCard
+                      key={`profile-rec-${job.id}`}
+                      job={job}
+                      onNavigate={(id) => {
+                        saveUserActivity({
+                          activityType: "JobClick",
+                          referenceId: id,
+                          title: job.title,
+                          category: job.category ?? undefined,
+                          tags: job.skillTags ?? undefined,
+                          page: "FindWorkAllJobs-ProfileRec",
+                        });
+                        navigate(`/find-work/job/${id}`);
+                      }}
+                    />
+                  ))}
+                </div>
+                <div className="my-6 border-t border-slate-200/60 dark:border-white/[0.07]" />
+              </>
+            ) : talentProfile && !talentRecs.hasEnoughData ? (
+              <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-white/[0.08] dark:bg-white/[0.03]">
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Complete your talent profile to get personalized job recommendations.</p>
+                <a
+                  href={`/talent-profile/${talentAuth.candidateId}`}
+                  className="mt-1 inline-block text-xs text-[#474ead] hover:underline dark:text-indigo-400"
+                >
+                  Update Talent Profile
+                </a>
+              </div>
+            ) : null}
           </div>
         )}
 

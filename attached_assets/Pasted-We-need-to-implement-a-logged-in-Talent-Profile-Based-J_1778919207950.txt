@@ -1,0 +1,225 @@
+We need to implement a logged-in Talent Profile Based Job Recommendations feature.
+
+Goal:
+When a logged-in talent account visits the Find Work / Jobs page, the site should automatically show recommended job openings related to the talent’s experience, interests, skills, and background.
+
+Example:
+If the logged-in talent profile says they are a Software Developer and also have background as an IT Administrator, the Find Work page should show job openings related to:
+- Software Developer
+- Web Developer
+- Frontend Developer
+- Backend Developer
+- Full Stack Developer
+- IT Administrator
+- Systems Administrator
+- Technical Support
+- IT Support
+
+Important:
+Use existing features and files as much as possible. Do not rebuild the matching system from scratch.
+
+Existing files to inspect and reuse:
+- client/src/pages/FindBestMatches.tsx
+- client/src/pages/TalentProfile.tsx
+- client/src/pages/FindWorkAllJobs.tsx
+- server/routes.ts
+
+Please inspect the current implementation first and identify:
+1. How logged-in talent auth/session data is stored on the client.
+2. How the logged-in talent profile is fetched.
+3. What fields exist in the talent profile.
+4. How jobs are fetched in FindWorkAllJobs.tsx.
+5. How FindBestMatches.tsx currently matches jobs.
+6. Whether there are existing job cards/components that should be reused.
+
+Main requirement:
+On the Find Work / Jobs page, add a “Recommended for You” section for logged-in talent users.
+
+This section should:
+- Fetch or read the logged-in talent profile.
+- Extract relevant recommendation keywords from the talent profile.
+- Use those keywords to find matching job openings.
+- Display recommended job openings using the existing job card/list component.
+- Avoid showing unrelated jobs when enough profile data exists.
+- Fall back gracefully if the talent profile is incomplete.
+
+Profile fields to use if available:
+- Job title
+- Professional title
+- Bio/about/summary
+- Skills
+- Work experience
+- Previous roles
+- Preferred job categories
+- Industry
+- Education
+- Certifications
+- Interests
+- Resume keywords if already available in the system
+
+Do not require all fields. Use only what exists in the current codebase/database.
+
+Recommendation keyword extraction:
+Create a helper function that converts the talent profile into searchable terms.
+
+Suggested helper name:
+buildTalentRecommendationProfile
+
+Suggested location:
+client/src/utils/talentRecommendations.ts
+or the existing utils/helper folder if the project already has one.
+
+The helper should return:
+{
+  keywords: string[],
+  query: string
+}
+
+Example logic:
+- Add skills directly as keywords.
+- Add current job title or professional title.
+- Add previous work experience titles.
+- Add category or industry.
+- Add important words from bio/about if available.
+- Remove empty values.
+- Trim spaces.
+- Deduplicate terms.
+- Limit to the most relevant terms.
+- Avoid very generic terms like “hardworking”, “motivated”, “passionate”, “team player”.
+
+Example output:
+Input profile:
+{
+  title: "Software Developer",
+  bio: "Experienced in React, Node.js, and IT administration.",
+  skills: ["React", "Node.js", "TypeScript", "IT Support"],
+  experience: [
+    { title: "IT Administrator" }
+  ]
+}
+
+Output:
+{
+  keywords: [
+    "Software Developer",
+    "React",
+    "Node.js",
+    "TypeScript",
+    "IT Support",
+    "IT Administrator"
+  ],
+  query: "Software Developer React Node.js TypeScript IT Support IT Administrator"
+}
+
+Matching:
+Reuse the existing FindBestMatches logic if possible.
+
+If FindBestMatches already accepts keywords/search text:
+- Pass the generated query to it.
+
+If jobs are already fetched in FindWorkAllJobs.tsx:
+- Fetch jobs as usual.
+- Add a filtering/scoring function that scores jobs against the talent profile keywords.
+
+Suggested scoring:
+For each job:
+- Job title match: +5
+- Job category match: +4
+- Job skills/tags match: +4
+- Job description match: +2
+- Exact keyword match: bonus +3
+- Multiple keyword matches increase the score
+
+Only show jobs with score greater than 0.
+Sort recommended jobs by score descending.
+Limit initial recommendations to 6 or 8 jobs.
+
+Suggested helper:
+scoreJobForTalent(job, talentKeywords)
+
+Possible job fields to check if available:
+- title
+- jobTitle
+- position
+- category
+- industry
+- skills
+- tags
+- requirements
+- qualifications
+- description
+
+Recommended UI:
+In client/src/pages/FindWorkAllJobs.tsx, add a section near the top of the page:
+
+Recommended for You
+
+Subtitle:
+Based on your talent profile, skills, and experience.
+
+Render recommended jobs using the existing job card component.
+
+If the logged-in user is not a talent:
+- Do not show the profile-based recommendation section.
+
+If the user is not logged in:
+- Do not show profile-based recommendations.
+- Keep the existing Find Work behavior unchanged.
+
+If the talent profile is incomplete:
+Show a soft empty state:
+“Complete your talent profile to get better job recommendations.”
+
+Optional button/link:
+“Update Talent Profile”
+
+Data source:
+Use existing auth/profile APIs. Do not create duplicate profile storage.
+If there is already an endpoint for the logged-in user or logged-in talent profile, use it.
+
+If no endpoint exists yet, add a minimal backend endpoint in server/routes.ts:
+
+GET /api/talent/profile/me
+
+This endpoint should:
+- Require logged-in talent authentication if auth middleware already exists.
+- Return the current talent’s profile data only.
+- Reuse existing database/schema/storage functions.
+- Do not expose other users’ private data.
+
+If auth middleware already has current user data:
+Use req.user, session user, token payload, or the existing auth pattern in the repo.
+
+Important:
+Do not hardcode a talent profile.
+Do not hardcode developer or IT administrator jobs.
+The example is only for expected behavior.
+The feature should work for any talent profile.
+
+Implementation steps:
+1. Inspect FindBestMatches.tsx.
+2. Inspect TalentProfile.tsx.
+3. Inspect FindWorkAllJobs.tsx.
+4. Inspect auth/session implementation.
+5. Inspect available job data structure.
+6. Create a small recommendation helper.
+7. Fetch/read logged-in talent profile on FindWorkAllJobs.tsx.
+8. Build recommendation keywords from the profile.
+9. Reuse existing FindBestMatches/search/job filtering logic.
+10. Render recommended jobs with existing job card UI.
+11. Add safe loading and empty states.
+12. Keep all existing Find Work behavior intact.
+
+Acceptance criteria:
+1. A logged-in talent with a completed profile sees “Recommended for You” on the Find Work page.
+2. Recommendations are based on skills, experience, interests, and background from the talent profile.
+3. A Software Developer with IT Administrator background sees developer and IT administrator related jobs first.
+4. Unrelated jobs are not prioritized when enough matching jobs exist.
+5. If profile data is missing, the site does not crash.
+6. If user is not logged in, existing Find Work page still works normally.
+7. If user is logged in as a client/employer, talent profile recommendations are hidden.
+8. Existing FindBestMatches functionality is reused where possible.
+9. Existing job cards/list UI is reused.
+10. No duplicate login/profile system is created.
+
+Please implement this with the smallest safe changes possible and keep the current project style.
