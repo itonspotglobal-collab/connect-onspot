@@ -1,0 +1,115 @@
+Please fix the “Are you a talent?” popup on the Talent Pool page.
+
+Bug:
+I am already logged in as a Client account. The navbar correctly shows “Client Profile”, but the “Are you a talent?” popup still appears on the Talent Pool page.
+
+Expected behavior:
+If any user is already logged in, the popup should not show.
+
+This includes:
+- Client users
+- Talent users
+- Admin users
+- Any valid authenticated session
+- Any valid candidate/talent auth session
+
+Current issue:
+In client/src/pages/TalentPool.tsx, the popup has a guard like:
+if (isAuthenticated) return null;
+
+But this is not enough because the app may have multiple login states:
+- AuthContext user/JWT login
+- client account login
+- talent candidate login
+- localStorage auth/session keys
+
+Required fix:
+
+1. Update TalentPool popup visibility logic
+In client/src/pages/TalentPool.tsx, find the component/section that renders the “Are you a talent?” popup.
+
+It is around the code with:
+- “Are you a talent?”
+- “Create Talent Account”
+- “Sign in”
+- showPopup
+- showLogin
+- TalentLoginModal
+
+Update the guard so it checks all logged-in states.
+
+Example:
+
+const hasGeneralAuth = isAuthenticated && !!user;
+const hasStoredUser = !!localStorage.getItem("onspot_user") && !!localStorage.getItem("onspot_jwt_token");
+const hasTalentAuth = !!localStorage.getItem("talent_auth_token") || !!localStorage.getItem("candidate_auth_token");
+const hasDevPortalAuth = !!localStorage.getItem("dev_portal_role") || !!localStorage.getItem("dev_portal_user");
+
+const shouldHideTalentPrompt =
+  hasGeneralAuth ||
+  hasStoredUser ||
+  hasTalentAuth ||
+  hasDevPortalAuth;
+
+if (shouldHideTalentPrompt) return null;
+
+Use the actual localStorage keys that exist in the project. Search the codebase for:
+- onspot_jwt_token
+- onspot_user
+- talentAuth
+- candidateId
+- candidate_auth
+- talent_auth
+- dev_portal_role
+- dev_portal_user
+
+2. Prefer AuthContext when possible
+If AuthContext already has user data, use:
+const { isAuthenticated, user } = useAuth();
+
+Then hide the popup if:
+- isAuthenticated is true
+- user exists
+- user.role is client, talent, or admin
+
+3. Do not show talent prompt to logged-in Client users
+If user.role === "client":
+- Do not show “Are you a talent?” popup.
+- Client users may browse Talent Pool without seeing signup/login prompts.
+
+4. Do not show talent prompt to logged-in Talent users
+If user.role === "talent":
+- Do not show popup.
+- Talent users should not be asked to create a talent account again.
+
+5. Do not show talent prompt to Admin users
+If user.role === "admin":
+- Do not show popup.
+
+6. Make the check reactive
+If the user logs in and then navigates to /talent-pool, the popup should immediately stay hidden.
+
+If needed:
+- Add a small auth state check in useEffect.
+- Or depend on isAuthenticated/user from AuthContext.
+
+Do not rely only on the initial page load.
+
+7. Do not break logged-out behavior
+If the visitor is not logged in:
+- The popup should still show as before.
+- Create Talent Account should still navigate to /find-best-matches.
+- Sign in should still open TalentLoginModal.
+
+8. Sign out behavior
+After signing out:
+- Auth storage should clear.
+- If user goes to Talent Pool as logged out, popup can show again.
+
+9. Acceptance criteria
+- Logged-in Client on /talent-pool does NOT see “Are you a talent?” popup.
+- Logged-in Talent on /talent-pool does NOT see the popup.
+- Logged-in Admin on /talent-pool does NOT see the popup.
+- Logged-out visitor still sees the popup.
+- Closing/minimizing behavior for logged-out visitors still works.
+- TalentLoginModal still works for logged-out visitors.

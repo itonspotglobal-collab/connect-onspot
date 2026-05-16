@@ -666,27 +666,42 @@ const PROMPT_DELAY_MS = 5 * 1000; // 5 seconds
 
 function TalentAccountPrompt() {
   const [, navigate] = useLocation();
+  const { user, isAuthenticated: isMainAuthAuthenticated } = useAuth();
   // showPopup: full card is visible | minimized: only floating pill is visible
   const [showPopup, setShowPopup] = useState(false);
   const [minimized, setMinimized] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const isAuthenticated = Boolean(loadTalentAuth());
+  // Check all possible auth states:
+  // 1. Main auth context (client / admin / talent via onspot_jwt_token)
+  const hasMainAuth = isMainAuthAuthenticated && !!user;
+  // 2. Talent candidate JWT stored directly in localStorage
+  const hasTalentCandidateAuth = Boolean(loadTalentAuth());
+  // 3. Fallback: raw localStorage keys in case context hasn't hydrated yet
+  const hasStoredJwt =
+    !!localStorage.getItem("onspot_jwt_token") &&
+    !!localStorage.getItem("onspot_user");
+
+  const anyUserLoggedIn = hasMainAuth || hasTalentCandidateAuth || hasStoredJwt;
 
   useEffect(() => {
-    // Never show for already-authenticated talent users
-    if (isAuthenticated) return;
+    // Never show for any logged-in user
+    if (anyUserLoggedIn) return;
 
     timerRef.current = setTimeout(() => {
-      // Re-check at trigger time in case they authenticated while the timer ran
-      if (!loadTalentAuth()) setShowPopup(true);
+      // Re-check all auth states at trigger time in case the user logged in while timer ran
+      const stillLoggedOut =
+        !loadTalentAuth() &&
+        !localStorage.getItem("onspot_jwt_token");
+      if (stillLoggedOut) setShowPopup(true);
     }, PROMPT_DELAY_MS);
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, []);
+  // Re-run if main auth state changes (e.g. user logs in while on the page)
+  }, [anyUserLoggedIn]);
 
   // Minimize (both X and minimize button do the same thing — never permanently dismiss)
   function minimize() {
@@ -707,8 +722,8 @@ function TalentAccountPrompt() {
     navigate(`/talent-profile/${auth.candidateId}`);
   }
 
-  // Never render anything for authenticated users
-  if (isAuthenticated) return null;
+  // Never render anything for any authenticated user
+  if (anyUserLoggedIn) return null;
 
   const prompt = (
     <>
