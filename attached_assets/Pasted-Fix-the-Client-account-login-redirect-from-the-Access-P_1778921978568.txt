@@ -1,0 +1,86 @@
+Fix the Client account login redirect from the Access Portal.
+
+Current issue:
+When I log in using a valid Client account:
+- The login popup/modal disappears.
+- I am not redirected to the Client Profile page.
+- I stay on the public Hire Talent page.
+- The account appears to authenticate partially, but routing/session handling is broken.
+
+Expected behavior:
+- When a Client account logs in successfully, redirect the user to the Client Profile page/dashboard.
+- The top navigation should switch from “Access Portal” to the correct logged-in client state.
+- The session/token should persist after login.
+- Refreshing the page should keep the client logged in.
+- Client users should not be redirected to Talent Profile.
+- Talent users should still go to Talent Profile.
+- Admin users should still go to Admin pages.
+
+Relevant files to inspect:
+- `client/src/contexts/AuthContext.tsx`
+- `client/src/components/DevPortalModal.tsx`
+- `client/src/components/SignUpDialog.tsx`
+- `client/src/components/TopNavigation.tsx`
+- `client/src/App.tsx`
+- Login/auth API routes on the backend
+- Any protected route / role redirect logic
+
+Please fix the full login flow:
+1. Find the Access Portal login handler.
+2. Confirm the login API response includes:
+   - user object
+   - token/session
+   - user role/accountType
+3. Make sure the frontend saves the token using the same storage key used by the rest of the app.
+4. Make sure AuthContext is updated immediately after successful login.
+5. Make sure role/accountType is normalized consistently.
+
+The app may use different role values such as:
+- client
+- CLIENT
+- employer
+- company
+- talent
+- TALENT
+- admin
+- ADMIN
+
+Normalize the redirect logic so that:
+- Client/employer/company account redirects to `/client/profile` or the existing correct client profile route.
+- Talent account redirects to `/talent/profile` or the existing correct talent profile route.
+- Admin account redirects to `/admin/find-work` or the existing correct admin dashboard route.
+
+Do not guess the route names. Check `client/src/App.tsx` and use the existing registered routes.
+
+Common bug to check:
+The login modal may be closing before navigation occurs, or login may be successful but the app does not call `navigate(...)`.
+Fix this by making successful login do these steps in order:
+1. Await login API response.
+2. Save token/session.
+3. Set authenticated user in AuthContext.
+4. Close modal.
+5. Navigate to the correct role-based page.
+
+Also check:
+- If login success currently only closes the modal.
+- If role is undefined because frontend expects `role` but backend returns `accountType`, `userType`, or `type`.
+- If client accounts are accidentally treated as talent accounts.
+- If protected client routes immediately redirect back to the public page because auth state is not hydrated yet.
+- If token is saved under one key but read from another key.
+- If the app uses `window.location.href` in one place and `navigate` in another, standardize safely.
+- If Client Profile route is protected by the wrong role guard.
+
+Acceptance criteria:
+- Click “Access Portal”.
+- Log in using a valid Client account.
+- Login modal closes.
+- User is redirected to the Client Profile page.
+- Header/nav reflects logged-in Client account.
+- Refreshing the Client Profile page keeps the user logged in.
+- Client account can access client profile/dashboard pages.
+- Client account is not redirected to Talent Profile.
+- Talent login still redirects to Talent Profile.
+- Admin login still redirects to Admin dashboard.
+- Invalid login still shows an error and does not close the modal.
+
+Please make the smallest safe changes necessary and do not redesign the UI.

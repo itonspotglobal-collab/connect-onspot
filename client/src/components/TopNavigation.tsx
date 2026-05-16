@@ -364,7 +364,7 @@ const navigationItems = [
 
 export function TopNavigation() {
   const [location, navigate] = useLocation();
-  const { isAuthenticated, isLoading, user, logout } = useAuth();
+  const { isAuthenticated, isLoading, user, logout, refreshAuth } = useAuth();
   const { toast } = useToast();
   const [isVisible, setIsVisible] = useState(true);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -2134,7 +2134,7 @@ export function TopNavigation() {
                                 toast({ title: "Signed in", description: `Welcome back, ${auth.fullName}!` });
                                 navigate(`/talent-profile/${auth.candidateId}`);
                               } else {
-                                // ── Client Portal login ──────────────────────────
+                                // ── Client / Admin Portal login ──────────────────────────
                                 const res = await fetch("/api/login", {
                                   method: "POST",
                                   headers: { "Content-Type": "application/json" },
@@ -2142,18 +2142,26 @@ export function TopNavigation() {
                                 });
                                 const data = await res.json();
                                 if (data.success) {
-                                  const role = data.user.role;
+                                  const role = (data.user?.role ?? "").toLowerCase();
                                   if (role === "talent") {
                                     toast({ variant: "destructive", title: "Wrong portal", description: "This is a Talent account. Please select the Talent Portal." });
                                     return;
                                   }
+                                  // Persist token + user so AuthContext can read them
                                   localStorage.setItem("onspot_jwt_token", data.token);
                                   localStorage.setItem("onspot_user", JSON.stringify(data.user));
-                                  localStorage.setItem("dev_portal_role", role);
-                                  localStorage.setItem("dev_portal_email", data.user.email);
+                                  // Hydrate AuthContext immediately so nav reflects logged-in state
+                                  await refreshAuth();
                                   setShowPortal(false);
                                   setModalStep(1);
-                                  navigate(role === "client" ? "/hire-talent" : "/");
+                                  const displayName = data.user?.first_name || data.user?.email || "back";
+                                  toast({ title: "Signed in", description: `Welcome back, ${displayName}!` });
+                                  // Navigate to the correct role-based destination
+                                  if (role === "admin") {
+                                    navigate("/admin/find-work");
+                                  } else {
+                                    navigate("/client-profile");
+                                  }
                                 } else {
                                   toast({ variant: "destructive", title: "Sign in failed", description: data.message || "Invalid email or password." });
                                 }
