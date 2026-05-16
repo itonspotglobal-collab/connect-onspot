@@ -1,0 +1,272 @@
+We already implemented the Talent side recommendation feature successfully.
+
+Now we need to implement the Client side recommendation feature.
+
+Goal:
+When a logged-in client account visits the Find Talent page, Client Dashboard, or any existing talent browsing page, the site should show “Suggested Talents” or “Recommended Talents” related to the client’s company, interests, and job postings.
+
+This is the reverse of the existing talent-side feature.
+
+Existing working behavior:
+Talent Profile → Recommended Job Openings
+
+New behavior needed:
+Client Profile + Company Info + Job Postings → Recommended Talents
+
+Important:
+Use the same pattern, helper structure, scoring logic, and UI approach already implemented for the talent-side recommendation feature.
+Do not rebuild from scratch.
+Reuse existing components, APIs, cards, matching logic, and recommendation helpers as much as possible.
+
+Please inspect the project first and identify:
+1. The existing working talent-side recommendation implementation.
+2. The client login/auth/session implementation.
+3. The client/company profile data structure.
+4. Existing client profile page or company profile page.
+5. Existing job posting creation/editing/listing logic.
+6. Existing Find Talent page or talent browsing page.
+7. Existing talent card/list component.
+8. Existing talent search/filter logic.
+9. Existing API routes in server/routes.ts.
+
+Main requirement:
+For logged-in client users, show a “Suggested Talents” or “Recommended Talents” section.
+
+This section should recommend talents based on:
+- Client company profile
+- Company industry
+- Company description
+- Business type
+- Client interests if available
+- Existing active job postings
+- Job post titles
+- Required skills from job postings
+- Job post categories
+- Job post descriptions
+- Job post qualifications
+- Job post responsibilities
+
+Example:
+If a client has job postings for:
+- Software Developer
+- IT Administrator
+- Technical Support
+
+Then Suggested Talents should prioritize talents with:
+- Software development skills
+- React, Node.js, TypeScript, JavaScript, PHP, Laravel, etc.
+- IT administration experience
+- Technical support background
+- System administration skills
+
+Do not hardcode these terms. They are only examples.
+
+Feature location:
+Add this to the existing client-side talent browsing area.
+
+Preferred locations:
+1. Find Talent page, if it exists.
+2. Client Dashboard, if talents are shown there.
+3. Any existing page where clients browse/search talents.
+
+Use the existing talent card component if available.
+Do not create a duplicate talent card UI unless no reusable component exists.
+
+Data source:
+Use existing client/company profile APIs and existing job posting APIs.
+
+If there is already an endpoint that returns the logged-in client profile, reuse it.
+If there is already an endpoint that returns the logged-in client’s job postings, reuse it.
+If no endpoint exists, add the smallest safe endpoint in server/routes.ts.
+
+Possible backend endpoint if needed:
+GET /api/client/recommendation-profile
+
+This should return only the logged-in client’s recommendation source data:
+
+{
+  clientProfile: {...},
+  companyProfile: {...},
+  jobPosts: [...]
+}
+
+It should not expose other clients’ private data.
+
+If there is already an auth middleware/session pattern, follow that existing pattern.
+
+Recommended helper:
+Create or extend an existing recommendation helper.
+
+Possible file:
+client/src/utils/clientRecommendations.ts
+
+If the talent-side feature already has a helper, either:
+- Add client recommendation functions to the same helper if appropriate, or
+- Create a separate helper with the same style.
+
+Suggested functions:
+buildClientRecommendationProfile(clientProfile, companyProfile, jobPosts)
+scoreTalentForClient(talent, clientKeywords)
+getRecommendedTalents(talents, clientRecommendationProfile)
+
+buildClientRecommendationProfile should return:
+
+{
+  keywords: string[],
+  query: string
+}
+
+Keyword extraction:
+Extract terms from:
+- Company name, only if useful
+- Company industry
+- Company category
+- Company description
+- Client interests
+- Job post titles
+- Job post categories
+- Required skills
+- Responsibilities
+- Qualifications
+- Job descriptions
+- Tags
+- Tools/technologies
+
+Avoid overly generic words:
+- hiring
+- looking
+- company
+- team
+- work
+- responsible
+- passionate
+- motivated
+- excellent
+- good
+- great
+- strong
+- communication
+- experience
+
+Deduplicate keywords.
+Trim spaces.
+Normalize for matching.
+Limit to the most relevant terms.
+
+Important:
+Prioritize job posting signals more than generic company profile text.
+
+Suggested weighting:
+Job post title = high priority
+Required skills = high priority
+Job category = high priority
+Job qualifications = medium priority
+Job responsibilities = medium priority
+Company industry = medium priority
+Company description = low priority
+Client interests = medium priority
+
+Suggested scoring:
+For each talent:
+- Talent professional title matches client keyword: +6
+- Talent skills match job post required skills: +6
+- Talent experience title matches job post title/category: +5
+- Talent bio/about matches keyword: +2
+- Talent category/industry matches company/job category: +4
+- Talent portfolio/project tags match keyword: +3
+- Exact keyword match bonus: +3
+
+Only show talents with score greater than 0.
+Sort by score descending.
+Limit recommended talents to 6 or 8 initially.
+
+Possible talent fields to check:
+- name
+- professionalTitle
+- title
+- headline
+- bio
+- about
+- summary
+- skills
+- experience
+- workExperience
+- previousRoles
+- category
+- industry
+- tags
+- portfolio
+- projects
+- certifications
+
+Use only fields that actually exist in the current codebase.
+
+UI requirement:
+Show a section titled:
+
+Recommended Talents
+
+or
+
+Suggested Talents
+
+Subtitle:
+Based on your company profile and job postings.
+
+If the client has no company profile and no job postings:
+Show an empty state:
+“Create a job post or complete your company profile to get better talent recommendations.”
+
+Optional buttons:
+- Create Job Post
+- Update Company Profile
+
+If the logged-in user is not a client:
+Do not show client-based talent recommendations.
+
+If the user is not logged in:
+Do not show client-based talent recommendations.
+Keep existing Find Talent behavior unchanged.
+
+If the logged-in user is a talent:
+Do not show Suggested Talents for client.
+
+Implementation steps:
+1. Inspect the existing talent-side recommendation feature that is already working.
+2. Reuse its structure and style.
+3. Find the page where clients browse talents.
+4. Find existing talent card/list components.
+5. Find existing auth/session logic to identify logged-in client accounts.
+6. Find existing client/company profile data.
+7. Find existing job posts created by the logged-in client.
+8. Build a client recommendation profile from company data and job posts.
+9. Fetch talents using the existing talent listing/search API.
+10. Score talents against the client recommendation profile.
+11. Render the highest-scoring talents in a “Recommended Talents” section.
+12. Keep existing talent search/browsing behavior working.
+
+Do not:
+- Do not hardcode sample talent recommendations.
+- Do not hardcode IT/developer keywords.
+- Do not create duplicate auth logic.
+- Do not create duplicate profile storage.
+- Do not break existing job posting features.
+- Do not break existing Find Talent page.
+- Do not show client recommendations to talent accounts.
+- Do not show private client data to other users.
+
+Acceptance criteria:
+1. Logged-in client users see a “Recommended Talents” or “Suggested Talents” section.
+2. Recommended talents are based on the client’s company profile and job postings.
+3. If the client posted developer jobs, developer-related talents appear first.
+4. If the client posted IT administrator jobs, IT administrator-related talents appear first.
+5. The recommendation uses actual profile/job posting data, not hardcoded examples.
+6. Existing talent cards/components are reused.
+7. Existing talent listing/search still works normally.
+8. Non-logged-in users do not see client-specific recommendations.
+9. Talent accounts do not see client-specific talent recommendations.
+10. If there is no recommendation data, the page shows a safe empty state and does not crash.
+11. Code style follows the existing project.
+12. The implementation mirrors the working talent-side recommendation pattern as much as possible.
+
+Please implement this with the smallest safe changes possible.

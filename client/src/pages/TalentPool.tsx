@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -33,6 +33,7 @@ import {
   UserPlus,
   LogIn,
   Minimize2,
+  Building2,
 } from "lucide-react";
 import {
   TalentLoginModal,
@@ -50,6 +51,10 @@ import { isAdmin, isClient } from "@/lib/authUtils";
 import type { Candidate } from "@shared/schema";
 import { saveUserActivity } from "@/lib/userActivityMemory";
 import { useReserveBottomRight } from "@/hooks/useReserveBottomRight";
+import {
+  buildClientRecProfile,
+  scoreTalentForClient,
+} from "@/lib/clientRecommendations";
 
 function candidatePhotoSrc(url: string | null | undefined): string {
   if (!url) return "";
@@ -847,11 +852,63 @@ export default function TalentPool() {
     refetchOnWindowFocus: true,
   });
 
+  // ── Client recommendation data (only fetched for logged-in client users) ──
+  const { data: clientProfile } = useQuery({
+    queryKey: ["/api/client-profile/me"],
+    queryFn: async () => {
+      const token = localStorage.getItem("onspot_jwt_token");
+      if (!token) return null;
+      const res = await fetch("/api/client-profile/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: isClientUser,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: clientJobs = [] } = useQuery({
+    queryKey: ["/api/client/jobs"],
+    queryFn: async () => {
+      const token = localStorage.getItem("onspot_jwt_token");
+      if (!token) return [];
+      const res = await fetch("/api/client/jobs", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: isClientUser,
+    staleTime: 5 * 60 * 1000,
+  });
+
   // Only show candidates who have at least completed their basic profile
   const eligibleCandidates = useMemo(
     () => candidates.filter((c) => c.targetPosition || c.fullName),
     [candidates],
   );
+
+  // Build keyword profile from client data and score candidates
+  const clientRecProfile = useMemo(
+    () => (isClientUser ? buildClientRecProfile(clientProfile, clientJobs) : null),
+    [clientProfile, clientJobs, isClientUser],
+  );
+
+  const recommendedTalents = useMemo(() => {
+    if (!isClientUser || !clientRecProfile?.hasEnoughData) return [];
+    // Only surface recommendations when the user is browsing (no active search/filter)
+    if (searchQuery.trim() || activeCategory !== "All") return [];
+
+    return eligibleCandidates
+      .map((c) => {
+        const { score, matchedSkills } = scoreTalentForClient(c, clientRecProfile.keywords);
+        return { candidate: c, score, label: null as string | null, matchedSkills };
+      })
+      .filter((r) => r.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 6);
+  }, [eligibleCandidates, clientRecProfile, isClientUser, searchQuery, activeCategory]);
 
   // Compute matches
   const matchResults = useMemo<MatchResult[]>(() => {
@@ -1012,6 +1069,89 @@ export default function TalentPool() {
           </div>
         </div>
       </section>
+
+      {/* ── Recommended Talents (client-only) ── */}
+      {isClientUser && !searchQuery.trim() && activeCategory === "All" && (
+        <section className="mx-auto max-w-7xl px-6 pb-2 pt-10 md:px-8 md:pt-14">
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <div className="mb-1.5 flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#474ead]/10">
+                  <Sparkles className="h-3.5 w-3.5 text-[#474ead]" />
+                </div>
+                <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
+                  Recommended Talents
+                </h2>
+              </div>
+              <p className="text-sm text-slate-500">
+                Based on your company profile and job postings.
+              </p>
+            </div>
+          </div>
+
+          {isLoading ? (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="h-56 animate-pulse rounded-3xl bg-slate-100 dark:bg-white/[0.04]" />
+              ))}
+            </div>
+          ) : recommendedTalents.length > 0 ? (
+            <>
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {recommendedTalents.map((result) => (
+                  <TalentCard
+                    key={result.candidate.id}
+                    result={result}
+                    onViewProfile={(r) => {
+                      saveUserActivity({
+                        activityType: "TalentView",
+                        referenceId: r.candidate.id,
+                        title: r.candidate.targetPosition ?? undefined,
+                        category: r.candidate.category ?? undefined,
+                        skills: [
+                          ...(r.candidate.coreSkills ?? []),
+                          ...(r.candidate.secondarySkills ?? []),
+                        ].slice(0, 5),
+                        page: "TalentPool",
+                      });
+                      setSelectedResult(r);
+                    }}
+                    isShortlisted={shortlisted.has(result.candidate.id)}
+                    onToggleShortlist={toggleShortlist}
+                    canSeeContact={canSeeContact}
+                  />
+                ))}
+              </div>
+              <div className="mt-8 border-b border-slate-200/70 dark:border-white/10" />
+            </>
+          ) : (
+            // Client is logged in but has no recommendation data yet
+            <div className="flex flex-col items-center rounded-3xl border border-dashed border-slate-200 bg-slate-50/60 py-12 text-center dark:border-white/10 dark:bg-white/[0.02]">
+              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#474ead]/10">
+                <Building2 className="h-5 w-5 text-[#474ead]" />
+              </div>
+              <p className="font-medium text-slate-800 dark:text-white">
+                No recommendations yet
+              </p>
+              <p className="mt-1 max-w-sm text-sm text-slate-500">
+                Create a job post or complete your company profile to get personalised talent suggestions.
+              </p>
+              <div className="mt-5 flex flex-wrap justify-center gap-3">
+                <Link href="/client-profile">
+                  <Button size="sm" variant="outline" className="rounded-full">
+                    Update Company Profile
+                  </Button>
+                </Link>
+                <Link href="/client-profile">
+                  <Button size="sm" className="rounded-full bg-[#474ead] text-white">
+                    Create Job Post
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
 
       {/* ── Filters + Results ── */}
       <section className="mx-auto max-w-7xl px-6 py-10 md:px-8 md:py-14">
