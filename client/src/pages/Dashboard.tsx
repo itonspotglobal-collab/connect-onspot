@@ -375,6 +375,36 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Stats Banner */}
+      <div className="rounded-xl overflow-hidden" style={{ background: "linear-gradient(135deg, #0f1566 0%, #1a237e 50%, #283593 100%)" }}>
+        {/* Tagline */}
+        <div className="text-center py-4 px-6 border-b border-white/10">
+          <p className="text-white/80 text-sm tracking-wide">
+            <span className="font-bold text-white">500+ clients</span>
+            <span className="text-white/50 mx-3">·</span>
+            <span className="font-bold text-white">2,000+ talents placed</span>
+            <span className="text-white/50 mx-3">·</span>
+            <span className="text-white/80">Onboarding in </span>
+            <span className="font-bold text-white">72 hours</span>
+          </p>
+        </div>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-x divide-white/10">
+          {[
+            { value: "72hrs", label: "AVG. TIME TO HIRE" },
+            { value: "500+", label: "GLOBAL CLIENTS" },
+            { value: "98%", label: "CLIENT RETENTION" },
+            { value: "2,000+", label: "TALENTS PLACED" },
+            { value: "🇵🇭", label: "PHILIPPINE-BASED" },
+          ].map((stat) => (
+            <div key={stat.label} className="flex flex-col items-start px-6 py-8 gap-2">
+              <span className="text-white font-extrabold text-4xl leading-none">{stat.value}</span>
+              <span className="text-white/50 text-xs font-semibold tracking-widest uppercase leading-tight">{stat.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Performance Summary & Talent Showcase Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Performance Summary - Takes 2/3 width */}
