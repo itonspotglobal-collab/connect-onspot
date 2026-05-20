@@ -1850,6 +1850,59 @@ export default function Home() {
               </div>
             </div>
 
+            {/* New Verticals Section */}
+            <div
+              className="md:space-y-6 md:border-b-0 transition-all duration-300"
+              style={{
+                paddingBottom: "clamp(4px, 0.6vh, 8px)",
+                borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
+              }}
+            >
+              <button
+                onClick={() => toggleFooterSection("verticals")}
+                className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left"
+                style={{ padding: "clamp(4px, 0.6vh, 8px) 0" }}
+                data-testid="footer-accordion-verticals"
+              >
+                <h3 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-white tracking-wide text-left">
+                  New Verticals
+                </h3>
+                <ChevronDown
+                  className={`w-5 h-5 text-slate-600 dark:text-slate-400 transition-transform duration-300 md:hidden ${expandedFooterSection === "verticals" ? "rotate-180" : ""}`}
+                />
+              </button>
+
+              <div
+                className={`space-y-3 transition-all duration-300 md:!opacity-100 md:!max-h-none md:!block ${
+                  expandedFooterSection === "verticals"
+                    ? "opacity-100 max-h-96"
+                    : "opacity-0 max-h-0 overflow-hidden"
+                }`}
+                style={{
+                  marginTop:
+                    expandedFooterSection === "verticals" || window.innerWidth >= 768
+                      ? "16px"
+                      : "0",
+                }}
+              >
+                <a href="#" className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300">
+                  AI Human-in-the-Loop
+                </a>
+                <a href="#" className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300">
+                  Founder Ops
+                </a>
+                <a href="#" className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300">
+                  Healthcare Micro-Admin
+                </a>
+                <a href="#" className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300">
+                  E-commerce Ops
+                </a>
+                <a href="#" className="block text-xs sm:text-sm font-medium text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300">
+                  View all 10 →
+                </a>
+              </div>
+            </div>
+
             {/* Connect Section */}
             <div className="md:space-y-6 transition-all duration-300 min-w-0">
               <button
