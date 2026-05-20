@@ -375,6 +375,44 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Stats Banner */}
+      {(() => {
+        const stats = [
+          { value: "72hrs",   label: "AVG. TIME TO HIRE" },
+          { value: "500+",    label: "GLOBAL CLIENTS" },
+          { value: "98%",     label: "CLIENT RETENTION" },
+          { value: "2,000+",  label: "TALENTS PLACED" },
+          { value: "🇵🇭",     label: "PHILIPPINE-BASED" },
+        ];
+        return (
+          <div
+            className="w-full rounded-xl overflow-hidden"
+            style={{ background: "linear-gradient(135deg, #0f1566 0%, #1a237e 50%, #283593 100%)" }}
+          >
+            {/* Tagline row */}
+            <div className="py-4 px-6 text-center border-b border-white/10">
+              <p className="text-sm tracking-wide text-white/80">
+                <span className="font-bold text-white">500+ clients</span>
+                <span className="mx-3 text-white/50">·</span>
+                <span className="font-bold text-white">2,000+ talents placed</span>
+                <span className="mx-3 text-white/50">·</span>
+                Onboarding in <span className="font-bold text-white">72 hours</span>
+              </p>
+            </div>
+
+            {/* Stats grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-x divide-white/10">
+              {stats.map((stat) => (
+                <div key={stat.label} className="flex flex-col items-start px-6 py-8 gap-2">
+                  <span className="text-white font-extrabold text-4xl leading-none">{stat.value}</span>
+                  <span className="text-white/50 text-xs font-semibold tracking-widest uppercase leading-tight">{stat.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Performance Summary & Talent Showcase Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Performance Summary - Takes 2/3 width */}
