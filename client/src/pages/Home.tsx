@@ -427,27 +427,33 @@ export default function Home() {
 
             {/* Trust / Stats line */}
             <div className="hero-fade-up-delay">
-              <p className="text-xs sm:text-sm text-white/40 font-light tracking-wide">
-                Hundreds of clients, thousands of talents, Fastest onboarding in the market.
+              <p className="text-sm text-center text-white/60 mb-4">
+                <span className="font-semibold text-white">500+ clients globally</span>
+                <span className="text-white/30 mx-2">·</span>
+                <span className="font-semibold text-white">2,000+ talents placed</span>
+                <span className="text-white/30 mx-2">·</span>
+                Onboarding in <span className="font-bold text-white">72 hours</span>
               </p>
             </div>
 
             {/* Stats banner */}
             <div className="hero-fade-up-delay w-full">
-              <div className="w-full border-t border-white/10 mt-6" />
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-x divide-white/10">
-                {[
-                  { value: "72hrs",   label: "AVG. TIME TO HIRE" },
-                  { value: "500+",    label: "GLOBAL CLIENTS" },
-                  { value: "98%",     label: "CLIENT RETENTION" },
-                  { value: "2,000+",  label: "TALENTS PLACED" },
-                  { value: "🇵🇭",     label: "PHILIPPINE-BASED" },
-                ].map(({ value, label }) => (
-                  <div key={label} className="flex flex-col items-center justify-center px-6 py-8 gap-2">
-                    <span className="text-white font-extrabold text-4xl leading-none">{value}</span>
-                    <span className="text-white/40 text-xs font-semibold tracking-widest uppercase">{label}</span>
-                  </div>
-                ))}
+              <div className="w-full border-t border-white/10" />
+              <div className="w-full bg-black/20">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-x divide-white/10">
+                  {[
+                    { value: "72hrs",  label: "AVG. TIME TO HIRE" },
+                    { value: "500+",   label: "GLOBAL CLIENTS" },
+                    { value: "98%",    label: "CLIENT RETENTION" },
+                    { value: "2,000+", label: "TALENTS PLACED" },
+                    { value: "🇵🇭",    label: "PHILIPPINE-BASED" },
+                  ].map(({ value, label }) => (
+                    <div key={label} className="flex flex-col items-start px-8 py-8 gap-2">
+                      <span className="text-white font-extrabold text-5xl leading-none">{value}</span>
+                      <span className="text-white/40 text-xs font-semibold tracking-widest uppercase">{label}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
