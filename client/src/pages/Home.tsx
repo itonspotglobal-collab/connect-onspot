@@ -1545,18 +1545,18 @@ export default function Home() {
           <div className="h-px bg-gradient-to-r from-transparent via-violet-400/30 through-blue-400/30 to-transparent"></div>
         </div>
 
-        <div className="container mx-auto px-4 sm:px-6 py-16 sm:py-20 lg:py-24">
+        <div className="container mx-auto px-4 sm:px-6 py-10 sm:py-12 lg:py-14">
           {/* Footer Grid - Fluid responsive layout */}
           <div
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 max-w-7xl mx-auto transition-all duration-500 ease-in-out"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 max-w-7xl mx-auto transition-all duration-500 ease-in-out"
             style={{
               rowGap: "clamp(4px, 0.6vh, 8px)",
-              columnGap: "clamp(24px, 3vw, 48px)",
+              columnGap: "clamp(16px, 2vw, 32px)",
             }}
           >
             {/* Brand Section - Spans 2 columns on tablet/desktop */}
             <div
-              className="md:col-span-2 lg:col-span-2 md:pb-0 md:border-b-0"
+              className="md:col-span-2 lg:col-span-1 md:pb-0 md:border-b-0"
               style={{
                 paddingBottom: "clamp(16px, 2.5vh, 24px)",
                 borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
@@ -1987,7 +1987,7 @@ export default function Home() {
           </div>
 
           {/* Bottom Bar */}
-          <div className="mt-16 pt-8 border-t border-slate-300 dark:border-white/[0.12]">
+          <div className="mt-8 pt-6 border-t border-slate-300 dark:border-white/[0.12]">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs sm:text-sm text-slate-600 dark:text-white/70">
               <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-center sm:text-left">
                 <p className="hover:text-slate-800 dark:hover:text-white/90 transition-colors duration-300">
