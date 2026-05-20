@@ -425,31 +425,35 @@ export default function Home() {
               </Button>
             </div>
 
-            {/* Trust / Stats line */}
-            <div className="hero-fade-up-delay">
-              <p className="text-xs sm:text-sm text-white/40 font-light tracking-wide">
-                Hundreds of clients, thousands of talents, Fastest onboarding in the market.
+            {/* Tagline row */}
+            <div className="hero-fade-up-delay mt-6">
+              <p className="text-sm text-white/70 text-center">
+                <span className="font-semibold text-white">500+ clients</span>
+                <span className="text-white/30 mx-2">·</span>
+                <span className="font-semibold text-white">2,000+ talents placed</span>
+                <span className="text-white/30 mx-2">·</span>
+                Onboarding in <span className="font-bold text-white">72 hours</span>
               </p>
             </div>
+          </div>
+        </div>
 
-            {/* Stats banner */}
-            <div className="hero-fade-up-delay w-full">
-              <div className="w-full border-t border-white/10 mt-6" />
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-x divide-white/10">
-                {[
-                  { value: "72hrs",   label: "AVG. TIME TO HIRE" },
-                  { value: "500+",    label: "GLOBAL CLIENTS" },
-                  { value: "98%",     label: "CLIENT RETENTION" },
-                  { value: "2,000+",  label: "TALENTS PLACED" },
-                  { value: "🇵🇭",     label: "PHILIPPINE-BASED" },
-                ].map(({ value, label }) => (
-                  <div key={label} className="flex flex-col items-center justify-center px-6 py-8 gap-2">
-                    <span className="text-white font-extrabold text-4xl leading-none">{value}</span>
-                    <span className="text-white/40 text-xs font-semibold tracking-widest uppercase">{label}</span>
-                  </div>
-                ))}
+        {/* Stats banner — full-bleed, sits inside the dark hero background */}
+        <div className="hero-fade-up-delay relative z-20 w-full mt-4">
+          <div className="w-full border-t border-white/10" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-x divide-white/10 bg-black/20">
+            {[
+              { value: "72hrs",  label: "AVG. TIME TO HIRE" },
+              { value: "500+",   label: "GLOBAL CLIENTS" },
+              { value: "98%",    label: "CLIENT RETENTION" },
+              { value: "2,000+", label: "TALENTS PLACED" },
+              { value: "🇵🇭",    label: "PHILIPPINE-BASED" },
+            ].map(({ value, label }) => (
+              <div key={label} className="flex flex-col items-start px-8 py-8 gap-2">
+                <span className="text-white font-extrabold text-5xl leading-none">{value}</span>
+                <span className="text-white/40 text-xs font-semibold tracking-[0.2em] uppercase leading-snug">{label}</span>
               </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>
