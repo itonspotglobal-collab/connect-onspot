@@ -368,29 +368,33 @@ export default function Home() {
               data-testid="badge-superhuman-bpo"
             >
               <div className="w-2 h-2 bg-white/60 rounded-full"></div>
-              Making Outsourcing Easy
+              Work Differently
             </div>
 
             {/* AI-First Headline */}
             <div className="space-y-3 sm:space-y-4 hero-fade-up">
               <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold tracking-tight leading-[1.1] text-white px-2">
-                AI first. Humans when it matters.
+                AI first.{" "}
+                <span className="bg-gradient-to-r from-violet-300 via-blue-200 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_24px_rgba(167,139,250,0.45)]">
+                  Humans
+                </span>{" "}
+                when it matters.
               </h1>
             </div>
 
-            {/* Subcopy */}
+            {/* Supporting statement */}
             <div className="hero-fade-up-delay">
-              <p className="text-lg sm:text-xl md:text-2xl text-white/70 font-light tracking-wide px-2">
-                One system. Your unfair advantage.
+              <p className="text-base sm:text-lg md:text-xl text-white/65 font-light leading-relaxed tracking-wide px-2 max-w-2xl mx-auto">
+                One system. Marketplace speed, BPO quality, and a talent pool built for the work AI creates — not just the work it replaces.
               </p>
             </div>
 
             {/* CTAs */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 hero-fade-up-delay px-4">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 hero-fade-up-delay px-4 flex-wrap">
               <Button
                 size="lg"
                 onClick={openVanessa}
-                className="relative group text-sm sm:text-base px-6 sm:px-8 h-auto bg-gradient-to-r from-violet-600 to-blue-600 text-white font-semibold hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] transition-all duration-300 hover-elevate rounded-2xl w-full sm:w-auto sm:min-w-[220px] py-3.5 sm:py-4 min-h-[48px]"
+                className="relative group text-sm sm:text-base px-6 sm:px-8 h-auto bg-gradient-to-r from-violet-600 to-blue-600 text-white font-semibold hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] transition-all duration-300 hover-elevate rounded-2xl w-full sm:w-auto sm:min-w-[200px] py-3.5 sm:py-4 min-h-[48px]"
                 data-testid="button-launch-ai"
               >
                 <span className="flex items-center gap-2 justify-center">
@@ -403,12 +407,29 @@ export default function Home() {
               <Button
                 variant="outline"
                 size="lg"
-                className="text-sm sm:text-base px-6 sm:px-8 h-auto border-2 border-white/30 text-white hover:bg-white/10 hover:border-white/50 font-medium backdrop-blur-xl bg-white/5 rounded-2xl w-full sm:w-auto sm:min-w-[220px] py-3.5 sm:py-4 min-h-[48px]"
+                className="text-sm sm:text-base px-6 sm:px-8 h-auto border-2 border-white/30 text-white hover:bg-white/10 hover:border-white/50 font-medium backdrop-blur-xl bg-white/5 rounded-2xl w-full sm:w-auto sm:min-w-[200px] py-3.5 sm:py-4 min-h-[48px]"
                 asChild
                 data-testid="button-get-managed-team"
               >
                 <Link href="/lead-intake">Get Managed Team</Link>
               </Button>
+
+              <Button
+                variant="outline"
+                size="lg"
+                className="text-sm sm:text-base px-6 sm:px-8 h-auto border-2 border-white/20 text-white/85 hover:bg-white/10 hover:border-white/40 font-medium backdrop-blur-xl bg-white/[0.03] rounded-2xl w-full sm:w-auto sm:min-w-[200px] py-3.5 sm:py-4 min-h-[48px]"
+                asChild
+                data-testid="button-find-work"
+              >
+                <Link href="/find-work">Find Work</Link>
+              </Button>
+            </div>
+
+            {/* Trust / Stats line */}
+            <div className="hero-fade-up-delay">
+              <p className="text-xs sm:text-sm text-white/40 font-light tracking-wide">
+                Hundreds of clients, thousands of talents, Fastest onboarding in the market.
+              </p>
             </div>
           </div>
         </div>

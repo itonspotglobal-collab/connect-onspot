@@ -1,0 +1,99 @@
+Minor Homepage / Landing Page Adjustments
+
+Please make the following updates to the homepage hero section of the website.
+
+IMPORTANT:
+- Keep the existing design system, fonts, spacing style, gradients, and overall branding of the current project.
+- DO NOT copy the entire design from the reference mockup.
+- Only apply the requested content/layout adjustments.
+- Maintain responsiveness for desktop and mobile.
+
+Changes Needed:
+
+1. Update Top Badge Text
+Current:
+"Making Outsourcing Easy"
+
+Replace with:
+"Work Differently"
+
+Keep the existing pill/badge styling.
+
+--------------------------------------------------
+
+2. Add Supporting Statement Under Main Heading
+
+Below the main heading:
+"AI first. Humans when it matters."
+
+Add this supporting statement:
+
+"One system. Marketplace speed, BPO quality, and a talent pool built for the work AI creates — not just the work it replaces."
+
+Requirements:
+- Match the current typography style of the site.
+- Keep it visually balanced and centered.
+- Ensure line breaks look clean on both desktop and mobile.
+- Do not make the text too wide.
+
+--------------------------------------------------
+
+3. Add Third CTA Button
+
+Currently there are 2 buttons:
+- Launch AI Assistant
+- Get Managed Team
+
+Add a third button:
+"Find Work"
+
+Requirements:
+- Match the existing button system/styles.
+- Maintain proper spacing between all 3 buttons.
+- On mobile, stack or wrap gracefully.
+- Preserve hover animations and responsiveness.
+
+--------------------------------------------------
+
+4. Update Bottom Trust/Stats Text
+
+Replace:
+"500+ clients globally · 2,000+ talents placed · Onboarding in 72 hours"
+
+With:
+"Hundreds of clients, thousands of talents, Fastest onboarding in the market."
+
+Style Requirements:
+- Keep the subtle supporting-text appearance.
+- Match existing font weight and opacity treatment.
+- Maintain centered alignment.
+
+--------------------------------------------------
+
+5. Highlight the Word “Humans”
+
+In the hero heading:
+"AI first. Humans when it matters."
+
+Visually emphasize ONLY the word:
+"Humans"
+
+Requirements:
+- Do NOT redesign the entire heading.
+- Keep the existing typography/font family.
+- Use a subtle visual treatment such as:
+  - gradient text,
+  - lighter accent color,
+  - glow,
+  - or slightly different emphasis.
+- The emphasis should feel premium and aligned with the current brand style.
+- Avoid making it look copied from the mockup.
+
+--------------------------------------------------
+
+Additional Notes:
+- Preserve current navbar spacing and hero section proportions.
+- Keep animations/transitions consistent with the existing project.
+- Ensure all updates are fully responsive.
+- Do not introduce a new font family.
+- Maintain accessibility and readable contrast ratios.
