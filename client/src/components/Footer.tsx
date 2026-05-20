@@ -10,9 +10,7 @@ import {
   Mail,
   Phone,
   MapPin,
-  Smartphone,
 } from "lucide-react";
-import { SiApple, SiGoogleplay } from "react-icons/si";
 
 export function Footer() {
   return (
@@ -391,57 +389,6 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Right Side - Download Platform */}
-          <div className="space-y-3 sm:space-y-4 w-full lg:w-auto">
-            <div className="flex items-center justify-start lg:justify-end space-x-2">
-              <Smartphone className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-              <h3 className="text-base sm:text-lg font-semibold text-white">
-                Download Our Platform
-              </h3>
-            </div>
-            <p className="text-white/90 text-xs sm:text-sm max-w-xs lg:text-right leading-relaxed">
-              Take OnSpot with you wherever you go. Manage projects and track
-              progress on the move.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-3 lg:justify-end">
-              <Button
-                variant="outline"
-                size="sm"
-                className="bg-black/80 text-white border-white/40 hover-elevate backdrop-blur-sm min-h-[48px] sm:min-h-[44px]"
-                asChild
-                data-testid="download-ios"
-              >
-                <Link href="/ai-assistant" aria-label="Download on App Store">
-                  <SiApple className="h-5 w-5 sm:h-4 sm:w-4 mr-2" />
-                  <div className="text-left">
-                    <div className="text-xs opacity-90">Download on the</div>
-                    <div className="font-semibold text-sm sm:text-xs">
-                      App Store
-                    </div>
-                  </div>
-                </Link>
-              </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                className="bg-black/80 text-white border-white/40 hover-elevate backdrop-blur-sm min-h-[48px] sm:min-h-[44px]"
-                asChild
-                data-testid="download-android"
-              >
-                <Link href="/ai-assistant" aria-label="Get it on Google Play">
-                  <SiGoogleplay className="h-5 w-5 sm:h-4 sm:w-4 mr-2" />
-                  <div className="text-left">
-                    <div className="text-xs opacity-90">Get it on</div>
-                    <div className="font-semibold text-sm sm:text-xs">
-                      Google Play
-                    </div>
-                  </div>
-                </Link>
-              </Button>
-            </div>
-          </div>
         </div>
       </div>
     </footer>

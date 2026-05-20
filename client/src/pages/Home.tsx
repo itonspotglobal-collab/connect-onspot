@@ -387,7 +387,8 @@ export default function Home() {
               {/* Supporting statement */}
               <div className="hero-fade-up-delay">
                 <p className="text-base sm:text-lg md:text-xl text-white/65 font-light leading-relaxed tracking-wide px-2 max-w-2xl mx-auto">
-                  One system. Marketplace speed, BPO quality, and a talent pool built for the work AI creates — not just the work it replaces.
+                  One system. Marketplace speed, BPO quality, and a talent pool
+                  built for the work AI creates — not just the work it replaces.
                 </p>
               </div>
 
@@ -430,11 +431,16 @@ export default function Home() {
               {/* Tagline */}
               <div className="hero-fade-up-delay">
                 <p className="text-center text-sm text-white/60 tracking-wide mt-2">
-                  <span className="font-semibold text-white">500+ clients globally</span>
+                  <span className="font-semibold text-white">
+                    Hundreds of clients
+                  </span>
                   <span className="text-white/30 mx-3">·</span>
-                  <span className="font-semibold text-white">2,000+ talents placed</span>
+                  <span className="font-semibold text-white">
+                    Thousands of talents
+                  </span>
                   <span className="text-white/30 mx-3">·</span>
-                  Onboarding in <span className="font-bold text-white">72 hours</span>
+                  Fastest onboarding in the market.
+                  <span className="font-bold text-white"></span>
                 </p>
               </div>
             </div>
@@ -444,15 +450,19 @@ export default function Home() {
         {/* Stats band — direct child of hero, full-bleed at the bottom */}
         <div className="relative z-20 w-full border-t border-b border-white/10 bg-white/5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-x divide-white/10 mt-8">
           {[
-            { value: "72hrs",  label: "AVG. TIME TO HIRE" },
-            { value: "500+",   label: "GLOBAL CLIENTS" },
-            { value: "98%",    label: "CLIENT RETENTION" },
+            { value: "72hrs", label: "AVG. TIME TO HIRE" },
+            { value: "500+", label: "GLOBAL CLIENTS" },
+            { value: "98%", label: "CLIENT RETENTION" },
             { value: "2,000+", label: "TALENTS PLACED" },
-            { value: "🇵🇭",    label: "PHILIPPINE-BASED" },
+            { value: "🇵🇭", label: "PHILIPPINE-BASED" },
           ].map((stat) => (
             <div key={stat.label} className="flex flex-col gap-2 px-8 py-7">
-              <span className="text-white font-extrabold text-5xl leading-none">{stat.value}</span>
-              <span className="text-white/40 text-xs font-semibold tracking-[0.18em] uppercase">{stat.label}</span>
+              <span className="text-white font-extrabold text-5xl leading-none">
+                {stat.value}
+              </span>
+              <span className="text-white/40 text-xs font-semibold tracking-[0.18em] uppercase">
+                {stat.label}
+              </span>
             </div>
           ))}
         </div>
@@ -1160,11 +1170,7 @@ export default function Home() {
                     <Button
                       variant={index === 0 ? "default" : "outline"}
                       className={`w-full min-h-[48px] ${index === 0 ? "bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700" : ""}`}
-                      onClick={
-                        mode.link === "#"
-                          ? openVanessa
-                          : undefined
-                      }
+                      onClick={mode.link === "#" ? openVanessa : undefined}
                       asChild={mode.link !== "#"}
                     >
                       {mode.link === "#" ? (
@@ -1569,10 +1575,10 @@ export default function Home() {
                 </div>
 
                 <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-md text-center md:text-left transition-all duration-300">
-                  The growth engine of the modern era. Built by entrepreneurs,
-                  for entrepreneurs—our Superhuman System fuses AI-first
-                  infrastructure with human excellence to scale businesses and
-                  empower people to perform beyond limits.
+                  OnSpot is a technology company and hybrid marketplace–BPO
+                  delivering Philippine talent to global clients. Marketplace
+                  speed, BPO quality, and AI-ready operations — in one
+                  platform.
                 </p>
               </div>
 
@@ -1844,85 +1850,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Download Section */}
-            <div
-              className="md:space-y-6 md:border-b-0 transition-all duration-300"
-              style={{
-                paddingBottom: "clamp(4px, 0.6vh, 8px)",
-                borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
-              }}
-            >
-              <button
-                onClick={() => toggleFooterSection("download")}
-                className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left"
-                style={{
-                  padding: "clamp(4px, 0.6vh, 8px) 0",
-                }}
-                data-testid="footer-accordion-download"
-              >
-                <h3 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-white tracking-wide text-left">
-                  Download Platform
-                </h3>
-                <ChevronDown
-                  className={`w-5 h-5 text-slate-600 dark:text-slate-400 transition-transform duration-300 md:hidden ${expandedFooterSection === "download" ? "rotate-180" : ""}`}
-                />
-              </button>
-
-              <div
-                className={`space-y-4 transition-all duration-300 md:!opacity-100 md:!max-h-none md:!block ${
-                  expandedFooterSection === "download"
-                    ? "opacity-100 max-h-96"
-                    : "opacity-0 max-h-0 overflow-hidden"
-                }`}
-                style={{
-                  marginTop:
-                    expandedFooterSection === "download" ||
-                    window.innerWidth >= 768
-                      ? "16px"
-                      : "0",
-                }}
-              >
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                  Take OnSpot with you wherever you go. Manage projects and
-                  track progress on the move.
-                </p>
-                <div className="flex flex-col gap-3 items-center md:items-start">
-                  <Link
-                    href="/pricing"
-                    className="flex items-center justify-center md:justify-start gap-3 px-5 py-3 rounded-xl bg-slate-100/20 dark:bg-white/[0.02] backdrop-blur-md border border-slate-300 dark:border-white/[0.15] hover:bg-slate-200/30 dark:hover:bg-white/[0.06] hover:border-violet-400/50 hover:shadow-[0_0_20px_rgba(139,92,246,0.25)] hover:-translate-y-0.5 transition-all duration-400 group w-full md:w-auto"
-                    data-testid="download-ios"
-                  >
-                    <svg
-                      className="w-5 h-5 text-slate-600 dark:text-white/50 group-hover:text-violet-600 dark:group-hover:text-violet-300 group-hover:scale-110 transition-all duration-300"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                    >
-                      <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
-                    </svg>
-                    <span className="text-sm font-medium text-slate-700 dark:text-white/70 group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors">
-                      App Store
-                    </span>
-                  </Link>
-                  <Link
-                    href="/pricing"
-                    className="flex items-center justify-center md:justify-start gap-3 px-5 py-3 rounded-xl bg-slate-100/20 dark:bg-white/[0.02] backdrop-blur-md border border-slate-300 dark:border-white/[0.15] hover:bg-slate-200/30 dark:hover:bg-white/[0.06] hover:border-violet-400/50 hover:shadow-[0_0_20px_rgba(139,92,246,0.25)] hover:-translate-y-0.5 transition-all duration-400 group w-full md:w-auto"
-                    data-testid="download-android"
-                  >
-                    <svg
-                      className="w-5 h-5 text-slate-600 dark:text-white/50 group-hover:text-violet-600 dark:group-hover:text-violet-300 group-hover:scale-110 transition-all duration-300"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                    >
-                      <path d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.6 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.5,12.92 20.16,13.19L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z" />
-                    </svg>
-                    <span className="text-sm font-medium text-slate-700 dark:text-white/70 group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors">
-                      Google Play
-                    </span>
-                  </Link>
-                </div>
-              </div>
-            </div>
-
             {/* Connect Section */}
             <div className="md:space-y-6 transition-all duration-300 min-w-0">
               <button
@@ -1995,7 +1922,9 @@ export default function Home() {
                     >
                       <MapPinIcon className="w-5 h-5 flex-shrink-0 mt-0.5 group-hover:scale-110 group-hover:text-violet-500 transition-all duration-300" />
                       <span className="break-words sm:break-normal underline-offset-2 group-hover:underline">
-                        PH - Unit No. 1702, 17th Floor High Street South Corporate Plaza Tower 2, 11th Ave Cor 26th St, Bonifacio Global City, Taguig
+                        PH - Unit No. 1702, 17th Floor High Street South
+                        Corporate Plaza Tower 2, 11th Ave Cor 26th St, Bonifacio
+                        Global City, Taguig
                       </span>
                     </a>
                   </span>
@@ -2038,7 +1967,6 @@ export default function Home() {
           </div>
         </div>
       </footer>
-
     </div>
   );
 }
