@@ -1,0 +1,59 @@
+In `client/src/pages/Home.tsx`, find the stats banner section below the hero
+CTA buttons. It currently looks broken — the stat cells appear as separate
+floating dark cards with gaps between them. Fix it so it renders as one clean,
+seamless full-width band matching the design below.
+
+---
+
+## INTENDED DESIGN
+One continuous dark strip spanning the full width of the hero, with 5 columns
+separated only by thin vertical lines. No individual card boxes. No gaps.
+No rounded corners on any cell.
+
+---
+
+## FULL REPLACEMENT
+
+Replace the entire stats banner block with this exact structure:
+
+<div className="w-full mt-8">
+  {/* Tagline */}
+  <p className="text-center text-sm text-white/60 mb-6 tracking-wide">
+    <span className="font-semibold text-white">500+ clients globally</span>
+    <span className="text-white/30 mx-3">·</span>
+    <span className="font-semibold text-white">2,000+ talents placed</span>
+    <span className="text-white/30 mx-3">·</span>
+    Onboarding in <span className="font-bold text-white">72 hours</span>
+  </p>
+
+  {/* Stats Band */}
+  <div className="w-full border-t border-b border-white/10 bg-white/5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-x divide-white/10">
+    {[
+      { value: "72hrs",  label: "AVG. TIME TO HIRE" },
+      { value: "500+",   label: "GLOBAL CLIENTS" },
+      { value: "98%",    label: "CLIENT RETENTION" },
+      { value: "2,000+", label: "TALENTS PLACED" },
+      { value: "🇵🇭",    label: "PHILIPPINE-BASED" },
+    ].map((stat) => (
+      <div key={stat.label} className="flex flex-col gap-2 px-8 py-7">
+        <span className="text-white font-extrabold text-5xl leading-none">
+          {stat.value}
+        </span>
+        <span className="text-white/40 text-xs font-semibold tracking-[0.18em] uppercase">
+          {stat.label}
+        </span>
+      </div>
+    ))}
+  </div>
+</div>
+
+---
+
+## KEY RULES
+- NO rounded corners anywhere on the stats band or its cells
+- NO gap between cells — use divide-x only for column separators
+- The band uses border-t and border-b (top and bottom borders), not a card
+- bg-white/5 gives a subtle darker tint vs the hero background
+- Stats band must be full bleed — if the hero has a container/max-width wrapper,
+  place this band OUTSIDE that container so it stretches edge to edge
+- The tagline stays inside the container (centered, max-width constrained)
