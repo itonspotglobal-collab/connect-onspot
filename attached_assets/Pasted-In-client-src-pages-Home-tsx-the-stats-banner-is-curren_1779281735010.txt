@@ -1,0 +1,64 @@
+In `client/src/pages/Home.tsx`, the stats banner is currently broken — it is
+rendering beside the hero headline instead of below it. This is a DOM placement
+bug. The stats band was placed inside the hero's inner content container
+(which is a flex or grid row), so it is treated as a sibling column to the
+headline text.
+
+---
+
+## THE FIX — Correct DOM placement
+
+The stats band must live at the BOTTOM of the hero section wrapper, OUTSIDE
+the inner content/container div, but still INSIDE the outer hero section so
+it shares the same dark background.
+
+The hero section structure should look like this:
+
+  <section>                          ← outer hero wrapper (dark bg, full width)
+    <div className="container ...">  ← inner content (headline, subtitle, CTAs)
+      <h1>AI first. Humans when it matters.</h1>
+      <p>One system...</p>
+      <div> {/* CTA buttons */} </div>
+      <p> {/* tagline: 500+ clients globally... */} </p>
+    </div>
+                                     ← stats band goes HERE, outside container
+    <div className="w-full border-t border-b border-white/10 bg-white/5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-x divide-white/10 mt-8">
+      {[
+        { value: "72hrs",  label: "AVG. TIME TO HIRE" },
+        { value: "500+",   label: "GLOBAL CLIENTS" },
+        { value: "98%",    label: "CLIENT RETENTION" },
+        { value: "2,000+", label: "TALENTS PLACED" },
+        { value: "🇵🇭",    label: "PHILIPPINE-BASED" },
+      ].map((stat) => (
+        <div key={stat.label} className="flex flex-col gap-2 px-8 py-7">
+          <span className="text-white font-extrabold text-5xl leading-none">
+            {stat.value}
+          </span>
+          <span className="text-white/40 text-xs font-semibold tracking-[0.18em] uppercase">
+            {stat.label}
+          </span>
+        </div>
+      ))}
+    </div>
+  </section>
+
+---
+
+## ALSO FIX — CTA buttons layout
+The CTA buttons (Launch AI Assistant, Get Managed Team, Find Work) are
+stacking vertically and left-aligning. Restore them to:
+  className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4"
+
+---
+
+## ALSO FIX — Tagline placement
+Move the tagline "500+ clients globally · 2,000+ talents placed · Onboarding
+in 72 hours" back INSIDE the container div, centered below the CTA buttons:
+  className="text-center text-sm text-white/60 tracking-wide mt-2"
+
+---
+
+## CRITICAL RULE
+Do NOT place the stats grid div inside any flex-row or grid-cols container
+that also holds the headline. It must be a direct child of the outer hero
+section, spanning the full width below all other hero content.

@@ -350,7 +350,7 @@ export default function Home() {
   return (
     <div>
       {/* Hero Section */}
-      <div className="relative overflow-hidden min-h-[80vh] sm:min-h-screen flex items-center justify-center hero-investor">
+      <div className="relative overflow-hidden min-h-[80vh] sm:min-h-screen flex flex-col hero-investor">
         {/* Elegant Gradient Overlay for Depth */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/30"></div>
 
@@ -360,86 +360,89 @@ export default function Home() {
           <div className="absolute bottom-1/3 right-1/4 w-[500px] h-[500px] bg-gradient-radial from-blue-500/10 to-transparent rounded-full blur-3xl animate-slow-spin"></div>
         </div>
 
-        <div className="container mx-auto text-center relative z-20 px-4 sm:px-6">
-          <div className="max-w-5xl mx-auto space-y-5 sm:space-y-8 lg:space-y-12">
-            {/* Ultra-minimal Badge */}
-            <div
-              className="hero-fade-up inline-flex items-center gap-2.5 text-xs sm:text-sm font-medium text-white/90 tracking-wide bg-white/5 backdrop-blur-xl px-4 sm:px-5 py-2 sm:py-2.5 rounded-full border border-white/20"
-              data-testid="badge-superhuman-bpo"
-            >
-              <div className="w-2 h-2 bg-white/60 rounded-full"></div>
-              Work Differently
-            </div>
-
-            {/* AI-First Headline */}
-            <div className="space-y-3 sm:space-y-4 hero-fade-up">
-              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold tracking-tight leading-[1.1] text-white px-2">
-                AI first.{" "}
-                <span className="bg-gradient-to-r from-violet-300 via-blue-200 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_24px_rgba(167,139,250,0.45)]">
-                  Humans
-                </span>{" "}
-                when it matters.
-              </h1>
-            </div>
-
-            {/* Supporting statement */}
-            <div className="hero-fade-up-delay">
-              <p className="text-base sm:text-lg md:text-xl text-white/65 font-light leading-relaxed tracking-wide px-2 max-w-2xl mx-auto">
-                One system. Marketplace speed, BPO quality, and a talent pool built for the work AI creates — not just the work it replaces.
-              </p>
-            </div>
-
-            {/* CTAs */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 hero-fade-up-delay px-4 flex-wrap">
-              <Button
-                size="lg"
-                onClick={openVanessa}
-                className="relative group text-sm sm:text-base px-6 sm:px-8 h-auto bg-gradient-to-r from-violet-600 to-blue-600 text-white font-semibold hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] transition-all duration-300 hover-elevate rounded-2xl w-full sm:w-auto sm:min-w-[200px] py-3.5 sm:py-4 min-h-[48px]"
-                data-testid="button-launch-ai"
+        {/* Main content — vertically centred in the available space above the stats band */}
+        <div className="flex-1 flex items-center justify-center relative z-20 px-4 sm:px-6 py-16 sm:py-24">
+          <div className="container mx-auto text-center">
+            <div className="max-w-5xl mx-auto space-y-5 sm:space-y-8 lg:space-y-12">
+              {/* Ultra-minimal Badge */}
+              <div
+                className="hero-fade-up inline-flex items-center gap-2.5 text-xs sm:text-sm font-medium text-white/90 tracking-wide bg-white/5 backdrop-blur-xl px-4 sm:px-5 py-2 sm:py-2.5 rounded-full border border-white/20"
+                data-testid="badge-superhuman-bpo"
               >
-                <span className="flex items-center gap-2 justify-center">
-                  Launch AI Assistant
-                  <Sparkles className="w-4 sm:w-5 h-4 sm:h-5" />
-                </span>
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-violet-600 to-blue-600 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-300 -z-10"></div>
-              </Button>
+                <div className="w-2 h-2 bg-white/60 rounded-full"></div>
+                Work Differently
+              </div>
 
-              <Button
-                variant="outline"
-                size="lg"
-                className="text-sm sm:text-base px-6 sm:px-8 h-auto border-2 border-white/30 text-white hover:bg-white/10 hover:border-white/50 font-medium backdrop-blur-xl bg-white/5 rounded-2xl w-full sm:w-auto sm:min-w-[200px] py-3.5 sm:py-4 min-h-[48px]"
-                asChild
-                data-testid="button-get-managed-team"
-              >
-                <Link href="/lead-intake">Get Managed Team</Link>
-              </Button>
+              {/* AI-First Headline */}
+              <div className="space-y-3 sm:space-y-4 hero-fade-up">
+                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold tracking-tight leading-[1.1] text-white px-2">
+                  AI first.{" "}
+                  <span className="bg-gradient-to-r from-violet-300 via-blue-200 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_24px_rgba(167,139,250,0.45)]">
+                    Humans
+                  </span>{" "}
+                  when it matters.
+                </h1>
+              </div>
 
-              <Button
-                variant="outline"
-                size="lg"
-                className="text-sm sm:text-base px-6 sm:px-8 h-auto border-2 border-white/20 text-white/85 hover:bg-white/10 hover:border-white/40 font-medium backdrop-blur-xl bg-white/[0.03] rounded-2xl w-full sm:w-auto sm:min-w-[200px] py-3.5 sm:py-4 min-h-[48px]"
-                asChild
-                data-testid="button-find-work"
-              >
-                <Link href="/find-work">Find Work</Link>
-              </Button>
-            </div>
+              {/* Supporting statement */}
+              <div className="hero-fade-up-delay">
+                <p className="text-base sm:text-lg md:text-xl text-white/65 font-light leading-relaxed tracking-wide px-2 max-w-2xl mx-auto">
+                  One system. Marketplace speed, BPO quality, and a talent pool built for the work AI creates — not just the work it replaces.
+                </p>
+              </div>
 
-            {/* Tagline */}
-            <div className="hero-fade-up-delay">
-              <p className="text-center text-sm text-white/60 tracking-wide">
-                <span className="font-semibold text-white">500+ clients globally</span>
-                <span className="text-white/30 mx-3">·</span>
-                <span className="font-semibold text-white">2,000+ talents placed</span>
-                <span className="text-white/30 mx-3">·</span>
-                Onboarding in <span className="font-bold text-white">72 hours</span>
-              </p>
+              {/* CTAs */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 hero-fade-up-delay flex-wrap">
+                <Button
+                  size="lg"
+                  onClick={openVanessa}
+                  className="relative group text-sm sm:text-base px-6 sm:px-8 h-auto bg-gradient-to-r from-violet-600 to-blue-600 text-white font-semibold hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] transition-all duration-300 hover-elevate rounded-2xl w-full sm:w-auto sm:min-w-[200px] py-3.5 sm:py-4 min-h-[48px]"
+                  data-testid="button-launch-ai"
+                >
+                  <span className="flex items-center gap-2 justify-center">
+                    Launch AI Assistant
+                    <Sparkles className="w-4 sm:w-5 h-4 sm:h-5" />
+                  </span>
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-violet-600 to-blue-600 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-300 -z-10"></div>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="text-sm sm:text-base px-6 sm:px-8 h-auto border-2 border-white/30 text-white hover:bg-white/10 hover:border-white/50 font-medium backdrop-blur-xl bg-white/5 rounded-2xl w-full sm:w-auto sm:min-w-[200px] py-3.5 sm:py-4 min-h-[48px]"
+                  asChild
+                  data-testid="button-get-managed-team"
+                >
+                  <Link href="/lead-intake">Get Managed Team</Link>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="text-sm sm:text-base px-6 sm:px-8 h-auto border-2 border-white/20 text-white/85 hover:bg-white/10 hover:border-white/40 font-medium backdrop-blur-xl bg-white/[0.03] rounded-2xl w-full sm:w-auto sm:min-w-[200px] py-3.5 sm:py-4 min-h-[48px]"
+                  asChild
+                  data-testid="button-find-work"
+                >
+                  <Link href="/find-work">Find Work</Link>
+                </Button>
+              </div>
+
+              {/* Tagline */}
+              <div className="hero-fade-up-delay">
+                <p className="text-center text-sm text-white/60 tracking-wide mt-2">
+                  <span className="font-semibold text-white">500+ clients globally</span>
+                  <span className="text-white/30 mx-3">·</span>
+                  <span className="font-semibold text-white">2,000+ talents placed</span>
+                  <span className="text-white/30 mx-3">·</span>
+                  Onboarding in <span className="font-bold text-white">72 hours</span>
+                </p>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Stats band — full-bleed outside the container so it stretches edge to edge */}
-        <div className="hero-fade-up-delay w-full border-t border-b border-white/10 bg-white/5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-x divide-white/10">
+        {/* Stats band — direct child of hero, full-bleed at the bottom */}
+        <div className="relative z-20 w-full border-t border-b border-white/10 bg-white/5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-x divide-white/10 mt-8">
           {[
             { value: "72hrs",  label: "AVG. TIME TO HIRE" },
             { value: "500+",   label: "GLOBAL CLIENTS" },
