@@ -431,6 +431,25 @@ export default function Home() {
                 Hundreds of clients, thousands of talents, Fastest onboarding in the market.
               </p>
             </div>
+
+            {/* Stats banner */}
+            <div className="hero-fade-up-delay w-full">
+              <div className="w-full border-t border-white/10 mt-6" />
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-x divide-white/10">
+                {[
+                  { value: "72hrs",   label: "AVG. TIME TO HIRE" },
+                  { value: "500+",    label: "GLOBAL CLIENTS" },
+                  { value: "98%",     label: "CLIENT RETENTION" },
+                  { value: "2,000+",  label: "TALENTS PLACED" },
+                  { value: "🇵🇭",     label: "PHILIPPINE-BASED" },
+                ].map(({ value, label }) => (
+                  <div key={label} className="flex flex-col items-center justify-center px-6 py-8 gap-2">
+                    <span className="text-white font-extrabold text-4xl leading-none">{value}</span>
+                    <span className="text-white/40 text-xs font-semibold tracking-widest uppercase">{label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
