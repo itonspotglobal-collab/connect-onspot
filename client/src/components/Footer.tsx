@@ -31,9 +31,9 @@ export function Footer() {
         <div className="absolute bottom-12 left-1/4 w-2 h-12 bg-white/8 rounded-full -rotate-12 animate-pulse delay-300"></div>
       </div>
 
-      <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 relative z-10">
+      <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-10 relative z-10">
         {/* Company Info and Navigation */}
-        <div className="space-y-8 sm:space-y-10">
+        <div className="space-y-6 sm:space-y-8">
           {/* Company Info */}
           <div className="space-y-4 sm:space-y-5">
             <div className="relative">
@@ -120,7 +120,7 @@ export function Footer() {
           </div>
 
           {/* Compact Navigation Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 lg:gap-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 sm:gap-8">
             {/* Navigation */}
             <div className="space-y-3">
               <h3 className="font-semibold text-white text-base sm:text-lg tracking-wide border-b border-white/20 pb-2">
@@ -349,10 +349,43 @@ export function Footer() {
                 </Button>
               </div>
             </div>
+            {/* New Verticals */}
+            <div className="space-y-3">
+              <h3 className="font-semibold text-white text-base sm:text-lg tracking-wide border-b border-white/20 pb-2">
+                New Verticals
+              </h3>
+              <ul className="space-y-2.5 sm:space-y-2 text-white/85 text-sm sm:text-base mt-0 md:mt-[0.7rem]">
+                <li>
+                  <a href="#" className="hover:text-white transition-all duration-200 hover:translate-x-1 inline-block">
+                    AI Human-in-the-Loop
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-all duration-200 hover:translate-x-1 inline-block">
+                    Founder Ops
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-all duration-200 hover:translate-x-1 inline-block">
+                    Healthcare Micro-Admin
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-all duration-200 hover:translate-x-1 inline-block">
+                    E-commerce Ops
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white font-medium transition-all duration-200 hover:translate-x-1 inline-block">
+                    View all 10 →
+                  </a>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
 
-        <Separator className="my-8 sm:my-10 bg-white/30" />
+        <Separator className="my-6 sm:my-8 bg-white/30" />
 
         {/* Bottom Row */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end space-y-6 sm:space-y-8 lg:space-y-0 gap-6">

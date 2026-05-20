@@ -1,0 +1,54 @@
+In the Footer component (`client/src/components/Footer.tsx` or wherever the
+footer is defined), make these two changes:
+
+---
+
+## CHANGE 1 — Add "New Verticals" column where "Download Platform" was
+
+In the footer grid, add a new column in the same position where "Download
+Platform" was removed. The column should look exactly like the other nav
+columns (Navigation, Company) in style.
+
+Column structure:
+
+  <div>
+    <h3 className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground mb-4">
+      New Verticals
+    </h3>
+    <ul className="space-y-3">
+      <li><a href="#" className="text-sm text-foreground/70 hover:text-foreground transition-colors">AI Human-in-the-Loop</a></li>
+      <li><a href="#" className="text-sm text-foreground/70 hover:text-foreground transition-colors">Founder Ops</a></li>
+      <li><a href="#" className="text-sm text-foreground/70 hover:text-foreground transition-colors">Healthcare Micro-Admin</a></li>
+      <li><a href="#" className="text-sm text-foreground/70 hover:text-foreground transition-colors">E-commerce Ops</a></li>
+      <li><a href="#" className="text-sm font-medium text-violet-600 hover:text-violet-700 transition-colors">View all 10 →</a></li>
+    </ul>
+  </div>
+
+---
+
+## CHANGE 2 — Fix footer spacing so it fills the width evenly
+
+The footer currently has too much empty space and looks unbalanced. Apply
+these fixes:
+
+1. The footer top section grid should use `grid-cols-5` on large screens
+   (one column for logo+description, four for the nav columns) with equal
+   distribution:
+     className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8"
+
+2. Give the logo/description column a proportional width:
+     className="lg:col-span-1"
+   And each of the four nav columns:
+     className="lg:col-span-1"
+
+3. Reduce the top/bottom padding on the footer wrapper to remove excess
+   vertical space. Change any `py-16` or `py-20` to `py-10`, and any
+   `py-12` to `py-8`.
+
+4. Reduce the gap between the footer top section and the bottom copyright
+   bar from `mt-12` or `mt-16` to `mt-8`.
+
+---
+
+## DO NOT change any existing links, text content, social icons, logo,
+or the copyright bar — only layout/spacing and the new column.
