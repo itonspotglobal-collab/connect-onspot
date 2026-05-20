@@ -1661,7 +1661,7 @@ export default function Insights() {
 
   const applySearch = (items: ArticleItem[]) =>
     items.filter((a) => {
-      const matchesSearch = [a.title, a.excerpt, a.author]
+      const matchesSearch = [a.title, a.excerpt, a.author, a.category]
         .join(" ")
         .toLowerCase()
         .includes(searchQuery.toLowerCase().trim());
