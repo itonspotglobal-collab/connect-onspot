@@ -1,0 +1,187 @@
+Please make two homepage layout updates:
+
+1. Change the footer background color to match the navigation bar.
+2. Move the stats strip section with “72hrs / 500+ / 98% / 2,000+ / Philippine-based” into the “The Experience” section and restyle it to match that section’s gradient background.
+
+IMPORTANT:
+- Do not redesign the whole page.
+- Keep the current fonts, branding, logo, icons, and general design language.
+- Make the changes responsive for large desktop, laptop, tablet, and mobile.
+- Do not use fixed positioning or hardcoded offsets that will break on different screen sizes.
+
+--------------------------------------------------
+PART 1: FOOTER COLOR UPDATE
+--------------------------------------------------
+
+Current issue:
+The footer background is currently light, but we want it to match the navigation bar color.
+
+Goal:
+Update the footer background so it uses the same dark blue/purple gradient or color treatment as the top navigation bar.
+
+Requirements:
+- Match the navbar background as closely as possible.
+- If the navbar uses a gradient, reuse the same gradient classes or CSS variables.
+- Footer text should remain readable on the darker background.
+- Update footer text/icon colors only as needed for contrast.
+- Keep footer layout structure the same unless spacing needs minor adjustment.
+
+Suggested:
+If navbar uses something like:
+
+bg-gradient-to-r from-[#34358f] via-[#2f2f82] to-[#3d2a86]
+
+then apply the same or shared class to the footer.
+
+Footer text color suggestions:
+- Headings: text-white
+- Body/link text: text-white/70 or text-white/75
+- Hover links: text-white
+- Divider border: border-white/10
+- Social icon background: bg-white/10
+- Social icon color: text-white/75
+- Social icon hover: bg-white/15 text-white
+
+Do not leave dark gray footer text on the dark navbar-colored background.
+
+--------------------------------------------------
+PART 2: MOVE STATS STRIP INTO “THE EXPERIENCE”
+--------------------------------------------------
+
+Current issue:
+The stats strip with:
+- 72hrs AVG. TIME TO HIRE
+- 500+ GLOBAL CLIENTS
+- 98% CLIENT RETENTION
+- 2,000+ TALENTS PLACED
+- Philippine flag PHILIPPINE-BASED
+
+is currently in its own dark section above “The Experience”.
+
+Goal:
+Remove that standalone stats strip from its current location and place it inside the “The Experience” section.
+
+The stats should appear within the gradient “The Experience” section, preferably between the title/subtitle and the large experience UI card.
+
+Desired order inside “The Experience” section:
+1. Heading: “The Experience”
+2. Subtitle: “One System. Your Unfair Advantage.”
+3. Stats strip/cards
+4. Existing large experience card with Vanessa AI Assistant / Task Flow / Managed Team / Live KPIs
+
+--------------------------------------------------
+STATS DESIGN INSIDE THE EXPERIENCE SECTION
+--------------------------------------------------
+
+Restyle the stats so they match the lighter gradient background of “The Experience”.
+
+Do NOT keep the current dark navy stats-strip background.
+
+Requirements:
+- Use a light glass/card style that fits the current Experience gradient section.
+- Keep the same stats content.
+- Use subtle borders and translucent background.
+- Make it look integrated with the section, not like a separate dark block.
+
+Suggested container style:
+className="
+  mx-auto mt-10 grid w-full max-w-6xl
+  grid-cols-1 sm:grid-cols-2 lg:grid-cols-5
+  overflow-hidden rounded-3xl
+  border border-white/40
+  bg-white/25
+  backdrop-blur-xl
+  shadow-[0_20px_60px_rgba(80,80,180,0.12)]
+"
+
+Suggested stat item style:
+className="
+  flex flex-col items-center justify-center
+  px-6 py-8 text-center
+  border-b border-white/30
+  sm:border-r
+  lg:border-b-0
+  last:border-r-0
+"
+
+But make sure borders work cleanly on responsive layouts.
+
+Numbers/text:
+- Large stat number should use the brand purple/blue color or a gradient text treatment.
+- Labels should use dark muted text with letter spacing.
+
+Suggested number:
+className="
+  text-4xl md:text-5xl font-bold
+  bg-gradient-to-r from-purple-600 to-blue-600
+  bg-clip-text text-transparent
+"
+
+Suggested label:
+className="
+  mt-3 text-xs font-semibold uppercase tracking-[0.25em]
+  text-slate-600
+"
+
+For the Philippine flag item:
+- Keep the flag visible.
+- Put the label “PHILIPPINE-BASED” below it.
+- Make it visually consistent with the other stat items.
+
+--------------------------------------------------
+RESPONSIVE REQUIREMENTS
+--------------------------------------------------
+
+Desktop:
+- Stats should display as 5 columns inside “The Experience”.
+- Should sit nicely between the heading/subtitle and main experience card.
+- Should not touch the edges of the screen.
+
+Laptop:
+- Stats should still fit cleanly.
+- If 5 columns feel too tight, reduce padding slightly with responsive classes.
+
+Tablet:
+- Stats can become 2 columns.
+- The last item may span full width if needed.
+
+Mobile:
+- Stats should stack vertically or use 1 column.
+- No horizontal scrolling.
+- Borders should not look broken.
+
+--------------------------------------------------
+REMOVE OLD STATS SECTION
+--------------------------------------------------
+
+Please remove or disable the old standalone dark stats section from its original position.
+
+Important:
+- There should only be one stats section after this update.
+- Do not duplicate the stats.
+- Do not leave a large empty gap where the old stats section was removed.
+
+--------------------------------------------------
+THE EXPERIENCE SECTION SPACING
+--------------------------------------------------
+
+After moving the stats into “The Experience”:
+- Add enough vertical spacing between subtitle and stats.
+- Add enough vertical spacing between stats and the existing experience card.
+- The section should feel balanced, not crowded.
+
+Suggested spacing:
+- Subtitle to stats: mt-8 or mt-10
+- Stats to experience card: mt-12 or mt-16
+
+--------------------------------------------------
+EXPECTED RESULT
+--------------------------------------------------
+
+- Footer now uses the same dark blue/purple color treatment as the navigation bar.
+- Footer text and icons remain readable on the dark background.
+- The old standalone stats strip is removed from above “The Experience”.
+- The stats appear inside “The Experience” as light glassy stat cards that match the gradient background.
+- The Experience section flows as:
+  heading, subtitle, stats, experience visual/card.
+- Layout remains responsive across large desktop, Mac laptop, tablet, and mobile.

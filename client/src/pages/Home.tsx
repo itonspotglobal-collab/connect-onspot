@@ -449,25 +449,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Stats band — direct child of hero, full-bleed at the bottom */}
-        <div className="relative z-20 w-full border-t border-b border-white/10 bg-white/5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-x divide-white/10 mt-8">
-          {[
-            { value: "72hrs", label: "AVG. TIME TO HIRE" },
-            { value: "500+", label: "GLOBAL CLIENTS" },
-            { value: "98%", label: "CLIENT RETENTION" },
-            { value: "2,000+", label: "TALENTS PLACED" },
-            { value: "🇵🇭", label: "PHILIPPINE-BASED" },
-          ].map((stat) => (
-            <div key={stat.label} className="flex flex-col gap-2 px-8 py-7">
-              <span className="text-white font-extrabold text-5xl leading-none">
-                {stat.value}
-              </span>
-              <span className="text-white/40 text-xs font-semibold tracking-[0.18em] uppercase">
-                {stat.label}
-              </span>
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* Trusted By Section - Premium Apple-Style Design */}
@@ -1307,7 +1288,7 @@ export default function Home() {
 
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
           {/* Title */}
-          <div className="text-center mb-10 sm:mb-16 space-y-4">
+          <div className="text-center space-y-4">
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight">
               The Experience
             </h2>
@@ -1316,8 +1297,41 @@ export default function Home() {
             </p>
           </div>
 
+          {/* Stats strip — glassy cards matching the Experience gradient */}
+          <div className="mx-auto mt-10 w-full max-w-5xl grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 overflow-hidden rounded-3xl border border-white/40 bg-white/25 backdrop-blur-xl shadow-[0_20px_60px_rgba(80,80,180,0.12)]">
+            {[
+              { value: "72hrs", label: "AVG. TIME TO HIRE" },
+              { value: "500+", label: "GLOBAL CLIENTS" },
+              { value: "98%", label: "CLIENT RETENTION" },
+              { value: "2,000+", label: "TALENTS PLACED" },
+              { flag: true, label: "PHILIPPINE-BASED" },
+            ].map((stat, i, arr) => (
+              <div
+                key={stat.label}
+                className={`flex flex-col items-center justify-center px-4 py-7 text-center
+                  border-white/30
+                  ${i < arr.length - 1 ? "border-b lg:border-b-0 lg:border-r" : ""}
+                  ${i % 2 === 0 && i < arr.length - 1 ? "sm:border-r" : ""}
+                  col-span-1
+                  ${i === 4 ? "col-span-2 sm:col-span-1" : ""}
+                `}
+              >
+                {stat.flag ? (
+                  <span className="text-4xl md:text-5xl leading-none">🇵🇭</span>
+                ) : (
+                  <span className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent leading-none">
+                    {stat.value}
+                  </span>
+                )}
+                <span className="mt-3 text-xs font-semibold uppercase tracking-[0.22em] text-slate-600 dark:text-slate-400">
+                  {stat.label}
+                </span>
+              </div>
+            ))}
+          </div>
+
           {/* OnSpot Connect Interface Mockup */}
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-6xl mx-auto mt-12 sm:mt-16">
             <div className="relative bg-background/30 backdrop-blur-xl border border-white/20 rounded-3xl p-8 sm:p-12 lg:p-16">
               {/* Glowing wireframe interface */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">

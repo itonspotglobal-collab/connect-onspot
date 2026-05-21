@@ -18,7 +18,7 @@ export function Footer() {
       className="relative overflow-hidden"
       style={{
         background:
-          "linear-gradient(135deg, #474ead 0%, #5a5dc7 50%, #6366f1 100%)",
+          "linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)",
       }}
     >
       {/* Enhanced Animated Background Elements */}
