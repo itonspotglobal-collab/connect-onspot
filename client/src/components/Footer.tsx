@@ -31,12 +31,12 @@ export function Footer() {
         <div className="absolute bottom-12 left-1/4 w-2 h-12 bg-white/8 rounded-full -rotate-12 animate-pulse delay-300"></div>
       </div>
 
-      <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-10 relative z-10">
+      <div className="container mx-auto px-6 py-8 sm:py-10 relative z-10">
         {/* Single unified grid: brand col-span-2, then 5 nav columns */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1fr_1fr_1.3fr] gap-8 lg:gap-x-10 items-start">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.9fr_1fr_1fr_1fr_1fr_1.4fr] gap-y-10 lg:gap-x-16 items-start">
 
           {/* Brand — naturally wider via grid template */}
-          <div className="space-y-4">
+          <div className="space-y-4 text-left">
             <div className="relative">
               <img
                 src={onspotLogo}

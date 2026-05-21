@@ -1,0 +1,63 @@
+Adjust the footer brand section so it stretches more toward the left side and is aligned with the bottom copyright text.
+
+Current issue:
+The footer brand/logo column is too far inward and too close to the Navigation column. The OnSpot logo, description, and social icons should start farther left, aligned with the “© 2025 OnSpot. All rights reserved.” text in the footer bottom row.
+
+Goal:
+Move/stretch the brand section toward the left side while keeping the Navigation column separated and clean.
+
+Requirements:
+
+1. Align brand section with copyright text
+- The left edge of the brand/logo section should align with:
+  “© 2025 OnSpot. All rights reserved.”
+- The OnSpot logo, brand description, and social icons should all follow this same left alignment.
+- Do not center the brand column if it causes it to move inward.
+
+2. Give the brand column more room
+- Keep the brand column wider than the other footer columns.
+- Increase the gap between the brand section and the Navigation column.
+- The Navigation column should not feel too close to the brand description or social icons.
+
+Suggested grid update:
+Use a wider first column and larger desktop column gap.
+
+Example Tailwind approach:
+
+Footer container:
+className="container mx-auto px-6 py-10 sm:py-12"
+
+Footer grid:
+className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1.9fr_1fr_1fr_1fr_1.4fr] gap-y-10 lg:gap-x-16"
+
+3. Remove unwanted brand column centering
+Check the brand column for classes that may be pushing it inward, such as:
+- mx-auto
+- text-center
+- items-center
+- justify-center
+- max-w-* that is too small
+
+Update the brand column to use left alignment on desktop:
+
+className="text-left items-start justify-start max-w-md"
+
+If the logo itself is centered, make sure it aligns left:
+className="mx-0"
+
+4. Keep social icons aligned and spacious
+- Social/platform icons should begin at the same left edge as the logo and description.
+- Keep the icons in one row on desktop when possible.
+- Use proper spacing between icons.
+
+Example:
+className="flex flex-wrap lg:flex-nowrap items-center gap-3 justify-start"
+
+5. Preserve existing footer design
+- Do not redesign the footer.
+- Do not change fonts, colors, icon styles, or background.
+- Only adjust alignment, width, and spacing.
+- Keep the bottom footer row layout as-is, except ensure the top brand column aligns with the copyright text.
+
+Expected result:
+The OnSpot brand section should start farther left, aligned with the copyright text below. It should have more breathing room and should no longer feel cramped or too close to the Navigation section.
