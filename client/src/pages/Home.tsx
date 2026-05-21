@@ -327,13 +327,26 @@ function LogoCarousel() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [visibleCount, setVisibleCount] = useState(5);
+  const [nearPx, setNearPx] = useState(240);
+  const [farPx, setFarPx]   = useState(440);
   const pauseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const update = () => {
-      if (window.innerWidth < 640) setVisibleCount(1);
-      else if (window.innerWidth < 1024) setVisibleCount(3);
-      else setVisibleCount(5);
+      const w = window.innerWidth;
+      if (w < 640) {
+        setVisibleCount(1);
+        setNearPx(0);
+        setFarPx(0);
+      } else if (w < 1024) {
+        setVisibleCount(3);
+        setNearPx(180);
+        setFarPx(320);
+      } else {
+        setVisibleCount(5);
+        setNearPx(w < 1280 ? 220 : 260);
+        setFarPx(w < 1280 ? 400 : 470);
+      }
     };
     update();
     window.addEventListener("resize", update);
@@ -373,80 +386,101 @@ function LogoCarousel() {
     return () => clearInterval(id);
   }, [isPaused, nextSlide]);
 
-  // Build the visible window centred on currentIndex
-  const half = Math.floor(visibleCount / 2);
-  const visibleItems = Array.from({ length: visibleCount }, (_, pos) => {
-    const offset = pos - half;
-    const logoIndex = (currentIndex + offset + logos.length) % logos.length;
-    return { ...logos[logoIndex], logoIndex, offset, isActive: offset === 0 };
+  const offsets = visibleCount === 5 ? [-2, -1, 0, 1, 2]
+                : visibleCount === 3 ? [-1, 0, 1]
+                : [0];
+
+  const visibleLogos = offsets.map((offset) => {
+    const idx = (currentIndex + offset + logos.length) % logos.length;
+    return { ...logos[idx], offset, idx };
   });
 
-  const cardStyle = (offset: number) => {
+  const getCardTransform = (offset: number): React.CSSProperties => {
     const abs = Math.abs(offset);
-    if (abs === 0) return "scale-110 opacity-100 shadow-2xl border-purple-300/70 bg-white z-20";
-    if (abs === 1) return "scale-95 opacity-80 shadow-md border-slate-200/70 bg-white/80 z-10";
-    return "scale-[0.85] opacity-55 shadow-sm border-slate-200/60 bg-white/60 z-0";
+    const sign = offset < 0 ? -1 : 1;
+    const tx   = abs === 0 ? 0 : abs === 1 ? sign * nearPx : sign * farPx;
+    const scale = abs === 0 ? 1.15 : abs === 1 ? 0.88 : 0.72;
+    const ry    = abs === 0 ? 0 : abs === 1 ? sign * -10 : sign * -16;
+    const op    = abs === 0 ? 1 : abs === 1 ? 0.78 : 0.38;
+    const zi    = abs === 0 ? 50 : abs === 1 ? 30 : 10;
+    return {
+      transform: `translate(-50%, -50%) translateX(${tx}px) scale(${scale}) rotateY(${ry}deg)`,
+      opacity: op,
+      zIndex: zi,
+    };
   };
 
-  const imgStyle = (isActive: boolean) =>
-    isActive
-      ? "max-h-16 sm:max-h-20 max-w-[170px] sm:max-w-[190px]"
-      : "max-h-10 sm:max-h-14 max-w-[120px] sm:max-w-[150px]";
+  const cardClass = (abs: number) =>
+    abs === 0
+      ? "h-40 w-[340px] border-purple-300/70 shadow-2xl bg-white"
+      : abs === 1
+      ? "h-32 w-[280px] border-slate-200/70 shadow-md bg-white/90"
+      : "h-28 w-[240px] border-slate-200/60 shadow-sm bg-white/80";
+
+  const imgClass = (abs: number) =>
+    abs === 0
+      ? "max-h-20 max-w-[220px]"
+      : abs === 1
+      ? "max-h-14 max-w-[160px]"
+      : "max-h-12 max-w-[130px]";
 
   return (
-    <div className="relative mt-10 sm:mt-14 w-full">
-
-      {/* Left arrow */}
-      <button
-        onClick={handlePrev}
-        aria-label="Previous client logos"
-        className="absolute left-0 top-1/2 -translate-y-1/2 z-30 flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white shadow-md transition hover:shadow-lg"
+    <div className="mt-10 sm:mt-14 w-full">
+      {/* Stage */}
+      <div className="relative mx-auto h-[240px] sm:h-[260px] w-full max-w-6xl overflow-visible"
+           style={{ perspective: "1200px" }}
+           onMouseEnter={() => setIsPaused(true)}
+           onMouseLeave={() => setIsPaused(false)}
       >
-        <ChevronLeft className="w-5 h-5 text-slate-600" />
-      </button>
+        {/* Left arrow */}
+        <button
+          onClick={handlePrev}
+          aria-label="Previous client logos"
+          className="absolute left-4 top-1/2 z-[60] -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full border border-slate-200 bg-white shadow-lg transition hover:shadow-xl"
+        >
+          <ChevronLeft className="w-5 h-5 text-slate-600" />
+        </button>
 
-      {/* Visible cards */}
-      <div
-        className="overflow-visible mx-14 py-8 flex items-center justify-center gap-3 sm:gap-4 lg:gap-5"
-        onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={() => setIsPaused(false)}
-      >
-        {visibleItems.map(({ name, logo, logoIndex, offset, isActive }) => (
-          <div
-            key={`${logoIndex}-${offset}`}
-            className="shrink-0 flex items-center justify-center"
-            style={{ width: visibleCount === 1 ? "100%" : visibleCount === 3 ? "30%" : "18%" }}
-            data-testid={`brand-logo-${logoIndex}`}
-          >
+        {/* Cards */}
+        {visibleLogos.map(({ name, logo, offset, idx }) => {
+          const abs = Math.abs(offset);
+          return (
             <div
+              key={name}
               className={[
-                "w-full flex h-28 sm:h-32 items-center justify-center rounded-2xl border",
-                "transition-all duration-500 ease-out",
-                cardStyle(offset),
+                "absolute left-1/2 top-1/2",
+                "flex items-center justify-center rounded-3xl border",
+                cardClass(abs),
               ].join(" ")}
+              style={{
+                ...getCardTransform(offset),
+                transformStyle: "preserve-3d",
+                transition: "transform 700ms cubic-bezier(0.22,1,0.36,1), opacity 700ms cubic-bezier(0.22,1,0.36,1)",
+              }}
+              data-testid={`brand-logo-${idx}`}
             >
               <img
                 src={logo}
                 alt={name}
                 loading="lazy"
-                className={["w-auto object-contain transition-all duration-500", imgStyle(isActive)].join(" ")}
+                className={["w-auto object-contain transition-all duration-700", imgClass(abs)].join(" ")}
               />
             </div>
-          </div>
-        ))}
+          );
+        })}
+
+        {/* Right arrow */}
+        <button
+          onClick={handleNext}
+          aria-label="Next client logos"
+          className="absolute right-4 top-1/2 z-[60] -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full border border-slate-200 bg-white shadow-lg transition hover:shadow-xl"
+        >
+          <ChevronRight className="w-5 h-5 text-slate-600" />
+        </button>
       </div>
 
-      {/* Right arrow */}
-      <button
-        onClick={handleNext}
-        aria-label="Next client logos"
-        className="absolute right-0 top-1/2 -translate-y-1/2 z-30 flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white shadow-md transition hover:shadow-lg"
-      >
-        <ChevronRight className="w-5 h-5 text-slate-600" />
-      </button>
-
       {/* Dots */}
-      <div className="flex justify-center gap-1.5 mt-4">
+      <div className="flex justify-center gap-1.5 mt-6">
         {logos.map((_, i) => (
           <button
             key={i}
