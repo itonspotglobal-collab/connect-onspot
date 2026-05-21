@@ -31,27 +31,27 @@ export function Footer() {
         <div className="absolute bottom-12 left-1/4 w-2 h-12 bg-white/8 rounded-full -rotate-12 animate-pulse delay-300"></div>
       </div>
 
-      <div className="container mx-auto px-6 py-8 sm:py-10 relative z-10">
-        {/* Single unified grid: brand col-span-2, then 5 nav columns */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.9fr_1fr_1fr_1fr_1fr_1.4fr] gap-y-10 lg:gap-x-16 items-start">
+      <div className="mx-auto w-full max-w-[1400px] px-6 sm:px-8 lg:px-12 xl:px-16 py-8 sm:py-10 relative z-10">
+        {/* Single unified grid: brand wider column, then 5 equal nav columns */}
+        <div className="grid grid-cols-1 gap-y-10 md:grid-cols-2 lg:grid-cols-[minmax(260px,340px)_minmax(120px,1fr)_minmax(120px,1fr)_minmax(140px,1fr)_minmax(120px,1fr)_minmax(220px,1.2fr)] lg:gap-x-10 xl:gap-x-14 items-start">
 
-          {/* Brand — naturally wider via grid template */}
-          <div className="space-y-4 text-left">
+          {/* Brand — wider first column, left-aligned on desktop */}
+          <div className="md:col-span-2 lg:col-span-1 flex flex-col items-center text-center md:items-start md:text-left space-y-4 max-w-[340px] mx-auto md:mx-0">
             <div className="relative">
               <img
                 src={onspotLogo}
                 alt="OnSpot"
-                className="h-8 sm:h-10 w-auto brightness-0 saturate-100 invert drop-shadow-lg relative z-10"
+                className="h-8 sm:h-10 w-auto brightness-0 saturate-100 invert drop-shadow-lg relative z-10 mx-auto md:mx-0"
               />
               <div className="absolute inset-0 bg-white/20 blur-lg rounded-lg opacity-30"></div>
             </div>
-            <p className="text-white/95 max-w-lg leading-relaxed text-sm sm:text-base font-light">
+            <p className="text-white/95 leading-relaxed text-sm sm:text-base font-light">
               The growth engine of modern business. Built by entrepreneurs, for
               entrepreneurs—our Superhuman Outsourcing System fuses AI-first
               infrastructure with human excellence to scale businesses and
               empower people to perform beyond limits.
             </p>
-            <div className="flex flex-wrap lg:flex-nowrap gap-3">
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
               <Button
                 variant="ghost"
                 size="sm"

@@ -1,0 +1,145 @@
+Please fix the footer layout so the spacing between the OnSpot brand section and the Navigation column looks balanced across different desktop sizes, including large monitors and Mac laptop screens.
+
+Current issue:
+The footer brand section and Navigation column spacing changes too much depending on screen size.
+- On large desktop screens, the footer feels too stretched/spacious.
+- On smaller laptop screens, the spacing looks closer to correct.
+- The OnSpot brand section should not be too close to Navigation, but it should also not create awkward empty space.
+- The footer must be dynamic/responsive and should not break when viewport size changes.
+
+IMPORTANT:
+Do not redesign the footer.
+Keep the existing fonts, colors, logo, icons, background, and general style.
+Only adjust layout, width, alignment, gaps, and responsive behavior.
+
+Goal:
+Create a stable responsive footer layout where:
+- The brand/logo section has enough room for the description and social icons.
+- Navigation starts at a consistent, visually balanced distance from the brand section.
+- The footer content does not stretch too widely on large screens.
+- The footer remains clean on laptop, tablet, and mobile sizes.
+
+Recommended implementation:
+
+1. Use a max-width wrapper for the footer content
+The footer content should not span too wide on very large screens.
+
+Update the main footer inner container to use a controlled max width, for example:
+
+className="mx-auto w-full max-w-[1500px] px-6 sm:px-8 lg:px-12 xl:px-16"
+
+Avoid using a full-width layout where columns keep spreading too far apart on large monitors.
+
+2. Use a responsive grid with custom column sizing
+Replace any simple layout like:
+
+lg:grid-cols-5
+
+with a custom grid that gives the brand section enough space without pushing everything too far away.
+
+Suggested:
+
+className="
+  grid grid-cols-1
+  gap-y-12
+  md:grid-cols-2
+  lg:grid-cols-[minmax(280px,360px)_minmax(140px,1fr)_minmax(140px,1fr)_minmax(170px,1fr)_minmax(260px,1.2fr)]
+  lg:gap-x-12
+  xl:gap-x-16
+"
+
+This prevents the brand column from becoming too narrow or too wide.
+
+3. Prevent the brand column from becoming centered awkwardly
+The brand column should align left on desktop and should not be pushed inward.
+
+Check the brand section for classes like:
+- mx-auto
+- text-center
+- items-center
+- justify-center
+- max-w-sm that is too restrictive
+- margin-left that pushes it toward the center
+
+Use something like:
+
+className="flex flex-col items-start text-left max-w-[360px]"
+
+For mobile only, it is okay to center if that is the existing design, but desktop should be left aligned:
+
+className="flex flex-col items-center text-center md:items-start md:text-left max-w-[360px]"
+
+4. Align brand logo, text, and social icons together
+The OnSpot logo, description, and social icons should share the same horizontal alignment.
+
+Make sure the logo does not have:
+mx-auto
+
+on desktop.
+
+Use:
+className="mx-auto md:mx-0"
+
+For the social icons:
+className="flex flex-wrap items-center justify-center md:justify-start gap-3"
+
+5. Add controlled spacing between Brand and Navigation
+Do not use huge margins like ml-20, mr-20, or fixed pixel offsets.
+Do not manually push Navigation with absolute positioning.
+
+Instead, control the spacing using the grid gap:
+
+lg:gap-x-12
+xl:gap-x-16
+2xl:gap-x-20
+
+But avoid excessive spacing on large screens.
+
+6. Improve large-screen behavior
+For very large screens, the footer should stay visually grouped instead of spreading too much.
+
+Use a max-width container:
+max-w-[1500px]
+
+Optional:
+If the current site uses max-w-7xl, use that instead for consistency.
+
+Example:
+
+<footer className="relative ...">
+  <div className="mx-auto w-full max-w-[1500px] px-6 sm:px-8 lg:px-12 xl:px-16">
+    <div className="grid grid-cols-1 gap-y-12 md:grid-cols-2 lg:grid-cols-[minmax(280px,360px)_minmax(140px,1fr)_minmax(140px,1fr)_minmax(170px,1fr)_minmax(260px,1.2fr)] lg:gap-x-12 xl:gap-x-16">
+      ...
+    </div>
+  </div>
+</footer>
+
+7. Make tablet and mobile layout safe
+For tablet:
+- Use 2 columns if it looks good.
+- Brand section can span full width if needed.
+
+Suggested:
+Brand column:
+className="md:col-span-2 lg:col-span-1"
+
+For mobile:
+- Stack all columns.
+- Center the brand section only if that matches the current mobile style.
+- Social icons should wrap cleanly and not overflow.
+
+8. Keep the bottom copyright row aligned
+The top footer grid and bottom copyright row should use the same parent container width and padding.
+
+Do not put the bottom row in a different width container.
+
+Both should be inside the same:
+
+mx-auto w-full max-w-[1500px] px-6 sm:px-8 lg:px-12 xl:px-16
+
+Expected result:
+- On large desktop screens, the footer content stays grouped and balanced instead of spreading too far apart.
+- On Mac laptop screens, spacing remains clean and does not collapse.
+- The OnSpot brand section has enough width for the logo, description, and platform icons.
+- The Navigation column has a natural gap from the brand column.
+- The footer remains responsive and does not break across screen sizes.
