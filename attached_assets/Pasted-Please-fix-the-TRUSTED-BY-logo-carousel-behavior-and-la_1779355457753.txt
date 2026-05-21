@@ -1,0 +1,318 @@
+Please fix the “TRUSTED BY” logo carousel behavior and layout.
+
+Current issues:
+1. The arrow buttons are both on the left side.
+2. The carousel order is wrong. It moves to the next logo, then jumps/goes back to the previous logo.
+3. The carousel should behave more like the attached reference: a center-highlight carousel where the active item is in the middle, the side items are smaller, and navigation moves smoothly in one direction.
+4. Do not copy the people/photo design from the reference. Use the same behavior and layout idea only.
+
+Goal:
+Create a proper center-focused client logo carousel:
+- Center logo/card is active and larger.
+- Side logos/cards are smaller.
+- Left arrow is on the left side.
+- Right arrow is on the right side.
+- Next always moves forward through the logo list.
+- Previous always moves backward through the logo list.
+- Autoplay should move forward only, not back and forth.
+- Carousel should loop smoothly.
+
+Keep:
+- “TRUSTED BY” label
+- Main headline
+- Colored client logos
+- Existing site fonts and overall design
+
+--------------------------------------------------
+1. FIX ARROW PLACEMENT
+--------------------------------------------------
+
+Place arrows on opposite sides of the carousel area.
+
+Previous arrow:
+- Left side of carousel
+- Vertically centered with the logo cards
+
+Next arrow:
+- Right side of carousel
+- Vertically centered with the logo cards
+
+Suggested carousel wrapper:
+className="relative mx-auto mt-16 w-full max-w-7xl px-12 sm:px-16"
+
+Previous button:
+className="
+  absolute left-0 top-1/2 z-20
+  -translate-y-1/2
+  flex h-11 w-11 items-center justify-center
+  rounded-full border border-slate-200
+  bg-white shadow-md
+  transition hover:scale-105 hover:shadow-lg
+"
+
+Next button:
+className="
+  absolute right-0 top-1/2 z-20
+  -translate-y-1/2
+  flex h-11 w-11 items-center justify-center
+  rounded-full border border-slate-200
+  bg-white shadow-md
+  transition hover:scale-105 hover:shadow-lg
+"
+
+Do not position both buttons using left values.
+Do not stack the arrows vertically on one side.
+
+--------------------------------------------------
+2. FIX CAROUSEL ORDER / LOOPING
+--------------------------------------------------
+
+The carousel should not bounce back and forth unless the user clicks previous.
+
+Autoplay should always call nextSlide only.
+
+Expected behavior:
+- Starting logos: A B C D E
+- Center active: C
+- Next: B C D E F, center active: D
+- Next: C D E F A, center active: E
+- Previous: B C D E F, center active: D
+
+Avoid logic that reverses direction automatically.
+Avoid logic that changes the array order incorrectly.
+Avoid using CSS animation-direction alternate.
+
+Use modulo logic:
+
+const nextSlide = () => {
+  setCurrentIndex((prev) => (prev + 1) % logos.length);
+};
+
+const prevSlide = () => {
+  setCurrentIndex((prev) => (prev - 1 + logos.length) % logos.length);
+};
+
+Autoplay:
+useEffect(() => {
+  if (isPaused) return;
+
+  const interval = setInterval(() => {
+    nextSlide();
+  }, 3500);
+
+  return () => clearInterval(interval);
+}, [isPaused, logos.length]);
+
+Make sure autoplay does not call prevSlide.
+
+--------------------------------------------------
+3. USE CENTER-FOCUSED DISPLAY LOGIC
+--------------------------------------------------
+
+Instead of sliding a track that can get confused, calculate the visible logos around the active center index.
+
+Use the active index as the CENTER item.
+
+Example:
+const getVisibleLogos = () => {
+  const visibleCount = getVisibleCount(); // 5 desktop, 3 tablet, 1 mobile
+  const half = Math.floor(visibleCount / 2);
+
+  return Array.from({ length: visibleCount }, (_, position) => {
+    const offset = position - half;
+    const logoIndex = (currentIndex + offset + logos.length) % logos.length;
+
+    return {
+      ...logos[logoIndex],
+      logoIndex,
+      offset,
+      position,
+      isActive: offset === 0,
+    };
+  });
+};
+
+This ensures:
+- The active logo is always centered.
+- Next moves the center to the next logo.
+- Previous moves the center to the previous logo.
+- The order stays correct and circular.
+
+--------------------------------------------------
+4. MAKE IT LOOK LIKE A COVERFLOW / CENTER-HIGHLIGHT CAROUSEL
+--------------------------------------------------
+
+The center logo should be largest.
+The nearest side logos should be medium.
+The far side logos should be smaller/faded.
+
+Desktop with 5 visible items:
+- Far left: smaller, opacity lower
+- Left: medium
+- Center: largest, highlighted
+- Right: medium
+- Far right: smaller, opacity lower
+
+Suggested scale based on offset:
+
+offset === 0:
+  scale-110 opacity-100 z-20
+
+Math.abs(offset) === 1:
+  scale-95 opacity-80 z-10
+
+Math.abs(offset) === 2:
+  scale-85 opacity-55 z-0
+
+Suggested card styles:
+Base:
+className="
+  flex h-32 items-center justify-center
+  rounded-2xl border bg-white
+  transition-all duration-500 ease-out
+"
+
+Active:
+className="
+  scale-110 border-purple-300/70 shadow-2xl opacity-100
+"
+
+Near side:
+className="
+  scale-95 border-slate-200/70 shadow-md opacity-80
+"
+
+Far side:
+className="
+  scale-85 border-slate-200/60 shadow-sm opacity-55
+"
+
+Logo image:
+Active:
+className="max-h-20 max-w-[190px] object-contain transition-all duration-500"
+
+Inactive:
+className="max-h-14 max-w-[150px] object-contain transition-all duration-500"
+
+--------------------------------------------------
+5. LAYOUT SIMILAR TO THE REFERENCE, BUT WITH LOGOS
+--------------------------------------------------
+
+The reference has:
+- One large center item
+- Smaller items on both sides
+- Balanced spacing
+- Side items visible but secondary
+
+Apply the same structure to logo cards.
+
+Suggested visible cards container:
+className="
+  mx-auto flex items-center justify-center
+  gap-4 sm:gap-6 lg:gap-8
+  overflow-visible
+"
+
+Each card wrapper:
+className="
+  flex shrink-0 basis-[180px] sm:basis-[210px] lg:basis-[240px]
+  items-center justify-center
+"
+
+Active card can be wider:
+- Active: w-[280px] h-36
+- Inactive: w-[220px] h-28
+
+Or use scale transform while keeping wrapper consistent.
+
+--------------------------------------------------
+6. RESPONSIVE VISIBLE COUNT
+--------------------------------------------------
+
+Use responsive visible counts:
+- Desktop/lg and up: 5 logos visible
+- Tablet/md: 3 logos visible
+- Mobile: 1 logo visible, or 3 if it still fits
+
+Suggested:
+const [visibleCount, setVisibleCount] = useState(5);
+
+useEffect(() => {
+  const updateVisibleCount = () => {
+    if (window.innerWidth < 640) setVisibleCount(1);
+    else if (window.innerWidth < 1024) setVisibleCount(3);
+    else setVisibleCount(5);
+  };
+
+  updateVisibleCount();
+  window.addEventListener("resize", updateVisibleCount);
+  return () => window.removeEventListener("resize", updateVisibleCount);
+}, []);
+
+Make sure visibleCount is always odd so there is a real center item.
+
+--------------------------------------------------
+7. AUTOPLAY + MANUAL NAVIGATION
+--------------------------------------------------
+
+Autoplay:
+- Move forward only.
+- Pause on hover.
+- Pause briefly after manual click.
+
+Manual buttons:
+- Previous button calls prevSlide.
+- Next button calls nextSlide.
+- Both should update the center active logo immediately.
+
+Suggested:
+const handleNext = () => {
+  setIsPaused(true);
+  nextSlide();
+  setTimeout(() => setIsPaused(false), 4000);
+};
+
+const handlePrev = () => {
+  setIsPaused(true);
+  prevSlide();
+  setTimeout(() => setIsPaused(false), 4000);
+};
+
+Make sure timers are cleaned up if needed.
+
+--------------------------------------------------
+8. DOTS / INDICATORS
+--------------------------------------------------
+
+If keeping pagination dots:
+- Dots should represent the current active center logo.
+- Clicking a dot should set that logo as the center active logo.
+- Do not let dots represent pages if the carousel is using centered active index logic.
+
+Dot active condition:
+index === currentIndex
+
+--------------------------------------------------
+9. REMOVE BROKEN SLIDING LOGIC
+--------------------------------------------------
+
+Please remove or replace any existing logic that:
+- Translates the whole track by page widths incorrectly
+- Uses page-based index instead of active-logo index
+- Causes the carousel to move next then back
+- Uses animation alternate/reverse
+- Places both arrows on the same side
+- Calculates active index as the first visible item instead of center item
+
+--------------------------------------------------
+EXPECTED RESULT
+--------------------------------------------------
+
+The “TRUSTED BY” carousel should:
+- Have one clearly highlighted center logo.
+- Show smaller logos on the left and right.
+- Have the left arrow on the left side and the right arrow on the right side.
+- Move forward smoothly on autoplay.
+- Move forward with Next and backward with Previous.
+- Loop through the logos in the correct order without jumping back and forth.
+- Feel visually similar to the attached reference layout, but using client logo cards instead of portrait/image panels.

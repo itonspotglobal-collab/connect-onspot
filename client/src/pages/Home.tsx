@@ -327,118 +327,131 @@ function LogoCarousel() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [visibleCount, setVisibleCount] = useState(5);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pauseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    const updateVisible = () => {
-      const w = window.innerWidth;
-      if (w < 640) setVisibleCount(1);
-      else if (w < 768) setVisibleCount(3);
-      else if (w < 1024) setVisibleCount(3);
+    const update = () => {
+      if (window.innerWidth < 640) setVisibleCount(1);
+      else if (window.innerWidth < 1024) setVisibleCount(3);
       else setVisibleCount(5);
     };
-    updateVisible();
-    window.addEventListener("resize", updateVisible);
-    return () => window.removeEventListener("resize", updateVisible);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
   }, []);
 
-  const maxIndex = Math.max(0, logos.length - visibleCount);
+  const nextSlide = useCallback(() => {
+    setCurrentIndex((i) => (i + 1) % logos.length);
+  }, [logos.length]);
 
-  const next = useCallback(() => {
-    setCurrentIndex((i) => (i >= maxIndex ? 0 : i + 1));
-  }, [maxIndex]);
+  const prevSlide = useCallback(() => {
+    setCurrentIndex((i) => (i - 1 + logos.length) % logos.length);
+  }, [logos.length]);
 
-  const prev = useCallback(() => {
-    setCurrentIndex((i) => (i <= 0 ? maxIndex : i - 1));
-  }, [maxIndex]);
+  const handleNext = () => {
+    nextSlide();
+    setIsPaused(true);
+    if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
+    pauseTimerRef.current = setTimeout(() => setIsPaused(false), 4000);
+  };
+
+  const handlePrev = () => {
+    prevSlide();
+    setIsPaused(true);
+    if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
+    pauseTimerRef.current = setTimeout(() => setIsPaused(false), 4000);
+  };
+
+  useEffect(() => {
+    return () => { if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current); };
+  }, []);
 
   useEffect(() => {
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (isPaused || prefersReduced) return;
-    intervalRef.current = setInterval(next, 3500);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [isPaused, next]);
+    const id = setInterval(nextSlide, 3500);
+    return () => clearInterval(id);
+  }, [isPaused, nextSlide]);
 
-  const cardWidthPct = 100 / visibleCount;
-  const translateX = -(currentIndex * cardWidthPct);
+  // Build the visible window centred on currentIndex
+  const half = Math.floor(visibleCount / 2);
+  const visibleItems = Array.from({ length: visibleCount }, (_, pos) => {
+    const offset = pos - half;
+    const logoIndex = (currentIndex + offset + logos.length) % logos.length;
+    return { ...logos[logoIndex], logoIndex, offset, isActive: offset === 0 };
+  });
 
-  // The card visually centered in the viewport
-  const centerOffset = Math.floor(visibleCount / 2);
-  const activeIndex = (currentIndex + centerOffset) % logos.length;
+  const cardStyle = (offset: number) => {
+    const abs = Math.abs(offset);
+    if (abs === 0) return "scale-110 opacity-100 shadow-2xl border-purple-300/70 bg-white z-20";
+    if (abs === 1) return "scale-95 opacity-80 shadow-md border-slate-200/70 bg-white/80 z-10";
+    return "scale-[0.85] opacity-55 shadow-sm border-slate-200/60 bg-white/60 z-0";
+  };
+
+  const imgStyle = (isActive: boolean) =>
+    isActive
+      ? "max-h-16 sm:max-h-20 max-w-[170px] sm:max-w-[190px]"
+      : "max-h-10 sm:max-h-14 max-w-[120px] sm:max-w-[150px]";
 
   return (
     <div className="relative mt-10 sm:mt-14 w-full">
-      {/* Prev button */}
+
+      {/* Left arrow */}
       <button
-        onClick={prev}
+        onClick={handlePrev}
         aria-label="Previous client logos"
-        className="absolute left-2 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-9 h-9 rounded-full bg-white/80 border border-slate-200/80 shadow-sm hover-elevate backdrop-blur-sm"
+        className="absolute left-0 top-1/2 -translate-y-1/2 z-30 flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white shadow-md transition hover:shadow-lg"
       >
-        <ChevronLeft className="w-4 h-4 text-slate-600" />
+        <ChevronLeft className="w-5 h-5 text-slate-600" />
       </button>
 
-      {/* Track wrapper — py-8 gives vertical room so scaled cards don't clip */}
+      {/* Visible cards */}
       <div
-        className="overflow-hidden mx-12 py-8"
+        className="overflow-visible mx-14 py-8 flex items-center justify-center gap-3 sm:gap-4 lg:gap-5"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
       >
-        <div
-          className="flex transition-transform duration-700 ease-out items-center"
-          style={{ transform: `translateX(${translateX}%)` }}
-        >
-          {logos.map((brand, i) => {
-            const isActive = i === activeIndex;
-            return (
-              <div
-                key={i}
-                className="shrink-0 px-2 sm:px-3 flex items-center justify-center"
-                style={{ width: `${cardWidthPct}%` }}
-                data-testid={`brand-logo-${i}`}
-              >
-                <div
-                  className={[
-                    "w-full flex items-center justify-center rounded-2xl border backdrop-blur-sm",
-                    "transition-all duration-500 ease-out",
-                    isActive
-                      ? "h-28 sm:h-32 scale-110 opacity-100 shadow-xl border-purple-300/60 bg-white z-10"
-                      : "h-24 sm:h-28 scale-90 opacity-60 shadow-sm border-slate-200/70 bg-white/60",
-                  ].join(" ")}
-                >
-                  <img
-                    src={brand.logo}
-                    alt={brand.name}
-                    loading="lazy"
-                    className={[
-                      "w-auto object-contain transition-all duration-500",
-                      isActive
-                        ? "max-h-16 sm:max-h-20 max-w-[170px] sm:max-w-[190px]"
-                        : "max-h-10 sm:max-h-14 max-w-[120px] sm:max-w-[150px]",
-                    ].join(" ")}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        {visibleItems.map(({ name, logo, logoIndex, offset, isActive }) => (
+          <div
+            key={`${logoIndex}-${offset}`}
+            className="shrink-0 flex items-center justify-center"
+            style={{ width: visibleCount === 1 ? "100%" : visibleCount === 3 ? "30%" : "18%" }}
+            data-testid={`brand-logo-${logoIndex}`}
+          >
+            <div
+              className={[
+                "w-full flex h-28 sm:h-32 items-center justify-center rounded-2xl border",
+                "transition-all duration-500 ease-out",
+                cardStyle(offset),
+              ].join(" ")}
+            >
+              <img
+                src={logo}
+                alt={name}
+                loading="lazy"
+                className={["w-auto object-contain transition-all duration-500", imgStyle(isActive)].join(" ")}
+              />
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Next button */}
+      {/* Right arrow */}
       <button
-        onClick={next}
+        onClick={handleNext}
         aria-label="Next client logos"
-        className="absolute right-2 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-9 h-9 rounded-full bg-white/80 border border-slate-200/80 shadow-sm hover-elevate backdrop-blur-sm"
+        className="absolute right-0 top-1/2 -translate-y-1/2 z-30 flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white shadow-md transition hover:shadow-lg"
       >
-        <ChevronRight className="w-4 h-4 text-slate-600" />
+        <ChevronRight className="w-5 h-5 text-slate-600" />
       </button>
 
-      {/* Pagination dots */}
-      <div className="flex justify-center gap-1.5 mt-2">
-        {Array.from({ length: maxIndex + 1 }).map((_, i) => (
+      {/* Dots */}
+      <div className="flex justify-center gap-1.5 mt-4">
+        {logos.map((_, i) => (
           <button
             key={i}
             onClick={() => setCurrentIndex(i)}
-            aria-label={`Go to slide ${i + 1}`}
+            aria-label={`Go to logo ${i + 1}`}
             className={`h-1.5 rounded-full transition-all duration-300 ${
               i === currentIndex ? "w-4 bg-violet-600" : "w-1.5 bg-slate-300"
             }`}
