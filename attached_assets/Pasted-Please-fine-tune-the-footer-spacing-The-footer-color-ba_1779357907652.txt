@@ -1,0 +1,150 @@
+Please fine-tune the footer spacing. The footer color/background is now close, but the layout is still too wide on the brand side, causing the Connect column and address text to look squeezed.
+
+Current issue:
+- The OnSpot brand section occupies too much width.
+- The Connect section does not have enough space.
+- The email/address wraps too aggressively.
+- The social icons look good now, but the brand block can be slightly narrower.
+- Keep the footer dark color as-is unless matching the navbar exact color is still needed.
+
+Goal:
+Rebalance the footer so the brand block still has enough room, but the Connect column gets more width and looks readable.
+
+Important:
+- Do not redesign the footer.
+- Do not change the content.
+- Keep the dark navbar-style footer background.
+- Keep the white footer logo.
+- Only adjust layout widths, column spacing, and wrapping.
+
+Recommended fix:
+
+1. Reduce the brand column width slightly
+Current brand area is too large. Reduce it from around 420px to around 320–350px.
+
+Use:
+
+lg:grid-cols-[320px_1fr]
+xl:grid-cols-[340px_1fr]
+2xl:grid-cols-[360px_1fr]
+
+instead of:
+
+lg:grid-cols-[340px_1fr]
+xl:grid-cols-[380px_1fr]
+2xl:grid-cols-[420px_1fr]
+
+2. Give the links grid more balanced column widths
+Inside the footer links grid, do not use equal columns if Connect needs more space.
+
+Use a custom grid on desktop:
+
+className="
+  grid grid-cols-1
+  sm:grid-cols-2
+  lg:grid-cols-[0.9fr_0.95fr_1.05fr_1.35fr]
+  gap-y-10
+  gap-x-8
+  xl:gap-x-10
+"
+
+This gives Connect more room without making the whole footer wider.
+
+3. Reduce excessive gap between brand and links
+If the gap is too large, reduce it slightly:
+
+Use:
+lg:gap-x-10
+xl:gap-x-14
+
+instead of:
+lg:gap-x-14
+xl:gap-x-20
+
+4. Make Connect column text wrap naturally
+The email and addresses should have enough width and should not break awkwardly.
+
+For the Connect column, use:
+
+className="min-w-0"
+
+For each contact row:
+
+className="flex items-start gap-4 min-w-0"
+
+For contact text:
+
+className="min-w-0 break-words leading-relaxed text-white/70"
+
+For email specifically, prevent ugly forced breaks if possible:
+
+className="break-normal whitespace-normal"
+
+If email still breaks badly, allow it only when necessary:
+
+className="break-words"
+
+5. Keep brand section readable but not oversized
+Brand block:
+
+className="
+  flex flex-col
+  items-start
+  text-left
+  w-full
+  max-w-[340px]
+"
+
+Description:
+
+className="mt-6 max-w-[320px] text-white/70"
+
+Social icons:
+
+className="
+  mt-8
+  flex
+  flex-wrap
+  items-center
+  justify-start
+  gap-3
+  overflow-visible
+"
+
+Keep social icon buttons as:
+
+className="
+  flex h-11 w-11 shrink-0
+  items-center justify-center
+  rounded-full
+  border border-white/15
+  bg-white/10
+  text-white/75
+  transition
+  hover:bg-white/15
+  hover:text-white
+"
+
+6. Bottom row should still align
+The bottom copyright row should remain inside the same footer container and align with the main footer content.
+
+7. Responsive behavior
+Desktop:
+- Brand block is around 320–360px.
+- Links area gets more room.
+- Connect column is wider than the other link columns.
+
+Laptop:
+- Connect should not look squeezed.
+- Address text should wrap cleanly.
+
+Tablet:
+- Footer can become two columns.
+- Connect should not be forced into a narrow column.
+
+Mobile:
+- Stack footer sections.
+- No horizontal scrolling.
+
+Expected result:
+The OnSpot brand section still looks spacious, but it no longer dominates the footer width. Navigation, Company, and New Verticals remain clean, and the Connect section has enough room so the email and addresses are readable and not squished.

@@ -1706,9 +1706,9 @@ export default function Home() {
 
         <div className="container mx-auto px-4 sm:px-6 py-10 sm:py-12 lg:py-14">
           {/* Footer Grid - Brand + Links layout */}
-          <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-y-10 lg:gap-x-14 xl:gap-x-20 items-start">
+          <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-y-10 lg:gap-x-10 xl:gap-x-14 items-start">
             {/* Brand Section */}
-            <div className="w-full lg:w-[360px] xl:w-[400px] shrink-0 pb-8 lg:pb-0 border-b border-white/10 lg:border-b-0">
+            <div className="w-full lg:w-[320px] xl:w-[340px] shrink-0 pb-8 lg:pb-0 border-b border-white/10 lg:border-b-0">
               <div className="space-y-6 sm:space-y-8 relative flex flex-col items-center md:items-start transition-all duration-300">
                 <div className="relative inline-block">
                   <img
@@ -1796,7 +1796,7 @@ export default function Home() {
             </div>
 
             {/* Link Columns */}
-            <div className="flex-1 grid grid-cols-2 lg:grid-cols-4 gap-x-8 xl:gap-x-12 gap-y-10">
+            <div className="flex-1 grid grid-cols-2 lg:grid-cols-[0.9fr_0.95fr_1.05fr_1.35fr] gap-x-8 xl:gap-x-10 gap-y-10">
             {/* Navigation Section */}
             <div
               className="md:space-y-6 md:border-b-0 transition-all duration-300"
