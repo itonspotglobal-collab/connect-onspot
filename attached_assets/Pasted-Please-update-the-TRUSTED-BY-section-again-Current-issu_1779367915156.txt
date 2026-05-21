@@ -1,0 +1,196 @@
+Please update the “TRUSTED BY” section again.
+
+Current issue:
+The client logos are currently in a carousel with animation. We no longer want a carousel or any fancy animation.
+
+Goal:
+Remove the carousel behavior completely and display the client logos as a simple, stable, straight horizontal row, similar to the reference image.
+
+Keep:
+- The “TRUSTED BY” label
+- The headline: “Trusted by global brands, hundreds of entrepreneurs, and thousands of professionals worldwide.”
+- The existing client logos
+- Colored logos
+
+Remove:
+- Carousel animation
+- Autoplay
+- Previous/next arrows
+- Pagination dots
+- Center zoom/highlight effect
+- Coverflow/3D effects
+- Scaling transitions
+- Any back-and-forth logo movement
+
+--------------------------------------------------
+Required Layout
+--------------------------------------------------
+
+Display the logos in one clean horizontal line on desktop.
+
+Example structure:
+
+<section>
+  <div className="container">
+    <p>TRUSTED BY</p>
+    <h2>Trusted by global brands...</h2>
+
+    <div className="trusted-logo-row">
+      logo 1
+      logo 2
+      logo 3
+      logo 4
+      logo 5
+      logo 6
+    </div>
+  </div>
+</section>
+
+Suggested Tailwind classes:
+
+Logo row:
+className="
+  mt-16
+  flex
+  flex-wrap
+  items-center
+  justify-center
+  gap-x-14
+  gap-y-10
+"
+
+Logo image:
+className="
+  max-h-14
+  max-w-[180px]
+  object-contain
+  opacity-100
+"
+
+--------------------------------------------------
+Desktop Behavior
+--------------------------------------------------
+
+On desktop:
+- Logos should appear in one straight horizontal row.
+- Logos should be evenly spaced.
+- Logos should not be inside carousel cards.
+- Logos should not move.
+- Logos should not be gray/desaturated.
+
+If needed, use:
+
+className="
+  mt-16
+  grid
+  grid-cols-2
+  sm:grid-cols-3
+  lg:grid-cols-6
+  items-center
+  gap-10
+"
+
+Each logo wrapper:
+className="
+  flex
+  items-center
+  justify-center
+"
+
+--------------------------------------------------
+Logo Styling
+--------------------------------------------------
+
+Use colored versions of the logos.
+
+Remove these styles if they exist:
+- grayscale
+- opacity-40
+- opacity-50
+- scale animations
+- active/inactive styles
+- transition-transform
+- carousel transform styles
+- absolute positioning
+- z-index layering
+- rotateY
+- perspective
+
+Logo images should remain natural and readable:
+
+className="
+  h-auto
+  max-h-14
+  max-w-[180px]
+  object-contain
+"
+
+For very wide logos, allow:
+max-w-[220px]
+
+For square logos, use:
+max-h-16
+
+Do not force all logos into the same fixed width and height if it distorts them.
+
+--------------------------------------------------
+Responsive Behavior
+--------------------------------------------------
+
+Desktop:
+- Straight horizontal row.
+
+Laptop:
+- Straight row if it fits.
+- If not, wrap naturally into two balanced rows.
+
+Tablet:
+- 3 logos per row.
+
+Mobile:
+- 2 logos per row or 1 logo per row if needed.
+
+No horizontal scrolling.
+
+Suggested responsive grid:
+
+className="
+  mt-16
+  grid
+  grid-cols-2
+  sm:grid-cols-3
+  lg:grid-cols-6
+  items-center
+  justify-items-center
+  gap-x-12
+  gap-y-10
+"
+
+--------------------------------------------------
+Section Spacing
+--------------------------------------------------
+
+Keep the section clean and minimal like the reference.
+
+- Maintain good spacing between the headline and logos.
+- Logos should sit on a clean light background.
+- Do not add logo cards unless the existing design requires it.
+- Prefer plain logos directly on the background, like the reference image.
+
+--------------------------------------------------
+Code Cleanup
+--------------------------------------------------
+
+Please remove unused carousel code:
+- currentIndex state
+- visibleCount state
+- nextSlide / prevSlide functions
+- autoplay useEffect
+- pause-on-hover logic
+- arrow buttons
+- pagination dots
+- coverflow position calculations
+- transform style helpers
+
+Expected result:
+The “TRUSTED BY” section should show a simple, static, straight line of colored client logos with no animation, no carousel controls, no center zoom, and no motion.

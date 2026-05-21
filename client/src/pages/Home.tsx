@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -31,8 +31,6 @@ import {
   Twitter,
   Instagram,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   Settings,
   Layers,
   User,
@@ -322,174 +320,20 @@ const talentProfiles = [
   },
 ];
 
-function LogoCarousel() {
-  const logos = trustedBrands;
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(5);
-  const [nearPx, setNearPx] = useState(240);
-  const [farPx, setFarPx]   = useState(440);
-  const pauseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    const update = () => {
-      const w = window.innerWidth;
-      if (w < 640) {
-        setVisibleCount(1);
-        setNearPx(0);
-        setFarPx(0);
-      } else if (w < 1024) {
-        setVisibleCount(3);
-        setNearPx(180);
-        setFarPx(320);
-      } else {
-        setVisibleCount(5);
-        setNearPx(w < 1280 ? 220 : 260);
-        setFarPx(w < 1280 ? 400 : 470);
-      }
-    };
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, []);
-
-  const nextSlide = useCallback(() => {
-    setCurrentIndex((i) => (i + 1) % logos.length);
-  }, [logos.length]);
-
-  const prevSlide = useCallback(() => {
-    setCurrentIndex((i) => (i - 1 + logos.length) % logos.length);
-  }, [logos.length]);
-
-  const handleNext = () => {
-    nextSlide();
-    setIsPaused(true);
-    if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
-    pauseTimerRef.current = setTimeout(() => setIsPaused(false), 4000);
-  };
-
-  const handlePrev = () => {
-    prevSlide();
-    setIsPaused(true);
-    if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
-    pauseTimerRef.current = setTimeout(() => setIsPaused(false), 4000);
-  };
-
-  useEffect(() => {
-    return () => { if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current); };
-  }, []);
-
-  useEffect(() => {
-    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (isPaused || prefersReduced) return;
-    const id = setInterval(nextSlide, 3500);
-    return () => clearInterval(id);
-  }, [isPaused, nextSlide]);
-
-  const offsets = visibleCount === 5 ? [-2, -1, 0, 1, 2]
-                : visibleCount === 3 ? [-1, 0, 1]
-                : [0];
-
-  const visibleLogos = offsets.map((offset) => {
-    const idx = (currentIndex + offset + logos.length) % logos.length;
-    return { ...logos[idx], offset, idx };
-  });
-
-  const getCardTransform = (offset: number): React.CSSProperties => {
-    const abs = Math.abs(offset);
-    const sign = offset < 0 ? -1 : 1;
-    const tx   = abs === 0 ? 0 : abs === 1 ? sign * nearPx : sign * farPx;
-    const scale = abs === 0 ? 1.15 : abs === 1 ? 0.88 : 0.72;
-    const ry    = abs === 0 ? 0 : abs === 1 ? sign * -10 : sign * -16;
-    const op    = abs === 0 ? 1 : abs === 1 ? 0.78 : 0.38;
-    const zi    = abs === 0 ? 50 : abs === 1 ? 30 : 10;
-    return {
-      transform: `translate(-50%, -50%) translateX(${tx}px) scale(${scale}) rotateY(${ry}deg)`,
-      opacity: op,
-      zIndex: zi,
-    };
-  };
-
-  const cardClass = (abs: number) =>
-    abs === 0
-      ? "h-40 w-[340px] border-purple-300/70 shadow-2xl bg-white"
-      : abs === 1
-      ? "h-32 w-[280px] border-slate-200/70 shadow-md bg-white/90"
-      : "h-28 w-[240px] border-slate-200/60 shadow-sm bg-white/80";
-
-  const imgClass = (abs: number) =>
-    abs === 0
-      ? "max-h-20 max-w-[220px]"
-      : abs === 1
-      ? "max-h-14 max-w-[160px]"
-      : "max-h-12 max-w-[130px]";
-
+function TrustedLogos() {
   return (
-    <div className="mt-10 sm:mt-14 w-full">
-      {/* Stage */}
-      <div className="relative mx-auto h-[240px] sm:h-[260px] w-full max-w-6xl overflow-visible"
-           style={{ perspective: "1200px" }}
-           onMouseEnter={() => setIsPaused(true)}
-           onMouseLeave={() => setIsPaused(false)}
-      >
-        {/* Left arrow */}
-        <button
-          onClick={handlePrev}
-          aria-label="Previous client logos"
-          className="absolute left-4 top-1/2 z-[60] -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full border border-slate-200 bg-white shadow-lg transition hover:shadow-xl"
-        >
-          <ChevronLeft className="w-5 h-5 text-slate-600" />
-        </button>
-
-        {/* Cards */}
-        {visibleLogos.map(({ name, logo, offset, idx }) => {
-          const abs = Math.abs(offset);
-          return (
-            <div
-              key={name}
-              className={[
-                "absolute left-1/2 top-1/2",
-                "flex items-center justify-center rounded-3xl border",
-                cardClass(abs),
-              ].join(" ")}
-              style={{
-                ...getCardTransform(offset),
-                transformStyle: "preserve-3d",
-                transition: "transform 700ms cubic-bezier(0.22,1,0.36,1), opacity 700ms cubic-bezier(0.22,1,0.36,1)",
-              }}
-              data-testid={`brand-logo-${idx}`}
-            >
-              <img
-                src={logo}
-                alt={name}
-                loading="lazy"
-                className={["w-auto object-contain transition-all duration-700", imgClass(abs)].join(" ")}
-              />
-            </div>
-          );
-        })}
-
-        {/* Right arrow */}
-        <button
-          onClick={handleNext}
-          aria-label="Next client logos"
-          className="absolute right-4 top-1/2 z-[60] -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full border border-slate-200 bg-white shadow-lg transition hover:shadow-xl"
-        >
-          <ChevronRight className="w-5 h-5 text-slate-600" />
-        </button>
-      </div>
-
-      {/* Dots */}
-      <div className="flex justify-center gap-1.5 mt-6">
-        {logos.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => setCurrentIndex(i)}
-            aria-label={`Go to logo ${i + 1}`}
-            className={`h-1.5 rounded-full transition-all duration-300 ${
-              i === currentIndex ? "w-4 bg-violet-600" : "w-1.5 bg-slate-300"
-            }`}
-          />
+    <div className="mt-12 sm:mt-16 w-full">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 items-center justify-items-center gap-x-10 gap-y-10">
+        {trustedBrands.map(({ name, logo }) => (
+          <div key={name} className="flex items-center justify-center w-full">
+            <img
+              src={logo}
+              alt={name}
+              loading="lazy"
+              className="h-auto max-h-14 max-w-[180px] w-auto object-contain"
+              data-testid={`brand-logo-${name.toLowerCase().replace(/\s+/g, "-")}`}
+            />
+          </div>
         ))}
       </div>
     </div>
@@ -660,8 +504,8 @@ export default function Home() {
               </h2>
             </div>
 
-            {/* Logo Carousel */}
-            <LogoCarousel />
+            {/* Trusted logos */}
+            <TrustedLogos />
           </div>
         </div>
       </div>
