@@ -1,0 +1,54 @@
+Fix the footer alignment in `client/src/components/Footer.tsx` to make all columns visually balanced and evenly spaced. Here are the specific issues to resolve:
+
+---
+
+**Current file:** `client/src/components/Footer.tsx`
+
+**Problem 1 — Inconsistent list-item spacing**
+Some `<li>` elements have `inline-block py-1` and some don't. This causes uneven vertical rhythm within columns. Remove the `py-1` / `inline-block` from individual `<li>` links and instead apply uniform spacing to the parent `<ul>`. Change all `<ul>` spacing from mixed `space-y-2.5 sm:space-y-2` to a single consistent value like `space-y-2`.
+
+**Problem 2 — Magic top margin hack**
+All five `<ul>` column lists have `mt-0 md:mt-[0.7rem]` which is a workaround for misaligned column headers. Remove this entirely and instead ensure all column `<h3>` headers have a consistent `mb-3` (margin-bottom) so the gap between header and list is uniform across all columns.
+
+**Problem 3 — Company info sits above the grid instead of inside it**
+Currently the layout is:
+```
+[Logo + Description + Socials]   ← above
+[Nav] [Solutions] [Company] [Contact] [New Verticals]  ← grid below
+```
+
+Restructure this so the company info is the **first column** of a single 6-column grid (or keep it as a wider `col-span-2` first column beside 4 equal columns). This makes everything sit at the same vertical level and the top of every column aligns.
+
+Suggested grid structure:
+```tsx
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-8 items-start">
+  {/* Company info — takes 2 cols on large screens */}
+  <div className="lg:col-span-2 space-y-4">
+    {/* logo, description, social buttons */}
+  </div>
+
+  {/* Navigation — 1 col */}
+  <div className="space-y-3"> ... </div>
+
+  {/* Company — 1 col */}
+  <div className="space-y-3"> ... </div>
+
+  {/* New Verticals — 1 col */}
+  <div className="space-y-3"> ... </div>
+
+  {/* Contact Us — 1 col */}
+  <div className="space-y-3"> ... </div>
+</div>
+```
+
+**Problem 4 — Contact column address text is too long**
+The PH address is one long unbroken string that forces the Contact column to be very wide. Add `break-words` or `max-w-[16rem]` to the address `<span>` so it wraps neatly within its column.
+
+**Problem 5 — Column header bottom borders don't align**
+Each `<h3>` uses `border-b border-white/20 pb-2`. Once the layout is in a single grid with `items-start`, the headers will naturally align because they're all in the first row of their respective columns.
+
+---
+
+**Expected result:** All columns sit in one unified horizontal row. Column headers are at the same height. List items have identical spacing throughout. The Contact column wraps addresses neatly. The overall footer looks balanced and breathes evenly.
+
+Do not change any colors, gradients, hover effects, animations, or links — only fix layout and spacing.

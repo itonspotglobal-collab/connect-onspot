@@ -32,17 +32,17 @@ export function Footer() {
       </div>
 
       <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-10 relative z-10">
-        {/* Company Info and Navigation */}
-        <div className="space-y-6 sm:space-y-8">
-          {/* Company Info */}
-          <div className="space-y-4 sm:space-y-5">
+        {/* Single unified grid: brand col-span-2, then 5 nav columns */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-8 items-start">
+
+          {/* Brand — spans 2 cols on large screens */}
+          <div className="lg:col-span-2 space-y-4">
             <div className="relative">
               <img
                 src={onspotLogo}
                 alt="OnSpot"
                 className="h-8 sm:h-10 w-auto brightness-0 saturate-100 invert drop-shadow-lg relative z-10"
               />
-              {/* Logo glow effect */}
               <div className="absolute inset-0 bg-white/20 blur-lg rounded-lg opacity-30"></div>
             </div>
             <p className="text-white/95 max-w-lg leading-relaxed text-sm sm:text-base font-light">
@@ -59,12 +59,7 @@ export function Footer() {
                 asChild
                 data-testid="social-facebook"
               >
-                <a
-                  href="https://facebook.com/onspot"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Follow us on Facebook"
-                >
+                <a href="https://facebook.com/onspot" target="_blank" rel="noopener noreferrer" aria-label="Follow us on Facebook">
                   <Facebook className="h-5 w-5 sm:h-4 sm:w-4" />
                 </a>
               </Button>
@@ -75,12 +70,7 @@ export function Footer() {
                 asChild
                 data-testid="social-twitter"
               >
-                <a
-                  href="https://twitter.com/onspot"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Follow us on Twitter"
-                >
+                <a href="https://twitter.com/onspot" target="_blank" rel="noopener noreferrer" aria-label="Follow us on Twitter">
                   <Twitter className="h-5 w-5 sm:h-4 sm:w-4" />
                 </a>
               </Button>
@@ -91,12 +81,7 @@ export function Footer() {
                 asChild
                 data-testid="social-linkedin"
               >
-                <a
-                  href="https://linkedin.com/company/onspot"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Follow us on LinkedIn"
-                >
+                <a href="https://linkedin.com/company/onspot" target="_blank" rel="noopener noreferrer" aria-label="Follow us on LinkedIn">
                   <Linkedin className="h-5 w-5 sm:h-4 sm:w-4" />
                 </a>
               </Button>
@@ -107,282 +92,111 @@ export function Footer() {
                 asChild
                 data-testid="social-youtube"
               >
-                <a
-                  href="https://youtube.com/onspot"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Subscribe to our YouTube channel"
-                >
+                <a href="https://youtube.com/onspot" target="_blank" rel="noopener noreferrer" aria-label="Subscribe to our YouTube channel">
                   <Youtube className="h-5 w-5 sm:h-4 sm:w-4" />
                 </a>
               </Button>
             </div>
           </div>
 
-          {/* Compact Navigation Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 sm:gap-8">
-            {/* Navigation */}
-            <div className="space-y-3">
-              <h3 className="font-semibold text-white text-base sm:text-lg tracking-wide border-b border-white/20 pb-2">
-                Navigation
-              </h3>
-              <ul className="space-y-2.5 sm:space-y-2 text-white/85 text-sm sm:text-base mt-0 md:mt-[0.7rem]">
-                <li>
-                  <Link
-                    href="/legal-ops"
-                    className="hover:text-white transition-all duration-200 hover:translate-x-1 inline-block py-1"
-                    data-testid="footer-nav-legal-ops"
-                  >
-                    LegalOps NY
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/powerapp"
-                    className="hover:text-white transition-all duration-200 hover:translate-x-1"
-                    data-testid="footer-nav-powerapp"
-                  >
-                    Powerapp
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/ai-assistant"
-                    className="hover:text-white transition-all duration-200 hover:translate-x-1"
-                    data-testid="footer-nav-ai-assistant"
-                  >
-                    AI Assistant
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/operations-playbook"
-                    className="hover:text-white transition-all duration-200 hover:translate-x-1 inline-block py-1"
-                    data-testid="footer-nav-operations-playbook"
-                  >
-                    Delivery Playbook
-                  </Link>
-                </li>
-              </ul>
-            </div>
+          {/* Navigation */}
+          <div className="space-y-3">
+            <h3 className="font-semibold text-white text-base sm:text-lg tracking-wide border-b border-white/20 pb-2 mb-3">
+              Navigation
+            </h3>
+            <ul className="space-y-2 text-white/85 text-sm sm:text-base">
+              <li><Link href="/legal-ops" className="hover:text-white transition-all duration-200 hover:translate-x-1 block" data-testid="footer-nav-legal-ops">LegalOps NY</Link></li>
+              <li><Link href="/powerapp" className="hover:text-white transition-all duration-200 hover:translate-x-1 block" data-testid="footer-nav-powerapp">Powerapp</Link></li>
+              <li><Link href="/ai-assistant" className="hover:text-white transition-all duration-200 hover:translate-x-1 block" data-testid="footer-nav-ai-assistant">AI Assistant</Link></li>
+              <li><Link href="/operations-playbook" className="hover:text-white transition-all duration-200 hover:translate-x-1 block" data-testid="footer-nav-operations-playbook">Delivery Playbook</Link></li>
+            </ul>
+          </div>
 
-            {/* Solutions */}
-            <div className="space-y-3">
-              <h3 className="font-semibold text-white text-base sm:text-lg tracking-wide border-b border-white/20 pb-2">
-                Solutions
-              </h3>
-              <ul className="space-y-2.5 sm:space-y-2 text-white/85 text-sm sm:text-base mt-0 md:mt-[0.7rem]">
-                <li>
-                  <Link
-                    href="/hire-talent"
-                    className="hover:text-white transition-all duration-200 hover:translate-x-1 inline-block py-1"
-                    data-testid="footer-hire-talent"
-                  >
-                    Hire Talent
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/get-hired"
-                    className="hover:text-white transition-all duration-200 hover:translate-x-1"
-                    data-testid="footer-careers"
-                  >
-                    Careers
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/powerapp"
-                    className="hover:text-white transition-all duration-200 hover:translate-x-1"
-                    data-testid="footer-powerapp"
-                  >
-                    Powerapp
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/ai-assistant"
-                    className="hover:text-white transition-all duration-200 hover:translate-x-1"
-                    data-testid="footer-ai-assistant"
-                  >
-                    AI Assistant
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/enterprise"
-                    className="hover:text-white transition-all duration-200 hover:translate-x-1"
-                    data-testid="footer-enterprise"
-                  >
-                    Enterprise Solutions
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/legal-ops"
-                    className="hover:text-white transition-all duration-200 hover:translate-x-1"
-                    data-testid="footer-legal-ops"
-                  >
-                    LegalOps NY
-                  </Link>
-                </li>
-              </ul>
-            </div>
+          {/* Solutions */}
+          <div className="space-y-3">
+            <h3 className="font-semibold text-white text-base sm:text-lg tracking-wide border-b border-white/20 pb-2 mb-3">
+              Solutions
+            </h3>
+            <ul className="space-y-2 text-white/85 text-sm sm:text-base">
+              <li><Link href="/hire-talent" className="hover:text-white transition-all duration-200 hover:translate-x-1 block" data-testid="footer-hire-talent">Hire Talent</Link></li>
+              <li><Link href="/get-hired" className="hover:text-white transition-all duration-200 hover:translate-x-1 block" data-testid="footer-careers">Careers</Link></li>
+              <li><Link href="/powerapp" className="hover:text-white transition-all duration-200 hover:translate-x-1 block" data-testid="footer-powerapp">Powerapp</Link></li>
+              <li><Link href="/ai-assistant" className="hover:text-white transition-all duration-200 hover:translate-x-1 block" data-testid="footer-ai-assistant">AI Assistant</Link></li>
+              <li><Link href="/enterprise" className="hover:text-white transition-all duration-200 hover:translate-x-1 block" data-testid="footer-enterprise">Enterprise Solutions</Link></li>
+              <li><Link href="/legal-ops" className="hover:text-white transition-all duration-200 hover:translate-x-1 block" data-testid="footer-legal-ops">LegalOps NY</Link></li>
+            </ul>
+          </div>
 
-            {/* Company Section */}
-            <div className="space-y-3">
-              <h3 className="font-semibold text-white text-base sm:text-lg tracking-wide border-b border-white/20 pb-2">
-                Company
-              </h3>
-              <ul className="space-y-2.5 sm:space-y-2 text-white/85 text-sm sm:text-base mt-0 md:mt-[0.7rem]">
-                <li>
-                  <Link
-                    href="/why-onspot"
-                    className="hover:text-white transition-all duration-200 hover:translate-x-1"
-                    data-testid="footer-why-onspot"
-                  >
-                    Why OnSpot
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/amazing"
-                    className="hover:text-white transition-all duration-200 hover:translate-x-1"
-                    data-testid="footer-amazing"
-                  >
-                    Amazing Stories
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/insights"
-                    className="hover:text-white transition-all duration-200 hover:translate-x-1"
-                    data-testid="footer-insights"
-                  >
-                    Insights
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/affiliate-marketing"
-                    className="hover:text-white transition-all duration-200 hover:translate-x-1"
-                    data-testid="footer-affiliate-marketing"
-                  >
-                    Affiliate Marketing
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/bpo-partner"
-                    className="hover:text-white transition-all duration-200 hover:translate-x-1"
-                    data-testid="footer-bpo-partner"
-                  >
-                    BPO Partner
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/investors"
-                    className="hover:text-white transition-all duration-200 hover:translate-x-1"
-                    data-testid="footer-investors"
-                  >
-                    Investors Corner
-                  </Link>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="hover:text-white transition-all duration-200 hover:translate-x-1"
-                    data-testid="footer-about"
-                  >
-                    About Us
-                  </a>
-                </li>
-                <li>
-                  <Link
-                    href="/operations-playbook"
-                    className="hover:text-white transition-all duration-200 hover:translate-x-1 inline-block py-1"
-                    data-testid="footer-operations-playbook"
-                  >
-                    Delivery Playbook
-                  </Link>
-                </li>
-              </ul>
-            </div>
+          {/* Company */}
+          <div className="space-y-3">
+            <h3 className="font-semibold text-white text-base sm:text-lg tracking-wide border-b border-white/20 pb-2 mb-3">
+              Company
+            </h3>
+            <ul className="space-y-2 text-white/85 text-sm sm:text-base">
+              <li><Link href="/why-onspot" className="hover:text-white transition-all duration-200 hover:translate-x-1 block" data-testid="footer-why-onspot">Why OnSpot</Link></li>
+              <li><Link href="/amazing" className="hover:text-white transition-all duration-200 hover:translate-x-1 block" data-testid="footer-amazing">Amazing Stories</Link></li>
+              <li><Link href="/insights" className="hover:text-white transition-all duration-200 hover:translate-x-1 block" data-testid="footer-insights">Insights</Link></li>
+              <li><Link href="/affiliate-marketing" className="hover:text-white transition-all duration-200 hover:translate-x-1 block" data-testid="footer-affiliate-marketing">Affiliate Marketing</Link></li>
+              <li><Link href="/bpo-partner" className="hover:text-white transition-all duration-200 hover:translate-x-1 block" data-testid="footer-bpo-partner">BPO Partner</Link></li>
+              <li><Link href="/investors" className="hover:text-white transition-all duration-200 hover:translate-x-1 block" data-testid="footer-investors">Investors Corner</Link></li>
+              <li><a href="#" className="hover:text-white transition-all duration-200 hover:translate-x-1 block" data-testid="footer-about">About Us</a></li>
+              <li><Link href="/operations-playbook" className="hover:text-white transition-all duration-200 hover:translate-x-1 block" data-testid="footer-operations-playbook">Delivery Playbook</Link></li>
+            </ul>
+          </div>
 
-            {/* Contact */}
-            <div className="space-y-3">
-              <h3 className="font-semibold text-white text-base sm:text-lg tracking-wide border-b border-white/20 pb-2">
-                Contact Us
-              </h3>
-              <ul className="space-y-3 sm:space-y-2.5 text-white/85 text-sm sm:text-base mt-0 md:mt-[0.7rem]">
-                <li className="flex items-center space-x-3 hover:text-white transition-colors duration-200">
-                  <Mail className="h-4 w-4 text-white/70" />
-                  <span>hello@onspot.com</span>
-                </li>
-                <li className="flex items-center space-x-3 hover:text-white transition-colors duration-200">
-                  <Phone className="h-4 w-4 text-white/70" />
-                  <span>1-718 540 5053</span>
-                </li>
-                <li className="flex items-start space-x-3 hover:text-white transition-colors duration-200">
-                  <MapPin className="h-4 w-4 mt-0.5 text-white/70" />
-                  <span>
-                    US - 2248 Broadway, New York, 10024
-                    <br />
-                    PH - Unit No. 1702, 17th Floor High Street South Corporate Plaza Tower 2, 11th Ave Cor 26th St, Bonifacio Global City, Taguig
-                  </span>
-                </li>
-              </ul>
+          {/* New Verticals */}
+          <div className="space-y-3">
+            <h3 className="font-semibold text-white text-base sm:text-lg tracking-wide border-b border-white/20 pb-2 mb-3">
+              New Verticals
+            </h3>
+            <ul className="space-y-2 text-white/85 text-sm sm:text-base">
+              <li><a href="#" className="hover:text-white transition-all duration-200 hover:translate-x-1 block">AI Human-in-the-Loop</a></li>
+              <li><a href="#" className="hover:text-white transition-all duration-200 hover:translate-x-1 block">Founder Ops</a></li>
+              <li><a href="#" className="hover:text-white transition-all duration-200 hover:translate-x-1 block">Healthcare Micro-Admin</a></li>
+              <li><a href="#" className="hover:text-white transition-all duration-200 hover:translate-x-1 block">E-commerce Ops</a></li>
+              <li><a href="#" className="hover:text-white font-medium transition-all duration-200 hover:translate-x-1 block">View all 10 →</a></li>
+            </ul>
+          </div>
 
-              <div className="mt-4 sm:mt-5">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="bg-white/10 text-white border-white/30 hover-elevate backdrop-blur-sm w-full min-h-[44px] text-sm sm:text-base"
-                  asChild
-                  data-testid="footer-contact-cta"
-                >
-                  <Link href="/lead-intake">
-                    <Mail className="h-4 w-4 mr-2" />
-                    Contact Us
-                  </Link>
-                </Button>
-              </div>
-            </div>
-            {/* New Verticals */}
-            <div className="space-y-3">
-              <h3 className="font-semibold text-white text-base sm:text-lg tracking-wide border-b border-white/20 pb-2">
-                New Verticals
-              </h3>
-              <ul className="space-y-2.5 sm:space-y-2 text-white/85 text-sm sm:text-base mt-0 md:mt-[0.7rem]">
-                <li>
-                  <a href="#" className="hover:text-white transition-all duration-200 hover:translate-x-1 inline-block">
-                    AI Human-in-the-Loop
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-all duration-200 hover:translate-x-1 inline-block">
-                    Founder Ops
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-all duration-200 hover:translate-x-1 inline-block">
-                    Healthcare Micro-Admin
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-all duration-200 hover:translate-x-1 inline-block">
-                    E-commerce Ops
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white font-medium transition-all duration-200 hover:translate-x-1 inline-block">
-                    View all 10 →
-                  </a>
-                </li>
-              </ul>
+          {/* Contact Us */}
+          <div className="space-y-3">
+            <h3 className="font-semibold text-white text-base sm:text-lg tracking-wide border-b border-white/20 pb-2 mb-3">
+              Contact Us
+            </h3>
+            <ul className="space-y-2 text-white/85 text-sm sm:text-base">
+              <li className="flex items-center gap-3 hover:text-white transition-colors duration-200">
+                <Mail className="h-4 w-4 shrink-0 text-white/70" />
+                <span>hello@onspot.com</span>
+              </li>
+              <li className="flex items-center gap-3 hover:text-white transition-colors duration-200">
+                <Phone className="h-4 w-4 shrink-0 text-white/70" />
+                <span>1-718 540 5053</span>
+              </li>
+              <li className="flex items-start gap-3 hover:text-white transition-colors duration-200">
+                <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-white/70" />
+                <span className="max-w-[16rem] break-words">
+                  US - 2248 Broadway, New York, 10024
+                  <br />
+                  PH - Unit No. 1702, 17th Floor High Street South Corporate Plaza Tower 2, 11th Ave Cor 26th St, Bonifacio Global City, Taguig
+                </span>
+              </li>
+            </ul>
+            <div className="mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-white/10 text-white border-white/30 hover-elevate backdrop-blur-sm w-full min-h-[44px] text-sm sm:text-base"
+                asChild
+                data-testid="footer-contact-cta"
+              >
+                <Link href="/lead-intake">
+                  <Mail className="h-4 w-4 mr-2" />
+                  Contact Us
+                </Link>
+              </Button>
             </div>
           </div>
+
         </div>
 
         <Separator className="my-6 sm:my-8 bg-white/30" />
