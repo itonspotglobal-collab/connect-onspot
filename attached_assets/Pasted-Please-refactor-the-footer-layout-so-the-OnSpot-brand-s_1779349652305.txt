@@ -1,0 +1,210 @@
+Please refactor the footer layout so the OnSpot brand section is separated from the rest of the footer columns. The current grid feels too fixed, and the brand section still looks awkward compared to the Navigation, Company, New Verticals, and Connect columns.
+
+Current issue:
+The footer is likely using one shared grid for all 5 sections. Because of this, the OnSpot logo/description/social icons are forced into the same spacing system as the other footer columns. This makes the brand section look bad and hard to control, especially across different screen sizes.
+
+Goal:
+Separate the footer into two main layout groups:
+
+1. Brand section
+- OnSpot logo
+- Company description
+- Social/platform icons
+
+2. Footer links section
+- Navigation
+- Company
+- New Verticals
+- Connect
+
+This will let us adjust the brand section independently without ruining the spacing of the other columns.
+
+Do not redesign the footer visually. Keep the current colors, fonts, logo, icons, background, and overall style.
+
+Recommended structure:
+
+<footer>
+  <div className="footer-container">
+
+    <div className="footer-main-layout">
+
+      <div className="footer-brand">
+        Logo
+        Description
+        Social icons
+      </div>
+
+      <div className="footer-links-grid">
+        Navigation column
+        Company column
+        New Verticals column
+        Connect column
+      </div>
+
+    </div>
+
+    <div className="footer-bottom">
+      Copyright / Powered by / Privacy / Terms
+    </div>
+
+  </div>
+</footer>
+
+Implementation requirements:
+
+1. Use a two-part desktop layout
+On desktop, use a parent grid like this:
+
+className="
+  grid grid-cols-1
+  gap-y-12
+  lg:grid-cols-[360px_1fr]
+  xl:grid-cols-[380px_1fr]
+  2xl:grid-cols-[400px_1fr]
+  lg:gap-x-16
+  xl:gap-x-20
+  items-start
+"
+
+This means:
+- Brand section gets its own fixed-but-responsive width.
+- Link columns get the remaining space.
+- The gap between brand and links is controlled independently.
+
+2. Make the link columns a separate grid
+Inside the links section, use a separate grid:
+
+className="
+  grid grid-cols-1
+  sm:grid-cols-2
+  lg:grid-cols-4
+  gap-y-10
+  gap-x-10
+  xl:gap-x-14
+"
+
+This keeps Navigation, Company, New Verticals, and Connect evenly spaced without depending on the brand section.
+
+3. Brand section styling
+The brand section should be independently controlled:
+
+className="
+  flex flex-col
+  items-start
+  text-left
+  w-full
+  max-w-[360px]
+  lg:max-w-[360px]
+  xl:max-w-[380px]
+  2xl:max-w-[400px]
+"
+
+Logo:
+- Align left on desktop.
+- Do not use mx-auto on desktop.
+
+Use:
+className="mx-0"
+
+Description:
+- Give it a readable width.
+- Avoid making it too narrow.
+- Avoid making it centered on desktop.
+
+Use:
+className="max-w-[330px]"
+
+Social icons:
+- Keep them in one row on desktop.
+- Allow wrap only on smaller screens.
+- Align with the logo and description.
+
+Use:
+className="
+  flex flex-wrap
+  lg:flex-nowrap
+  items-center
+  justify-start
+  gap-3
+"
+
+4. Responsive behavior
+Desktop:
+- Brand and links sit side by side.
+- Brand width is independent.
+- Link columns are evenly distributed.
+- Spacing should not become awkward on larger screens.
+
+Laptop:
+- Brand should keep enough width.
+- Links should not squeeze too tightly.
+- Gap should remain balanced.
+
+Tablet:
+- Brand may stack above the links section.
+- Links can become 2 columns.
+
+Mobile:
+- Everything stacks.
+- Brand can be centered only on mobile if the existing design requires it.
+- Do not allow horizontal scrolling.
+
+Recommended responsive behavior:
+
+Parent:
+className="
+  grid grid-cols-1
+  gap-y-12
+  lg:grid-cols-[360px_1fr]
+  xl:grid-cols-[380px_1fr]
+  2xl:grid-cols-[400px_1fr]
+  lg:gap-x-16
+  xl:gap-x-20
+"
+
+Links grid:
+className="
+  grid grid-cols-1
+  sm:grid-cols-2
+  lg:grid-cols-4
+  gap-y-10
+  gap-x-8
+  xl:gap-x-12
+"
+
+5. Container width
+Make sure the footer content uses one consistent max-width wrapper.
+
+Use the same wrapper for the main footer and bottom row:
+
+className="
+  mx-auto
+  w-full
+  max-w-[1600px]
+  px-6
+  sm:px-8
+  lg:px-16
+  2xl:px-20
+"
+
+Do not let the footer content stretch infinitely on very large screens.
+
+6. Bottom row alignment
+The bottom copyright row should stay aligned with the main footer container.
+
+The copyright text should align with the brand logo section above.
+
+Do not put the bottom row in a different container width than the footer main layout.
+
+7. Avoid these fixes
+Please do NOT fix this using:
+- absolute positioning
+- huge margin-left or margin-right values
+- negative margins
+- hardcoded pixel offsets to push Navigation
+- one shared 5-column grid for all footer sections
+
+The issue should be fixed by separating the brand block and the link columns into two independent layout groups.
+
+Expected result:
+The OnSpot brand section should finally feel like its own block instead of being forced into the same grid as the navigation columns. The spacing between the brand section and Navigation should look natural and adjustable. The other columns should remain clean and evenly spaced. The footer should look stable on large desktop screens, Mac laptop screens, tablet, and mobile.
