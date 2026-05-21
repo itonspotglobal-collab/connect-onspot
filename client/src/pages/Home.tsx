@@ -1695,7 +1695,7 @@ export default function Home() {
       </div>
 
       {/* Footer */}
-      <footer className="onspot-footer relative backdrop-blur-sm overflow-hidden">
+      <footer className="onspot-footer relative overflow-hidden bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4]">
         {/* Hairline Gradient Seam with Soft Contact Shadow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[85%] pointer-events-none">
           {/* Soft contact shadow for depth */}
@@ -1727,13 +1727,13 @@ export default function Home() {
                   <img
                     src={onspotLogo}
                     alt="OnSpot"
-                    className="h-8 sm:h-9 w-auto"
+                    className="h-8 sm:h-9 w-auto brightness-0 invert"
                     data-testid="footer-logo"
                   />
                   <div className="absolute -inset-2 bg-gradient-to-r from-violet-500/20 to-blue-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
                 </div>
 
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-md text-center md:text-left transition-all duration-300">
+                <p className="text-xs sm:text-sm text-white/75 leading-relaxed max-w-md text-center md:text-left transition-all duration-300">
                   OnSpot is a technology company and hybrid marketplace–BPO
                   delivering Philippine talent to global clients. Marketplace
                   speed, BPO quality, and AI-ready operations — in one platform.
@@ -1752,64 +1752,64 @@ export default function Home() {
                   href="https://www.linkedin.com/company/onspotglobal/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="relative w-11 h-11 rounded-full bg-white/[0.03] backdrop-blur-sm border border-slate-300 dark:border-white/10 hover:bg-gradient-to-br hover:from-violet-500/30 hover:to-blue-500/30 hover:border-violet-400/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group"
+                  className="relative w-11 h-11 rounded-full bg-white/10 border border-white/20 hover:bg-white/20 hover:border-white/40 hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group"
                   data-testid="social-linkedin"
                 >
-                  <Linkedin className="w-5 h-5 text-slate-600 dark:text-slate-300 group-hover:text-violet-600 dark:group-hover:text-violet-400 group-hover:scale-110 transition-all duration-300" />
+                  <Linkedin className="w-5 h-5 text-white/75 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
                 </a>
                 <a
                   href="https://www.facebook.com/OnSpotGlobal"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="relative w-11 h-11 rounded-full bg-white/[0.03] backdrop-blur-sm border border-slate-300 dark:border-white/10 hover:bg-gradient-to-br hover:from-violet-500/30 hover:to-blue-500/30 hover:border-violet-400/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group"
+                  className="relative w-11 h-11 rounded-full bg-white/10 border border-white/20 hover:bg-white/20 hover:border-white/40 hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group"
                   data-testid="social-facebook"
                 >
-                  <Facebook className="w-5 h-5 text-slate-600 dark:text-slate-300 group-hover:text-violet-600 dark:group-hover:text-violet-400 group-hover:scale-110 transition-all duration-300" />
+                  <Facebook className="w-5 h-5 text-white/75 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
                 </a>
                 <a
                   href="https://x.com/OnSpotTribe"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="relative w-11 h-11 rounded-full bg-white/[0.03] backdrop-blur-sm border border-slate-300 dark:border-white/10 hover:bg-gradient-to-br hover:from-violet-500/30 hover:to-blue-500/30 hover:border-violet-400/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group"
+                  className="relative w-11 h-11 rounded-full bg-white/10 border border-white/20 hover:bg-white/20 hover:border-white/40 hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group"
                   data-testid="social-x"
                 >
-                  <SiX className="w-4 h-4 text-slate-600 dark:text-slate-300 group-hover:text-violet-600 dark:group-hover:text-violet-400 group-hover:scale-110 transition-all duration-300" />
+                  <SiX className="w-4 h-4 text-white/75 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
                 </a>
                 <a
                   href="https://www.threads.com/@onspotglobal"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="relative w-11 h-11 rounded-full bg-white/[0.03] backdrop-blur-sm border border-slate-300 dark:border-white/10 hover:bg-gradient-to-br hover:from-violet-500/30 hover:to-blue-500/30 hover:border-violet-400/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group"
+                  className="relative w-11 h-11 rounded-full bg-white/10 border border-white/20 hover:bg-white/20 hover:border-white/40 hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group"
                   data-testid="social-threads"
                 >
-                  <SiThreads className="w-4 h-4 text-slate-600 dark:text-slate-300 group-hover:text-violet-600 dark:group-hover:text-violet-400 group-hover:scale-110 transition-all duration-300" />
+                  <SiThreads className="w-4 h-4 text-white/75 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
                 </a>
                 <a
                   href="https://www.instagram.com/onspotglobal"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="relative w-11 h-11 rounded-full bg-white/[0.03] backdrop-blur-sm border border-slate-300 dark:border-white/10 hover:bg-gradient-to-br hover:from-violet-500/30 hover:to-blue-500/30 hover:border-violet-400/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group"
+                  className="relative w-11 h-11 rounded-full bg-white/10 border border-white/20 hover:bg-white/20 hover:border-white/40 hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group"
                   data-testid="social-instagram"
                 >
-                  <Instagram className="w-5 h-5 text-slate-600 dark:text-slate-300 group-hover:text-violet-600 dark:group-hover:text-violet-400 group-hover:scale-110 transition-all duration-300" />
+                  <Instagram className="w-5 h-5 text-white/75 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
                 </a>
                 <a
                   href="https://www.tiktok.com/@onspottribe"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="relative w-11 h-11 rounded-full bg-white/[0.03] backdrop-blur-sm border border-slate-300 dark:border-white/10 hover:bg-gradient-to-br hover:from-violet-500/30 hover:to-blue-500/30 hover:border-violet-400/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group"
+                  className="relative w-11 h-11 rounded-full bg-white/10 border border-white/20 hover:bg-white/20 hover:border-white/40 hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group"
                   data-testid="social-tiktok"
                 >
-                  <SiTiktok className="w-4 h-4 text-slate-600 dark:text-slate-300 group-hover:text-violet-600 dark:group-hover:text-violet-400 group-hover:scale-110 transition-all duration-300" />
+                  <SiTiktok className="w-4 h-4 text-white/75 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
                 </a>
                 <a
                   href="https://www.youtube.com/@OnSpotGlobal"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="relative w-11 h-11 rounded-full bg-white/[0.03] backdrop-blur-sm border border-slate-300 dark:border-white/10 hover:bg-gradient-to-br hover:from-violet-500/30 hover:to-blue-500/30 hover:border-violet-400/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group"
+                  className="relative w-11 h-11 rounded-full bg-white/10 border border-white/20 hover:bg-white/20 hover:border-white/40 hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group"
                   data-testid="social-youtube"
                 >
-                  <SiYoutube className="w-5 h-5 text-slate-600 dark:text-slate-300 group-hover:text-violet-600 dark:group-hover:text-violet-400 group-hover:scale-110 transition-all duration-300" />
+                  <SiYoutube className="w-5 h-5 text-white/75 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
                 </a>
               </div>
             </div>
@@ -1830,11 +1830,11 @@ export default function Home() {
                 }}
                 data-testid="footer-accordion-navigation"
               >
-                <h3 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-white tracking-wide text-left">
+                <h3 className="text-sm sm:text-base font-semibold text-white tracking-wide text-left">
                   Navigation
                 </h3>
                 <ChevronDown
-                  className={`w-5 h-5 text-slate-600 dark:text-slate-400 transition-transform duration-300 md:hidden ${expandedFooterSection === "navigation" ? "rotate-180" : ""}`}
+                  className={`w-5 h-5 text-white/60 transition-transform duration-300 md:hidden ${expandedFooterSection === "navigation" ? "rotate-180" : ""}`}
                 />
               </button>
 
@@ -1854,56 +1854,56 @@ export default function Home() {
               >
                 <Link
                   href="/hire-talent"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
+                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
                   data-testid="footer-link-hire"
                 >
                   Hire Talent
                 </Link>
                 <Link
                   href="/lead-intake"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
+                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
                   data-testid="footer-link-managed"
                 >
                   Managed Services
                 </Link>
                 <Link
                   href="/superhuman"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
+                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
                   data-testid="footer-link-ai"
                 >
                   The Superhuman Project
                 </Link>
                 <Link
                   href="/waitlist"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
+                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
                   data-testid="footer-link-waitlist"
                 >
                   Join Waitlist
                 </Link>
                 <Link
                   href="/careers"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
+                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
                   data-testid="footer-link-careers"
                 >
                   Careers
                 </Link>
                 <Link
                   href="/powerapp"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
+                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
                   data-testid="footer-link-powerapp"
                 >
                   Powerapp
                 </Link>
                 <Link
                   href="/legal-ops"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
+                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
                   data-testid="footer-link-legal-ops"
                 >
                   LegalOps NY
                 </Link>
                 <Link
                   href="/pricing"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
+                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
                   data-testid="footer-link-pricing"
                 >
                   Pricing
@@ -1927,11 +1927,11 @@ export default function Home() {
                 }}
                 data-testid="footer-accordion-company"
               >
-                <h3 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-white tracking-wide text-left">
+                <h3 className="text-sm sm:text-base font-semibold text-white tracking-wide text-left">
                   Company
                 </h3>
                 <ChevronDown
-                  className={`w-5 h-5 text-slate-600 dark:text-slate-400 transition-transform duration-300 md:hidden ${expandedFooterSection === "company" ? "rotate-180" : ""}`}
+                  className={`w-5 h-5 text-white/60 transition-transform duration-300 md:hidden ${expandedFooterSection === "company" ? "rotate-180" : ""}`}
                 />
               </button>
 
@@ -1951,56 +1951,56 @@ export default function Home() {
               >
                 <Link
                   href="/why-onspot"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
+                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
                   data-testid="footer-link-why"
                 >
                   Why OnSpot
                 </Link>
                 <Link
                   href="/stories"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
+                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
                   data-testid="footer-link-stories"
                 >
                   Amazing Stories
                 </Link>
                 <Link
                   href="/insights"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
+                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
                   data-testid="footer-link-insights"
                 >
                   Insights
                 </Link>
                 <Link
                   href="/affiliate"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
+                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
                   data-testid="footer-link-affiliate"
                 >
                   Affiliate Marketing
                 </Link>
                 <Link
                   href="/bpo-partner"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
+                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
                   data-testid="footer-link-bpo"
                 >
                   BPO Partner
                 </Link>
                 <Link
                   href="/investors"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
+                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
                   data-testid="footer-link-investors"
                 >
                   Investors Corner
                 </Link>
                 <Link
                   href="/about"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
+                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
                   data-testid="footer-link-about"
                 >
                   About Us
                 </Link>
                 <Link
                   href="/operations-playbook"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
+                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
                   data-testid="footer-link-playbook"
                 >
                   Delivery Playbook
@@ -2022,11 +2022,11 @@ export default function Home() {
                 style={{ padding: "clamp(4px, 0.6vh, 8px) 0" }}
                 data-testid="footer-accordion-verticals"
               >
-                <h3 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-white tracking-wide text-left">
+                <h3 className="text-sm sm:text-base font-semibold text-white tracking-wide text-left">
                   New Verticals
                 </h3>
                 <ChevronDown
-                  className={`w-5 h-5 text-slate-600 dark:text-slate-400 transition-transform duration-300 md:hidden ${expandedFooterSection === "verticals" ? "rotate-180" : ""}`}
+                  className={`w-5 h-5 text-white/60 transition-transform duration-300 md:hidden ${expandedFooterSection === "verticals" ? "rotate-180" : ""}`}
                 />
               </button>
 
@@ -2046,31 +2046,31 @@ export default function Home() {
               >
                 <a
                   href="#"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
+                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
                 >
                   AI Human-in-the-Loop
                 </a>
                 <a
                   href="#"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
+                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
                 >
                   Founder Ops
                 </a>
                 <a
                   href="#"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
+                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
                 >
                   Healthcare Micro-Admin
                 </a>
                 <a
                   href="#"
-                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
+                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
                 >
                   E-commerce Ops
                 </a>
                 <a
                   href="#"
-                  className="block text-xs sm:text-sm font-medium text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300"
+                  className="block text-xs sm:text-sm font-medium text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
                 >
                   View all 10 →
                 </a>
@@ -2087,11 +2087,11 @@ export default function Home() {
                 }}
                 data-testid="footer-accordion-connect"
               >
-                <h3 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-white tracking-wide text-left">
+                <h3 className="text-sm sm:text-base font-semibold text-white tracking-wide text-left">
                   Connect
                 </h3>
                 <ChevronDown
-                  className={`w-5 h-5 text-slate-600 dark:text-slate-400 transition-transform duration-300 md:hidden ${expandedFooterSection === "connect" ? "rotate-180" : ""}`}
+                  className={`w-5 h-5 text-white/60 transition-transform duration-300 md:hidden ${expandedFooterSection === "connect" ? "rotate-180" : ""}`}
                 />
               </button>
 
@@ -2111,7 +2111,7 @@ export default function Home() {
               >
                 <a
                   href="mailto:hello@onspotglobal.com"
-                  className="flex items-start justify-center md:justify-start gap-3 min-w-0 text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-300 group"
+                  className="flex items-start justify-center md:justify-start gap-3 min-w-0 text-xs sm:text-sm text-white/70 hover:text-white transition-all duration-300 group"
                   data-testid="footer-email"
                 >
                   <Mail className="w-5 h-5 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform duration-300" />
@@ -2121,19 +2121,19 @@ export default function Home() {
                 </a>
                 <a
                   href="tel:+1234567890"
-                  className="flex items-center justify-center md:justify-start gap-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-300 group"
+                  className="flex items-center justify-center md:justify-start gap-3 text-xs sm:text-sm text-white/70 hover:text-white transition-all duration-300 group"
                   data-testid="footer-phone"
                 >
                   <Phone className="w-5 h-5 flex-shrink-0 group-hover:scale-110 transition-transform duration-300" />
                   <span>1-917-801-9294</span>
                 </a>
-                <div className="flex items-start justify-center md:justify-start gap-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300">
+                <div className="flex items-start justify-center md:justify-start gap-3 text-xs sm:text-sm text-white/70">
                   <span className="break-words sm:break-normal">
                     <a
                       href="https://www.google.com/search?q=onspot+global+new+york..."
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-start justify-center md:justify-start gap-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300                        hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-300 group"
+                      className="flex items-start justify-center md:justify-start gap-3 text-xs sm:text-sm text-white/70 hover:text-white transition-all duration-300 group"
                     >
                       <MapPinIcon className="w-5 h-5 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform duration-300" />
                       <span className="break-words sm:break-normal underline-offset-2 group-hover:underline">
@@ -2145,9 +2145,9 @@ export default function Home() {
                       href="https://www.google.com/search?q=onspot+global+philippines&sca_esv=4acce884baa46368&rlz=1C5CHFA_enPH1014PH1014&ei=Koz4aJ3FFuuqvr0Pt66r6QI&oq=onspot+global+ph"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-start justify-center md:justify-start gap-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-300 group"
+                      className="flex items-start justify-center md:justify-start gap-3 text-xs sm:text-sm text-white/70 hover:text-white transition-all duration-300 group"
                     >
-                      <MapPinIcon className="w-5 h-5 flex-shrink-0 mt-0.5 group-hover:scale-110 group-hover:text-violet-500 transition-all duration-300" />
+                      <MapPinIcon className="w-5 h-5 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-all duration-300" />
                       <span className="break-words sm:break-normal underline-offset-2 group-hover:underline">
                         PH - Unit No. 1702, 17th Floor High Street South
                         Corporate Plaza Tower 2, 11th Ave Cor 26th St, Bonifacio
@@ -2161,30 +2161,30 @@ export default function Home() {
           </div>
 
           {/* Bottom Bar */}
-          <div className="mt-8 pt-6 border-t border-slate-300 dark:border-white/[0.12]">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs sm:text-sm text-slate-600 dark:text-white/70">
+          <div className="mt-8 pt-6 border-t border-white/20">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs sm:text-sm text-white/70">
               <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-center sm:text-left">
-                <p className="hover:text-slate-800 dark:hover:text-white/90 transition-colors duration-300">
+                <p className="hover:text-white transition-colors duration-300">
                   © 2025 OnSpot. All rights reserved.
                 </p>
-                <span className="hidden sm:inline text-slate-400 dark:text-white/30">
+                <span className="hidden sm:inline text-white/30">
                   ·
                 </span>
-                <p className="text-[10px] sm:text-xs text-slate-500 dark:text-white/50">
+                <p className="text-[10px] sm:text-xs text-white/50">
                   Powered by OnSpot Intelligence
                 </p>
               </div>
               <div className="flex gap-6">
                 <Link
                   href="/privacy"
-                  className="hover:text-violet-600 dark:hover:text-violet-300 transition-all duration-300 hover:translate-y-[-1px]"
+                  className="hover:text-white transition-all duration-300 hover:translate-y-[-1px]"
                   data-testid="footer-privacy"
                 >
                   Privacy Policy
                 </Link>
                 <Link
                   href="/terms"
-                  className="hover:text-violet-600 dark:hover:text-violet-300 transition-all duration-300 hover:translate-y-[-1px]"
+                  className="hover:text-white transition-all duration-300 hover:translate-y-[-1px]"
                   data-testid="footer-terms"
                 >
                   Terms of Service

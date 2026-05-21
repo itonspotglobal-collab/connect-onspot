@@ -1,0 +1,190 @@
+Please fix the footer color properly. The previous change did not apply.
+
+Current issue:
+The footer is still light. We need the footer to match the navigation bar exactly: the same dark violet / dark blue gradient color. Footer text also needs to become white so it is readable.
+
+Goal:
+Make the footer visually match the navbar background exactly.
+
+IMPORTANT:
+- Inspect the navbar/header component and copy the exact background class or CSS values being used there.
+- Apply that same background to the footer.
+- Remove or override any existing light footer background, pseudo-element overlay, blur layer, or gradient that is keeping the footer light.
+- Do not only add a new class if an existing footer style is overriding it.
+
+Footer element currently appears to be:
+<footer
+  data-component-name="footer"
+  className="onspot-footer relative backdrop-blur-sm overflow-hidden"
+>
+
+Please update this footer directly.
+
+--------------------------------------------------
+1. Match the navbar background exactly
+--------------------------------------------------
+
+Find the navbar background class/style. It may be something like:
+
+bg-gradient-to-r from-[#34358f] via-[#2f2f82] to-[#3d2a86]
+
+or a custom class/CSS variable.
+
+Apply the same exact class/style to:
+
+footer.onspot-footer
+
+Example:
+
+<footer
+  className="
+    onspot-footer
+    relative
+    overflow-hidden
+    bg-gradient-to-r from-[#34358f] via-[#2f2f82] to-[#3d2a86]
+    text-white
+  "
+>
+
+If the navbar uses a reusable class, use that instead.
+
+--------------------------------------------------
+2. Remove the light footer background
+--------------------------------------------------
+
+Search for these styles on the footer and remove/replace them:
+
+- bg-white
+- bg-slate-50
+- bg-gray-50
+- bg-[#f...]
+- from-white
+- via-white
+- to-white
+- from-slate
+- via-slate
+- to-slate
+- text-slate-*
+- text-gray-*
+- border-slate-*
+- border-gray-*
+- backdrop-blur-sm if it is causing the footer to look washed out
+
+Also check for pseudo-elements like:
+
+before:absolute
+before:inset-0
+before:bg-...
+after:absolute
+after:inset-0
+after:bg-...
+
+If these pseudo-elements are adding a light overlay, either remove them or change them to a subtle dark overlay:
+
+before:bg-black/0
+
+or:
+
+before:bg-white/0
+
+Do not let any white/light overlay sit on top of the footer.
+
+--------------------------------------------------
+3. Make all footer text white/readable
+--------------------------------------------------
+
+Update footer text colors for the dark background.
+
+Footer headings:
+className="text-white"
+
+Footer links/body/contact text:
+className="text-white/70 hover:text-white"
+
+Footer description:
+className="text-white/70"
+
+Footer contact icons:
+className="text-white/70"
+
+Footer bottom text:
+className="text-white/65"
+
+Privacy Policy / Terms:
+className="text-white/70 hover:text-white"
+
+Divider line:
+className="border-white/10"
+
+--------------------------------------------------
+4. Change footer logo to match navbar logo
+--------------------------------------------------
+
+The footer logo should match the logo used in the navigation bar.
+
+Currently the footer logo appears dark violet, which will not be visible on the dark footer background.
+
+Please do one of these:
+- Reuse the exact same logo component used in the navbar, or
+- Use the same white OnSpot logo asset used in the navbar.
+
+Do not use the dark violet logo in the footer anymore.
+
+Example:
+If navbar uses:
+<Logo variant="white" />
+
+Use the same in the footer:
+<Logo variant="white" />
+
+If navbar uses an image:
+<img src="/path/to/navbar-logo-white.svg" ... />
+
+Use the same image in footer.
+
+--------------------------------------------------
+5. Update social icon buttons for dark footer
+--------------------------------------------------
+
+Social buttons should be visible against the dark violet background.
+
+Use:
+
+Icon button:
+className="
+  bg-white/10
+  border border-white/10
+  text-white/75
+  hover:bg-white/15
+  hover:text-white
+"
+
+Do not keep pale blue/gray icon button styling from the light footer.
+
+--------------------------------------------------
+6. Keep layout unchanged
+--------------------------------------------------
+
+Do not change the footer layout, columns, spacing, links, or content in this task.
+
+Only update:
+- footer background
+- text/link/icon colors
+- footer logo asset/color
+- divider color
+
+--------------------------------------------------
+7. Verify visually
+--------------------------------------------------
+
+After the change:
+- Footer background should be the same dark violet/dark blue as the navbar.
+- Footer logo should be white like the navbar logo.
+- Footer headings should be white.
+- Footer links and description should be white with opacity.
+- Footer divider should be subtle white.
+- No light footer background should remain.
+- No gray/dark text should remain on the dark footer.
+
+Expected result:
+The footer should look like a dark navbar-colored section, with the same white OnSpot logo from the navigation bar and readable white footer text.
