@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -31,6 +31,8 @@ import {
   Twitter,
   Instagram,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Settings,
   Layers,
   User,
@@ -320,6 +322,116 @@ const talentProfiles = [
   },
 ];
 
+function LogoCarousel() {
+  const logos = trustedBrands;
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(4);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const updateVisible = () => {
+      const w = window.innerWidth;
+      if (w < 640) setVisibleCount(1);
+      else if (w < 768) setVisibleCount(2);
+      else if (w < 1024) setVisibleCount(3);
+      else if (w < 1280) setVisibleCount(4);
+      else setVisibleCount(5);
+    };
+    updateVisible();
+    window.addEventListener("resize", updateVisible);
+    return () => window.removeEventListener("resize", updateVisible);
+  }, []);
+
+  const maxIndex = Math.max(0, logos.length - visibleCount);
+
+  const next = useCallback(() => {
+    setCurrentIndex((i) => (i >= maxIndex ? 0 : i + 1));
+  }, [maxIndex]);
+
+  const prev = useCallback(() => {
+    setCurrentIndex((i) => (i <= 0 ? maxIndex : i - 1));
+  }, [maxIndex]);
+
+  useEffect(() => {
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (isPaused || prefersReduced) return;
+    intervalRef.current = setInterval(next, 3500);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [isPaused, next]);
+
+  const cardWidthPct = 100 / visibleCount;
+  const translateX = -(currentIndex * cardWidthPct);
+
+  return (
+    <div className="relative mt-10 sm:mt-14 w-full">
+      {/* Prev button */}
+      <button
+        onClick={prev}
+        aria-label="Previous client logos"
+        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-9 h-9 rounded-full bg-white/80 border border-slate-200/80 shadow-sm hover-elevate -translate-x-1 sm:-translate-x-4 backdrop-blur-sm"
+      >
+        <ChevronLeft className="w-4 h-4 text-slate-600" />
+      </button>
+
+      {/* Track wrapper */}
+      <div
+        className="overflow-hidden mx-6 sm:mx-10"
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+      >
+        <div
+          ref={trackRef}
+          className="flex transition-transform duration-700 ease-out"
+          style={{ transform: `translateX(${translateX}%)` }}
+        >
+          {logos.map((brand, i) => (
+            <div
+              key={i}
+              className="shrink-0 px-2 sm:px-3"
+              style={{ width: `${cardWidthPct}%` }}
+              data-testid={`brand-logo-${i}`}
+            >
+              <div className="flex h-24 sm:h-28 items-center justify-center rounded-2xl border border-slate-200/70 bg-white/70 shadow-sm backdrop-blur-sm">
+                <img
+                  src={brand.logo}
+                  alt={brand.name}
+                  loading="lazy"
+                  className="max-h-12 sm:max-h-14 max-w-[140px] sm:max-w-[160px] w-auto object-contain opacity-100"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Next button */}
+      <button
+        onClick={next}
+        aria-label="Next client logos"
+        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-9 h-9 rounded-full bg-white/80 border border-slate-200/80 shadow-sm hover-elevate translate-x-1 sm:translate-x-4 backdrop-blur-sm"
+      >
+        <ChevronRight className="w-4 h-4 text-slate-600" />
+      </button>
+
+      {/* Pagination dots */}
+      <div className="flex justify-center gap-1.5 mt-6">
+        {Array.from({ length: maxIndex + 1 }).map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setCurrentIndex(i)}
+            aria-label={`Go to slide ${i + 1}`}
+            className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+              i === currentIndex ? "w-4 bg-violet-600" : "bg-slate-300"
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const { openVanessa } = useVanessa();
   const [expandedFooterSection, setExpandedFooterSection] = useState<
@@ -484,43 +596,8 @@ export default function Home() {
               </h2>
             </div>
 
-            {/* Auto-fit Logo Grid */}
-            <div className="relative py-8 sm:py-12">
-              <div
-                className="mx-auto items-center justify-items-center"
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-                  gap: "clamp(2rem, 4vw, 3rem)",
-                }}
-              >
-                {trustedBrands.map((brand, index) => (
-                  <div
-                    key={index}
-                    className="group relative flex items-center justify-center w-full"
-                    style={{
-                      animation: `float ${3 + index * 0.3}s ease-in-out infinite`,
-                      animationDelay: `${index * 0.15}s`,
-                    }}
-                    data-testid={`brand-logo-${index}`}
-                  >
-                    {/* Glow effect on hover */}
-                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                      <div className="absolute inset-0 bg-gradient-to-r from-violet-500/20 to-blue-500/20 blur-xl rounded-full scale-150"></div>
-                    </div>
-
-                    <img
-                      src={brand.logo}
-                      alt={brand.name}
-                      width="180"
-                      height="64"
-                      loading="lazy"
-                      className="h-12 sm:h-14 lg:h-16 w-auto object-contain grayscale opacity-30 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500 relative z-10 filter group-hover:brightness-110 group-hover:drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* Logo Carousel */}
+            <LogoCarousel />
           </div>
         </div>
       </div>

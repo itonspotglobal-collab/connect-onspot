@@ -1,0 +1,222 @@
+Please update the “TRUSTED BY” section on the homepage.
+
+Current issue:
+The client logos currently appear with an animation/fade style and look gray/desaturated. We want to remove that existing animation and replace it with a stable colored logo carousel.
+
+Goal:
+Create a client logo carousel similar in behavior to the attached reference:
+- Client logos should be visible in color.
+- Carousel should move automatically.
+- User should also be able to manually navigate it.
+- Do not copy the exact design of the reference image. Use it only as a behavior/layout reference.
+
+IMPORTANT:
+- Keep the current “TRUSTED BY” section heading and main headline.
+- Keep the existing website fonts and design system.
+- Do not redesign the full page.
+- Only update the client logo display area.
+- Do not use grayscale filters.
+- Do not use fade-in/fade-out logo animation from the current version.
+
+--------------------------------------------------
+CONTENT TO KEEP
+--------------------------------------------------
+
+Keep this label:
+“TRUSTED BY”
+
+Keep this headline:
+“Trusted by global brands, hundreds of entrepreneurs, and thousands of professionals worldwide.”
+
+Client logos should remain below the headline.
+
+--------------------------------------------------
+LOGO STYLE
+--------------------------------------------------
+
+Update the logos so they are:
+- colored, not gray
+- clearly visible
+- stable and readable
+- placed inside clean logo cards or logo panels
+
+Suggested logo card style:
+className="
+  flex items-center justify-center
+  h-28 min-w-[220px]
+  rounded-2xl
+  border border-slate-200/70
+  bg-white/70
+  shadow-sm
+  backdrop-blur-sm
+"
+
+Logo image style:
+className="
+  max-h-14 max-w-[160px]
+  object-contain
+"
+
+Remove any existing classes like:
+- grayscale
+- opacity-40
+- opacity-50
+- filter
+- blur
+- animate-pulse
+- motion fade variants that make logos appear/disappear
+
+Use opacity 100 or near-full:
+opacity-100
+
+--------------------------------------------------
+CAROUSEL BEHAVIOR
+--------------------------------------------------
+
+Implement a horizontal carousel for the client logos.
+
+Requirements:
+1. Automatic movement
+- Carousel should autoplay.
+- Move smoothly from logo to logo.
+- Suggested interval: every 3 to 4 seconds.
+- Pause autoplay when the user hovers over the carousel.
+- Pause autoplay when the user interacts manually.
+
+2. Manual controls
+Add manual carousel controls:
+- Previous button
+- Next button
+
+Controls should:
+- Be visible but subtle.
+- Match the site’s existing button/icon style.
+- Be accessible with aria-labels:
+  - aria-label="Previous client logos"
+  - aria-label="Next client logos"
+
+Optional:
+- Add small pagination dots below the carousel if easy, but not required.
+
+3. Responsive behavior
+Desktop:
+- Show multiple logos at once, ideally 4 to 5 visible depending on screen width.
+
+Laptop:
+- Show 3 to 4 logos.
+
+Tablet:
+- Show 2 to 3 logos.
+
+Mobile:
+- Show 1 to 2 logos.
+
+The carousel must not cause horizontal page scrolling.
+
+--------------------------------------------------
+IMPLEMENTATION SUGGESTION
+--------------------------------------------------
+
+If the project already uses a carousel library/component, reuse it.
+
+If not, implement it using simple React state and CSS transform.
+
+Example structure:
+
+const logos = [
+  { name: "Flash Justice", src: "/path/logo-flash-justice.png" },
+  { name: "Future Motors EV", src: "/path/logo-future-motors.png" },
+  { name: "IPS by Meest", src: "/path/logo-ips.png" },
+  { name: "Pinetech", src: "/path/logo-pinetech.png" },
+  { name: "Safeway Moving", src: "/path/logo-safeway.png" },
+  { name: "Vertex Education", src: "/path/logo-vertex.png" },
+];
+
+Carousel layout idea:
+
+- Use an overflow-hidden wrapper.
+- Use a flex track.
+- Move the track using transform: translateX(...)
+- Use transition-transform for smooth movement.
+- Use responsive card widths.
+
+Suggested wrapper:
+className="relative mx-auto mt-16 w-full max-w-7xl overflow-hidden px-6"
+
+Suggested track:
+className="flex transition-transform duration-700 ease-out"
+
+Suggested card:
+className="
+  shrink-0 px-3
+  basis-full
+  sm:basis-1/2
+  md:basis-1/3
+  lg:basis-1/4
+  xl:basis-1/5
+"
+
+Inside each card:
+className="
+  flex h-28 items-center justify-center
+  rounded-2xl border border-slate-200/70
+  bg-white/70 shadow-sm backdrop-blur-sm
+"
+
+--------------------------------------------------
+AUTOPLAY LOGIC
+--------------------------------------------------
+
+Use React state:
+
+- currentIndex
+- visibleCount based on screen size or calculated using CSS/card width
+- nextSlide()
+- prevSlide()
+
+Autoplay:
+- useEffect with setInterval
+- Clear interval on unmount
+- Pause when hovering:
+  - onMouseEnter setIsPaused(true)
+  - onMouseLeave setIsPaused(false)
+
+Make sure carousel loops correctly:
+- When reaching the end, return to the first slide.
+- When clicking previous on the first slide, go to the last available slide.
+
+--------------------------------------------------
+ACCESSIBILITY
+--------------------------------------------------
+
+- Each logo image should have meaningful alt text using the client name.
+- Previous/Next buttons should have aria-labels.
+- Do not make the carousel too fast.
+- Avoid motion that is distracting.
+- Respect reduced motion if possible:
+  - If prefers-reduced-motion is enabled, disable autoplay or reduce animation.
+
+--------------------------------------------------
+VISUAL DIRECTION
+--------------------------------------------------
+
+The carousel should feel premium and clean.
+
+Do:
+- Use colored logos.
+- Use soft cards/panels.
+- Keep spacing generous.
+- Keep the section light and minimal.
+
+Do not:
+- Use the vertical portrait carousel design from the reference.
+- Use people images.
+- Copy the exact reference design.
+- Keep gray/desaturated logos.
+- Keep the old animated/fading logo strip.
+
+--------------------------------------------------
+EXPECTED RESULT
+--------------------------------------------------
+
+The “TRUSTED BY” section should show the same heading and headline, but the client logos should now appear as a polished, colored carousel. The carousel should autoplay, support previous/next manual navigation, pause on hover/interactions, and remain responsive across desktop, laptop, tablet, and mobile.
