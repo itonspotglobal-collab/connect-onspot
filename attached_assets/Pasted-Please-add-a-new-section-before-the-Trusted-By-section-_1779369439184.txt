@@ -1,0 +1,275 @@
+Please add a new section before the “Trusted By” section.
+
+Reference:
+Use the uploaded screenshot as a layout/content reference, but do not include the part covered by the red line mark.
+
+Goal:
+Add a “Work Differently” section before “Trusted By” with two side-by-side cards:
+1. For Companies
+2. For Professionals
+
+The section should use a gradient background and match the current OnSpot design language.
+
+--------------------------------------------------
+Placement
+--------------------------------------------------
+
+Add this new section directly before the “Trusted By” section on the homepage.
+
+Page flow should be:
+
+... existing previous section
+New “Work Differently” section
+Trusted By section
+... rest of page
+
+--------------------------------------------------
+Do NOT include this part
+--------------------------------------------------
+
+Do not include the heading area that is covered by the red line in the reference screenshot.
+
+Specifically, do not add the crossed-out/red-marked heading text.
+
+Only include:
+- Small label: “WORK DIFFERENTLY”
+- Supporting sentence
+- Two cards with content
+- Bottom CTA buttons
+
+--------------------------------------------------
+Section Background
+--------------------------------------------------
+
+Use a gradient background so it fits the rest of the site.
+
+Suggested section background:
+
+className="
+  relative overflow-hidden
+  bg-gradient-to-br from-[#eef2ff] via-[#f7f4ff] to-[#dff8ff]
+  py-20 sm:py-24
+"
+
+Optional soft blobs:
+- purple glow on one side
+- cyan glow on the other side
+- very subtle, not overpowering
+
+Example:
+<div className="pointer-events-none absolute -left-24 top-10 h-72 w-72 rounded-full bg-purple-400/20 blur-3xl" />
+<div className="pointer-events-none absolute -right-24 bottom-10 h-72 w-72 rounded-full bg-cyan-300/20 blur-3xl" />
+
+--------------------------------------------------
+Section Header
+--------------------------------------------------
+
+Add small label:
+
+“WORK DIFFERENTLY”
+
+Suggested style:
+className="
+  text-center text-xs font-semibold uppercase tracking-[0.25em]
+  text-indigo-600
+"
+
+Add supporting sentence:
+
+“Whether you’re building a team or building a career — OnSpot works differently for both sides.”
+
+Suggested style:
+className="
+  mx-auto mt-4 max-w-3xl text-center
+  text-base sm:text-lg
+  text-slate-700
+"
+
+Do not add the removed/red-marked heading.
+
+--------------------------------------------------
+Cards Layout
+--------------------------------------------------
+
+Create two cards side by side on desktop and stacked on mobile.
+
+Wrapper:
+className="
+  mx-auto mt-12 grid w-full max-w-6xl
+  grid-cols-1 gap-6
+  lg:grid-cols-2
+"
+
+Card style:
+className="
+  overflow-hidden rounded-2xl
+  border border-slate-200/70
+  bg-white/75
+  shadow-sm
+  backdrop-blur-md
+"
+
+Each card should have:
+- Top header area
+- Main title
+- List of benefits with icons
+- Bottom CTA button
+
+--------------------------------------------------
+Card 1: For Companies
+--------------------------------------------------
+
+Small label:
+“FOR COMPANIES”
+
+Main title:
+“Hire faster, smarter, and without the overhead”
+
+Benefit items:
+
+1. Days, not months
+“Skip the lengthy agency cycles. Our pre-vetted talent network means we match you in days — not after a six-week search.”
+
+2. Flexible engagements, your way
+“Contract, project-based, part-time, or full-time — structure the engagement around how your team actually works.”
+
+3. Direct access, no middleman
+“Work with talent directly. No layers of account managers, no inflated markups — just the right person for the job.”
+
+4. Global reach, local expertise
+“Access professionals across 50+ countries with the regional know-how to hit the ground running from day one.”
+
+Bottom CTA:
+“Find the right talent”
+
+--------------------------------------------------
+Card 2: For Professionals
+--------------------------------------------------
+
+Small label:
+“FOR PROFESSIONALS”
+
+Main title:
+“Grow your career with work that keeps coming”
+
+Benefit items:
+
+1. A steady pipeline of real work
+“No more chasing leads or gaps between projects. OnSpot keeps your pipeline active with quality engagements matched to your skills.”
+
+2. Work that builds your reputation
+“Get placed with leading companies globally — the kind of work that strengthens your portfolio and opens doors.”
+
+3. Flexible on your terms
+“Remote-first, with engagements structured around your availability. You choose what fits your life and your goals.”
+
+4. Zero gatekeeping
+“No favoritism, no opaque processes. Your skills speak for themselves — we match you on merit and make sure you’re seen.”
+
+Bottom CTA:
+“Find your next opportunity”
+
+--------------------------------------------------
+Icons
+--------------------------------------------------
+
+Use existing icon library if available, such as lucide-react.
+
+Suggested icons:
+For Companies:
+- Building2
+- Zap or Clock
+- SlidersHorizontal
+- Users
+- Globe2
+
+For Professionals:
+- BriefcaseBusiness
+- TrendingUp
+- Trophy
+- CalendarCheck
+- DoorOpen or BadgeCheck
+
+Icon styling:
+className="h-5 w-5 text-indigo-600"
+or for professionals:
+className="h-5 w-5 text-teal-600"
+
+Keep icons subtle and aligned.
+
+--------------------------------------------------
+Benefit Item Styling
+--------------------------------------------------
+
+Each benefit item should have:
+- icon on the left
+- title and description on the right
+- subtle divider between items
+
+Suggested structure:
+
+<div className="flex gap-4 border-t border-slate-200/70 p-5">
+  <Icon className="mt-1 h-5 w-5 shrink-0 text-indigo-600" />
+  <div>
+    <h4 className="text-sm font-semibold text-slate-900">Days, not months</h4>
+    <p className="mt-1 text-sm leading-relaxed text-slate-600">...</p>
+  </div>
+</div>
+
+--------------------------------------------------
+CTA Buttons
+--------------------------------------------------
+
+At the bottom of each card, add a full-width button-like link.
+
+Style:
+className="
+  flex items-center justify-between
+  border-t border-slate-200/70
+  px-5 py-4
+  text-sm font-semibold text-slate-900
+  transition hover:bg-slate-50
+"
+
+Add a right arrow icon at the end.
+
+Button text:
+- Card 1: “Find the right talent”
+- Card 2: “Find your next opportunity”
+
+--------------------------------------------------
+Responsive Behavior
+--------------------------------------------------
+
+Desktop:
+- Two cards side by side.
+- Equal height if possible.
+- Clean spacing.
+
+Tablet:
+- Cards can stack or remain two columns if space allows.
+
+Mobile:
+- Stack cards vertically.
+- Text should remain readable.
+- No horizontal scrolling.
+- CTA buttons should stay full width.
+
+--------------------------------------------------
+Design Notes
+--------------------------------------------------
+
+Do:
+- Match the existing OnSpot premium style.
+- Use soft gradient background.
+- Use glassy/white cards.
+- Keep spacing clean and modern.
+
+Do not:
+- Include the red-marked heading.
+- Copy the screenshot pixel-for-pixel.
+- Use harsh borders or heavy shadows.
+- Add animations unless the site already uses subtle fade-in effects.
+
+Expected result:
+A new gradient “Work Differently” section appears before “Trusted By”, with two polished cards explaining benefits for companies and professionals.
