@@ -406,9 +406,13 @@ export default function Home() {
 
               {/* Supporting statement */}
               <div className="hero-fade-up-delay">
-                <p className="text-base sm:text-lg md:text-xl text-white/65 font-light leading-relaxed tracking-wide px-2 max-w-2xl mx-auto">
-                  One system. Marketplace speed, BPO quality, and a talent pool
-                  built for the work AI creates — not just the work it replaces.
+                <p className="text-base sm:text-lg md:text-xl font-light leading-relaxed tracking-wide px-2 max-w-2xl mx-auto">
+                  <span className="block font-medium text-white/80">
+                    One System. Your unfair Advantage.
+                  </span>
+                  <span className="block mt-2 text-white/60">
+                    Marketplace speed, BPO quality, and a talent pool built for the work AI creates — not just the work it replaces.
+                  </span>
                 </p>
               </div>
 
@@ -468,7 +472,6 @@ export default function Home() {
             </div>
           </div>
         </div>
-
       </div>
 
       {/* Trusted By Section - Premium Apple-Style Design */}
@@ -1297,12 +1300,16 @@ export default function Home() {
                     key={stat.label}
                     className={[
                       "flex flex-col items-center justify-center px-6 py-8 text-center",
-                      i < arr.length - 1 ? "border-b border-white/30 sm:border-b-0 sm:border-r" : "",
+                      i < arr.length - 1
+                        ? "border-b border-white/30 sm:border-b-0 sm:border-r"
+                        : "",
                       i === 4 ? "col-span-2 sm:col-span-1" : "",
                     ].join(" ")}
                   >
                     {stat.flag ? (
-                      <span className="text-5xl md:text-6xl leading-none">🇵🇭</span>
+                      <span className="text-5xl md:text-6xl leading-none">
+                        🇵🇭
+                      </span>
                     ) : (
                       <span className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent leading-none">
                         {stat.value}
@@ -1641,350 +1648,350 @@ export default function Home() {
 
             {/* Link Columns */}
             <div className="flex-1 grid grid-cols-2 lg:grid-cols-[0.9fr_0.95fr_1.05fr_1.35fr] gap-x-8 xl:gap-x-10 gap-y-10">
-            {/* Navigation Section */}
-            <div
-              className="md:space-y-6 md:border-b-0 transition-all duration-300"
-              style={{
-                paddingBottom: "clamp(4px, 0.6vh, 8px)",
-                borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
-              }}
-            >
-              <button
-                onClick={() => toggleFooterSection("navigation")}
-                className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left"
-                style={{
-                  padding: "clamp(4px, 0.6vh, 8px) 0",
-                }}
-                data-testid="footer-accordion-navigation"
-              >
-                <h3 className="text-sm sm:text-base font-semibold text-white tracking-wide text-left">
-                  Navigation
-                </h3>
-                <ChevronDown
-                  className={`w-5 h-5 text-white/60 transition-transform duration-300 md:hidden ${expandedFooterSection === "navigation" ? "rotate-180" : ""}`}
-                />
-              </button>
-
+              {/* Navigation Section */}
               <div
-                className={`space-y-3 transition-all duration-300 md:!opacity-100 md:!max-h-none md:!block ${
-                  expandedFooterSection === "navigation"
-                    ? "opacity-100 max-h-96"
-                    : "opacity-0 max-h-0 overflow-hidden"
-                }`}
+                className="md:space-y-6 md:border-b-0 transition-all duration-300"
                 style={{
-                  marginTop:
-                    expandedFooterSection === "navigation" ||
-                    window.innerWidth >= 768
-                      ? "16px"
-                      : "0",
+                  paddingBottom: "clamp(4px, 0.6vh, 8px)",
+                  borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
                 }}
               >
-                <Link
-                  href="/hire-talent"
-                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
-                  data-testid="footer-link-hire"
+                <button
+                  onClick={() => toggleFooterSection("navigation")}
+                  className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left"
+                  style={{
+                    padding: "clamp(4px, 0.6vh, 8px) 0",
+                  }}
+                  data-testid="footer-accordion-navigation"
                 >
-                  Hire Talent
-                </Link>
-                <Link
-                  href="/lead-intake"
-                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
-                  data-testid="footer-link-managed"
-                >
-                  Managed Services
-                </Link>
-                <Link
-                  href="/superhuman"
-                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
-                  data-testid="footer-link-ai"
-                >
-                  The Superhuman Project
-                </Link>
-                <Link
-                  href="/waitlist"
-                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
-                  data-testid="footer-link-waitlist"
-                >
-                  Join Waitlist
-                </Link>
-                <Link
-                  href="/careers"
-                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
-                  data-testid="footer-link-careers"
-                >
-                  Careers
-                </Link>
-                <Link
-                  href="/powerapp"
-                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
-                  data-testid="footer-link-powerapp"
-                >
-                  Powerapp
-                </Link>
-                <Link
-                  href="/legal-ops"
-                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
-                  data-testid="footer-link-legal-ops"
-                >
-                  LegalOps NY
-                </Link>
-                <Link
-                  href="/pricing"
-                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
-                  data-testid="footer-link-pricing"
-                >
-                  Pricing
-                </Link>
-              </div>
-            </div>
+                  <h3 className="text-sm sm:text-base font-semibold text-white tracking-wide text-left">
+                    Navigation
+                  </h3>
+                  <ChevronDown
+                    className={`w-5 h-5 text-white/60 transition-transform duration-300 md:hidden ${expandedFooterSection === "navigation" ? "rotate-180" : ""}`}
+                  />
+                </button>
 
-            {/* Company Section */}
-            <div
-              className="md:space-y-6 md:border-b-0 transition-all duration-300"
-              style={{
-                paddingBottom: "clamp(4px, 0.6vh, 8px)",
-                borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
-              }}
-            >
-              <button
-                onClick={() => toggleFooterSection("company")}
-                className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left"
-                style={{
-                  padding: "clamp(4px, 0.6vh, 8px) 0",
-                }}
-                data-testid="footer-accordion-company"
-              >
-                <h3 className="text-sm sm:text-base font-semibold text-white tracking-wide text-left">
-                  Company
-                </h3>
-                <ChevronDown
-                  className={`w-5 h-5 text-white/60 transition-transform duration-300 md:hidden ${expandedFooterSection === "company" ? "rotate-180" : ""}`}
-                />
-              </button>
-
-              <div
-                className={`space-y-3 transition-all duration-300 md:!opacity-100 md:!max-h-none md:!block ${
-                  expandedFooterSection === "company"
-                    ? "opacity-100 max-h-96"
-                    : "opacity-0 max-h-0 overflow-hidden"
-                }`}
-                style={{
-                  marginTop:
-                    expandedFooterSection === "company" ||
-                    window.innerWidth >= 768
-                      ? "16px"
-                      : "0",
-                }}
-              >
-                <Link
-                  href="/why-onspot"
-                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
-                  data-testid="footer-link-why"
+                <div
+                  className={`space-y-3 transition-all duration-300 md:!opacity-100 md:!max-h-none md:!block ${
+                    expandedFooterSection === "navigation"
+                      ? "opacity-100 max-h-96"
+                      : "opacity-0 max-h-0 overflow-hidden"
+                  }`}
+                  style={{
+                    marginTop:
+                      expandedFooterSection === "navigation" ||
+                      window.innerWidth >= 768
+                        ? "16px"
+                        : "0",
+                  }}
                 >
-                  Why OnSpot
-                </Link>
-                <Link
-                  href="/stories"
-                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
-                  data-testid="footer-link-stories"
-                >
-                  Amazing Stories
-                </Link>
-                <Link
-                  href="/insights"
-                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
-                  data-testid="footer-link-insights"
-                >
-                  Insights
-                </Link>
-                <Link
-                  href="/affiliate"
-                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
-                  data-testid="footer-link-affiliate"
-                >
-                  Affiliate Marketing
-                </Link>
-                <Link
-                  href="/bpo-partner"
-                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
-                  data-testid="footer-link-bpo"
-                >
-                  BPO Partner
-                </Link>
-                <Link
-                  href="/investors"
-                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
-                  data-testid="footer-link-investors"
-                >
-                  Investors Corner
-                </Link>
-                <Link
-                  href="/about"
-                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
-                  data-testid="footer-link-about"
-                >
-                  About Us
-                </Link>
-                <Link
-                  href="/operations-playbook"
-                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
-                  data-testid="footer-link-playbook"
-                >
-                  Delivery Playbook
-                </Link>
-              </div>
-            </div>
-
-            {/* New Verticals Section */}
-            <div
-              className="md:space-y-6 md:border-b-0 transition-all duration-300"
-              style={{
-                paddingBottom: "clamp(4px, 0.6vh, 8px)",
-                borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
-              }}
-            >
-              <button
-                onClick={() => toggleFooterSection("verticals")}
-                className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left"
-                style={{ padding: "clamp(4px, 0.6vh, 8px) 0" }}
-                data-testid="footer-accordion-verticals"
-              >
-                <h3 className="text-sm sm:text-base font-semibold text-white tracking-wide text-left">
-                  New Verticals
-                </h3>
-                <ChevronDown
-                  className={`w-5 h-5 text-white/60 transition-transform duration-300 md:hidden ${expandedFooterSection === "verticals" ? "rotate-180" : ""}`}
-                />
-              </button>
-
-              <div
-                className={`space-y-3 transition-all duration-300 md:!opacity-100 md:!max-h-none md:!block ${
-                  expandedFooterSection === "verticals"
-                    ? "opacity-100 max-h-96"
-                    : "opacity-0 max-h-0 overflow-hidden"
-                }`}
-                style={{
-                  marginTop:
-                    expandedFooterSection === "verticals" ||
-                    window.innerWidth >= 768
-                      ? "16px"
-                      : "0",
-                }}
-              >
-                <a
-                  href="#"
-                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
-                >
-                  AI Human-in-the-Loop
-                </a>
-                <a
-                  href="#"
-                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
-                >
-                  Founder Ops
-                </a>
-                <a
-                  href="#"
-                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
-                >
-                  Healthcare Micro-Admin
-                </a>
-                <a
-                  href="#"
-                  className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
-                >
-                  E-commerce Ops
-                </a>
-                <a
-                  href="#"
-                  className="block text-xs sm:text-sm font-medium text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
-                >
-                  View all 10 →
-                </a>
-              </div>
-            </div>
-
-            {/* Connect Section */}
-            <div className="md:space-y-6 transition-all duration-300 min-w-0">
-              <button
-                onClick={() => toggleFooterSection("connect")}
-                className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left"
-                style={{
-                  padding: "clamp(4px, 0.6vh, 8px) 0",
-                }}
-                data-testid="footer-accordion-connect"
-              >
-                <h3 className="text-sm sm:text-base font-semibold text-white tracking-wide text-left">
-                  Connect
-                </h3>
-                <ChevronDown
-                  className={`w-5 h-5 text-white/60 transition-transform duration-300 md:hidden ${expandedFooterSection === "connect" ? "rotate-180" : ""}`}
-                />
-              </button>
-
-              <div
-                className={`space-y-3 transition-all duration-300 md:!opacity-100 md:!max-h-none md:!block ${
-                  expandedFooterSection === "connect"
-                    ? "opacity-100 max-h-96"
-                    : "opacity-0 max-h-0 overflow-hidden"
-                }`}
-                style={{
-                  marginTop:
-                    expandedFooterSection === "connect" ||
-                    window.innerWidth >= 768
-                      ? "16px"
-                      : "0",
-                }}
-              >
-                <a
-                  href="mailto:hello@onspotglobal.com"
-                  className="flex items-start justify-center md:justify-start gap-3 min-w-0 text-xs sm:text-sm text-white/70 hover:text-white transition-all duration-300 group"
-                  data-testid="footer-email"
-                >
-                  <Mail className="w-5 h-5 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform duration-300" />
-                  <span className="break-words whitespace-normal leading-snug min-w-0">
-                    hello@onspotglobal.com
-                  </span>
-                </a>
-                <a
-                  href="tel:+1234567890"
-                  className="flex items-center justify-center md:justify-start gap-3 text-xs sm:text-sm text-white/70 hover:text-white transition-all duration-300 group"
-                  data-testid="footer-phone"
-                >
-                  <Phone className="w-5 h-5 flex-shrink-0 group-hover:scale-110 transition-transform duration-300" />
-                  <span>1-917-801-9294</span>
-                </a>
-                <div className="flex items-start justify-center md:justify-start gap-3 text-xs sm:text-sm text-white/70">
-                  <span className="break-words sm:break-normal">
-                    <a
-                      href="https://www.google.com/search?q=onspot+global+new+york..."
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-start justify-center md:justify-start gap-3 text-xs sm:text-sm text-white/70 hover:text-white transition-all duration-300 group"
-                    >
-                      <MapPinIcon className="w-5 h-5 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform duration-300" />
-                      <span className="break-words sm:break-normal underline-offset-2 group-hover:underline">
-                        US - 2248 Broadway, New York, 10024
-                      </span>
-                    </a>
-                    <br />
-                    <a
-                      href="https://www.google.com/search?q=onspot+global+philippines&sca_esv=4acce884baa46368&rlz=1C5CHFA_enPH1014PH1014&ei=Koz4aJ3FFuuqvr0Pt66r6QI&oq=onspot+global+ph"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-start justify-center md:justify-start gap-3 text-xs sm:text-sm text-white/70 hover:text-white transition-all duration-300 group"
-                    >
-                      <MapPinIcon className="w-5 h-5 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-all duration-300" />
-                      <span className="break-words sm:break-normal underline-offset-2 group-hover:underline">
-                        PH - Unit No. 1702, 17th Floor High Street South
-                        Corporate Plaza Tower 2, 11th Ave Cor 26th St, Bonifacio
-                        Global City, Taguig
-                      </span>
-                    </a>
-                  </span>
+                  <Link
+                    href="/hire-talent"
+                    className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
+                    data-testid="footer-link-hire"
+                  >
+                    Hire Talent
+                  </Link>
+                  <Link
+                    href="/lead-intake"
+                    className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
+                    data-testid="footer-link-managed"
+                  >
+                    Managed Services
+                  </Link>
+                  <Link
+                    href="/superhuman"
+                    className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
+                    data-testid="footer-link-ai"
+                  >
+                    The Superhuman Project
+                  </Link>
+                  <Link
+                    href="/waitlist"
+                    className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
+                    data-testid="footer-link-waitlist"
+                  >
+                    Join Waitlist
+                  </Link>
+                  <Link
+                    href="/careers"
+                    className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
+                    data-testid="footer-link-careers"
+                  >
+                    Careers
+                  </Link>
+                  <Link
+                    href="/powerapp"
+                    className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
+                    data-testid="footer-link-powerapp"
+                  >
+                    Powerapp
+                  </Link>
+                  <Link
+                    href="/legal-ops"
+                    className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
+                    data-testid="footer-link-legal-ops"
+                  >
+                    LegalOps NY
+                  </Link>
+                  <Link
+                    href="/pricing"
+                    className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
+                    data-testid="footer-link-pricing"
+                  >
+                    Pricing
+                  </Link>
                 </div>
               </div>
-            </div>
+
+              {/* Company Section */}
+              <div
+                className="md:space-y-6 md:border-b-0 transition-all duration-300"
+                style={{
+                  paddingBottom: "clamp(4px, 0.6vh, 8px)",
+                  borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
+                }}
+              >
+                <button
+                  onClick={() => toggleFooterSection("company")}
+                  className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left"
+                  style={{
+                    padding: "clamp(4px, 0.6vh, 8px) 0",
+                  }}
+                  data-testid="footer-accordion-company"
+                >
+                  <h3 className="text-sm sm:text-base font-semibold text-white tracking-wide text-left">
+                    Company
+                  </h3>
+                  <ChevronDown
+                    className={`w-5 h-5 text-white/60 transition-transform duration-300 md:hidden ${expandedFooterSection === "company" ? "rotate-180" : ""}`}
+                  />
+                </button>
+
+                <div
+                  className={`space-y-3 transition-all duration-300 md:!opacity-100 md:!max-h-none md:!block ${
+                    expandedFooterSection === "company"
+                      ? "opacity-100 max-h-96"
+                      : "opacity-0 max-h-0 overflow-hidden"
+                  }`}
+                  style={{
+                    marginTop:
+                      expandedFooterSection === "company" ||
+                      window.innerWidth >= 768
+                        ? "16px"
+                        : "0",
+                  }}
+                >
+                  <Link
+                    href="/why-onspot"
+                    className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
+                    data-testid="footer-link-why"
+                  >
+                    Why OnSpot
+                  </Link>
+                  <Link
+                    href="/stories"
+                    className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
+                    data-testid="footer-link-stories"
+                  >
+                    Amazing Stories
+                  </Link>
+                  <Link
+                    href="/insights"
+                    className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
+                    data-testid="footer-link-insights"
+                  >
+                    Insights
+                  </Link>
+                  <Link
+                    href="/affiliate"
+                    className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
+                    data-testid="footer-link-affiliate"
+                  >
+                    Affiliate Marketing
+                  </Link>
+                  <Link
+                    href="/bpo-partner"
+                    className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
+                    data-testid="footer-link-bpo"
+                  >
+                    BPO Partner
+                  </Link>
+                  <Link
+                    href="/investors"
+                    className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
+                    data-testid="footer-link-investors"
+                  >
+                    Investors Corner
+                  </Link>
+                  <Link
+                    href="/about"
+                    className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
+                    data-testid="footer-link-about"
+                  >
+                    About Us
+                  </Link>
+                  <Link
+                    href="/operations-playbook"
+                    className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
+                    data-testid="footer-link-playbook"
+                  >
+                    Delivery Playbook
+                  </Link>
+                </div>
+              </div>
+
+              {/* New Verticals Section */}
+              <div
+                className="md:space-y-6 md:border-b-0 transition-all duration-300"
+                style={{
+                  paddingBottom: "clamp(4px, 0.6vh, 8px)",
+                  borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
+                }}
+              >
+                <button
+                  onClick={() => toggleFooterSection("verticals")}
+                  className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left"
+                  style={{ padding: "clamp(4px, 0.6vh, 8px) 0" }}
+                  data-testid="footer-accordion-verticals"
+                >
+                  <h3 className="text-sm sm:text-base font-semibold text-white tracking-wide text-left">
+                    New Verticals
+                  </h3>
+                  <ChevronDown
+                    className={`w-5 h-5 text-white/60 transition-transform duration-300 md:hidden ${expandedFooterSection === "verticals" ? "rotate-180" : ""}`}
+                  />
+                </button>
+
+                <div
+                  className={`space-y-3 transition-all duration-300 md:!opacity-100 md:!max-h-none md:!block ${
+                    expandedFooterSection === "verticals"
+                      ? "opacity-100 max-h-96"
+                      : "opacity-0 max-h-0 overflow-hidden"
+                  }`}
+                  style={{
+                    marginTop:
+                      expandedFooterSection === "verticals" ||
+                      window.innerWidth >= 768
+                        ? "16px"
+                        : "0",
+                  }}
+                >
+                  <a
+                    href="#"
+                    className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
+                  >
+                    AI Human-in-the-Loop
+                  </a>
+                  <a
+                    href="#"
+                    className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
+                  >
+                    Founder Ops
+                  </a>
+                  <a
+                    href="#"
+                    className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
+                  >
+                    Healthcare Micro-Admin
+                  </a>
+                  <a
+                    href="#"
+                    className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
+                  >
+                    E-commerce Ops
+                  </a>
+                  <a
+                    href="#"
+                    className="block text-xs sm:text-sm font-medium text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
+                  >
+                    View all 10 →
+                  </a>
+                </div>
+              </div>
+
+              {/* Connect Section */}
+              <div className="md:space-y-6 transition-all duration-300 min-w-0">
+                <button
+                  onClick={() => toggleFooterSection("connect")}
+                  className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left"
+                  style={{
+                    padding: "clamp(4px, 0.6vh, 8px) 0",
+                  }}
+                  data-testid="footer-accordion-connect"
+                >
+                  <h3 className="text-sm sm:text-base font-semibold text-white tracking-wide text-left">
+                    Connect
+                  </h3>
+                  <ChevronDown
+                    className={`w-5 h-5 text-white/60 transition-transform duration-300 md:hidden ${expandedFooterSection === "connect" ? "rotate-180" : ""}`}
+                  />
+                </button>
+
+                <div
+                  className={`space-y-3 transition-all duration-300 md:!opacity-100 md:!max-h-none md:!block ${
+                    expandedFooterSection === "connect"
+                      ? "opacity-100 max-h-96"
+                      : "opacity-0 max-h-0 overflow-hidden"
+                  }`}
+                  style={{
+                    marginTop:
+                      expandedFooterSection === "connect" ||
+                      window.innerWidth >= 768
+                        ? "16px"
+                        : "0",
+                  }}
+                >
+                  <a
+                    href="mailto:hello@onspotglobal.com"
+                    className="flex items-start justify-center md:justify-start gap-3 min-w-0 text-xs sm:text-sm text-white/70 hover:text-white transition-all duration-300 group"
+                    data-testid="footer-email"
+                  >
+                    <Mail className="w-5 h-5 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform duration-300" />
+                    <span className="break-words whitespace-normal leading-snug min-w-0">
+                      hello@onspotglobal.com
+                    </span>
+                  </a>
+                  <a
+                    href="tel:+1234567890"
+                    className="flex items-center justify-center md:justify-start gap-3 text-xs sm:text-sm text-white/70 hover:text-white transition-all duration-300 group"
+                    data-testid="footer-phone"
+                  >
+                    <Phone className="w-5 h-5 flex-shrink-0 group-hover:scale-110 transition-transform duration-300" />
+                    <span>1-917-801-9294</span>
+                  </a>
+                  <div className="flex items-start justify-center md:justify-start gap-3 text-xs sm:text-sm text-white/70">
+                    <span className="break-words sm:break-normal">
+                      <a
+                        href="https://www.google.com/search?q=onspot+global+new+york..."
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-start justify-center md:justify-start gap-3 text-xs sm:text-sm text-white/70 hover:text-white transition-all duration-300 group"
+                      >
+                        <MapPinIcon className="w-5 h-5 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform duration-300" />
+                        <span className="break-words sm:break-normal underline-offset-2 group-hover:underline">
+                          US - 2248 Broadway, New York, 10024
+                        </span>
+                      </a>
+                      <br />
+                      <a
+                        href="https://www.google.com/search?q=onspot+global+philippines&sca_esv=4acce884baa46368&rlz=1C5CHFA_enPH1014PH1014&ei=Koz4aJ3FFuuqvr0Pt66r6QI&oq=onspot+global+ph"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-start justify-center md:justify-start gap-3 text-xs sm:text-sm text-white/70 hover:text-white transition-all duration-300 group"
+                      >
+                        <MapPinIcon className="w-5 h-5 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-all duration-300" />
+                        <span className="break-words sm:break-normal underline-offset-2 group-hover:underline">
+                          PH - Unit No. 1702, 17th Floor High Street South
+                          Corporate Plaza Tower 2, 11th Ave Cor 26th St,
+                          Bonifacio Global City, Taguig
+                        </span>
+                      </a>
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1995,9 +2002,7 @@ export default function Home() {
                 <p className="hover:text-white transition-colors duration-300">
                   © 2025 OnSpot. All rights reserved.
                 </p>
-                <span className="hidden sm:inline text-white/30">
-                  ·
-                </span>
+                <span className="hidden sm:inline text-white/30">·</span>
                 <p className="text-[10px] sm:text-xs text-white/50">
                   Powered by OnSpot Intelligence
                 </p>
