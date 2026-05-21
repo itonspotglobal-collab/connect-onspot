@@ -406,10 +406,13 @@ export default function Home() {
 
               {/* Supporting statement */}
               <div className="hero-fade-up-delay">
-                <p className="text-base sm:text-lg md:text-xl text-white/65 font-light leading-relaxed tracking-wide px-2 max-w-2xl mx-auto">
-                  One system. Your unfair advantage. Marketplace speed, BPO
-                  quality, and a talent pool built for the work AI creates — not
-                  just the work it replaces.
+                <p className="text-base sm:text-lg md:text-xl font-light leading-relaxed tracking-wide px-2 max-w-2xl mx-auto">
+                  <span className="block font-medium text-white/80">
+                    One System. Your unfair Advantage.
+                  </span>
+                  <span className="block mt-2 text-white/60">
+                    Marketplace speed, BPO quality, and a talent pool built for the work AI creates — not just the work it replaces.
+                  </span>
                 </p>
               </div>
 
