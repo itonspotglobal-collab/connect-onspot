@@ -1,0 +1,199 @@
+Please fix the footer background issue.
+
+Current issue:
+The footer logo is now white, but the footer background is still light because there is a light overlay/background covering the actual footer background. We need to remove that light layer so the footer fully matches the navigation bar’s dark violet/blue color.
+
+Goal:
+The entire footer should have the exact same dark violet/blue background as the navigation bar, with no light overlay, no washed-out background, and readable white text.
+
+IMPORTANT:
+- Do not change the footer layout.
+- Do not change footer spacing or columns.
+- Only fix the background, overlay, logo, and text/icon colors.
+- Inspect the actual footer component and CSS, not just the visible className.
+
+--------------------------------------------------
+1. Remove the light background overlay
+--------------------------------------------------
+
+Search the footer component and related CSS for any light overlays or pseudo-elements.
+
+The footer currently appears to use something like:
+
+<footer className="onspot-footer relative backdrop-blur-sm overflow-hidden">
+
+Check for styles like:
+
+.onspot-footer::before
+.onspot-footer::after
+
+or Tailwind classes like:
+
+before:absolute
+before:inset-0
+before:bg-white
+before:bg-slate-50
+before:bg-gradient-to-b
+before:from-white
+before:via-white
+before:to-transparent
+after:absolute
+after:inset-0
+after:bg-white
+after:bg-slate-50
+bg-white
+bg-slate-50
+bg-gray-50
+bg-[#f...]
+backdrop-blur-sm
+
+Remove or disable those light overlays.
+
+If the footer has decorative blurred background divs inside it, make sure they are not covering the dark background with a pale color.
+
+Example:
+Remove this kind of layer:
+
+<div className="absolute inset-0 bg-white/70 ..." />
+
+or change it to:
+
+<div className="absolute inset-0 bg-transparent pointer-events-none" />
+
+If keeping decorative effects, make them subtle dark/purple, not white:
+
+bg-purple-500/10
+bg-blue-500/10
+
+--------------------------------------------------
+2. Apply the navbar background directly to the footer
+--------------------------------------------------
+
+Find the exact navbar background class or CSS variable.
+
+Apply the same exact background to the footer element itself.
+
+Example:
+
+<footer
+  data-component-name="footer"
+  className="
+    onspot-footer
+    relative
+    overflow-hidden
+    text-white
+    bg-gradient-to-r from-[#34358f] via-[#2f2f82] to-[#3d2a86]
+  "
+>
+
+If the navbar uses a different exact gradient, copy that exact gradient instead.
+
+Do not use `backdrop-blur-sm` if it makes the footer look light or washed out.
+
+--------------------------------------------------
+3. Ensure inner containers are transparent
+--------------------------------------------------
+
+Check all direct child containers inside the footer.
+
+Remove light background classes from inner wrappers, such as:
+
+bg-white
+bg-white/50
+bg-white/70
+bg-slate-50
+bg-gray-50
+bg-gradient-to-b from-white
+bg-gradient-to-r from-white
+backdrop-blur-sm with white overlay
+
+The footer inner containers should be transparent unless they are small social icon buttons.
+
+Example:
+Main footer content wrapper should be:
+
+className="relative z-10 mx-auto ..."
+
+not:
+
+className="relative z-10 bg-white/70 ..."
+
+--------------------------------------------------
+4. Update footer text colors for dark background
+--------------------------------------------------
+
+Make sure all footer text is readable on the dark background.
+
+Footer logo:
+- Use the same white logo as the navbar.
+
+Footer description:
+text-white/70
+
+Column headings:
+text-white
+
+Footer links:
+text-white/70 hover:text-white
+
+Contact icons:
+text-white/70
+
+Bottom copyright text:
+text-white/65
+
+Privacy / Terms:
+text-white/70 hover:text-white
+
+Divider:
+border-white/10
+
+--------------------------------------------------
+5. Update social media icons
+--------------------------------------------------
+
+Social icon buttons should work on dark footer.
+
+Use:
+
+className="
+  bg-white/10
+  border border-white/10
+  text-white/75
+  hover:bg-white/15
+  hover:text-white
+"
+
+Do not keep the light blue/gray social icon button background.
+
+--------------------------------------------------
+6. Make sure nothing is covering the footer
+--------------------------------------------------
+
+Use dev tools or inspect styles and confirm:
+- The computed background of the footer is the same dark violet/blue as the navbar.
+- There is no white/light absolute div covering it.
+- There is no `::before` or `::after` pseudo-element adding a light background.
+- The footer children do not have a full-width light background.
+
+If the footer uses pseudo-elements, set them to:
+
+.onspot-footer::before,
+.onspot-footer::after {
+  background: transparent !important;
+}
+
+or remove those pseudo-elements entirely.
+
+--------------------------------------------------
+7. Expected result
+--------------------------------------------------
+
+The footer should look like a dark section matching the navbar:
+- Dark violet/blue background visible across the entire footer.
+- White OnSpot logo.
+- White column headings.
+- Footer links and description in white with opacity.
+- Social icons visible on dark background.
+- Divider line subtle white.
+- No pale/light background remaining.

@@ -904,15 +904,9 @@ body.has-floating-bottom-right {
     }
   }
 
-  /* OnSpot Footer - Apple-Minimal Light Blue Aesthetic */
+  /* OnSpot Footer - matches navbar gradient */
   .onspot-footer {
-    background: 
-      linear-gradient(
-        180deg,
-        hsla(220, 60%, 70%, 0.12) 0%,
-        hsla(230, 55%, 68%, 0.15) 50%,
-        hsla(236, 50%, 65%, 0.18) 100%
-      );
+    background: linear-gradient(to right, #3A3AF8, #7F3DF4);
     position: relative;
   }
 
@@ -920,22 +914,7 @@ body.has-floating-bottom-right {
     content: '';
     position: absolute;
     inset: 0;
-    background: 
-      radial-gradient(
-        1200px 600px at 50% 0%,
-        hsla(220, 100%, 75%, 0.08) 0%,
-        transparent 70%
-      ),
-      radial-gradient(
-        900px 400px at 25% 100%,
-        hsla(236, 60%, 70%, 0.05) 0%,
-        transparent 75%
-      ),
-      radial-gradient(
-        900px 400px at 75% 100%,
-        hsla(210, 70%, 72%, 0.05) 0%,
-        transparent 75%
-      );
+    background: transparent;
     pointer-events: none;
   }
 
