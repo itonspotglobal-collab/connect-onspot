@@ -439,8 +439,10 @@ export default function Home() {
                     Thousands of talents
                   </span>
                   <span className="text-white/30 mx-3">·</span>
-                  Fastest onboarding in the market.
-                  <span className="font-bold text-white"></span>
+                  <span className="font-semibold text-white">
+                    {" "}
+                    Fastest onboarding in the market.{" "}
+                  </span>
                 </p>
               </div>
             </div>
@@ -1577,8 +1579,7 @@ export default function Home() {
                 <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-md text-center md:text-left transition-all duration-300">
                   OnSpot is a technology company and hybrid marketplace–BPO
                   delivering Philippine talent to global clients. Marketplace
-                  speed, BPO quality, and AI-ready operations — in one
-                  platform.
+                  speed, BPO quality, and AI-ready operations — in one platform.
                 </p>
               </div>
 
@@ -1880,24 +1881,40 @@ export default function Home() {
                 }`}
                 style={{
                   marginTop:
-                    expandedFooterSection === "verticals" || window.innerWidth >= 768
+                    expandedFooterSection === "verticals" ||
+                    window.innerWidth >= 768
                       ? "16px"
                       : "0",
                 }}
               >
-                <a href="#" className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300">
+                <a
+                  href="#"
+                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
+                >
                   AI Human-in-the-Loop
                 </a>
-                <a href="#" className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300">
+                <a
+                  href="#"
+                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
+                >
                   Founder Ops
                 </a>
-                <a href="#" className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300">
+                <a
+                  href="#"
+                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
+                >
                   Healthcare Micro-Admin
                 </a>
-                <a href="#" className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300">
+                <a
+                  href="#"
+                  className="block text-xs sm:text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 md:hover:translate-x-1 transition-all duration-300"
+                >
                   E-commerce Ops
                 </a>
-                <a href="#" className="block text-xs sm:text-sm font-medium text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300">
+                <a
+                  href="#"
+                  className="block text-xs sm:text-sm font-medium text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 md:hover:translate-x-1 transition-all duration-300"
+                >
                   View all 10 →
                 </a>
               </div>
