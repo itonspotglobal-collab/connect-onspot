@@ -904,9 +904,9 @@ body.has-floating-bottom-right {
     }
   }
 
-  /* OnSpot Footer - matches navbar gradient */
+  /* OnSpot Footer - dark navy/violet matching navbar perceived color */
   .onspot-footer {
-    background: linear-gradient(to right, #3A3AF8, #7F3DF4);
+    background: linear-gradient(135deg, #1a1a6e 0%, #26137a 50%, #360f8a 100%);
     position: relative;
   }
 

@@ -1,0 +1,302 @@
+Please fix the footer properly this time. The current footer still looks wrong.
+
+Current issues:
+1. Footer background is now a bright blue/purple gradient, but it does NOT match the navigation bar.
+2. The footer should use the exact same dark violet/navy color as the navbar.
+3. The footer logo/social icons area looks squeezed and poorly spaced.
+4. The social platform icons look cramped/squished even though there is available space.
+5. The footer spacing still feels too rigid.
+
+Goal:
+Make the footer match the navbar color exactly and improve the footer brand/social spacing.
+
+IMPORTANT:
+Do not approximate the footer color.
+Do not use a new blue/purple gradient.
+Do not use the bright gradient currently shown in the footer.
+Use the exact same background color/gradient as the navbar.
+
+--------------------------------------------------
+PART 1: MATCH FOOTER BACKGROUND EXACTLY TO NAVBAR
+--------------------------------------------------
+
+Inspect the navbar/header component and find the exact background styling being used.
+
+For example, check:
+- Header.tsx
+- Navbar.tsx
+- Navigation component
+- global CSS classes used by the navbar
+- CSS variables used for navbar background
+
+Then reuse that exact same class/style on the footer.
+
+If the navbar uses a solid dark color, use that exact color.
+If the navbar uses a subtle dark gradient, use that exact gradient.
+
+Current footer gradient is too bright. Remove it.
+
+Do NOT use:
+- from-blue-600
+- via-purple-600
+- to-violet-600
+- bright purple gradient
+- bright blue gradient
+
+The footer should look like the navbar:
+dark navy / dark violet, subtle, premium.
+
+Suggested approach:
+Create a shared class if needed:
+
+.navbar-surface,
+.footer-surface {
+  background: /* exact navbar background value here */;
+}
+
+Then apply:
+
+<footer className="onspot-footer footer-surface ...">
+
+If the navbar class is already something like:
+bg-[#30308a]
+or
+bg-gradient-to-r from-[#36388f] to-[#2b246f]
+
+copy it exactly.
+
+--------------------------------------------------
+PART 2: REMOVE FOOTER-SPECIFIC BACKGROUND OVERRIDES
+--------------------------------------------------
+
+Search the footer component and CSS for any footer-specific gradient/background classes.
+
+Remove or replace things like:
+
+bg-gradient-to-r
+bg-gradient-to-br
+from-blue-*
+from-purple-*
+from-violet-*
+via-*
+to-*
+bg-white
+bg-slate-*
+before:bg-*
+after:bg-*
+absolute inset-0 bg-*
+radial-gradient
+linear-gradient
+
+Also check:
+.onspot-footer
+.onspot-footer::before
+.onspot-footer::after
+
+If these pseudo-elements are adding color or light overlays, remove them or make them transparent.
+
+Use:
+
+.onspot-footer::before,
+.onspot-footer::after {
+  background: transparent !important;
+}
+
+unless they are required for something else.
+
+The footer background must come from the footer element itself, not from a decorative overlay.
+
+--------------------------------------------------
+PART 3: TEXT COLORS FOR DARK FOOTER
+--------------------------------------------------
+
+Since the footer background will be dark like the navbar, all footer text should be readable.
+
+Use:
+- Footer logo: same white logo used in navbar
+- Column headings: text-white
+- Body/description: text-white/70
+- Footer links: text-white/70 hover:text-white
+- Contact text/icons: text-white/70
+- Bottom row text: text-white/65
+- Privacy/Terms: text-white/70 hover:text-white
+- Divider: border-white/10
+
+Do not leave slate/dark text on the footer.
+
+--------------------------------------------------
+PART 4: FIX BRAND/SOCIAL ICON SPACING
+--------------------------------------------------
+
+The brand section still looks squeezed. Please separate the brand block from the link columns and give it enough space.
+
+Footer should have two main layout groups:
+
+1. Brand block:
+- OnSpot logo
+- Description
+- Social/platform icons
+
+2. Link columns:
+- Navigation
+- Company
+- New Verticals
+- Connect
+
+Do NOT force all five sections into one equal grid.
+
+Use this structure:
+
+<footer>
+  <div className="footer-container">
+    <div className="footer-main">
+      <div className="footer-brand">
+        logo
+        description
+        social icons
+      </div>
+
+      <div className="footer-links-grid">
+        Navigation
+        Company
+        New Verticals
+        Connect
+      </div>
+    </div>
+
+    <div className="footer-bottom">
+      copyright / powered by / privacy / terms
+    </div>
+  </div>
+</footer>
+
+Suggested parent layout:
+
+className="
+  grid grid-cols-1
+  gap-y-12
+  lg:grid-cols-[340px_1fr]
+  xl:grid-cols-[380px_1fr]
+  2xl:grid-cols-[420px_1fr]
+  lg:gap-x-14
+  xl:gap-x-20
+  items-start
+"
+
+Suggested links grid:
+
+className="
+  grid grid-cols-1
+  sm:grid-cols-2
+  lg:grid-cols-4
+  gap-y-10
+  gap-x-8
+  xl:gap-x-12
+"
+
+--------------------------------------------------
+PART 5: FIX SOCIAL ICONS SO THEY DO NOT LOOK SQUISHED
+--------------------------------------------------
+
+The social icons should not be clipped, squeezed, or crowded.
+
+Check if the brand column or social container has:
+- overflow-hidden
+- max-width too small
+- fixed width too small
+- justify-between in a narrow area
+- negative margin
+- icon size too small
+- parent width smaller than the icon row
+
+Fix social icon row with:
+
+className="
+  mt-8
+  flex
+  flex-wrap
+  items-center
+  justify-start
+  gap-3
+  overflow-visible
+"
+
+Each icon button:
+
+className="
+  flex
+  h-11
+  w-11
+  shrink-0
+  items-center
+  justify-center
+  rounded-full
+  border border-white/15
+  bg-white/10
+  text-white/75
+  transition
+  hover:bg-white/15
+  hover:text-white
+"
+
+Icon SVG:
+className="h-5 w-5 shrink-0"
+
+Do not allow icon buttons to shrink:
+shrink-0
+
+If there are many social icons, allow wrapping cleanly instead of squeezing:
+flex-wrap gap-3
+
+--------------------------------------------------
+PART 6: ALIGNMENT AND WIDTH
+--------------------------------------------------
+
+Use one consistent footer container for both main content and bottom row:
+
+className="
+  mx-auto
+  w-full
+  max-w-[1500px]
+  px-6
+  sm:px-8
+  lg:px-12
+  xl:px-16
+"
+
+Brand block:
+className="
+  flex
+  flex-col
+  items-start
+  text-left
+  w-full
+  max-w-[420px]
+"
+
+Description:
+className="mt-6 max-w-[340px] text-white/70"
+
+Logo:
+- Use the exact same white logo asset/component as navbar.
+- Do not stretch it.
+- Set natural sizing only.
+
+Example:
+className="h-auto w-[180px]"
+
+Do not force both width and height in a way that distorts the logo.
+
+--------------------------------------------------
+PART 7: EXPECTED RESULT
+--------------------------------------------------
+
+After this update:
+- Footer background exactly matches navbar dark violet/navy.
+- No bright footer gradient remains.
+- Footer logo is white and not distorted.
+- Footer text is readable white/white-opacity.
+- Brand section has enough width.
+- Social icons are not squished or clipped.
+- Navigation, Company, New Verticals, and Connect columns remain evenly spaced.
+- Footer looks balanced on large desktop, laptop, tablet, and mobile.

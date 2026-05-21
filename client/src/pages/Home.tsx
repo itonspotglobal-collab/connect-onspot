@@ -1705,23 +1705,10 @@ export default function Home() {
         </div>
 
         <div className="container mx-auto px-4 sm:px-6 py-10 sm:py-12 lg:py-14">
-          {/* Footer Grid - Fluid responsive layout */}
-          <div
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 max-w-7xl mx-auto transition-all duration-500 ease-in-out"
-            style={{
-              rowGap: "clamp(4px, 0.6vh, 8px)",
-              columnGap: "clamp(16px, 2vw, 32px)",
-            }}
-          >
-            {/* Brand Section - Spans 2 columns on tablet/desktop */}
-            <div
-              className="md:col-span-2 lg:col-span-1 md:pb-0 md:border-b-0"
-              style={{
-                paddingBottom: "clamp(16px, 2.5vh, 24px)",
-                borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
-                transition: "all 0.3s ease-in-out",
-              }}
-            >
+          {/* Footer Grid - Brand + Links layout */}
+          <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-y-10 lg:gap-x-14 xl:gap-x-20 items-start">
+            {/* Brand Section */}
+            <div className="w-full lg:w-[360px] xl:w-[400px] shrink-0 pb-8 lg:pb-0 border-b border-white/10 lg:border-b-0">
               <div className="space-y-6 sm:space-y-8 relative flex flex-col items-center md:items-start transition-all duration-300">
                 <div className="relative inline-block">
                   <img
@@ -1741,13 +1728,7 @@ export default function Home() {
               </div>
 
               {/* Social Icons - Single horizontal row, never wrapping */}
-              <div
-                className="flex gap-2 sm:gap-3 justify-center md:justify-start overflow-x-auto scrollbar-hide transition-all duration-300"
-                style={{
-                  flexWrap: "nowrap",
-                  marginTop: "clamp(20px, 3vh, 32px)",
-                }}
-              >
+              <div className="mt-8 flex flex-wrap items-center justify-start gap-3">
                 <a
                   href="https://www.linkedin.com/company/onspotglobal/"
                   target="_blank"
@@ -1814,6 +1795,8 @@ export default function Home() {
               </div>
             </div>
 
+            {/* Link Columns */}
+            <div className="flex-1 grid grid-cols-2 lg:grid-cols-4 gap-x-8 xl:gap-x-12 gap-y-10">
             {/* Navigation Section */}
             <div
               className="md:space-y-6 md:border-b-0 transition-all duration-300"
@@ -2157,6 +2140,7 @@ export default function Home() {
                   </span>
                 </div>
               </div>
+            </div>
             </div>
           </div>
 
