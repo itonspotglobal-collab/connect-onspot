@@ -1,0 +1,83 @@
+Fix the footer layout so the brand/logo column has more space and is visually separated from the rest of the footer content.
+
+Current issue:
+The footer uses a grid layout where the brand logo/content column is too narrow. The logo, brand description, and social/platform icons feel cramped, especially the icons row.
+
+Goal:
+Make the first footer section, the one containing the OnSpot logo, description, and social/platform icons, wider than the other footer columns.
+
+Requirements:
+
+1. Keep the current footer design
+- Do not redesign the whole footer.
+- Keep the current fonts, colors, spacing style, background, and overall visual treatment.
+- Only adjust the layout/column sizing.
+
+2. Make the brand/logo column wider
+- The first column should take more horizontal space than the other footer columns.
+- The brand column should have enough width for:
+  - the OnSpot logo,
+  - the company description,
+  - the social/platform icons row.
+- The social/platform icons should stay in one clean row on desktop as much as possible.
+
+Suggested desktop grid layout:
+- Brand column: wider, around 1.4x to 1.8x the width of the other columns.
+- Other columns: equal widths.
+
+For example, use something like:
+grid-template-columns: 1.6fr 1fr 1fr 1fr 1.3fr;
+
+or in Tailwind:
+lg:grid-cols-[1.6fr_1fr_1fr_1fr_1.3fr]
+
+3. Separate the brand column from the rest
+- Add a little more spacing/gap between the brand column and the Navigation column.
+- The brand column should feel like its own section, but still part of the same footer.
+- Do not add a heavy border unless it already matches the site style.
+- A subtle right padding or increased column gap is preferred.
+
+4. Improve the social/platform icons layout
+- Prevent the icons from looking squeezed.
+- Keep consistent spacing between icons.
+- Allow wrapping only on smaller screens if needed.
+- On desktop, the icons should ideally stay on one row.
+
+Suggested styling:
+- Use flex with gap.
+- Example:
+  flex flex-wrap gap-3
+- On larger screens:
+  lg:flex-nowrap
+
+5. Preserve responsiveness
+- Desktop: brand column should be wider than the rest.
+- Tablet/mobile: columns should stack or remain responsive according to the existing footer behavior.
+- Do not cause horizontal scrolling.
+- Make sure the brand column still looks good on smaller screen widths.
+
+6. Check footer bottom row
+- Keep the copyright row, “Powered by OnSpot Intelligence”, Privacy Policy, and Terms of Service aligned as currently designed.
+- Do not change the content or styling of the bottom footer row unless needed for spacing consistency.
+
+Implementation hint:
+Look for the footer grid container, likely similar to:
+
+grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5
+
+Replace the desktop grid class with a custom column layout like:
+
+grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1fr_1.3fr]
+
+Then make sure the first child/footer brand column does not have restrictive width classes that keep it narrow.
+
+Also check if the first column has classes like:
+md:col-span-2
+lg:col-span-1
+max-w-...
+w-...
+
+Adjust or remove restrictive width classes if they prevent the brand column from using the wider grid space.
+
+Expected result:
+The OnSpot logo/brand section should look more spacious and separated, while the Navigation, Company, New Verticals, and Connect columns remain clean and aligned.

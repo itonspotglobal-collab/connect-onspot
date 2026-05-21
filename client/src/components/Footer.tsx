@@ -33,10 +33,10 @@ export function Footer() {
 
       <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-10 relative z-10">
         {/* Single unified grid: brand col-span-2, then 5 nav columns */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-8 items-start">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1fr_1fr_1.3fr] gap-8 lg:gap-x-10 items-start">
 
-          {/* Brand — spans 2 cols on large screens */}
-          <div className="lg:col-span-2 space-y-4">
+          {/* Brand — naturally wider via grid template */}
+          <div className="space-y-4">
             <div className="relative">
               <img
                 src={onspotLogo}
@@ -51,7 +51,7 @@ export function Footer() {
               infrastructure with human excellence to scale businesses and
               empower people to perform beyond limits.
             </p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap lg:flex-nowrap gap-3">
               <Button
                 variant="ghost"
                 size="sm"
