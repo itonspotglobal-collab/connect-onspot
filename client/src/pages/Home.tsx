@@ -326,17 +326,15 @@ function LogoCarousel() {
   const logos = trustedBrands;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(4);
+  const [visibleCount, setVisibleCount] = useState(5);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const updateVisible = () => {
       const w = window.innerWidth;
       if (w < 640) setVisibleCount(1);
-      else if (w < 768) setVisibleCount(2);
+      else if (w < 768) setVisibleCount(3);
       else if (w < 1024) setVisibleCount(3);
-      else if (w < 1280) setVisibleCount(4);
       else setVisibleCount(5);
     };
     updateVisible();
@@ -364,45 +362,64 @@ function LogoCarousel() {
   const cardWidthPct = 100 / visibleCount;
   const translateX = -(currentIndex * cardWidthPct);
 
+  // The card visually centered in the viewport
+  const centerOffset = Math.floor(visibleCount / 2);
+  const activeIndex = (currentIndex + centerOffset) % logos.length;
+
   return (
     <div className="relative mt-10 sm:mt-14 w-full">
       {/* Prev button */}
       <button
         onClick={prev}
         aria-label="Previous client logos"
-        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-9 h-9 rounded-full bg-white/80 border border-slate-200/80 shadow-sm hover-elevate -translate-x-1 sm:-translate-x-4 backdrop-blur-sm"
+        className="absolute left-2 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-9 h-9 rounded-full bg-white/80 border border-slate-200/80 shadow-sm hover-elevate backdrop-blur-sm"
       >
         <ChevronLeft className="w-4 h-4 text-slate-600" />
       </button>
 
-      {/* Track wrapper */}
+      {/* Track wrapper — py-8 gives vertical room so scaled cards don't clip */}
       <div
-        className="overflow-hidden mx-6 sm:mx-10"
+        className="overflow-hidden mx-12 py-8"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
       >
         <div
-          ref={trackRef}
-          className="flex transition-transform duration-700 ease-out"
+          className="flex transition-transform duration-700 ease-out items-center"
           style={{ transform: `translateX(${translateX}%)` }}
         >
-          {logos.map((brand, i) => (
-            <div
-              key={i}
-              className="shrink-0 px-2 sm:px-3"
-              style={{ width: `${cardWidthPct}%` }}
-              data-testid={`brand-logo-${i}`}
-            >
-              <div className="flex h-24 sm:h-28 items-center justify-center rounded-2xl border border-slate-200/70 bg-white/70 shadow-sm backdrop-blur-sm">
-                <img
-                  src={brand.logo}
-                  alt={brand.name}
-                  loading="lazy"
-                  className="max-h-12 sm:max-h-14 max-w-[140px] sm:max-w-[160px] w-auto object-contain opacity-100"
-                />
+          {logos.map((brand, i) => {
+            const isActive = i === activeIndex;
+            return (
+              <div
+                key={i}
+                className="shrink-0 px-2 sm:px-3 flex items-center justify-center"
+                style={{ width: `${cardWidthPct}%` }}
+                data-testid={`brand-logo-${i}`}
+              >
+                <div
+                  className={[
+                    "w-full flex items-center justify-center rounded-2xl border backdrop-blur-sm",
+                    "transition-all duration-500 ease-out",
+                    isActive
+                      ? "h-28 sm:h-32 scale-110 opacity-100 shadow-xl border-purple-300/60 bg-white z-10"
+                      : "h-24 sm:h-28 scale-90 opacity-60 shadow-sm border-slate-200/70 bg-white/60",
+                  ].join(" ")}
+                >
+                  <img
+                    src={brand.logo}
+                    alt={brand.name}
+                    loading="lazy"
+                    className={[
+                      "w-auto object-contain transition-all duration-500",
+                      isActive
+                        ? "max-h-16 sm:max-h-20 max-w-[170px] sm:max-w-[190px]"
+                        : "max-h-10 sm:max-h-14 max-w-[120px] sm:max-w-[150px]",
+                    ].join(" ")}
+                  />
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -410,20 +427,20 @@ function LogoCarousel() {
       <button
         onClick={next}
         aria-label="Next client logos"
-        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-9 h-9 rounded-full bg-white/80 border border-slate-200/80 shadow-sm hover-elevate translate-x-1 sm:translate-x-4 backdrop-blur-sm"
+        className="absolute right-2 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-9 h-9 rounded-full bg-white/80 border border-slate-200/80 shadow-sm hover-elevate backdrop-blur-sm"
       >
         <ChevronRight className="w-4 h-4 text-slate-600" />
       </button>
 
       {/* Pagination dots */}
-      <div className="flex justify-center gap-1.5 mt-6">
+      <div className="flex justify-center gap-1.5 mt-2">
         {Array.from({ length: maxIndex + 1 }).map((_, i) => (
           <button
             key={i}
             onClick={() => setCurrentIndex(i)}
             aria-label={`Go to slide ${i + 1}`}
-            className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
-              i === currentIndex ? "w-4 bg-violet-600" : "bg-slate-300"
+            className={`h-1.5 rounded-full transition-all duration-300 ${
+              i === currentIndex ? "w-4 bg-violet-600" : "w-1.5 bg-slate-300"
             }`}
           />
         ))}

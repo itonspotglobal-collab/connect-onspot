@@ -1,0 +1,168 @@
+Please enhance the “TRUSTED BY” client logo carousel.
+
+Current status:
+The client logos are now in a carousel and displayed in color, which is good. However, we want the centered/active logo to be visually highlighted.
+
+Goal:
+When a logo/card is in the center of the carousel, it should look bigger and highlighted compared to the other logos, similar to a “center active slide” carousel effect.
+
+IMPORTANT:
+- Keep the current “TRUSTED BY” heading and headline.
+- Keep the logos in color.
+- Keep autoplay and manual previous/next controls.
+- Do not copy the exact reference design.
+- Only enhance the carousel behavior and styling.
+
+Requirements:
+
+1. Highlight the center/active logo
+The logo/card currently in the center should:
+- Scale up slightly
+- Look more prominent than the others
+- Have a smoother zoom transition
+- Have stronger opacity and shadow
+- Stay fully readable
+
+Suggested active card style:
+className="
+  scale-110
+  opacity-100
+  shadow-xl
+  border-purple-300/60
+  bg-white
+  z-10
+"
+
+Suggested inactive card style:
+className="
+  scale-90
+  opacity-60
+  shadow-sm
+  bg-white/60
+"
+
+Use smooth transitions:
+className="
+  transition-all
+  duration-500
+  ease-out
+"
+
+2. Center active item logic
+The active slide should be the one visually centered in the carousel viewport.
+
+Please update the carousel logic so the active/highlighted index matches the centered logo, not just the first visible logo.
+
+Example:
+If 5 logos are visible on desktop, the center active item should be the 3rd visible card.
+
+If using currentIndex:
+const centerOffset = Math.floor(visibleCount / 2);
+const activeIndex = (currentIndex + centerOffset) % logos.length;
+
+Then apply active styling when:
+index === activeIndex
+
+3. Make the active logo itself slightly larger
+Inside the active card, the logo image should also become larger.
+
+Suggested logo image styles:
+
+Active:
+className="
+  max-h-20
+  max-w-[190px]
+  transition-all duration-500
+"
+
+Inactive:
+className="
+  max-h-14
+  max-w-[150px]
+  transition-all duration-500
+"
+
+4. Keep card heights consistent
+The active card can scale visually, but the carousel row should not jump or change height.
+
+Use a taller carousel area to allow zooming without clipping:
+
+Carousel viewport:
+className="
+  relative mx-auto mt-14 w-full max-w-7xl overflow-hidden px-8 py-8
+"
+
+Card wrapper:
+className="
+  flex items-center justify-center
+"
+
+Make sure overflow does not cut off the zoomed card. If needed, use:
+overflow-visible
+on the inner track but keep the outer section from causing page overflow.
+
+5. Use a “coverflow-like” feel, but subtle
+Do not make the zoom extreme.
+
+Suggested scale values:
+- Active center card: scale-110 or scale-[1.12]
+- Cards beside active: scale-95 opacity-80
+- Farther cards: scale-90 opacity-60
+
+If the current carousel only supports active/inactive states, use:
+- Active: scale-110 opacity-100
+- Inactive: scale-90 opacity-60
+
+6. Manual controls should update the active center
+When clicking previous or next:
+- The carousel should move smoothly.
+- The newly centered logo should become active/highlighted.
+- The active highlight should not lag behind the carousel.
+
+7. Autoplay should update active center
+During autoplay:
+- The carousel should move to the next item.
+- The centered item should scale up/highlight.
+- The previous active item should smoothly scale back down.
+
+8. Responsive behavior
+Desktop:
+- Show 5 logos if possible.
+- Center logo is highlighted.
+
+Laptop:
+- Show 3 or 5 logos depending on available width.
+- Center logo is highlighted.
+
+Tablet:
+- Show 3 logos.
+- Center logo is highlighted.
+
+Mobile:
+- Show 1 logo or 1 main logo with partial side logos if possible.
+- The visible logo should be highlighted.
+- No horizontal page scrolling.
+
+9. Controls placement
+The previous and next arrows should be positioned vertically centered beside the carousel row, not awkwardly floating too high or too low.
+
+Suggested:
+Previous button:
+className="
+  absolute left-2 top-1/2 -translate-y-1/2
+"
+
+Next button:
+className="
+  absolute right-2 top-1/2 -translate-y-1/2
+"
+
+10. Accessibility
+- Keep aria-labels for previous and next buttons.
+- Logo images should keep descriptive alt text.
+- Respect prefers-reduced-motion if possible:
+  - Reduce/disable autoplay animation
+  - Keep manual navigation working
+
+Expected result:
+The logo carousel should now feel more dynamic and premium. The center logo/card should expand or zoom slightly and look highlighted, while the surrounding logos remain smaller and softer. Autoplay and manual controls should continue working smoothly.
