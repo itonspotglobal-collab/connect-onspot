@@ -1,0 +1,53 @@
+Please update the footer background color so it matches the navigation bar exactly.
+
+Current issue:
+The footer still has a different background color from the navbar. We want the footer to use the same dark blue/purple color treatment as the navigation bar.
+
+Goal:
+Make the footer background the same color/gradient as the top navigation bar.
+
+Requirements:
+
+1. Reuse the navbar background style
+- Find the exact background class, CSS variable, or gradient used by the navbar/header.
+- Apply that same background treatment to the footer.
+- Do not approximate if the navbar already has reusable classes or variables.
+
+For example, if the navbar uses something like:
+bg-gradient-to-r from-[#34358f] via-[#2f2f82] to-[#3d2a86]
+
+Apply the same class to the footer.
+
+2. Update footer text colors for readability
+Since the footer will become dark, update footer text colors so everything remains readable.
+
+Suggested:
+- Footer headings: text-white
+- Footer links/body text: text-white/70 or text-white/75
+- Footer links hover: text-white
+- Footer contact icons: text-white/70
+- Footer divider line: border-white/10 or border-white/15
+- Copyright text: text-white/70
+- Privacy / Terms links: text-white/70 hover:text-white
+
+3. Update social/platform icons
+The social icon buttons should still be visible on the dark background.
+
+Suggested:
+- Icon button background: bg-white/10
+- Icon button border: border-white/10
+- Icon color: text-white/75
+- Hover state: bg-white/15 text-white
+
+4. Keep the footer layout unchanged
+- Do not redesign the footer.
+- Do not change footer spacing, columns, or content.
+- Only update the background and text/icon colors needed for contrast.
+
+5. Make sure the footer blends with the site
+- Footer should visually match the navbar color.
+- No light footer background should remain.
+- Avoid gray/dark text that is hard to read on the new dark footer.
+
+Expected result:
+The footer should now have the exact same dark blue/purple background as the navigation bar, with all footer text, links, contact info, divider, and social icons readable and visually consistent.

@@ -14,13 +14,7 @@ import {
 
 export function Footer() {
   return (
-    <footer
-      className="relative overflow-hidden"
-      style={{
-        background:
-          "linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)",
-      }}
-    >
+    <footer className="relative overflow-hidden bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4]">
       {/* Enhanced Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-white/8 rounded-full blur-2xl animate-pulse"></div>
