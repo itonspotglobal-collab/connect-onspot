@@ -1,0 +1,156 @@
+Please update the stats section inside “The Experience” section.
+
+Current status:
+The stats section was moved into “The Experience” and the new colors look good. However, the layout is now too boxed-in/narrow. We want to keep the new color styling, but return to the old format where the stats stretch horizontally across the page.
+
+Goal:
+Make the stats row stretch wide to both sides, similar to the old stats strip format, while keeping the new lighter/gradient style that matches “The Experience”.
+
+Important:
+- Keep the stats inside “The Experience”.
+- Do not bring back the old dark navy stats section.
+- Do not duplicate the stats.
+- Keep the new color/style direction.
+- Only adjust the width/layout so it stretches wider.
+
+Requirements:
+
+1. Make the stats row full-width within the Experience section
+Instead of a narrow centered card, the stats should stretch much wider across the section.
+
+Use a wider container such as:
+
+className="
+  relative left-1/2 right-1/2
+  -ml-[50vw] -mr-[50vw]
+  w-screen
+"
+
+or, if the project avoids full-bleed sections, use:
+
+className="
+  mx-auto w-full max-w-none
+"
+
+The visual goal is for the stats to span almost the entire viewport width like the old strip.
+
+2. Keep content aligned and not too close to the screen edges
+Even though the stats background stretches wide, the inner stat content should have safe horizontal padding.
+
+Suggested structure:
+
+<div className="w-full">
+  <div className="mx-auto w-full max-w-[1800px] px-6 sm:px-10 lg:px-16">
+    stats grid here
+  </div>
+</div>
+
+3. Use the new gradient/glass style
+Keep the new lighter style that matches The Experience section.
+
+Do NOT use the old dark navy background.
+
+Suggested outer stats strip style:
+
+className="
+  mt-10 w-full
+  border-y border-white/40
+  bg-white/20
+  backdrop-blur-xl
+  shadow-[0_20px_60px_rgba(80,80,180,0.10)]
+"
+
+or:
+
+className="
+  mt-10 w-full
+  bg-gradient-to-r from-white/20 via-white/30 to-white/20
+  border-y border-white/40
+  backdrop-blur-xl
+"
+
+4. Remove rounded card look if it makes the strip look boxed-in
+The old format stretched straight across, so remove or reduce the rounded corners.
+
+Use:
+rounded-none
+
+If slight softness is needed:
+rounded-none lg:rounded-none
+
+Do not use rounded-3xl on the full-width stats strip.
+
+5. Keep five columns on desktop
+The stats should display as a wide horizontal row:
+
+- 72hrs / AVG. TIME TO HIRE
+- 500+ / GLOBAL CLIENTS
+- 98% / CLIENT RETENTION
+- 2,000+ / TALENTS PLACED
+- 🇵🇭 / PHILIPPINE-BASED
+
+Use:
+
+className="
+  grid grid-cols-1
+  sm:grid-cols-2
+  lg:grid-cols-5
+"
+
+6. Add divider lines between stats
+To preserve the old strip feel, add subtle vertical dividers between stat items on desktop.
+
+Suggested:
+- border-white/30
+- lg:border-r for each item except the last
+- For mobile/tablet, use bottom borders instead of vertical dividers.
+
+7. Text styling
+Keep the updated gradient text for the main numbers.
+
+Numbers:
+className="
+  text-5xl md:text-6xl font-bold
+  bg-gradient-to-r from-purple-600 to-blue-600
+  bg-clip-text text-transparent
+"
+
+Labels:
+className="
+  mt-3 text-xs font-semibold uppercase tracking-[0.25em]
+  text-slate-700/80
+"
+
+8. Spacing with Experience content
+The stats should sit between:
+- the subtitle “One System. Your Unfair Advantage.”
+- the Vanessa AI Assistant experience card
+
+Suggested spacing:
+- Subtitle to stats: mt-10
+- Stats to main experience card: mt-14 or mt-16
+
+9. Responsive behavior
+Desktop:
+- Stats stretch across the page like the old strip.
+- Five columns remain in one row.
+- Content has safe side padding.
+
+Large desktop:
+- Stats should not look like a small centered box.
+- It should feel full-width and intentional.
+
+Laptop:
+- Stats should remain clean and proportionate.
+
+Tablet:
+- 2-column layout is fine.
+- Borders should adjust cleanly.
+
+Mobile:
+- Stack vertically.
+- No horizontal scrolling.
+- Keep enough padding.
+
+Expected result:
+The stats section keeps the new lighter gradient/glass color treatment, but visually returns to the old full-width stretched format. It should feel like a wide strip inside “The Experience,” not a narrow rounded card.

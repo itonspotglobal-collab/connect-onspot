@@ -1297,37 +1297,39 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Stats strip — glassy cards matching the Experience gradient */}
-          <div className="mx-auto mt-10 w-full max-w-5xl grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 overflow-hidden rounded-3xl border border-white/40 bg-white/25 backdrop-blur-xl shadow-[0_20px_60px_rgba(80,80,180,0.12)]">
-            {[
-              { value: "72hrs", label: "AVG. TIME TO HIRE" },
-              { value: "500+", label: "GLOBAL CLIENTS" },
-              { value: "98%", label: "CLIENT RETENTION" },
-              { value: "2,000+", label: "TALENTS PLACED" },
-              { flag: true, label: "PHILIPPINE-BASED" },
-            ].map((stat, i, arr) => (
-              <div
-                key={stat.label}
-                className={`flex flex-col items-center justify-center px-4 py-7 text-center
-                  border-white/30
-                  ${i < arr.length - 1 ? "border-b lg:border-b-0 lg:border-r" : ""}
-                  ${i % 2 === 0 && i < arr.length - 1 ? "sm:border-r" : ""}
-                  col-span-1
-                  ${i === 4 ? "col-span-2 sm:col-span-1" : ""}
-                `}
-              >
-                {stat.flag ? (
-                  <span className="text-4xl md:text-5xl leading-none">🇵🇭</span>
-                ) : (
-                  <span className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent leading-none">
-                    {stat.value}
-                  </span>
-                )}
-                <span className="mt-3 text-xs font-semibold uppercase tracking-[0.22em] text-slate-600 dark:text-slate-400">
-                  {stat.label}
-                </span>
+          {/* Stats strip — full-width, glass style matching Experience gradient */}
+          <div className="relative mt-10 left-1/2 -translate-x-1/2 w-screen bg-gradient-to-r from-white/20 via-white/30 to-white/20 border-y border-white/40 backdrop-blur-xl shadow-[0_20px_60px_rgba(80,80,180,0.10)]">
+            <div className="mx-auto w-full max-w-[1800px] px-6 sm:px-10 lg:px-16">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+                {[
+                  { value: "72hrs", label: "AVG. TIME TO HIRE" },
+                  { value: "500+", label: "GLOBAL CLIENTS" },
+                  { value: "98%", label: "CLIENT RETENTION" },
+                  { value: "2,000+", label: "TALENTS PLACED" },
+                  { flag: true, label: "PHILIPPINE-BASED" },
+                ].map((stat, i, arr) => (
+                  <div
+                    key={stat.label}
+                    className={[
+                      "flex flex-col items-center justify-center px-6 py-8 text-center",
+                      i < arr.length - 1 ? "border-b border-white/30 sm:border-b-0 sm:border-r" : "",
+                      i === 4 ? "col-span-2 sm:col-span-1" : "",
+                    ].join(" ")}
+                  >
+                    {stat.flag ? (
+                      <span className="text-5xl md:text-6xl leading-none">🇵🇭</span>
+                    ) : (
+                      <span className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent leading-none">
+                        {stat.value}
+                      </span>
+                    )}
+                    <span className="mt-3 text-xs font-semibold uppercase tracking-[0.25em] text-slate-700/80 dark:text-slate-300">
+                      {stat.label}
+                    </span>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
 
           {/* OnSpot Connect Interface Mockup */}
