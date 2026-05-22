@@ -4450,6 +4450,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/admin/jobs/:id/refresh", async (req: Request, res: Response) => {
+    try {
+      const now = new Date();
+      const existing = await storage.getJob(req.params.id);
+      if (!existing) return res.status(404).json({ error: "Job not found" });
+      const job = await storage.updateJob(req.params.id, {
+        postedAt: now,
+        lastRefreshedAt: now,
+        originalPostedAt: (existing as any).originalPostedAt ?? (existing as any).postedAt ?? existing.createdAt ?? now,
+      } as any);
+      res.json(job);
+      import("./services/ragService")
+        .then(({ indexJobListings }) => indexJobListings())
+        .catch((err: any) => console.error("❌ Background job reindex failed:", err.message));
+    } catch (error) {
+      console.error("Admin job refresh error:", error);
+      res.status(500).json({ error: "Failed to refresh job posting" });
+    }
+  });
+
   app.delete("/api/admin/jobs/:id", async (req: Request, res: Response) => {
     try {
       const job = await storage.updateJob(req.params.id, { status: "cancelled" });

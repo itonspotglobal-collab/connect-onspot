@@ -1,0 +1,126 @@
+Add a “Refresh Posting” feature to `/admin/find-work` so admins can reset an existing job posting’s posted date back to today/current time without duplicating the job.
+
+Goal:
+Admins should be able to refresh a job posting so it appears as a latest/new posting again. For example, instead of showing `Posted 1 month ago`, after refresh it should show `Posted today`, `Just now`, or `Day 1` depending on the project’s current relative-date wording.
+
+Current issue:
+Job postings become old over time, but there is no admin action to make an existing job appear newly posted again.
+
+Required behavior:
+- Add a `Refresh Posting` button/action to each job posting in `/admin/find-work`
+- Clicking it updates that existing job’s `postedAt` date to the current date/time
+- Do not duplicate the job
+- Do not change title, description, salary, apply link, cultural fit, status, category, or any other content
+- Refreshed jobs should move back up when sorting by recently posted
+- Public pages should reflect the refreshed posting date automatically
+
+Implementation details:
+
+1. Add/standardize posted date fields
+Make sure each job has:
+
+```ts
+postedAt: string;
+originalPostedAt?: string;
+lastRefreshedAt?: string;
+
+On job creation:
+
+postedAt = new Date().toISOString()
+originalPostedAt = new Date().toISOString()
+
+On refresh:
+
+postedAt = new Date().toISOString()
+lastRefreshedAt = new Date().toISOString()
+
+Do not overwrite originalPostedAt if it already exists.
+
+Add Refresh Posting button in admin
+In /admin/find-work, add a new action button near existing actions like:
+Open / Close
+Edit
+Preview
+Copy Link
+Delete
+
+Button label:
+Refresh Posting
+
+or shorter:
+Refresh
+
+Use an icon if the project already uses one, such as RefreshCw.
+
+Add confirmation before refresh
+Before updating the date, show a confirmation message:
+
+Refresh this job posting? This will update its posted date and make it appear as a latest opening again.
+
+Use the existing confirmation dialog/modal style if available. If not, use the current admin UI pattern.
+
+Refresh handler
+Create a handler like:
+const handleRefreshPosting = (jobId) => {
+  const now = new Date().toISOString();
+
+  updateJob(jobId, {
+    postedAt: now,
+    lastRefreshedAt: now,
+    originalPostedAt: existingJob.originalPostedAt || existingJob.postedAt || now,
+  });
+};
+
+Adapt this to the project’s actual state/store/update pattern.
+
+Update sorting
+Anywhere jobs are sorted by latest/recently posted, make sure sorting uses postedAt descending.
+
+This should affect:
+
+/admin/find-work if it has latest sorting
+FindWork.tsx live preview if it shows latest open jobs
+FindWorkJob.tsx / FindWorkAllJobs.tsx recently posted sort
+Update public relative date display
+Make sure public job cards/pages use postedAt for the posted age label.
+
+Example:
+
+refreshed now → Posted today or Just now
+refreshed yesterday → Posted 1 day ago
+old job → Posted 1 month ago
+
+Use the existing relative-date helper if one exists. Do not create conflicting date display logic.
+
+Optional admin indicator
+After a job has been refreshed, show a subtle admin-only indicator:
+Refreshed today
+or Last refreshed: Today
+
+This is optional, but helpful.
+
+Keep existing functionality intact
+Do not break:
+Add Job
+Edit Job
+Open/Close
+Preview
+Copy Link
+Delete
+Apply Link
+Cultural Fit
+Peso salary/rate fields
+category filtering
+public job popup
+public full job page
+Output expectation
+Return updated code for:
+job schema/type updates
+admin Refresh Posting button
+refresh confirmation + handler
+shared job update logic
+posted date sorting updates
+public posted-date display updates if needed
+
+Important:
+Refreshing a posting means updating the existing job’s postedAt to the current date/time. It must not create a duplicate job.

@@ -158,6 +158,9 @@ export const jobs = pgTable("jobs", {
   proposalCount: integer("proposal_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  postedAt: timestamp("posted_at"),
+  originalPostedAt: timestamp("original_posted_at"),
+  lastRefreshedAt: timestamp("last_refreshed_at"),
 });
 
 // Proposals

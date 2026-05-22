@@ -50,6 +50,7 @@ import {
   ThumbsUp,
   ThumbsDown,
   RotateCcw,
+  RefreshCw,
   AlertCircle,
   Building2,
   Link2,
@@ -210,11 +211,13 @@ function AdminJobRow({
   onApprove,
   onReject,
   onMoveToPending,
+  onRefresh,
   copiedId,
   isToggling,
   isDeleting,
   isApproving,
   isRejecting,
+  isRefreshing,
 }: {
   job: Job;
   onEdit: () => void;
@@ -224,16 +227,18 @@ function AdminJobRow({
   onApprove: () => void;
   onReject: () => void;
   onMoveToPending: () => void;
+  onRefresh: () => void;
   copiedId: string | null;
   isToggling: boolean;
   isDeleting: boolean;
   isApproving: boolean;
   isRejecting: boolean;
+  isRefreshing: boolean;
 }) {
   const badges = getJobBadges(job as any);
   const isOpen = job.status === "open";
   const pay = buildRateDisplay(job);
-  const timeAgo = getTimeAgo(job.createdAt);
+  const timeAgo = getTimeAgo((job as any).postedAt || job.createdAt);
   const approvalStatus = (job as any).approvalStatus ?? "approved";
   const approvalCfg = APPROVAL_CONFIG[approvalStatus] ?? APPROVAL_CONFIG.pending;
 
@@ -393,6 +398,32 @@ function AdminJobRow({
               <><Copy className="w-3.5 h-3.5 mr-1.5" />Share</>
             )}
           </Button>
+
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isRefreshing}
+                title="Reset posted date to today"
+              >
+                <RefreshCw className="w-3.5 h-3.5 mr-1.5 text-indigo-500" />
+                Refresh
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Refresh posting date?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will reset &ldquo;{job.title}&rdquo; so it appears as posted today on the job board. No other details will change.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={onRefresh}>Refresh Posting</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -775,6 +806,13 @@ export default function AdminFindWork() {
     onSuccess: () => { invalidate(); toast({ title: "Job moved back to pending" }); },
     onError: (err: any) =>
       toast({ title: "Failed", description: err.message, variant: "destructive" }),
+  });
+
+  const refreshMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("POST", `/api/admin/jobs/${id}/refresh`),
+    onSuccess: () => { invalidate(); toast({ title: "Posting date refreshed — job now appears as posted today" }); },
+    onError: (err: any) =>
+      toast({ title: "Failed to refresh posting", description: err.message, variant: "destructive" }),
   });
 
   const linkMutation = useMutation({
@@ -1218,11 +1256,13 @@ export default function AdminFindWork() {
                   onApprove={() => approveMutation.mutate(job.id)}
                   onReject={() => { setRejectModalJobId(job.id); setRejectionReason(""); }}
                   onMoveToPending={() => pendingMutation.mutate(job.id)}
+                  onRefresh={() => refreshMutation.mutate(job.id)}
                   copiedId={copiedId}
                   isToggling={toggleStatusMutation.isPending}
                   isDeleting={deleteMutation.isPending}
                   isApproving={approveMutation.isPending}
                   isRejecting={rejectMutation.isPending}
+                  isRefreshing={refreshMutation.isPending}
                 />
               ))}
             </div>

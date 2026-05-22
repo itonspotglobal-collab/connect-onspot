@@ -123,8 +123,10 @@ export function getJobBadges(job: {
 export function sortJobs(jobs: any[], sortBy: SortOption): any[] {
   const list = [...jobs];
 
-  const toMs = (j: any) =>
-    j.createdAt ? new Date(j.createdAt).getTime() : 0;
+  const toMs = (j: any) => {
+    const d = j.postedAt || j.createdAt;
+    return d ? new Date(d).getTime() : 0;
+  };
 
   switch (sortBy) {
     case "recently-posted":
@@ -174,8 +176,9 @@ export function sortJobs(jobs: any[], sortBy: SortOption): any[] {
       return list
         .filter((j) => {
           const budget = parseFloat(j.budget || "0");
-          const daysOld = j.createdAt
-            ? Math.floor((Date.now() - new Date(j.createdAt).getTime()) / 86400000)
+          const dateRef = j.postedAt || j.createdAt;
+          const daysOld = dateRef
+            ? Math.floor((Date.now() - new Date(dateRef).getTime()) / 86400000)
             : 999;
           return budget >= 30000 || (j.proposalCount || 0) >= 2 || daysOld <= 5;
         })
