@@ -417,7 +417,8 @@ export default function Home() {
                     One System. Your unfair Advantage.
                   </span>
                   <span className="block mt-2 text-white/60">
-                    Marketplace speed, BPO quality, and a talent pool built for the work AI creates — not just the work it replaces.
+                    Marketplace speed, BPO quality, and a talent pool built for
+                    the work AI creates — not just the work it replaces.
                   </span>
                 </p>
               </div>
@@ -457,24 +458,6 @@ export default function Home() {
                   <Link href="/find-work">Find Work</Link>
                 </Button>
               </div>
-
-              {/* Tagline */}
-              <div className="hero-fade-up-delay">
-                <p className="text-center text-sm text-white/60 tracking-wide mt-2">
-                  <span className="font-semibold text-white">
-                    Hundreds of clients
-                  </span>
-                  <span className="text-white/30 mx-3">·</span>
-                  <span className="font-semibold text-white">
-                    Thousands of talents
-                  </span>
-                  <span className="text-white/30 mx-3">·</span>
-                  <span className="font-semibold text-white">
-                    {" "}
-                    Fastest onboarding in the market.{" "}
-                  </span>
-                </p>
-              </div>
             </div>
           </div>
         </div>
@@ -491,12 +474,12 @@ export default function Home() {
             Work Differently
           </p>
           <p className="mx-auto mt-4 max-w-3xl text-center text-base sm:text-lg text-slate-700">
-            Whether you're building a team or building a career — OnSpot works differently for both sides.
+            Whether you're building a team or building a career — OnSpot works
+            differently for both sides.
           </p>
 
           {/* Cards */}
           <div className="mx-auto mt-12 grid w-full max-w-6xl grid-cols-1 gap-6 lg:grid-cols-2">
-
             {/* Card 1: For Companies */}
             <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white/75 shadow-sm backdrop-blur-md">
               {/* Card header */}
@@ -505,8 +488,12 @@ export default function Home() {
                   <Building2 className="h-5 w-5 text-indigo-600" />
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-widest text-indigo-500">For Companies</p>
-                  <h3 className="text-base font-semibold text-slate-900">Hire faster, smarter, and without the overhead</h3>
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-indigo-500">
+                    For Companies
+                  </p>
+                  <h3 className="text-base font-semibold text-slate-900">
+                    Hire faster, smarter, and without the overhead
+                  </h3>
                 </div>
               </div>
 
@@ -515,29 +502,51 @@ export default function Home() {
                 <div className="flex gap-4 border-t border-slate-200/70 p-5">
                   <Zap className="mt-1 h-5 w-5 shrink-0 text-indigo-600" />
                   <div>
-                    <h4 className="text-sm font-semibold text-slate-900">Days, not months</h4>
-                    <p className="mt-1 text-sm leading-relaxed text-slate-600">Skip the lengthy agency cycles. Our pre-vetted talent network means we match you in days — not after a six-week search.</p>
+                    <h4 className="text-sm font-semibold text-slate-900">
+                      Days, not months
+                    </h4>
+                    <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                      Skip the lengthy agency cycles. Our pre-vetted talent
+                      network means we match you in days — not after a six-week
+                      search.
+                    </p>
                   </div>
                 </div>
                 <div className="flex gap-4 border-t border-slate-200/70 p-5">
                   <SlidersHorizontal className="mt-1 h-5 w-5 shrink-0 text-indigo-600" />
                   <div>
-                    <h4 className="text-sm font-semibold text-slate-900">Flexible engagements, your way</h4>
-                    <p className="mt-1 text-sm leading-relaxed text-slate-600">Contract, project-based, part-time, or full-time — structure the engagement around how your team actually works.</p>
+                    <h4 className="text-sm font-semibold text-slate-900">
+                      Flexible engagements, your way
+                    </h4>
+                    <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                      Contract, project-based, part-time, or full-time —
+                      structure the engagement around how your team actually
+                      works.
+                    </p>
                   </div>
                 </div>
                 <div className="flex gap-4 border-t border-slate-200/70 p-5">
                   <Users className="mt-1 h-5 w-5 shrink-0 text-indigo-600" />
                   <div>
-                    <h4 className="text-sm font-semibold text-slate-900">Direct access, no middleman</h4>
-                    <p className="mt-1 text-sm leading-relaxed text-slate-600">Work with talent directly. No layers of account managers, no inflated markups — just the right person for the job.</p>
+                    <h4 className="text-sm font-semibold text-slate-900">
+                      Direct access, no middleman
+                    </h4>
+                    <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                      Work with talent directly. No layers of account managers,
+                      no inflated markups — just the right person for the job.
+                    </p>
                   </div>
                 </div>
                 <div className="flex gap-4 border-t border-slate-200/70 p-5">
                   <Globe className="mt-1 h-5 w-5 shrink-0 text-indigo-600" />
                   <div>
-                    <h4 className="text-sm font-semibold text-slate-900">Global reach, local expertise</h4>
-                    <p className="mt-1 text-sm leading-relaxed text-slate-600">Access professionals across 50+ countries with the regional know-how to hit the ground running from day one.</p>
+                    <h4 className="text-sm font-semibold text-slate-900">
+                      Global reach, local expertise
+                    </h4>
+                    <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                      Access professionals across 50+ countries with the
+                      regional know-how to hit the ground running from day one.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -560,8 +569,12 @@ export default function Home() {
                   <Briefcase className="h-5 w-5 text-teal-600" />
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-widest text-teal-500">For Professionals</p>
-                  <h3 className="text-base font-semibold text-slate-900">Grow your career with work that keeps coming</h3>
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-teal-500">
+                    For Professionals
+                  </p>
+                  <h3 className="text-base font-semibold text-slate-900">
+                    Grow your career with work that keeps coming
+                  </h3>
                 </div>
               </div>
 
@@ -570,29 +583,52 @@ export default function Home() {
                 <div className="flex gap-4 border-t border-slate-200/70 p-5">
                   <TrendingUp className="mt-1 h-5 w-5 shrink-0 text-teal-600" />
                   <div>
-                    <h4 className="text-sm font-semibold text-slate-900">A steady pipeline of real work</h4>
-                    <p className="mt-1 text-sm leading-relaxed text-slate-600">No more chasing leads or gaps between projects. OnSpot keeps your pipeline active with quality engagements matched to your skills.</p>
+                    <h4 className="text-sm font-semibold text-slate-900">
+                      A steady pipeline of real work
+                    </h4>
+                    <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                      No more chasing leads or gaps between projects. OnSpot
+                      keeps your pipeline active with quality engagements
+                      matched to your skills.
+                    </p>
                   </div>
                 </div>
                 <div className="flex gap-4 border-t border-slate-200/70 p-5">
                   <Star className="mt-1 h-5 w-5 shrink-0 text-teal-600" />
                   <div>
-                    <h4 className="text-sm font-semibold text-slate-900">Work that builds your reputation</h4>
-                    <p className="mt-1 text-sm leading-relaxed text-slate-600">Get placed with leading companies globally — the kind of work that strengthens your portfolio and opens doors.</p>
+                    <h4 className="text-sm font-semibold text-slate-900">
+                      Work that builds your reputation
+                    </h4>
+                    <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                      Get placed with leading companies globally — the kind of
+                      work that strengthens your portfolio and opens doors.
+                    </p>
                   </div>
                 </div>
                 <div className="flex gap-4 border-t border-slate-200/70 p-5">
                   <CalendarCheck className="mt-1 h-5 w-5 shrink-0 text-teal-600" />
                   <div>
-                    <h4 className="text-sm font-semibold text-slate-900">Flexible on your terms</h4>
-                    <p className="mt-1 text-sm leading-relaxed text-slate-600">Remote-first, with engagements structured around your availability. You choose what fits your life and your goals.</p>
+                    <h4 className="text-sm font-semibold text-slate-900">
+                      Flexible on your terms
+                    </h4>
+                    <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                      Remote-first, with engagements structured around your
+                      availability. You choose what fits your life and your
+                      goals.
+                    </p>
                   </div>
                 </div>
                 <div className="flex gap-4 border-t border-slate-200/70 p-5">
                   <BadgeCheck className="mt-1 h-5 w-5 shrink-0 text-teal-600" />
                   <div>
-                    <h4 className="text-sm font-semibold text-slate-900">Zero gatekeeping</h4>
-                    <p className="mt-1 text-sm leading-relaxed text-slate-600">No favoritism, no opaque processes. Your skills speak for themselves — we match you on merit and make sure you're seen.</p>
+                    <h4 className="text-sm font-semibold text-slate-900">
+                      Zero gatekeeping
+                    </h4>
+                    <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                      No favoritism, no opaque processes. Your skills speak for
+                      themselves — we match you on merit and make sure you're
+                      seen.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -606,7 +642,6 @@ export default function Home() {
                 <ArrowRight className="h-4 w-4 text-teal-500" />
               </a>
             </div>
-
           </div>
         </div>
       </div>
