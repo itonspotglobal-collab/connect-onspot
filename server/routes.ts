@@ -781,12 +781,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         role: newUser.role,
       });
 
-      // Return exact format required by specification - ONLY { success:true, userId, email, role }
+      // Generate JWT token immediately so the client can auto-login
+      // without a separate /api/login round-trip.
+      let jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) {
+        if (process.env.NODE_ENV === "development") {
+          jwtSecret = "development-fallback-secret-not-for-production";
+        } else {
+          return res.status(500).json({ success: false, message: "JWT not configured" });
+        }
+      }
+
+      const signupToken = jwt.sign(
+        { userId: newUser.id, email: newUser.email, role: newUser.role },
+        jwtSecret,
+        { expiresIn: "7d" },
+      );
+
+      console.log(`🔑 JWT token generated for new user [${requestId}]`);
+
       res.status(201).json({
         success: true,
+        token: signupToken,
         userId: newUser.id,
         email: newUser.email,
         role: newUser.role,
+        user: {
+          id: newUser.id,
+          email: newUser.email,
+          username: newUser.username,
+          role: newUser.role,
+          first_name: newUser.first_name,
+          last_name: newUser.last_name,
+        },
       });
     } catch (error: any) {
       const requestId = (req as any).requestId;

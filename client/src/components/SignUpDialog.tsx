@@ -150,46 +150,32 @@ export function SignUpDialog() {
           description: `Your ${accountType.toLowerCase()} account has been created successfully! Logging you in...`,
         });
         
-        // Step 2: Auto-login by calling authAPI directly so the token is
-        // stored in localStorage before we do a full-page navigation.
-        // A full-page reload lets AuthContext re-initialize cleanly from
-        // localStorage — no React state race conditions with ProtectedRoute.
-        try {
-          console.log('🚀 Step 2: Auto-login via authAPI.login...');
-          const loginResult = await authAPI.login(formData.email.trim(), formData.password);
+        // Step 2: The signup response now includes a JWT token directly.
+        // Store it the same way authAPI.login() does, then navigate.
+        // Full-page reload lets AuthContext re-initialize from localStorage
+        // cleanly — no React state race conditions with any ProtectedRoute.
+        if (signupResponse.token && signupResponse.user) {
+          console.log('✅ Step 2: Token received from signup, storing...');
+          localStorage.setItem("onspot_jwt_token", signupResponse.token);
+          localStorage.setItem("onspot_user", JSON.stringify(signupResponse.user));
 
-          if (loginResult.success && loginResult.token) {
-            console.log('✅ Step 2 complete: Token stored, navigating...');
-
-            toast({
-              title: "Logged In Successfully",
-              description: `Welcome to your OnSpot ${accountType.toLowerCase()} portal!`,
-            });
-
-            setOpen(false);
-            resetDialog();
-
-            // Full-page navigation for both roles so AuthContext initializes
-            // from localStorage before any protected route renders.
-            if (userType === "talent") {
-              window.location.href = "/get-hired";
-            } else {
-              window.location.href = "/dashboard";
-            }
-          } else {
-            console.error('❌ Step 2 failed: Login returned no token', loginResult);
-            toast({
-              title: "Auto-Login Failed",
-              description: "Account created successfully. Please log in manually to continue.",
-              variant: "destructive",
-            });
-          }
-        } catch (loginError: any) {
-          console.error("❌ Step 2 failed: authAPI.login error:", {
-            message: loginError.message,
-            response: loginError.response?.data,
-            status: loginError.response?.status
+          toast({
+            title: "Logged In Successfully",
+            description: `Welcome to your OnSpot ${accountType.toLowerCase()} portal!`,
           });
+
+          setOpen(false);
+          resetDialog();
+
+          // Client → public client profile page (no auth guard, loads immediately)
+          // Talent → /get-hired (public route, renders TalentPortal when authenticated)
+          if (userType === "talent") {
+            window.location.href = "/get-hired";
+          } else {
+            window.location.href = "/client-profile";
+          }
+        } else {
+          console.error('❌ Step 2 failed: Signup response missing token', signupResponse);
           toast({
             title: "Auto-Login Failed",
             description: "Account created successfully. Please log in manually to continue.",

@@ -1,0 +1,83 @@
+The previous fix is still wrong.
+
+Current behavior:
+After Client signup, the app still redirects to the public Hire Talent page and the navbar still shows “Access Portal”.
+
+I can see the previous change used:
+
+Client signup →
+window.location.href = "/dashboard"
+
+This is NOT acceptable unless `/dashboard` is the actual Client Profile route. I specifically want successful Client signup to redirect to the Client Profile page.
+
+Task:
+Fix Client signup so it redirects directly to the existing Client Profile route, not `/hire-talent` and not a generic `/dashboard`.
+
+Required steps:
+1. Open `client/src/App.tsx`.
+2. Find the exact existing route for the Client Profile page.
+   Look for the route that renders the Client Profile / Client Dashboard / company profile page.
+   It may be one of:
+   - `/client/profile`
+   - `/client-dashboard`
+   - `/client/dashboard`
+   - `/dashboard/client`
+   - another existing route
+
+3. Open the signup file currently handling Access Portal signup.
+   Likely files:
+   - `client/src/components/SignUpDialog.tsx`
+   - `client/src/components/DevPortalModal.tsx`
+   - any auth/signup modal file
+
+4. Search the whole codebase for these strings:
+   - `window.location.href = "/dashboard"`
+   - `window.location.href = "/hire-talent"`
+   - `setLocation("/hire-talent")`
+   - `navigate("/hire-talent")`
+   - `"/dashboard"`
+   - `"/hire-talent"`
+
+5. In the successful CLIENT signup path only, replace the redirect with the exact Client Profile route found in `App.tsx`.
+
+Example only:
+If `App.tsx` has this route:
+
+<Route path="/client/profile" component={ClientProfile} />
+
+then Client signup must redirect to:
+
+window.location.href = "/client/profile"
+
+or:
+
+setLocation("/client/profile")
+
+Do not use `/dashboard` unless that exact route renders the Client Profile.
+
+Required auth behavior:
+After Client signup succeeds:
+1. Call login using the newly created email/password OR use the token returned by signup.
+2. Store the token in the exact same localStorage key used by normal login.
+3. Store/update the user in the exact same format used by normal login.
+4. Confirm the saved user has role/client account type recognized by the Client Profile protected route.
+5. Redirect to the Client Profile route.
+
+Also fix the navbar:
+After signup and redirect, the navbar should show the logged-in Client account state, not “Access Portal”.
+
+Important:
+- Talent signup is already working. Do not break Talent signup.
+- Existing Client login should still work.
+- Existing Talent login should still work.
+- Do not route Client signup to `/hire-talent`.
+- Do not route Client signup to generic `/dashboard` unless it is confirmed to be the Client Profile route.
+- Do not silently redirect to public pages after successful signup.
+
+Acceptance criteria:
+- Create a brand-new Client account.
+- After signup succeeds, URL becomes the actual Client Profile route.
+- The page shown is the Client Profile page.
+- Navbar no longer shows “Access Portal”.
+- Refresh keeps the Client logged in.
+- Talent signup still works.
