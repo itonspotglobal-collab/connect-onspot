@@ -43,7 +43,7 @@ export function SignUpDialog() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const { login } = useAuth(); // Get AuthContext methods
+  useAuth(); // Keep context available for potential future use
 
   const resetDialog = () => {
     setCurrentStep("user-type");
@@ -150,13 +150,16 @@ export function SignUpDialog() {
           description: `Your ${accountType.toLowerCase()} account has been created successfully! Logging you in...`,
         });
         
-        // Step 2: Auto-login using AuthContext.login (handles token storage + state hydration)
+        // Step 2: Auto-login by calling authAPI directly so the token is
+        // stored in localStorage before we do a full-page navigation.
+        // A full-page reload lets AuthContext re-initialize cleanly from
+        // localStorage — no React state race conditions with ProtectedRoute.
         try {
-          console.log('🚀 Step 2: Auto-login via AuthContext...');
-          const loginSuccess = await login(formData.email.trim(), formData.password, userType);
+          console.log('🚀 Step 2: Auto-login via authAPI.login...');
+          const loginResult = await authAPI.login(formData.email.trim(), formData.password);
 
-          if (loginSuccess) {
-            console.log('✅ Step 2 complete: Auto-login successful');
+          if (loginResult.success && loginResult.token) {
+            console.log('✅ Step 2 complete: Token stored, navigating...');
 
             toast({
               title: "Logged In Successfully",
@@ -166,16 +169,15 @@ export function SignUpDialog() {
             setOpen(false);
             resetDialog();
 
-            // Navigate to the correct authenticated portal.
-            // Client uses a full page navigation so AuthContext re-initializes
-            // from localStorage before ClientProtectedRoute renders its auth check.
+            // Full-page navigation for both roles so AuthContext initializes
+            // from localStorage before any protected route renders.
             if (userType === "talent") {
-              setLocation("/get-hired");
+              window.location.href = "/get-hired";
             } else {
               window.location.href = "/dashboard";
             }
           } else {
-            console.error('❌ Step 2 failed: Auto-login returned false');
+            console.error('❌ Step 2 failed: Login returned no token', loginResult);
             toast({
               title: "Auto-Login Failed",
               description: "Account created successfully. Please log in manually to continue.",
@@ -183,7 +185,7 @@ export function SignUpDialog() {
             });
           }
         } catch (loginError: any) {
-          console.error("❌ Step 2 failed: Auto-login error:", {
+          console.error("❌ Step 2 failed: authAPI.login error:", {
             message: loginError.message,
             response: loginError.response?.data,
             status: loginError.response?.status

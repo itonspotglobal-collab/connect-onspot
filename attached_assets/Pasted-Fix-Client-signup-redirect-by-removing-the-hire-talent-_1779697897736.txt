@@ -1,0 +1,79 @@
+Fix Client signup redirect by removing the `/hire-talent` redirect completely.
+
+Current issue:
+After creating a Client account, the user is still redirected to the public `/hire-talent` page. Because `/hire-talent` is public, the navbar still shows “Access Portal”, making it look like the Client is not logged in.
+
+I want this changed now:
+After successful Client signup, redirect directly to the Client Profile page instead of `/hire-talent`.
+
+Important:
+Talent signup is working. Do not break Talent signup.
+
+Required fix:
+1. Search the entire codebase for every Client signup redirect to:
+   - `/hire-talent`
+   - `navigate("/hire-talent")`
+   - `setLocation("/hire-talent")`
+   - `window.location.href = "/hire-talent"`
+   - `window.location.assign("/hire-talent")`
+   - any equivalent redirect after Client signup
+
+2. In the successful Client signup flow only, replace the `/hire-talent` redirect with the existing Client Profile route.
+
+3. Check `client/src/App.tsx` and use the actual registered Client Profile route.
+   Most likely this is one of:
+   - `/client/profile`
+   - `/client`
+   - `/client/dashboard`
+
+4. Do not guess if the route exists. Use the route that is already registered.
+
+Known file to inspect first:
+- `client/src/components/SignUpDialog.tsx`
+
+The current broken logic may look like this:
+
+if (userType === "talent") {
+  setLocation("/get-hired");
+} else if (userType === "client") {
+  setLocation("/hire-talent");
+}
+
+Change only the Client branch to the real Client Profile route, for example:
+
+if (userType === "talent") {
+  setLocation("/get-hired");
+} else if (userType === "client") {
+  setLocation("/client/profile");
+}
+
+Only use `/client/profile` if it exists in `App.tsx`.
+
+Also check for duplicate signup logic in:
+- `client/src/components/DevPortalModal.tsx`
+- `client/src/components/SignUpDialog.tsx`
+- `client/src/contexts/AuthContext.tsx`
+- Any onboarding/signup helper file
+
+Client signup success behavior must be:
+1. Create Client account.
+2. Auto-login or save returned token.
+3. Refresh/set AuthContext.
+4. Close signup modal.
+5. Redirect to Client Profile page.
+6. Navbar should show logged-in Client state, not “Access Portal”.
+
+If auto-login fails:
+- Do not redirect to `/hire-talent`.
+- Show: “Account created, but automatic login failed. Please sign in manually.”
+
+Acceptance criteria:
+- Create a new Client account.
+- After signup succeeds, user is redirected to Client Profile, not `/hire-talent`.
+- The URL should be the Client Profile URL.
+- Navbar should not show “Access Portal” after successful signup.
+- Refreshing the Client Profile page keeps the Client logged in.
+- Talent signup still works as before.
+- Existing Client login still works.
+
+Make the smallest safe change. Do not redesign anything.
