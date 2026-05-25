@@ -1,0 +1,223 @@
+Please make one final footer layout adjustment.
+
+Current issue:
+The footer is close, but the bottom copyright text:
+“© 2025 OnSpot. All rights reserved.”
+
+is not aligned with the OnSpot brand logo above it. Also, the footer layout changes too much between large desktop screens and smaller laptop screens.
+
+Goal:
+1. Align “© 2025 OnSpot. All rights reserved.” with the left edge of the OnSpot footer logo.
+2. Make the footer layout more dynamic/responsive so it looks consistent on large desktops and smaller laptops.
+3. Do not break the current improved footer layout.
+
+IMPORTANT:
+- Keep the current footer color/background.
+- Keep the white logo.
+- Keep the current content.
+- Do not redesign the footer.
+- Only adjust alignment, container width, spacing, and responsive behavior.
+
+--------------------------------------------------
+1. Use one shared footer container
+--------------------------------------------------
+
+The main footer content and the bottom copyright row must use the same exact parent container width and horizontal padding.
+
+Right now, the bottom row seems to be aligned differently from the logo. Fix this by placing both the main footer layout and bottom row inside one shared wrapper.
+
+Recommended structure:
+
+<footer>
+  <div className="footer-container">
+    <div className="footer-main">
+      Brand section + link columns
+    </div>
+
+    <div className="footer-bottom">
+      Copyright / Powered by / Privacy / Terms
+    </div>
+  </div>
+</footer>
+
+Use one shared wrapper like:
+
+className="
+  mx-auto
+  w-full
+  max-w-[1500px]
+  px-6
+  sm:px-8
+  lg:px-12
+  xl:px-14
+  2xl:px-16
+"
+
+Do not put the bottom row in a separate `container`, `max-w-*`, or different `px-*`.
+
+--------------------------------------------------
+2. Align copyright with brand logo
+--------------------------------------------------
+
+The left edge of the copyright text should line up with the left edge of the footer OnSpot logo.
+
+Footer brand logo and copyright should both start from the same container x-position.
+
+Make sure the brand section does not have extra left margin or padding like:
+- ml-*
+- pl-*
+- translate-x-*
+- mx-auto on desktop
+
+Brand block should use:
+
+className="
+  flex flex-col
+  items-start
+  text-left
+  w-full
+"
+
+Logo should use:
+
+className="mx-0"
+
+Bottom row should use:
+
+className="
+  border-t border-white/10
+  pt-8
+  flex flex-col gap-4
+  lg:flex-row lg:items-center lg:justify-between
+"
+
+Left bottom group should not have extra padding/margin.
+
+Example:
+
+<div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-white/65">
+  <span>© 2025 OnSpot. All rights reserved.</span>
+  <span className="hidden sm:inline">·</span>
+  <span>Powered by OnSpot Intelligence</span>
+</div>
+
+--------------------------------------------------
+3. Make footer responsive and stable across screen sizes
+--------------------------------------------------
+
+The footer should not spread too much on large desktop and should not squeeze on laptop.
+
+Use a controlled max-width wrapper instead of letting the footer stretch infinitely.
+
+Recommended:
+max-w-[1500px]
+
+If it still looks too wide on large screens, use:
+max-w-[1440px]
+
+Do not use:
+max-w-none
+w-screen
+full viewport-width containers
+different max-widths for top and bottom footer rows
+
+--------------------------------------------------
+4. Use a balanced main layout
+--------------------------------------------------
+
+Keep the brand section separate from the link columns, but make the sizing fluid.
+
+Recommended main layout:
+
+className="
+  grid grid-cols-1
+  gap-y-12
+  lg:grid-cols-[minmax(300px,360px)_1fr]
+  xl:grid-cols-[minmax(320px,380px)_1fr]
+  lg:gap-x-12
+  xl:gap-x-14
+  items-start
+"
+
+This keeps the brand block from taking too much space, while still giving it room.
+
+--------------------------------------------------
+5. Link columns should adapt better
+--------------------------------------------------
+
+The link columns should not squeeze Connect too much.
+
+Use:
+
+className="
+  grid grid-cols-1
+  sm:grid-cols-2
+  lg:grid-cols-[0.9fr_0.95fr_1.05fr_1.35fr]
+  gap-y-10
+  gap-x-8
+  xl:gap-x-10
+"
+
+Connect column:
+className="min-w-0"
+
+Contact rows:
+className="flex items-start gap-4 min-w-0"
+
+Contact text:
+className="min-w-0 break-words leading-relaxed text-white/70"
+
+--------------------------------------------------
+6. Social icons should remain clean
+--------------------------------------------------
+
+Do not squeeze the social icons.
+
+Social row:
+className="
+  mt-8
+  flex
+  flex-wrap
+  items-center
+  justify-start
+  gap-3
+  overflow-visible
+"
+
+Social button:
+className="
+  flex h-11 w-11 shrink-0
+  items-center justify-center
+  rounded-full
+  border border-white/15
+  bg-white/10
+  text-white/75
+"
+
+--------------------------------------------------
+7. Responsive behavior
+--------------------------------------------------
+
+Large desktop:
+- Footer content remains centered inside max-width wrapper.
+- Copyright aligns with logo.
+- Link columns do not spread too far apart.
+
+Laptop:
+- Same structure and alignment.
+- Connect column remains readable.
+
+Tablet:
+- Brand section can appear above link columns.
+- Link columns can use 2 columns.
+
+Mobile:
+- Everything stacks.
+- Bottom row stacks cleanly.
+- No horizontal scrolling.
+
+--------------------------------------------------
+Expected result
+--------------------------------------------------
+
+The footer should look consistent across desktop and laptop sizes. The “© 2025 OnSpot. All rights reserved.” text should align exactly with the left edge of the OnSpot footer logo above it, because both are inside the same shared footer container with the same padding.

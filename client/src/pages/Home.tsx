@@ -1727,12 +1727,12 @@ export default function Home() {
           <div className="h-px bg-gradient-to-r from-transparent via-violet-400/30 through-blue-400/30 to-transparent"></div>
         </div>
 
-        <div className="container mx-auto px-4 sm:px-6 py-10 sm:py-12 lg:py-14">
+        <div className="mx-auto w-full max-w-[1500px] px-6 sm:px-8 lg:px-12 xl:px-14 2xl:px-16 py-10 sm:py-12 lg:py-14">
           {/* Footer Grid - Brand + Links layout */}
-          <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-y-10 lg:gap-x-10 xl:gap-x-14 items-start">
+          <div className="grid grid-cols-1 gap-y-12 lg:grid-cols-[minmax(300px,360px)_1fr] xl:grid-cols-[minmax(320px,380px)_1fr] lg:gap-x-12 xl:gap-x-14 items-start">
             {/* Brand Section */}
-            <div className="w-full lg:w-[320px] xl:w-[340px] shrink-0 pb-8 lg:pb-0 border-b border-white/10 lg:border-b-0">
-              <div className="space-y-6 sm:space-y-8 relative flex flex-col items-center md:items-start transition-all duration-300">
+            <div className="pb-8 lg:pb-0 border-b border-white/10 lg:border-b-0">
+              <div className="space-y-6 sm:space-y-8 relative flex flex-col items-start transition-all duration-300">
                 <div className="relative inline-block">
                   <img
                     src={onspotLogo}
@@ -1743,7 +1743,7 @@ export default function Home() {
                   <div className="absolute -inset-2 bg-gradient-to-r from-violet-500/20 to-blue-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
                 </div>
 
-                <p className="text-xs sm:text-sm text-white/75 leading-relaxed max-w-md text-center md:text-left transition-all duration-300">
+                <p className="text-xs sm:text-sm text-white/75 leading-relaxed max-w-md text-left transition-all duration-300">
                   OnSpot is a technology company and hybrid marketplace–BPO
                   delivering Philippine talent to global clients. Marketplace
                   speed, BPO quality, and AI-ready operations — in one platform.
@@ -1819,7 +1819,7 @@ export default function Home() {
             </div>
 
             {/* Link Columns */}
-            <div className="flex-1 grid grid-cols-2 lg:grid-cols-[0.9fr_0.95fr_1.05fr_1.35fr] gap-x-8 xl:gap-x-10 gap-y-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[0.9fr_0.95fr_1.05fr_1.35fr] gap-y-10 gap-x-8 xl:gap-x-10">
               {/* Navigation Section */}
               <div
                 className="md:space-y-6 md:border-b-0 transition-all duration-300"
@@ -2168,33 +2168,31 @@ export default function Home() {
           </div>
 
           {/* Bottom Bar */}
-          <div className="mt-8 pt-6 border-t border-white/20">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs sm:text-sm text-white/70">
-              <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-center sm:text-left">
-                <p className="hover:text-white transition-colors duration-300">
-                  © 2025 OnSpot. All rights reserved.
-                </p>
-                <span className="hidden sm:inline text-white/30">·</span>
-                <p className="text-[10px] sm:text-xs text-white/50">
-                  Powered by OnSpot Intelligence
-                </p>
-              </div>
-              <div className="flex gap-6">
-                <Link
-                  href="/privacy"
-                  className="hover:text-white transition-all duration-300 hover:translate-y-[-1px]"
-                  data-testid="footer-privacy"
-                >
-                  Privacy Policy
-                </Link>
-                <Link
-                  href="/terms"
-                  className="hover:text-white transition-all duration-300 hover:translate-y-[-1px]"
-                  data-testid="footer-terms"
-                >
-                  Terms of Service
-                </Link>
-              </div>
+          <div className="mt-8 pt-8 border-t border-white/10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between text-xs sm:text-sm text-white/70">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+              <span className="hover:text-white transition-colors duration-300">
+                © 2025 OnSpot. All rights reserved.
+              </span>
+              <span className="hidden sm:inline text-white/30">·</span>
+              <span className="text-[10px] sm:text-xs text-white/50">
+                Powered by OnSpot Intelligence
+              </span>
+            </div>
+            <div className="flex gap-6">
+              <Link
+                href="/privacy"
+                className="hover:text-white transition-all duration-300 hover:translate-y-[-1px]"
+                data-testid="footer-privacy"
+              >
+                Privacy Policy
+              </Link>
+              <Link
+                href="/terms"
+                className="hover:text-white transition-all duration-300 hover:translate-y-[-1px]"
+                data-testid="footer-terms"
+              >
+                Terms of Service
+              </Link>
             </div>
           </div>
         </div>
