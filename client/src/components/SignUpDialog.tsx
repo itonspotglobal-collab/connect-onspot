@@ -166,11 +166,13 @@ export function SignUpDialog() {
             setOpen(false);
             resetDialog();
 
-            // Navigate to the correct authenticated portal
+            // Navigate to the correct authenticated portal.
+            // Client uses a full page navigation so AuthContext re-initializes
+            // from localStorage before ClientProtectedRoute renders its auth check.
             if (userType === "talent") {
               setLocation("/get-hired");
             } else {
-              setLocation("/dashboard");
+              window.location.href = "/dashboard";
             }
           } else {
             console.error('❌ Step 2 failed: Auto-login returned false');

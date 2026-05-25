@@ -1,0 +1,107 @@
+Fix Client signup auto-login. Talent signup auto-login already works, but Client signup still does not.
+
+Current issue:
+When I create a new Client account:
+- Account creation succeeds.
+- I am redirected to the public `/hire-talent` page.
+- I am NOT logged in as the new Client account.
+- The top navigation still shows “Access Portal”.
+- I have to manually click “Access Portal” and sign in again.
+
+Important:
+Talent signup already works correctly. Do not break Talent signup.
+
+Expected Client behavior:
+- After successful Client account creation, the user should be automatically logged in.
+- The auth token/session should be saved the same way login saves it.
+- AuthContext should immediately contain the newly created Client user.
+- The signup modal should close.
+- The user should be redirected to the existing Client Profile route.
+- The top navigation should change from “Access Portal” to the logged-in Client state.
+- Refreshing the Client Profile page should keep the Client logged in.
+
+Please compare the working Talent signup flow against the broken Client signup flow.
+
+Inspect these files:
+- `client/src/components/DevPortalModal.tsx`
+- `client/src/components/SignUpDialog.tsx`
+- `client/src/contexts/AuthContext.tsx`
+- `client/src/components/TopNavigation.tsx`
+- `client/src/App.tsx`
+- Any auth API helper/client file
+- Backend register/signup endpoints for Client and Talent
+
+Main task:
+Find why Talent signup auto-login works but Client signup does not, then make Client signup use the same successful auth/session logic.
+
+Likely causes to check:
+1. Talent signup calls an AuthContext login/register function, but Client signup only redirects to `/hire-talent`.
+2. Client signup creates the account but does not save the returned token.
+3. Client signup endpoint does not return a token, while Talent signup endpoint does.
+4. Client signup response uses a different shape, such as:
+   - `accessToken` instead of `token`
+   - `client` instead of `user`
+   - `accountType` instead of `role`
+5. Client signup role is not normalized correctly.
+6. Client signup is treated as public “hire talent inquiry” instead of authenticated account creation.
+7. TopNavigation reads auth state from a different storage key than Client signup writes to.
+8. Protected Client Profile route redirects away because the user role is missing or mismatched.
+9. Client signup closes the modal and navigates before AuthContext finishes updating.
+
+Required fix:
+After Client signup succeeds, do the same things the working Talent signup does:
+
+1. Get a valid auth token and Client user object.
+2. Normalize the Client user role/account type consistently.
+3. Save the token using the same key used by normal login.
+4. Save/update the user using the same AuthContext method used by login or Talent signup.
+5. Close the signup modal only after auth state is set.
+6. Navigate to the existing Client Profile route from `App.tsx`.
+
+If the Client signup backend endpoint does not return a token:
+- Either update it to return the same auth payload as login, or
+- Immediately call the login endpoint after successful Client creation using the submitted email/password.
+- Prefer matching the working Talent signup implementation.
+
+Role mapping requirements:
+Treat these as Client roles:
+- `client`
+- `CLIENT`
+- `employer`
+- `company`
+- `business`
+
+Normalize them to the same role value used by protected Client routes.
+
+Do not redirect successful Client signup to `/hire-talent`.
+Only redirect to `/hire-talent` if the user intentionally navigates there while logged out.
+
+Client redirect requirements:
+- Use the existing Client Profile route registered in `client/src/App.tsx`.
+- Do not guess or create a duplicate route.
+- If the existing route is `/client/profile`, use that.
+- If the app uses another route, use the actual existing route.
+
+Error handling:
+- If Client account creation fails, keep the modal open and show the error.
+- If Client account is created but auto-login fails, show:
+  “Account created, but automatic login failed. Please sign in manually.”
+- Do not silently redirect to `/hire-talent` on auto-login failure.
+
+Acceptance criteria:
+- Open Access Portal.
+- Click Sign Up.
+- Create a Client account.
+- Signup succeeds.
+- Modal closes.
+- User is automatically logged in as Client.
+- Top navigation no longer says “Access Portal”.
+- User is redirected to the Client Profile page.
+- Refreshing the page keeps the Client logged in.
+- Client can access Client Profile.
+- Client is not redirected to Talent Profile.
+- Talent signup still auto-logs in and redirects correctly.
+- Existing Client login still works.
+- Existing Talent login still works.
+
+Please make the smallest safe changes necessary and do not redesign the UI.
