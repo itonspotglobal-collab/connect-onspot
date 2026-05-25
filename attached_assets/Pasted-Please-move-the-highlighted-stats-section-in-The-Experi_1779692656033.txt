@@ -1,0 +1,74 @@
+Please move the highlighted stats section in “The Experience” section.
+
+Current issue:
+The stats strip with:
+- 72hrs / AVG. TIME TO HIRE
+- 500+ / GLOBAL CLIENTS
+- 98% / CLIENT RETENTION
+- 2,000+ / TALENTS PLACED
+- Philippine-based
+
+is currently placed directly under the “The Experience” heading/subtitle.
+
+Goal:
+Move this entire stats strip to the lower part of the section, below the large box/card that contains “Vanessa AI Assistant”.
+
+New order should be:
+
+1. “The Experience”
+2. “One System. Your Unfair Advantage.”
+3. Large glass box/card containing “Vanessa AI Assistant”
+4. Stats strip with 72hrs, 500+, 98%, 2,000+, Philippine-based
+
+Important:
+- Do not remove the stats section.
+- Do not duplicate the stats section.
+- Only move it below the Vanessa AI Assistant box.
+- Keep the current stats styling, colors, and full-width/stretched layout.
+- Keep the same Experience gradient background.
+- Do not redesign the section.
+
+Implementation guidance:
+Find the JSX/component block that renders the stats strip inside the Experience section. It may include content like:
+
+72hrs
+500+
+98%
+2,000+
+PHILIPPINE-BASED
+
+Move that entire block so it renders after the Vanessa AI Assistant card/container.
+
+Example structure:
+
+<section id="experience">
+  <div className="experience-container">
+    <div className="experience-header">
+      <h2>The Experience</h2>
+      <p>One System. Your Unfair Advantage.</p>
+    </div>
+
+    <div className="experience-card">
+      Vanessa AI Assistant content
+    </div>
+
+    <div className="experience-stats">
+      72hrs / 500+ / 98% / 2,000+ / Philippine-based
+    </div>
+  </div>
+</section>
+
+Spacing requirements:
+- Add proper space between the Vanessa AI Assistant card and the stats strip.
+- Suggested spacing: mt-12 or mt-16.
+- Keep the stats strip visually connected to The Experience section.
+- Avoid adding too much empty space.
+
+Responsive requirements:
+- Desktop: Vanessa AI Assistant card appears first, stats strip below it.
+- Tablet/mobile: same order, card first then stats.
+- Stats should still wrap responsively as currently designed.
+- No horizontal scrolling.
+
+Expected result:
+The stats strip should appear below the Vanessa AI Assistant box, not between the heading and the box.
