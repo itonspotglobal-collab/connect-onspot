@@ -1,0 +1,218 @@
+Update the OnSpot `/amazing` page in the React app.
+
+Repository/page context:
+- Route `/amazing` is already mapped to `client/src/pages/Amazing.tsx`.
+- The page is currently a static magazine-style page with hardcoded content.
+- Keep the existing visual direction, animations, Tailwind styling, and responsive layout, but convert the page from a brand showcase into a stronger lead-generating asset.
+
+Primary file to update:
+- `client/src/pages/Amazing.tsx`
+
+Also check SEO/head metadata:
+- Search for where page metadata/canonical tags are handled, likely `HeadSEO`, app-level SEO, or index metadata.
+- Update metadata specifically for `/amazing` if the project supports per-page metadata.
+
+Required changes:
+
+1. Update the hero section copy.
+
+Current hero:
+- Kicker: ONSPOT MAGAZINE
+- Pill: APRIL ISSUE — EMPLOYEE OF THE MONTH
+- Headline: The Operator
+- Subhead: Alyssa Mendoza / CLIENT SUCCESS OPERATOR
+- Body: “This month's feature spotlights a team member who represents composure, discipline, and quiet excellence. Alyssa is the kind of operator clients trust deeply — the one who keeps promises, protects quality, and makes complexity feel simple.”
+- CTAs: Read cover story / View past issues
+
+Replace with:
+- Kicker: ONSPOT MAGAZINE — A LOOK INSIDE THE TEAM THAT RUNS YOUR BUSINESS
+- Pill: APRIL ISSUE — COVER STORY
+- Headline: The kind of operator you wish you'd hired five years ago.
+- Subhead: Meet Alyssa Mendoza, Client Success Operator
+- Body: “Every month we feature one operator who quietly raises the standard at OnSpot. Alyssa keeps promises, protects quality, and makes complexity feel simple — the kind of person founders trust with the parts of the business they can't afford to drop.”
+- Primary CTA: Read cover story →
+- Secondary CTA: Hire an operator like Alyssa →
+- Secondary CTA must link/navigate to `/hire-talent`.
+
+Use the existing Button components. If the app uses `wouter`, use the project’s existing navigation pattern. If a direct anchor is simpler and consistent, use `<a href="/hire-talent">`.
+
+2. Update the values section header.
+
+Keep title:
+- Six people. Six values. Daily proof of what the company stands for.
+
+Replace subtext with:
+- Culture isn't what gets printed on the wall. It's what people do when no one's watching. These six operators are how we know our values are real.
+
+Remove/delete the sidebar note that currently says:
+- “These ambassadors can rotate quarterly or remain as the current standard-bearers of the culture.”
+
+Do not leave any internal design-brief language on the live page.
+
+3. Rename the value “Fast-Fast-Fast”.
+
+In the `coreValueAmbassadors` data:
+- Change value from `Fast-Fast-Fast` to `Relentless Speed`.
+- Change quote from `Speed matters most when it still feels thoughtful.` to `Move with urgency without sacrificing care.`
+
+Keep the rest of the card unless needed for grammar.
+
+4. Add a new mid-page lead capture band immediately after the six values cards and before the Magazine Stories section.
+
+Content:
+- Headline: Want operators like these on your team?
+- Body: Tell us what you're trying to get back — hours, quality, your weekends — and we'll show you what's possible.
+- Input placeholder: Work email
+- Button: Get matched →
+- Trust line: Most founders hear back within one business day.
+
+Implementation requirements:
+- The band should be full-width within the main content rhythm, ideally inside the same max-width container style as the rest of the page.
+- Use a slightly darker or more conversion-focused background to break the editorial rhythm.
+- Use existing design language: rounded corners, subtle border, shadow, and OnSpot purple.
+- The form does not need backend integration yet.
+- Prevent default form submission.
+- Use `useState` for the email field if needed.
+- On submit, either:
+  - navigate to `/hire-talent?email=<encoded email>` if simple, or
+  - show a small inline “Thanks — we’ll reach out shortly.” success state.
+Choose the least risky implementation based on current app conventions.
+- Do not introduce a new dependency.
+
+5. Update the Magazine Stories header.
+
+Current title:
+- A living showcase of employees, clients, leadership, culture, and company stories.
+
+Replace with:
+- The stories behind the standard.
+
+Current subtext:
+- “This grid is the heart of the magazine. It should feel rich, visual, and continuously fresh — a place where the company becomes a publication, not just a brand page.”
+
+Replace with:
+- How real teams run with calm, speed, and leverage. Drawn from the operators, founders, and clients we work with every week.
+
+6. Upgrade the StoryCard visuals.
+
+Current story cards are text-only on light gray.
+
+Required visual change:
+- Add a cover image or illustrated header to at least the two large feature cards:
+  - “The assistant who became an indispensable operator”
+  - “The standards behind the brand”
+- For smaller cards, add a branded accent in the upper-left area, such as a small color block, typographic mark, gradient badge, or mini visual treatment.
+- Keep it lightweight and static.
+- Do not fetch images dynamically.
+- You may add optional fields to the `stories` array like `image`, `accent`, or `visual`.
+- If using remote images, use reliable Unsplash URLs already formatted similarly to the existing hero image.
+- Maintain responsive behavior and existing hover animation.
+
+7. Update the Amazing Clients section copy.
+
+Keep title:
+- The clients deserve the spotlight too.
+
+Replace subtext with:
+- Behind every system we run is a founder who decided to stop drowning. These are some of their stories.
+
+Replace editorial framing body with:
+- We don't list logos. We tell what changed. Calm replaced chaos. Hours came back. Quality stopped depending on whether the founder was awake. These are the operators and teams who made that shift with OnSpot.
+
+CTA remains:
+- Explore client stories →
+
+8. Make client story cards more specific.
+
+Replace current `amazingClients` entries:
+
+Before:
+- Growth-Stage Founder / Founder Story
+- Agency Operator / Agency Story
+- Healthcare Team / Team Story
+
+After:
+- name: James K.
+  type: FOUNDER STORY
+  descriptor/details: SaaS founder, Series A, 22 staff
+  quote should include a concrete number, e.g. “OnSpot gave us 20 hours back every week and finally made follow-through feel predictable.”
+
+- name: Maria L.
+  type: AGENCY STORY
+  descriptor/details: Agency owner, 14-person team
+  quote should include a concrete number, e.g. “Response times dropped under 24 hours, and our clients felt the difference almost immediately.”
+
+- name: Operations Director
+  type: TEAM STORY
+  descriptor/details: Multi-clinic dental group
+  quote should include a concrete number, e.g. “We cut scheduling back-and-forth by 40% and gave our managers room to focus on patient experience.”
+
+Update the card layout to display the descriptor/details under the name, in smaller muted text.
+
+9. Replace the dark “What this page is” footer section entirely.
+
+Delete/remove the current dark section that says:
+- WHAT THIS PAGE IS
+- A company magazine. A living showcase. A storytelling platform.
+- The four feature blocks: Monthly issue hero, Core values ambassadors, Story grid, Amazing clients.
+
+Replace with a conversion-focused closing section.
+
+New content:
+- Eyebrow: THIS IS THE STANDARD
+- Headline: This is the standard of people you get.
+- Body: Every operator we place is hired, trained, and held to the bar you've just read about. If you want a team like this behind your business, let's talk about what you need.
+- Primary CTA: Book a 20-minute call →
+- Secondary CTA/link: See who's available now →
+- Secondary link should go to `/hire-talent`.
+
+For the primary CTA:
+- If there is an existing booking/contact route or calendly-style link in the project, use that.
+- Otherwise link to `/hire-talent` for now.
+- Keep the same dark visual contrast if desired, but remove all meta/design-brief language.
+
+10. Photography placeholders.
+
+Current ambassador cards have dashed placeholder boxes saying “Photo / Ambassador portrait.”
+
+Do not leave the dashed boxes as-is.
+Implement a better temporary state:
+- Add a `photo` field for each ambassador using tasteful placeholder portrait URLs, or
+- Replace the dashed box with initials/avatar-style visual blocks that look intentional and premium.
+
+Preferred:
+- Use real image fields if available. Since real headshots may not exist in the repo, use neutral remote portrait placeholders for now, and keep code structured so the URLs can be replaced later.
+- Each ambassador card should visually feel complete.
+
+11. SEO and metadata.
+
+Find where metadata is set and update for `/amazing`.
+
+Recommended:
+- canonical: `https://www.onspotglobal.com/amazing`
+- title: `OnSpot Magazine — Inside the team that runs your business`
+- description: `A monthly look at the operators, values, and client stories behind OnSpot's high-standard outsourcing team.`
+- Open Graph title should match or closely mirror the title.
+- Open Graph description should match or closely mirror the description.
+- Open Graph image should use the hero image or a branded magazine cover image. Avoid generic `/heart.png` if currently used.
+
+If the project has a `HeadSEO` component:
+- Import and render it inside `Amazing.tsx`.
+- Follow existing usage patterns from other pages.
+- Do not break global SEO behavior.
+
+12. Code quality requirements.
+
+- Keep TypeScript valid.
+- Avoid introducing new dependencies.
+- Keep current Framer Motion animations unless replacing a section requires cleanup.
+- Do not remove the route.
+- Do not change unrelated pages.
+- Avoid large architectural changes.
+- Ensure the page builds without lint/type errors.
+- Make the implementation mobile-responsive.
+
+After changes:
+- Run the app/build check available in the Replit project, such as `npm run check`, `npm run build`, or the existing command in `package.json`.
+- Fix any TypeScript or JSX errors.
+- Summarize the changed files and the key updates.
