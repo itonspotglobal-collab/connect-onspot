@@ -1,0 +1,56 @@
+Fix the remaining Client signup auto-login bug in SignUpDialog.tsx.
+
+I inspected the current code and found the likely bug:
+
+In `client/src/components/SignUpDialog.tsx`, after successful signup and auto-login, the redirect logic still does this:
+
+if (userType === "talent") {
+  setLocation("/get-hired");
+} else if (userType === "client") {
+  setLocation("/hire-talent");
+}
+
+This is wrong for Client signup. `/hire-talent` is a public page, so after creating a Client account the user appears logged out and the navbar still shows “Access Portal”.
+
+Required fix:
+- Do not redirect Client signup to `/hire-talent`.
+- Redirect Client signup to the existing Client Profile route.
+- Check `client/src/App.tsx` for the real route. It may be `/client/profile`, `/client`, `/client/dashboard`, or another registered route.
+- Use the actual existing client profile/dashboard route.
+- Do not create a duplicate route unless none exists.
+
+Also verify the auth state:
+- After `authAPI.login(...)` succeeds, make sure the token and user are actually stored.
+- Make sure `refreshAuth()` updates AuthContext before navigating.
+- If `authAPI.login` already returns the user, prefer setting AuthContext directly if available instead of relying only on refresh.
+- The navbar should update from “Access Portal” to the Client logged-in state immediately.
+
+Important:
+- Talent signup currently works. Do not break it.
+- Existing Client login should still work.
+- Existing Talent login should still work.
+
+Specific change needed:
+Replace this Client redirect:
+
+setLocation("/hire-talent");
+
+with the actual Client Profile route from `App.tsx`, for example:
+
+setLocation("/client/profile");
+
+but only use `/client/profile` if that route exists.
+
+Acceptance criteria:
+1. Open Access Portal.
+2. Sign up as Client.
+3. Signup succeeds.
+4. Auto-login succeeds.
+5. Modal closes.
+6. User is redirected to the Client Profile page, not `/hire-talent`.
+7. Navbar no longer shows “Access Portal”.
+8. Refreshing the page keeps the Client logged in.
+9. Talent signup still redirects correctly.
+10. No successful Client signup path redirects to `/hire-talent`.
+
+Make the smallest safe code change necessary.
