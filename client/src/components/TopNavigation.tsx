@@ -70,6 +70,8 @@ import {
   clearTalentAuth,
   type TalentAuthState,
 } from "@/components/TalentLoginModal";
+import { LoginDialog } from "@/components/LoginDialog";
+import { SignUpDialog } from "@/components/SignUpDialog";
 
 // Service definitions for mega menu
 const serviceDetails = {
@@ -2705,20 +2707,3 @@ export function TopNavigation() {
   );
 }
 
-// Placeholder component - to be implemented properly later
-function LoginDialog() {
-  return (
-    <Button variant="default" size="lg" data-testid="button-login">
-      Log In
-    </Button>
-  );
-}
-
-// Placeholder component - to be implemented properly later
-function SignUpDialog() {
-  return (
-    <Button variant="outline" size="lg" data-testid="button-signup">
-      Sign Up
-    </Button>
-  );
-}

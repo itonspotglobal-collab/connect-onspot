@@ -43,7 +43,7 @@ export function SignUpDialog() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const { login, refreshAuth } = useAuth(); // Get AuthContext methods
+  const { login } = useAuth(); // Get AuthContext methods
 
   const resetDialog = () => {
     setCurrentStep("user-type");
@@ -150,38 +150,33 @@ export function SignUpDialog() {
           description: `Your ${accountType.toLowerCase()} account has been created successfully! Logging you in...`,
         });
         
-        // Step 2: Immediately call login API with email and password
+        // Step 2: Auto-login using AuthContext.login (handles token storage + state hydration)
         try {
-          console.log('🚀 Step 2: Calling login API...');
-          const loginResponse = await authAPI.login(formData.email.trim(), formData.password);
-          
-          if (loginResponse.success && loginResponse.token) {
-            console.log('✅ Step 2 complete: Login successful');
-            
-            // Step 3: Token and user are already stored by authAPI.login
-            
-            // Refresh AuthContext to pick up the new authentication
-            await refreshAuth();
-            
+          console.log('🚀 Step 2: Auto-login via AuthContext...');
+          const loginSuccess = await login(formData.email.trim(), formData.password, userType);
+
+          if (loginSuccess) {
+            console.log('✅ Step 2 complete: Auto-login successful');
+
             toast({
               title: "Logged In Successfully",
               description: `Welcome to your OnSpot ${accountType.toLowerCase()} portal!`,
             });
-            
+
             setOpen(false);
             resetDialog();
-            
-            // Navigate user to appropriate page
+
+            // Navigate to the correct authenticated portal
             if (userType === "talent") {
               setLocation("/get-hired");
-            } else if (userType === "client") {
-              setLocation("/hire-talent");
+            } else {
+              setLocation("/dashboard");
             }
           } else {
-            console.error('❌ Step 2 failed: Login response missing token', loginResponse);
+            console.error('❌ Step 2 failed: Auto-login returned false');
             toast({
               title: "Auto-Login Failed",
-              description: "Signup succeeded but auto-login failed, please log in manually.",
+              description: "Account created successfully. Please log in manually to continue.",
               variant: "destructive",
             });
           }
@@ -193,7 +188,7 @@ export function SignUpDialog() {
           });
           toast({
             title: "Auto-Login Failed",
-            description: "Signup succeeded but auto-login failed, please log in manually.",
+            description: "Account created successfully. Please log in manually to continue.",
             variant: "destructive",
           });
         }

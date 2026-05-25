@@ -1,0 +1,114 @@
+Fix the signup/account creation flow so newly created accounts are automatically logged in.
+
+Current issue:
+When I create a new account as either “Client” or “Talent”:
+- Account creation succeeds.
+- I am redirected to the public Hire Talent page.
+- I am not automatically logged in.
+- I have to manually click “Access Portal” and log in again using the newly created account.
+
+Expected behavior:
+- After creating a Client account, the user should be automatically authenticated and redirected to the Client Profile page/dashboard.
+- After creating a Talent account, the user should be automatically authenticated and redirected to the Talent Profile page/dashboard.
+- The user should not need to manually log in after signup.
+- The top navigation should immediately show the correct logged-in state.
+- Refreshing the redirected page should keep the user logged in.
+
+Please inspect and fix the full signup flow:
+- Signup/account creation form or modal
+- Access Portal flow
+- Client signup handler
+- Talent signup handler
+- AuthContext/session handling
+- Backend signup/register endpoint
+- Route protection and role-based redirect logic
+- TopNavigation logged-in state
+
+Relevant files to check:
+- `client/src/contexts/AuthContext.tsx`
+- `client/src/components/DevPortalModal.tsx`
+- `client/src/components/SignUpDialog.tsx`
+- `client/src/components/TopNavigation.tsx`
+- `client/src/App.tsx`
+- Any auth API helper/client file
+- Backend auth/register routes and controllers
+
+Main fix:
+After successful account creation, the app must either:
+1. Have the signup/register endpoint return the same auth payload as login:
+   - token
+   - user object
+   - role/accountType/userType
+or:
+2. Automatically call the login endpoint immediately after successful signup using the submitted email/password.
+
+Prefer option 1 if the backend already supports returning a token safely. Otherwise, implement option 2.
+
+Required frontend behavior after successful signup:
+1. Await the signup API response.
+2. Obtain a valid auth token and user object.
+3. Save the token using the same storage key used by login.
+4. Update AuthContext with the authenticated user.
+5. Close the signup/login modal.
+6. Redirect based on the created account type.
+
+Role-based redirect rules:
+- Client / employer / company account → existing Client Profile route, such as `/client/profile`
+- Talent account → existing Talent Profile route, such as `/talent/profile`
+- Admin account, if applicable → existing Admin dashboard route
+
+Do not guess route names. Check `client/src/App.tsx` and use the existing registered routes.
+
+Important consistency requirements:
+- Signup and login must use the same token storage key.
+- Signup and login must use the same user shape in AuthContext.
+- Signup and login must normalize role/account type the same way.
+- If backend returns `accountType`, `userType`, `type`, or `role`, map it consistently.
+- Do not create a separate signup-only auth state.
+- Do not redirect to `/hire-talent` after successful signup unless signup failed or the user is unauthenticated.
+- Do not treat Client accounts as Talent accounts.
+- Do not treat Talent accounts as Client accounts.
+
+Check for these likely bugs:
+- Signup success handler only navigates to `/hire-talent`.
+- Signup success handler closes modal but does not call AuthContext login.
+- Register endpoint creates user but does not return a token.
+- Frontend expects `token`, but backend returns `accessToken` or `jwt`.
+- Frontend expects `role`, but backend returns `accountType`.
+- AuthContext loads from one localStorage key, but signup saves to another.
+- Protected routes redirect back to public pages because auth state is not hydrated before navigation.
+- The modal redirects before auth state is set.
+
+Error handling:
+- If signup fails, keep the modal open and show the real error message.
+- If auto-login after signup fails, show:
+  “Account created, but automatic login failed. Please log in manually.”
+- Do not silently redirect to a public page on failed auto-login.
+- Do not clear the form unless signup succeeds.
+
+Acceptance criteria:
+- Open Access Portal.
+- Create a new Client account.
+- After signup succeeds, the modal closes.
+- User is automatically logged in.
+- User is redirected to Client Profile page.
+- Top navigation shows Client logged-in state.
+- Refreshing the page keeps the user logged in.
+
+Also:
+- Create a new Talent account.
+- After signup succeeds, the modal closes.
+- User is automatically logged in.
+- User is redirected to Talent Profile page.
+- Top navigation shows Talent logged-in state.
+- Refreshing the page keeps the user logged in.
+
+Regression checks:
+- Existing Client login still works.
+- Existing Talent login still works.
+- Admin login still works.
+- Invalid signup still shows validation errors.
+- Duplicate email signup still shows an error.
+- No hardcoded redirect to Hire Talent remains after successful signup.
+
+Please make the smallest safe changes necessary and do not redesign the UI.
