@@ -1,8 +1,3 @@
-// DEV ONLY: temporary portal flow without real authentication.
-// This component provides a dev-only Sign In / Sign Up modal so Client and Talent
-// pages can be freely accessed during development.
-// Replace with real auth integration when ready.
-
 import { useState } from "react";
 import { useLocation } from "wouter";
 import {
@@ -26,9 +21,12 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { authAPI } from "@/lib/api";
 import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
 
-// DEV ONLY: localStorage keys for temp dev user session
+// Legacy dev-session keys — kept for backward compat with any code that reads them,
+// but no longer written to by this component.
 export const DEV_PORTAL_USER_KEY = "dev_portal_user";
 export const DEV_PORTAL_ROLE_KEY = "dev_portal_role";
 
@@ -42,7 +40,7 @@ export function getDevPortalRole(): "client" | "talent" | null {
   return r === "client" || r === "talent" ? r : null;
 }
 
-type ModalStep = "choice" | "signin" | "signin-portal" | "signup";
+type ModalStep = "choice" | "signin" | "signup";
 type PortalType = "client" | "talent";
 
 interface DevPortalModalProps {
@@ -52,8 +50,10 @@ interface DevPortalModalProps {
 
 export function DevPortalModal({ open, onOpenChange }: DevPortalModalProps) {
   const [, navigate] = useLocation();
+  const { toast } = useToast();
   const [step, setStep] = useState<ModalStep>("choice");
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [signInEmail, setSignInEmail] = useState("");
   const [signInPassword, setSignInPassword] = useState("");
@@ -67,6 +67,7 @@ export function DevPortalModal({ open, onOpenChange }: DevPortalModalProps) {
   const resetModal = () => {
     setStep("choice");
     setShowPassword(false);
+    setIsLoading(false);
     setSignInEmail("");
     setSignInPassword("");
     setSignUpFirstName("");
@@ -81,40 +82,110 @@ export function DevPortalModal({ open, onOpenChange }: DevPortalModalProps) {
     onOpenChange(isOpen);
   };
 
-  // DEV ONLY: save session to localStorage and navigate to the correct portal
-  const enterPortal = (role: PortalType, name: string, email: string) => {
-    localStorage.setItem(DEV_PORTAL_ROLE_KEY, role);
-    localStorage.setItem(DEV_PORTAL_USER_KEY, JSON.stringify({ name, email, role }));
-    onOpenChange(false);
-    resetModal();
-    // DEV ONLY: redirect to existing portal routes (protected route bypass handles the rest)
-    if (role === "client") {
-      navigate("/dashboard");
-    } else {
-      navigate("/talent-portal");
+  // Real sign-in: calls /api/login, stores JWT, full-page navigates by role
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!signInEmail || !signInPassword) return;
+
+    console.log("[PORTAL SIGNIN] handler reached", { email: signInEmail });
+    setIsLoading(true);
+    try {
+      const result = await authAPI.login(signInEmail, signInPassword);
+      console.log("[PORTAL SIGNIN] response", result);
+
+      if (result.success && result.token && result.user) {
+        localStorage.setItem("onspot_jwt_token", result.token);
+        localStorage.setItem("onspot_user", JSON.stringify(result.user));
+        console.log("[PORTAL SIGNIN] saved token", localStorage.getItem("onspot_jwt_token"));
+        console.log("[PORTAL SIGNIN] saved user", localStorage.getItem("onspot_user"));
+
+        onOpenChange(false);
+        resetModal();
+
+        if (result.user.role === "talent") {
+          window.location.href = "/get-hired";
+        } else {
+          window.location.href = "/client-profile";
+        }
+      } else {
+        toast({
+          title: "Sign In Failed",
+          description: result.message || "Invalid email or password.",
+          variant: "destructive",
+        });
+      }
+    } catch (err: any) {
+      console.error("[PORTAL SIGNIN] error", err);
+      toast({
+        title: "Sign In Failed",
+        description: err.response?.data?.message || "Invalid email or password.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleSignInContinue = (e: React.FormEvent) => {
+  // Real sign-up: calls /api/signup, response includes JWT token, stores it, navigates
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!signInEmail) return;
-    // DEV ONLY: no backend auth call — advance to portal selection
-    setStep("signin-portal");
-  };
+    if (!signUpRole || !signUpFirstName || !signUpEmail || !signUpPassword) return;
 
-  const handleSignInPortalSelect = (role: PortalType) => {
-    enterPortal(role, signInEmail.split("@")[0], signInEmail);
-  };
+    console.log("[CLIENT SIGNUP FLOW] handler reached", {
+      email: signUpEmail,
+      role: signUpRole,
+      firstName: signUpFirstName,
+    });
+    setIsLoading(true);
+    try {
+      const signupData = {
+        email: signUpEmail.trim(),
+        username: signUpEmail.split("@")[0],
+        password: signUpPassword,
+        first_name: signUpFirstName.trim(),
+        last_name: signUpLastName.trim(),
+        role: signUpRole,
+      };
 
-  const handleSignUp = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!signUpRole || !signUpFirstName || !signUpEmail) return;
-    // DEV ONLY: no backend signup call — save locally and redirect
-    enterPortal(
-      signUpRole,
-      `${signUpFirstName} ${signUpLastName}`.trim(),
-      signUpEmail,
-    );
+      const signupResponse = await authAPI.signup(signupData);
+      console.log("[CLIENT SIGNUP FLOW] signup response", signupResponse);
+
+      if (signupResponse.success && signupResponse.token && signupResponse.user) {
+        localStorage.setItem("onspot_jwt_token", signupResponse.token);
+        localStorage.setItem("onspot_user", JSON.stringify(signupResponse.user));
+        console.log("[CLIENT SIGNUP FLOW] saved token", localStorage.getItem("onspot_jwt_token"));
+        console.log("[CLIENT SIGNUP FLOW] saved user", localStorage.getItem("onspot_user"));
+
+        toast({
+          title: "Account Created",
+          description: `Welcome to OnSpot! Logging you in...`,
+        });
+
+        onOpenChange(false);
+        resetModal();
+
+        if (signUpRole === "talent") {
+          window.location.href = "/get-hired";
+        } else {
+          window.location.href = "/client-profile";
+        }
+      } else {
+        toast({
+          title: "Signup Failed",
+          description: signupResponse.message || "Failed to create account. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (err: any) {
+      console.error("[CLIENT SIGNUP FLOW] error", err);
+      toast({
+        title: "Signup Failed",
+        description: err.response?.data?.message || "Failed to create account. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -175,12 +246,11 @@ export function DevPortalModal({ open, onOpenChange }: DevPortalModalProps) {
                 Enter your credentials to continue.
               </DialogDescription>
             </DialogHeader>
-            {/* DEV ONLY: no backend auth endpoint is called */}
-            <form onSubmit={handleSignInContinue} className="space-y-4 mt-1">
+            <form onSubmit={handleSignIn} className="space-y-4 mt-1">
               <div className="space-y-1.5">
-                <Label htmlFor="dev-si-email">Email</Label>
+                <Label htmlFor="si-email">Email</Label>
                 <Input
-                  id="dev-si-email"
+                  id="si-email"
                   type="email"
                   placeholder="you@example.com"
                   value={signInEmail}
@@ -190,14 +260,15 @@ export function DevPortalModal({ open, onOpenChange }: DevPortalModalProps) {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="dev-si-password">Password</Label>
+                <Label htmlFor="si-password">Password</Label>
                 <div className="relative">
                   <Input
-                    id="dev-si-password"
+                    id="si-password"
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
                     value={signInPassword}
                     onChange={(e) => setSignInPassword(e.target.value)}
+                    required
                     autoComplete="current-password"
                   />
                   <button
@@ -213,8 +284,8 @@ export function DevPortalModal({ open, onOpenChange }: DevPortalModalProps) {
                   </button>
                 </div>
               </div>
-              <Button type="submit" className="w-full gap-2">
-                Continue <ArrowRight className="w-4 h-4" />
+              <Button type="submit" className="w-full gap-2" disabled={isLoading}>
+                {isLoading ? "Signing in…" : <>Continue <ArrowRight className="w-4 h-4" /></>}
               </Button>
             </form>
             <p className="text-center text-xs text-muted-foreground mt-2">
@@ -226,54 +297,6 @@ export function DevPortalModal({ open, onOpenChange }: DevPortalModalProps) {
                 Sign Up
               </button>
             </p>
-          </>
-        )}
-
-        {/* ── Sign In → Portal Selection ───────────────────── */}
-        {step === "signin-portal" && (
-          <>
-            <DialogHeader>
-              <button
-                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-1 w-fit"
-                onClick={() => setStep("signin")}
-              >
-                <ArrowLeft className="w-3.5 h-3.5" /> Back
-              </button>
-              <DialogTitle>Choose Your Portal</DialogTitle>
-              <DialogDescription>
-                Which portal would you like to access?
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid grid-cols-2 gap-4 mt-2">
-              <Card
-                className="cursor-pointer hover-elevate border-2 hover:border-primary/50 transition-all duration-200"
-                onClick={() => handleSignInPortalSelect("client")}
-              >
-                <CardContent className="p-5 text-center">
-                  <div className="w-12 h-12 mx-auto mb-3 bg-primary/10 rounded-full flex items-center justify-center">
-                    <Building className="w-6 h-6 text-primary" />
-                  </div>
-                  <h3 className="font-semibold text-sm mb-1">Client Portal</h3>
-                  <p className="text-xs text-muted-foreground leading-snug">
-                    Find and manage top outsourcing talent.
-                  </p>
-                </CardContent>
-              </Card>
-              <Card
-                className="cursor-pointer hover-elevate border-2 hover:border-[hsl(var(--gold-yellow)/0.5)] transition-all duration-200"
-                onClick={() => handleSignInPortalSelect("talent")}
-              >
-                <CardContent className="p-5 text-center">
-                  <div className="w-12 h-12 mx-auto mb-3 bg-[hsl(var(--gold-yellow)/0.1)] rounded-full flex items-center justify-center">
-                    <User className="w-6 h-6 text-[hsl(var(--gold-yellow)/0.8)]" />
-                  </div>
-                  <h3 className="font-semibold text-sm mb-1">Talent Portal</h3>
-                  <p className="text-xs text-muted-foreground leading-snug">
-                    Find jobs and manage your career profile.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
           </>
         )}
 
@@ -290,13 +313,12 @@ export function DevPortalModal({ open, onOpenChange }: DevPortalModalProps) {
               <DialogTitle>Create Account</DialogTitle>
               <DialogDescription>Tell us a bit about yourself.</DialogDescription>
             </DialogHeader>
-            {/* DEV ONLY: no backend signup endpoint is called */}
             <form onSubmit={handleSignUp} className="space-y-3 mt-1">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="dev-su-first">First Name</Label>
+                  <Label htmlFor="su-first">First Name</Label>
                   <Input
-                    id="dev-su-first"
+                    id="su-first"
                     placeholder="John"
                     value={signUpFirstName}
                     onChange={(e) => setSignUpFirstName(e.target.value)}
@@ -304,9 +326,9 @@ export function DevPortalModal({ open, onOpenChange }: DevPortalModalProps) {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="dev-su-last">Last Name</Label>
+                  <Label htmlFor="su-last">Last Name</Label>
                   <Input
-                    id="dev-su-last"
+                    id="su-last"
                     placeholder="Doe"
                     value={signUpLastName}
                     onChange={(e) => setSignUpLastName(e.target.value)}
@@ -314,9 +336,9 @@ export function DevPortalModal({ open, onOpenChange }: DevPortalModalProps) {
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="dev-su-email">Email</Label>
+                <Label htmlFor="su-email">Email</Label>
                 <Input
-                  id="dev-su-email"
+                  id="su-email"
                   type="email"
                   placeholder="you@example.com"
                   value={signUpEmail}
@@ -326,14 +348,15 @@ export function DevPortalModal({ open, onOpenChange }: DevPortalModalProps) {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="dev-su-password">Password</Label>
+                <Label htmlFor="su-password">Password</Label>
                 <div className="relative">
                   <Input
-                    id="dev-su-password"
+                    id="su-password"
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
                     value={signUpPassword}
                     onChange={(e) => setSignUpPassword(e.target.value)}
+                    required
                     autoComplete="new-password"
                   />
                   <button
@@ -389,9 +412,9 @@ export function DevPortalModal({ open, onOpenChange }: DevPortalModalProps) {
               <Button
                 type="submit"
                 className="w-full gap-2 mt-1"
-                disabled={!signUpRole}
+                disabled={!signUpRole || isLoading}
               >
-                Create Account <ArrowRight className="w-4 h-4" />
+                {isLoading ? "Creating account…" : <>Create Account <ArrowRight className="w-4 h-4" /></>}
               </Button>
             </form>
             <p className="text-center text-xs text-muted-foreground mt-2">

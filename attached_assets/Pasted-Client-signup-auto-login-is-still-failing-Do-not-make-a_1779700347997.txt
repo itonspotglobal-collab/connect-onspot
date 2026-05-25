@@ -1,0 +1,56 @@
+Client signup auto-login is still failing. Do not make another blind redirect fix.
+
+I need you to trace the real runtime flow and fix the exact broken point.
+
+Current failed behavior:
+- I create a Client account successfully.
+- I still end up logged out.
+- Navbar still shows “Access Portal”.
+- Desired result: after Client signup, automatically logged in and redirected to `/client-profile`.
+
+Important known facts:
+- Correct Client Profile route is `/client-profile`.
+- `/api/signup` was supposedly changed to return a JWT token.
+- Frontend was supposedly changed to store:
+  - `onspot_jwt_token`
+  - `onspot_user`
+- But the browser still behaves as logged out.
+
+Please debug this with concrete verification, not assumptions.
+
+Step 1: Confirm the exact component handling the signup form I am using
+- Add a temporary console log at the top of the actual Client signup submit handler:
+  `console.log("[CLIENT SIGNUP FLOW] handler reached", signupData);`
+- Make sure this log appears when I submit the Client signup form.
+- If it does not appear, you are editing the wrong file/component.
+- Search for all signup forms/modals/routes and identify the one actually used by the Access Portal signup UI.
+
+Search for:
+- `Sign Up`
+- `signup`
+- `register`
+- `Access Portal`
+- `DevPortalModal`
+- `SignUpDialog`
+- `/api/signup`
+- `create account`
+- `accountType`
+- `role`
+
+Step 2: Confirm the `/api/signup` response in the browser
+After the signup request, log the response:
+`console.log("[CLIENT SIGNUP FLOW] signup response", signupResponse);`
+
+Verify it contains:
+- `success: true`
+- `token`
+- `user`
+- `user.role` or `role` equal to client
+
+If there is no token, fix the backend `/api/signup` route again. It must return the same token format that `/api/login` returns.
+
+Step 3: Confirm localStorage after signup
+Immediately after saving auth, log:
+```js
+console.log("[CLIENT SIGNUP FLOW] saved token", localStorage.getItem("onspot_jwt_token"));
+console.log("[CLIENT SIGNUP FLOW] saved user", localStorage.getItem("onspot_user"));
