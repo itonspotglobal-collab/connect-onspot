@@ -35,7 +35,7 @@ import {
   Layers,
 } from "lucide-react";
 import type { Post } from "@shared/schema";
-import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
+import onspotLogo from "@assets/onspot-logo-new.png";
 import { useReserveBottomRight } from "@/hooks/useReserveBottomRight";
 
 // ─── Shared Case Studies data (sourced from WhyOnSpot Success Stories) ───────
@@ -801,7 +801,7 @@ function CategoryNav({
               <img
                 src={onspotLogo}
                 alt="OnSpot"
-                className="h-7 w-auto object-contain brightness-0 saturate-100 invert drop-shadow-sm"
+                className="h-7 w-auto object-contain drop-shadow-sm"
               />
             </button>
 

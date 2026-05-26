@@ -35,7 +35,7 @@ import {
 } from 'react-icons/si';
 import { Link } from 'wouter';
 import { useVanessa } from '@/contexts/VanessaContext';
-import onspotLogo from '@assets/OnSpot Log Full Purple Blue_1757942805752.png';
+import onspotLogo from '@assets/onspot-logo-new.png';
 
 import FlashLogo from '../assets/logos/Flash.png';
 import FutureEVLogo from '../assets/logos/FutureEV.png';
@@ -919,7 +919,7 @@ export default function Home() {
                   <img
                     src={onspotLogo}
                     alt="OnSpot"
-                    className="h-8 sm:h-9 w-auto brightness-0 invert"
+                    className="h-8 sm:h-9 w-auto"
                     data-testid="footer-logo"
                   />
                   <div className="absolute -inset-2 bg-gradient-to-r from-violet-500/20 to-blue-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>

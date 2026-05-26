@@ -61,7 +61,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
+import onspotLogo from "@assets/onspot-logo-new.png";
 import { VanessaChat } from "@/components/VanessaChat";
 import {
   TOKEN_KEY as TALENT_TOKEN_KEY,
@@ -747,7 +747,7 @@ export function TopNavigation() {
             <img
               src={onspotLogo}
               alt="OnSpot"
-              className="h-8 w-auto brightness-0 saturate-100 invert drop-shadow-sm"
+              className="h-8 w-auto drop-shadow-sm"
             />
           </Link>
 
@@ -2540,11 +2540,13 @@ export function TopNavigation() {
                   >
                     <DialogHeader className="text-center space-y-4">
                       <div className="flex justify-center mb-2">
-                        <img
-                          src={onspotLogo}
-                          alt="OnSpot"
-                          className="h-12 w-auto"
-                        />
+                        <div className="rounded-2xl bg-gradient-to-br from-violet-600 to-blue-600 px-5 py-3">
+                          <img
+                            src={onspotLogo}
+                            alt="OnSpot"
+                            className="h-9 w-auto"
+                          />
+                        </div>
                       </div>
                       <DialogTitle className="text-2xl font-semibold">
                         Welcome to OnSpot
@@ -2658,11 +2660,13 @@ export function TopNavigation() {
                   >
                     <DialogHeader className="text-center space-y-4">
                       <div className="flex justify-center mb-2">
-                        <img
-                          src={onspotLogo}
-                          alt="OnSpot"
-                          className="h-12 w-auto"
-                        />
+                        <div className="rounded-2xl bg-gradient-to-br from-violet-600 to-blue-600 px-5 py-3">
+                          <img
+                            src={onspotLogo}
+                            alt="OnSpot"
+                            className="h-9 w-auto"
+                          />
+                        </div>
                       </div>
                       <DialogTitle className="text-2xl font-semibold">
                         {selectedPortal === "client"
