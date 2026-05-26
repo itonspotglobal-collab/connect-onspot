@@ -1,0 +1,244 @@
+Please correct the Trusted By / Featured Insights update.
+
+Important correction:
+Do NOT remove the Trusted By carousel.
+Keep the carousel behavior.
+
+Current request:
+1. Keep the Trusted By client logo carousel.
+2. Stretch/give the Trusted By carousel more space so the logos are easier to view.
+3. Add a Featured Insights / Latest News section using published blogs from the Insights page.
+4. Make the insights area look like a news-style homepage preview.
+
+==================================================
+TRUSTED BY CAROUSEL
+==================================================
+
+Keep:
+- Carousel behavior
+- Logo movement/animation
+- Colored logos
+- Existing carousel logic
+- Existing logo data
+- Existing section label/headline
+
+Do NOT remove:
+- carousel state
+- autoplay
+- manual navigation, if currently used
+- active/center logo behavior, if currently used
+
+Only adjust:
+- width
+- spacing
+- layout
+- visibility
+- responsiveness
+
+Goal:
+The Trusted By carousel should have more room and not feel cramped.
+
+Suggested carousel wrapper:
+
+className="
+  mx-auto w-full max-w-[1600px]
+  px-6 sm:px-8 lg:px-12 xl:px-16
+"
+
+If the carousel is inside a smaller `max-w-6xl` or `max-w-7xl`, increase it to:
+
+max-w-[1500px] or max-w-[1600px]
+
+If the logo cards feel too close together, adjust gap/padding, but keep the carousel.
+
+==================================================
+FEATURED INSIGHTS / LATEST NEWS
+==================================================
+
+Add a Featured Insights section near the Trusted By section.
+
+Preferred placement:
+Directly after Trusted By carousel.
+
+Page order should remain:
+
+1. Hero
+2. Trusted By carousel
+3. Featured Insights / Latest News
+4. Work Differently
+5. Choose Your Path
+6. Ready to Become Superhuman
+7. Footer
+
+Alternative:
+If it looks better, Trusted By and Featured Insights can be grouped in one shared section, but keep them visually distinct.
+
+==================================================
+FEATURED INSIGHTS DATA
+==================================================
+
+Use real published or featured articles from the existing Insights page.
+
+Please inspect the project for:
+- Insights page data
+- blog/article data arrays
+- published posts
+- featured posts
+- article images
+- slugs/routes
+
+Priority:
+1. Use articles marked as featured.
+2. If no featured field exists, use latest published article.
+3. Sort by date descending if dates are available.
+4. Show 1 large featured article card, and optionally 2 smaller cards if the design supports it.
+
+Do not invent fake article data if real data exists.
+
+==================================================
+NEWS-STYLE DESIGN
+==================================================
+
+Create a news-like section after Trusted By.
+
+Suggested section header:
+
+Label:
+“LATEST INSIGHTS”
+
+Headline:
+“Featured insights from OnSpot.”
+
+or:
+“Fresh thinking from the OnSpot team.”
+
+Featured article card should include:
+- cover image
+- category pill
+- title
+- excerpt
+- author/date/read time/views if available
+- “Read Article” link
+
+Suggested card style:
+
+className="
+  group overflow-hidden rounded-3xl
+  border border-slate-200/70
+  bg-white
+  shadow-sm transition
+  hover:-translate-y-1 hover:shadow-xl
+"
+
+Image wrapper:
+className="
+  relative aspect-[16/9]
+  overflow-hidden bg-slate-100
+"
+
+Image:
+className="
+  h-full w-full object-cover
+  transition duration-500 group-hover:scale-105
+"
+
+Overlay option:
+Use a dark gradient overlay at the bottom of the image, similar to a featured news card.
+
+Overlay:
+className="
+  absolute inset-x-0 bottom-0
+  bg-gradient-to-t from-slate-950/90 via-slate-950/70 to-transparent
+  p-6 sm:p-8
+"
+
+Category pill:
+className="
+  inline-flex rounded-full
+  bg-indigo-500/90 px-3 py-1
+  text-xs font-semibold uppercase tracking-[0.18em]
+  text-white
+"
+
+Title:
+className="
+  mt-4 text-2xl sm:text-3xl
+  font-bold leading-tight text-white
+"
+
+Excerpt:
+className="
+  mt-3 text-sm sm:text-base
+  leading-relaxed text-white/75
+"
+
+Read Article:
+className="
+  mt-5 inline-flex items-center gap-2
+  text-sm font-semibold text-white hover:text-white/80
+"
+
+==================================================
+LAYOUT
+==================================================
+
+Recommended layout:
+Keep Trusted By carousel full-width first, then show Featured Insights below it.
+
+Example:
+
+<section id="trusted-and-insights">
+  <TrustedByCarousel />
+  <FeaturedInsights />
+</section>
+
+Featured insights wrapper:
+
+className="
+  mx-auto mt-20 w-full max-w-[1400px]
+  px-6 sm:px-8 lg:px-12 xl:px-16
+"
+
+If showing one large article:
+className="
+  mx-auto max-w-5xl
+"
+
+If showing one large + smaller articles:
+className="
+  grid grid-cols-1 gap-8 lg:grid-cols-[1.4fr_0.8fr]
+"
+
+==================================================
+RESPONSIVE REQUIREMENTS
+==================================================
+
+Desktop:
+- Trusted By carousel has more horizontal room.
+- Featured insight card looks like a polished news feature.
+
+Laptop:
+- Carousel should not feel cramped.
+- Article card remains readable.
+
+Tablet/mobile:
+- Carousel stays functional.
+- Featured insight card stacks naturally.
+- No horizontal scrolling.
+
+==================================================
+CLEANUP
+==================================================
+
+Do NOT remove carousel code.
+
+Only remove carousel code if it is duplicated or broken, but preserve the carousel feature itself.
+
+Make sure:
+- Trusted By appears once.
+- Featured Insights appears once.
+- Work Differently still follows after this area.
+- No removed homepage sections are accidentally re-added.
+
+Expected result:
+The Trusted By section remains a carousel, but with more space and better visibility. A new Featured Insights / Latest News card appears after it, pulling real published/featured blog content from the Insights page.

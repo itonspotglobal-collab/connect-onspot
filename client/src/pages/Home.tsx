@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import {
   Users,
@@ -17,8 +18,6 @@ import {
   Facebook,
   Instagram,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   Globe,
   SlidersHorizontal,
 } from 'lucide-react';
@@ -84,167 +83,118 @@ const hiringModes = [
   },
 ];
 
-type CardStyle = {
-  transform: string;
-  zIndex: number;
-  opacity: number;
+type PostSummary = {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  coverImageUrl: string | null;
+  category: string;
+  author: string;
+  isFeatured: boolean;
+  readTime: string | null;
+  views: number;
+  publishedAt: string | null;
 };
 
-function getCardStyle(offset: number, nearOffset: number, farOffset: number): CardStyle {
-  const map: Record<string, CardStyle> = {
-    "0":  { transform: `translate(-50%, -50%) translateX(0px) scale(1.16)`,                                           zIndex: 50, opacity: 1    },
-    "-1": { transform: `translate(-50%, -50%) translateX(-${nearOffset}px) scale(0.88) rotateY(10deg)`,               zIndex: 30, opacity: 0.72 },
-    "1":  { transform: `translate(-50%, -50%) translateX(${nearOffset}px) scale(0.88) rotateY(-10deg)`,               zIndex: 30, opacity: 0.72 },
-    "-2": { transform: `translate(-50%, -50%) translateX(-${farOffset}px) scale(0.72) rotateY(16deg)`,                zIndex: 10, opacity: 0.35 },
-    "2":  { transform: `translate(-50%, -50%) translateX(${farOffset}px) scale(0.72) rotateY(-16deg)`,                zIndex: 10, opacity: 0.35 },
-  };
-  return map[String(offset)] ?? { transform: "translate(-50%,-50%) scale(0)", zIndex: 0, opacity: 0 };
+function TrustedLogos() {
+  return (
+    <div className="mt-10 grid grid-cols-2 sm:grid-cols-3 items-center justify-items-center gap-x-10 gap-y-10 xl:gap-x-14">
+      {trustedBrands.map(({ name, logo }) => (
+        <div key={name} className="flex items-center justify-center w-full">
+          <img
+            src={logo}
+            alt={name}
+            loading="lazy"
+            className="h-auto max-h-16 max-w-[200px] w-auto object-contain"
+            data-testid={`brand-logo-${name.toLowerCase().replace(/\s+/g, "-")}`}
+          />
+        </div>
+      ))}
+    </div>
+  );
 }
 
-function TrustedLogos() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [visibleCount, setVisibleCount] = useState(5);
-  const [isPaused, setIsPaused] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Offsets per breakpoint
-  const nearOffset = visibleCount === 5 ? 260 : visibleCount === 3 ? 190 : 0;
-  const farOffset  = visibleCount === 5 ? 470 : visibleCount === 3 ? 340 : 0;
-
-  const nextSlide = useCallback(() => {
-    setCurrentIndex((prev) => (prev + 1) % trustedBrands.length);
-  }, []);
-
-  const prevSlide = useCallback(() => {
-    setCurrentIndex((prev) => (prev - 1 + trustedBrands.length) % trustedBrands.length);
-  }, []);
-
-  const goTo = useCallback((index: number) => {
-    setCurrentIndex(index);
-    setIsPaused(true);
-    setTimeout(() => setIsPaused(false), 3000);
-  }, []);
-
-  const handleArrow = useCallback((dir: "prev" | "next") => {
-    if (dir === "next") nextSlide(); else prevSlide();
-    setIsPaused(true);
-    setTimeout(() => setIsPaused(false), 3000);
-  }, [nextSlide, prevSlide]);
-
-  // Resize → update visibleCount
-  useEffect(() => {
-    const update = () => {
-      if (window.innerWidth < 640)  setVisibleCount(1);
-      else if (window.innerWidth < 1024) setVisibleCount(3);
-      else setVisibleCount(5);
-    };
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, []);
-
-  // Autoplay
-  useEffect(() => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    if (!isPaused) {
-      intervalRef.current = setInterval(nextSlide, 3500);
-    }
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [isPaused, nextSlide]);
-
-  // Compute visible slots
-  const visibleOffsets: number[] =
-    visibleCount === 5 ? [-2, -1, 0, 1, 2] :
-    visibleCount === 3 ? [-1, 0, 1] :
-    [0];
-
-  const visibleItems = visibleOffsets.map((offset) => {
-    const index = (currentIndex + offset + trustedBrands.length) % trustedBrands.length;
-    return { ...trustedBrands[index], offset, isActive: offset === 0 };
+function FeaturedInsight() {
+  const { data: posts = [], isLoading } = useQuery<PostSummary[]>({
+    queryKey: ["/api/posts"],
+    select: (res: any) => (Array.isArray(res) ? res : (res?.posts ?? [])),
   });
 
+  const featured: PostSummary | undefined =
+    posts.find((p) => p.isFeatured) ?? posts[0];
+
+  if (isLoading) {
+    return (
+      <div className="mt-6 animate-pulse rounded-3xl bg-slate-200/60 h-[340px] w-full" />
+    );
+  }
+
+  if (!featured) return null;
+
+  const date = featured.publishedAt
+    ? new Date(featured.publishedAt).toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    : null;
+
   return (
-    <div className="mt-10 sm:mt-14 w-full select-none">
-      {/* Carousel stage */}
-      <div
-        className="relative mx-auto h-[220px] sm:h-[250px] w-full max-w-6xl overflow-visible"
-        style={{ perspective: "1200px" }}
-        onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={() => setIsPaused(false)}
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-600">
+        Latest Insights
+      </p>
+      <h2 className="mt-3 text-2xl sm:text-3xl font-semibold text-slate-900">
+        Featured insights from OnSpot.
+      </h2>
+
+      <Link
+        href={`/insights/${featured.slug}`}
+        className="group mt-6 block overflow-hidden rounded-3xl shadow-sm transition-shadow duration-300 hover:shadow-xl"
       >
-        {/* Cards */}
-        {visibleItems.map(({ name, logo, offset, isActive }) => {
-          const style = getCardStyle(offset, nearOffset, farOffset);
-          return (
-            <div
-              key={name}
-              className={[
-                "absolute left-1/2 top-1/2 flex items-center justify-center rounded-3xl bg-white",
-                "transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]",
-                isActive
-                  ? "h-36 sm:h-40 w-[280px] sm:w-[340px] border border-purple-300/70 shadow-2xl"
-                  : Math.abs(offset) === 1
-                  ? "h-28 sm:h-32 w-[240px] sm:w-[300px] border border-slate-200/70 shadow-md"
-                  : "h-24 sm:h-28 w-[210px] sm:w-[260px] border border-slate-200/60 shadow-sm",
-              ].join(" ")}
-              style={{
-                ...style,
-                transformStyle: "preserve-3d",
-                willChange: "transform, opacity",
-              }}
-            >
-              <img
-                src={logo}
-                alt={name}
-                loading="lazy"
-                className={[
-                  "object-contain transition-all duration-700",
-                  isActive
-                    ? "max-h-20 max-w-[200px] sm:max-w-[230px]"
-                    : Math.abs(offset) === 1
-                    ? "max-h-14 max-w-[150px] sm:max-w-[170px]"
-                    : "max-h-12 max-w-[120px] sm:max-w-[140px]",
-                ].join(" ")}
-              />
+        <div className="relative aspect-[16/9] overflow-hidden bg-slate-100">
+          {featured.coverImageUrl ? (
+            <img
+              src={featured.coverImageUrl}
+              alt={featured.title}
+              className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+            />
+          ) : (
+            <div className="h-full w-full bg-gradient-to-br from-indigo-500 via-violet-500 to-blue-600" />
+          )}
+
+          {/* Dark overlay with content */}
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/92 via-slate-950/65 to-transparent p-6 sm:p-8">
+            <span className="inline-flex rounded-full bg-indigo-500/90 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white">
+              {featured.category || "Industry Insights"}
+            </span>
+
+            <p className="mt-4 text-xl sm:text-2xl font-bold leading-tight text-white line-clamp-2">
+              {featured.title}
+            </p>
+
+            {featured.excerpt && (
+              <p className="mt-2 text-sm leading-relaxed text-white/75 line-clamp-2">
+                {featured.excerpt}
+              </p>
+            )}
+
+            <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-white/60">
+              {featured.author && <span>{featured.author}</span>}
+              {date && <span>{date}</span>}
+              {featured.readTime && <span>{featured.readTime}</span>}
+              {(featured.views ?? 0) > 0 && (
+                <span>{featured.views.toLocaleString()} views</span>
+              )}
             </div>
-          );
-        })}
 
-        {/* Left arrow */}
-        <button
-          onClick={() => handleArrow("prev")}
-          aria-label="Previous logo"
-          className="absolute left-2 sm:left-4 top-1/2 z-[60] -translate-y-1/2 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full border border-slate-200 bg-white shadow-lg transition hover:scale-105 hover:shadow-xl"
-        >
-          <ChevronLeft className="h-5 w-5 text-slate-600" />
-        </button>
-
-        {/* Right arrow */}
-        <button
-          onClick={() => handleArrow("next")}
-          aria-label="Next logo"
-          className="absolute right-2 sm:right-4 top-1/2 z-[60] -translate-y-1/2 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full border border-slate-200 bg-white shadow-lg transition hover:scale-105 hover:shadow-xl"
-        >
-          <ChevronRight className="h-5 w-5 text-slate-600" />
-        </button>
-      </div>
-
-      {/* Dot indicators */}
-      <div className="mt-10 flex items-center justify-center gap-2">
-        {trustedBrands.map((brand, index) => (
-          <button
-            key={brand.name}
-            onClick={() => goTo(index)}
-            aria-label={`Go to ${brand.name}`}
-            className={[
-              "rounded-full transition-all duration-500",
-              index === currentIndex
-                ? "h-2.5 w-6 bg-violet-500"
-                : "h-2 w-2 bg-slate-300 hover:bg-slate-400",
-            ].join(" ")}
-          />
-        ))}
-      </div>
+            <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-white transition group-hover:text-white/80">
+              Read Article <ArrowRight className="h-4 w-4" />
+            </span>
+          </div>
+        </div>
+      </Link>
     </div>
   );
 }
@@ -362,35 +312,44 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ── 2. TRUSTED BY ── */}
+      {/* ── 2. TRUSTED BY + FEATURED INSIGHTS ── */}
       <div
         className="relative overflow-hidden bg-[#f7f9ff] dark:bg-background"
-        style={{ padding: "clamp(2.5rem, 6vw, 8rem) 0" }}
+        style={{ padding: "clamp(2.5rem, 6vw, 7rem) 0" }}
       >
+        {/* Top divider accent */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[85%] pointer-events-none">
           <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-b from-violet-500/5 via-blue-500/3 to-transparent blur-sm"></div>
           <div className="h-px bg-gradient-to-r from-transparent via-violet-400/25 to-transparent"></div>
         </div>
 
-        <div className="container mx-auto px-4 sm:px-6 relative z-10">
-          <div className="text-center space-y-8 sm:space-y-12">
-            <div className="space-y-4 sm:space-y-6 mx-auto">
+        <div className="mx-auto w-full max-w-[1600px] px-6 sm:px-8 lg:px-12 xl:px-16 relative z-10">
+          {/* Two-column: logos left, featured insight right */}
+          <div className="grid grid-cols-1 gap-14 xl:grid-cols-[1fr_1.15fr] xl:items-start xl:gap-20">
+
+            {/* Left column: Trusted By */}
+            <div>
               <p className="text-xs sm:text-sm font-medium uppercase tracking-[0.2em] bg-gradient-to-r from-violet-600/80 to-blue-600/80 bg-clip-text text-transparent">
                 Trusted by
               </p>
               <h2
-                className="font-light tracking-tight leading-tight mx-auto"
+                className="mt-4 font-light tracking-tight leading-tight"
                 style={{
-                  fontSize: "clamp(1.75rem, 4vw, 3rem)",
+                  fontSize: "clamp(1.5rem, 3.5vw, 2.5rem)",
                   textWrap: "balance",
-                  maxWidth: "62ch",
                 }}
               >
                 Trusted by global brands, hundreds of entrepreneurs, and
                 thousands of professionals worldwide.
               </h2>
+              <TrustedLogos />
             </div>
-            <TrustedLogos />
+
+            {/* Right column: Featured Insight */}
+            <div className="xl:pt-1">
+              <FeaturedInsight />
+            </div>
+
           </div>
         </div>
       </div>
