@@ -14,7 +14,7 @@ import {
 
 export function Footer() {
   return (
-    <footer className="relative overflow-hidden bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4]">
+    <footer className="relative overflow-hidden bg-[#3F4698]">
       {/* Enhanced Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-white/8 rounded-full blur-2xl animate-pulse"></div>

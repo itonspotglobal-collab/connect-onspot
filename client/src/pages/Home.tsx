@@ -1713,7 +1713,7 @@ export default function Home() {
       </div>
 
       {/* Footer */}
-      <footer className="onspot-footer relative overflow-hidden bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4]">
+      <footer className="onspot-footer relative overflow-hidden bg-[#3F4698]">
         {/* Hairline Gradient Seam with Soft Contact Shadow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[85%] pointer-events-none">
           {/* Soft contact shadow for depth */}
