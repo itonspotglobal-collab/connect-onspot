@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Users,
@@ -17,6 +17,8 @@ import {
   Facebook,
   Instagram,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Globe,
   SlidersHorizontal,
 } from 'lucide-react';
@@ -82,20 +84,165 @@ const hiringModes = [
   },
 ];
 
+type CardStyle = {
+  transform: string;
+  zIndex: number;
+  opacity: number;
+};
+
+function getCardStyle(offset: number, nearOffset: number, farOffset: number): CardStyle {
+  const map: Record<string, CardStyle> = {
+    "0":  { transform: `translate(-50%, -50%) translateX(0px) scale(1.16)`,                                           zIndex: 50, opacity: 1    },
+    "-1": { transform: `translate(-50%, -50%) translateX(-${nearOffset}px) scale(0.88) rotateY(10deg)`,               zIndex: 30, opacity: 0.72 },
+    "1":  { transform: `translate(-50%, -50%) translateX(${nearOffset}px) scale(0.88) rotateY(-10deg)`,               zIndex: 30, opacity: 0.72 },
+    "-2": { transform: `translate(-50%, -50%) translateX(-${farOffset}px) scale(0.72) rotateY(16deg)`,                zIndex: 10, opacity: 0.35 },
+    "2":  { transform: `translate(-50%, -50%) translateX(${farOffset}px) scale(0.72) rotateY(-16deg)`,                zIndex: 10, opacity: 0.35 },
+  };
+  return map[String(offset)] ?? { transform: "translate(-50%,-50%) scale(0)", zIndex: 0, opacity: 0 };
+}
+
 function TrustedLogos() {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [visibleCount, setVisibleCount] = useState(5);
+  const [isPaused, setIsPaused] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Offsets per breakpoint
+  const nearOffset = visibleCount === 5 ? 260 : visibleCount === 3 ? 190 : 0;
+  const farOffset  = visibleCount === 5 ? 470 : visibleCount === 3 ? 340 : 0;
+
+  const nextSlide = useCallback(() => {
+    setCurrentIndex((prev) => (prev + 1) % trustedBrands.length);
+  }, []);
+
+  const prevSlide = useCallback(() => {
+    setCurrentIndex((prev) => (prev - 1 + trustedBrands.length) % trustedBrands.length);
+  }, []);
+
+  const goTo = useCallback((index: number) => {
+    setCurrentIndex(index);
+    setIsPaused(true);
+    setTimeout(() => setIsPaused(false), 3000);
+  }, []);
+
+  const handleArrow = useCallback((dir: "prev" | "next") => {
+    if (dir === "next") nextSlide(); else prevSlide();
+    setIsPaused(true);
+    setTimeout(() => setIsPaused(false), 3000);
+  }, [nextSlide, prevSlide]);
+
+  // Resize → update visibleCount
+  useEffect(() => {
+    const update = () => {
+      if (window.innerWidth < 640)  setVisibleCount(1);
+      else if (window.innerWidth < 1024) setVisibleCount(3);
+      else setVisibleCount(5);
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  // Autoplay
+  useEffect(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    if (!isPaused) {
+      intervalRef.current = setInterval(nextSlide, 3500);
+    }
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [isPaused, nextSlide]);
+
+  // Compute visible slots
+  const visibleOffsets: number[] =
+    visibleCount === 5 ? [-2, -1, 0, 1, 2] :
+    visibleCount === 3 ? [-1, 0, 1] :
+    [0];
+
+  const visibleItems = visibleOffsets.map((offset) => {
+    const index = (currentIndex + offset + trustedBrands.length) % trustedBrands.length;
+    return { ...trustedBrands[index], offset, isActive: offset === 0 };
+  });
+
   return (
-    <div className="mt-12 sm:mt-16 w-full">
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 items-center justify-items-center gap-x-10 gap-y-10">
-        {trustedBrands.map(({ name, logo }) => (
-          <div key={name} className="flex items-center justify-center w-full">
-            <img
-              src={logo}
-              alt={name}
-              loading="lazy"
-              className="h-auto max-h-14 max-w-[180px] w-auto object-contain"
-              data-testid={`brand-logo-${name.toLowerCase().replace(/\s+/g, "-")}`}
-            />
-          </div>
+    <div className="mt-10 sm:mt-14 w-full select-none">
+      {/* Carousel stage */}
+      <div
+        className="relative mx-auto h-[220px] sm:h-[250px] w-full max-w-6xl overflow-visible"
+        style={{ perspective: "1200px" }}
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+      >
+        {/* Cards */}
+        {visibleItems.map(({ name, logo, offset, isActive }) => {
+          const style = getCardStyle(offset, nearOffset, farOffset);
+          return (
+            <div
+              key={name}
+              className={[
+                "absolute left-1/2 top-1/2 flex items-center justify-center rounded-3xl bg-white",
+                "transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                isActive
+                  ? "h-36 sm:h-40 w-[280px] sm:w-[340px] border border-purple-300/70 shadow-2xl"
+                  : Math.abs(offset) === 1
+                  ? "h-28 sm:h-32 w-[240px] sm:w-[300px] border border-slate-200/70 shadow-md"
+                  : "h-24 sm:h-28 w-[210px] sm:w-[260px] border border-slate-200/60 shadow-sm",
+              ].join(" ")}
+              style={{
+                ...style,
+                transformStyle: "preserve-3d",
+                willChange: "transform, opacity",
+              }}
+            >
+              <img
+                src={logo}
+                alt={name}
+                loading="lazy"
+                className={[
+                  "object-contain transition-all duration-700",
+                  isActive
+                    ? "max-h-20 max-w-[200px] sm:max-w-[230px]"
+                    : Math.abs(offset) === 1
+                    ? "max-h-14 max-w-[150px] sm:max-w-[170px]"
+                    : "max-h-12 max-w-[120px] sm:max-w-[140px]",
+                ].join(" ")}
+              />
+            </div>
+          );
+        })}
+
+        {/* Left arrow */}
+        <button
+          onClick={() => handleArrow("prev")}
+          aria-label="Previous logo"
+          className="absolute left-2 sm:left-4 top-1/2 z-[60] -translate-y-1/2 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full border border-slate-200 bg-white shadow-lg transition hover:scale-105 hover:shadow-xl"
+        >
+          <ChevronLeft className="h-5 w-5 text-slate-600" />
+        </button>
+
+        {/* Right arrow */}
+        <button
+          onClick={() => handleArrow("next")}
+          aria-label="Next logo"
+          className="absolute right-2 sm:right-4 top-1/2 z-[60] -translate-y-1/2 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full border border-slate-200 bg-white shadow-lg transition hover:scale-105 hover:shadow-xl"
+        >
+          <ChevronRight className="h-5 w-5 text-slate-600" />
+        </button>
+      </div>
+
+      {/* Dot indicators */}
+      <div className="mt-10 flex items-center justify-center gap-2">
+        {trustedBrands.map((brand, index) => (
+          <button
+            key={brand.name}
+            onClick={() => goTo(index)}
+            aria-label={`Go to ${brand.name}`}
+            className={[
+              "rounded-full transition-all duration-500",
+              index === currentIndex
+                ? "h-2.5 w-6 bg-violet-500"
+                : "h-2 w-2 bg-slate-300 hover:bg-slate-400",
+            ].join(" ")}
+          />
         ))}
       </div>
     </div>
