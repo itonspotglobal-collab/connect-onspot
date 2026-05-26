@@ -264,6 +264,9 @@ export function VanessaChat({
       pricing: "What are your pricing models?",
       "ai-human": "What's the AI + Human advantage?",
       "talk-human": "I'd like to talk to a human expert",
+      roles: "What types of roles can I outsource through OnSpot?",
+      speed: "How quickly can I hire talent through OnSpot?",
+      "free-trial": "Is there a free trial or pilot option?",
     };
 
     const userMessage = userMessages[topic];
@@ -897,38 +900,38 @@ export function VanessaChat({
                     </div>
                   ) : (
                     <>
-                      <Button
-                        onClick={() => handleTopicSelect("how-it-works")}
-                        variant="outline"
-                        className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
-                        data-testid="button-how-it-works"
-                      >
-                        How OnSpot Outsourcing Works
-                      </Button>
-                      <Button
-                        onClick={() => handleTopicSelect("pricing")}
-                        variant="outline"
-                        className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
-                        data-testid="button-pricing"
-                      >
-                        See Pricing Models
-                      </Button>
-                      <Button
-                        onClick={() => handleTopicSelect("ai-human")}
-                        variant="outline"
-                        className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
-                        data-testid="button-ai-human"
-                      >
-                        AI + Human Advantage
-                      </Button>
-                      <Button
-                        onClick={() => handleTopicSelect("talk-human")}
-                        variant="outline"
-                        className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
-                        data-testid="button-talk-human"
-                      >
-                        Talk to a Human Expert
-                      </Button>
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-violet-400 mb-2">
+                        Quick questions
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[
+                          { id: "how-it-works", label: "How does it work?", testId: "button-how-it-works" },
+                          { id: "roles", label: "What roles can I hire?", testId: "button-roles" },
+                          { id: "pricing", label: "How much does it cost?", testId: "button-pricing" },
+                          { id: "speed", label: "How fast can I hire?", testId: "button-speed" },
+                          { id: "ai-human", label: "AI + Human model?", testId: "button-ai-human" },
+                          { id: "free-trial", label: "Free trial?", testId: "button-free-trial" },
+                          { id: "talk-human", label: "Talk to an expert", testId: "button-talk-human" },
+                        ].map((chip) => (
+                          <button
+                            key={chip.id}
+                            onClick={() => handleTopicSelect(chip.id)}
+                            data-testid={chip.testId}
+                            className="rounded-full border border-violet-300 bg-white/70 px-3 py-1 text-xs font-medium text-violet-700 transition-all hover:border-violet-500 hover:bg-violet-50 hover:shadow-sm active:scale-95"
+                          >
+                            {chip.label}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="mt-2.5 pt-2 border-t border-violet-100">
+                        <a
+                          href="/faq"
+                          className="flex items-center gap-1 text-[11px] font-medium text-violet-500 hover:text-violet-700 transition-colors"
+                        >
+                          Browse all FAQs
+                          <svg className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                        </a>
+                      </div>
                     </>
                   )}
                 </div>
@@ -1209,38 +1212,38 @@ export function VanessaChat({
                 </div>
               ) : (
                 <>
-                  <Button
-                    onClick={() => handleTopicSelect("how-it-works")}
-                    variant="outline"
-                    className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
-                    data-testid="button-how-it-works"
-                  >
-                    How OnSpot Outsourcing Works
-                  </Button>
-                  <Button
-                    onClick={() => handleTopicSelect("pricing")}
-                    variant="outline"
-                    className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
-                    data-testid="button-pricing"
-                  >
-                    See Pricing Models
-                  </Button>
-                  <Button
-                    onClick={() => handleTopicSelect("ai-human")}
-                    variant="outline"
-                    className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
-                    data-testid="button-ai-human"
-                  >
-                    AI + Human Advantage
-                  </Button>
-                  <Button
-                    onClick={() => handleTopicSelect("talk-human")}
-                    variant="outline"
-                    className="w-full justify-start text-left border-violet-300 text-gray-700 hover:bg-violet-50 hover:border-violet-400"
-                    data-testid="button-talk-human"
-                  >
-                    Talk to a Human Expert
-                  </Button>
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-violet-400 mb-2">
+                    Quick questions
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { id: "how-it-works", label: "How does it work?", testId: "button-how-it-works" },
+                      { id: "roles", label: "What roles can I hire?", testId: "button-roles" },
+                      { id: "pricing", label: "How much does it cost?", testId: "button-pricing" },
+                      { id: "speed", label: "How fast can I hire?", testId: "button-speed" },
+                      { id: "ai-human", label: "AI + Human model?", testId: "button-ai-human" },
+                      { id: "free-trial", label: "Free trial?", testId: "button-free-trial" },
+                      { id: "talk-human", label: "Talk to an expert", testId: "button-talk-human" },
+                    ].map((chip) => (
+                      <button
+                        key={chip.id}
+                        onClick={() => handleTopicSelect(chip.id)}
+                        data-testid={chip.testId}
+                        className="rounded-full border border-violet-300 bg-white/70 px-3 py-1 text-xs font-medium text-violet-700 transition-all hover:border-violet-500 hover:bg-violet-50 hover:shadow-sm active:scale-95"
+                      >
+                        {chip.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-2.5 pt-2 border-t border-violet-100">
+                    <a
+                      href="/faq"
+                      className="flex items-center gap-1 text-[11px] font-medium text-violet-500 hover:text-violet-700 transition-colors"
+                    >
+                      Browse all FAQs
+                      <svg className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                    </a>
+                  </div>
                 </>
               )}
             </div>

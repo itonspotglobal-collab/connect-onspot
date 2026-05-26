@@ -65,6 +65,7 @@ import ResourcedServicesPage from "@/pages/ResourcedServicesPage";
 import EnterpriseServicesPage from "@/pages/EnterpriseServicesPage";
 import HumanVirtualAssistantPage from "@/pages/HumanVirtualAssistantPage";
 import HireTalentPage from "@/pages/HireTalentPage";
+import FAQ from "@/pages/FAQ";
 import TalentPool from "@/pages/TalentPool";
 import TalentProfile from "@/pages/TalentProfile";
 import ClientProfile from "@/pages/ClientProfile";
@@ -142,6 +143,7 @@ function PublicRouter() {
           <Route path="/why-onspot/experience" component={WhyOnSpotExperience} />
           <Route path="/why-onspot/integrator-system" component={WhyOnSpotIntegratorSystem} />
           <Route path="/why-onspot/value-calculator" component={WhyOnSpotValueCalculator} />
+          <Route path="/faq" component={FAQ} />
           <Route path="/amazing" component={Amazing} />
           <Route path="/insights" component={Insights} />
           <Route path="/insights/:slug" component={InsightPost} />

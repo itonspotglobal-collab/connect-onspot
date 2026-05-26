@@ -1094,6 +1094,13 @@ export default function Home() {
                   >
                     Pricing
                   </Link>
+                  <Link
+                    href="/faq"
+                    className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300"
+                    data-testid="footer-link-faq"
+                  >
+                    FAQ
+                  </Link>
                 </div>
               </div>
 
