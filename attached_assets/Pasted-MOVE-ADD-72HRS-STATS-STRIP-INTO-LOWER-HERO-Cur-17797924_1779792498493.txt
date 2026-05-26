@@ -1,0 +1,253 @@
+MOVE / ADD 72HRS STATS STRIP INTO LOWER HERO
+==================================================
+
+Current issue:
+The stats strip is currently in the Experience section / elsewhere. We want it inside the stretched violet hero area, but lower down so it is only seen after scrolling.
+
+Goal:
+Place the stats strip with:
+- 72hrs / AVG. TIME TO HIRE
+- 500+ / GLOBAL CLIENTS
+- 98% / CLIENT RETENTION
+- 2,000+ / TALENTS PLACED
+- Philippine flag / PHILIPPINE-BASED
+
+inside the lower part of the hero section.
+
+Important:
+- Do not show this stats strip in the initial visible hero area with the title and buttons.
+- It should appear only when the user scrolls down.
+- Do not duplicate the stats if it already exists elsewhere. Move it into the lower hero section.
+- Remove the old instance if needed.
+
+Placement:
+- Below the hero CTA buttons, after enough vertical spacing.
+- Still inside the same violet hero background.
+- Before the next light/gradient section starts.
+
+Suggested structure:
+
+<section className="hero-section ...">
+  <div className="hero-main-content min-h-[calc(100vh-72px)] flex flex-col justify-center">
+    hero content
+  </div>
+
+  <div className="hero-stats-area pb-20">
+    stats strip
+  </div>
+</section>
+
+Stats color/style:
+Since this is now on the violet hero background, style it to match the hero.
+
+Suggested stats container:
+className="
+  w-full border-y border-white/10
+  bg-white/[0.04]
+  backdrop-blur-md
+"
+
+Suggested inner wrapper:
+className="
+  mx-auto grid w-full max-w-[1800px]
+  grid-cols-1 sm:grid-cols-2 lg:grid-cols-5
+  px-6 sm:px-10 lg:px-16
+"
+
+Stat item:
+className="
+  flex min-h-[150px] flex-col items-center justify-center
+  border-white/10 px-6 py-8 text-center
+  border-b sm:border-r lg:border-b-0
+  last:border-r-0
+"
+
+Stat number:
+className="
+  text-5xl md:text-6xl font-bold
+  text-white
+"
+
+Optional subtle gradient for numbers:
+className="
+  text-5xl md:text-6xl font-bold
+  bg-gradient-to-r from-white to-[#b9c3ff]
+  bg-clip-text text-transparent
+"
+
+Stat label:
+className="
+  mt-3 text-xs font-semibold uppercase tracking-[0.25em]
+  text-white/45
+"
+
+Philippine flag:
+- Keep visible and properly sized.
+- Use the same label style.
+
+Responsive:
+- Desktop: 5 columns in one row.
+- Tablet: 2 columns.
+- Mobile: 1 column.
+- No horizontal scrolling.
+
+Current issue:
+The hero section now looks good overall, but:
+1. The hero still ends too soon after the 72hrs stats strip.
+2. There should be empty violet background space below the stats strip before the next section starts.
+3. The stats text is too large.
+
+Goal:
+Stretch the hero section further downward and reduce the stats text size so the section feels more balanced.
+
+IMPORTANT:
+- Keep the stats strip inside the hero section.
+- Keep the violet hero background behind the stats.
+- Do not move the stats back to another section.
+- Do not redesign the hero.
+- Only adjust vertical spacing and stats typography size.
+
+--------------------------------------------------
+1. Add empty violet space below the stats strip
+--------------------------------------------------
+
+After the stats strip, add bottom padding inside the hero section so the violet background continues below it.
+
+Suggested:
+
+Hero lower/stats wrapper:
+className="
+  hero-stats-area
+  pb-24 sm:pb-28 lg:pb-32 xl:pb-36
+"
+
+or if the stats strip itself has the padding:
+
+<div className="hero-stats-area pb-28 lg:pb-36">
+  <StatsStrip />
+</div>
+
+Expected:
+- After the 72hrs stats row, there should still be visible empty violet background before the next light section begins.
+- Do not let the next section start immediately after the stats strip.
+
+--------------------------------------------------
+2. Add a little breathing room above the stats if needed
+--------------------------------------------------
+
+The stats should not feel too close to the CTA buttons.
+
+Suggested:
+
+className="
+  mt-20 sm:mt-24 lg:mt-28
+"
+
+But keep the stats lower in the hero, not visible too early.
+
+--------------------------------------------------
+3. Reduce stats number size
+--------------------------------------------------
+
+The stats numbers are too large right now.
+
+Change from very large sizes like:
+text-5xl md:text-6xl
+or
+text-6xl md:text-7xl
+
+To something more balanced:
+
+className="
+  text-4xl sm:text-5xl lg:text-6xl
+  font-bold
+"
+
+If still too large, use:
+
+className="
+  text-4xl sm:text-5xl
+  font-bold
+"
+
+For desktop, the numbers should be readable and strong but not overpower the stats strip.
+
+--------------------------------------------------
+4. Reduce stats item height/padding slightly
+--------------------------------------------------
+
+The stats strip feels visually heavy.
+
+If stat items use something like:
+min-h-[150px] px-6 py-8
+
+Adjust to:
+
+className="
+  flex min-h-[130px] flex-col items-center justify-center
+  px-5 py-7 text-center
+"
+
+or:
+
+className="
+  flex min-h-[120px] flex-col items-center justify-center
+  px-5 py-6 text-center
+"
+
+Keep enough vertical space so it still feels premium.
+
+--------------------------------------------------
+5. Reduce label size slightly if needed
+--------------------------------------------------
+
+Current labels like “AVG. TIME TO HIRE” can remain uppercase, but reduce the tracking/size if they look too large.
+
+Suggested label:
+
+className="
+  mt-3 text-[11px] sm:text-xs
+  font-semibold uppercase
+  tracking-[0.22em]
+  text-white/45
+"
+
+Do not make labels too faint.
+
+--------------------------------------------------
+6. Keep full-width layout
+--------------------------------------------------
+
+Keep the stats strip stretched horizontally as it currently is.
+
+Do not convert it back into a card.
+Do not narrow it.
+
+Stats container should remain full-width:
+
+className="
+  w-full border-y border-white/10
+  bg-white/[0.04]
+  backdrop-blur-md
+"
+
+--------------------------------------------------
+7. Responsive behavior
+--------------------------------------------------
+
+Desktop:
+- Stats stay in one row.
+- Numbers are smaller than current.
+- There is empty violet space below stats.
+
+Laptop:
+- Same layout, balanced size.
+
+Tablet/mobile:
+- Stats can stack/wrap as currently implemented.
+- Keep bottom spacing, but reduce if needed:
+  pb-16 sm:pb-24 lg:pb-32
+
+--------------------------------------------------
+Expected result:
+The hero section should extend further down with empty violet space below the stats strip. The 72hrs / 500+ / 98% / 2,000+ stats should be smaller and more balanced, while still looking like a strong stats section.

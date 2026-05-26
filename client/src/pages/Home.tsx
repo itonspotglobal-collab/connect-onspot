@@ -518,7 +518,7 @@ export default function Home() {
                     For Companies
                   </p>
                   <h3 className="text-base font-semibold text-slate-900">
-                    Hire faster, smarter, and without the overhead
+                    Hire faster. Spend less.
                   </h3>
                 </div>
               </div>
@@ -596,7 +596,7 @@ export default function Home() {
                     For Professionals
                   </p>
                   <h3 className="text-base font-semibold text-slate-900">
-                    Grow your career with work that keeps coming
+                    Real work. Real growth.
                   </h3>
                 </div>
               </div>
