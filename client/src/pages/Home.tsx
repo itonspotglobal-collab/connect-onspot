@@ -386,7 +386,7 @@ export default function Home() {
         </div>
 
         {/* Stats strip — below the fold, still on violet hero */}
-        <div className="relative z-20 pb-24 lg:pb-32">
+        <div className="relative z-20 mt-20 sm:mt-24 lg:mt-28 pb-16 sm:pb-24 lg:pb-32">
           <div className="w-full border-y border-white/10 bg-white/[0.04] backdrop-blur-md">
             <div className="mx-auto grid w-full max-w-[1800px] grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 px-6 sm:px-10 lg:px-16">
               {[
@@ -398,24 +398,24 @@ export default function Home() {
                 <div
                   key={stat.label}
                   className={[
-                    "flex min-h-[140px] flex-col items-center justify-center px-6 py-8 text-center",
+                    "flex min-h-[120px] flex-col items-center justify-center px-5 py-6 text-center",
                     "border-white/10",
                     i < 3 ? "border-b sm:border-b lg:border-b-0 lg:border-r" : "border-b lg:border-b-0 sm:border-r lg:border-r-0",
                   ].join(" ")}
                 >
-                  <span className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-white to-[#b9c3ff] bg-clip-text text-transparent">
+                  <span className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-white to-[#b9c3ff] bg-clip-text text-transparent">
                     {stat.value}
                   </span>
-                  <span className="mt-3 text-[10px] font-semibold uppercase tracking-[0.25em] text-white/45">
+                  <span className="mt-2.5 text-[11px] sm:text-xs font-semibold uppercase tracking-[0.22em] text-white/45">
                     {stat.label}
                   </span>
                 </div>
               ))}
 
               {/* Philippine flag stat */}
-              <div className="flex min-h-[140px] flex-col items-center justify-center px-6 py-8 text-center border-white/10">
-                <span className="text-4xl md:text-5xl" role="img" aria-label="Philippine flag">🇵🇭</span>
-                <span className="mt-3 text-[10px] font-semibold uppercase tracking-[0.25em] text-white/45">
+              <div className="flex min-h-[120px] flex-col items-center justify-center px-5 py-6 text-center border-white/10">
+                <span className="text-3xl sm:text-4xl lg:text-5xl" role="img" aria-label="Philippine flag">🇵🇭</span>
+                <span className="mt-2.5 text-[11px] sm:text-xs font-semibold uppercase tracking-[0.22em] text-white/45">
                   PHILIPPINE-BASED
                 </span>
               </div>
