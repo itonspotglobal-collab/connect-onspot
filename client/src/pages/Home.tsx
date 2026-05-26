@@ -317,11 +317,13 @@ export default function Home() {
             <div className="max-w-5xl mx-auto space-y-5 sm:space-y-8 lg:space-y-12">
               {/* Badge */}
               <div
-                className="hero-fade-up inline-flex items-center gap-2.5 text-base sm:text-lg font-medium text-white/85 tracking-wide bg-white/8 backdrop-blur-md px-7 py-3.5 rounded-full border border-white/20"
+                className="hero-fade-up inline-flex items-center gap-2.5 bg-white/8 backdrop-blur-md px-7 py-3.5 rounded-full border border-white/20"
                 data-testid="badge-superhuman-bpo"
               >
-                <div className="w-2.5 h-2.5 bg-white/60 rounded-full flex-shrink-0"></div>
-                Work Differently
+                <div className="w-2.5 h-2.5 bg-violet-300/80 rounded-full flex-shrink-0"></div>
+                <span className="text-xl sm:text-2xl md:text-3xl font-medium bg-gradient-to-r from-violet-300 via-blue-200 to-violet-300 bg-clip-text text-transparent">
+                  Work Differently
+                </span>
               </div>
 
               {/* Headline */}

@@ -1,0 +1,78 @@
+Please adjust the hero badge text/style for “Work Differently”.
+
+Current issue:
+The “Work Differently” badge above the hero title is too small compared to the supporting headline:
+“One System. Your unfair Advantage.”
+
+Goal:
+Make the “Work Differently” badge text the same size as “One System. Your unfair Advantage.”, but do NOT make it bold. Also change its color to match the highlighted “Humans” word in the hero title.
+
+IMPORTANT:
+- Do not redesign the hero section.
+- Do not change the hero title.
+- Do not change the CTA buttons.
+- Only adjust the “Work Differently” badge text size, weight, and color.
+- Keep the pill/badge shape and border if it currently exists.
+
+Requested style:
+- Same font size as “One System. Your unfair Advantage.”
+- Normal or medium weight, not bold
+- Color should match the “Humans” highlighted word
+- Keep it readable against the dark violet hero background
+
+Implementation guidance:
+Find the “Work Differently” badge in the Hero section.
+
+If “One System. Your unfair Advantage.” uses something like:
+text-xl sm:text-2xl md:text-3xl
+
+Apply the same text sizing to the badge text:
+
+className="
+  text-xl sm:text-2xl md:text-3xl
+  font-normal
+"
+
+or, if font-normal looks too light:
+
+className="
+  text-xl sm:text-2xl md:text-3xl
+  font-medium
+"
+
+Do not use:
+font-bold
+font-extrabold
+font-black
+
+For the color, reuse the exact class/style used on the word “Humans”.
+
+Example:
+If “Humans” uses:
+text-[#B8B7FF]
+
+Then use:
+text-[#B8B7FF]
+
+If “Humans” uses a gradient, reuse that same gradient text style:
+
+className="
+  bg-gradient-to-r from-[#B8B7FF] to-[#D6D1FF]
+  bg-clip-text text-transparent
+"
+
+Keep the badge container subtle:
+
+className="
+  inline-flex items-center gap-2
+  rounded-full border border-white/20
+  bg-white/8 px-6 py-3
+  backdrop-blur-md
+"
+
+If the text size becomes too large for the current pill, increase horizontal/vertical padding slightly:
+
+px-7 py-3.5
+
+Expected result:
+The “Work Differently” badge should visually match the size of “One System. Your unfair Advantage.”, use the same color treatment as the highlighted “Humans” word, and remain lighter/not bold so it does not overpower the main hero title.
