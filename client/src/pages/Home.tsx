@@ -461,35 +461,37 @@ export default function Home() {
         </div>
 
         {/* ── Stats strip — inside hero, visible on scroll ── */}
-        <div className="relative z-20 w-full border-y border-white/10 bg-white/[0.04] backdrop-blur-md pb-4">
-          <div className="mx-auto grid w-full max-w-[1800px] grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 px-6 sm:px-10 lg:px-16">
-            {[
-              { value: "72hrs", label: "AVG. TIME TO HIRE" },
-              { value: "500+", label: "GLOBAL CLIENTS" },
-              { value: "98%", label: "CLIENT RETENTION" },
-              { value: "2,000+", label: "TALENTS PLACED" },
-              { flag: true, label: "PHILIPPINE-BASED" },
-            ].map((stat, i, arr) => (
-              <div
-                key={stat.label}
-                className={[
-                  "flex min-h-[150px] flex-col items-center justify-center px-6 py-8 text-center",
-                  i < arr.length - 1 ? "border-b border-white/10 sm:border-b-0 sm:border-r" : "",
-                  i === 4 ? "col-span-1 sm:col-span-2 lg:col-span-1" : "",
-                ].join(" ")}
-              >
-                {stat.flag ? (
-                  <span className="text-5xl md:text-6xl leading-none">🇵🇭</span>
-                ) : (
-                  <span className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-white to-[#b9c3ff] bg-clip-text text-transparent leading-none">
-                    {stat.value}
+        <div className="relative z-20 mt-20 sm:mt-24 lg:mt-28 pb-16 sm:pb-24 lg:pb-32">
+          <div className="w-full border-y border-white/10 bg-white/[0.04] backdrop-blur-md">
+            <div className="mx-auto grid w-full max-w-[1800px] grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 px-6 sm:px-10 lg:px-16">
+              {[
+                { value: "72hrs", label: "AVG. TIME TO HIRE" },
+                { value: "500+", label: "GLOBAL CLIENTS" },
+                { value: "98%", label: "CLIENT RETENTION" },
+                { value: "2,000+", label: "TALENTS PLACED" },
+                { flag: true, label: "PHILIPPINE-BASED" },
+              ].map((stat, i, arr) => (
+                <div
+                  key={stat.label}
+                  className={[
+                    "flex min-h-[120px] flex-col items-center justify-center px-5 py-6 text-center",
+                    i < arr.length - 1 ? "border-b border-white/10 sm:border-b-0 sm:border-r" : "",
+                    i === 4 ? "col-span-1 sm:col-span-2 lg:col-span-1" : "",
+                  ].join(" ")}
+                >
+                  {stat.flag ? (
+                    <span className="text-4xl sm:text-5xl leading-none">🇵🇭</span>
+                  ) : (
+                    <span className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-white to-[#b9c3ff] bg-clip-text text-transparent leading-none">
+                      {stat.value}
+                    </span>
+                  )}
+                  <span className="mt-3 text-[11px] sm:text-xs font-semibold uppercase tracking-[0.22em] text-white/45">
+                    {stat.label}
                   </span>
-                )}
-                <span className="mt-3 text-xs font-semibold uppercase tracking-[0.25em] text-white/45">
-                  {stat.label}
-                </span>
-              </div>
-            ))}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
