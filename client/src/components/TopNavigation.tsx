@@ -61,7 +61,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import onspotLogo from "@assets/onspot-logo-new.png";
+import onspotLogo from "@assets/onspot-logo-white.png";
 import { VanessaChat } from "@/components/VanessaChat";
 import {
   TOKEN_KEY as TALENT_TOKEN_KEY,
@@ -747,7 +747,7 @@ export function TopNavigation() {
             <img
               src={onspotLogo}
               alt="OnSpot"
-              className="h-8 w-auto drop-shadow-sm"
+              className="h-auto w-[135px] sm:w-[155px] lg:w-[170px] object-contain"
             />
           </Link>
 

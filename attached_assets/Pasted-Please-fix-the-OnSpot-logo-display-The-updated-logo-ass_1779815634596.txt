@@ -1,0 +1,185 @@
+Please fix the OnSpot logo display. The updated logo asset is currently rendering extremely small on the page, especially in the navbar/footer.
+
+Current issue:
+The uploaded white OnSpot logo is not displaying at the correct size. It appears tiny, even though the actual logo image is large.
+
+Goal:
+Use the uploaded full white logo asset correctly and size it properly in the navbar and footer.
+
+Logo asset to use:
+"Full Logo White Version 1.png"
+
+Important:
+- Do not stretch or distort the logo.
+- Do not force both width and height in a way that changes the aspect ratio.
+- Use `object-contain`.
+- Make the logo visible and properly sized on the dark navbar/footer background.
+
+==================================================
+1. Use the correct logo asset
+==================================================
+
+Replace the current small/broken logo reference with the full white logo asset:
+
+Full Logo White Version 1.png
+
+If the project stores assets in `/public`, place it somewhere like:
+
+/public/assets/logos/onspot-logo-white.png
+
+Then reference it as:
+
+<img
+  src="/assets/logos/onspot-logo-white.png"
+  alt="OnSpot"
+  className="..."
+/>
+
+If the project imports images from `src/assets`, import it properly:
+
+import onspotLogoWhite from "@/assets/logos/onspot-logo-white.png";
+
+Then:
+
+<img src={onspotLogoWhite} alt="OnSpot" className="..." />
+
+==================================================
+2. Fix navbar logo size
+==================================================
+
+The navbar logo should not be tiny.
+
+Use a controlled width and auto height:
+
+className="
+  h-auto
+  w-[150px]
+  sm:w-[165px]
+  lg:w-[175px]
+  object-contain
+"
+
+Do NOT use:
+- w-4
+- w-6
+- h-4
+- h-6
+- max-w-[20px]
+- max-h-[20px]
+- text-size classes for image sizing
+- icon-size classes meant for small SVG icons
+
+Navbar logo wrapper should not shrink too much:
+
+className="flex shrink-0 items-center"
+
+If the logo is inside a button/link, the link should not constrain it:
+
+className="inline-flex items-center shrink-0"
+
+==================================================
+3. Fix footer logo size
+==================================================
+
+Footer logo should also use the same white logo and proper sizing.
+
+Suggested footer logo:
+
+className="
+  h-auto
+  w-[170px]
+  sm:w-[190px]
+  object-contain
+"
+
+Do not use a tiny icon-only logo in the footer unless specifically requested.
+
+==================================================
+4. Prevent CSS from shrinking the logo
+==================================================
+
+Inspect global styles and component styles for rules affecting logos, such as:
+
+.logo img
+.navbar img
+.footer img
+img {
+  max-width: ...
+}
+.logo {
+  width: ...
+  height: ...
+}
+
+Make sure the OnSpot logo is not being affected by a generic icon/logo class intended for small icons.
+
+If needed, add a specific class:
+
+.onspot-logo {
+  width: 170px;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+For navbar:
+
+.navbar .onspot-logo {
+  width: 165px;
+}
+
+For footer:
+
+.footer .onspot-logo {
+  width: 190px;
+}
+
+==================================================
+5. Keep aspect ratio
+==================================================
+
+The logo should keep its natural aspect ratio.
+
+Use:
+height: auto;
+
+Avoid:
+width and height fixed together unless using object-contain inside a fixed box.
+
+If using a fixed box, do:
+
+<div className="relative h-10 w-[175px]">
+  <img
+    src="/assets/logos/onspot-logo-white.png"
+    alt="OnSpot"
+    className="h-full w-full object-contain"
+  />
+</div>
+
+Do not use `object-cover`.
+
+==================================================
+6. Responsive behavior
+==================================================
+
+Desktop:
+- Navbar logo should be clearly visible, around 160–175px wide.
+- Footer logo should be around 180–190px wide.
+
+Tablet/mobile:
+- Navbar logo can be slightly smaller, around 130–150px wide.
+- Footer logo should remain readable.
+
+Suggested responsive classes:
+
+Navbar:
+w-[135px] sm:w-[155px] lg:w-[170px]
+
+Footer:
+w-[150px] sm:w-[175px] lg:w-[190px]
+
+==================================================
+7. Expected result
+==================================================
+
+The OnSpot logo should appear at normal brand size in the navbar and footer. It should no longer appear tiny. It should remain white, sharp, undistorted, and properly aligned with the navigation/footer content.

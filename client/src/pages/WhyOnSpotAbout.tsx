@@ -1,7 +1,7 @@
 import { useState, type CSSProperties } from "react";
 import { Link } from "wouter";
 import { ArrowRight, ChevronDown, ChevronUp, CheckCircle2 } from "lucide-react";
-import onspotLogo from "@assets/onspot-logo-new.png";
+import onspotLogo from "@assets/onspot-logo-white.png";
 import nurPhoto from "@assets/Nur_1775038610216.png";
 import jakePhoto from "@assets/Jake_1775039278985.png";
 import alonPhoto from "@assets/Alon_1775058113450.png";
@@ -253,7 +253,7 @@ export default function WhyOnSpotAbout() {
             <img
               src={onspotLogo}
               alt="OnSpot"
-              className="h-8 w-auto drop-shadow-sm"
+              className="h-auto w-[135px] sm:w-[155px] lg:w-[170px] object-contain"
             />
           </Link>
 
