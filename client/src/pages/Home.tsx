@@ -506,161 +506,116 @@ export default function Home() {
             differently for both sides.
           </p>
 
-          <div className="mx-auto mt-12 grid w-full max-w-6xl grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="mx-auto mt-12 grid w-full max-w-6xl grid-cols-1 gap-8 lg:grid-cols-2">
             {/* Card 1: For Companies */}
-            <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white/75 shadow-sm backdrop-blur-md">
-              <div className="flex items-center gap-3 bg-gradient-to-r from-indigo-50 to-violet-50 px-5 py-4">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-100">
-                  <Building2 className="h-5 w-5 text-indigo-600" />
-                </div>
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-widest text-indigo-500">
-                    For Companies
-                  </p>
-                  <h3 className="text-base font-semibold text-slate-900">
-                    Hire faster. Spend less.
-                  </h3>
-                </div>
-              </div>
+            <div className="rounded-3xl border border-indigo-400/70 bg-indigo-50/60 p-8 sm:p-10 shadow-sm backdrop-blur-md flex flex-col">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-indigo-600">
+                For companies
+              </p>
+              <h3 className="mt-4 text-xl font-semibold text-slate-900">
+                Hire faster. Spend less.
+              </h3>
 
-              <div className="flex flex-col flex-1">
-                <div className="flex gap-4 border-t border-slate-200/70 p-5">
-                  <Zap className="mt-1 h-5 w-5 shrink-0 text-indigo-600" />
+              <div className="mt-8 flex flex-col gap-7 flex-1">
+                <div className="flex items-center gap-5">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-white">
+                    <Zap className="h-6 w-6" />
+                  </div>
                   <div>
-                    <h4 className="text-sm font-semibold text-slate-900">
-                      Days, not months
-                    </h4>
-                    <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                      Skip the lengthy agency cycles. Our pre-vetted talent
-                      network means we match you in days — not after a six-week
-                      search.
-                    </p>
+                    <p className="text-base font-semibold text-slate-900">Days, not months</p>
+                    <p className="mt-1 text-sm text-slate-600">72-hour match average</p>
                   </div>
                 </div>
-                <div className="flex gap-4 border-t border-slate-200/70 p-5">
-                  <SlidersHorizontal className="mt-1 h-5 w-5 shrink-0 text-indigo-600" />
+                <div className="flex items-center gap-5">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-white">
+                    <SlidersHorizontal className="h-6 w-6" />
+                  </div>
                   <div>
-                    <h4 className="text-sm font-semibold text-slate-900">
-                      Flexible engagements, your way
-                    </h4>
-                    <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                      Contract, project-based, part-time, or full-time —
-                      structure the engagement around how your team actually
-                      works.
-                    </p>
+                    <p className="text-base font-semibold text-slate-900">Hire your way</p>
+                    <p className="mt-1 text-sm text-slate-600">Contract, project, full-time</p>
                   </div>
                 </div>
-                <div className="flex gap-4 border-t border-slate-200/70 p-5">
-                  <Users className="mt-1 h-5 w-5 shrink-0 text-indigo-600" />
+                <div className="flex items-center gap-5">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-white">
+                    <ArrowRight className="h-6 w-6" />
+                  </div>
                   <div>
-                    <h4 className="text-sm font-semibold text-slate-900">
-                      Direct access, no middleman
-                    </h4>
-                    <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                      Work with talent directly. No layers of account managers,
-                      no inflated markups — just the right person for the job.
-                    </p>
+                    <p className="text-base font-semibold text-slate-900">Skip the middlemen</p>
+                    <p className="mt-1 text-sm text-slate-600">Direct, no markups</p>
                   </div>
                 </div>
-                <div className="flex gap-4 border-t border-slate-200/70 p-5">
-                  <Globe className="mt-1 h-5 w-5 shrink-0 text-indigo-600" />
+                <div className="flex items-center gap-5">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-white">
+                    <Globe className="h-6 w-6" />
+                  </div>
                   <div>
-                    <h4 className="text-sm font-semibold text-slate-900">
-                      Global reach, local expertise
-                    </h4>
-                    <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                      Access professionals across 50+ countries with the
-                      regional know-how to hit the ground running from day one.
-                    </p>
+                    <p className="text-base font-semibold text-slate-900">50+ countries</p>
+                    <p className="mt-1 text-sm text-slate-600">Global reach, local expertise</p>
                   </div>
                 </div>
               </div>
 
               <a
                 href="/hire-talent"
-                className="flex items-center justify-between border-t border-slate-200/70 px-5 py-4 text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
+                className="mt-10 flex w-full items-center justify-center rounded-full border border-indigo-500 px-6 py-3 text-sm font-semibold text-indigo-600 transition hover:bg-indigo-500 hover:text-white"
               >
-                Find the right talent
-                <ArrowRight className="h-4 w-4 text-indigo-500" />
+                Find the right talent →
               </a>
             </div>
 
             {/* Card 2: For Professionals */}
-            <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white/75 shadow-sm backdrop-blur-md">
-              <div className="flex items-center gap-3 bg-gradient-to-r from-teal-50 to-cyan-50 px-5 py-4">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-100">
-                  <Briefcase className="h-5 w-5 text-teal-600" />
-                </div>
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-widest text-teal-500">
-                    For Professionals
-                  </p>
-                  <h3 className="text-base font-semibold text-slate-900">
-                    Real work. Real growth.
-                  </h3>
-                </div>
-              </div>
+            <div className="rounded-3xl border border-teal-600/60 bg-teal-50/60 p-8 sm:p-10 shadow-sm backdrop-blur-md flex flex-col">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-teal-700">
+                For professionals
+              </p>
+              <h3 className="mt-4 text-xl font-semibold text-slate-900">
+                Real work. Real growth.
+              </h3>
 
-              <div className="flex flex-col flex-1">
-                <div className="flex gap-4 border-t border-slate-200/70 p-5">
-                  <TrendingUp className="mt-1 h-5 w-5 shrink-0 text-teal-600" />
+              <div className="mt-8 flex flex-col gap-7 flex-1">
+                <div className="flex items-center gap-5">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-teal-600 text-white">
+                    <TrendingUp className="h-6 w-6" />
+                  </div>
                   <div>
-                    <h4 className="text-sm font-semibold text-slate-900">
-                      A steady pipeline of real work
-                    </h4>
-                    <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                      No more chasing leads or gaps between projects. OnSpot
-                      keeps your pipeline active with quality engagements
-                      matched to your skills.
-                    </p>
+                    <p className="text-base font-semibold text-slate-900">Steady pipeline</p>
+                    <p className="mt-1 text-sm text-slate-600">No gaps, no chasing</p>
                   </div>
                 </div>
-                <div className="flex gap-4 border-t border-slate-200/70 p-5">
-                  <Star className="mt-1 h-5 w-5 shrink-0 text-teal-600" />
+                <div className="flex items-center gap-5">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-teal-600 text-white">
+                    <Star className="h-6 w-6" />
+                  </div>
                   <div>
-                    <h4 className="text-sm font-semibold text-slate-900">
-                      Work that builds your reputation
-                    </h4>
-                    <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                      Get placed with leading companies globally — the kind of
-                      work that strengthens your portfolio and opens doors.
-                    </p>
+                    <p className="text-base font-semibold text-slate-900">Top global brands</p>
+                    <p className="mt-1 text-sm text-slate-600">Builds your reputation</p>
                   </div>
                 </div>
-                <div className="flex gap-4 border-t border-slate-200/70 p-5">
-                  <CalendarCheck className="mt-1 h-5 w-5 shrink-0 text-teal-600" />
+                <div className="flex items-center gap-5">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-teal-600 text-white">
+                    <Clock className="h-6 w-6" />
+                  </div>
                   <div>
-                    <h4 className="text-sm font-semibold text-slate-900">
-                      Flexible on your terms
-                    </h4>
-                    <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                      Remote-first, with engagements structured around your
-                      availability. You choose what fits your life and your
-                      goals.
-                    </p>
+                    <p className="text-base font-semibold text-slate-900">Your terms</p>
+                    <p className="mt-1 text-sm text-slate-600">Remote, your schedule</p>
                   </div>
                 </div>
-                <div className="flex gap-4 border-t border-slate-200/70 p-5">
-                  <BadgeCheck className="mt-1 h-5 w-5 shrink-0 text-teal-600" />
+                <div className="flex items-center gap-5">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-teal-600 text-white">
+                    <CheckCircle2 className="h-6 w-6" />
+                  </div>
                   <div>
-                    <h4 className="text-sm font-semibold text-slate-900">
-                      Zero gatekeeping
-                    </h4>
-                    <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                      No favoritism, no opaque processes. Your skills speak for
-                      themselves — we match you on merit and make sure you're
-                      seen.
-                    </p>
+                    <p className="text-base font-semibold text-slate-900">Pure merit</p>
+                    <p className="mt-1 text-sm text-slate-600">No gatekeepers, no politics</p>
                   </div>
                 </div>
               </div>
 
               <a
                 href="/find-best-matches"
-                className="flex items-center justify-between border-t border-slate-200/70 px-5 py-4 text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
+                className="mt-10 flex w-full items-center justify-center rounded-full border border-teal-600 px-6 py-3 text-sm font-semibold text-teal-700 transition hover:bg-teal-600 hover:text-white"
               >
-                Find your next opportunity
-                <ArrowRight className="h-4 w-4 text-teal-500" />
+                Find your next opportunity →
               </a>
             </div>
           </div>

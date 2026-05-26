@@ -1,0 +1,301 @@
+Please update the Work Differently section cards to follow the visual style and copy from the attached reference.
+
+Current issue:
+The Work Differently cards currently look too text-heavy and detailed. We want the cards to be closer to the reference image:
+- simpler
+- more compact
+- larger circular icons
+- shorter benefit text
+- cleaner visual hierarchy
+
+IMPORTANT:
+- Keep this section in the same position on the homepage.
+- Keep the existing gradient/background of the section.
+- Do not redesign the whole page.
+- Only update the Work Differently card content, icons, and card styling.
+- Do not copy the screenshot pixel-for-pixel, but follow its structure and feel.
+
+--------------------------------------------------
+CARD LAYOUT
+--------------------------------------------------
+
+Use two side-by-side cards on desktop:
+1. For companies
+2. For professionals
+
+Stack them on mobile.
+
+Suggested wrapper:
+className="
+  mx-auto mt-12 grid w-full max-w-6xl
+  grid-cols-1 gap-8
+  lg:grid-cols-2
+"
+
+Card base style:
+className="
+  rounded-3xl border bg-white/55
+  p-8 sm:p-10
+  shadow-sm backdrop-blur-md
+"
+
+For Companies card:
+- Border color: purple/indigo
+- Soft purple background tint
+
+Suggested:
+className="
+  rounded-3xl border border-indigo-400/70
+  bg-indigo-50/60
+  p-8 sm:p-10
+"
+
+For Professionals card:
+- Border color: teal/green
+- Soft teal background tint
+
+Suggested:
+className="
+  rounded-3xl border border-teal-600/60
+  bg-teal-50/60
+  p-8 sm:p-10
+"
+
+--------------------------------------------------
+CARD HEADERS
+--------------------------------------------------
+
+For Companies:
+
+Small label:
+"For companies"
+
+Headline:
+"Hire faster. Spend less."
+
+For Professionals:
+
+Small label:
+"For professionals"
+
+Headline:
+"Real work. Real growth."
+
+Header label styling:
+className="
+  text-xs font-semibold uppercase tracking-[0.22em]
+"
+
+Companies label:
+text-indigo-600
+
+Professionals label:
+text-teal-700
+
+Headline styling:
+className="
+  mt-4 text-xl font-semibold text-slate-900
+"
+
+--------------------------------------------------
+BENEFIT ITEMS
+--------------------------------------------------
+
+Follow the shorter copy from the reference.
+
+For Companies benefits:
+
+1. Icon: lightning
+Title: "Days, not months"
+Subtitle: "72-hour match average"
+
+2. Icon: sliders/settings
+Title: "Hire your way"
+Subtitle: "Contract, project, full-time"
+
+3. Icon: arrow/right arrow
+Title: "Skip the middlemen"
+Subtitle: "Direct, no markups"
+
+4. Icon: globe
+Title: "50+ countries"
+Subtitle: "Global reach, local expertise"
+
+For Professionals benefits:
+
+1. Icon: trending up
+Title: "Steady pipeline"
+Subtitle: "No gaps, no chasing"
+
+2. Icon: star
+Title: "Top global brands"
+Subtitle: "Builds your reputation"
+
+3. Icon: clock
+Title: "Your terms"
+Subtitle: "Remote, your schedule"
+
+4. Icon: check
+Title: "Pure merit"
+Subtitle: "No gatekeepers, no politics"
+
+--------------------------------------------------
+ICON STYLE
+--------------------------------------------------
+
+Use circular filled icon backgrounds like the reference.
+
+For Companies icons:
+Circle background: indigo/purple
+Icon color: white
+
+Suggested:
+className="
+  flex h-12 w-12 shrink-0 items-center justify-center
+  rounded-full bg-indigo-500 text-white
+"
+
+For Professionals icons:
+Circle background: teal/green
+Icon color: white
+
+Suggested:
+className="
+  flex h-12 w-12 shrink-0 items-center justify-center
+  rounded-full bg-teal-600 text-white
+"
+
+Icon SVG:
+className="h-6 w-6"
+
+Use existing icon library if available, such as lucide-react:
+- Zap
+- SlidersHorizontal
+- ArrowRight
+- Globe2
+- TrendingUp
+- Star
+- Clock
+- Check
+
+--------------------------------------------------
+BENEFIT ITEM STYLE
+--------------------------------------------------
+
+Each benefit row should look like the reference:
+- Icon on the left
+- Text on the right
+- No long paragraph
+- Good vertical spacing
+
+Suggested benefit row:
+className="
+  mt-8 flex items-center gap-5
+"
+
+Text group:
+Title:
+className="text-base font-semibold text-slate-900"
+
+Subtitle:
+className="mt-1 text-sm text-slate-600"
+
+Do not use the previous long descriptions in this compact card version.
+
+--------------------------------------------------
+CTA BUTTONS
+--------------------------------------------------
+
+Keep the bottom buttons but make them look like rounded outline buttons, similar to the reference.
+
+For Companies button:
+Text:
+"Find the right talent →"
+
+Style:
+className="
+  mt-10 flex w-full items-center justify-center
+  rounded-full border border-indigo-500
+  px-6 py-3
+  text-sm font-semibold text-white
+  transition hover:bg-indigo-500 hover:text-white
+"
+
+Note:
+If the button text is not visible because it is white on a light background, use:
+text-indigo-600
+and on hover:
+hover:text-white
+
+Better:
+className="
+  mt-10 flex w-full items-center justify-center
+  rounded-full border border-indigo-500
+  px-6 py-3
+  text-sm font-semibold text-indigo-600
+  transition hover:bg-indigo-500 hover:text-white
+"
+
+For Professionals button:
+Text:
+"Find your next opportunity →"
+
+Style:
+className="
+  mt-10 flex w-full items-center justify-center
+  rounded-full border border-teal-600
+  px-6 py-3
+  text-sm font-semibold text-teal-700
+  transition hover:bg-teal-600 hover:text-white
+"
+
+--------------------------------------------------
+REMOVE OLD LONG CONTENT
+--------------------------------------------------
+
+Remove/replace the previous long benefit descriptions, such as:
+- “Skip the lengthy agency cycles...”
+- “Contract, project-based, part-time...”
+- “Work with talent directly...”
+- “No more chasing leads...”
+
+Use only the short benefit title + subtitle pairs above.
+
+--------------------------------------------------
+RESPONSIVE REQUIREMENTS
+--------------------------------------------------
+
+Desktop:
+- Two cards side by side.
+- Cards should have equal height if possible.
+- Icons and text should align cleanly.
+
+Tablet:
+- Cards can stack or remain two columns if space allows.
+
+Mobile:
+- Stack cards vertically.
+- Keep icon circles and text readable.
+- No horizontal scrolling.
+
+--------------------------------------------------
+EXPECTED RESULT
+--------------------------------------------------
+
+The Work Differently section should look closer to the reference:
+- Two clean outlined cards
+- Purple card for companies
+- Teal card for professionals
+- Larger circular icon art
+- Short benefit text:
+  Days, not months
+  Hire your way
+  Skip the middlemen
+  50+ countries
+  Steady pipeline
+  Top global brands
+  Your terms
+  Pure merit
+- Updated headlines:
+  “Hire faster. Spend less.”
+  “Real work. Real growth.”
