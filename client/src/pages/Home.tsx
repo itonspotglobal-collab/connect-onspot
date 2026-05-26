@@ -311,16 +311,16 @@ export default function Home() {
           <div className="absolute bottom-1/3 right-1/4 w-[500px] h-[500px] bg-gradient-radial from-blue-500/10 to-transparent rounded-full blur-3xl animate-slow-spin"></div>
         </div>
 
-        {/* Main content */}
+        {/* Main content — fills viewport */}
         <div className="min-h-[calc(100vh-72px)] flex items-center justify-center relative z-20 px-4 sm:px-6 py-16 sm:py-24">
           <div className="container mx-auto text-center">
             <div className="max-w-5xl mx-auto space-y-5 sm:space-y-8 lg:space-y-12">
               {/* Badge */}
               <div
-                className="hero-fade-up inline-flex items-center gap-2.5 text-sm sm:text-base font-medium text-white/85 tracking-wide bg-white/8 backdrop-blur-md px-6 py-3 rounded-full border border-white/20"
+                className="hero-fade-up inline-flex items-center gap-2.5 text-base sm:text-lg font-medium text-white/85 tracking-wide bg-white/8 backdrop-blur-md px-7 py-3.5 rounded-full border border-white/20"
                 data-testid="badge-superhuman-bpo"
               >
-                <div className="w-2 h-2 bg-white/60 rounded-full"></div>
+                <div className="w-2.5 h-2.5 bg-white/60 rounded-full flex-shrink-0"></div>
                 Work Differently
               </div>
 
@@ -380,6 +380,44 @@ export default function Home() {
                 >
                   <Link href="/find-work">Find Work</Link>
                 </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats strip — below the fold, still on violet hero */}
+        <div className="relative z-20 pb-24 lg:pb-32">
+          <div className="w-full border-y border-white/10 bg-white/[0.04] backdrop-blur-md">
+            <div className="mx-auto grid w-full max-w-[1800px] grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 px-6 sm:px-10 lg:px-16">
+              {[
+                { value: "72hrs", label: "AVG. TIME TO HIRE" },
+                { value: "500+", label: "GLOBAL CLIENTS" },
+                { value: "98%", label: "CLIENT RETENTION" },
+                { value: "2,000+", label: "TALENTS PLACED" },
+              ].map((stat, i) => (
+                <div
+                  key={stat.label}
+                  className={[
+                    "flex min-h-[140px] flex-col items-center justify-center px-6 py-8 text-center",
+                    "border-white/10",
+                    i < 3 ? "border-b sm:border-b lg:border-b-0 lg:border-r" : "border-b lg:border-b-0 sm:border-r lg:border-r-0",
+                  ].join(" ")}
+                >
+                  <span className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-white to-[#b9c3ff] bg-clip-text text-transparent">
+                    {stat.value}
+                  </span>
+                  <span className="mt-3 text-[10px] font-semibold uppercase tracking-[0.25em] text-white/45">
+                    {stat.label}
+                  </span>
+                </div>
+              ))}
+
+              {/* Philippine flag stat */}
+              <div className="flex min-h-[140px] flex-col items-center justify-center px-6 py-8 text-center border-white/10">
+                <span className="text-4xl md:text-5xl" role="img" aria-label="Philippine flag">🇵🇭</span>
+                <span className="mt-3 text-[10px] font-semibold uppercase tracking-[0.25em] text-white/45">
+                  PHILIPPINE-BASED
+                </span>
               </div>
             </div>
           </div>
