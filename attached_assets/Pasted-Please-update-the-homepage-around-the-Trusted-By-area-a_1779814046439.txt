@@ -1,0 +1,231 @@
+Please update the homepage around the “Trusted By” area and add a featured insights/news section.
+
+Current request:
+1. Stretch the Trusted By logos section so the logos have more space and better visibility.
+2. Add a latest/featured published insights/blog section after the Trusted By section.
+3. Make the insights/blog area look like a news-style section.
+4. Pull/show published or featured blogs from the Insights page if available.
+
+IMPORTANT:
+- Keep the homepage cleaned-up structure.
+- Do not bring back removed sections.
+- Maintain the carousel animation for Trusted By logos.
+- Make the section responsive.
+- Do not hardcode fake blogs if the project already has an Insights/blog data source.
+
+==================================================
+SECTION PLACEMENT
+==================================================
+
+Place this directly after the Hero section.
+
+The page order should be:
+
+1. Hero
+2. Trusted By
+3. Featured Insights / News
+4. Work Differently
+5. Choose Your Path
+6. Ready to Become Superhuman
+7. Footer
+
+==================================================
+ADD FEATURED INSIGHTS / NEWS SECTION
+==================================================
+
+Add a news-style section that shows latest published or featured insights/blogs from the Insights page.
+
+Goal:
+Show a featured/latest blog card like a news feature, similar to the attached reference:
+- large image/card
+- category pill
+- title
+- short excerpt
+- author/date/read time/view count if available
+- “Read Article” link
+
+This should feel like a “Latest Insights” or “Featured Insights” section.
+
+==================================================
+DATA SOURCE
+==================================================
+
+Please inspect the project for the Insights/blog data source.
+
+Look for files/components like:
+- insights data
+- blog data
+- posts array
+- articles array
+- Insights page
+- Blog page
+- published posts
+- featured posts
+- src/data/insights
+- src/pages/Insights
+- src/components/Insights
+
+Use real published/featured insights from the existing project.
+
+Priority:
+1. Use posts marked as featured if such a field exists.
+2. Otherwise use the latest published posts.
+3. If there is a published flag, only show published posts.
+4. Sort by date descending if dates are available.
+5. Show the first 1 featured article prominently, and optionally 2–3 smaller articles if the layout supports it.
+
+Do not invent article content if real content exists.
+
+==================================================
+FEATURED INSIGHT CARD DESIGN
+==================================================
+
+Create a news-style card.
+
+Suggested card:
+
+className="
+  group overflow-hidden rounded-3xl
+  border border-slate-200/70
+  bg-white
+  shadow-sm transition
+  hover:-translate-y-1 hover:shadow-xl
+"
+
+Image wrapper:
+
+className="
+  relative aspect-[16/9]
+  overflow-hidden bg-slate-100
+"
+
+Image:
+
+className="
+  h-full w-full object-cover
+  transition duration-500 group-hover:scale-105
+"
+
+Content overlay or content block:
+
+Option 1, overlay style like reference:
+- Image on top
+- Dark gradient overlay at bottom
+- Text in white
+
+Option 2, cleaner news card:
+- Image on top
+- Text block below on white background
+
+Use whichever matches the site better.
+
+Suggested overlay style:
+
+<div className="relative overflow-hidden rounded-3xl">
+  <img ... />
+  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/90 via-slate-950/70 to-transparent p-6 sm:p-8">
+    category pill
+    title
+    excerpt
+    meta
+    Read Article
+  </div>
+</div>
+
+Category pill:
+
+className="
+  inline-flex rounded-full
+  bg-indigo-500/90 px-3 py-1
+  text-xs font-semibold uppercase tracking-[0.18em]
+  text-white
+"
+
+Title:
+
+className="
+  mt-4 text-2xl sm:text-3xl
+  font-bold leading-tight text-white
+"
+
+Excerpt:
+
+className="
+  mt-3 text-sm sm:text-base
+  leading-relaxed text-white/75
+"
+
+Meta row:
+
+className="
+  mt-5 flex flex-wrap items-center gap-4
+  text-xs text-white/65
+"
+
+Read Article:
+
+className="
+  mt-5 inline-flex items-center gap-2
+  text-sm font-semibold text-white
+  hover:text-white/80
+"
+
+==================================================
+FEATURED INSIGHTS SECTION COPY
+==================================================
+
+Add a small heading above the article card:
+
+Label:
+“LATEST INSIGHTS”
+
+Headline:
+“Fresh thinking from the OnSpot team.”
+
+or:
+“Featured insights from OnSpot.”
+
+Keep it short and news-like.
+
+Suggested:
+
+<p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-600">
+  Latest Insights
+</p>
+
+<h2 className="mt-3 text-3xl sm:text-4xl font-semibold text-slate-900">
+  Featured insights from OnSpot.
+</h2>
+
+==================================================
+ARTICLE CARD CONTENT FIELDS
+==================================================
+
+Use these fields if available from the Insights data:
+- title
+- excerpt / description
+- category
+- author
+- date
+- readTime
+- views
+- slug / url
+- image / coverImage / thumbnail
+
+Fallbacks:
+- If category missing: “Industry Insights”
+- If read time missing: do not show it
+- If views missing: do not show it
+- If author missing: do not show it
+- If image missing: use existing fallback insight image or gradient placeholder
+
+Link:
+The “Read Article” button should link to the real article detail page.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+After the Hero, the homepage should show a stronger credibility/news area:
+- A polished news-style Featured Insights card appears using the latest/featured published blog from the Insights page.
+- The section feels like a homepage preview of the Insights page, not a full blog archive.

@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import type { Post } from '@shared/schema';
 import { Button } from '@/components/ui/button';
 import {
   Users,
@@ -21,6 +23,9 @@ import {
   ChevronRight,
   Globe,
   SlidersHorizontal,
+  Eye,
+  Calendar,
+  ArrowUpRight,
 } from 'lucide-react';
 import {
   SiX,
@@ -274,6 +279,24 @@ export default function Home() {
     );
   };
 
+  const { data: postsData } = useQuery<{ success: boolean; posts: Post[] }>({
+    queryKey: ["/api/posts"],
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const featuredPosts: Post[] = postsData?.posts
+    ? [...postsData.posts]
+        .sort((a, b) => {
+          if (a.isFeatured && !b.isFeatured) return -1;
+          if (!a.isFeatured && b.isFeatured) return 1;
+          return (
+            new Date(b.publishedAt ?? b.createdAt).getTime() -
+            new Date(a.publishedAt ?? a.createdAt).getTime()
+          );
+        })
+        .slice(0, 3)
+    : [];
+
   return (
     <div>
       {/* ── 1. HERO ── */}
@@ -394,6 +417,161 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* ── 2b. FEATURED INSIGHTS ── */}
+      {featuredPosts.length > 0 && (
+        <div className="relative bg-slate-50 py-20 sm:py-28">
+          <div className="container mx-auto px-4 sm:px-6">
+            {/* Section header */}
+            <div className="mb-10 sm:mb-14">
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-600">
+                Latest Insights
+              </p>
+              <h2 className="mt-3 text-3xl sm:text-4xl font-semibold text-slate-900">
+                Featured insights from OnSpot.
+              </h2>
+            </div>
+
+            {/* Cards grid */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+              {/* Main featured card — spans 2 cols on desktop */}
+              {featuredPosts[0] && (() => {
+                const post = featuredPosts[0];
+                const dateStr = post.publishedAt
+                  ? new Date(post.publishedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                  : null;
+                return (
+                  <a
+                    href={`/insights/${post.slug}`}
+                    className="group relative col-span-1 lg:col-span-2 block overflow-hidden rounded-3xl shadow-md hover:shadow-2xl transition-shadow duration-500"
+                  >
+                    {/* Image or gradient placeholder */}
+                    <div className="relative aspect-[16/9] w-full overflow-hidden bg-gradient-to-br from-indigo-600 via-violet-600 to-blue-700">
+                      {post.coverImageUrl && (
+                        <img
+                          src={post.coverImageUrl}
+                          alt={post.title}
+                          className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                          loading="lazy"
+                        />
+                      )}
+                      {/* Dark wash overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/50 to-slate-950/10" />
+                    </div>
+
+                    {/* Content overlay */}
+                    <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8">
+                      <span className="inline-flex rounded-full bg-indigo-500/90 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white">
+                        {post.category || "Industry Insights"}
+                      </span>
+                      <h3 className="mt-4 text-xl sm:text-2xl lg:text-3xl font-bold leading-tight text-white line-clamp-2">
+                        {post.title}
+                      </h3>
+                      <p className="mt-3 text-sm sm:text-base leading-relaxed text-white/75 line-clamp-2">
+                        {post.excerpt}
+                      </p>
+                      <div className="mt-5 flex flex-wrap items-center gap-4 text-xs text-white/60">
+                        {post.author && <span>{post.author}</span>}
+                        {dateStr && (
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {dateStr}
+                          </span>
+                        )}
+                        {post.readTime && (
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {post.readTime}
+                          </span>
+                        )}
+                        {(post.views ?? 0) > 0 && (
+                          <span className="flex items-center gap-1">
+                            <Eye className="h-3 w-3" />
+                            {post.views?.toLocaleString()} views
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-white group-hover:text-white/80 transition-colors">
+                        Read Article
+                        <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                      </div>
+                    </div>
+                  </a>
+                );
+              })()}
+
+              {/* Side cards — stack vertically */}
+              <div className="col-span-1 flex flex-col gap-6">
+                {featuredPosts.slice(1, 3).map((post) => {
+                  const dateStr = post.publishedAt
+                    ? new Date(post.publishedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                    : null;
+                  return (
+                    <a
+                      key={post.id}
+                      href={`/insights/${post.slug}`}
+                      className="group relative flex-1 block overflow-hidden rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-500 min-h-[200px]"
+                    >
+                      {/* Image or gradient placeholder */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-violet-700 via-blue-700 to-cyan-700">
+                        {post.coverImageUrl && (
+                          <img
+                            src={post.coverImageUrl}
+                            alt={post.title}
+                            className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                            loading="lazy"
+                          />
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/50 to-slate-950/10" />
+                      </div>
+
+                      {/* Content */}
+                      <div className="absolute inset-x-0 bottom-0 p-5">
+                        <span className="inline-flex rounded-full bg-indigo-500/80 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white">
+                          {post.category || "Insights"}
+                        </span>
+                        <h4 className="mt-2.5 text-base font-bold leading-snug text-white line-clamp-2">
+                          {post.title}
+                        </h4>
+                        <div className="mt-2 flex flex-wrap items-center gap-3 text-[11px] text-white/60">
+                          {post.author && <span>{post.author}</span>}
+                          {dateStr && (
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {dateStr}
+                            </span>
+                          )}
+                          {post.readTime && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {post.readTime}
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-white/80 group-hover:text-white transition-colors">
+                          Read Article
+                          <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                        </div>
+                      </div>
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* View all link */}
+            <div className="mt-10 text-center">
+              <a
+                href="/insights"
+                className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-6 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-indigo-400 hover:text-indigo-600 hover:shadow-md"
+              >
+                View all insights
+                <ArrowUpRight className="h-4 w-4" />
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── 3. WORK DIFFERENTLY ── */}
       <div className="relative overflow-hidden bg-gradient-to-br from-[#eef2ff] via-[#f7f4ff] to-[#dff8ff] py-20 sm:py-24">
