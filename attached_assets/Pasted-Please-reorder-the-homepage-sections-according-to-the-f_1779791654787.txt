@@ -1,0 +1,252 @@
+Please reorder the homepage sections according to the final content/story flow below.
+
+IMPORTANT:
+- Do not redesign the individual sections unless absolutely necessary for spacing continuity.
+- Preserve existing section styles, content, components, animations, and responsive behavior.
+- Only change the order of the sections on the homepage.
+- Make sure there are no duplicate sections after reordering.
+- Make sure removed/moved sections do not leave large empty gaps.
+- Keep the navbar at the top and footer at the bottom.
+- Keep the final page responsive across desktop, laptop, tablet, and mobile.
+
+Final Homepage Section Order:
+
+1. Hero
+2. Trusted By / Client Logos
+3. Work Differently
+4. The Superhuman System
+5. AI + Human Advantage
+6. The Experience
+7. Stats
+8. Transformation Stories / Testimonials
+9. The Proof / Team Profiles
+10. Connected Intelligence / Integrations
+11. Choose Your Path
+12. Our Philosophy / Why Partner with OnSpot
+13. Final CTA — “Ready to Become Superhuman?”
+
+--------------------------------------------------
+IMPLEMENTATION DETAILS
+--------------------------------------------------
+
+1. HERO
+Keep the current hero section first.
+
+Hero should include:
+- Navbar above it
+- Work Differently badge
+- Main headline
+- Supporting tagline
+- CTA buttons
+
+Do not place Trusted By, Stats, or any other section before Hero.
+
+--------------------------------------------------
+2. TRUSTED BY / CLIENT LOGOS
+Move the “Trusted By” section directly after the Hero.
+
+This section should include:
+- “TRUSTED BY” label
+- The trusted-by headline
+- Static straight row/grid of colored client logos
+
+Important:
+- No carousel animation.
+- No arrows.
+- No dots.
+- No zoom effect.
+- No autoplay.
+- It should be a stable horizontal logo row/grid.
+
+--------------------------------------------------
+3. WORK DIFFERENTLY
+Move the “Work Differently” section directly after Trusted By.
+
+This section should include:
+- WORK DIFFERENTLY label
+- Supporting sentence
+- Two cards:
+  - For Companies
+  - For Professionals
+
+Do not include any previously red-marked/removed heading content.
+
+--------------------------------------------------
+4. THE SUPERHUMAN SYSTEM
+Move “The Superhuman System” section after Work Differently.
+
+This section should explain the three offerings:
+- AI Assistant
+- Managed
+- Resourced
+
+This section is educational, not final CTA. Keep it as the explanation of what OnSpot offers.
+
+--------------------------------------------------
+5. AI + HUMAN ADVANTAGE
+Move the “AI + Human Advantage” section after The Superhuman System.
+
+This section should contain the idea/philosophy behind the model, including the line or concept:
+“Intelligence that never sleeps. Humanity that always understands.”
+
+Keep current styling.
+
+--------------------------------------------------
+6. THE EXPERIENCE
+Move “The Experience” section after AI + Human Advantage.
+
+This section should include:
+- The Experience heading
+- “One System. Your Unfair Advantage.”
+- Vanessa AI Assistant mockup
+- Task Flow
+- Managed Team
+- Live KPIs
+
+Important:
+Do not include the 72hrs / 500+ / 98% / 2,000+ stats inside this section anymore if Stats will be its own section below.
+
+--------------------------------------------------
+7. STATS
+Place the Stats section immediately after The Experience.
+
+Stats should include:
+- 72hrs / AVG. TIME TO HIRE
+- 500+ / GLOBAL CLIENTS
+- 98% / CLIENT RETENTION
+- 2,000+ / TALENTS PLACED
+- Philippine flag / PHILIPPINE-BASED
+
+This should be its own section after The Experience.
+
+Important:
+- Remove duplicate stats if they currently also appear inside Hero or Experience.
+- There should only be one Stats section on the page.
+- Keep the current styling unless spacing needs minor cleanup.
+
+--------------------------------------------------
+8. TRANSFORMATION STORIES / TESTIMONIALS
+Move testimonials after Stats.
+
+This section provides emotional/social proof after the numbers.
+
+Keep existing testimonial content and styling.
+
+--------------------------------------------------
+9. THE PROOF / TEAM PROFILES
+Move “The Proof” or team profiles section after Transformation Stories.
+
+This section should show the actual humans/team profiles visitors may work with.
+
+Keep current styling and content.
+
+--------------------------------------------------
+10. CONNECTED INTELLIGENCE / INTEGRATIONS
+Move Connected Intelligence / Integrations after The Proof.
+
+This section should answer practical fit:
+- integrations
+- tools
+- connected systems
+- stack compatibility
+
+Keep current styling and content.
+
+--------------------------------------------------
+11. CHOOSE YOUR PATH
+Move Choose Your Path after Connected Intelligence.
+
+This section should function as an action-oriented CTA section, reintroducing the paths/offerings.
+
+It may include:
+- AI Assistant
+- Managed Team
+- Resourced / talent path
+or the existing Choose Your Path cards.
+
+Keep current styling.
+
+--------------------------------------------------
+12. OUR PHILOSOPHY / WHY PARTNER WITH ONSPOT
+Move Our Philosophy / Why Partner with OnSpot after Choose Your Path.
+
+This is the closing argument section.
+
+Keep current content and styling.
+
+--------------------------------------------------
+13. FINAL CTA
+Place the final CTA as the last content section before the footer.
+
+Final CTA headline:
+“Ready to Become Superhuman?”
+
+Keep the existing CTA buttons or final CTA styling if already present.
+
+After this section, render the footer.
+
+--------------------------------------------------
+CLEANUP REQUIREMENTS
+--------------------------------------------------
+
+Please inspect the homepage component and make sure:
+- No section is duplicated.
+- Stats appear only once.
+- Trusted By appears only once.
+- Work Differently appears only once.
+- Final CTA appears only once.
+- No orphaned spacing remains from moved sections.
+- Section anchors/IDs still make sense.
+- Navigation links still scroll to the correct sections if applicable.
+
+--------------------------------------------------
+RESPONSIVE REQUIREMENTS
+--------------------------------------------------
+
+After reordering:
+- Desktop layout should remain clean.
+- Laptop layout should not have excessive gaps.
+- Tablet/mobile should stack properly.
+- No horizontal scrolling.
+- Footer remains last and keeps current styling.
+
+--------------------------------------------------
+EXPECTED RESULT
+--------------------------------------------------
+
+The homepage should follow this story arc:
+
+Attention:
+1. Hero
+
+Trust:
+2. Trusted By
+
+Relevance:
+3. Work Differently
+
+Understanding:
+4. The Superhuman System
+5. AI + Human Advantage
+
+Belief:
+6. The Experience
+
+Proof:
+7. Stats
+8. Transformation Stories
+9. The Proof
+
+Fit:
+10. Connected Intelligence
+
+Decision:
+11. Choose Your Path
+
+Conviction:
+12. Our Philosophy / Why Partner with OnSpot
+
+Action:
+13. Final CTA — “Ready to Become Superhuman?”
+
+Then footer.

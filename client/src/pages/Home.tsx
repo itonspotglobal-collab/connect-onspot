@@ -260,7 +260,7 @@ const transformationStories = [
     role: "Operations Director, Flash Justice",
     transformation: "From scattered processes to seamless orchestration",
     story:
-      "I’ve worked with several outsourcing companies, but none delivered like On-Spot Global. Shane and Ria helped me build my team, stayed involved, and ensured success. Communication’s great, savings exceeded expectations, and I finally feel like I’m working with a true partner.",
+      "I've worked with several outsourcing companies, but none delivered like On-Spot Global. Shane and Ria helped me build my team, stayed involved, and ensured success. Communication's great, savings exceeded expectations, and I finally feel like I'm working with a true partner.",
     photo: null,
     metric: "85% Faster",
   },
@@ -269,7 +269,7 @@ const transformationStories = [
     role: "CTO, Pinetech",
     transformation: "From constant firefighting to proactive innovation",
     story:
-      "I’m extremely happy with the service provided by Onspot Global. Their team is professional, responsive, and reliable—always going above and beyond to make sure everything runs smoothly. The efficiency and consistency they deliver gives me complete confidence, and I truly value the partnership we’ve built.",
+      "I'm extremely happy with the service provided by Onspot Global. Their team is professional, responsive, and reliable—always going above and beyond to make sure everything runs smoothly. The efficiency and consistency they deliver gives me complete confidence, and I truly value the partnership we've built.",
     photo: FernandoPhoto,
     metric: "99.9% Uptime",
   },
@@ -280,7 +280,7 @@ const talentProfiles = [
     name: "Kyle Mendez",
     role: "Recruitment Specialist",
     photo: KyleMendezPhoto,
-    focalY: "15%", // Show full head with headroom - lower % = more of top visible
+    focalY: "15%",
   },
   {
     name: "Alexandra Lopez",
@@ -355,7 +355,6 @@ export default function Home() {
     typeof window !== "undefined" && window.innerWidth >= 1024,
   );
 
-  // Track window size for responsive footer
   useEffect(() => {
     const checkDesktop = () => {
       setIsDesktop(window.innerWidth >= 1024);
@@ -366,7 +365,6 @@ export default function Home() {
     return () => window.removeEventListener("resize", checkDesktop);
   }, []);
 
-  // Toggle footer accordion sections
   const toggleFooterSection = (section: string) => {
     setExpandedFooterSection(
       expandedFooterSection === section ? null : section,
@@ -375,7 +373,7 @@ export default function Home() {
 
   return (
     <div>
-      {/* Hero Section */}
+      {/* ── 1. HERO ── */}
       <div className="relative overflow-hidden flex flex-col hero-investor">
         {/* Elegant Gradient Overlay for Depth */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/30"></div>
@@ -386,11 +384,11 @@ export default function Home() {
           <div className="absolute bottom-1/3 right-1/4 w-[500px] h-[500px] bg-gradient-radial from-blue-500/10 to-transparent rounded-full blur-3xl animate-slow-spin"></div>
         </div>
 
-        {/* Main content — fills the full viewport height above the stats band */}
+        {/* Main content */}
         <div className="min-h-[calc(100vh-72px)] flex items-center justify-center relative z-20 px-4 sm:px-6 py-16 sm:py-24">
           <div className="container mx-auto text-center">
             <div className="max-w-5xl mx-auto space-y-5 sm:space-y-8 lg:space-y-12">
-              {/* Ultra-minimal Badge */}
+              {/* Badge */}
               <div
                 className="hero-fade-up inline-flex items-center gap-2.5 text-sm sm:text-base font-medium text-white/85 tracking-wide bg-white/8 backdrop-blur-md px-6 py-3 rounded-full border border-white/20"
                 data-testid="badge-superhuman-bpo"
@@ -399,7 +397,7 @@ export default function Home() {
                 Work Differently
               </div>
 
-              {/* AI-First Headline */}
+              {/* Headline */}
               <div className="space-y-3 sm:space-y-4 hero-fade-up">
                 <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold tracking-tight leading-[1.1] text-white px-2">
                   AI first.{" "}
@@ -459,50 +457,47 @@ export default function Home() {
             </div>
           </div>
         </div>
+      </div>
 
-        {/* ── Stats strip — inside hero, visible on scroll ── */}
-        <div className="relative z-20 mt-20 sm:mt-24 lg:mt-28 pb-16 sm:pb-24 lg:pb-32">
-          <div className="w-full border-y border-white/10 bg-white/[0.04] backdrop-blur-md">
-            <div className="mx-auto grid w-full max-w-[1800px] grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 px-6 sm:px-10 lg:px-16">
-              {[
-                { value: "72hrs", label: "AVG. TIME TO HIRE" },
-                { value: "500+", label: "GLOBAL CLIENTS" },
-                { value: "98%", label: "CLIENT RETENTION" },
-                { value: "2,000+", label: "TALENTS PLACED" },
-                { flag: true, label: "PHILIPPINE-BASED" },
-              ].map((stat, i, arr) => (
-                <div
-                  key={stat.label}
-                  className={[
-                    "flex min-h-[120px] flex-col items-center justify-center px-5 py-6 text-center",
-                    i < arr.length - 1 ? "border-b border-white/10 sm:border-b-0 sm:border-r" : "",
-                    i === 4 ? "col-span-1 sm:col-span-2 lg:col-span-1" : "",
-                  ].join(" ")}
-                >
-                  {stat.flag ? (
-                    <span className="text-4xl sm:text-5xl leading-none">🇵🇭</span>
-                  ) : (
-                    <span className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-white to-[#b9c3ff] bg-clip-text text-transparent leading-none">
-                      {stat.value}
-                    </span>
-                  )}
-                  <span className="mt-3 text-[11px] sm:text-xs font-semibold uppercase tracking-[0.22em] text-white/45">
-                    {stat.label}
-                  </span>
-                </div>
-              ))}
+      {/* ── 2. TRUSTED BY ── */}
+      <div
+        className="relative overflow-hidden bg-[#f7f9ff] dark:bg-background"
+        style={{ padding: "clamp(2.5rem, 6vw, 8rem) 0" }}
+      >
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[85%] pointer-events-none">
+          <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-b from-violet-500/5 via-blue-500/3 to-transparent blur-sm"></div>
+          <div className="h-px bg-gradient-to-r from-transparent via-violet-400/25 to-transparent"></div>
+        </div>
+
+        <div className="container mx-auto px-4 sm:px-6 relative z-10">
+          <div className="text-center space-y-8 sm:space-y-12">
+            <div className="space-y-4 sm:space-y-6 mx-auto">
+              <p className="text-xs sm:text-sm font-medium uppercase tracking-[0.2em] bg-gradient-to-r from-violet-600/80 to-blue-600/80 bg-clip-text text-transparent">
+                Trusted by
+              </p>
+              <h2
+                className="font-light tracking-tight leading-tight mx-auto"
+                style={{
+                  fontSize: "clamp(1.75rem, 4vw, 3rem)",
+                  textWrap: "balance",
+                  maxWidth: "62ch",
+                }}
+              >
+                Trusted by global brands, hundreds of entrepreneurs, and
+                thousands of professionals worldwide.
+              </h2>
             </div>
+            <TrustedLogos />
           </div>
         </div>
       </div>
 
-      {/* Work Differently Section */}
+      {/* ── 3. WORK DIFFERENTLY ── */}
       <div className="relative overflow-hidden bg-gradient-to-br from-[#eef2ff] via-[#f7f4ff] to-[#dff8ff] py-20 sm:py-24">
         <div className="pointer-events-none absolute -left-24 top-10 h-72 w-72 rounded-full bg-purple-400/20 blur-3xl" />
         <div className="pointer-events-none absolute -right-24 bottom-10 h-72 w-72 rounded-full bg-cyan-300/20 blur-3xl" />
 
         <div className="container relative z-10 mx-auto px-4 sm:px-6">
-          {/* Section header */}
           <p className="text-center text-xs font-semibold uppercase tracking-[0.25em] text-indigo-600">
             Work Differently
           </p>
@@ -511,11 +506,9 @@ export default function Home() {
             differently for both sides.
           </p>
 
-          {/* Cards */}
           <div className="mx-auto mt-12 grid w-full max-w-6xl grid-cols-1 gap-6 lg:grid-cols-2">
             {/* Card 1: For Companies */}
             <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white/75 shadow-sm backdrop-blur-md">
-              {/* Card header */}
               <div className="flex items-center gap-3 bg-gradient-to-r from-indigo-50 to-violet-50 px-5 py-4">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-100">
                   <Building2 className="h-5 w-5 text-indigo-600" />
@@ -530,7 +523,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Benefits */}
               <div className="flex flex-col flex-1">
                 <div className="flex gap-4 border-t border-slate-200/70 p-5">
                   <Zap className="mt-1 h-5 w-5 shrink-0 text-indigo-600" />
@@ -584,7 +576,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* CTA */}
               <a
                 href="/hire-talent"
                 className="flex items-center justify-between border-t border-slate-200/70 px-5 py-4 text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
@@ -596,7 +587,6 @@ export default function Home() {
 
             {/* Card 2: For Professionals */}
             <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white/75 shadow-sm backdrop-blur-md">
-              {/* Card header */}
               <div className="flex items-center gap-3 bg-gradient-to-r from-teal-50 to-cyan-50 px-5 py-4">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-100">
                   <Briefcase className="h-5 w-5 text-teal-600" />
@@ -611,7 +601,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Benefits */}
               <div className="flex flex-col flex-1">
                 <div className="flex gap-4 border-t border-slate-200/70 p-5">
                   <TrendingUp className="mt-1 h-5 w-5 shrink-0 text-teal-600" />
@@ -666,7 +655,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* CTA */}
               <a
                 href="/find-best-matches"
                 className="flex items-center justify-between border-t border-slate-200/70 px-5 py-4 text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
@@ -679,59 +667,17 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Trusted By Section - Premium Apple-Style Design */}
-      <div
-        className="relative overflow-hidden bg-[#f7f9ff] dark:bg-background"
-        style={{ padding: "clamp(2.5rem, 6vw, 8rem) 0" }}
-      >
-        {/* Centered 1px highlight line with soft contact shadow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[85%] pointer-events-none">
-          {/* Soft contact shadow for depth */}
-          <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-b from-violet-500/5 via-blue-500/3 to-transparent blur-sm"></div>
-          {/* Centered highlight line */}
-          <div className="h-px bg-gradient-to-r from-transparent via-violet-400/25 to-transparent"></div>
-        </div>
-
-        <div className="container mx-auto px-4 sm:px-6 relative z-10">
-          <div className="text-center space-y-8 sm:space-y-12">
-            {/* Balanced Typography */}
-            <div className="space-y-4 sm:space-y-6 mx-auto">
-              <p className="text-xs sm:text-sm font-medium uppercase tracking-[0.2em] bg-gradient-to-r from-violet-600/80 to-blue-600/80 bg-clip-text text-transparent">
-                Trusted by
-              </p>
-              <h2
-                className="font-light tracking-tight leading-tight mx-auto"
-                style={{
-                  fontSize: "clamp(1.75rem, 4vw, 3rem)",
-                  textWrap: "balance",
-                  maxWidth: "62ch",
-                }}
-              >
-                Trusted by global brands, hundreds of entrepreneurs, and
-                thousands of professionals worldwide.
-              </h2>
-            </div>
-
-            {/* Trusted logos */}
-            <TrustedLogos />
-          </div>
-        </div>
-      </div>
-
-      {/* The Superhuman System - Cinematic Apple-style Cards */}
+      {/* ── 4. THE SUPERHUMAN SYSTEM ── */}
       <div className="relative py-12 sm:py-24 overflow-hidden">
-        {/* Subtle background gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-background via-background/95 to-background pointer-events-none"></div>
 
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
-          {/* Section Title */}
           <div className="text-center mb-10 sm:mb-16 space-y-4">
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight">
               The Superhuman System
             </h2>
           </div>
 
-          {/* Glassmorphic Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 max-w-7xl mx-auto">
             {superhumanSystem.map((item, index) => (
               <div
@@ -742,31 +688,25 @@ export default function Home() {
                 }}
                 data-testid={`superhuman-card-${index}`}
               >
-                {/* Floating glow effect */}
                 <div
                   className={`absolute inset-0 bg-gradient-to-br ${item.gradient} opacity-0 group-hover:opacity-100 blur-2xl transition-opacity duration-700 rounded-3xl scale-105`}
                 ></div>
 
-                {/* Glass card */}
                 <div className="relative bg-background/40 backdrop-blur-xl border border-white/10 rounded-3xl p-8 sm:p-10 transition-all duration-500 group-hover:border-white/20 group-hover:bg-background/50 h-full flex flex-col items-center md:items-start">
-                  {/* Icon with gradient background */}
                   <div
                     className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br ${item.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500`}
                   >
                     <item.icon className="w-7 h-7 sm:w-8 sm:h-8 text-foreground" />
                   </div>
 
-                  {/* Title */}
                   <h3 className="text-xl sm:text-2xl font-semibold mb-3 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent text-center md:text-left">
                     {item.title}
                   </h3>
 
-                  {/* Subtitle */}
                   <p className="text-sm sm:text-base text-muted-foreground leading-relaxed text-center md:text-left">
                     {item.subtitle}
                   </p>
 
-                  {/* Subtle bottom glow line */}
                   <div
                     className={`absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r ${item.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
                   ></div>
@@ -777,9 +717,8 @@ export default function Home() {
         </div>
       </div>
 
-      {/* AI + Human Advantage Philosophy Section */}
+      {/* ── 5. AI + HUMAN ADVANTAGE ── */}
       <div className="relative py-12 sm:py-24 lg:py-32 overflow-hidden mt-8 sm:mt-16">
-        {/* Luminous gradient background */}
         <div className="absolute inset-0 bg-gradient-to-b from-background via-violet-500/5 to-background"></div>
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-violet-500/20 via-blue-500/10 to-transparent rounded-full blur-3xl opacity-60"></div>
@@ -788,7 +727,6 @@ export default function Home() {
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
           <div className="max-w-5xl mx-auto">
             <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-              {/* Typography */}
               <div className="text-center lg:text-left space-y-6 sm:space-y-8">
                 <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight">
                   <span className="block bg-gradient-to-r from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent">
@@ -811,14 +749,10 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Abstract gradient shape */}
               <div className="relative flex items-center justify-center lg:justify-end">
                 <div className="relative w-64 h-64 sm:w-80 sm:h-80 lg:w-96 lg:h-96">
-                  {/* Luminous swirl effect */}
                   <div className="absolute inset-0 bg-gradient-to-tr from-violet-500/30 via-blue-500/30 to-cyan-500/30 rounded-full blur-3xl opacity-80 animate-gentle-float"></div>
                   <div className="absolute inset-0 bg-gradient-to-bl from-blue-500/40 via-violet-500/40 to-purple-500/40 rounded-full blur-2xl opacity-70 animate-slow-spin"></div>
-
-                  {/* Center glow */}
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="w-32 h-32 sm:w-40 sm:h-40 bg-gradient-to-r from-violet-400 to-blue-400 rounded-full blur-xl opacity-60"></div>
                   </div>
@@ -829,13 +763,383 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Integrations - Neural Grid */}
+      {/* ── 6. THE EXPERIENCE ── */}
+      <div className="relative py-12 sm:py-24 lg:py-32 overflow-hidden mt-8 sm:mt-16">
+        <div className="absolute inset-0 bg-gradient-to-r from-violet-600/20 via-blue-600/20 to-cyan-500/20"></div>
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-1/2 -left-1/4 w-[1000px] h-[1000px] bg-gradient-radial from-violet-500/30 to-transparent rounded-full blur-3xl"></div>
+          <div className="absolute -bottom-1/2 -right-1/4 w-[1000px] h-[1000px] bg-gradient-radial from-blue-500/30 to-transparent rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="container mx-auto px-4 sm:px-6 relative z-10">
+          <div className="text-center space-y-4">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight">
+              The Experience
+            </h2>
+            <p className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent">
+              One System. Your Unfair Advantage.
+            </p>
+          </div>
+
+          <div className="max-w-6xl mx-auto mt-12 sm:mt-16">
+            <div className="relative bg-background/30 backdrop-blur-xl border border-white/20 rounded-3xl p-8 sm:p-12 lg:p-16">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+                {/* Left Column - AI Assistant */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-violet-600 to-blue-600 flex items-center justify-center">
+                      <Bot className="w-5 h-5 text-white" />
+                    </div>
+                    <span className="text-lg font-semibold">
+                      Vanessa AI Assistant
+                    </span>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="bg-violet-500/20 border border-violet-500/30 rounded-2xl rounded-tl-sm p-4">
+                      <p className="text-sm text-foreground/90">
+                        How can I help you scale today?
+                      </p>
+                    </div>
+                    <div className="bg-blue-500/20 border border-blue-500/30 rounded-2xl rounded-tr-sm p-4 ml-8">
+                      <p className="text-sm text-foreground/90">
+                        Find me 3 data analysts
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column - Dashboard & Team */}
+                <div className="space-y-6">
+                  <div className="bg-background/40 border border-white/10 rounded-2xl p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-sm font-semibold">Task Flow</span>
+                      <CheckCircle2 className="w-4 h-4 text-green-500" />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-2 bg-gradient-to-r from-violet-600 to-blue-600 rounded-full w-3/4"></div>
+                      <div className="h-2 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full w-1/2"></div>
+                    </div>
+                  </div>
+
+                  <div className="bg-background/40 border border-white/10 rounded-2xl p-5">
+                    <span className="text-sm font-semibold mb-3 block">
+                      Managed Team
+                    </span>
+                    <div className="flex -space-x-2">
+                      {talentProfiles.slice(0, 4).map((profile, i) => (
+                        <div
+                          key={i}
+                          className="w-8 h-8 rounded-full border-2 border-background overflow-hidden"
+                        >
+                          <img
+                            src={profile.photo}
+                            alt={profile.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="bg-background/40 border border-white/10 rounded-2xl p-5">
+                    <span className="text-sm font-semibold mb-3 block">
+                      Live KPIs
+                    </span>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-green-500">98%</p>
+                        <p className="text-xs text-muted-foreground">Uptime</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-blue-500">24h</p>
+                        <p className="text-xs text-muted-foreground">
+                          Response
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-violet-500">
+                          5.0
+                        </p>
+                        <p className="text-xs text-muted-foreground">Rating</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="absolute -top-10 -left-10 w-40 h-40 bg-violet-500/20 rounded-full blur-3xl animate-gentle-float"></div>
+              <div
+                className="absolute -bottom-10 -right-10 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl animate-gentle-float"
+                style={{ animationDelay: "1s" }}
+              ></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 7. STATS ── */}
+      <div className="relative py-12 sm:py-16 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-background/95 to-background pointer-events-none"></div>
+        <div className="relative z-10 w-full border-y border-white/10 bg-white/[0.04] backdrop-blur-md">
+          <div className="mx-auto grid w-full max-w-[1800px] grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 px-6 sm:px-10 lg:px-16">
+            {[
+              { value: "72hrs", label: "AVG. TIME TO HIRE" },
+              { value: "500+", label: "GLOBAL CLIENTS" },
+              { value: "98%", label: "CLIENT RETENTION" },
+              { value: "2,000+", label: "TALENTS PLACED" },
+              { flag: true, label: "PHILIPPINE-BASED" },
+            ].map((stat, i, arr) => (
+              <div
+                key={stat.label}
+                className={[
+                  "flex min-h-[120px] flex-col items-center justify-center px-5 py-6 text-center",
+                  i < arr.length - 1
+                    ? "border-b border-white/10 sm:border-b-0 sm:border-r"
+                    : "",
+                  i === 4 ? "col-span-1 sm:col-span-2 lg:col-span-1" : "",
+                ].join(" ")}
+              >
+                {stat.flag ? (
+                  <span className="text-4xl sm:text-5xl leading-none">🇵🇭</span>
+                ) : (
+                  <span className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent leading-none">
+                    {stat.value}
+                  </span>
+                )}
+                <span className="mt-3 text-[11px] sm:text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                  {stat.label}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── 8. TRANSFORMATION STORIES ── */}
+      <div className="relative py-12 sm:py-24 lg:py-32 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-violet-500/5 to-background"></div>
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-gradient-radial from-violet-500/10 to-transparent rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-gradient-radial from-blue-500/10 to-transparent rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="container mx-auto px-4 sm:px-6 relative z-10">
+          <div className="text-center mb-10 sm:mb-16 space-y-4">
+            <p className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wider">
+              Transformation Stories
+            </p>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight">
+              Human Achievements
+            </h2>
+            <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
+              Powered by Intelligence
+            </p>
+          </div>
+
+          <div className="relative">
+            {/* Desktop Grid */}
+            <div className="hidden md:grid md:grid-cols-3 gap-8 lg:gap-12 max-w-7xl mx-auto">
+              {transformationStories.map((story, index) => (
+                <div
+                  key={index}
+                  className="group relative"
+                  style={{
+                    animation: `fadeInUp 0.8s ease-out ${index * 0.2}s both`,
+                  }}
+                  data-testid={`story-card-${index}`}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 to-blue-500/20 rounded-3xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 scale-110 animate-gentle-pulse"></div>
+
+                  <div className="relative bg-background/30 backdrop-blur-xl border border-white/10 rounded-3xl p-8 lg:p-10 transition-all duration-700 group-hover:border-white/20 group-hover:bg-background/40 h-full flex flex-col">
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className="relative w-14 h-14 lg:w-16 lg:h-16 rounded-full overflow-hidden border-2 border-white/20 group-hover:border-white/40 transition-colors duration-500">
+                        <div className="absolute inset-0 flex items-center justify-center bg-slate-500/40">
+                          <User className="w-7 h-7 lg:w-8 lg:h-8 text-slate-100/90" />
+                        </div>
+                        {story.photo && (
+                          <img
+                            src={story.photo}
+                            alt={story.name}
+                            className="absolute inset-0 w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
+                            }}
+                          />
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 to-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-sm lg:text-base">
+                          {story.name}
+                        </p>
+                        <p className="text-xs lg:text-sm text-muted-foreground">
+                          {story.role}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mb-6 flex-grow">
+                      <p className="text-base lg:text-lg font-light leading-relaxed text-foreground/90 group-hover:text-foreground transition-colors duration-500">
+                        {story.transformation}
+                      </p>
+                    </div>
+
+                    <div className="mb-6">
+                      <p className="text-sm lg:text-base text-muted-foreground leading-relaxed">
+                        {story.story}
+                      </p>
+                    </div>
+
+                    <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-violet-500/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Mobile Horizontal Scroll */}
+            <div className="md:hidden overflow-x-auto scrollbar-hide -mx-4 px-4">
+              <div
+                className="flex gap-6 pb-4"
+                style={{ scrollSnapType: "x mandatory" }}
+              >
+                {transformationStories.map((story, index) => (
+                  <div
+                    key={index}
+                    className="group relative flex-shrink-0 w-[85vw] max-w-[400px]"
+                    style={{ scrollSnapAlign: "center" }}
+                    data-testid={`story-card-mobile-${index}`}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 to-blue-500/20 rounded-3xl blur-2xl opacity-50 animate-gentle-pulse"></div>
+
+                    <div className="relative bg-background/30 backdrop-blur-xl border border-white/10 rounded-3xl p-6 h-full flex flex-col">
+                      <div className="flex items-center gap-3 mb-5">
+                        <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-white/20">
+                          <div className="absolute inset-0 flex items-center justify-center bg-slate-500/40">
+                            <User className="w-6 h-6 text-slate-100/90" />
+                          </div>
+                          {story.photo && (
+                            <img
+                              src={story.photo}
+                              alt={story.name}
+                              className="absolute inset-0 w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                              }}
+                            />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-semibold text-sm">{story.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {story.role}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mb-4 flex-grow">
+                        <p className="text-base font-light leading-relaxed text-foreground/90">
+                          {story.transformation}
+                        </p>
+                      </div>
+
+                      <div className="mb-5">
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {story.story}
+                        </p>
+                      </div>
+
+                      <div className="mt-auto pt-5 border-t border-white/10">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-violet-500/10 to-blue-500/10 border border-white/10">
+                          <Sparkles className="w-4 h-4 text-violet-500" />
+                          <span className="text-sm font-semibold bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent">
+                            {story.metric}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center mt-16 sm:mt-20">
+            <Button
+              variant="outline"
+              size="lg"
+              className="min-h-[56px] px-8 text-base border-2 bg-background/50 backdrop-blur-sm hover:bg-background/80"
+              asChild
+            >
+              <Link href="/amazing">
+                Explore More Transformations
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 9. THE PROOF ── */}
+      <div className="relative py-12 sm:py-24 overflow-hidden mt-8 sm:mt-16">
+        <div className="container mx-auto px-4 sm:px-6 relative z-10">
+          <div className="text-center mb-10 sm:mb-16 space-y-4">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight">
+              The Proof
+            </h2>
+            <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto">
+              Powered by professionals from US, Philippines, and beyond.
+            </p>
+            <p className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent">
+              The Superhuman BPO Network.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 max-w-6xl mx-auto">
+            {talentProfiles.map((profile, index) => (
+              <div
+                key={index}
+                className="group relative cursor-pointer"
+                data-testid={`talent-profile-${index}`}
+              >
+                <div className="relative aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-violet-500/10 to-blue-500/10 transition-transform duration-500 group-hover:scale-105">
+                  <img
+                    src={profile.photo}
+                    alt={profile.name}
+                    width="400"
+                    height="400"
+                    loading="lazy"
+                    className="w-full h-full object-cover sm:blur-sm sm:group-hover:blur-none opacity-100 sm:opacity-60 sm:group-hover:opacity-100 transition-all duration-500"
+                    style={{
+                      objectPosition: `center ${profile.focalY || "15%"}`,
+                    }}
+                  />
+
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-500 flex items-end p-4">
+                    <div className="text-white transform translate-y-0 sm:translate-y-2 sm:group-hover:translate-y-0 transition-transform duration-500">
+                      <p className="font-semibold text-sm sm:text-base leading-tight">
+                        {profile.name}
+                      </p>
+                      <p className="text-xs sm:text-sm text-white/90 mt-1">
+                        {profile.role}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="absolute -inset-1 opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10">
+                    <div className="absolute inset-0 bg-gradient-to-r from-violet-500/30 to-blue-500/30 blur-xl rounded-2xl"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── 10. CONNECTED INTELLIGENCE / INTEGRATIONS ── */}
       <div className="relative py-12 sm:py-24 overflow-hidden">
-        {/* Background gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-background via-violet-500/5 to-background"></div>
 
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
-          {/* Section Title */}
           <div className="text-center mb-10 sm:mb-16 space-y-3">
             <p className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wider">
               Connected Intelligence
@@ -855,15 +1159,12 @@ export default function Home() {
                   data-testid={`integration-${index}`}
                 >
                   <div className="relative">
-                    {/* Hover glow */}
                     <div className="absolute inset-0 bg-gradient-to-r from-violet-500/30 to-blue-500/30 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
-                    {/* Glass card */}
                     <div className="relative bg-background/40 backdrop-blur-xl border border-white/10 rounded-2xl p-4 transition-all duration-500 group-hover:border-white/30 group-hover:bg-background/60">
                       <div className="flex flex-col items-center justify-center gap-2">
                         {integration.icon ? (
                           typeof integration.icon === "string" ? (
-                            // 🖼️ When icon is an imported image file (JPG/PNG)
                             <img
                               src={integration.icon}
                               alt={integration.name}
@@ -873,11 +1174,9 @@ export default function Home() {
                               className="w-8 h-8 object-contain opacity-90 group-hover:opacity-100 transition-all duration-300 grayscale group-hover:grayscale-0"
                             />
                           ) : (
-                            // ⚙️ When icon is a React component (Lucide or react-icons)
                             <integration.icon className="w-7 h-7 text-foreground/60 group-hover:text-foreground transition-colors duration-300 grayscale group-hover:grayscale-0" />
                           )
                         ) : (
-                          // Placeholder if no icon
                           <div className="w-7 h-7 rounded bg-gradient-to-br from-violet-500/20 to-blue-500/20"></div>
                         )}
                         <span className="text-[9px] font-medium text-foreground/60 group-hover:text-foreground transition-colors duration-300 text-center">
@@ -896,10 +1195,7 @@ export default function Home() {
             {/* Central OnSpot Core */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
               <div className="relative group">
-                {/* Pulsing glow effect */}
                 <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-blue-600 rounded-full blur-2xl opacity-60 group-hover:opacity-80 transition-opacity duration-500 animate-gentle-pulse"></div>
-
-                {/* Core circle */}
                 <div className="relative w-24 h-24 lg:w-28 lg:h-28 rounded-full bg-gradient-to-br from-violet-600 to-blue-600 flex items-center justify-center border-2 border-white/20">
                   <Sparkles className="w-12 h-12 text-white" />
                 </div>
@@ -911,8 +1207,8 @@ export default function Home() {
               {integrations.map((integration, index) => {
                 const totalItems = integrations.length;
                 const angle = (index * 360) / totalItems;
-                const mdRadius = 220; // Tablet
-                const lgRadius = 280; // Desktop
+                const mdRadius = 220;
+                const lgRadius = 280;
 
                 const x = Math.cos(((angle - 90) * Math.PI) / 180);
                 const y = Math.sin(((angle - 90) * Math.PI) / 180);
@@ -941,9 +1237,7 @@ export default function Home() {
                       className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                       width={mdRadius * 2.5}
                       height={mdRadius * 2.5}
-                      style={{
-                        transform: "translate(-50%, -50%)",
-                      }}
+                      style={{ transform: "translate(-50%, -50%)" }}
                     >
                       <line
                         x1="50%"
@@ -978,11 +1272,9 @@ export default function Home() {
 
                     {/* Integration Node */}
                     <div className="relative">
-                      {/* Hover glow */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-violet-500/30 to-blue-500/30 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 scale-150"></div>
+                      <div className="absolute inset-0 bg-gradient-to-r from-violet-500/30 to-blue-500/30 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
-                      {/* Glass card */}
-                      <div className="relative bg-background/40 backdrop-blur-xl border border-white/10 rounded-2xl p-4 transition-all duration-500 group-hover:border-white/30 group-hover:bg-background/60 min-w-[100px] lg:min-w-[120px]">
+                      <div className="relative bg-background/40 backdrop-blur-xl border border-white/10 rounded-2xl p-4 lg:p-5 transition-all duration-500 group-hover:border-white/30 group-hover:bg-background/60 w-20 lg:w-24">
                         <div className="flex flex-col items-center justify-center gap-2">
                           {integration.icon ? (
                             typeof integration.icon === "string" ? (
@@ -995,7 +1287,7 @@ export default function Home() {
                                 className="w-8 h-8 object-contain opacity-90 group-hover:opacity-100 transition-all duration-300 grayscale group-hover:grayscale-0"
                               />
                             ) : (
-                              <integration.icon className="w-8 h-8 text-foreground/60 group-hover:text-foreground transition-colors duration-300 grayscale group-hover:grayscale-0" />
+                              <integration.icon className="w-8 h-8 text-foreground/60 group-hover:text-foreground transition-colors duration-300" />
                             )
                           ) : (
                             <div className="w-8 h-8 rounded bg-gradient-to-br from-violet-500/20 to-blue-500/20"></div>
@@ -1022,7 +1314,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Bottom text */}
           <div className="text-center mt-8 sm:mt-12 md:mt-16">
             <p className="text-xs sm:text-sm text-muted-foreground">
               and many more...
@@ -1031,194 +1322,8 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Transformation Stories - Cinematic Gallery */}
+      {/* ── 11. CHOOSE YOUR PATH ── */}
       <div className="relative py-12 sm:py-24 lg:py-32 overflow-hidden">
-        {/* Ethereal background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-violet-500/5 to-background"></div>
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-gradient-radial from-violet-500/10 to-transparent rounded-full blur-3xl"></div>
-          <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-gradient-radial from-blue-500/10 to-transparent rounded-full blur-3xl"></div>
-        </div>
-
-        <div className="container mx-auto px-4 sm:px-6 relative z-10">
-          {/* Section Title */}
-          <div className="text-center mb-10 sm:mb-16 space-y-4">
-            <p className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wider">
-              Transformation Stories
-            </p>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight">
-              Human Achievements
-            </h2>
-            <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
-              Powered by Intelligence
-            </p>
-          </div>
-
-          {/* Story Cards - Horizontal Scroll on Mobile, Grid on Desktop */}
-          <div className="relative">
-            {/* Desktop Grid */}
-            <div className="hidden md:grid md:grid-cols-3 gap-8 lg:gap-12 max-w-7xl mx-auto">
-              {transformationStories.map((story, index) => (
-                <div
-                  key={index}
-                  className="group relative"
-                  style={{
-                    animation: `fadeInUp 0.8s ease-out ${index * 0.2}s both`,
-                  }}
-                  data-testid={`story-card-${index}`}
-                >
-                  {/* Breathing glow effect */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 to-blue-500/20 rounded-3xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 scale-110 animate-gentle-pulse"></div>
-
-                  {/* Glass Story Card */}
-                  <div className="relative bg-background/30 backdrop-blur-xl border border-white/10 rounded-3xl p-8 lg:p-10 transition-all duration-700 group-hover:border-white/20 group-hover:bg-background/40 h-full flex flex-col">
-                    {/* Profile */}
-                    <div className="flex items-center gap-4 mb-6">
-                      <div className="relative w-14 h-14 lg:w-16 lg:h-16 rounded-full overflow-hidden border-2 border-white/20 group-hover:border-white/40 transition-colors duration-500">
-                        {/* Default avatar — always rendered underneath */}
-                        <div className="absolute inset-0 flex items-center justify-center bg-slate-500/40">
-                          <User className="w-7 h-7 lg:w-8 lg:h-8 text-slate-100/90" />
-                        </div>
-                        {/* Real photo rendered on top; hidden on error */}
-                        {story.photo && (
-                          <img
-                            src={story.photo}
-                            alt={story.name}
-                            className="absolute inset-0 w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
-                            onError={(e) => {
-                              e.currentTarget.style.display = "none";
-                            }}
-                          />
-                        )}
-                        {/* Photo glow */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 to-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-sm lg:text-base">
-                          {story.name}
-                        </p>
-                        <p className="text-xs lg:text-sm text-muted-foreground">
-                          {story.role}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Transformation Title */}
-                    <div className="mb-6 flex-grow">
-                      <p className="text-base lg:text-lg font-light leading-relaxed text-foreground/90 group-hover:text-foreground transition-colors duration-500">
-                        {story.transformation}
-                      </p>
-                    </div>
-
-                    {/* Story */}
-                    <div className="mb-6">
-                      <p className="text-sm lg:text-base text-muted-foreground leading-relaxed">
-                        {story.story}
-                      </p>
-                    </div>
-
-                    {/* Bottom glow line */}
-                    <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-violet-500/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Mobile Horizontal Scroll */}
-            <div className="md:hidden overflow-x-auto scrollbar-hide -mx-4 px-4">
-              <div
-                className="flex gap-6 pb-4"
-                style={{ scrollSnapType: "x mandatory" }}
-              >
-                {transformationStories.map((story, index) => (
-                  <div
-                    key={index}
-                    className="group relative flex-shrink-0 w-[85vw] max-w-[400px]"
-                    style={{ scrollSnapAlign: "center" }}
-                    data-testid={`story-card-mobile-${index}`}
-                  >
-                    {/* Breathing glow effect */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 to-blue-500/20 rounded-3xl blur-2xl opacity-50 animate-gentle-pulse"></div>
-
-                    {/* Glass Story Card */}
-                    <div className="relative bg-background/30 backdrop-blur-xl border border-white/10 rounded-3xl p-6 h-full flex flex-col">
-                      {/* Profile */}
-                      <div className="flex items-center gap-3 mb-5">
-                        <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-white/20">
-                          {/* Default avatar — always rendered underneath */}
-                          <div className="absolute inset-0 flex items-center justify-center bg-slate-500/40">
-                            <User className="w-6 h-6 text-slate-100/90" />
-                          </div>
-                          {/* Real photo rendered on top; hidden on error */}
-                          {story.photo && (
-                            <img
-                              src={story.photo}
-                              alt={story.name}
-                              className="absolute inset-0 w-full h-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.style.display = "none";
-                              }}
-                            />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-semibold text-sm">{story.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {story.role}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Transformation Title */}
-                      <div className="mb-4 flex-grow">
-                        <p className="text-base font-light leading-relaxed text-foreground/90">
-                          {story.transformation}
-                        </p>
-                      </div>
-
-                      {/* Story */}
-                      <div className="mb-5">
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          {story.story}
-                        </p>
-                      </div>
-
-                      {/* Metric Badge */}
-                      <div className="mt-auto pt-5 border-t border-white/10">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-violet-500/10 to-blue-500/10 border border-white/10">
-                          <Sparkles className="w-4 h-4 text-violet-500" />
-                          <span className="text-sm font-semibold bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent">
-                            {story.metric}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* CTA */}
-          <div className="text-center mt-16 sm:mt-20">
-            <Button
-              variant="outline"
-              size="lg"
-              className="min-h-[56px] px-8 text-base border-2 bg-background/50 backdrop-blur-sm hover:bg-background/80"
-              asChild
-            >
-              <Link href="/amazing">
-                Explore More Transformations
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Hire Talent - Cinematic Selector */}
-      <div className="relative py-12 sm:py-24 lg:py-32 overflow-hidden">
-        {/* Network lines background */}
         <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-background">
           <svg
             className="absolute inset-0 w-full h-full opacity-20"
@@ -1264,7 +1369,6 @@ export default function Home() {
           </svg>
         </div>
 
-        {/* Gradient motion overlay */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-1/4 -left-1/4 w-[800px] h-[800px] bg-gradient-radial from-violet-500/10 to-transparent rounded-full blur-3xl animate-slow-spin"></div>
           <div
@@ -1274,7 +1378,6 @@ export default function Home() {
         </div>
 
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
-          {/* Section Title */}
           <div className="text-center mb-10 sm:mb-16 space-y-4">
             <p className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wider">
               Choose Your Path
@@ -1287,7 +1390,6 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Hiring Mode Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12 max-w-7xl mx-auto">
             {hiringModes.map((mode, index) => (
               <div
@@ -1298,21 +1400,17 @@ export default function Home() {
                 }}
                 data-testid={`hiring-mode-${index}`}
               >
-                {/* Floating glow effect */}
                 <div
                   className={`absolute inset-0 bg-gradient-to-br ${mode.gradient} opacity-0 group-hover:opacity-100 blur-2xl transition-opacity duration-700 rounded-3xl scale-110 animate-gentle-pulse`}
                 ></div>
 
-                {/* Glass Card */}
                 <div className="relative bg-background/30 backdrop-blur-xl border border-white/10 rounded-3xl p-8 lg:p-10 transition-all duration-700 group-hover:border-white/20 group-hover:bg-background/40 h-full flex flex-col group-hover:transform group-hover:scale-[1.02]">
-                  {/* Icon */}
                   <div
                     className={`w-16 h-16 lg:w-20 lg:h-20 rounded-2xl bg-gradient-to-br ${mode.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 mx-auto md:mx-0`}
                   >
                     <mode.icon className="w-8 h-8 lg:w-10 lg:h-10 text-foreground" />
                   </div>
 
-                  {/* Title & Subtitle */}
                   <div className="mb-4">
                     <h3 className="text-xl lg:text-2xl font-semibold mb-2 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
                       {mode.title}
@@ -1322,14 +1420,12 @@ export default function Home() {
                     </p>
                   </div>
 
-                  {/* Description */}
                   <div className="mb-6 flex-grow">
                     <p className="text-sm lg:text-base text-foreground/80 leading-relaxed">
                       {mode.description}
                     </p>
                   </div>
 
-                  {/* Features */}
                   <div className="mb-6 space-y-2">
                     {mode.features.map((feature, idx) => (
                       <div key={idx} className="flex items-center gap-2">
@@ -1341,7 +1437,6 @@ export default function Home() {
                     ))}
                   </div>
 
-                  {/* CTA Button */}
                   <div className="mt-auto pt-6 border-t border-white/10">
                     <Button
                       variant={index === 0 ? "default" : "outline"}
@@ -1363,7 +1458,6 @@ export default function Home() {
                     </Button>
                   </div>
 
-                  {/* Bottom glow line */}
                   <div
                     className={`absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r ${mode.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-700`}
                   ></div>
@@ -1374,12 +1468,10 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Why Partner with OnSpot - Brand Philosophy */}
+      {/* ── 12. OUR PHILOSOPHY / WHY PARTNER WITH ONSPOT ── */}
       <div className="relative py-12 sm:py-24 lg:py-32 overflow-hidden">
-        {/* Subtle gradient background */}
         <div className="absolute inset-0 bg-gradient-to-b from-background via-violet-500/5 to-background"></div>
 
-        {/* Ambient glow orbs */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-1/3 left-1/4 w-[600px] h-[600px] bg-gradient-radial from-violet-500/10 to-transparent rounded-full blur-3xl animate-gentle-pulse"></div>
           <div
@@ -1389,7 +1481,6 @@ export default function Home() {
         </div>
 
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
-          {/* Philosophy Title */}
           <div className="text-center mb-12 sm:mb-20 space-y-6 max-w-4xl mx-auto">
             <p className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wider">
               Our Philosophy
@@ -1406,7 +1497,6 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Pillar Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10 max-w-7xl mx-auto">
             {brandPillars.map((pillar, index) => (
               <div
@@ -1417,36 +1507,29 @@ export default function Home() {
                 }}
                 data-testid={`brand-pillar-${index}`}
               >
-                {/* Hover glow effect */}
                 <div
                   className={`absolute inset-0 bg-gradient-to-br ${pillar.gradient} opacity-0 group-hover:opacity-100 blur-3xl transition-opacity duration-700 rounded-3xl`}
                 ></div>
 
-                {/* Glass card */}
                 <div className="relative bg-background/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-8 sm:p-10 lg:p-12 transition-all duration-700 group-hover:border-white/30 group-hover:bg-background/50 h-full flex flex-col items-center md:items-start">
-                  {/* Icon */}
                   <div
                     className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br ${pillar.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500`}
                   >
                     <pillar.icon className="w-7 h-7 sm:w-8 sm:h-8 text-foreground" />
                   </div>
 
-                  {/* Title with gradient on hover */}
                   <h3 className="text-xl sm:text-2xl lg:text-3xl font-semibold mb-2 transition-all duration-500 group-hover:bg-gradient-to-r group-hover:from-violet-600 group-hover:to-blue-600 group-hover:bg-clip-text group-hover:text-transparent text-center md:text-left">
                     {pillar.title}
                   </h3>
 
-                  {/* Subtitle */}
                   <p className="text-sm sm:text-base text-muted-foreground mb-6 text-center md:text-left">
                     {pillar.subtitle}
                   </p>
 
-                  {/* Description */}
                   <p className="text-sm sm:text-base lg:text-lg text-foreground/80 leading-relaxed flex-grow">
                     {pillar.description}
                   </p>
 
-                  {/* Bottom accent line */}
                   <div
                     className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r ${pillar.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-700`}
                   ></div>
@@ -1455,7 +1538,6 @@ export default function Home() {
             ))}
           </div>
 
-          {/* Philosophy Statement */}
           <div className="text-center mt-20 sm:mt-24 max-w-4xl mx-auto space-y-8">
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-violet-500/20 to-transparent h-px top-1/2"></div>
@@ -1470,194 +1552,8 @@ export default function Home() {
         </div>
       </div>
 
-      {/* The Experience — One System. Your Unfair Advantage */}
-      <div className="relative py-12 sm:py-24 lg:py-32 overflow-hidden mt-8 sm:mt-16">
-        {/* Gradient glow background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-violet-600/20 via-blue-600/20 to-cyan-500/20"></div>
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-1/2 -left-1/4 w-[1000px] h-[1000px] bg-gradient-radial from-violet-500/30 to-transparent rounded-full blur-3xl"></div>
-          <div className="absolute -bottom-1/2 -right-1/4 w-[1000px] h-[1000px] bg-gradient-radial from-blue-500/30 to-transparent rounded-full blur-3xl"></div>
-        </div>
-
-        <div className="container mx-auto px-4 sm:px-6 relative z-10">
-          {/* Title */}
-          <div className="text-center space-y-4">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight">
-              The Experience
-            </h2>
-            <p className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent">
-              One System. Your Unfair Advantage.
-            </p>
-          </div>
-
-          {/* OnSpot Connect Interface Mockup */}
-          <div className="max-w-6xl mx-auto mt-12 sm:mt-16">
-            <div className="relative bg-background/30 backdrop-blur-xl border border-white/20 rounded-3xl p-8 sm:p-12 lg:p-16">
-              {/* Glowing wireframe interface */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-                {/* Left Column - AI Assistant */}
-                <div className="space-y-6">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-violet-600 to-blue-600 flex items-center justify-center">
-                      <Bot className="w-5 h-5 text-white" />
-                    </div>
-                    <span className="text-lg font-semibold">
-                      Vanessa AI Assistant
-                    </span>
-                  </div>
-                  <div className="space-y-3">
-                    {/* Chat bubbles */}
-                    <div className="bg-violet-500/20 border border-violet-500/30 rounded-2xl rounded-tl-sm p-4">
-                      <p className="text-sm text-foreground/90">
-                        How can I help you scale today?
-                      </p>
-                    </div>
-                    <div className="bg-blue-500/20 border border-blue-500/30 rounded-2xl rounded-tr-sm p-4 ml-8">
-                      <p className="text-sm text-foreground/90">
-                        Find me 3 data analysts
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right Column - Dashboard & Team */}
-                <div className="space-y-6">
-                  {/* Task Flow */}
-                  <div className="bg-background/40 border border-white/10 rounded-2xl p-5">
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-sm font-semibold">Task Flow</span>
-                      <CheckCircle2 className="w-4 h-4 text-green-500" />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="h-2 bg-gradient-to-r from-violet-600 to-blue-600 rounded-full w-3/4"></div>
-                      <div className="h-2 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full w-1/2"></div>
-                    </div>
-                  </div>
-
-                  {/* Managed Team */}
-                  <div className="bg-background/40 border border-white/10 rounded-2xl p-5">
-                    <span className="text-sm font-semibold mb-3 block">
-                      Managed Team
-                    </span>
-                    <div className="flex -space-x-2">
-                      {talentProfiles.slice(0, 4).map((profile, i) => (
-                        <div
-                          key={i}
-                          className="w-8 h-8 rounded-full border-2 border-background overflow-hidden"
-                        >
-                          <img
-                            src={profile.photo}
-                            alt={profile.name}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* KPI Dashboard */}
-                  <div className="bg-background/40 border border-white/10 rounded-2xl p-5">
-                    <span className="text-sm font-semibold mb-3 block">
-                      Live KPIs
-                    </span>
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-green-500">98%</p>
-                        <p className="text-xs text-muted-foreground">Uptime</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-blue-500">24h</p>
-                        <p className="text-xs text-muted-foreground">
-                          Response
-                        </p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-violet-500">
-                          5.0
-                        </p>
-                        <p className="text-xs text-muted-foreground">Rating</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Decorative glow elements */}
-              <div className="absolute -top-10 -left-10 w-40 h-40 bg-violet-500/20 rounded-full blur-3xl animate-gentle-float"></div>
-              <div
-                className="absolute -bottom-10 -right-10 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl animate-gentle-float"
-                style={{ animationDelay: "1s" }}
-              ></div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      {/* The Proof — Global Talent, Human Excellence */}
-      <div className="relative py-12 sm:py-24 overflow-hidden mt-8 sm:mt-16">
-        <div className="container mx-auto px-4 sm:px-6 relative z-10">
-          {/* Title */}
-          <div className="text-center mb-10 sm:mb-16 space-y-4">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight">
-              The Proof
-            </h2>
-            <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto">
-              Powered by professionals from US, Philippines, and beyond.
-            </p>
-            <p className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent">
-              The Superhuman BPO Network.
-            </p>
-          </div>
-
-          {/* Talent Profiles Grid - 2x4 responsive grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 max-w-6xl mx-auto">
-            {talentProfiles.map((profile, index) => (
-              <div
-                key={index}
-                className="group relative cursor-pointer"
-                data-testid={`talent-profile-${index}`}
-              >
-                {/* Profile Image Card - blurred inactive, sharp on hover */}
-                <div className="relative aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-violet-500/10 to-blue-500/10 transition-transform duration-500 group-hover:scale-105">
-                  <img
-                    src={profile.photo}
-                    alt={profile.name}
-                    width="400"
-                    height="400"
-                    loading="lazy"
-                    className="w-full h-full object-cover sm:blur-sm sm:group-hover:blur-none opacity-100 sm:opacity-60 sm:group-hover:opacity-100 transition-all duration-500"
-                    style={{
-                      objectPosition: `center ${profile.focalY || "15%"}`,
-                    }}
-                  />
-
-                  {/* Semi-transparent gradient overlay with name/title - always visible on mobile, hover on desktop */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-500 flex items-end p-4">
-                    <div className="text-white transform translate-y-0 sm:translate-y-2 sm:group-hover:translate-y-0 transition-transform duration-500">
-                      <p className="font-semibold text-sm sm:text-base leading-tight">
-                        {profile.name}
-                      </p>
-                      <p className="text-xs sm:text-sm text-white/90 mt-1">
-                        {profile.role}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Soft glow effect on hover */}
-                  <div className="absolute -inset-1 opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10">
-                    <div className="absolute inset-0 bg-gradient-to-r from-violet-500/30 to-blue-500/30 blur-xl rounded-2xl"></div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* The Call — Ready to Become Superhuman */}
+      {/* ── 13. FINAL CTA ── */}
       <div className="relative py-16 sm:py-32 lg:py-40 overflow-hidden mt-8 sm:mt-16">
-        {/* Full-screen gradient */}
         <div className="absolute inset-0 bg-gradient-to-br from-violet-600/30 via-blue-600/30 to-cyan-500/30"></div>
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-radial from-violet-500/20 via-transparent to-transparent"></div>
@@ -1665,7 +1561,6 @@ export default function Home() {
 
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
           <div className="text-center max-w-4xl mx-auto space-y-12">
-            {/* Main heading */}
             <div className="space-y-6">
               <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight">
                 <span className="block">Ready to Become</span>
@@ -1684,7 +1579,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 pt-8">
               <Button
                 size="lg"
@@ -1712,18 +1606,15 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Footer */}
+      {/* ── 14. FOOTER ── */}
       <footer className="onspot-footer relative overflow-hidden bg-[#3F4698]">
         {/* Hairline Gradient Seam with Soft Contact Shadow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[85%] pointer-events-none">
-          {/* Soft contact shadow for depth */}
           <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-b from-violet-500/10 via-blue-500/5 to-transparent blur-md"></div>
-          {/* Hairline gradient seam - fades at edges */}
           <div className="h-px bg-gradient-to-r from-transparent via-violet-400/30 through-blue-400/30 to-transparent"></div>
         </div>
 
         <div className="mx-auto w-full max-w-[1500px] px-6 sm:px-8 lg:px-12 xl:px-14 2xl:px-16 py-10 sm:py-12 lg:py-14">
-          {/* Footer Grid - Brand + Links layout */}
           <div className="grid grid-cols-1 gap-y-12 lg:grid-cols-[minmax(300px,360px)_1fr] xl:grid-cols-[minmax(320px,380px)_1fr] lg:gap-x-12 xl:gap-x-14 items-start">
             {/* Brand Section */}
             <div className="pb-8 lg:pb-0 border-b border-white/10 lg:border-b-0">
@@ -1745,7 +1636,7 @@ export default function Home() {
                 </p>
               </div>
 
-              {/* Social Icons - Single horizontal row, never wrapping */}
+              {/* Social Icons */}
               <div className="mt-8 flex flex-wrap items-center justify-start gap-3">
                 <a
                   href="https://www.linkedin.com/company/onspotglobal/"
@@ -1826,9 +1717,7 @@ export default function Home() {
                 <button
                   onClick={() => toggleFooterSection("navigation")}
                   className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left"
-                  style={{
-                    padding: "clamp(4px, 0.6vh, 8px) 0",
-                  }}
+                  style={{ padding: "clamp(4px, 0.6vh, 8px) 0" }}
                   data-testid="footer-accordion-navigation"
                 >
                   <h3 className="text-sm sm:text-base font-semibold text-white tracking-wide text-left">
@@ -1923,9 +1812,7 @@ export default function Home() {
                 <button
                   onClick={() => toggleFooterSection("company")}
                   className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left"
-                  style={{
-                    padding: "clamp(4px, 0.6vh, 8px) 0",
-                  }}
+                  style={{ padding: "clamp(4px, 0.6vh, 8px) 0" }}
                   data-testid="footer-accordion-company"
                 >
                   <h3 className="text-sm sm:text-base font-semibold text-white tracking-wide text-left">
@@ -2083,9 +1970,7 @@ export default function Home() {
                 <button
                   onClick={() => toggleFooterSection("connect")}
                   className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left"
-                  style={{
-                    padding: "clamp(4px, 0.6vh, 8px) 0",
-                  }}
+                  style={{ padding: "clamp(4px, 0.6vh, 8px) 0" }}
                   data-testid="footer-accordion-connect"
                 >
                   <h3 className="text-sm sm:text-base font-semibold text-white tracking-wide text-left">

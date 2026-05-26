@@ -1,0 +1,174 @@
+Continue restructuring the homepage section order and complete the cleanup.
+
+Final Homepage Section Order must be:
+
+1. Hero
+2. Trusted By / Client Logos
+3. Work Differently
+4. The Superhuman System
+5. AI + Human Advantage
+6. The Experience
+7. Stats
+8. Transformation Stories / Testimonials
+9. The Proof / Team Profiles
+10. Connected Intelligence / Integrations
+11. Choose Your Path
+12. Our Philosophy / Why Partner with OnSpot
+13. Final CTA — “Ready to Become Superhuman?”
+14. Footer
+
+--------------------------------------------------
+IMPORTANT CLEANUP
+--------------------------------------------------
+
+Please make sure the following are fixed after reordering:
+
+1. Stats section
+- The stats section with:
+  - 72hrs
+  - 500+
+  - 98%
+  - 2,000+
+  - Philippine-based
+- should appear only once.
+- It should appear after “The Experience”.
+- It should not remain inside the Hero section.
+- It should not remain inside “The Experience”.
+- Remove duplicate stats if any exist.
+
+2. Trusted By section
+- Move it directly after Hero.
+- Use the static client logo row/grid only.
+- No carousel.
+- No arrows.
+- No pagination dots.
+- No autoplay.
+- No zoom animation.
+
+3. Work Differently section
+- Move it directly after Trusted By.
+- Keep the two cards:
+  - For Companies
+  - For Professionals
+
+4. Hero section
+- Hero stays first.
+- Do not place stats inside the hero anymore for this final order.
+- Keep current hero content and styling unless spacing needs minor cleanup.
+
+5. The Experience section
+- The Experience should only include:
+  - heading
+  - subtitle
+  - Vanessa AI Assistant mockup
+  - Task Flow
+  - Managed Team
+  - Live KPIs
+- Do not include the 72hrs stats strip inside it.
+
+6. Footer
+- Footer remains last.
+- Do not move footer above any content section.
+
+--------------------------------------------------
+SECTION IMPORT ORDER / JSX ORDER
+--------------------------------------------------
+
+Please update the actual JSX/render order in the homepage file.
+
+Example structure:
+
+<>
+  <HeroSection />
+  <TrustedBySection />
+  <WorkDifferentlySection />
+  <SuperhumanSystemSection />
+  <AIHumanAdvantageSection />
+  <ExperienceSection />
+  <StatsSection />
+  <TransformationStoriesSection />
+  <ProofSection />
+  <ConnectedIntelligenceSection />
+  <ChooseYourPathSection />
+  <PhilosophySection />
+  <FinalCTASection />
+  <Footer />
+</>
+
+Use the actual component names from the project.
+
+--------------------------------------------------
+SPACING BETWEEN SECTIONS
+--------------------------------------------------
+
+After reordering, check section transitions:
+- No giant empty gaps.
+- No sections overlapping.
+- No duplicated top/bottom padding from moved sections.
+- Gradient backgrounds should transition cleanly.
+- Light sections and dark sections should not have awkward hard cuts unless intentional.
+
+--------------------------------------------------
+ANCHORS / NAV LINKS
+--------------------------------------------------
+
+If any nav links or buttons scroll to section IDs, confirm they still point to the correct section after reordering.
+
+For example:
+- Trusted By anchor still points to Trusted By.
+- Work Differently anchor still points to Work Differently.
+- Experience anchor still points to Experience.
+- Choose Your Path CTA still points to the correct path/CTA section.
+
+--------------------------------------------------
+RESPONSIVE CHECK
+--------------------------------------------------
+
+Please verify after reordering:
+- Desktop layout looks correct.
+- Laptop layout does not have excessive spacing.
+- Tablet sections stack correctly.
+- Mobile sections stack correctly.
+- No horizontal scrolling.
+- Footer stays at the bottom.
+
+--------------------------------------------------
+EXPECTED RESULT
+--------------------------------------------------
+
+The homepage should now follow this complete story arc:
+
+Attention:
+Hero
+
+Trust:
+Trusted By
+
+Relevance:
+Work Differently
+
+Understanding:
+The Superhuman System
+AI + Human Advantage
+
+Belief:
+The Experience
+
+Proof:
+Stats
+Transformation Stories
+The Proof
+
+Fit:
+Connected Intelligence
+
+Decision:
+Choose Your Path
+
+Conviction:
+Our Philosophy / Why Partner with OnSpot
+
+Action:
+Final CTA — “Ready to Become Superhuman?”
+
+Then Footer.
