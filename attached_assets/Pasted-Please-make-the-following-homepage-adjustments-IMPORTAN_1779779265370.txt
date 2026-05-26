@@ -1,0 +1,280 @@
+Please make the following homepage adjustments.
+
+IMPORTANT:
+- Keep the existing OnSpot design style.
+- Do not redesign the full page.
+- Make all changes responsive for large desktop, laptop, tablet, and mobile.
+- Avoid fixed pixel hacks that only work on one screen size.
+
+==================================================
+1. HERO BADGE: “Work Differently”
+==================================================
+
+Current issue:
+The “Work Differently” badge is too small/subtle and does not feel like a highlighted part of the hero section.
+
+Goal:
+Adjust the badge spacing and text size so it is recognizable as a hero highlight, but not oversized.
+
+Requirements:
+- Keep the existing pill/badge style.
+- Increase the font size slightly.
+- Add a little more padding.
+- Keep it centered above the hero title.
+- Do not make it huge.
+
+Suggested styling:
+
+className="
+  inline-flex items-center gap-2
+  rounded-full border border-white/20
+  bg-white/8 px-6 py-3
+  text-sm sm:text-base
+  font-medium text-white/85
+  backdrop-blur-md
+"
+
+If the dot icon exists, keep it but make sure it is vertically centered.
+
+==================================================
+2. HERO TAGLINE HEADLINE SIZE
+==================================================
+
+Current issue:
+“One System. Your unfair Advantage.” needs to feel like a headline, but it should not overpower the main hero title.
+
+Goal:
+Make it more visually important than the second tagline line, but still clearly secondary to:
+“AI first. Humans when it matters.”
+
+Text format should remain:
+
+Line 1:
+“One System. Your unfair Advantage.”
+
+Line 2:
+“Marketplace speed, BPO quality, and a talent pool built for the work AI creates — not just the work it replaces.”
+
+Suggested styling:
+
+Wrapper:
+className="
+  mx-auto mt-8 max-w-5xl text-center
+"
+
+Line 1:
+className="
+  block text-xl sm:text-2xl md:text-3xl
+  font-semibold tracking-wide
+  text-white/85
+"
+
+Line 2:
+className="
+  mt-3 block
+  text-base sm:text-lg md:text-xl
+  leading-relaxed
+  text-white/55
+"
+
+Important:
+- Do not make line 1 close to the main title size.
+- It should read as a supporting headline only.
+
+==================================================
+3. STRETCH HERO SECTION VERTICALLY
+==================================================
+
+Current issue:
+When scrolling down, the hero violet background ends too early.
+
+Goal:
+Extend the hero section vertically so when the user scrolls down, they can still see the violet hero background before the next light section starts.
+
+Requirements:
+- The hero should have more vertical space below the CTA buttons.
+- Do not make the visible hero content feel too low or awkward.
+- The extra violet space should be below the buttons.
+- This extra space will contain the stats strip later, but the stats should not be visible in the initial hero viewport.
+
+Suggested hero section structure:
+
+<section className="hero-section bg-dark-violet ...">
+  <div className="hero-main-content min-h-screen flex flex-col justify-center">
+    Badge
+    Title
+    Tagline
+    Buttons
+  </div>
+
+  <div className="hero-lower-content">
+    Stats strip
+  </div>
+</section>
+
+Suggested spacing:
+- Main hero content: min-h-[calc(100vh-72px)] or min-h-screen depending on navbar
+- Lower hero content: pt-20 pb-20 or py-20
+- Overall hero keeps the same violet background throughout
+
+Avoid placing the next section immediately after the CTA buttons.
+
+==================================================
+4. MOVE / ADD 72HRS STATS STRIP INTO LOWER HERO
+==================================================
+
+Current issue:
+The stats strip is currently in the Experience section / elsewhere. We want it inside the stretched violet hero area, but lower down so it is only seen after scrolling.
+
+Goal:
+Place the stats strip with:
+- 72hrs / AVG. TIME TO HIRE
+- 500+ / GLOBAL CLIENTS
+- 98% / CLIENT RETENTION
+- 2,000+ / TALENTS PLACED
+- Philippine flag / PHILIPPINE-BASED
+
+inside the lower part of the hero section.
+
+Important:
+- Do not show this stats strip in the initial visible hero area with the title and buttons.
+- It should appear only when the user scrolls down.
+- Do not duplicate the stats if it already exists elsewhere. Move it into the lower hero section.
+- Remove the old instance if needed.
+
+Placement:
+- Below the hero CTA buttons, after enough vertical spacing.
+- Still inside the same violet hero background.
+- Before the next light/gradient section starts.
+
+Suggested structure:
+
+<section className="hero-section ...">
+  <div className="hero-main-content min-h-[calc(100vh-72px)] flex flex-col justify-center">
+    hero content
+  </div>
+
+  <div className="hero-stats-area pb-20">
+    stats strip
+  </div>
+</section>
+
+Stats color/style:
+Since this is now on the violet hero background, style it to match the hero.
+
+Suggested stats container:
+className="
+  w-full border-y border-white/10
+  bg-white/[0.04]
+  backdrop-blur-md
+"
+
+Suggested inner wrapper:
+className="
+  mx-auto grid w-full max-w-[1800px]
+  grid-cols-1 sm:grid-cols-2 lg:grid-cols-5
+  px-6 sm:px-10 lg:px-16
+"
+
+Stat item:
+className="
+  flex min-h-[150px] flex-col items-center justify-center
+  border-white/10 px-6 py-8 text-center
+  border-b sm:border-r lg:border-b-0
+  last:border-r-0
+"
+
+Stat number:
+className="
+  text-5xl md:text-6xl font-bold
+  text-white
+"
+
+Optional subtle gradient for numbers:
+className="
+  text-5xl md:text-6xl font-bold
+  bg-gradient-to-r from-white to-[#b9c3ff]
+  bg-clip-text text-transparent
+"
+
+Stat label:
+className="
+  mt-3 text-xs font-semibold uppercase tracking-[0.25em]
+  text-white/45
+"
+
+Philippine flag:
+- Keep visible and properly sized.
+- Use the same label style.
+
+Responsive:
+- Desktop: 5 columns in one row.
+- Tablet: 2 columns.
+- Mobile: 1 column.
+- No horizontal scrolling.
+
+==================================================
+5. FOOTER COLOR: MATCH NAVIGATION BAR
+==================================================
+
+Current issue:
+The footer is too dark compared to the navigation bar. The navbar is a lighter dark violet/navy, while the footer is much darker.
+
+Goal:
+Change the footer background to match the navigation bar color exactly or as close as possible.
+
+Important:
+- Do not use the very dark footer color currently applied.
+- Do not use a bright purple/blue gradient.
+- Copy the navbar background class/color directly if possible.
+
+Required approach:
+Inspect the navbar/header class or CSS and reuse its exact background on the footer.
+
+If navbar uses a solid color:
+- Use the same exact hex on the footer.
+
+If navbar uses a subtle gradient:
+- Use the same exact gradient classes on the footer.
+
+Examples:
+If navbar uses:
+bg-[#34358f]
+
+Then footer should use:
+bg-[#34358f]
+
+If navbar uses:
+bg-gradient-to-r from-[#34358f] via-[#303080] to-[#3a2b88]
+
+Then footer should use the exact same gradient.
+
+Footer text should remain readable:
+- Logo: white navbar logo
+- Headings: text-white
+- Links/body/contact: text-white/70 hover:text-white
+- Divider: border-white/10
+- Social icons: bg-white/10 border-white/15 text-white/75 hover:bg-white/15
+
+Also remove any footer-specific background overrides that make it too dark:
+- bg-[#120a4a]
+- bg-[#160b55]
+- bg-[#1b0d63]
+- from-[#120a4a]
+- via-[#1b0d63]
+- to-[#2b0f7a]
+- any custom “footer dark” gradient
+
+Expected footer result:
+The footer should visually match the navbar’s dark violet tone, not look significantly darker than the navbar.
+
+==================================================
+EXPECTED FINAL RESULT
+==================================================
+
+- “Work Differently” badge is slightly larger and more noticeable.
+- “One System. Your unfair Advantage.” is a clear supporting headline but not overpowering.
+- Hero section is taller, with extra violet space below the buttons.
+- The 72hrs / 500+ / 98% / 2,000+ / Philippine-based stats strip appears in the lower hero area and is only visible after scrolling.
+- Stats strip uses colors that match the violet hero background.
+- Footer color matches the navigation bar’s dark violet/navy color instead of being too dark.

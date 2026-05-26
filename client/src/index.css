@@ -904,19 +904,6 @@ body.has-floating-bottom-right {
     }
   }
 
-  /* OnSpot Footer - dark navy/violet matching navbar perceived color */
-  .onspot-footer {
-    background: linear-gradient(135deg, #1a1a6e 0%, #26137a 50%, #360f8a 100%);
-    position: relative;
-  }
-
-  .onspot-footer::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: transparent;
-    pointer-events: none;
-  }
 
   /* Coming Soon Page - Futuristic Animations */
   @keyframes gradient-shift {

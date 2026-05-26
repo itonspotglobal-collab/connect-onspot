@@ -376,7 +376,7 @@ export default function Home() {
   return (
     <div>
       {/* Hero Section */}
-      <div className="relative overflow-hidden min-h-[80vh] sm:min-h-screen flex flex-col hero-investor">
+      <div className="relative overflow-hidden flex flex-col hero-investor">
         {/* Elegant Gradient Overlay for Depth */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/30"></div>
 
@@ -386,13 +386,13 @@ export default function Home() {
           <div className="absolute bottom-1/3 right-1/4 w-[500px] h-[500px] bg-gradient-radial from-blue-500/10 to-transparent rounded-full blur-3xl animate-slow-spin"></div>
         </div>
 
-        {/* Main content — vertically centred in the available space above the stats band */}
-        <div className="flex-1 flex items-center justify-center relative z-20 px-4 sm:px-6 py-16 sm:py-24">
+        {/* Main content — fills the full viewport height above the stats band */}
+        <div className="min-h-[calc(100vh-72px)] flex items-center justify-center relative z-20 px-4 sm:px-6 py-16 sm:py-24">
           <div className="container mx-auto text-center">
             <div className="max-w-5xl mx-auto space-y-5 sm:space-y-8 lg:space-y-12">
               {/* Ultra-minimal Badge */}
               <div
-                className="hero-fade-up inline-flex items-center gap-2.5 text-xs sm:text-sm font-medium text-white/90 tracking-wide bg-white/5 backdrop-blur-xl px-4 sm:px-5 py-2 sm:py-2.5 rounded-full border border-white/20"
+                className="hero-fade-up inline-flex items-center gap-2.5 text-sm sm:text-base font-medium text-white/85 tracking-wide bg-white/8 backdrop-blur-md px-6 py-3 rounded-full border border-white/20"
                 data-testid="badge-superhuman-bpo"
               >
                 <div className="w-2 h-2 bg-white/60 rounded-full"></div>
@@ -411,16 +411,14 @@ export default function Home() {
               </div>
 
               {/* Supporting statement */}
-              <div className="hero-fade-up-delay">
-                <p className="text-base sm:text-lg md:text-xl font-light leading-relaxed tracking-wide px-2 max-w-2xl mx-auto">
-                  <span className="block font-medium text-white/80">
-                    One System. Your unfair Advantage.
-                  </span>
-                  <span className="block mt-2 text-white/60">
-                    Marketplace speed, BPO quality, and a talent pool built for
-                    the work AI creates — not just the work it replaces.
-                  </span>
-                </p>
+              <div className="hero-fade-up-delay mx-auto mt-8 max-w-5xl text-center">
+                <span className="block text-xl sm:text-2xl md:text-3xl font-semibold tracking-wide text-white/85">
+                  One System. Your unfair Advantage.
+                </span>
+                <span className="mt-3 block text-base sm:text-lg md:text-xl leading-relaxed text-white/55">
+                  Marketplace speed, BPO quality, and a talent pool built for
+                  the work AI creates — not just the work it replaces.
+                </span>
               </div>
 
               {/* CTAs */}
@@ -459,6 +457,39 @@ export default function Home() {
                 </Button>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* ── Stats strip — inside hero, visible on scroll ── */}
+        <div className="relative z-20 w-full border-y border-white/10 bg-white/[0.04] backdrop-blur-md pb-4">
+          <div className="mx-auto grid w-full max-w-[1800px] grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 px-6 sm:px-10 lg:px-16">
+            {[
+              { value: "72hrs", label: "AVG. TIME TO HIRE" },
+              { value: "500+", label: "GLOBAL CLIENTS" },
+              { value: "98%", label: "CLIENT RETENTION" },
+              { value: "2,000+", label: "TALENTS PLACED" },
+              { flag: true, label: "PHILIPPINE-BASED" },
+            ].map((stat, i, arr) => (
+              <div
+                key={stat.label}
+                className={[
+                  "flex min-h-[150px] flex-col items-center justify-center px-6 py-8 text-center",
+                  i < arr.length - 1 ? "border-b border-white/10 sm:border-b-0 sm:border-r" : "",
+                  i === 4 ? "col-span-1 sm:col-span-2 lg:col-span-1" : "",
+                ].join(" ")}
+              >
+                {stat.flag ? (
+                  <span className="text-5xl md:text-6xl leading-none">🇵🇭</span>
+                ) : (
+                  <span className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-white to-[#b9c3ff] bg-clip-text text-transparent leading-none">
+                    {stat.value}
+                  </span>
+                )}
+                <span className="mt-3 text-xs font-semibold uppercase tracking-[0.25em] text-white/45">
+                  {stat.label}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -1558,44 +1589,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Stats strip — full-width, glass style matching Experience gradient */}
-          <div className="relative mt-12 left-1/2 -translate-x-1/2 w-screen bg-gradient-to-r from-white/20 via-white/30 to-white/20 border-y border-white/40 backdrop-blur-xl shadow-[0_20px_60px_rgba(80,80,180,0.10)]">
-            <div className="mx-auto w-full max-w-[1800px] px-6 sm:px-10 lg:px-16">
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
-                {[
-                  { value: "72hrs", label: "AVG. TIME TO HIRE" },
-                  { value: "500+", label: "GLOBAL CLIENTS" },
-                  { value: "98%", label: "CLIENT RETENTION" },
-                  { value: "2,000+", label: "TALENTS PLACED" },
-                  { flag: true, label: "PHILIPPINE-BASED" },
-                ].map((stat, i, arr) => (
-                  <div
-                    key={stat.label}
-                    className={[
-                      "flex flex-col items-center justify-center px-6 py-8 text-center",
-                      i < arr.length - 1
-                        ? "border-b border-white/30 sm:border-b-0 sm:border-r"
-                        : "",
-                      i === 4 ? "col-span-2 sm:col-span-1" : "",
-                    ].join(" ")}
-                  >
-                    {stat.flag ? (
-                      <span className="text-5xl md:text-6xl leading-none">
-                        🇵🇭
-                      </span>
-                    ) : (
-                      <span className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent leading-none">
-                        {stat.value}
-                      </span>
-                    )}
-                    <span className="mt-3 text-xs font-semibold uppercase tracking-[0.25em] text-slate-700/80 dark:text-slate-300">
-                      {stat.label}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
