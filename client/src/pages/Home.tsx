@@ -915,14 +915,13 @@ export default function Home() {
             {/* Brand Section */}
             <div className="pb-8 lg:pb-0 border-b border-white/10 lg:border-b-0">
               <div className="space-y-6 sm:space-y-8 relative flex flex-col items-start transition-all duration-300">
-                <div className="relative inline-block">
+                <div className="relative inline-flex h-10 items-center">
                   <img
                     src={onspotLogo}
                     alt="OnSpot"
-                    className="h-auto w-[135px] sm:w-[150px] lg:w-[160px] object-contain"
+                    className="h-10 w-auto object-contain object-left"
                     data-testid="footer-logo"
                   />
-                  <div className="absolute -inset-2 bg-gradient-to-r from-violet-500/20 to-blue-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
                 </div>
 
                 <p className="text-xs sm:text-sm text-white/75 leading-relaxed max-w-md text-left transition-all duration-300">
