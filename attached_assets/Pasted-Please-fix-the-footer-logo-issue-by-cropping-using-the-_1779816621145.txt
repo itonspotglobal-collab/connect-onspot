@@ -1,0 +1,62 @@
+Please fix the footer logo issue by cropping/using the visible logo artwork, not the full transparent square canvas.
+
+Problem found:
+The uploaded logo file “Full Logo White Version 1(1).png” is 1200x1200, but the actual visible OnSpot logo only occupies a horizontal strip in the middle. There is a huge amount of transparent/empty space above and below the logo.
+
+That is why:
+- When we size it by width, it creates a huge vertical gap.
+- When we size it by height, the visible logo becomes too small.
+- CSS alone is not giving the correct result because the image canvas has too much transparent padding.
+
+Goal:
+Create/use a cropped version of the logo for the footer and navbar if needed.
+
+Required fix:
+1. Crop the logo image to the visible artwork bounds.
+2. Save it as a new asset, for example:
+   /public/assets/logos/onspot-logo-white-cropped.png
+
+Approximate visible bounds:
+- Original image size: 1200 x 1200
+- Visible logo area is roughly:
+  x: 84 to 1097
+  y: 444 to 761
+
+Crop around the visible logo with a little safe padding.
+
+Suggested crop:
+left: 60
+top: 420
+right: 1120
+bottom: 790
+
+This should produce a wide logo image instead of a square logo image.
+
+3. Use the cropped logo asset in the footer.
+
+Footer logo:
+<img
+  src="/assets/logos/onspot-logo-white-cropped.png"
+  alt="OnSpot"
+  className="block h-auto w-[160px] sm:w-[175px] lg:w-[190px] object-contain"
+/>
+
+4. Set normal spacing below the logo:
+<p className="mt-5 max-w-[340px] text-white/75">
+  ...
+</p>
+
+Important:
+- Do NOT keep using the uncropped 1200x1200 logo file in the footer.
+- Do NOT try to fix this with huge negative margins.
+- Do NOT set the logo to tiny sizes.
+- Do NOT change footer color.
+- Do NOT change footer layout.
+- Only replace the footer logo image source with the cropped logo asset and use normal spacing.
+
+Optional:
+If the navbar currently looks good, do not change the navbar logo.
+Only update the footer logo source.
+
+Expected result:
+The footer logo should appear normal-sized and the description text should sit close underneath it with no huge gap.

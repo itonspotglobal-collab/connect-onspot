@@ -36,6 +36,7 @@ import {
 import { Link } from 'wouter';
 import { useVanessa } from '@/contexts/VanessaContext';
 import onspotLogo from '@assets/onspot-logo-white.png';
+import onspotLogoCropped from '@assets/onspot-logo-cropped.png';
 
 import FlashLogo from '../assets/logos/Flash.png';
 import FutureEVLogo from '../assets/logos/FutureEV.png';
@@ -915,14 +916,12 @@ export default function Home() {
             {/* Brand Section */}
             <div className="pb-8 lg:pb-0 border-b border-white/10 lg:border-b-0">
               <div className="space-y-6 sm:space-y-8 relative flex flex-col items-start transition-all duration-300">
-                <div className="flex h-14 items-center justify-start overflow-hidden">
-                  <img
-                    src={onspotLogo}
-                    alt="OnSpot"
-                    className="block h-12 w-auto object-contain object-left"
-                    data-testid="footer-logo"
-                  />
-                </div>
+                <img
+                  src={onspotLogoCropped}
+                  alt="OnSpot"
+                  className="block h-auto w-[160px] sm:w-[175px] lg:w-[190px] object-contain"
+                  data-testid="footer-logo"
+                />
 
                 <p className="text-xs sm:text-sm text-white/75 leading-relaxed max-w-md text-left transition-all duration-300">
                   OnSpot is a technology company and hybrid marketplace–BPO
