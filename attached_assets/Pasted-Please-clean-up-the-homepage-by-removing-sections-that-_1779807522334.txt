@@ -1,0 +1,190 @@
+Please clean up the homepage by removing sections that are making the page feel too long and unfocused.
+
+Goal:
+Keep only the key sections that tell a simple, direct story:
+Hero → Trust → Audience Paths → Main CTA Choices → Final CTA
+
+Do not redesign the remaining sections unless minor spacing cleanup is needed.
+
+==================================================
+SECTIONS TO KEEP
+==================================================
+
+Keep these sections only, in this order:
+
+1. Hero Section
+2. Trusted By Section
+3. Work Differently Section
+4. Choose Your Path Section
+5. Ready to Become Superhuman Section
+6. Footer
+
+The homepage render order should be:
+
+<HeroSection />
+<TrustedBySection />
+<WorkDifferentlySection />
+<ChooseYourPathSection />
+<FinalCTASection />
+<Footer />
+
+Use the actual component names in the project.
+
+==================================================
+SECTIONS TO REMOVE
+==================================================
+
+Remove these sections from the homepage:
+
+1. The Superhuman System
+2. AI + Human Advantage
+3. The Experience
+4. Transformation Stories
+5. The Proof
+6. Connected Intelligence
+7. Our Philosophy / Why Partner with OnSpot
+
+Important:
+- Remove these from the homepage render order.
+- Do not leave them hidden with `display: none`.
+- Do not leave empty wrapper divs.
+- Do not leave large spacing gaps where they used to be.
+- If these components are still used elsewhere, do not delete the component files yet. Just stop rendering them on the homepage.
+- If they are only imported for the homepage, remove unused imports.
+
+==================================================
+SECTION ORDER DETAILS
+==================================================
+
+1. Hero Section
+Keep current hero section first.
+
+Hero should include:
+- Work Differently badge
+- Main headline
+- Supporting tagline
+- CTA buttons
+
+If the 72hrs stats strip is currently inside the hero, remove it from the hero for this cleanup unless it is part of one of the kept sections. The simplified homepage should not include a separate Stats section.
+
+2. Trusted By Section
+Place directly after Hero.
+
+Trusted By should remain:
+- static client logo row/grid
+- no carousel animation
+- no arrows
+- no dots
+- no autoplay
+
+3. Work Differently Section
+Place directly after Trusted By.
+
+Keep the two-card audience sorting section:
+- For Companies
+- For Professionals
+
+Use the updated compact card copy:
+For Companies:
+- Headline: “Hire faster. Spend less.”
+- Benefits:
+  - Days, not months
+  - Hire your way
+  - Skip the middlemen
+  - 50+ countries
+
+For Professionals:
+- Headline: “Real work. Real growth.”
+- Benefits:
+  - Steady pipeline
+  - Top global brands
+  - Your terms
+  - Pure merit
+
+4. Choose Your Path Section
+Place directly after Work Differently.
+
+This should act as the main decision section for users to choose what they want:
+- Launch AI Assistant
+- Get Managed Team
+- Find Work / talent path, if currently available
+
+Keep current styling unless spacing needs adjustment.
+
+5. Ready to Become Superhuman Section
+Place directly after Choose Your Path.
+
+This should be the final CTA before the footer.
+
+Use the existing final CTA section if it already exists.
+
+6. Footer
+Footer remains last.
+
+Keep the footer background/color adjustments already made, unless the current footer color is wrong. Footer should still match the navbar color as requested previously.
+
+==================================================
+CLEANUP REQUIREMENTS
+==================================================
+
+After removing sections:
+
+- Remove unused imports from the homepage file.
+- Remove unused section arrays/config objects if they only exist for removed sections.
+- Remove obsolete anchor links if they point to removed sections.
+- Update any navigation or CTA scroll links that target removed sections.
+- Make sure no buttons link to missing IDs.
+- Make sure there are no console errors.
+- Make sure the page still builds successfully.
+
+==================================================
+SPACING CLEANUP
+==================================================
+
+Because many sections are being removed, check the vertical spacing between remaining sections.
+
+Expected flow:
+Hero should transition cleanly into Trusted By.
+Trusted By should transition cleanly into Work Differently.
+Work Differently should transition cleanly into Choose Your Path.
+Choose Your Path should transition cleanly into Ready to Become Superhuman.
+Ready to Become Superhuman should transition cleanly into Footer.
+
+Avoid:
+- huge empty vertical gaps
+- duplicated padding
+- hard cuts that look accidental
+- overlapping sections
+- hidden old sections taking space
+
+==================================================
+RESPONSIVE CHECK
+==================================================
+
+Verify the cleaned homepage on:
+- large desktop
+- laptop
+- tablet
+- mobile
+
+Requirements:
+- No horizontal scrolling.
+- Sections stack properly.
+- Cards remain readable.
+- Footer remains last.
+- CTA buttons are accessible and responsive.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The homepage should now feel simpler and more focused:
+
+1. Hero catches attention.
+2. Trusted By establishes credibility.
+3. Work Differently sorts visitors into companies/professionals.
+4. Choose Your Path gives them clear next actions.
+5. Ready to Become Superhuman closes with one strong CTA.
+6. Footer ends the page.
+
+Remove the extra explanation/proof sections for now so the homepage tells a cleaner story.
