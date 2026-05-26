@@ -919,7 +919,7 @@ export default function Home() {
                   <img
                     src={onspotLogo}
                     alt="OnSpot"
-                    className="h-auto w-[150px] sm:w-[175px] lg:w-[190px] object-contain"
+                    className="h-auto w-[135px] sm:w-[150px] lg:w-[160px] object-contain"
                     data-testid="footer-logo"
                   />
                   <div className="absolute -inset-2 bg-gradient-to-r from-violet-500/20 to-blue-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>

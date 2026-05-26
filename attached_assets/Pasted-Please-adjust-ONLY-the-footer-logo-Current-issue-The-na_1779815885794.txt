@@ -1,0 +1,82 @@
+Please adjust ONLY the footer logo.
+
+Current issue:
+The navbar logo looks good, but the footer logo does not look right. It appears oversized/awkward compared to the previous footer logo layout.
+
+Important:
+- Do NOT change the footer background color.
+- Do NOT change footer text colors.
+- Do NOT change footer layout, columns, spacing, or content.
+- Do NOT change the navbar logo.
+- Only fix the footer OnSpot logo display.
+
+Goal:
+Make the footer logo look balanced like the previous footer version, while still using the updated white OnSpot logo asset.
+
+Use the same white logo asset that works in the navbar, but size it differently for the footer.
+
+Footer logo requirements:
+- Keep it white.
+- Keep the correct aspect ratio.
+- Do not stretch or distort it.
+- Do not make it overly large.
+- Align it with the footer brand text below.
+- It should look clean and proportional inside the brand column.
+
+Suggested footer logo styling:
+
+```tsx
+<img
+  src="/path-to-white-onspot-logo.png"
+  alt="OnSpot"
+  className="
+    h-auto
+    w-[150px]
+    sm:w-[165px]
+    lg:w-[175px]
+    object-contain
+  "
+/>
+
+If the logo still feels too large, use:
+
+className="
+  h-auto
+  w-[135px]
+  sm:w-[150px]
+  lg:w-[160px]
+  object-contain
+"
+
+Please check the footer logo wrapper as well. It should not force a strange height or width.
+
+Footer logo wrapper should be something like:
+
+<a className="inline-flex items-center shrink-0">
+  <img ... />
+</a>
+
+or:
+
+<div className="inline-flex items-center shrink-0">
+  <img ... />
+</div>
+
+Remove footer-only logo classes that may be causing the issue, such as:
+
+h-20
+h-24
+w-[250px]
+w-[300px]
+scale-*
+object-cover
+fixed height and fixed width together
+max-w-none
+huge padding around the logo
+negative margins
+translate-x / translate-y
+
+If the uploaded logo image has a lot of transparent padding, do NOT compensate with extreme CSS. Instead, keep the displayed logo size visually around the same size as the previous footer logo.
+
+Expected result:
+The navbar logo stays exactly as-is. The footer logo becomes smaller, balanced, and aligned with the footer brand block, similar to how the previous footer logo looked.
