@@ -98,19 +98,36 @@ type PostSummary = {
 };
 
 function TrustedLogos() {
+  const [isPaused, setIsPaused] = useState(false);
+  // Duplicate so the strip loops seamlessly (slide left by 50%)
+  const doubled = [...trustedBrands, ...trustedBrands];
+
   return (
-    <div className="mt-10 grid grid-cols-2 sm:grid-cols-3 items-center justify-items-center gap-x-10 gap-y-10 xl:gap-x-14">
-      {trustedBrands.map(({ name, logo }) => (
-        <div key={name} className="flex items-center justify-center w-full">
-          <img
-            src={logo}
-            alt={name}
-            loading="lazy"
-            className="h-auto max-h-16 max-w-[200px] w-auto object-contain"
-            data-testid={`brand-logo-${name.toLowerCase().replace(/\s+/g, "-")}`}
-          />
-        </div>
-      ))}
+    <div
+      className="mt-10 w-full overflow-hidden"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      aria-label="Trusted client logos"
+    >
+      <div
+        className={`flex items-center gap-10 animate-logo-marquee${isPaused ? " paused" : ""}`}
+        style={{ width: "max-content" }}
+      >
+        {doubled.map(({ name, logo }, i) => (
+          <div
+            key={`${name}-${i}`}
+            className="flex shrink-0 min-w-[140px] items-center justify-center"
+          >
+            <img
+              src={logo}
+              alt={name}
+              loading="lazy"
+              className="h-auto max-h-14 max-w-[160px] w-auto object-contain"
+              data-testid={i < trustedBrands.length ? `brand-logo-${name.toLowerCase().replace(/\s+/g, "-")}` : undefined}
+            />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

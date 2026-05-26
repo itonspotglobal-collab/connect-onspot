@@ -1,0 +1,174 @@
+Please fix the Trusted By section. The carousel was accidentally removed, but it should remain.
+
+Current issue:
+The Trusted By section is now a static logo grid on the left side beside Latest Insights. This is incorrect.
+
+Goal:
+Restore the Trusted By logo carousel and keep the Featured Insights section.
+
+IMPORTANT:
+- Do NOT use a static grid for Trusted By.
+- Do NOT remove the Featured Insights card.
+- Keep the homepage order:
+  1. Hero
+  2. Trusted By carousel + Featured Insights
+  3. Work Differently
+  4. Choose Your Path
+  5. Ready to Become Superhuman
+  6. Footer
+
+==================================================
+RESTORE TRUSTED BY CAROUSEL
+==================================================
+
+The Trusted By section should be a carousel again.
+
+Restore or recreate the carousel behavior:
+- Logos should move/slide automatically.
+- User should be able to manually navigate if the previous version had arrows/buttons.
+- Use colored logos.
+- Keep the carousel smooth.
+- Keep the logos readable.
+- Do not use a static 2-row grid.
+
+If there was an existing carousel component before, reuse it instead of rebuilding a static grid.
+
+Look for previous code/components such as:
+- TrustedByCarousel
+- LogoCarousel
+- ClientLogoCarousel
+- trustedLogos carousel logic
+- currentIndex
+- nextSlide
+- prevSlide
+- autoplay useEffect
+
+Bring that carousel back.
+
+==================================================
+LAYOUT WITH FEATURED INSIGHTS
+==================================================
+
+Keep the new Featured Insights section, but do not replace the carousel with a static logo grid.
+
+Use a two-column desktop layout:
+
+Left column:
+- TRUSTED BY label
+- Trusted By headline
+- Trusted By carousel
+
+Right column:
+- LATEST INSIGHTS label
+- Featured insights heading
+- Featured blog/news card
+
+Suggested wrapper:
+
+className="
+  mx-auto grid w-full max-w-[1600px]
+  grid-cols-1 gap-12
+  px-6 sm:px-8 lg:px-12 xl:px-16
+  xl:grid-cols-[0.9fr_1.1fr]
+  items-start
+"
+
+On mobile/tablet:
+- Stack columns.
+- Trusted By carousel first.
+- Featured Insights second.
+
+==================================================
+TRUSTED BY CAROUSEL STYLE
+==================================================
+
+The carousel should have more room than before.
+
+Carousel area:
+className="
+  mt-12 w-full overflow-hidden
+"
+
+If using a sliding logo row:
+className="
+  flex items-center gap-10
+"
+
+Logo card/wrapper:
+className="
+  flex min-w-[180px] items-center justify-center
+"
+
+Logo image:
+className="
+  h-auto max-h-16 max-w-[200px] object-contain
+"
+
+If using the center-highlight carousel:
+- Keep the active/center highlight behavior if already implemented.
+- Do not convert it to static grid.
+- Make sure it fits inside the left column without overflowing.
+- If the left column is too narrow for 5 visible logos, show 3 visible logos on desktop inside this two-column layout.
+
+==================================================
+CAROUSEL FUNCTIONALITY
+==================================================
+
+Autoplay:
+- Carousel should move forward automatically.
+- Do not bounce back and forth unless the user clicks previous.
+- Use nextSlide for autoplay only.
+
+Manual navigation:
+- Keep previous/next controls if already existing.
+- Place arrows correctly on left and right sides of the carousel.
+
+Looping:
+- When it reaches the end, continue from the first logo smoothly.
+
+Do not use:
+- static logo grid
+- plain list only
+- no movement
+- no carousel state
+
+==================================================
+FEATURED INSIGHTS
+==================================================
+
+Keep the Featured Insights section as currently shown on the right.
+
+It should continue to show:
+- LATEST INSIGHTS label
+- “Featured insights from OnSpot.”
+- Featured article card
+- article image
+- category pill
+- title
+- excerpt
+- metadata if available
+- Read Article link
+
+Use real Insights page data if already connected.
+
+==================================================
+CLEANUP
+==================================================
+
+Remove or replace the current static Trusted By logo grid.
+
+Make sure there is only one Trusted By section.
+
+Make sure there is only one Featured Insights section.
+
+Do not re-add removed homepage sections.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The section should look like this on desktop:
+- Left side: Trusted By text and a working logo carousel.
+- Right side: Featured Insights news card.
+
+The Trusted By logos should no longer be a static grid. They should move as a carousel again.

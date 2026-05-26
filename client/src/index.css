@@ -775,6 +775,19 @@ body.has-floating-bottom-right {
     animation: shimmer 3s linear infinite;
   }
 
+  @keyframes logo-marquee {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+
+  .animate-logo-marquee {
+    animation: logo-marquee 22s linear infinite;
+  }
+
+  .animate-logo-marquee.paused {
+    animation-play-state: paused;
+  }
+
   /* Hide scrollbar but keep functionality */
   .scrollbar-hide {
     -ms-overflow-style: none;
