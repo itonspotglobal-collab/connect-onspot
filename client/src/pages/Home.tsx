@@ -1042,10 +1042,9 @@ export default function Home() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[0.9fr_0.95fr_1.05fr_1.35fr] gap-y-10 gap-x-8 xl:gap-x-10">
               {/* Navigation Section */}
               <div
-                className="md:space-y-6 md:border-b-0 transition-all duration-300"
+                className="md:space-y-6 transition-all duration-300"
                 style={{
                   paddingBottom: "clamp(4px, 0.6vh, 8px)",
-                  borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
                 }}
               >
                 <button
@@ -1144,10 +1143,9 @@ export default function Home() {
 
               {/* Company Section */}
               <div
-                className="md:space-y-6 md:border-b-0 transition-all duration-300"
+                className="md:space-y-6 transition-all duration-300"
                 style={{
                   paddingBottom: "clamp(4px, 0.6vh, 8px)",
-                  borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
                 }}
               >
                 <button
@@ -1239,10 +1237,9 @@ export default function Home() {
 
               {/* New Verticals Section */}
               <div
-                className="md:space-y-6 md:border-b-0 transition-all duration-300"
+                className="md:space-y-6 transition-all duration-300"
                 style={{
                   paddingBottom: "clamp(4px, 0.6vh, 8px)",
-                  borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
                 }}
               >
                 <button
