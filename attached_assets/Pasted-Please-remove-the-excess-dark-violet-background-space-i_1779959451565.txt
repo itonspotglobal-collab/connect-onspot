@@ -1,0 +1,165 @@
+Please remove the excess dark violet background space in the Hero section.
+
+Current issue:
+There is too much empty dark violet space between the hero content/Vanessa AI card and the stats strip. The page feels overly stretched before reaching the next section.
+
+Goal:
+Reduce the vertical height of the Hero section so there is no large empty dark violet gap.
+
+IMPORTANT:
+- Do NOT change the Navigation bar.
+- Do NOT change the Footer.
+- Do NOT remove the stats strip.
+- Do NOT remove the Vanessa AI card.
+- Do NOT redesign the hero.
+- Only adjust hero section height, padding, margins, and spacing.
+
+==================================================
+WHAT TO FIX
+==================================================
+
+The large empty area appears between:
+- the hero CTA buttons / Vanessa AI card
+and
+- the 72hrs / 500+ / 98% / 2,000+ stats strip
+
+Please reduce this empty space significantly.
+
+==================================================
+RECOMMENDED ADJUSTMENTS
+==================================================
+
+Look for hero section classes like:
+
+min-h-screen
+min-h-[120vh]
+min-h-[130vh]
+min-h-[140vh]
+h-screen
+py-40
+pb-40
+pb-52
+pb-64
+mt-32
+mt-40
+mb-40
+
+Replace oversized values with more balanced spacing.
+
+Suggested hero section:
+
+className="
+  relative overflow-hidden
+  bg-[#252A70]
+  pt-24 sm:pt-28 lg:pt-32
+"
+
+Hero content wrapper:
+
+className="
+  mx-auto grid w-full max-w-[1400px]
+  grid-cols-1 items-center
+  gap-10 px-6
+  pb-20
+  lg:grid-cols-[1fr_0.9fr]
+  lg:gap-12
+  lg:pb-24
+"
+
+Stats wrapper:
+Remove excessive margin-top.
+
+If stats currently has:
+
+mt-32
+mt-40
+mt-52
+
+Change to:
+
+mt-12 sm:mt-16 lg:mt-20
+
+or remove margin-top entirely if the hero wrapper already has bottom padding.
+
+==================================================
+STATS POSITION
+==================================================
+
+The stats strip should sit closer to the hero content.
+
+It should appear after the hero content with comfortable spacing, not after a huge empty screen.
+
+Expected:
+- Hero content
+- modest breathing room
+- Stats strip
+- next section starts
+
+Suggested:
+
+<div className="hero-content pb-20 lg:pb-24">
+  ...
+</div>
+
+<StatsStrip />
+
+Do not add another large spacer div between them.
+
+==================================================
+BOTTOM SPACE AFTER STATS
+==================================================
+
+Do not leave a large empty dark violet area below the stats strip.
+
+If there is a wrapper with:
+
+pb-24
+pb-32
+pb-40
+pb-52
+
+after the stats strip, reduce it to:
+
+pb-0
+
+or at most:
+
+pb-8
+
+The next light section should start shortly after the stats strip.
+
+==================================================
+CHECK FOR EMPTY SPACER DIVS
+==================================================
+
+Search for empty spacing elements inside the hero such as:
+
+<div className="h-40" />
+<div className="h-64" />
+<div className="min-h-[300px]" />
+<div className="spacer" />
+
+Remove them or reduce them.
+
+==================================================
+RESPONSIVE REQUIREMENTS
+==================================================
+
+Desktop:
+- No large empty dark violet gap.
+- Hero content and stats feel connected.
+
+Laptop:
+- Hero should not require excessive scrolling before stats.
+
+Tablet/mobile:
+- Content stacks cleanly.
+- Stats remain readable.
+- No overlap.
+- No horizontal scrolling.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The dark violet Hero section should end much sooner. The stats strip should appear closer to the hero content, and the next section should start shortly after the stats strip. The page should no longer show a large empty dark violet background area.
