@@ -313,7 +313,7 @@ export default function Home() {
         {/* Main content — fills viewport, 2-col on desktop */}
         <div className="min-h-[calc(100vh-72px)] flex items-center relative z-20 px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
           <div className="container mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 xl:gap-20 items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_0.9fr] gap-10 lg:gap-12 xl:gap-14 items-center">
               {/* ── LEFT: Text + CTAs ── */}
               <div className="flex flex-col items-start text-left space-y-6 sm:space-y-8">
                 {/* Badge */}
@@ -388,9 +388,9 @@ export default function Home() {
               </div>
 
               {/* ── RIGHT: Vanessa AI Card ── */}
-              <div className="hero-fade-up-delay flex items-center justify-center lg:justify-end">
+              <div className="hero-fade-up-delay flex items-center justify-center lg:justify-start">
                 <div
-                  className="w-full max-w-[420px] lg:max-w-[460px] rounded-2xl border border-white/15 bg-white/[0.07] backdrop-blur-xl shadow-[0_32px_80px_-20px_rgba(83,74,183,0.45)] p-5 sm:p-6"
+                  className="w-full max-w-[460px] lg:max-w-[500px] rounded-2xl border border-white/15 bg-white/[0.07] backdrop-blur-xl shadow-[0_32px_80px_-20px_rgba(83,74,183,0.45)] p-5 sm:p-6"
                   style={{ transform: "rotate(1deg)" }}
                 >
                   {/* Card header */}

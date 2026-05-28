@@ -1,0 +1,271 @@
+Please update the current/published Hero section to follow the reference direction more closely.
+
+Current request:
+1. The main hero headline should be “Work Differently.”
+2. “AI first. Humans when it matters.” should become supporting text under the headline.
+3. Move the Vanessa AI card slightly closer to the headline/content.
+4. Make the hero content and Vanessa card feel centered in the same frame, similar to the reference.
+5. Do not change the current Navigation bar or Footer.
+
+IMPORTANT:
+- Do NOT copy the reference font style exactly.
+- Do NOT change the navbar.
+- Do NOT change the footer.
+- Keep the current brand colors and general design language.
+- Keep the current CTA buttons.
+- Keep the Vanessa AI card.
+- Only adjust hero content, spacing, and alignment.
+
+==================================================
+1. HERO HEADLINE CONTENT
+==================================================
+
+Change the main hero headline from:
+
+“AI first. Humans when it matters.”
+
+To:
+
+“Work Differently.”
+
+Suggested JSX:
+
+<h1 className="hero-title">
+  Work <span className="highlight">Differently.</span>
+</h1>
+
+Highlight:
+- Apply the same highlight color/style currently used for the word “Humans”.
+- Use that style on “Differently.”
+- Do not keep “Humans” highlighted in the main headline because it should no longer be the main headline.
+
+==================================================
+2. HERO SUPPORTING TEXT
+==================================================
+
+Below the main headline, show:
+
+Line 1:
+“AI first. Humans when it matters.”
+
+Line 2:
+“Marketplace speed. BPO quality. One platform.”
+
+Suggested structure:
+
+<p className="hero-subtitle">
+  AI first. Humans when it matters.
+</p>
+
+<p className="hero-supporting">
+  Marketplace speed. BPO quality. One platform.
+</p>
+
+If the longer text currently says:
+“One System. Your unfair Advantage. Marketplace speed, BPO quality...”
+
+Replace it in the hero with the simpler supporting copy above.
+
+==================================================
+3. BADGE / PILL
+==================================================
+
+If the hero currently has a “Work Differently” pill above the headline, change it so it does not duplicate the headline.
+
+Replace badge text with:
+
+“Vanessa AI Assistant is now live →”
+
+Optional:
+Add a small “NEW” pill before it if the component already supports that.
+
+Example:
+
+<span>NEW</span>
+<span>Vanessa AI Assistant is now live →</span>
+
+==================================================
+4. MOVE VANESSA AI CARD CLOSER
+==================================================
+
+The Vanessa AI card currently feels too far away from the left hero content.
+
+Adjust the hero grid gap so the card is closer to the headline/content.
+
+If the hero layout uses something like:
+
+gap-20
+gap-24
+lg:gap-24
+xl:gap-32
+
+Reduce it to:
+
+gap-10
+lg:gap-12
+xl:gap-14
+
+Suggested hero grid:
+
+className="
+  mx-auto grid w-full max-w-[1400px]
+  grid-cols-1 items-center
+  gap-10 px-6
+  lg:grid-cols-[1fr_0.9fr]
+  lg:gap-12
+  xl:gap-14
+"
+
+Make sure the Vanessa card does not touch the text, but it should feel visually connected.
+
+==================================================
+5. CENTER BOTH HERO CONTENT AND CARD IN THE FRAME
+==================================================
+
+The hero content and Vanessa AI card should align vertically in the same visual center, similar to the reference.
+
+Use:
+
+items-center
+
+on the hero grid.
+
+The hero section should place content around the center of the viewport, not too high or too low.
+
+Suggested hero section:
+
+className="
+  relative overflow-hidden
+  min-h-[calc(100vh-72px)]
+  flex items-center
+"
+
+If the navbar is fixed/sticky, account for navbar height.
+
+Avoid:
+- pushing the hero content too far down
+- leaving the Vanessa card floating too high
+- excessive top padding
+
+Suggested hero inner wrapper:
+
+className="
+  mx-auto grid w-full max-w-[1400px]
+  grid-cols-1 items-center
+  gap-10 px-6 py-20
+  lg:grid-cols-[1fr_0.9fr]
+  lg:gap-12
+  lg:py-24
+"
+
+==================================================
+6. TEXT WIDTH AND HEADLINE SIZE
+==================================================
+
+Because “Work Differently.” is shorter, keep it large but balanced.
+
+Suggested headline sizing:
+
+className="
+  text-6xl sm:text-7xl lg:text-8xl
+  font-bold leading-[0.95] tracking-tight
+"
+
+If this is too large on desktop, use:
+
+text-5xl sm:text-6xl lg:text-7xl
+
+Keep the supporting text under it readable and not too wide:
+
+Subtitle:
+className="
+  mt-6 text-xl sm:text-2xl text-white/80
+"
+
+Supporting:
+className="
+  mt-3 max-w-xl text-base sm:text-lg text-white/55
+"
+
+==================================================
+7. CTA BUTTON POSITION
+==================================================
+
+Keep CTA buttons below the supporting text.
+
+Buttons should align with the left content and stay close enough to the copy.
+
+Suggested spacing:
+mt-8 or mt-10
+
+Do not push buttons too far down.
+
+==================================================
+8. VANESSA CARD SIZE
+==================================================
+
+Keep the Vanessa AI card readable and balanced.
+
+Suggested:
+- max-width around 440px–520px
+- do not let it become too small
+- do not let it overpower the headline
+
+Card wrapper:
+
+className="
+  mx-auto w-full max-w-[520px]
+  lg:mx-0
+"
+
+If it feels too far right, remove any excessive:
+- translate-x
+- ml-auto
+- justify-end
+- xl:translate-x-*
+- large margin-left
+
+Use:
+justify-self-center lg:justify-self-start
+
+or if it should sit slightly to the right but closer:
+justify-self-center
+
+==================================================
+9. RESPONSIVE BEHAVIOR
+==================================================
+
+Desktop:
+- Left: Work Differently headline and CTAs
+- Right: Vanessa AI card
+- Both vertically centered in the hero frame
+- Gap is balanced, not too wide
+
+Laptop:
+- Same layout, no excessive space between text and card
+
+Tablet/mobile:
+- Stack hero content first, Vanessa card second
+- Headline does not overflow
+- Card remains readable
+- CTA buttons wrap cleanly
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+Hero should now show:
+
+Badge:
+NEW Vanessa AI Assistant is now live →
+
+Main headline:
+Work Differently.
+
+Supporting:
+AI first. Humans when it matters.
+Marketplace speed. BPO quality. One platform.
+
+CTA buttons remain.
+
+The Vanessa AI card should move closer to the headline/content and both sides should feel centered in one balanced hero frame, similar to the reference.
