@@ -397,50 +397,29 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Stats strip — below the fold, still on violet hero */}
-        <div className="relative z-20 pb-0">
-          <div className="w-full border-y border-white/10 bg-white/[0.04] backdrop-blur-md">
-            <div className="mx-auto grid w-full max-w-[1800px] grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 px-6 sm:px-10 lg:px-16">
-              {[
-                { value: "72hrs", label: "AVG. TIME TO HIRE" },
-                { value: "500+", label: "GLOBAL CLIENTS" },
-                { value: "98%", label: "CLIENT RETENTION" },
-                { value: "2,000+", label: "TALENTS PLACED" },
-              ].map((stat, i) => (
-                <div
-                  key={stat.label}
-                  className={[
-                    "flex min-h-[120px] flex-col items-center justify-center px-5 py-6 text-center",
-                    "border-white/10",
-                    i < 3
-                      ? "border-b sm:border-b lg:border-b-0 lg:border-r"
-                      : "border-b lg:border-b-0 sm:border-r lg:border-r-0",
-                  ].join(" ")}
-                >
-                  <span className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-white to-[#b9c3ff] bg-clip-text text-transparent">
-                    {stat.value}
-                  </span>
-                  <span className="mt-2.5 text-[11px] sm:text-xs font-semibold uppercase tracking-[0.22em] text-white/45">
-                    {stat.label}
-                  </span>
-                </div>
-              ))}
+      </div>
 
-              {/* Philippine flag stat */}
-              <div className="flex min-h-[120px] flex-col items-center justify-center px-5 py-6 text-center border-white/10">
-                <span
-                  className="text-3xl sm:text-4xl lg:text-5xl"
-                  role="img"
-                  aria-label="Philippine flag"
-                >
-                  🇵🇭
-                </span>
-                <span className="mt-2.5 text-[11px] sm:text-xs font-semibold uppercase tracking-[0.22em] text-white/45">
-                  PHILIPPINE-BASED
-                </span>
-              </div>
+      {/* ── Stats strip — light contrast band after hero ── */}
+      <div className="relative w-full border-y border-slate-200/70 bg-[#F6F7FB]">
+        <div className="mx-auto grid max-w-[1600px] grid-cols-2 divide-y divide-slate-200/70 md:grid-cols-4 md:divide-x md:divide-y-0">
+          {[
+            { value: "72hrs",   label: "AVG. TIME TO HIRE" },
+            { value: "500+",    label: "GLOBAL CLIENTS" },
+            { value: "98%",     label: "CLIENT RETENTION" },
+            { value: "2,000+",  label: "TALENTS PLACED" },
+          ].map((stat) => (
+            <div
+              key={stat.label}
+              className="flex min-h-[150px] flex-col items-center justify-center px-6 py-8 text-center"
+            >
+              <span className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-[#3F4698]">
+                {stat.value}
+              </span>
+              <span className="mt-3 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+                {stat.label}
+              </span>
             </div>
-          </div>
+          ))}
         </div>
       </div>
 

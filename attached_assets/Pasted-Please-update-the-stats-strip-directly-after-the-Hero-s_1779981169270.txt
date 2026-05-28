@@ -1,0 +1,225 @@
+Please update the stats strip directly after the Hero section.
+
+Current issue:
+The stats strip is still dark violet and visually blends into the Hero section. Since it comes right after the Hero, it should create contrast. Also, the “PH / PHILIPPINE-BASED” item should be removed.
+
+Goal:
+Turn the stats strip into a light section and remove the Philippine-based stat.
+
+IMPORTANT:
+- Do NOT change the Navigation bar.
+- Do NOT change the Footer.
+- Do NOT change the Hero headline/buttons.
+- Do NOT remove the stats strip entirely.
+- Only update the stats strip design and content.
+- The stats strip should appear after the Hero section as a contrasting light strip.
+
+==================================================
+1. REMOVE PHILIPPINE-BASED STAT
+==================================================
+
+Remove this stat item completely:
+
+PH
+PHILIPPINE-BASED
+
+or:
+
+🇵🇭
+PHILIPPINE-BASED
+
+After removing it, the stats strip should only have 4 items:
+
+1. 72hrs
+   AVG. TIME TO HIRE
+
+2. 500+
+   GLOBAL CLIENTS
+
+3. 98%
+   CLIENT RETENTION
+
+4. 2,000+
+   TALENTS PLACED
+
+Do not leave an empty fifth column.
+
+==================================================
+2. MAKE STATS STRIP LIGHT
+==================================================
+
+Change the stats strip background from dark violet to a light contrast background.
+
+Recommended background:
+
+bg-[#F6F7FB]
+
+or:
+
+bg-slate-50
+
+or:
+
+bg-[#F4F6FF]
+
+Use one clean light background, not a dark background.
+
+Suggested stats section wrapper:
+
+className="
+  relative w-full
+  border-y border-slate-200/70
+  bg-[#F6F7FB]
+"
+
+Do NOT use:
+- bg-[#252A70]
+- bg-[#1F235F]
+- bg-[#2A2E7A]
+- bg-gradient with dark violet
+- text-white
+- border-white/10
+
+==================================================
+3. UPDATE TEXT COLORS FOR LIGHT BACKGROUND
+==================================================
+
+Since the background is now light, change the stat text colors.
+
+Number:
+className="
+  text-4xl sm:text-5xl lg:text-6xl
+  font-bold tracking-tight
+  text-[#3F4698]
+"
+
+Label:
+className="
+  mt-3 text-xs font-semibold uppercase
+  tracking-[0.22em]
+  text-slate-500
+"
+
+Do not keep the text white or white/50 on a light background.
+
+==================================================
+4. UPDATE GRID TO 4 COLUMNS
+==================================================
+
+Since the PH item is removed, update the grid to 4 equal columns on desktop.
+
+Suggested grid:
+
+className="
+  mx-auto grid max-w-[1600px]
+  grid-cols-2
+  md:grid-cols-4
+"
+
+Each stat item:
+
+className="
+  flex min-h-[150px]
+  flex-col items-center justify-center
+  border-slate-200/70
+  px-6 py-8 text-center
+"
+
+Add dividers only between columns on larger screens.
+
+Example:
+- use border-r on items except the last item
+- or use divide-x divide-slate-200/70
+
+Suggested:
+
+<div className="mx-auto grid max-w-[1600px] grid-cols-2 divide-x-0 divide-y divide-slate-200/70 md:grid-cols-4 md:divide-x md:divide-y-0">
+  ...
+</div>
+
+If divide lines become awkward on 2-column mobile, use responsive borders manually.
+
+==================================================
+5. SECTION POSITION
+==================================================
+
+This stats strip should be after the Hero’s main viewport/content.
+
+It should no longer visually look like part of the dark hero background.
+
+Structure should be:
+
+<HeroSection />
+<StatsStrip />
+<InsightsSection />
+
+or if StatsStrip is inside the Hero component:
+
+<section className="hero dark">
+  <HeroMain />
+</section>
+
+<StatsStrip className="light" />
+
+Preferred:
+StatsStrip should be outside the dark hero background wrapper.
+
+If the hero currently wraps both hero content and stats in the same dark background, move the StatsStrip outside that dark hero wrapper.
+
+Example:
+
+Before:
+<section className="bg-dark-violet">
+  <HeroMain />
+  <StatsStrip />
+</section>
+
+After:
+<section className="bg-dark-violet">
+  <HeroMain />
+</section>
+
+<StatsStrip />
+
+==================================================
+6. SPACING
+==================================================
+
+The stats strip should connect cleanly after the hero.
+
+Do not add a huge white gap before it.
+
+Do not add a huge dark gap after the hero.
+
+The transition should be:
+dark hero ends → light stats strip starts → next section starts.
+
+==================================================
+7. RESPONSIVE REQUIREMENTS
+==================================================
+
+Desktop:
+- 4 stats in one row.
+- Light background.
+- Brand-colored numbers.
+
+Tablet:
+- 2x2 layout is acceptable.
+
+Mobile:
+- Stack or 2x2 layout.
+- Text remains readable.
+- No horizontal scrolling.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The stats strip should become a clean light contrast section after the Hero:
+
+Light background.
+4 stats only.
+No PH / Philippine-based stat.
+Numbers use OnSpot brand color #3F4698.
+Labels use muted slate text.
+The section should no longer look like a dark continuation of the Hero.
