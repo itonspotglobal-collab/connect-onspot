@@ -1,0 +1,295 @@
+Please implement the uploaded homepage mockup as the visual/layout direction for the current website.
+
+Reference file:
+onspot-homepage-mockup(1).html
+
+Use it as a layout and section-composition reference only.
+
+IMPORTANT:
+- Do NOT copy the mockup’s font/text style exactly.
+- Keep the current website typography/text style.
+- Do NOT change the current Navigation bar.
+- Do NOT change the current Footer.
+- Do NOT change the color pallets of the background
+- Do NOT OnSpot Logo
+- Do NOT change the current client logos.
+- Do NOT change the current Talent Photos.
+- Keep the existing talent names/photos, including:
+  - Kyle Mendez — add the PH flag if missing
+  - Alexandra Lopez
+  - and the other current talent profiles/photos already in the project
+- Retain the existing “Ready to become superhuman?” final CTA section.
+- Preserve current branding, logo handling, navbar, footer, and responsive behavior.
+
+==================================================
+PRIMARY GOAL
+==================================================
+
+Update the homepage body sections to follow the mockup’s layout/story direction while preserving the current site’s design system.
+
+The mockup includes these major layout ideas:
+- A clean hero with left messaging and a right Vanessa AI Assistant-style visual
+- A numbers/stats strip
+- Insights/blog cards
+- Work Differently cards for companies and professionals
+- Trusted By logos
+- Transformation/Testimonials
+- Why Partner / philosophy-style cards
+- Talent proof/team profiles
+- Final CTA
+
+However, implement only the sections that currently belong in our cleaned homepage flow unless otherwise instructed.
+
+Current homepage sections to retain:
+1. Hero
+2. Trusted By / Client Logos
+3. Featured Insights / Latest News, if already added
+4. Work Differently
+5. Choose Your Path
+6. Ready to Become Superhuman
+7. Footer
+
+Do not re-add removed sections unless they are already part of the current approved homepage flow.
+
+==================================================
+DO NOT CHANGE THESE
+==================================================
+
+1. Navigation bar
+- Keep current navbar exactly as-is.
+- Do not change navbar color, logo, spacing, links, CTA button, sticky behavior, or responsiveness.
+
+2. Footer
+- Keep current footer exactly as-is.
+- Do not change footer color, layout, links, logo, spacing, or responsiveness.
+
+3. Client logos
+- Keep the existing client logo assets.
+- Do not replace them with text-only mockup logos.
+- If Trusted By is currently a carousel, keep it as a carousel.
+- Do not remove carousel behavior unless separately requested.
+
+4. Talent photos
+- Keep the current talent photos.
+- Do not replace them with initials or mockup placeholders.
+- Do not change existing talent names unless correcting requested details.
+- Add PH flag to Kyle Mendez if missing.
+
+5. Final CTA
+- Retain the “Ready to become superhuman?” section.
+- Keep its current text and CTA treatment unless minor spacing is needed.
+
+==================================================
+HERO SECTION
+==================================================
+
+Use the mockup’s hero structure as inspiration:
+- Left side: main headline, supporting text, CTA buttons
+- Right side: Vanessa AI Assistant / matching mockup visual
+
+But:
+- Keep the current site’s font style.
+- Keep the current hero messaging unless already approved.
+- Keep the current hero CTA buttons:
+  - Launch AI Assistant
+  - Get Managed Team
+  - Find Work, if currently present
+
+Hero visual:
+- Add or improve a right-side Vanessa AI Assistant card if the current homepage supports it.
+- Use current design system colors and components.
+- Do not make it look like the mockup’s exact typography.
+- Keep it responsive:
+  - desktop: text and visual side-by-side
+  - tablet/mobile: stacked
+
+If the current hero intentionally does not have a visual, add it only if it improves the layout and does not conflict with current design.
+
+==================================================
+WORK DIFFERENTLY SECTION
+==================================================
+
+Use the mockup’s Work Differently card structure as inspiration.
+
+Keep the compact two-card design:
+- For Companies
+- For Professionals
+
+Card 1:
+Label:
+For Companies
+
+Headline:
+Hire faster. Spend less.
+
+Benefits:
+- Days, not months
+- Hire your way
+- Skip the middlemen
+- 50+ countries
+
+Card 2:
+Label:
+For Professionals
+
+Headline:
+Real work. Real growth.
+
+Benefits:
+- Steady pipeline
+- Top global brands
+- Your terms
+- Pure merit
+
+Use larger circular icons similar to the mockup direction, but keep current icon library/style.
+
+Do not use the mockup’s exact font.
+
+==================================================
+TRUSTED BY SECTION
+==================================================
+
+Keep the current client logos and current behavior.
+
+If Trusted By is currently a carousel:
+- Keep the carousel.
+- Do not replace it with a static grid.
+- Do not remove autoplay/manual controls if already present.
+
+If Trusted By currently includes Featured Insights beside it:
+- Keep that layout if it is working.
+- Ensure the carousel remains active and not replaced by static logos.
+
+Do not replace logo images with mockup text labels.
+
+==================================================
+FEATURED INSIGHTS / NEWS SECTION
+==================================================
+
+If Featured Insights has already been added, keep it.
+
+Use the mockup’s Insights section as inspiration only:
+- news/blog card layout
+- clean article cards
+- published/featured insight data from existing Insights page
+
+Do not invent fake article content if real published articles already exist.
+
+If one featured article is shown:
+- image
+- category
+- title
+- excerpt
+- meta
+- Read Article link
+
+Keep the current site text style.
+
+==================================================
+CHOOSE YOUR PATH SECTION
+==================================================
+
+Keep the current Choose Your Path section.
+
+If the mockup has CTA card styling that can improve this section, apply only subtle layout improvements:
+- clearer card hierarchy
+- better spacing
+- responsive stacking
+
+Do not change the section’s purpose or current CTA links.
+
+==================================================
+TALENT PHOTOS / PROOF CONTENT
+==================================================
+
+If talent/profile cards appear anywhere on the homepage:
+- Keep current talent photos.
+- Do not replace with mockup initials.
+- Keep current names and roles.
+- Add PH flag to Kyle Mendez if missing.
+- Keep Alexandra Lopez and others as-is.
+
+Do not use mockup placeholder avatar styles.
+
+==================================================
+READY TO BECOME SUPERHUMAN
+==================================================
+
+Retain the current final CTA section:
+“Ready to become superhuman?”
+
+Do not remove it.
+Do not rename it.
+Do not replace it with mockup CTA text.
+
+Minor spacing improvements are okay.
+
+==================================================
+STYLE RULES
+==================================================
+
+Use the mockup for:
+- layout inspiration
+- section composition
+- card structure
+- spacing rhythm
+- content hierarchy
+
+Do NOT use the mockup for:
+- exact fonts
+- exact text style
+- replacing navbar
+- replacing footer
+- replacing logos
+- replacing talent photos
+
+Keep current:
+- typography
+- navbar
+- footer
+- logos
+- talent images
+- final CTA
+
+==================================================
+RESPONSIVE REQUIREMENTS
+==================================================
+
+Desktop:
+- Sections should feel balanced and spacious.
+- Hero may use a two-column layout if implemented.
+- Work Differently should show two cards side by side.
+- Trusted By / Featured Insights should not feel cramped.
+
+Laptop:
+- Same design should remain stable.
+- Avoid giant gaps or squished columns.
+
+Tablet:
+- Sections stack cleanly.
+
+Mobile:
+- One-column layout.
+- CTA buttons wrap/stack cleanly.
+- No horizontal scrolling.
+
+==================================================
+CLEANUP REQUIREMENTS
+==================================================
+
+After implementation:
+- Remove unused imports.
+- Remove old section wrappers that are no longer rendered.
+- Avoid duplicate Trusted By sections.
+- Avoid duplicate final CTA sections.
+- Avoid duplicate Work Differently sections.
+- Make sure nav links do not point to missing sections.
+- Make sure the build passes.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The homepage should follow the uploaded mockup’s general layout direction, but still feel like the current OnSpot website.
+
+The navigation bar, footer, client logos, talent photos, and “Ready to become superhuman?” section should remain intact.

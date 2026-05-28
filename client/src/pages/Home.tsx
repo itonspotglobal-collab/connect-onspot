@@ -311,78 +311,158 @@ export default function Home() {
           <div className="absolute bottom-1/3 right-1/4 w-[500px] h-[500px] bg-gradient-radial from-blue-500/10 to-transparent rounded-full blur-3xl animate-slow-spin"></div>
         </div>
 
-        {/* Main content — fills viewport */}
-        <div className="min-h-[calc(100vh-72px)] flex items-center justify-center relative z-20 px-4 sm:px-6 py-16 sm:py-24">
-          <div className="container mx-auto text-center">
-            <div className="max-w-5xl mx-auto space-y-5 sm:space-y-8 lg:space-y-12">
-              {/* Badge */}
-              <div
-                className="hero-fade-up inline-flex items-center gap-2.5 bg-white/8 backdrop-blur-md px-7 py-3.5 rounded-full border border-white/20"
-                data-testid="badge-superhuman-bpo"
-              >
-                <div className="w-2.5 h-2.5 bg-violet-300/80 rounded-full flex-shrink-0"></div>
-                <span className="text-xl sm:text-2xl md:text-3xl font-medium bg-gradient-to-r from-violet-300 via-blue-200 to-violet-300 bg-clip-text text-transparent">
-                  Work Differently
-                </span>
-              </div>
+        {/* Main content — fills viewport, 2-col on desktop */}
+        <div className="min-h-[calc(100vh-72px)] flex items-center relative z-20 px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+          <div className="container mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 xl:gap-20 items-center">
 
-              {/* Headline */}
-              <div className="space-y-3 sm:space-y-4 hero-fade-up">
-                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold tracking-tight leading-[1.1] text-white px-2">
-                  AI first.{" "}
-                  <span className="bg-gradient-to-r from-violet-300 via-blue-200 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_24px_rgba(167,139,250,0.45)]">
-                    Humans
-                  </span>{" "}
-                  when it matters.
-                </h1>
-              </div>
-
-              {/* Supporting statement */}
-              <div className="hero-fade-up-delay mx-auto mt-8 max-w-5xl text-center">
-                <span className="block text-xl sm:text-2xl md:text-3xl font-semibold tracking-wide text-white/85">
-                  One System. Your unfair Advantage.
-                </span>
-                <span className="mt-3 block text-base sm:text-lg md:text-xl leading-relaxed text-white/55">
-                  Marketplace speed, BPO quality, and a talent pool built for
-                  the work AI creates — not just the work it replaces.
-                </span>
-              </div>
-
-              {/* CTAs */}
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 hero-fade-up-delay flex-wrap">
-                <Button
-                  size="lg"
-                  onClick={openVanessa}
-                  className="relative group text-sm sm:text-base px-6 sm:px-8 h-auto bg-gradient-to-r from-violet-600 to-blue-600 text-white font-semibold hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] transition-all duration-300 hover-elevate rounded-2xl w-full sm:w-auto sm:min-w-[200px] py-3.5 sm:py-4 min-h-[48px]"
-                  data-testid="button-launch-ai"
+              {/* ── LEFT: Text + CTAs ── */}
+              <div className="flex flex-col items-start text-left space-y-6 sm:space-y-8">
+                {/* Badge */}
+                <div
+                  className="hero-fade-up inline-flex items-center gap-2.5 bg-white/8 backdrop-blur-md px-6 py-3 rounded-full border border-white/20"
+                  data-testid="badge-superhuman-bpo"
                 >
-                  <span className="flex items-center gap-2 justify-center">
-                    Launch AI Assistant
-                    <Sparkles className="w-4 sm:w-5 h-4 sm:h-5" />
+                  <div className="w-2 h-2 bg-violet-300/80 rounded-full flex-shrink-0"></div>
+                  <span className="text-base sm:text-lg font-medium bg-gradient-to-r from-violet-300 via-blue-200 to-violet-300 bg-clip-text text-transparent">
+                    Work Differently
                   </span>
-                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-violet-600 to-blue-600 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-300 -z-10"></div>
-                </Button>
+                </div>
 
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="text-sm sm:text-base px-6 sm:px-8 h-auto border-2 border-white/30 text-white hover:bg-white/10 hover:border-white/50 font-medium backdrop-blur-xl bg-white/5 rounded-2xl w-full sm:w-auto sm:min-w-[200px] py-3.5 sm:py-4 min-h-[48px]"
-                  asChild
-                  data-testid="button-get-managed-team"
-                >
-                  <Link href="/lead-intake">Get Managed Team</Link>
-                </Button>
+                {/* Headline */}
+                <div className="hero-fade-up">
+                  <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-5xl xl:text-6xl 2xl:text-7xl font-bold tracking-tight leading-[1.05] text-white">
+                    AI first.{" "}
+                    <span className="bg-gradient-to-r from-violet-300 via-blue-200 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_24px_rgba(167,139,250,0.45)]">
+                      Humans
+                    </span>{" "}
+                    when it matters.
+                  </h1>
+                </div>
 
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="text-sm sm:text-base px-6 sm:px-8 h-auto border-2 border-white/20 text-white/85 hover:bg-white/10 hover:border-white/40 font-medium backdrop-blur-xl bg-white/[0.03] rounded-2xl w-full sm:w-auto sm:min-w-[200px] py-3.5 sm:py-4 min-h-[48px]"
-                  asChild
-                  data-testid="button-find-work"
-                >
-                  <Link href="/find-work">Find Work</Link>
-                </Button>
+                {/* Supporting statement */}
+                <div className="hero-fade-up-delay">
+                  <p className="text-lg sm:text-xl font-semibold text-white/85">
+                    One System. Your unfair Advantage.
+                  </p>
+                  <p className="mt-2 text-base sm:text-lg leading-relaxed text-white/55 max-w-lg">
+                    Marketplace speed, BPO quality, and a talent pool built for
+                    the work AI creates — not just the work it replaces.
+                  </p>
+                </div>
+
+                {/* CTAs */}
+                <div className="flex flex-col sm:flex-row items-start gap-3 hero-fade-up-delay flex-wrap">
+                  <Button
+                    size="lg"
+                    onClick={openVanessa}
+                    className="relative group text-sm sm:text-base px-6 sm:px-8 h-auto bg-gradient-to-r from-violet-600 to-blue-600 text-white font-semibold hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] transition-all duration-300 hover-elevate rounded-2xl w-full sm:w-auto py-3.5 min-h-[48px]"
+                    data-testid="button-launch-ai"
+                  >
+                    <span className="flex items-center gap-2 justify-center">
+                      Launch AI Assistant
+                      <Sparkles className="w-4 sm:w-5 h-4 sm:h-5" />
+                    </span>
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-violet-600 to-blue-600 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-300 -z-10"></div>
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="text-sm sm:text-base px-6 sm:px-8 h-auto border-2 border-white/30 text-white font-medium backdrop-blur-xl bg-white/5 rounded-2xl w-full sm:w-auto py-3.5 min-h-[48px]"
+                    asChild
+                    data-testid="button-get-managed-team"
+                  >
+                    <Link href="/lead-intake">Get Managed Team</Link>
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="text-sm sm:text-base px-6 sm:px-8 h-auto border-2 border-white/20 text-white/85 font-medium backdrop-blur-xl bg-white/[0.03] rounded-2xl w-full sm:w-auto py-3.5 min-h-[48px]"
+                    asChild
+                    data-testid="button-find-work"
+                  >
+                    <Link href="/find-work">Find Work</Link>
+                  </Button>
+                </div>
               </div>
+
+              {/* ── RIGHT: Vanessa AI Card ── */}
+              <div className="hero-fade-up-delay flex items-center justify-center lg:justify-end">
+                <div className="w-full max-w-[420px] lg:max-w-[460px] rounded-2xl border border-white/15 bg-white/[0.07] backdrop-blur-xl shadow-[0_32px_80px_-20px_rgba(83,74,183,0.45)] p-5 sm:p-6"
+                  style={{ transform: "rotate(1deg)" }}>
+
+                  {/* Card header */}
+                  <div className="flex items-center gap-3 pb-4 border-b border-white/10 mb-4">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-400 to-blue-600 flex items-center justify-center flex-shrink-0">
+                      <Bot className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-white">Vanessa AI</p>
+                      <p className="text-xs text-emerald-400 flex items-center gap-1.5">
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                        Online · Talent matching active
+                      </p>
+                    </div>
+                    <div className="flex gap-1">
+                      <span className="w-2.5 h-2.5 rounded-full bg-white/20"></span>
+                      <span className="w-2.5 h-2.5 rounded-full bg-white/20"></span>
+                      <span className="w-2.5 h-2.5 rounded-full bg-white/20"></span>
+                    </div>
+                  </div>
+
+                  {/* Chat bubbles */}
+                  <div className="space-y-3 mb-4">
+                    <div className="flex justify-end">
+                      <div className="max-w-[78%] bg-violet-500/30 border border-violet-400/20 rounded-2xl rounded-br-sm px-4 py-2.5">
+                        <p className="text-xs sm:text-sm text-white/90 leading-relaxed">Find me a top Filipino VA for customer support</p>
+                      </div>
+                    </div>
+                    <div className="flex justify-start">
+                      <div className="max-w-[85%] bg-white/[0.08] border border-white/10 rounded-2xl rounded-bl-sm px-4 py-2.5">
+                        <p className="text-xs sm:text-sm text-white/80 leading-relaxed">Found 3 top matches from our pre-assessed talent pool:</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Match cards */}
+                  <div className="space-y-2.5">
+                    {[
+                      { initials: "KM", name: "Kyle Mendez 🇵🇭", role: "Customer Support Specialist", match: "97%" },
+                      { initials: "AL", name: "Alexandra Lopez", role: "CX & Operations Lead", match: "94%" },
+                      { initials: "RD", name: "Rica Dela Cruz", role: "Bilingual Support Agent", match: "91%" },
+                    ].map((person) => (
+                      <div key={person.name} className="flex items-center gap-3 rounded-xl bg-white/[0.06] border border-white/10 px-3.5 py-2.5">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-400/60 to-blue-500/60 flex items-center justify-center flex-shrink-0">
+                          <span className="text-[10px] font-bold text-white">{person.initials}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-white truncate">{person.name}</p>
+                          <p className="text-[10px] text-white/55 truncate">{person.role}</p>
+                        </div>
+                        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 rounded-full px-2 py-0.5 flex-shrink-0">
+                          {person.match}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Footer prompt */}
+                  <div className="mt-4 pt-3 border-t border-white/10 flex items-center gap-2">
+                    <div className="flex-1 rounded-xl bg-white/[0.05] border border-white/10 px-3 py-2">
+                      <p className="text-xs text-white/30">Ask Vanessa anything...</p>
+                    </div>
+                    <button
+                      onClick={openVanessa}
+                      className="w-8 h-8 rounded-xl bg-violet-600 flex items-center justify-center flex-shrink-0 hover:bg-violet-500 transition-colors"
+                    >
+                      <ArrowRight className="w-3.5 h-3.5 text-white" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>

@@ -1,0 +1,1737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OnSpot — Work Differently</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================
+   DESIGN TOKENS
+   ============================================ */
+:root {
+  --purple-50: #F4F2FC;
+  --purple-100: #EEEDFE;
+  --purple-200: #CECBF6;
+  --purple-400: #7F77DD;
+  --purple-600: #534AB7;
+  --purple-800: #3C3489;
+  --purple-900: #26215C;
+
+  --teal-50: #F0FAF6;
+  --teal-100: #E1F5EE;
+  --teal-400: #1D9E75;
+  --teal-600: #0F6E56;
+  --teal-800: #085041;
+
+  --ink: #1A1530;
+  --ink-muted: #6B6789;
+  --ink-faint: #A09DB8;
+
+  --white: #FFFFFF;
+  --cream: #FAF9F5;
+  --border: rgba(26, 21, 48, 0.08);
+  --border-strong: rgba(26, 21, 48, 0.16);
+
+  --display: 'Instrument Serif', Georgia, serif;
+  --sans: 'Manrope', -apple-system, sans-serif;
+
+  --max-width: 1200px;
+  --section-pad-y: 120px;
+  --section-pad-y-mobile: 72px;
+}
+
+/* ============================================
+   RESET & BASE
+   ============================================ */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+body {
+  font-family: var(--sans);
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--cream);
+  overflow-x: hidden;
+}
+
+img { max-width: 100%; display: block; }
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+/* ============================================
+   NAVIGATION
+   ============================================ */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(250, 249, 245, 0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 18px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  font-family: var(--display);
+  font-size: 28px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--purple-600);
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 36px;
+  list-style: none;
+}
+
+.nav-links a {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-muted);
+  transition: color 0.2s ease;
+}
+
+.nav-links a:hover { color: var(--ink); }
+
+.nav-cta {
+  background: var(--ink);
+  color: var(--white);
+  padding: 10px 20px;
+  border-radius: 100px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.nav-cta:hover { background: var(--purple-600); }
+
+@media (max-width: 768px) {
+  .nav-links { display: none; }
+}
+
+/* ============================================
+   SECTION BASE
+   ============================================ */
+section {
+  padding: var(--section-pad-y) 0;
+  position: relative;
+}
+
+@media (max-width: 768px) {
+  section { padding: var(--section-pad-y-mobile) 0; }
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--purple-600);
+  margin-bottom: 24px;
+}
+
+.eyebrow::before {
+  content: '';
+  width: 24px;
+  height: 1px;
+  background: currentColor;
+}
+
+.section-title {
+  font-family: var(--display);
+  font-size: clamp(40px, 5vw, 56px);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  color: var(--ink);
+  margin-bottom: 20px;
+  max-width: 720px;
+}
+
+.section-title em {
+  font-style: italic;
+  color: var(--purple-600);
+}
+
+.section-subtitle {
+  font-size: 19px;
+  line-height: 1.55;
+  color: var(--ink-muted);
+  max-width: 600px;
+  margin-bottom: 64px;
+}
+
+/* ============================================
+   HERO
+   ============================================ */
+.hero {
+  padding: 80px 0 120px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -200px;
+  right: -200px;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(83, 74, 183, 0.08) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  bottom: -300px;
+  left: -150px;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(15, 110, 86, 0.06) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.hero-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 32px;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 80px;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px 6px 6px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  font-size: 13px;
+  color: var(--ink-muted);
+  margin-bottom: 32px;
+}
+
+.hero-badge-pill {
+  background: var(--purple-100);
+  color: var(--purple-800);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  padding: 4px 10px;
+  border-radius: 100px;
+  text-transform: uppercase;
+}
+
+.hero-title {
+  font-family: var(--display);
+  font-size: clamp(56px, 7vw, 92px);
+  font-weight: 400;
+  line-height: 0.95;
+  letter-spacing: -0.035em;
+  color: var(--ink);
+  margin-bottom: 28px;
+}
+
+.hero-title em {
+  font-style: italic;
+  color: var(--purple-600);
+  position: relative;
+}
+
+.hero-subtitle {
+  font-size: 21px;
+  line-height: 1.5;
+  color: var(--ink-muted);
+  margin-bottom: 12px;
+  max-width: 480px;
+}
+
+.hero-supporting {
+  font-size: 15px;
+  color: var(--ink-faint);
+  margin-bottom: 40px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.hero-ctas {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.btn-primary {
+  background: var(--ink);
+  color: var(--white);
+  padding: 16px 28px;
+  border-radius: 100px;
+  font-size: 15px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background: var(--purple-600);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: var(--white);
+  color: var(--ink);
+  padding: 16px 28px;
+  border-radius: 100px;
+  font-size: 15px;
+  font-weight: 500;
+  border: 1px solid var(--border-strong);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  border-color: var(--ink);
+}
+
+.btn-text {
+  color: var(--ink-muted);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 16px 8px;
+  transition: color 0.2s ease;
+}
+
+.btn-text:hover { color: var(--purple-600); }
+
+/* Vanessa mockup */
+.vanessa-card {
+  background: var(--white);
+  border-radius: 20px;
+  padding: 24px;
+  border: 1px solid var(--border);
+  box-shadow: 0 30px 80px -20px rgba(83, 74, 183, 0.18), 0 8px 24px -8px rgba(26, 21, 48, 0.08);
+  position: relative;
+  transform: rotate(-1deg);
+  transition: transform 0.4s ease;
+}
+
+.vanessa-card:hover { transform: rotate(0deg); }
+
+.vanessa-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 18px;
+}
+
+.vanessa-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--purple-400), var(--purple-600));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--white);
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.vanessa-info { flex: 1; }
+.vanessa-name { font-size: 15px; font-weight: 600; color: var(--ink); }
+.vanessa-status {
+  font-size: 12px;
+  color: var(--teal-600);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.vanessa-status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--teal-400);
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.chat-bubble {
+  padding: 12px 16px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  max-width: 85%;
+  margin-bottom: 12px;
+}
+
+.bubble-user {
+  background: var(--purple-100);
+  color: var(--purple-900);
+  margin-left: auto;
+  border-bottom-right-radius: 4px;
+}
+
+.bubble-ai {
+  background: var(--purple-50);
+  color: var(--ink);
+  border-bottom-left-radius: 4px;
+}
+
+.match-card {
+  background: var(--cream);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.match-card + .match-card { margin-top: 8px; }
+
+.match-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--purple-200);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--purple-800);
+  flex-shrink: 0;
+}
+
+.match-info { flex: 1; min-width: 0; }
+.match-name { font-size: 13px; font-weight: 600; color: var(--ink); }
+.match-role { font-size: 12px; color: var(--ink-muted); }
+.match-badge {
+  font-size: 11px;
+  color: var(--teal-600);
+  font-weight: 600;
+  background: var(--teal-100);
+  padding: 3px 8px;
+  border-radius: 100px;
+}
+
+@media (max-width: 968px) {
+  .hero-inner { grid-template-columns: 1fr; gap: 60px; }
+  .vanessa-card { max-width: 420px; margin: 0 auto; }
+}
+
+/* ============================================
+   NUMBERS STRIP
+   ============================================ */
+.numbers-section {
+  padding: 60px 0;
+  background: var(--purple-50);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.numbers-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 32px;
+}
+
+.stat {
+  position: relative;
+  padding-left: 24px;
+}
+
+.stat::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: var(--purple-600);
+}
+
+.stat-number {
+  font-family: var(--display);
+  font-size: 56px;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--purple-800);
+  letter-spacing: -0.03em;
+  margin-bottom: 8px;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: var(--ink-muted);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+@media (max-width: 768px) {
+  .numbers-grid { grid-template-columns: 1fr 1fr; gap: 28px; }
+  .stat-number { font-size: 44px; }
+}
+
+/* ============================================
+   INSIGHTS
+   ============================================ */
+.insights-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 56px;
+  gap: 40px;
+}
+
+.insights-header-text { flex: 1; }
+.insights-header .section-subtitle { margin-bottom: 0; }
+
+.insights-link {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--ink);
+  transition: gap 0.2s ease;
+  flex-shrink: 0;
+}
+
+.insights-link:hover { gap: 10px; }
+
+.insights-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.article-card {
+  background: var(--white);
+  border-radius: 16px;
+  padding: 28px;
+  border: 1px solid var(--border);
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+}
+
+.article-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--purple-200);
+  box-shadow: 0 20px 40px -20px rgba(83, 74, 183, 0.15);
+}
+
+.article-thumb {
+  width: 100%;
+  height: 180px;
+  border-radius: 10px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.article-thumb-1 {
+  background: linear-gradient(135deg, var(--purple-100) 0%, var(--purple-200) 100%);
+}
+.article-thumb-2 {
+  background: linear-gradient(135deg, var(--teal-100) 0%, #C8EBD9 100%);
+}
+.article-thumb-3 {
+  background: linear-gradient(135deg, #FDF1D8 0%, #F8DDA8 100%);
+}
+
+.article-thumb svg {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  opacity: 0.6;
+}
+
+.article-tag {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--purple-600);
+  margin-bottom: 12px;
+}
+
+.article-title {
+  font-family: var(--display);
+  font-size: 24px;
+  line-height: 1.2;
+  color: var(--ink);
+  margin-bottom: 12px;
+  letter-spacing: -0.01em;
+}
+
+.article-excerpt {
+  font-size: 14px;
+  color: var(--ink-muted);
+  line-height: 1.55;
+  margin-bottom: 20px;
+  flex: 1;
+}
+
+.article-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
+.article-meta-dot {
+  width: 3px;
+  height: 3px;
+  background: var(--ink-faint);
+  border-radius: 50%;
+}
+
+@media (max-width: 968px) {
+  .insights-grid { grid-template-columns: 1fr; }
+  .insights-header { flex-direction: column; align-items: flex-start; }
+}
+
+/* ============================================
+   WORK DIFFERENTLY
+   ============================================ */
+.work-section { background: var(--white); }
+
+.work-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.work-card {
+  padding: 48px 40px;
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.work-card-purple {
+  background: var(--purple-100);
+  color: var(--purple-900);
+}
+
+.work-card-teal {
+  background: var(--teal-100);
+  color: var(--teal-800);
+}
+
+.work-card-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.work-card-purple .work-card-eyebrow { color: var(--purple-600); }
+.work-card-teal .work-card-eyebrow { color: var(--teal-600); }
+
+.work-card-title {
+  font-family: var(--display);
+  font-size: 42px;
+  line-height: 1.05;
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  margin-bottom: 36px;
+}
+
+.work-card-title em { font-style: italic; }
+
+.work-items {
+  list-style: none;
+  margin-bottom: 36px;
+}
+
+.work-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid currentColor;
+  border-bottom-color: rgba(0,0,0,0.08);
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.work-item:last-child { border-bottom: none; }
+
+.work-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.work-card-purple .work-icon { color: var(--purple-600); }
+.work-card-teal .work-icon { color: var(--teal-600); }
+
+.work-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  padding-top: 24px;
+  border-top: 1px solid currentColor;
+  border-top-color: rgba(0,0,0,0.1);
+  width: 100%;
+  transition: gap 0.2s ease;
+}
+
+.work-cta:hover { gap: 12px; }
+
+.work-card-purple .work-cta { color: var(--purple-600); }
+.work-card-teal .work-cta { color: var(--teal-600); }
+
+@media (max-width: 768px) {
+  .work-grid { grid-template-columns: 1fr; }
+  .work-card-title { font-size: 36px; }
+}
+
+/* ============================================
+   TRUSTED BY
+   ============================================ */
+.trusted-section {
+  padding: 80px 0;
+  background: var(--cream);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.trusted-label {
+  text-align: center;
+  font-size: 13px;
+  color: var(--ink-muted);
+  margin-bottom: 40px;
+  letter-spacing: 0.02em;
+}
+
+.trusted-logos {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 48px;
+}
+
+.logo-item {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--ink-muted);
+  letter-spacing: -0.01em;
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+  white-space: nowrap;
+}
+
+.logo-item:hover { opacity: 1; color: var(--ink); }
+
+.logo-item-bold { font-family: var(--sans); font-weight: 700; letter-spacing: -0.02em; }
+.logo-item-italic { font-style: italic; }
+
+@media (max-width: 768px) {
+  .trusted-logos { gap: 28px; justify-content: center; }
+  .logo-item { font-size: 18px; }
+}
+
+/* ============================================
+   TRANSFORMATION STORIES
+   ============================================ */
+.stories-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.story-card {
+  background: var(--white);
+  border-radius: 20px;
+  padding: 36px 32px;
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+}
+
+.story-card:hover {
+  border-color: var(--purple-200);
+  transform: translateY(-2px);
+}
+
+.story-quote-mark {
+  font-family: var(--display);
+  font-size: 56px;
+  line-height: 0.6;
+  color: var(--purple-400);
+  margin-bottom: 4px;
+  font-style: italic;
+}
+
+.story-transformation {
+  font-family: var(--display);
+  font-size: 22px;
+  line-height: 1.25;
+  color: var(--ink);
+  margin-bottom: 20px;
+  letter-spacing: -0.015em;
+}
+
+.story-transformation em {
+  font-style: italic;
+  color: var(--purple-600);
+}
+
+.story-metric {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--teal-50);
+  color: var(--teal-600);
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 24px;
+  align-self: flex-start;
+}
+
+.story-quote {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink-muted);
+  margin-bottom: 24px;
+  flex: 1;
+}
+
+.story-author {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.story-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--purple-200);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--purple-800);
+}
+
+.story-avatar-2 { background: var(--teal-100); color: var(--teal-600); }
+.story-avatar-3 { background: #FDF1D8; color: #854F0B; }
+
+.story-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+.story-role { font-size: 13px; color: var(--ink-muted); }
+
+@media (max-width: 968px) {
+  .stories-grid { grid-template-columns: 1fr; }
+}
+
+/* ============================================
+   WHY PARTNER
+   ============================================ */
+.why-section { background: var(--purple-50); }
+
+.why-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.why-card {
+  background: var(--white);
+  border-radius: 16px;
+  padding: 36px;
+  border: 1px solid var(--border);
+  transition: all 0.3s ease;
+}
+
+.why-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 20px 40px -20px rgba(83, 74, 183, 0.15);
+}
+
+.why-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.why-icon-purple { background: var(--purple-100); color: var(--purple-600); }
+.why-icon-teal { background: var(--teal-100); color: var(--teal-600); }
+
+.why-title {
+  font-family: var(--display);
+  font-size: 26px;
+  font-weight: 400;
+  line-height: 1.15;
+  color: var(--ink);
+  margin-bottom: 8px;
+  letter-spacing: -0.015em;
+}
+
+.why-tagline {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+.why-card .why-icon-purple ~ .why-tagline { color: var(--purple-600); }
+.why-tagline-purple { color: var(--purple-600); }
+.why-tagline-teal { color: var(--teal-600); }
+
+.why-body {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink-muted);
+}
+
+@media (max-width: 768px) {
+  .why-grid { grid-template-columns: 1fr; }
+}
+
+/* ============================================
+   THE PROOF (TEAM)
+   ============================================ */
+.proof-section { background: var(--white); }
+
+.proof-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.team-card {
+  text-align: center;
+  padding: 24px 12px;
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.team-card:hover {
+  background: var(--purple-50);
+}
+
+.team-photo {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--display);
+  font-size: 36px;
+  color: var(--white);
+  font-weight: 400;
+  position: relative;
+  overflow: hidden;
+}
+
+.team-photo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid var(--white);
+  box-shadow: 0 0 0 1px var(--border-strong);
+}
+
+.team-photo-1 { background: linear-gradient(135deg, #7F77DD, #534AB7); }
+.team-photo-2 { background: linear-gradient(135deg, #5DCAA5, #0F6E56); }
+.team-photo-3 { background: linear-gradient(135deg, #F0997B, #D85A30); }
+.team-photo-4 { background: linear-gradient(135deg, #ED93B1, #D4537E); }
+.team-photo-5 { background: linear-gradient(135deg, #B5D4F4, #378ADD); }
+.team-photo-6 { background: linear-gradient(135deg, #FAC775, #BA7517); }
+.team-photo-7 { background: linear-gradient(135deg, #C0DD97, #639922); }
+.team-photo-8 { background: linear-gradient(135deg, #CECBF6, #7F77DD); }
+
+.team-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+
+.team-role {
+  font-size: 13px;
+  color: var(--ink-muted);
+  line-height: 1.4;
+}
+
+.team-flag {
+  font-size: 14px;
+  margin-left: 4px;
+}
+
+.proof-footer {
+  text-align: center;
+  margin-top: 56px;
+}
+
+.proof-footer-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+  padding: 14px 24px;
+  border: 1px solid var(--border-strong);
+  border-radius: 100px;
+  transition: all 0.2s ease;
+}
+
+.proof-footer-link:hover {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--white);
+}
+
+@media (max-width: 968px) {
+  .proof-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ============================================
+   FINAL CTA
+   ============================================ */
+.final-cta {
+  background: var(--purple-900);
+  color: var(--white);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.final-cta::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 800px;
+  height: 800px;
+  background: radial-gradient(circle, rgba(127, 119, 221, 0.15) 0%, transparent 60%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.final-cta-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+.final-cta-title {
+  font-family: var(--display);
+  font-size: clamp(48px, 7vw, 80px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.035em;
+  margin-bottom: 24px;
+}
+
+.final-cta-title em {
+  font-style: italic;
+  color: var(--purple-200);
+}
+
+.final-cta-subtitle {
+  font-size: 19px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 48px;
+  max-width: 540px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.final-cta-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn-cta-primary {
+  background: var(--white);
+  color: var(--purple-900);
+  padding: 18px 32px;
+  border-radius: 100px;
+  font-size: 16px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-cta-primary:hover {
+  background: var(--purple-100);
+  transform: translateY(-2px);
+}
+
+.btn-cta-secondary {
+  background: transparent;
+  color: var(--white);
+  padding: 18px 32px;
+  border-radius: 100px;
+  font-size: 16px;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  transition: all 0.2s ease;
+}
+
+.btn-cta-secondary:hover {
+  border-color: var(--white);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* ============================================
+   FOOTER
+   ============================================ */
+.footer {
+  background: var(--ink);
+  color: rgba(255, 255, 255, 0.6);
+  padding: 60px 0 32px;
+}
+
+.footer-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.footer-logo {
+  color: var(--white);
+  font-family: var(--display);
+  font-size: 22px;
+}
+
+.footer-text {
+  font-size: 13px;
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.hero-title, .hero-subtitle, .hero-ctas, .hero-badge, .hero-supporting {
+  animation: fadeUp 0.8s ease backwards;
+}
+.hero-badge { animation-delay: 0.1s; }
+.hero-title { animation-delay: 0.2s; }
+.hero-subtitle { animation-delay: 0.4s; }
+.hero-supporting { animation-delay: 0.5s; }
+.hero-ctas { animation-delay: 0.6s; }
+
+.vanessa-card {
+  animation: fadeUp 1s ease 0.4s backwards;
+}
+
+</style>
+</head>
+<body>
+
+<!-- ============================================
+     NAVIGATION
+     ============================================ -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="#" class="logo">OnSpot<span class="logo-dot"></span></a>
+    <ul class="nav-links">
+      <li><a href="#">Hire Talent</a></li>
+      <li><a href="#">Find Work</a></li>
+      <li><a href="#">Why OnSpot</a></li>
+      <li><a href="#">Solutions</a></li>
+      <li><a href="#">Insights</a></li>
+    </ul>
+    <a href="#" class="nav-cta">Get Started</a>
+  </div>
+</nav>
+
+<!-- ============================================
+     1. HERO
+     ============================================ -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="hero-badge-pill">New</span>
+        <span>Vanessa AI Assistant is now live →</span>
+      </div>
+      <h1 class="hero-title">Work <em>Differently.</em></h1>
+      <p class="hero-subtitle">AI first. Humans when it matters.</p>
+      <p class="hero-supporting">Marketplace speed. BPO quality. One platform.</p>
+      <div class="hero-ctas">
+        <a href="#" class="btn-primary">
+          Launch AI Assistant
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </a>
+        <a href="#" class="btn-secondary">Get Managed Team</a>
+        <a href="#" class="btn-text">Looking for work? →</a>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="vanessa-card">
+        <div class="vanessa-header">
+          <div class="vanessa-avatar">V</div>
+          <div class="vanessa-info">
+            <div class="vanessa-name">Vanessa</div>
+            <div class="vanessa-status">AI Assistant · Online</div>
+          </div>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A09DB8" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+        </div>
+
+        <div class="chat-bubble bubble-ai">Hi! How can I help you scale today?</div>
+        <div class="chat-bubble bubble-user">Find me 3 data analysts</div>
+        <div class="chat-bubble bubble-ai">Here are your top matches based on availability and skills:</div>
+
+        <div class="match-card">
+          <div class="match-avatar">KM</div>
+          <div class="match-info">
+            <div class="match-name">Kyle Mendez</div>
+            <div class="match-role">Senior Data Analyst · 5 yrs</div>
+          </div>
+          <div class="match-badge">98% match</div>
+        </div>
+
+        <div class="match-card">
+          <div class="match-avatar">AL</div>
+          <div class="match-info">
+            <div class="match-name">Alexandra Lopez</div>
+            <div class="match-role">Data Analyst · 4 yrs</div>
+          </div>
+          <div class="match-badge">94% match</div>
+        </div>
+
+        <div class="match-card">
+          <div class="match-avatar">AP</div>
+          <div class="match-info">
+            <div class="match-name">Andrea Pinzon</div>
+            <div class="match-role">Data Analyst · 3 yrs</div>
+          </div>
+          <div class="match-badge">91% match</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================
+     2. NUMBERS STRIP
+     ============================================ -->
+<section class="numbers-section">
+  <div class="container">
+    <div class="numbers-grid">
+      <div class="stat">
+        <div class="stat-number">72hrs</div>
+        <div class="stat-label">Average time to hire</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">500+</div>
+        <div class="stat-label">Global clients</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">98%</div>
+        <div class="stat-label">Client retention</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">2,000+</div>
+        <div class="stat-label">Talents placed</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================
+     3. INSIGHTS
+     ============================================ -->
+<section>
+  <div class="container">
+    <div class="insights-header">
+      <div class="insights-header-text">
+        <span class="eyebrow">Insights</span>
+        <h2 class="section-title">Thinking ahead, so you can move <em>faster.</em></h2>
+        <p class="section-subtitle">Perspectives on AI, talent, and the future of work — from the team building it.</p>
+      </div>
+      <a href="#" class="insights-link">
+        Explore all insights
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+
+    <div class="insights-grid">
+      <article class="article-card">
+        <div class="article-thumb article-thumb-1">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#534AB7" stroke-width="1.5">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <path d="M9 9h6v6H9z"/>
+            <path d="M3 9h6M15 9h6M3 15h6M15 15h6M9 3v6M9 15v6M15 3v6M15 15v6"/>
+          </svg>
+        </div>
+        <div class="article-tag">AI Operations</div>
+        <h3 class="article-title">The new operating model: AI agents and human teams</h3>
+        <p class="article-excerpt">How leading companies are restructuring around AI-first workflows without losing the human touch.</p>
+        <div class="article-meta">
+          <span>Shane Cruz</span>
+          <span class="article-meta-dot"></span>
+          <span>6 min read</span>
+        </div>
+      </article>
+
+      <article class="article-card">
+        <div class="article-thumb article-thumb-2">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#0F6E56" stroke-width="1.5">
+            <circle cx="12" cy="8" r="4"/>
+            <path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
+            <circle cx="6" cy="6" r="2"/>
+            <circle cx="18" cy="6" r="2"/>
+          </svg>
+        </div>
+        <div class="article-tag">Talent Strategy</div>
+        <h3 class="article-title">Why the Philippines is the future of global operations</h3>
+        <p class="article-excerpt">A deep dive into the workforce, infrastructure, and cultural fit driving the next wave of offshore excellence.</p>
+        <div class="article-meta">
+          <span>Ria Mendoza</span>
+          <span class="article-meta-dot"></span>
+          <span>8 min read</span>
+        </div>
+      </article>
+
+      <article class="article-card">
+        <div class="article-thumb article-thumb-3">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#854F0B" stroke-width="1.5">
+            <path d="M3 3v18h18"/>
+            <path d="M7 14l4-4 4 4 6-6"/>
+            <path d="M17 8h4v4"/>
+          </svg>
+        </div>
+        <div class="article-tag">Founder Ops</div>
+        <h3 class="article-title">From burnout to 4-day weeks: a founder's playbook</h3>
+        <p class="article-excerpt">What it actually takes to reclaim your time — three founders share what worked and what didn't.</p>
+        <div class="article-meta">
+          <span>OnSpot Team</span>
+          <span class="article-meta-dot"></span>
+          <span>5 min read</span>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================
+     4. WORK DIFFERENTLY
+     ============================================ -->
+<section class="work-section">
+  <div class="container">
+    <div style="text-align: center; margin-bottom: 72px;">
+      <span class="eyebrow" style="margin-left: auto; margin-right: auto;">Two paths</span>
+      <h2 class="section-title" style="margin-left: auto; margin-right: auto; text-align: center;">Whether you're building a team <em>or</em> building a career.</h2>
+    </div>
+
+    <div class="work-grid">
+      <!-- For Companies -->
+      <div class="work-card work-card-purple">
+        <div class="work-card-eyebrow">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>
+          For Companies
+        </div>
+        <h3 class="work-card-title">Hire <em>faster.</em><br>Spend less.</h3>
+        <ul class="work-items">
+          <li class="work-item">
+            <div class="work-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            </div>
+            Hire in days
+          </li>
+          <li class="work-item">
+            <div class="work-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+            </div>
+            Hire your way
+          </li>
+          <li class="work-item">
+            <div class="work-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            No middlemen
+          </li>
+          <li class="work-item">
+            <div class="work-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            </div>
+            50+ countries
+          </li>
+        </ul>
+        <a href="#" class="work-cta">
+          Find the right talent
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+
+      <!-- For Professionals -->
+      <div class="work-card work-card-teal">
+        <div class="work-card-eyebrow">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          For Professionals
+        </div>
+        <h3 class="work-card-title">Real <em>work.</em><br>Real growth.</h3>
+        <ul class="work-items">
+          <li class="work-item">
+            <div class="work-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            </div>
+            Steady pipeline
+          </li>
+          <li class="work-item">
+            <div class="work-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+            Top global brands
+          </li>
+          <li class="work-item">
+            <div class="work-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            Your terms
+          </li>
+          <li class="work-item">
+            <div class="work-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+            </div>
+            Zero gatekeeping
+          </li>
+        </ul>
+        <a href="#" class="work-cta">
+          Find your next opportunity
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================
+     5. TRUSTED BY
+     ============================================ -->
+<section class="trusted-section">
+  <div class="container">
+    <p class="trusted-label">Trusted by global brands, hundreds of entrepreneurs, and thousands of professionals worldwide.</p>
+    <div class="trusted-logos">
+      <span class="logo-item logo-item-bold">Flash Justice</span>
+      <span class="logo-item">Future Motors EV</span>
+      <span class="logo-item logo-item-italic">IPS by Meest</span>
+      <span class="logo-item logo-item-bold">Pinetech</span>
+      <span class="logo-item">Safeway Moving</span>
+      <span class="logo-item logo-item-italic">Vertex Education</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================
+     6. TRANSFORMATION STORIES
+     ============================================ -->
+<section>
+  <div class="container">
+    <div style="margin-bottom: 64px;">
+      <span class="eyebrow">Transformations</span>
+      <h2 class="section-title">Real change. <em>Real results.</em></h2>
+      <p class="section-subtitle">How OnSpot reshapes how teams work — one partnership at a time.</p>
+    </div>
+
+    <div class="stories-grid">
+      <div class="story-card">
+        <div class="story-quote-mark">"</div>
+        <h3 class="story-transformation">From 12-hour workdays to <em>automated excellence</em></h3>
+        <div class="story-metric">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg>
+          40% time saved
+        </div>
+        <p class="story-quote">The professionalism and consistency of the OnSpot team. Communication is always clear, and the structured daily and weekly updates make it simple to stay aligned.</p>
+        <div class="story-author">
+          <div class="story-avatar story-avatar-1">EB</div>
+          <div>
+            <div class="story-name">Elad B.</div>
+            <div class="story-role">CEO / Founder, PineTech</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="story-card">
+        <div class="story-quote-mark">"</div>
+        <h3 class="story-transformation">From scattered processes to <em>seamless orchestration</em></h3>
+        <div class="story-metric">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg>
+          3 weeks to full team
+        </div>
+        <p class="story-quote">I've worked with several outsourcing companies, but none delivered like OnSpot. Shane and Ria helped me build my team, stayed involved, and ensured success. I finally feel like I'm working with a true partner.</p>
+        <div class="story-author">
+          <div class="story-avatar story-avatar-2">EM</div>
+          <div>
+            <div class="story-name">Eric M.</div>
+            <div class="story-role">Operations Director, Flash Justice</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="story-card">
+        <div class="story-quote-mark">"</div>
+        <h3 class="story-transformation">From constant firefighting to <em>proactive innovation</em></h3>
+        <div class="story-metric">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg>
+          24/7 coverage
+        </div>
+        <p class="story-quote">OnSpot's team is professional, responsive, and reliable — always going above and beyond. The efficiency and consistency they deliver gives me complete confidence in the partnership we've built.</p>
+        <div class="story-author">
+          <div class="story-avatar story-avatar-3">FC</div>
+          <div>
+            <div class="story-name">Fernando C.</div>
+            <div class="story-role">CTO, Pinetech</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================
+     7. WHY PARTNER
+     ============================================ -->
+<section class="why-section">
+  <div class="container">
+    <div style="margin-bottom: 64px;">
+      <span class="eyebrow">Why OnSpot</span>
+      <h2 class="section-title">Not a service provider. <em>An architect.</em></h2>
+      <p class="section-subtitle">We build the future where AI and human brilliance work as one — and we'd be honored to build it with you.</p>
+    </div>
+
+    <div class="why-grid">
+      <div class="why-card">
+        <div class="why-icon why-icon-purple">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="2" x2="9" y2="4"/><line x1="15" y1="2" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="22"/><line x1="15" y1="20" x2="15" y2="22"/><line x1="20" y1="9" x2="22" y2="9"/><line x1="20" y1="14" x2="22" y2="14"/><line x1="2" y1="9" x2="4" y2="9"/><line x1="2" y1="14" x2="4" y2="14"/></svg>
+        </div>
+        <h3 class="why-title">AI-first infrastructure</h3>
+        <div class="why-tagline why-tagline-purple">Intelligent by design</div>
+        <p class="why-body">Every system and workflow enhanced by intelligence that amplifies human potential — not automation for its own sake.</p>
+      </div>
+
+      <div class="why-card">
+        <div class="why-icon why-icon-teal">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </div>
+        <h3 class="why-title">Human-centered culture</h3>
+        <div class="why-tagline why-tagline-teal">People, not resources</div>
+        <p class="why-body">Elite Filipino talent treated as partners. We invest in their growth because your success depends on it.</p>
+      </div>
+
+      <div class="why-card">
+        <div class="why-icon why-icon-purple">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6M12 9v6M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
+        </div>
+        <h3 class="why-title">Connected ecosystem</h3>
+        <div class="why-tagline why-tagline-purple">Seamless integration</div>
+        <p class="why-body">Your tools, your workflow, working in harmony. We don't disrupt what you've built — we elevate it.</p>
+      </div>
+
+      <div class="why-card">
+        <div class="why-icon why-icon-teal">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        </div>
+        <h3 class="why-title">Scalable excellence</h3>
+        <div class="why-tagline why-tagline-teal">Grow without compromise</div>
+        <p class="why-body">Scale from 1 to 100 without losing quality, culture, or control. Same excellence at every stage.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================
+     8. THE PROOF (TEAM)
+     ============================================ -->
+<section class="proof-section">
+  <div class="container">
+    <div style="text-align: center; margin-bottom: 64px;">
+      <span class="eyebrow" style="margin-left: auto; margin-right: auto;">The proof</span>
+      <h2 class="section-title" style="margin-left: auto; margin-right: auto; text-align: center;">The people <em>behind</em> the platform.</h2>
+      <p class="section-subtitle" style="margin-left: auto; margin-right: auto;">Powered by professionals from the US, Philippines, and beyond. The Superhuman BPO Network.</p>
+    </div>
+
+    <div class="proof-grid">
+      <div class="team-card">
+        <div class="team-photo team-photo-1">KM</div>
+        <div class="team-name">Kyle Mendez <span class="team-flag">🇵🇭</span></div>
+        <div class="team-role">Recruitment Specialist</div>
+      </div>
+      <div class="team-card">
+        <div class="team-photo team-photo-2">AL</div>
+        <div class="team-name">Alexandra Lopez <span class="team-flag">🇵🇭</span></div>
+        <div class="team-role">Executive Assistant</div>
+      </div>
+      <div class="team-card">
+        <div class="team-photo team-photo-3">AP</div>
+        <div class="team-name">Andrea Pinzon <span class="team-flag">🇵🇭</span></div>
+        <div class="team-role">Virtual Assistant</div>
+      </div>
+      <div class="team-card">
+        <div class="team-photo team-photo-4">CA</div>
+        <div class="team-name">Christopher Alba <span class="team-flag">🇵🇭</span></div>
+        <div class="team-role">Technical Support</div>
+      </div>
+      <div class="team-card">
+        <div class="team-photo team-photo-5">RC</div>
+        <div class="team-name">Rachel Castro <span class="team-flag">🇵🇭</span></div>
+        <div class="team-role">Social Media Manager</div>
+      </div>
+      <div class="team-card">
+        <div class="team-photo team-photo-6">AS</div>
+        <div class="team-name">Amir Singh <span class="team-flag">🇺🇸</span></div>
+        <div class="team-role">SEO Specialist</div>
+      </div>
+      <div class="team-card">
+        <div class="team-photo team-photo-7">JD</div>
+        <div class="team-name">Jennifer Dizon <span class="team-flag">🇵🇭</span></div>
+        <div class="team-role">Customer Service</div>
+      </div>
+      <div class="team-card">
+        <div class="team-photo team-photo-8">AL</div>
+        <div class="team-name">Andrei Losanto <span class="team-flag">🇵🇭</span></div>
+        <div class="team-role">Full Stack Developer</div>
+      </div>
+    </div>
+
+    <div class="proof-footer">
+      <a href="#" class="proof-footer-link">
+        Browse all talent
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================
+     9. FINAL CTA
+     ============================================ -->
+<section class="final-cta">
+  <div class="final-cta-inner">
+    <h2 class="final-cta-title">Ready to become <em>superhuman?</em></h2>
+    <p class="final-cta-subtitle">AI first. Humans when it matters. Join the Superhuman Revolution.</p>
+    <div class="final-cta-buttons">
+      <a href="#" class="btn-cta-primary">
+        Launch AI Assistant
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
+      <a href="#" class="btn-cta-secondary">Get Managed Team</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================
+     FOOTER
+     ============================================ -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-logo">OnSpot</div>
+      <p class="footer-text" style="margin-top: 8px;">AI first. Humans when it matters.</p>
+    </div>
+    <div class="footer-text">© 2025 OnSpot. All rights reserved. · Powered by OnSpot Intelligence</div>
+  </div>
+</footer>
+
+</body>
+</html>
