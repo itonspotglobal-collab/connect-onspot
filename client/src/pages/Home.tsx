@@ -320,8 +320,8 @@ export default function Home() {
           <div className="absolute bottom-1/3 right-1/4 w-[500px] h-[500px] bg-gradient-radial from-blue-500/10 to-transparent rounded-full blur-3xl animate-slow-spin"></div>
         </div>
 
-        {/* Main content — 2-col on desktop */}
-        <div className="flex items-center relative z-20 px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 lg:pt-32 pb-16 sm:pb-20">
+        {/* Main content — 2-col on desktop, occupies first viewport so stats fall below fold */}
+        <div className="min-h-[calc(100vh-72px)] flex items-center relative z-20 px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
           <div className="container mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_0.9fr] gap-10 lg:gap-12 xl:gap-14 items-center">
               {/* ── LEFT: Text + CTAs ── */}

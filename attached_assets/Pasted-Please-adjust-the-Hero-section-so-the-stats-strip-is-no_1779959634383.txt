@@ -1,0 +1,157 @@
+Please adjust the Hero section so the stats strip is not visible when the page first loads.
+
+Current issue:
+The stats strip is visible at the bottom of the initial viewport:
+- 72hrs
+- 500+
+- 98%
+- 2,000+
+- PHILIPPINE-BASED
+
+Goal:
+Keep the stats strip inside the Hero section, but push it slightly below the initial fold so it only becomes visible when the user scrolls down a little.
+
+IMPORTANT:
+- Do NOT remove the stats strip.
+- Do NOT hide it with display:none.
+- Do NOT change the Navigation bar.
+- Do NOT change the Footer.
+- Do NOT redesign the Hero.
+- Keep the current hero layout/content/card/buttons.
+- Only adjust vertical height/spacing so the stats are below the initial viewport.
+
+==================================================
+EXPECTED BEHAVIOR
+==================================================
+
+When the page first opens:
+- User should see the navbar.
+- User should see the main Hero content:
+  - badge
+  - “Work Differently.”
+  - subtitle
+  - CTA buttons
+  - Vanessa AI card
+- User should NOT see the stats strip yet.
+
+After the user scrolls down a little:
+- The stats strip becomes visible.
+
+==================================================
+IMPLEMENTATION GUIDANCE
+==================================================
+
+Separate the Hero into two vertical parts:
+
+1. Initial Hero Viewport
+2. Stats Strip
+
+Example structure:
+
+<section className="hero-section">
+  <div className="hero-main">
+    hero content + Vanessa card
+  </div>
+
+  <StatsStrip />
+</section>
+
+The `.hero-main` should take up the first viewport height, accounting for the navbar.
+
+Recommended Tailwind:
+
+Hero main wrapper:
+
+className="
+  min-h-[calc(100vh-72px)]
+  flex items-center
+"
+
+or if the navbar height is around 64px:
+
+className="
+  min-h-[calc(100vh-64px)]
+  flex items-center
+"
+
+If the stats are still visible on load, increase to:
+
+className="
+  min-h-[calc(100vh-40px)]
+  flex items-center
+"
+
+or:
+
+className="
+  min-h-screen
+  flex items-center
+"
+
+Stats strip should come after that wrapper.
+
+Example:
+
+<section className="relative overflow-hidden bg-[#252A70]">
+  <div className="min-h-[calc(100vh-72px)] flex items-center">
+    <div className="mx-auto grid w-full max-w-[1400px] grid-cols-1 items-center gap-10 px-6 lg:grid-cols-[1fr_0.9fr] lg:gap-12">
+      hero text
+      Vanessa card
+    </div>
+  </div>
+
+  <StatsStrip />
+</section>
+
+==================================================
+REMOVE CONFLICTING SPACING
+==================================================
+
+Make sure the stats strip is not pulled upward by negative margins or absolute positioning.
+
+Check and remove/reduce classes like:
+- -mt-*
+- absolute bottom-0
+- sticky
+- translate-y-*
+- top-*
+- bottom-*
+- mt-[-...]
+
+The stats strip should be in normal document flow after the hero-main viewport.
+
+==================================================
+DO NOT ADD TOO MUCH GAP
+==================================================
+
+The stats should appear after a small scroll, not after a huge empty gap.
+
+Do not add a large spacer div like:
+- h-screen
+- h-[400px]
+- mt-40
+- pt-40
+
+The only reason stats are below the fold should be because the hero-main content occupies the first viewport.
+
+==================================================
+RESPONSIVE REQUIREMENTS
+==================================================
+
+Desktop:
+- Stats are not visible on initial page load.
+- Stats appear after a slight scroll.
+
+Laptop:
+- Same behavior.
+
+Tablet/mobile:
+- Since hero content stacks, the stats may naturally be lower.
+- Make sure there is no overlap.
+- No horizontal scrolling.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The stats strip remains part of the Hero section, but it is placed below the first viewport. On page load, users see only the Hero content and Vanessa AI card. The stats appear only after scrolling down a little.
