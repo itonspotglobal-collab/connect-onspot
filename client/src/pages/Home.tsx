@@ -550,17 +550,27 @@ export default function Home() {
         <div className="relative bg-slate-50 py-20 sm:py-28">
           <div className="container mx-auto px-4 sm:px-6">
             {/* Section header */}
-            <div className="mb-10 sm:mb-14">
-              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-600">
-                Insights
-              </p>
-              <h2 className="mt-3 text-3xl sm:text-4xl font-semibold text-slate-900">
-                Thinking ahead, so you can move faster.
-              </h2>
-              <h2 className="mt-3 text-3xl sm:text-4xl font-semibold text-slate-900">
-                Perspectives on AI, talent, and the future of work — from the
-                team building it.
-              </h2>
+            <div className="mb-10 sm:mb-14 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-600">
+                  Insights
+                </p>
+                <h2 className="mt-3 text-3xl sm:text-4xl font-semibold text-slate-900 max-w-xl">
+                  Thinking ahead, so you can move{" "}
+                  <span className="text-violet-600">faster.</span>
+                </h2>
+                <p className="mt-3 text-base sm:text-lg text-slate-500 max-w-xl">
+                  Perspectives on AI, talent, and the future of work — from the
+                  team building it.
+                </p>
+              </div>
+              <a
+                href="/insights"
+                className="shrink-0 inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors"
+              >
+                Explore all insights
+                <ArrowUpRight className="h-4 w-4" />
+              </a>
             </div>
 
             {/* Cards grid */}
@@ -719,156 +729,90 @@ export default function Home() {
         <div className="pointer-events-none absolute -right-24 bottom-10 h-72 w-72 rounded-full bg-cyan-300/20 blur-3xl" />
 
         <div className="container relative z-10 mx-auto px-4 sm:px-6">
-          <p className="text-center text-xs font-semibold uppercase tracking-[0.25em] text-indigo-600">
-            Two paths
-          </p>
-          <p className="mx-auto mt-4 max-w-3xl text-center text-base sm:text-lg text-slate-700">
-            Whether you're building a team or building a career.
-          </p>
+          <div className="text-center mb-12 sm:mb-16">
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-600">
+              Two paths
+            </p>
+            <h2 className="mx-auto mt-4 max-w-2xl text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900">
+              Whether you're building a team or building a career.
+            </h2>
+          </div>
 
-          <div className="mx-auto mt-12 grid w-full max-w-6xl grid-cols-1 gap-8 lg:grid-cols-2">
+          <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-8 lg:grid-cols-2">
             {/* Card 1: For Companies */}
-            <div className="rounded-3xl border border-indigo-400/70 bg-indigo-50/60 p-8 sm:p-10 shadow-sm backdrop-blur-md flex flex-col">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-indigo-600">
+            <div className="rounded-3xl border border-indigo-200 bg-indigo-50/70 p-8 sm:p-10 shadow-sm flex flex-col">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-indigo-500">
                 For companies
               </p>
-              <h3 className="mt-4 text-xl font-semibold text-slate-900">
+              <h3 className="mt-3 text-2xl font-bold text-slate-900">
                 Hire faster. Spend less.
               </h3>
 
-              <div className="mt-8 flex flex-col gap-7 flex-1">
-                <div className="flex items-center gap-5">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-white">
-                    <Zap className="h-6 w-6" />
+              <div className="mt-8 flex flex-col flex-1 divide-y divide-slate-200/80">
+                {[
+                  { icon: <Zap className="h-5 w-5" />, title: "Hire in days", sub: "72-hour match average" },
+                  { icon: <SlidersHorizontal className="h-5 w-5" />, title: "Hire your way", sub: "Contract, project, full-time" },
+                  { icon: <ArrowRight className="h-5 w-5" />, title: "No middlemen", sub: "Direct access, zero markups" },
+                  { icon: <Globe className="h-5 w-5" />, title: "50+ countries", sub: "Global reach, local expertise" },
+                ].map((item) => (
+                  <div key={item.title} className="flex items-center gap-4 py-5">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600">
+                      {item.icon}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">{item.title}</p>
+                      <p className="text-sm text-slate-500">{item.sub}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-base font-semibold text-slate-900">
-                      Days, not months
-                    </p>
-                    <p className="mt-1 text-sm text-slate-600">
-                      72-hour match average
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-5">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-white">
-                    <SlidersHorizontal className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <p className="text-base font-semibold text-slate-900">
-                      Hire your way
-                    </p>
-                    <p className="mt-1 text-sm text-slate-600">
-                      Contract, project, full-time
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-5">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-white">
-                    <ArrowRight className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <p className="text-base font-semibold text-slate-900">
-                      Skip the middlemen
-                    </p>
-                    <p className="mt-1 text-sm text-slate-600">
-                      Direct, no markups
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-5">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-white">
-                    <Globe className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <p className="text-base font-semibold text-slate-900">
-                      50+ countries
-                    </p>
-                    <p className="mt-1 text-sm text-slate-600">
-                      Global reach, local expertise
-                    </p>
-                  </div>
-                </div>
+                ))}
               </div>
 
-              <a
-                href="/hire-talent"
-                className="mt-10 flex w-full items-center justify-center rounded-full border border-indigo-500 px-6 py-3 text-sm font-semibold text-indigo-600 transition hover:bg-indigo-500 hover:text-white"
-              >
-                Find the right talent →
-              </a>
+              <div className="mt-6 pt-6 border-t border-indigo-200">
+                <a
+                  href="/hire-talent"
+                  className="flex w-full items-center justify-center rounded-full border border-indigo-500 px-6 py-3 text-sm font-semibold text-indigo-600 transition hover:bg-indigo-500 hover:text-white"
+                >
+                  Find the right talent →
+                </a>
+              </div>
             </div>
 
             {/* Card 2: For Professionals */}
-            <div className="rounded-3xl border border-teal-600/60 bg-teal-50/60 p-8 sm:p-10 shadow-sm backdrop-blur-md flex flex-col">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-teal-700">
+            <div className="rounded-3xl border border-teal-200 bg-teal-50/70 p-8 sm:p-10 shadow-sm flex flex-col">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-teal-600">
                 For professionals
               </p>
-              <h3 className="mt-4 text-xl font-semibold text-slate-900">
+              <h3 className="mt-3 text-2xl font-bold text-slate-900">
                 Real work. Real growth.
               </h3>
 
-              <div className="mt-8 flex flex-col gap-7 flex-1">
-                <div className="flex items-center gap-5">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-teal-600 text-white">
-                    <TrendingUp className="h-6 w-6" />
+              <div className="mt-8 flex flex-col flex-1 divide-y divide-slate-200/80">
+                {[
+                  { icon: <TrendingUp className="h-5 w-5" />, title: "Steady pipeline", sub: "No gaps, no chasing" },
+                  { icon: <Star className="h-5 w-5" />, title: "Top global brands", sub: "Builds your reputation fast" },
+                  { icon: <Clock className="h-5 w-5" />, title: "Your terms", sub: "Remote, flexible schedule" },
+                  { icon: <CheckCircle2 className="h-5 w-5" />, title: "Zero gatekeeping", sub: "Pure merit, open access" },
+                ].map((item) => (
+                  <div key={item.title} className="flex items-center gap-4 py-5">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-500/10 text-teal-600">
+                      {item.icon}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">{item.title}</p>
+                      <p className="text-sm text-slate-500">{item.sub}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-base font-semibold text-slate-900">
-                      Steady pipeline
-                    </p>
-                    <p className="mt-1 text-sm text-slate-600">
-                      No gaps, no chasing
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-5">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-teal-600 text-white">
-                    <Star className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <p className="text-base font-semibold text-slate-900">
-                      Top global brands
-                    </p>
-                    <p className="mt-1 text-sm text-slate-600">
-                      Builds your reputation
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-5">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-teal-600 text-white">
-                    <Clock className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <p className="text-base font-semibold text-slate-900">
-                      Your terms
-                    </p>
-                    <p className="mt-1 text-sm text-slate-600">
-                      Remote, your schedule
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-5">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-teal-600 text-white">
-                    <CheckCircle2 className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <p className="text-base font-semibold text-slate-900">
-                      Pure merit
-                    </p>
-                    <p className="mt-1 text-sm text-slate-600">
-                      No gatekeepers, no politics
-                    </p>
-                  </div>
-                </div>
+                ))}
               </div>
 
-              <a
-                href="/find-best-matches"
-                className="mt-10 flex w-full items-center justify-center rounded-full border border-teal-600 px-6 py-3 text-sm font-semibold text-teal-700 transition hover:bg-teal-600 hover:text-white"
-              >
-                Find your next opportunity →
-              </a>
+              <div className="mt-6 pt-6 border-t border-teal-200">
+                <a
+                  href="/find-best-matches"
+                  className="flex w-full items-center justify-center rounded-full border border-teal-600 px-6 py-3 text-sm font-semibold text-teal-700 transition hover:bg-teal-600 hover:text-white"
+                >
+                  Find your next opportunity →
+                </a>
+              </div>
             </div>
           </div>
         </div>
@@ -1042,25 +986,25 @@ export default function Home() {
                 icon: <Users className="h-6 w-6" />,
                 iconBg: "bg-teal-100 text-teal-600",
                 title: "Human-centered culture",
-                tagline: "People who care",
+                tagline: "People, not resources",
                 taglineColor: "text-teal-600",
-                body: "We believe technology is only as powerful as the people behind it. Our team is passionate, empathetic, and relentlessly client-focused.",
+                body: "Elite Filipino talent treated as partners. We invest in their growth because your success depends on it.",
               },
               {
                 icon: <Globe className="h-6 w-6" />,
                 iconBg: "bg-violet-100 text-violet-600",
                 title: "Connected ecosystem",
-                tagline: "One platform, everything",
+                tagline: "Seamless integration",
                 taglineColor: "text-violet-600",
-                body: "From AI assistants to managed teams, every tool and talent in your stack talks to each other — giving you full operational clarity.",
+                body: "Your tools, your workflow, working in harmony. We don't disrupt what you've built — we elevate it.",
               },
               {
                 icon: <TrendingUp className="h-6 w-6" />,
                 iconBg: "bg-teal-100 text-teal-600",
                 title: "Scalable excellence",
-                tagline: "Built to grow with you",
+                tagline: "Grow without compromise",
                 taglineColor: "text-teal-600",
-                body: "Whether you're a founder scaling your first team or an enterprise optimizing a global workforce, our model adapts to you.",
+                body: "Scale from 1 to 100 without losing quality, culture, or control. Same excellence at every stage.",
               },
             ].map((card) => (
               <div
@@ -1075,9 +1019,7 @@ export default function Home() {
                 <h3 className="text-xl font-semibold text-slate-900 mb-1">
                   {card.title}
                 </h3>
-                <p
-                  className={`text-sm font-semibold mb-3 ${card.taglineColor}`}
-                >
+                <p className={`text-sm font-semibold mb-3 ${card.taglineColor}`}>
                   {card.tagline}
                 </p>
                 <p className="text-sm leading-relaxed text-slate-500">
@@ -1092,16 +1034,16 @@ export default function Home() {
       {/* ── 7. THE PROOF / TALENT PROFILES ── */}
       <div className="relative bg-white py-20 sm:py-28">
         <div className="container mx-auto px-4 sm:px-6">
-          <div className="mb-12 sm:mb-16">
+          <div className="mb-12 sm:mb-16 text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-violet-600">
               The Proof
             </p>
-            <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900 max-w-2xl">
-              World-class talent, ready for you.
+            <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900 mx-auto max-w-2xl">
+              The people behind the platform.
             </h2>
-            <p className="mt-4 text-base sm:text-lg text-slate-500 max-w-xl">
-              Every professional in our network is pre-assessed,
-              culture-matched, and ready to contribute from day one.
+            <p className="mt-4 text-base sm:text-lg text-slate-500 mx-auto max-w-xl">
+              Powered by professionals from the US, Philippines, and beyond.
+              The Superhuman BPO Network.
             </p>
           </div>
 

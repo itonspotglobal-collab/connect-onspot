@@ -1,0 +1,361 @@
+Please update the remaining homepage sections to visually follow the attached reference screenshots.
+
+IMPORTANT:
+- Do NOT change the current Navigation bar.
+- Do NOT change the Footer.
+- Do NOT copy the exact font/text style from the reference.
+- Keep the current OnSpot typography and brand styling.
+- Use the reference for layout, spacing, section structure, and general visual direction only.
+- Do NOT replace existing client logos.
+- Do NOT replace existing talent photos.
+- Keep the current talent photos and talent names.
+- Keep the final CTA section: “Ready to become superhuman?”
+- Keep the current hero update where the headline is “Work Differently.”
+- Make sure all sections are responsive.
+
+Sections to update based on the references:
+1. Insights
+2. Work Differently
+3. Trusted By
+4. Transformation Stories
+5. Why OnSpot / Why Partner
+6. The Proof / Talent Profiles
+
+==================================================
+1. INSIGHTS SECTION
+==================================================
+
+Reference:
+The Insights section should follow the attached screenshot with:
+- label: INSIGHTS
+- headline on the left
+- short subtitle below
+- “Explore all insights →” link aligned to the right
+- three article cards underneath
+
+Do NOT copy the exact serif text style. Use the current site font system.
+
+Content direction:
+Label:
+“INSIGHTS”
+
+Headline:
+“Thinking ahead, so you can move faster.”
+
+The word “faster” can be highlighted using the same purple accent used elsewhere.
+
+Subtitle:
+“Perspectives on AI, talent, and the future of work — from the team building it.”
+
+Right-side link:
+“Explore all insights →”
+
+Cards:
+Use real existing published Insights/blog content if available.
+If the project already has blog/insight data, pull from that instead of hardcoding placeholders.
+
+Card layout:
+- 3 cards in one row on desktop
+- stacked on mobile
+- image/thumbnail block on top
+- category/tag
+- title
+- excerpt
+- author/read time/date if available
+
+Suggested layout:
+<section id="insights">
+  <div className="container">
+    <div className="flex items-end justify-between gap-8">
+      left heading/subtitle
+      right Explore link
+    </div>
+
+    <div className="mt-14 grid grid-cols-1 gap-6 lg:grid-cols-3">
+      article cards
+    </div>
+  </div>
+</section>
+
+Card style:
+- rounded corners
+- white background
+- subtle border
+- subtle hover lift
+- soft image/thumbnail area
+
+==================================================
+2. WORK DIFFERENTLY SECTION
+==================================================
+
+Reference:
+Use the attached Work Differently section screenshot.
+
+Structure:
+- centered label: TWO PATHS
+- centered headline:
+  “Whether you're building a team or building a career.”
+- two large cards side by side:
+  - For Companies
+  - For Professionals
+
+Do NOT copy the exact font style.
+Use current site typography.
+
+For Companies card:
+Label:
+“FOR COMPANIES”
+
+Headline:
+“Hire faster. Spend less.”
+
+Items:
+- Hire in days
+- Hire your way
+- No middlemen
+- 50+ countries
+
+CTA:
+“Find the right talent →”
+
+For Professionals card:
+Label:
+“FOR PROFESSIONALS”
+
+Headline:
+“Real work. Real growth.”
+
+Items:
+- Steady pipeline
+- Top global brands
+- Your terms
+- Zero gatekeeping
+
+CTA:
+“Find your next opportunity →”
+
+Visual style:
+- Companies card: soft purple/lavender background
+- Professionals card: soft mint/teal background
+- Large rounded cards
+- Icon beside each item
+- Thin divider lines between items
+- CTA at the bottom with a top divider
+
+Responsive:
+- desktop: two columns
+- mobile: stacked
+
+==================================================
+3. TRUSTED BY SECTION
+==================================================
+
+Reference:
+Use the attached simple Trusted By reference.
+
+Important:
+- Do NOT replace client logos.
+- Use the real current client logo assets.
+- If the current Trusted By section uses a carousel and that is still desired/implemented, preserve the carousel behavior.
+- If the current accepted design is static, keep it static.
+- Do not use text placeholders like “Flash Justice” if real logo images exist.
+
+Content:
+Small centered line:
+“Trusted by global brands, hundreds of entrepreneurs, and thousands of professionals worldwide.”
+
+Then show the client logos in a clean horizontal row/carousel area.
+
+Visual style:
+- clean light background
+- lots of breathing room
+- logos horizontally aligned
+- logos not distorted
+- colored logos if current assets are colored
+
+Responsive:
+- desktop: row/carousel
+- mobile: wrap or functional carousel without horizontal page scroll
+
+==================================================
+4. TRANSFORMATION STORIES SECTION
+==================================================
+
+Reference:
+Use the attached Transformation Stories screenshot.
+
+Structure:
+- label: TRANSFORMATIONS
+- headline:
+  “Real change. Real results.”
+- subtitle:
+  “How OnSpot reshapes how teams work — one partnership at a time.”
+- 3 testimonial/story cards
+
+Use existing real testimonial content if available.
+
+Card structure:
+- quote mark at top
+- transformation headline
+- small metric pill
+- quote text
+- author block
+
+Suggested card layout:
+<div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+  <StoryCard />
+</div>
+
+Keep it clean:
+- white cards
+- rounded corners
+- subtle border
+- quote mark in purple
+- metric pill in soft green/teal
+- author info at bottom with divider
+
+Responsive:
+- desktop: 3 cards
+- mobile: stacked
+
+==================================================
+5. WHY ONSPOT / WHY PARTNER SECTION
+==================================================
+
+Reference:
+Use the attached Why OnSpot screenshot.
+
+Structure:
+- soft lavender background
+- label: WHY ONSPOT
+- headline:
+  “Not a service provider. An architect.”
+- subtitle:
+  “We build the future where AI and human brilliance work as one — and we'd be honored to build it with you.”
+- 4 cards in a 2x2 grid
+
+Cards:
+1. AI-first infrastructure
+   Tagline: Intelligent by design
+   Body: Every system and workflow enhanced by intelligence that amplifies human potential — not automation for its own sake.
+
+2. Human-centered culture
+   Tagline: People, not resources
+   Body: Elite Filipino talent treated as partners. We invest in their growth because your success depends on it.
+
+3. Connected ecosystem
+   Tagline: Seamless integration
+   Body: Your tools, your workflow, working in harmony. We don't disrupt what you've built — we elevate it.
+
+4. Scalable excellence
+   Tagline: Grow without compromise
+   Body: Scale from 1 to 100 without losing quality, culture, or control. Same excellence at every stage.
+
+Visual style:
+- soft lavender section background
+- white cards
+- rounded corners
+- subtle borders
+- small icon block on top
+- purple and teal icon accents
+
+Responsive:
+- desktop: 2 columns
+- mobile: stacked
+
+==================================================
+6. THE PROOF / TALENT PROFILES SECTION
+==================================================
+
+Reference:
+Use the attached The Proof screenshot.
+
+IMPORTANT:
+- Do NOT replace existing talent photos.
+- Do NOT replace talent names.
+- Retain actual talent photos currently used in the project.
+- Retain names such as Kyle Mendez, Alexandra Lopez, etc.
+- Add PH flag beside Kyle Mendez if it is not already there.
+- If other profiles already have flags, keep them.
+
+Structure:
+- centered label: THE PROOF
+- centered headline:
+  “The people behind the platform.”
+- subtitle:
+  “Powered by professionals from the US, Philippines, and beyond. The Superhuman BPO Network.”
+- talent grid
+- optional button:
+  “Browse all talent →”
+
+Visual style:
+- centered section
+- clean grid
+- talent cards/profile items evenly spaced
+- keep real photos if available
+- do not replace with initials unless there are no photos
+
+If talent photos exist:
+- use circular photos
+- keep them clear and not cropped badly
+- add flag beside name text, not on top of the photo unless already designed
+
+Responsive:
+- desktop: 4 columns
+- tablet: 2 columns
+- mobile: 1–2 columns
+
+==================================================
+GENERAL STYLE RULES
+==================================================
+
+Do:
+- Follow the reference layouts.
+- Keep current site fonts.
+- Keep current OnSpot colors.
+- Keep current Navigation bar and Footer.
+- Keep real logos and real talent images.
+- Use soft purple/teal accent colors.
+- Use clean rounded cards and subtle borders.
+- Preserve responsive behavior.
+
+Do NOT:
+- copy the reference font style exactly
+- change navbar
+- change footer
+- replace client logo assets
+- replace talent photos
+- use placeholder logo text if real logos exist
+- add horizontal page scrolling
+- duplicate sections
+- leave old versions of the sections rendered
+
+==================================================
+SECTION ORDER
+==================================================
+
+Keep the homepage section order aligned with the current mockup implementation:
+
+1. Navigation
+2. Hero
+3. Numbers / Stats Strip
+4. Insights
+5. Work Differently
+6. Trusted By
+7. Transformation Stories
+8. Why OnSpot / Why Partner
+9. The Proof / Talent Profiles
+10. Ready to Become Superhuman
+11. Footer
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The homepage should now visually follow the reference screenshots across all main content sections, while preserving:
+- current navbar
+- current footer
+- current typography
+- current client logos
+- current talent photos
+- “Ready to become superhuman?” CTA
