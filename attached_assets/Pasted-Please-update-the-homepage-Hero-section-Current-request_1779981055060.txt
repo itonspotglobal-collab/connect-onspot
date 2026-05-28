@@ -1,0 +1,227 @@
+Please update the homepage Hero section.
+
+Current request:
+Remove the Vanessa AI card from the Hero section and bring the Hero content back to a centered layout.
+
+IMPORTANT:
+- Do NOT change the Navigation bar.
+- Do NOT change the Footer.
+- Do NOT change the stats strip behavior.
+- Do NOT remove the stats strip.
+- Do NOT change other homepage sections.
+- Only update the Hero section layout/content.
+- The Hero should no longer use a two-column layout.
+
+==================================================
+1. REMOVE VANESSA AI CARD
+==================================================
+
+Remove the Vanessa AI card from the Hero section.
+
+Remove/stop rendering:
+- Vanessa AI card
+- chat mockup
+- talent match rows inside the hero
+- right-side hero visual column
+
+Do not leave an empty right column.
+
+If there are imports/components only used for the Vanessa card, remove unused imports.
+
+==================================================
+2. CENTER HERO CONTENT
+==================================================
+
+Change the hero layout from two-column back to centered content.
+
+Replace grid/two-column layout such as:
+
+grid lg:grid-cols-[1fr_0.9fr]
+
+with a centered single-column layout.
+
+Suggested hero content wrapper:
+
+className="
+  mx-auto flex w-full max-w-6xl flex-col items-center justify-center
+  px-6 text-center
+"
+
+Hero main area should still fill the first viewport so stats are not visible on initial load:
+
+className="
+  min-h-[calc(100vh-72px)]
+  flex items-center justify-center
+"
+
+Keep the stats strip after this main hero viewport.
+
+==================================================
+3. HERO BADGE
+==================================================
+
+Keep the current badge above the title:
+
+“NEW | Vanessa AI Assistant is now live →”
+
+Center it above the headline.
+
+Suggested:
+
+className="
+  inline-flex items-center gap-3
+  rounded-full border border-white/20
+  bg-white/8 px-5 py-2.5
+  text-sm font-medium text-white/75
+  backdrop-blur-md
+"
+
+==================================================
+4. MAIN HERO TITLE
+==================================================
+
+Keep the main title:
+
+“Work Differently.”
+
+Centered.
+
+Use the current hero headline style, but centered.
+
+Suggested:
+
+<h1 className="
+  mt-10 text-center text-6xl font-bold tracking-tight text-white
+  sm:text-7xl lg:text-8xl
+">
+  Work <span className="text-[#B8B7FF]">Differently.</span>
+</h1>
+
+If the project uses a highlight style for “Differently,” keep it.
+
+==================================================
+5. RESTORE SUPPORTING HEADERS BELOW TITLE
+==================================================
+
+Below “Work Differently.” bring back the previous supporting headline structure:
+
+Line 1:
+“One System. Your unfair Advantage.”
+
+Line 2:
+“Marketplace speed, BPO quality, and a talent pool built for the work AI creates — not just the work it replaces.”
+
+This replaces the shorter:
+“AI first. Humans when it matters.”
+“Marketplace speed. BPO quality. One platform.”
+
+Suggested JSX:
+
+<div className="mx-auto mt-8 max-w-4xl text-center">
+  <p className="text-xl font-semibold tracking-wide text-white/85 sm:text-2xl">
+    One System. Your unfair Advantage.
+  </p>
+  <p className="mt-3 text-base leading-relaxed text-white/55 sm:text-lg md:text-xl">
+    Marketplace speed, BPO quality, and a talent pool built for the work AI creates — not just the work it replaces.
+  </p>
+</div>
+
+Important:
+- Line 1 should be noticeable but not overpower the main “Work Differently.” title.
+- Line 2 should be softer and slightly smaller.
+- Center both lines.
+
+==================================================
+6. CTA BUTTONS CENTERED
+==================================================
+
+Keep the existing CTA buttons:
+- Launch AI Assistant
+- Get Managed Team
+- Find Work
+
+Center them below the supporting copy.
+
+Suggested wrapper:
+
+className="
+  mt-10 flex flex-col items-center justify-center gap-4
+  sm:flex-row
+"
+
+Keep the current button styles.
+
+==================================================
+7. STATS STRIP STILL BELOW INITIAL VIEW
+==================================================
+
+Keep the stats strip after the centered hero main content.
+
+Structure should be:
+
+<section className="hero-section">
+  <div className="hero-main min-h-[calc(100vh-72px)] flex items-center justify-center">
+    centered hero content
+  </div>
+
+  <StatsStrip />
+</section>
+
+Expected behavior:
+- On initial page load, stats should NOT be visible.
+- User sees centered hero only.
+- Stats appear after scrolling a little.
+
+Do not put the stats inside the hero-main wrapper.
+
+==================================================
+8. REMOVE TWO-COLUMN SPACING
+==================================================
+
+Remove spacing that was only needed for the Vanessa card:
+- lg:grid-cols
+- right column
+- justify-between
+- gap-10/gap-12 for two columns
+- max-w-[1400px] grid wrapper if only used for the two-column layout
+- card-specific glow/background elements
+
+The centered hero should not have a large empty right side.
+
+==================================================
+9. RESPONSIVE REQUIREMENTS
+==================================================
+
+Desktop:
+- Content centered.
+- No Vanessa card.
+- Title and supporting text centered.
+- CTA buttons centered.
+- Stats below fold.
+
+Tablet/mobile:
+- Title scales down cleanly.
+- Buttons stack if needed.
+- No horizontal scrolling.
+- No empty right-column space.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The Hero section should now be centered again:
+
+Badge:
+NEW | Vanessa AI Assistant is now live →
+
+Main title:
+Work Differently.
+
+Supporting:
+One System. Your unfair Advantage.
+Marketplace speed, BPO quality, and a talent pool built for the work AI creates — not just the work it replaces.
+
+CTA buttons centered:
+Launch AI Assistant / Get Managed Team / Find Work
+
+No Vanessa AI card should appear in the Hero.

@@ -321,198 +321,78 @@ export default function Home() {
           <div className="absolute bottom-1/3 right-1/4 w-[500px] h-[500px] bg-gradient-radial from-blue-500/10 to-transparent rounded-full blur-3xl animate-slow-spin"></div>
         </div>
 
-        {/* Main content — 2-col on desktop, occupies first viewport so stats fall below fold */}
-        <div className="min-h-[calc(100vh-72px)] flex items-center relative z-20 px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
-          <div className="container mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_0.9fr] gap-10 lg:gap-12 xl:gap-14 items-center">
-              {/* ── LEFT: Text + CTAs ── */}
-              <div className="flex flex-col items-start text-left space-y-6 sm:space-y-8">
-                {/* Badge */}
-                <div
-                  className="hero-fade-up inline-flex items-center gap-2.5 bg-white/8 backdrop-blur-md px-5 py-2.5 rounded-full border border-white/20"
-                  data-testid="badge-superhuman-bpo"
-                >
-                  <span className="text-xs font-bold bg-gradient-to-r from-violet-400 to-blue-400 bg-clip-text text-transparent uppercase tracking-widest">
-                    NEW
-                  </span>
-                  <div className="w-px h-3.5 bg-white/20 flex-shrink-0"></div>
-                  <span className="text-sm sm:text-base font-medium text-white/80">
-                    Vanessa AI Assistant is now live →
-                  </span>
-                </div>
+        {/* Main content — centered, occupies first viewport so stats fall below fold */}
+        <div className="min-h-[calc(100vh-72px)] flex items-center justify-center relative z-20 px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+          <div className="mx-auto flex w-full max-w-5xl flex-col items-center justify-center text-center">
+            {/* Badge */}
+            <div
+              className="hero-fade-up inline-flex items-center gap-2.5 bg-white/8 backdrop-blur-md px-5 py-2.5 rounded-full border border-white/20"
+              data-testid="badge-superhuman-bpo"
+            >
+              <span className="text-xs font-bold bg-gradient-to-r from-violet-400 to-blue-400 bg-clip-text text-transparent uppercase tracking-widest">
+                NEW
+              </span>
+              <div className="w-px h-3.5 bg-white/20 flex-shrink-0"></div>
+              <span className="text-sm sm:text-base font-medium text-white/80">
+                Vanessa AI Assistant is now live →
+              </span>
+            </div>
 
-                {/* Headline */}
-                <div className="hero-fade-up">
-                  <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-6xl xl:text-7xl 2xl:text-8xl font-bold tracking-tight leading-[1.05] text-white">
-                    Work{" "}
-                    <span className="bg-gradient-to-r from-violet-300 via-blue-200 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_24px_rgba(167,139,250,0.45)]">
-                      Differently.
-                    </span>
-                  </h1>
-                </div>
+            {/* Headline */}
+            <div className="hero-fade-up mt-8 sm:mt-10">
+              <h1 className="text-6xl sm:text-7xl lg:text-8xl font-bold tracking-tight leading-[1.05] text-white">
+                Work{" "}
+                <span className="bg-gradient-to-r from-violet-300 via-blue-200 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_24px_rgba(167,139,250,0.45)]">
+                  Differently.
+                </span>
+              </h1>
+            </div>
 
-                {/* Supporting statement */}
-                <div className="hero-fade-up-delay space-y-2">
-                  <p className="text-lg sm:text-xl font-semibold text-white/85">
-                    AI first. Humans when it matters.
-                  </p>
-                  <p className="text-base sm:text-lg leading-relaxed text-white/55 max-w-lg">
-                    Marketplace speed. BPO quality. One platform.
-                  </p>
-                </div>
+            {/* Supporting copy */}
+            <div className="hero-fade-up-delay mx-auto mt-8 max-w-3xl">
+              <p className="text-xl sm:text-2xl font-semibold tracking-wide text-white/85">
+                One System. Your unfair Advantage.
+              </p>
+              <p className="mt-3 text-base sm:text-lg md:text-xl leading-relaxed text-white/55">
+                Marketplace speed, BPO quality, and a talent pool built for the
+                work AI creates — not just the work it replaces.
+              </p>
+            </div>
 
-                {/* CTAs */}
-                <div className="flex flex-col sm:flex-row items-start gap-3 hero-fade-up-delay flex-wrap">
-                  <Button
-                    size="lg"
-                    onClick={openVanessa}
-                    className="relative group text-sm sm:text-base px-6 sm:px-8 h-auto bg-gradient-to-r from-violet-600 to-blue-600 text-white font-semibold hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] transition-all duration-300 hover-elevate rounded-2xl w-full sm:w-auto py-3.5 min-h-[48px]"
-                    data-testid="button-launch-ai"
-                  >
-                    <span className="flex items-center gap-2 justify-center">
-                      Launch AI Assistant
-                      <Sparkles className="w-4 sm:w-5 h-4 sm:h-5" />
-                    </span>
-                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-violet-600 to-blue-600 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-300 -z-10"></div>
-                  </Button>
+            {/* CTAs */}
+            <div className="hero-fade-up-delay mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 flex-wrap">
+              <Button
+                size="lg"
+                onClick={openVanessa}
+                className="relative group text-sm sm:text-base px-6 sm:px-8 h-auto bg-gradient-to-r from-violet-600 to-blue-600 text-white font-semibold hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] transition-all duration-300 hover-elevate rounded-2xl w-full sm:w-auto py-3.5 min-h-[48px]"
+                data-testid="button-launch-ai"
+              >
+                <span className="flex items-center gap-2 justify-center">
+                  Launch AI Assistant
+                  <Sparkles className="w-4 sm:w-5 h-4 sm:h-5" />
+                </span>
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-violet-600 to-blue-600 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-300 -z-10"></div>
+              </Button>
 
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="text-sm sm:text-base px-6 sm:px-8 h-auto border-2 border-white/30 text-white font-medium backdrop-blur-xl bg-white/5 rounded-2xl w-full sm:w-auto py-3.5 min-h-[48px]"
-                    asChild
-                    data-testid="button-get-managed-team"
-                  >
-                    <Link href="/lead-intake">Get Managed Team</Link>
-                  </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                className="text-sm sm:text-base px-6 sm:px-8 h-auto border-2 border-white/30 text-white font-medium backdrop-blur-xl bg-white/5 rounded-2xl w-full sm:w-auto py-3.5 min-h-[48px]"
+                asChild
+                data-testid="button-get-managed-team"
+              >
+                <Link href="/lead-intake">Get Managed Team</Link>
+              </Button>
 
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="text-sm sm:text-base px-6 sm:px-8 h-auto border-2 border-white/20 text-white/85 font-medium backdrop-blur-xl bg-white/[0.03] rounded-2xl w-full sm:w-auto py-3.5 min-h-[48px]"
-                    asChild
-                    data-testid="button-find-work"
-                  >
-                    <Link href="/find-work">Find Work</Link>
-                  </Button>
-                </div>
-              </div>
-
-              {/* ── RIGHT: Vanessa AI Card ── */}
-              <div className="hero-fade-up-delay flex items-center justify-center lg:justify-start">
-                {/* Outer group for hover orchestration */}
-                <div
-                  className="group relative w-full max-w-[480px] lg:max-w-[520px]"
-                  style={{ transform: "rotate(1deg)" }}
-                >
-                  {/* Soft ambient glow — behind card */}
-                  <div className="absolute -inset-8 -z-10 rounded-[44px] bg-gradient-to-br from-[#3F4698]/35 to-[#565CC0]/20 blur-3xl opacity-55 transition-opacity duration-500 group-hover:opacity-85" />
-
-                  {/* Card */}
-                  <div className="relative rounded-[28px] border border-white/18 bg-white/[0.075] p-6 sm:p-7 shadow-[0_28px_90px_rgba(0,0,0,0.28)] backdrop-blur-xl transition-all duration-500 ease-out will-change-transform hover:-translate-y-2 hover:scale-[1.012] hover:border-white/28 hover:bg-white/[0.095] hover:shadow-[0_38px_110px_rgba(0,0,0,0.36)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:hover:scale-100">
-
-                    {/* Card header */}
-                    <div className="flex items-center gap-3.5 pb-5 border-b border-white/12 mb-5">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#6F63FF] shadow-lg shadow-[#6F63FF]/30">
-                        <Bot className="w-5 h-5 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-base font-bold text-white leading-tight">
-                          Vanessa AI
-                        </p>
-                        <p className="text-sm font-medium text-emerald-300 flex items-center gap-1.5 mt-0.5">
-                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.7)]"></span>
-                          Online · Talent matching active
-                        </p>
-                      </div>
-                      <div className="flex gap-1.5">
-                        <span className="w-2.5 h-2.5 rounded-full bg-white/25"></span>
-                        <span className="w-2.5 h-2.5 rounded-full bg-white/25"></span>
-                        <span className="w-2.5 h-2.5 rounded-full bg-white/25"></span>
-                      </div>
-                    </div>
-
-                    {/* Chat bubbles */}
-                    <div className="space-y-3 mb-5">
-                      <div className="flex justify-end">
-                        <div className="max-w-[78%] rounded-2xl rounded-br-sm border border-white/12 bg-[#6B5BEA]/45 px-5 py-3">
-                          <p className="text-sm font-semibold text-white leading-snug">
-                            Find me a top Filipino VA for customer support
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex justify-start">
-                        <div className="max-w-[85%] rounded-2xl rounded-bl-sm border border-white/10 bg-white/[0.12] px-5 py-3">
-                          <p className="text-sm font-medium text-white/82 leading-snug">
-                            Found 3 top matches from our pre-assessed talent pool:
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Match rows */}
-                    <div className="space-y-2">
-                      {[
-                        {
-                          initials: "KM",
-                          name: "Kyle Mendez 🇵🇭",
-                          role: "Customer Support Specialist",
-                          match: "97%",
-                        },
-                        {
-                          initials: "AL",
-                          name: "Alexandra Lopez",
-                          role: "CX & Operations Lead",
-                          match: "94%",
-                        },
-                        {
-                          initials: "RD",
-                          name: "Rica Dela Cruz",
-                          role: "Bilingual Support Agent",
-                          match: "91%",
-                        },
-                      ].map((person) => (
-                        <div
-                          key={person.name}
-                          className="flex items-center gap-3 rounded-2xl border border-white/12 bg-white/[0.10] px-4 py-3.5 transition-all duration-300 group-hover:bg-white/[0.13] group-hover:translate-x-0.5 motion-reduce:group-hover:translate-x-0"
-                        >
-                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#6F63FF]/70 to-blue-500/60 flex items-center justify-center shrink-0 shadow-sm">
-                            <span className="text-[11px] font-bold text-white">
-                              {person.initials}
-                            </span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-semibold text-white/95 truncate">
-                              {person.name}
-                            </p>
-                            <p className="text-[10px] text-white/55 truncate mt-0.5">
-                              {person.role}
-                            </p>
-                          </div>
-                          <span className="text-[10px] font-bold text-emerald-300 bg-emerald-400/15 border border-emerald-300/20 rounded-full px-2.5 py-0.5 shrink-0">
-                            {person.match}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Footer prompt */}
-                    <div className="mt-5 pt-4 border-t border-white/12 flex items-center gap-2.5">
-                      <div className="flex-1 rounded-xl border border-white/12 bg-white/[0.07] px-4 py-2.5">
-                        <p className="text-xs text-white/35 font-medium">
-                          Ask Vanessa anything...
-                        </p>
-                      </div>
-                      <button
-                        onClick={openVanessa}
-                        className="w-9 h-9 rounded-xl bg-[#6F63FF] flex items-center justify-center shrink-0 shadow-md shadow-[#6F63FF]/30 transition-all duration-300 group-hover:shadow-lg group-hover:shadow-[#6F63FF]/40 hover:bg-[#7C70FF]"
-                      >
-                        <ArrowRight className="w-4 h-4 text-white" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <Button
+                variant="outline"
+                size="lg"
+                className="text-sm sm:text-base px-6 sm:px-8 h-auto border-2 border-white/20 text-white/85 font-medium backdrop-blur-xl bg-white/[0.03] rounded-2xl w-full sm:w-auto py-3.5 min-h-[48px]"
+                asChild
+                data-testid="button-find-work"
+              >
+                <Link href="/find-work">Find Work</Link>
+              </Button>
             </div>
           </div>
         </div>
