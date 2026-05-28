@@ -39,14 +39,14 @@ import PinetechLogo from "../assets/logos/Pinetech.png";
 import SafewayLogo from "../assets/logos/Safeway.png";
 import VertexLogo from "../assets/logos/Vertex.png";
 
-import photoAlex from "../assets/logos/Alex.png";
-import photoSofia from "../assets/logos/Sofia.png";
-import photoJames from "../assets/logos/James.png";
-import photoMaria from "../assets/logos/Maria.png";
-import photoStefan from "../assets/logos/Stefan.png";
-import photoNicole from "../assets/logos/nicole.png";
-import photoAmira from "../assets/logos/Amira.png";
-import photoJonathan from "../assets/logos/jonathan.png";
+import KyleMendezPhoto from "@assets/Kyle_Mendez_1774430604161.jpeg";
+import AlexandraLopezPhoto from "@assets/Alexandra_Lopez_1774430604160.jpg";
+import AndreaPinzonPhoto from "@assets/Andrea_Pinzon_1774264095055.jpeg";
+import ChristopherAlbaPhoto from "@assets/Christopher_Alba_1774264095055.jpg";
+import RachelCastroPhoto from "@assets/Rachel_Caztro_1774264095056.jpg";
+import AmirSinghPhoto from "@assets/Amir_Singh_1774264095055.jpg";
+import JenniferDizonPhoto from "@assets/Jennifer_Dizon_1774430604160.jpg";
+import AndreiLosantoPhoto from "@assets/Andrei_Losanto_1774430604160.jpg";
 
 const trustedBrands = [
   { name: "Flash Justice", logo: FlashLogo },
@@ -1059,7 +1059,7 @@ export default function Home() {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 sm:gap-6">
             {[
               {
-                photo: null,
+                photo: KyleMendezPhoto,
                 initials: "KM",
                 name: "Kyle Mendez",
                 flag: "🇵🇭",
@@ -1067,59 +1067,59 @@ export default function Home() {
                 gradient: "from-violet-400 to-violet-700",
               },
               {
-                photo: photoAlex,
+                photo: AlexandraLopezPhoto,
                 initials: "AL",
                 name: "Alexandra Lopez",
-                flag: "",
+                flag: "🇵🇭",
                 role: "CX & Operations Lead",
                 gradient: "from-teal-400 to-teal-700",
               },
               {
-                photo: photoSofia,
-                initials: "SR",
-                name: "Sofia Reyes",
-                flag: "🇵🇭",
-                role: "Marketing Specialist",
-                gradient: "from-amber-400 to-orange-600",
-              },
-              {
-                photo: photoJames,
-                initials: "JW",
-                name: "James Wei",
-                flag: "",
-                role: "Business Analyst",
-                gradient: "from-sky-400 to-sky-700",
-              },
-              {
-                photo: photoMaria,
-                initials: "MS",
-                name: "Maria Santos",
+                photo: AndreaPinzonPhoto,
+                initials: "AP",
+                name: "Andrea Pinzon",
                 flag: "🇵🇭",
                 role: "Virtual Assistant",
                 gradient: "from-rose-400 to-pink-700",
               },
               {
-                photo: photoStefan,
-                initials: "SK",
-                name: "Stefan K.",
-                flag: "",
-                role: "Account Manager",
+                photo: ChristopherAlbaPhoto,
+                initials: "CA",
+                name: "Christopher Alba",
+                flag: "🇵🇭",
+                role: "Technical Support",
                 gradient: "from-blue-400 to-blue-700",
               },
               {
-                photo: photoNicole,
-                initials: "ND",
-                name: "Nicole D.",
+                photo: RachelCastroPhoto,
+                initials: "RC",
+                name: "Rachel Castro",
                 flag: "🇵🇭",
-                role: "Customer Success",
+                role: "Social Media Manager",
+                gradient: "from-amber-400 to-orange-600",
+              },
+              {
+                photo: AmirSinghPhoto,
+                initials: "AS",
+                name: "Amir Singh",
+                flag: "🇺🇸",
+                role: "SEO Specialist",
+                gradient: "from-sky-400 to-sky-700",
+              },
+              {
+                photo: JenniferDizonPhoto,
+                initials: "JD",
+                name: "Jennifer Dizon",
+                flag: "🇵🇭",
+                role: "Customer Service",
                 gradient: "from-green-400 to-green-700",
               },
               {
-                photo: photoAmira,
-                initials: "AS",
-                name: "Amira S.",
-                flag: "",
-                role: "Operations Coordinator",
+                photo: AndreiLosantoPhoto,
+                initials: "AL",
+                name: "Andrei Losanto",
+                flag: "🇵🇭",
+                role: "Full Stack Developer",
                 gradient: "from-indigo-400 to-indigo-700",
               },
             ].map((person) => (

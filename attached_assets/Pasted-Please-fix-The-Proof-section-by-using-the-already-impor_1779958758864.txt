@@ -1,0 +1,210 @@
+Please fix The Proof section by using the already-imported talent photo variables.
+
+I found these imports in the homepage file:
+
+import KyleMendezPhoto from "@assets/Kyle_Mendez_1774430604161.jpeg";
+import AlexandraLopezPhoto from "@assets/Alexandra_Lopez_1774430604160.jpg";
+import AndreaPinzonPhoto from "@assets/Andrea_Pinzon_1774264095055.jpeg";
+import ChristopherAlbaPhoto from "@assets/Christopher_Alba_1774264095055.jpg";
+import RachelCastroPhoto from "@assets/Rachel_Caztro_1774264095056.jpg";
+import AmirSinghPhoto from "@assets/Amir_Singh_1774264095055.jpg";
+import JenniferDizonPhoto from "@assets/Jennifer_Dizon_1774430604160.jpg";
+import AndreiLosantoPhoto from "@assets/Andrei_Losanto_1774430604160.jpg";
+
+These are the correct talent photos. Please make The Proof section use these imports directly.
+
+Current issue:
+The Proof section is still showing wrong/random photos or initials instead of these imported talent images.
+
+Goal:
+Use the imported image variables in the talent profile data for The Proof section.
+
+==================================================
+1. Update the talent profile array
+==================================================
+
+Find the talent profile data used by The Proof section.
+
+It may be named:
+- talentProfiles
+- teamMembers
+- proofProfiles
+- superhumanTalent
+- people
+- profiles
+
+Replace the current image/photo/avatar values with the imported variables above.
+
+The array should look like this:
+
+const talentProfiles = [
+  {
+    name: "Kyle Mendez",
+    flag: "🇵🇭",
+    role: "Senior Data Analyst",
+    image: KyleMendezPhoto,
+  },
+  {
+    name: "Alexandra Lopez",
+    flag: "🇵🇭",
+    role: "CX & Operations Lead",
+    image: AlexandraLopezPhoto,
+  },
+  {
+    name: "Andrea Pinzon",
+    flag: "🇵🇭",
+    role: "Virtual Assistant",
+    image: AndreaPinzonPhoto,
+  },
+  {
+    name: "Christopher Alba",
+    flag: "🇵🇭",
+    role: "Technical Support",
+    image: ChristopherAlbaPhoto,
+  },
+  {
+    name: "Rachel Castro",
+    flag: "🇵🇭",
+    role: "Social Media Manager",
+    image: RachelCastroPhoto,
+  },
+  {
+    name: "Amir Singh",
+    flag: "🇺🇸",
+    role: "SEO Specialist",
+    image: AmirSinghPhoto,
+  },
+  {
+    name: "Jennifer Dizon",
+    flag: "🇵🇭",
+    role: "Customer Service",
+    image: JenniferDizonPhoto,
+  },
+  {
+    name: "Andrei Losanto",
+    flag: "🇵🇭",
+    role: "Full Stack Developer",
+    image: AndreiLosantoPhoto,
+  },
+];
+
+Important:
+Use `image`, `photo`, or whatever property the component actually reads. If the card component expects `photo`, then use:
+
+photo: KyleMendezPhoto
+
+not `image`.
+
+Make sure the property name matches the JSX.
+
+==================================================
+2. Update the JSX to render the imported image
+==================================================
+
+Find the profile card JSX.
+
+It might currently do something like:
+
+{profile.image ? (
+  <img src={profile.image} />
+) : (
+  <div>{profile.initials}</div>
+)}
+
+Make sure `profile.image` or `profile.photo` points to the imported image variables.
+
+Example:
+
+<img
+  src={profile.image}
+  alt={profile.name}
+  className="h-28 w-28 rounded-full object-cover"
+/>
+
+If using Vite/React imported images, the imported variable should be valid directly as the `src`.
+
+Do not use:
+src={profile.image.src}
+
+unless the project framework requires it. For Vite, use:
+src={profile.image}
+
+==================================================
+3. Remove wrong placeholder profile data
+==================================================
+
+Remove these incorrect profiles from The Proof section:
+- Sofia Reyes
+- James Wei
+- Maria Santos
+- Stefan K.
+- Nicole D.
+- Amira S.
+
+They should not appear.
+
+The final displayed names should be:
+- Kyle Mendez 🇵🇭
+- Alexandra Lopez 🇵🇭
+- Andrea Pinzon 🇵🇭
+- Christopher Alba 🇵🇭
+- Rachel Castro 🇵🇭
+- Amir Singh 🇺🇸
+- Jennifer Dizon 🇵🇭
+- Andrei Losanto 🇵🇭
+
+==================================================
+4. Do not fall back to initials if image exists
+==================================================
+
+Kyle Mendez is currently showing as “KM”. That means the component is falling back to initials.
+
+Fix the condition so that if `profile.image` exists, it always renders the `<img>`.
+
+Example:
+
+{profile.image ? (
+  <img src={profile.image} alt={profile.name} className="..." />
+) : (
+  <div>{profile.initials}</div>
+)}
+
+Also make sure Kyle’s object has:
+
+image: KyleMendezPhoto
+
+==================================================
+5. Check filename typo for Rachel
+==================================================
+
+The import is:
+
+RachelCastroPhoto from "@assets/Rachel_Caztro_1774264095056.jpg";
+
+Note the filename says `Caztro`, not `Castro`.
+
+Do not rename the import path unless the actual file name is different. Keep the import working as currently written.
+
+The displayed name should still be:
+
+Rachel Castro
+
+==================================================
+6. Keep the section layout
+==================================================
+
+Keep the current The Proof section layout and styling.
+
+Only fix:
+- profile data
+- image source
+- flags
+- wrong names
+
+Do not redesign the section.
+
+==================================================
+7. Expected result
+==================================================
+
+The Proof section should display the correct imported talent photos from the assets folder, not initials or wrong placeholder headshots. Kyle Mendez should show his real image and have the PH flag beside his name.
