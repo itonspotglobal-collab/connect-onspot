@@ -35,7 +35,6 @@ import {
 } from 'react-icons/si';
 import { Link } from 'wouter';
 import { useVanessa } from '@/contexts/VanessaContext';
-import onspotLogo from '@assets/onspot-logo-white.png';
 import onspotLogoCropped from '@assets/onspot-logo-cropped.png';
 
 import FlashLogo from '../assets/logos/Flash.png';
@@ -54,41 +53,6 @@ const trustedBrands = [
   { name: 'Vertex Education', logo: VertexLogo },
 ];
 
-const hiringModes = [
-  {
-    icon: Bot,
-    title: 'AI Assistant',
-    subtitle: 'Vanessa at your service',
-    description:
-      'Instant, intelligent automation that never sleeps. Perfect for routine tasks, scheduling, and coordination.',
-    features: ['24/7 Availability', 'Instant Responses', 'Smart Automation'],
-    gradient: 'from-violet-500/20 to-blue-500/20',
-    link: '#',
-    cta: 'Launch AI Assistant',
-  },
-  {
-    icon: Zap,
-    title: 'Managed Services',
-    subtitle: 'Full team, zero hassle',
-    description:
-      'We build, train, and manage your offshore team. You focus on growth, we handle operations.',
-    features: ['Dedicated Team', 'Full Management', 'Quality Assurance'],
-    gradient: 'from-blue-500/20 to-cyan-500/20',
-    link: '/lead-intake',
-    cta: 'Get Managed Team',
-  },
-  {
-    icon: Users,
-    title: 'Resourced Services',
-    subtitle: 'Elite talent, on-demand',
-    description:
-      'Handpicked professionals integrated into your workflow. Expert skills when you need them.',
-    features: ['Top 5% Talent', 'Flexible Scaling', 'Direct Integration'],
-    gradient: 'from-cyan-500/20 to-violet-500/20',
-    link: '/hire-talent',
-    cta: 'Browse Talent',
-  },
-];
 
 type CardStyle = {
   transform: string;
@@ -506,40 +470,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ── 2. TRUSTED BY ── */}
-      <div
-        className="relative overflow-hidden bg-[#f7f9ff] dark:bg-background"
-        style={{ padding: "clamp(2.5rem, 6vw, 8rem) 0" }}
-      >
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[85%] pointer-events-none">
-          <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-b from-violet-500/5 via-blue-500/3 to-transparent blur-sm"></div>
-          <div className="h-px bg-gradient-to-r from-transparent via-violet-400/25 to-transparent"></div>
-        </div>
-
-        <div className="container mx-auto px-4 sm:px-6 relative z-10">
-          <div className="text-center space-y-8 sm:space-y-12">
-            <div className="space-y-4 sm:space-y-6 mx-auto">
-              <p className="text-xs sm:text-sm font-medium uppercase tracking-[0.2em] bg-gradient-to-r from-violet-600/80 to-blue-600/80 bg-clip-text text-transparent">
-                Trusted by
-              </p>
-              <h2
-                className="font-light tracking-tight leading-tight mx-auto"
-                style={{
-                  fontSize: "clamp(1.75rem, 4vw, 3rem)",
-                  textWrap: "balance",
-                  maxWidth: "62ch",
-                }}
-              >
-                Trusted by global brands, hundreds of entrepreneurs, and
-                thousands of professionals worldwide.
-              </h2>
-            </div>
-            <TrustedLogos />
-          </div>
-        </div>
-      </div>
-
-      {/* ── 2b. FEATURED INSIGHTS ── */}
+      {/* ── 2. FEATURED INSIGHTS ── */}
       {featuredPosts.length > 0 && (
         <div className="relative bg-slate-50 py-20 sm:py-28">
           <div className="container mx-auto px-4 sm:px-6">
@@ -823,145 +754,98 @@ export default function Home() {
           </div>
         </div>
       </div>
-      {/* ── 11. CHOOSE YOUR PATH ── */}
-      <div className="relative py-12 sm:py-24 lg:py-32 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-background">
-          <svg
-            className="absolute inset-0 w-full h-full opacity-20"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <defs>
-              <pattern
-                id="network-pattern"
-                x="0"
-                y="0"
-                width="100"
-                height="100"
-                patternUnits="userSpaceOnUse"
-              >
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="1"
-                  fill="currentColor"
-                  className="text-violet-500/40"
-                />
-                <line
-                  x1="50"
-                  y1="50"
-                  x2="100"
-                  y2="50"
-                  stroke="currentColor"
-                  strokeWidth="0.5"
-                  className="text-violet-500/20"
-                />
-                <line
-                  x1="50"
-                  y1="50"
-                  x2="50"
-                  y2="100"
-                  stroke="currentColor"
-                  strokeWidth="0.5"
-                  className="text-blue-500/20"
-                />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#network-pattern)" />
-          </svg>
+      {/* ── 4. TRUSTED BY ── */}
+      <div
+        className="relative overflow-hidden bg-[#f7f9ff] dark:bg-background"
+        style={{ padding: "clamp(2.5rem, 6vw, 8rem) 0" }}
+      >
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[85%] pointer-events-none">
+          <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-b from-violet-500/5 via-blue-500/3 to-transparent blur-sm"></div>
+          <div className="h-px bg-gradient-to-r from-transparent via-violet-400/25 to-transparent"></div>
         </div>
-
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/4 -left-1/4 w-[800px] h-[800px] bg-gradient-radial from-violet-500/10 to-transparent rounded-full blur-3xl animate-slow-spin"></div>
-          <div
-            className="absolute bottom-1/4 -right-1/4 w-[800px] h-[800px] bg-gradient-radial from-blue-500/10 to-transparent rounded-full blur-3xl animate-slow-spin"
-            style={{ animationDelay: "5s" }}
-          ></div>
-        </div>
-
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
-          <div className="text-center mb-10 sm:mb-16 space-y-4">
-            <p className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wider">
-              Choose Your Path
-            </p>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight">
-              Hire Talent, Your Way
+          <div className="text-center space-y-8 sm:space-y-12">
+            <div className="space-y-4 sm:space-y-5 mx-auto">
+              <p className="text-xs sm:text-sm font-medium uppercase tracking-[0.2em] bg-gradient-to-r from-violet-600/80 to-blue-600/80 bg-clip-text text-transparent">
+                Trusted by
+              </p>
+              <h2
+                className="font-light tracking-tight leading-tight mx-auto"
+                style={{ fontSize: "clamp(1.75rem, 4vw, 3rem)", textWrap: "balance", maxWidth: "62ch" }}
+              >
+                Trusted by global brands, hundreds of entrepreneurs, and thousands of professionals worldwide.
+              </h2>
+            </div>
+            <TrustedLogos />
+          </div>
+        </div>
+      </div>
+
+      {/* ── 5. TRANSFORMATION STORIES ── */}
+      <div className="relative bg-white py-20 sm:py-28">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="mb-12 sm:mb-16">
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-violet-600">Transformations</p>
+            <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900 max-w-2xl">
+              Real change. <span className="italic text-violet-600">Real results.</span>
             </h2>
-            <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
-              Select the perfect approach for your needs
+            <p className="mt-4 text-base sm:text-lg text-slate-500 max-w-xl">
+              How OnSpot reshapes how teams work — one partnership at a time.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12 max-w-7xl mx-auto">
-            {hiringModes.map((mode, index) => (
-              <div
-                key={index}
-                className="group relative"
-                style={{
-                  animation: `fadeInUp 0.8s ease-out ${index * 0.15}s both`,
-                }}
-                data-testid={`hiring-mode-${index}`}
-              >
-                <div
-                  className={`absolute inset-0 bg-gradient-to-br ${mode.gradient} opacity-0 group-hover:opacity-100 blur-2xl transition-opacity duration-700 rounded-3xl scale-110 animate-gentle-pulse`}
-                ></div>
-
-                <div className="relative bg-background/30 backdrop-blur-xl border border-white/10 rounded-3xl p-8 lg:p-10 transition-all duration-700 group-hover:border-white/20 group-hover:bg-background/40 h-full flex flex-col group-hover:transform group-hover:scale-[1.02]">
-                  <div
-                    className={`w-16 h-16 lg:w-20 lg:h-20 rounded-2xl bg-gradient-to-br ${mode.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 mx-auto md:mx-0`}
-                  >
-                    <mode.icon className="w-8 h-8 lg:w-10 lg:h-10 text-foreground" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                quote: "The professionalism and consistency of the OnSpot team. Communication is always clear, and the structured daily and weekly updates make it simple to stay aligned.",
+                transformation: "From 12-hour workdays to automated excellence",
+                metric: "40% time saved",
+                name: "Elad B.",
+                role: "CEO / Founder, PineTech",
+                initials: "EB",
+                color: "from-violet-400 to-violet-700",
+              },
+              {
+                quote: "I've worked with several outsourcing companies, but none delivered like OnSpot. Shane and Ria helped me build my team, stayed involved, and ensured success. I finally feel like I'm working with a true partner.",
+                transformation: "From scattered processes to seamless orchestration",
+                metric: "3 weeks to full team",
+                name: "Eric M.",
+                role: "Operations Director, Flash Justice",
+                initials: "EM",
+                color: "from-teal-400 to-teal-700",
+              },
+              {
+                quote: "OnSpot's team is professional, responsive, and reliable — always going above and beyond. The efficiency and consistency they deliver gives me complete confidence in the partnership we've built.",
+                transformation: "From constant firefighting to proactive innovation",
+                metric: "24/7 coverage",
+                name: "Fernando C.",
+                role: "CTO, Pinetech",
+                initials: "FC",
+                color: "from-amber-400 to-orange-600",
+              },
+            ].map((story) => (
+              <div key={story.name} className="flex flex-col rounded-2xl border border-slate-200 bg-white p-8 shadow-sm hover:border-violet-200 hover:shadow-md transition-all duration-300">
+                <p className="text-4xl font-serif italic text-violet-300 leading-none mb-1">"</p>
+                <h3 className="text-lg font-semibold text-slate-900 leading-snug mb-3">
+                  {story.transformation.split(/automated excellence|seamless orchestration|proactive innovation/).map((part, i, arr) => (
+                    i < arr.length - 1
+                      ? <span key={i}>{part}<span className="italic text-violet-600">{story.transformation.match(/automated excellence|seamless orchestration|proactive innovation/)?.[0]}</span></span>
+                      : <span key={i}>{part}</span>
+                  ))}
+                </h3>
+                <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700 mb-5">
+                  <TrendingUp className="h-3 w-3" />
+                  {story.metric}
+                </span>
+                <p className="flex-1 text-sm leading-relaxed text-slate-500 mb-6">{story.quote}</p>
+                <div className="flex items-center gap-3 pt-5 border-t border-slate-100">
+                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${story.color} text-sm font-bold text-white`}>
+                    {story.initials}
                   </div>
-
-                  <div className="mb-4">
-                    <h3 className="text-xl lg:text-2xl font-semibold mb-2 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
-                      {mode.title}
-                    </h3>
-                    <p className="text-sm lg:text-base text-muted-foreground">
-                      {mode.subtitle}
-                    </p>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">{story.name}</p>
+                    <p className="text-xs text-slate-400">{story.role}</p>
                   </div>
-
-                  <div className="mb-6 flex-grow">
-                    <p className="text-sm lg:text-base text-foreground/80 leading-relaxed">
-                      {mode.description}
-                    </p>
-                  </div>
-
-                  <div className="mb-6 space-y-2">
-                    {mode.features.map((feature, idx) => (
-                      <div key={idx} className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-violet-500 flex-shrink-0" />
-                        <span className="text-sm text-muted-foreground">
-                          {feature}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="mt-auto pt-6 border-t border-white/10">
-                    <Button
-                      variant={index === 0 ? "default" : "outline"}
-                      className={`w-full min-h-[48px] ${index === 0 ? "bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700" : ""}`}
-                      onClick={mode.link === "#" ? openVanessa : undefined}
-                      asChild={mode.link !== "#"}
-                    >
-                      {mode.link === "#" ? (
-                        <span>
-                          <mode.icon className="w-4 h-4 mr-2" />
-                          {mode.cta}
-                        </span>
-                      ) : (
-                        <Link href={mode.link}>
-                          <mode.icon className="w-4 h-4 mr-2" />
-                          {mode.cta}
-                        </Link>
-                      )}
-                    </Button>
-                  </div>
-
-                  <div
-                    className={`absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r ${mode.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-700`}
-                  ></div>
                 </div>
               </div>
             ))}
@@ -969,7 +853,117 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ── 13. FINAL CTA ── */}
+      {/* ── 6. WHY PARTNER / WHY ONSPOT ── */}
+      <div className="relative bg-[#f4f2fc] py-20 sm:py-28">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="mb-12 sm:mb-16">
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-violet-600">Why OnSpot</p>
+            <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900 max-w-2xl">
+              Not a service provider. <span className="italic text-violet-600">An architect.</span>
+            </h2>
+            <p className="mt-4 text-base sm:text-lg text-slate-500 max-w-xl">
+              We build the future where AI and human brilliance work as one — and we'd be honored to build it with you.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {[
+              {
+                icon: <Bot className="h-6 w-6" />,
+                iconBg: "bg-violet-100 text-violet-600",
+                title: "AI-first infrastructure",
+                tagline: "Intelligent by design",
+                taglineColor: "text-violet-600",
+                body: "Every system and workflow enhanced by intelligence that amplifies human potential — not automation for its own sake.",
+              },
+              {
+                icon: <Users className="h-6 w-6" />,
+                iconBg: "bg-teal-100 text-teal-600",
+                title: "Human-centered culture",
+                tagline: "People who care",
+                taglineColor: "text-teal-600",
+                body: "We believe technology is only as powerful as the people behind it. Our team is passionate, empathetic, and relentlessly client-focused.",
+              },
+              {
+                icon: <Globe className="h-6 w-6" />,
+                iconBg: "bg-violet-100 text-violet-600",
+                title: "Connected ecosystem",
+                tagline: "One platform, everything",
+                taglineColor: "text-violet-600",
+                body: "From AI assistants to managed teams, every tool and talent in your stack talks to each other — giving you full operational clarity.",
+              },
+              {
+                icon: <TrendingUp className="h-6 w-6" />,
+                iconBg: "bg-teal-100 text-teal-600",
+                title: "Scalable excellence",
+                tagline: "Built to grow with you",
+                taglineColor: "text-teal-600",
+                body: "Whether you're a founder scaling your first team or an enterprise optimizing a global workforce, our model adapts to you.",
+              },
+            ].map((card) => (
+              <div key={card.title} className="rounded-2xl border border-slate-200/80 bg-white p-8 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-violet-500/10">
+                <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${card.iconBg} mb-6`}>
+                  {card.icon}
+                </div>
+                <h3 className="text-xl font-semibold text-slate-900 mb-1">{card.title}</h3>
+                <p className={`text-sm font-semibold mb-3 ${card.taglineColor}`}>{card.tagline}</p>
+                <p className="text-sm leading-relaxed text-slate-500">{card.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── 7. THE PROOF / TALENT PROFILES ── */}
+      <div className="relative bg-white py-20 sm:py-28">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="mb-12 sm:mb-16">
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-violet-600">The Proof</p>
+            <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900 max-w-2xl">
+              World-class talent, ready for you.
+            </h2>
+            <p className="mt-4 text-base sm:text-lg text-slate-500 max-w-xl">
+              Every professional in our network is pre-assessed, culture-matched, and ready to contribute from day one.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 sm:gap-6">
+            {[
+              { initials: "KM", name: "Kyle Mendez", flag: "🇵🇭", role: "Senior Data Analyst", years: "5 yrs", gradient: "from-violet-400 to-violet-700" },
+              { initials: "AL", name: "Alexandra Lopez", flag: "", role: "CX & Operations Lead", years: "4 yrs", gradient: "from-teal-400 to-teal-700" },
+              { initials: "RD", name: "Rica Dela Cruz", flag: "🇵🇭", role: "Bilingual Support Agent", years: "3 yrs", gradient: "from-rose-400 to-pink-700" },
+              { initials: "MT", name: "Marcus Tan", flag: "🇵🇭", role: "Project Manager", years: "6 yrs", gradient: "from-blue-400 to-blue-700" },
+              { initials: "SR", name: "Sofia Reyes", flag: "🇵🇭", role: "Marketing Specialist", years: "4 yrs", gradient: "from-amber-400 to-orange-600" },
+              { initials: "JW", name: "James Wei", flag: "", role: "Business Analyst", years: "5 yrs", gradient: "from-sky-400 to-sky-700" },
+              { initials: "AG", name: "Ana Gonzalez", flag: "🇵🇭", role: "HR Specialist", years: "3 yrs", gradient: "from-green-400 to-green-700" },
+              { initials: "DP", name: "David Park", flag: "", role: "Software Developer", years: "7 yrs", gradient: "from-indigo-400 to-indigo-700" },
+            ].map((person) => (
+              <div key={person.name} className="group flex flex-col items-center text-center p-5 sm:p-6 rounded-2xl cursor-pointer hover:bg-violet-50 transition-all duration-300">
+                <div className={`flex h-24 w-24 sm:h-28 sm:w-28 items-center justify-center rounded-full bg-gradient-to-br ${person.gradient} ring-4 ring-white shadow-lg mb-4 text-2xl sm:text-3xl font-semibold text-white`}>
+                  {person.initials}
+                </div>
+                <p className="text-sm sm:text-base font-semibold text-slate-900">
+                  {person.name}{person.flag && <span className="ml-1">{person.flag}</span>}
+                </p>
+                <p className="mt-1 text-xs sm:text-sm text-slate-500 leading-snug">{person.role}</p>
+                <p className="mt-1 text-xs text-slate-400">{person.years} exp.</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-12 text-center">
+            <Link
+              href="/talent-pool"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-7 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-violet-400 hover:text-violet-600 hover:shadow-md"
+            >
+              Browse all talent
+              <ArrowUpRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 8. FINAL CTA ── */}
       <div className="relative py-16 sm:py-32 lg:py-40 overflow-hidden mt-8 sm:mt-16">
         <div className="absolute inset-0 bg-gradient-to-br from-violet-600/30 via-blue-600/30 to-cyan-500/30"></div>
         <div className="absolute inset-0 overflow-hidden">

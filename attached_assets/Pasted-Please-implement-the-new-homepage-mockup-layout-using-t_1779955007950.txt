@@ -1,0 +1,355 @@
+Please implement the new homepage mockup layout using the attached HTML file as the section/layout reference.
+
+Mockup file:
+`onspot-homepage-mockup(1).html`
+
+IMPORTANT RULES:
+
+* Do NOT change the current Navigation bar.
+* Do NOT change the current Footer.
+* Do NOT follow or copy the mockup’s font/text style.
+* Keep the current website typography, brand colors, button styles, spacing language, and overall OnSpot design system where possible.
+* Use the mockup mainly for section order, layout structure, and content flow.
+* Do NOT replace the existing client logos.
+* Do NOT replace the existing talent photos.
+* Keep the current talent photos/names already used in the site, including:
+
+  * Kyle Mendez
+  * Alexandra Lopez
+  * and the rest of the existing talent profiles
+* Add a Philippine flag beside Kyle Mendez.
+* Retain the existing “Ready to become superhuman?” final CTA section.
+* Keep the homepage responsive for desktop, laptop, tablet, and mobile.
+
+==================================================
+SECTION ORDER TO FOLLOW FROM THE HTML MOCKUP
+============================================
+
+Use the section sequence from the attached HTML mockup, but preserve the current navbar and footer.
+
+Final homepage order should be:
+
+1. Current Navigation Bar
+2. Hero Section
+3. Numbers / Stats Strip
+4. Insights Section
+5. Work Differently Section
+6. Trusted By Section
+7. Transformation Stories Section
+8. Why Partner / Why OnSpot Section
+9. The Proof / Talent Profiles Section
+10. Ready to Become Superhuman Final CTA
+11. Current Footer
+
+Do not use the mockup’s navigation or footer.
+
+==================================================
+
+1. HERO SECTION
+   ==================================================
+
+Use the mockup’s hero layout idea:
+
+* left-side hero copy
+* right-side Vanessa AI Assistant-style card/mockup
+
+But keep the current OnSpot design style and do not copy mockup fonts.
+
+Hero content direction:
+
+* Badge / small highlight
+* Main headline around “Work Differently.”
+* Supporting line:
+  “AI first. Humans when it matters.”
+* Supporting short line:
+  “Marketplace speed. BPO quality. One platform.”
+* CTA buttons:
+
+  * Launch AI Assistant
+  * Get Managed Team
+  * Looking for work? / Find Work
+
+If the current hero already has preferred copy, preserve current brand-approved copy unless the mockup order/layout needs to be followed.
+
+Hero visual:
+
+* Use a Vanessa AI Assistant style card.
+* Do not replace existing talent names/photos if the current project already has them.
+* If using match cards, keep the existing talent profiles.
+* Add PH flag beside Kyle Mendez if he appears here.
+
+Important:
+
+* Keep current navbar untouched.
+* Make sure hero does not hide behind sticky navbar.
+* Keep responsive behavior clean.
+
+==================================================
+2. NUMBERS / STATS STRIP
+========================
+
+Add/keep a numbers strip after the Hero.
+
+Stats:
+
+* 72hrs / Average time to hire
+* 500+ / Global clients
+* 98% / Client retention
+* 2,000+ / Talents placed
+
+If the current site also uses a Philippine-based stat, keep it only if already part of the existing approved design. Otherwise, follow the HTML mockup’s 4-stat structure.
+
+Style:
+
+* Keep consistent with the current site.
+* Do not copy the mockup typography.
+* Should be clean and readable.
+* Responsive:
+
+  * desktop: row layout
+  * mobile: 2 columns or stacked
+
+==================================================
+3. INSIGHTS SECTION
+===================
+
+Add/keep an Insights section after the stats strip.
+
+Use the mockup’s intent:
+
+* “Insights” section label
+* headline about thinking ahead / moving faster
+* supporting copy
+* article cards
+
+Important:
+
+* If the project already has real Insights/blog data, use the real published/featured insights.
+* Do not hardcode fake blog content if real insight data exists.
+* Use existing images/content from the Insights page where possible.
+* Make it look like a polished news/blog preview section.
+
+The section should include:
+
+* article image/thumbnail
+* category/tag
+* article title
+* excerpt
+* author/date/read time if available
+* link to read article
+
+Responsive:
+
+* desktop: 3-card grid or featured + smaller cards
+* mobile: stacked cards
+
+==================================================
+4. WORK DIFFERENTLY SECTION
+===========================
+
+Use the mockup’s two-card structure:
+
+* For Companies
+* For Professionals
+
+Do NOT copy the mockup fonts exactly.
+Use current site fonts/design.
+
+For Companies:
+Headline:
+“Hire faster. Spend less.”
+
+Items:
+
+* Days, not months
+* Hire your way
+* Skip the middlemen
+* 50+ countries
+
+For Professionals:
+Headline:
+“Real work. Real growth.”
+
+Items:
+
+* Steady pipeline
+* Top global brands
+* Your terms
+* Zero gatekeeping / Pure merit
+
+Use circular icons/art similar to the mockup style, but make them match the current OnSpot design.
+
+CTA buttons:
+
+* Find the right talent
+* Find your next opportunity
+
+Responsive:
+
+* desktop: two cards side by side
+* mobile: stacked
+
+==================================================
+5. TRUSTED BY SECTION
+=====================
+
+Keep the existing client logos.
+
+IMPORTANT:
+
+* Do NOT replace client logos.
+* Do NOT use mockup placeholder logo text if real logo assets already exist.
+* Preserve the current carousel behavior if the Trusted By section currently uses a carousel.
+* If the carousel was already restored, keep it.
+* Do not convert it into static logos unless explicitly requested later.
+
+Use the mockup only as placement guidance:
+
+* Trusted By comes after Work Differently in this mockup sequence.
+
+==================================================
+6. TRANSFORMATION STORIES SECTION
+=================================
+
+Add/keep transformation stories/testimonials after Trusted By.
+
+Use the mockup’s layout idea:
+
+* cards with short transformation headline
+* metric badge
+* quote
+* author info
+
+But:
+
+* use existing testimonial content if the current project already has real testimonials.
+* do not invent new client quotes if real content exists.
+
+Responsive:
+
+* desktop: 3 cards
+* mobile: stacked
+
+==================================================
+7. WHY PARTNER / WHY ONSPOT SECTION
+===================================
+
+Add/keep the Why Partner / Why OnSpot section after Transformation Stories.
+
+Use the mockup’s structure:
+
+* section label
+* headline
+* supporting paragraph
+* four benefit cards
+
+Possible benefit themes:
+
+* AI-first infrastructure
+* Human-centered culture
+* Connected ecosystem
+* Scalable excellence
+
+Keep current brand styling, not mockup font styling.
+
+Responsive:
+
+* desktop: 2x2 grid
+* mobile: stacked
+
+==================================================
+8. THE PROOF / TALENT PROFILES SECTION
+======================================
+
+Add/keep The Proof / Talent Profiles section after Why Partner.
+
+IMPORTANT:
+
+* Do NOT replace existing talent photos.
+* Do NOT replace existing talent names.
+* Keep current talent photo assets.
+* Keep existing talent profile styling if it already looks good.
+* Add PH flag beside Kyle Mendez.
+* Retain Alexandra Lopez and other existing talent profiles.
+
+Use the mockup only for layout/sequence inspiration:
+
+* section label
+* headline
+* supporting copy
+* talent cards/grid
+
+If there is a “Browse all talent” button, keep it if it already exists.
+
+==================================================
+9. FINAL CTA
+============
+
+Retain the current existing final CTA:
+“Ready to become superhuman?”
+
+Important:
+
+* Do not replace this with mockup styling if the current CTA is already approved.
+* Keep current CTA buttons and design.
+* This should appear before the footer.
+
+==================================================
+10. FOOTER
+==========
+
+Do NOT change the footer.
+
+Keep the current footer:
+
+* layout
+* colors
+* logo
+* links
+* social icons
+* copyright
+* spacing
+
+No footer changes in this task.
+
+==================================================
+CLEANUP REQUIREMENTS
+====================
+
+After implementation:
+
+* Remove duplicate sections.
+* Make sure every section appears only once.
+* Remove unused imports if sections are no longer used.
+* Make sure no mockup navbar or mockup footer is copied into the app.
+* Make sure no placeholder logo text replaces real logo assets.
+* Make sure current client logos remain.
+* Make sure current talent photos remain.
+* Make sure Kyle Mendez has a PH flag.
+* Make sure final CTA still says “Ready to become superhuman?”
+
+==================================================
+RESPONSIVE REQUIREMENTS
+=======================
+
+Check:
+
+* large desktop
+* laptop
+* tablet
+* mobile
+
+Requirements:
+
+* no horizontal scrolling
+* cards stack cleanly
+* hero visual stacks below text on smaller screens
+* logos remain readable
+* talent profiles remain readable
+* final CTA and footer remain clean
+
+==================================================
+EXPECTED RESULT
+===============
+
+The homepage should follow the attached HTML mockup’s section sequence and general layout direction, while preserving the real OnSpot navigation, footer, client logos, talent photos, typography, and approved final CTA.
