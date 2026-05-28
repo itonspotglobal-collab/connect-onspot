@@ -866,98 +866,42 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 sm:gap-6">
+          <div className="mx-auto mt-20 grid w-full max-w-7xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              {
-                photo: KyleMendezPhoto,
-                initials: "KM",
-                name: "Kyle Mendez",
-                flag: "🇵🇭",
-                role: "Senior Data Analyst",
-                gradient: "from-violet-400 to-violet-700",
-              },
-              {
-                photo: AlexandraLopezPhoto,
-                initials: "AL",
-                name: "Alexandra Lopez",
-                flag: "🇵🇭",
-                role: "CX & Operations Lead",
-                gradient: "from-teal-400 to-teal-700",
-              },
-              {
-                photo: AndreaPinzonPhoto,
-                initials: "AP",
-                name: "Andrea Pinzon",
-                flag: "🇵🇭",
-                role: "Virtual Assistant",
-                gradient: "from-rose-400 to-pink-700",
-              },
-              {
-                photo: ChristopherAlbaPhoto,
-                initials: "CA",
-                name: "Christopher Alba",
-                flag: "🇵🇭",
-                role: "Technical Support",
-                gradient: "from-blue-400 to-blue-700",
-              },
-              {
-                photo: RachelCastroPhoto,
-                initials: "RC",
-                name: "Rachel Castro",
-                flag: "🇵🇭",
-                role: "Social Media Manager",
-                gradient: "from-amber-400 to-orange-600",
-              },
-              {
-                photo: AmirSinghPhoto,
-                initials: "AS",
-                name: "Amir Singh",
-                flag: "🇺🇸",
-                role: "SEO Specialist",
-                gradient: "from-sky-400 to-sky-700",
-              },
-              {
-                photo: JenniferDizonPhoto,
-                initials: "JD",
-                name: "Jennifer Dizon",
-                flag: "🇵🇭",
-                role: "Customer Service",
-                gradient: "from-green-400 to-green-700",
-              },
-              {
-                photo: AndreiLosantoPhoto,
-                initials: "AL",
-                name: "Andrei Losanto",
-                flag: "🇵🇭",
-                role: "Full Stack Developer",
-                gradient: "from-indigo-400 to-indigo-700",
-              },
+              { photo: KyleMendezPhoto,        name: "Kyle Mendez",       flag: "🇵🇭", role: "Senior Data Analyst"    },
+              { photo: AlexandraLopezPhoto,    name: "Alexandra Lopez",   flag: "🇵🇭", role: "CX & Operations Lead"   },
+              { photo: AndreaPinzonPhoto,      name: "Andrea Pinzon",     flag: "🇵🇭", role: "Virtual Assistant"      },
+              { photo: ChristopherAlbaPhoto,   name: "Christopher Alba",  flag: "🇵🇭", role: "Technical Support"      },
+              { photo: RachelCastroPhoto,      name: "Rachel Castro",     flag: "🇵🇭", role: "Social Media Manager"   },
+              { photo: AmirSinghPhoto,         name: "Amir Singh",        flag: "🇺🇸", role: "SEO Specialist"         },
+              { photo: JenniferDizonPhoto,     name: "Jennifer Dizon",    flag: "🇵🇭", role: "Customer Service"       },
+              { photo: AndreiLosantoPhoto,     name: "Andrei Losanto",    flag: "🇵🇭", role: "Full Stack Developer"   },
             ].map((person) => (
               <div
                 key={person.name}
-                className="group flex flex-col items-center text-center p-5 sm:p-6 rounded-2xl cursor-pointer hover:bg-[#3F4698]/5 transition-all duration-300"
+                className="group relative aspect-[4/3] overflow-hidden rounded-3xl bg-slate-100 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-xl"
               >
-                {person.photo ? (
-                  <img
-                    src={person.photo}
-                    alt={person.name}
-                    className="h-24 w-24 sm:h-28 sm:w-28 rounded-full object-cover object-top ring-4 ring-white shadow-lg mb-4"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div
-                    className={`flex h-24 w-24 sm:h-28 sm:w-28 items-center justify-center rounded-full bg-gradient-to-br ${person.gradient} ring-4 ring-white shadow-lg mb-4 text-2xl sm:text-3xl font-semibold text-white`}
-                  >
-                    {person.initials}
-                  </div>
-                )}
-                <p className="text-sm sm:text-base font-semibold text-slate-900">
-                  {person.name}
-                  {person.flag && <span className="ml-1">{person.flag}</span>}
-                </p>
-                <p className="mt-1 text-xs sm:text-sm text-slate-500 leading-snug">
-                  {person.role}
-                </p>
+                {/* Photo — full-color, no filter */}
+                <img
+                  src={person.photo}
+                  alt={person.name}
+                  className="h-full w-full object-cover object-top transition duration-700 group-hover:scale-105"
+                  loading="lazy"
+                />
+
+                {/* Hover gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/25 to-transparent opacity-100 md:opacity-0 md:transition-opacity md:duration-300 md:group-hover:opacity-100" />
+
+                {/* Name + role — always visible mobile, hover-only desktop */}
+                <div className="absolute inset-x-0 bottom-0 z-10 translate-y-0 p-5 text-white opacity-100 transition-all duration-300 md:translate-y-4 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100">
+                  <h3 className="text-base font-bold text-white leading-tight">
+                    {person.name}{" "}
+                    <span aria-hidden="true">{person.flag}</span>
+                  </h3>
+                  <p className="mt-0.5 text-sm font-medium text-white/80">
+                    {person.role}
+                  </p>
+                </div>
               </div>
             ))}
           </div>

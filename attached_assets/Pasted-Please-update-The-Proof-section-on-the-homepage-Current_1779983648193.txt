@@ -1,0 +1,294 @@
+Please update “The Proof” section on the homepage.
+
+Current issue:
+The section currently shows small circular profile photos with names underneath. We want to bring back the previous larger photo-grid design, but without the gray/blurred inactive effect.
+
+Goal:
+Use the larger photo tile layout again:
+- larger rectangular/rounded talent photos
+- full-color, clear images by default
+- names/details appear on hover
+- no gray/blurred default state
+
+IMPORTANT:
+- Do NOT change the Navigation bar.
+- Do NOT change the Footer.
+- Do NOT change other homepage sections.
+- Do NOT replace the talent photos.
+- Use the existing imported talent photos:
+  - KyleMendezPhoto
+  - AlexandraLopezPhoto
+  - AndreaPinzonPhoto
+  - ChristopherAlbaPhoto
+  - RachelCastroPhoto
+  - AmirSinghPhoto
+  - JenniferDizonPhoto
+  - AndreiLosantoPhoto
+- Do NOT use generic placeholder photos.
+- Do NOT use blurred/gray images as the default.
+- Keep “Browse all talent” button.
+
+==================================================
+SECTION HEADER
+==================================================
+
+Keep the current heading structure:
+
+Label:
+THE PROOF
+
+Headline:
+The people behind the platform.
+
+Subtitle:
+Powered by professionals from the US, Philippines, and beyond.
+The Superhuman BPO Network.
+
+Keep this centered.
+
+==================================================
+RESTORE LARGE PHOTO GRID
+==================================================
+
+Replace the small circular-avatar grid with a large photo tile grid.
+
+Desktop layout:
+- 4 columns
+- 2 rows
+- large rectangular photo tiles
+
+Tablet:
+- 2 columns
+
+Mobile:
+- 1 column or 2 columns if it still looks good
+
+Suggested grid:
+
+<div className="
+  mx-auto mt-20 grid w-full max-w-7xl
+  grid-cols-1 gap-6
+  sm:grid-cols-2
+  lg:grid-cols-4
+">
+  ...
+</div>
+
+==================================================
+PHOTO TILE STYLE
+==================================================
+
+Each talent should be displayed as a large photo card.
+
+Tile wrapper:
+
+className="
+  group relative aspect-[4/3]
+  overflow-hidden rounded-3xl
+  bg-slate-100 shadow-sm
+  transition-all duration-500
+  hover:-translate-y-1 hover:shadow-xl
+"
+
+Image:
+
+className="
+  h-full w-full object-cover
+  transition duration-700
+  group-hover:scale-105
+"
+
+IMPORTANT:
+- Remove `blur`
+- Remove `grayscale`
+- Remove `opacity-50`
+- Remove `filter`
+- Remove default gray overlay that hides the photo
+- Photos should be clear and full-color by default
+
+Do NOT use:
+blur-sm
+blur-md
+grayscale
+opacity-40
+opacity-50
+backdrop-blur over the whole image by default
+
+==================================================
+HOVER OVERLAY WITH NAME
+==================================================
+
+By default:
+- show the full-color photo only
+- no visible text, or only very subtle text if necessary
+
+On hover:
+- show a dark gradient overlay from bottom
+- reveal name and role
+- optionally show flag beside name
+
+Overlay:
+
+className="
+  absolute inset-0
+  bg-gradient-to-t from-slate-950/85 via-slate-950/25 to-transparent
+  opacity-0 transition-opacity duration-300
+  group-hover:opacity-100
+"
+
+Text wrapper:
+
+className="
+  absolute inset-x-0 bottom-0 z-10
+  translate-y-4 p-6 text-white opacity-0
+  transition-all duration-300
+  group-hover:translate-y-0 group-hover:opacity-100
+"
+
+Name:
+
+className="
+  text-lg font-bold text-white
+"
+
+Role:
+
+className="
+  mt-1 text-sm font-medium text-white/80
+"
+
+Example content:
+
+<h3>Kyle Mendez <span>🇵🇭</span></h3>
+<p>Senior Data Analyst</p>
+
+==================================================
+TALENT DATA
+==================================================
+
+Use this exact talent list and existing imported images:
+
+const talentProfiles = [
+  {
+    name: "Kyle Mendez",
+    flag: "🇵🇭",
+    role: "Senior Data Analyst",
+    image: KyleMendezPhoto,
+  },
+  {
+    name: "Alexandra Lopez",
+    flag: "🇵🇭",
+    role: "CX & Operations Lead",
+    image: AlexandraLopezPhoto,
+  },
+  {
+    name: "Andrea Pinzon",
+    flag: "🇵🇭",
+    role: "Virtual Assistant",
+    image: AndreaPinzonPhoto,
+  },
+  {
+    name: "Christopher Alba",
+    flag: "🇵🇭",
+    role: "Technical Support",
+    image: ChristopherAlbaPhoto,
+  },
+  {
+    name: "Rachel Castro",
+    flag: "🇵🇭",
+    role: "Social Media Manager",
+    image: RachelCastroPhoto,
+  },
+  {
+    name: "Amir Singh",
+    flag: "🇺🇸",
+    role: "SEO Specialist",
+    image: AmirSinghPhoto,
+  },
+  {
+    name: "Jennifer Dizon",
+    flag: "🇵🇭",
+    role: "Customer Service",
+    image: JenniferDizonPhoto,
+  },
+  {
+    name: "Andrei Losanto",
+    flag: "🇵🇭",
+    role: "Full Stack Developer",
+    image: AndreiLosantoPhoto,
+  },
+];
+
+Make sure the property name matches what the card component renders.
+If the component uses `photo`, then use `photo`.
+If it uses `image`, then use `image`.
+
+==================================================
+REMOVE OLD SMALL CIRCULAR PROFILE LAYOUT
+==================================================
+
+Remove/replace the current small circular profile rendering:
+- circular image above name
+- name always visible under image
+- lots of empty spacing between profiles
+
+Do not keep both versions. There should only be one The Proof talent grid.
+
+==================================================
+NO GRAYED DEFAULT STATE
+==================================================
+
+The previous reference had gray/blurred inactive tiles. Do NOT copy that.
+
+All tiles should be:
+- clear
+- full-color
+- visible
+- no blur
+- no grayscale
+
+Only show overlay text on hover.
+
+Optional:
+On hover, the current tile can brighten slightly and other tiles can remain unchanged. Do not dim other tiles.
+
+==================================================
+MOBILE BEHAVIOR
+==================================================
+
+Since hover does not work well on mobile:
+- show the name/role overlay always on mobile
+- hide it until hover only on devices that support hover, if possible
+
+Simple approach:
+Overlay can be visible by default on mobile and hover-only on desktop.
+
+Example:
+overlay class:
+opacity-100 md:opacity-0 md:group-hover:opacity-100
+
+text class:
+opacity-100 translate-y-0 md:opacity-0 md:translate-y-4 md:group-hover:opacity-100 md:group-hover:translate-y-0
+
+==================================================
+BROWSE BUTTON
+==================================================
+
+Keep the Browse all talent button below the grid.
+
+Center it.
+
+Suggested spacing:
+mt-12
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The Proof section should now show:
+- large rectangular talent photo tiles
+- full-color clear photos by default
+- no gray/blurred inactive state
+- names/roles appear on hover
+- existing imported talent photos are used
+- Browse all talent remains below
