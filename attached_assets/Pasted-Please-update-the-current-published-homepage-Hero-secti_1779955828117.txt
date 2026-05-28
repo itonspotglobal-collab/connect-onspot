@@ -1,0 +1,170 @@
+Please update the current/published homepage Hero section headline.
+
+Current issue:
+The Hero main headline currently uses:
+“AI first. Humans when it matters.”
+
+Requested change:
+Make the main Hero headline:
+“Work Differently.”
+
+Use the attached first reference image as the content/layout reference only.
+
+IMPORTANT:
+- Do NOT change the current Navigation bar.
+- Do NOT change the Footer.
+- Do NOT redesign the whole hero.
+- Do NOT copy the reference image’s exact text style/font.
+- Keep the current website typography/design language.
+- Only update the hero headline content and make minor layout adjustments if needed.
+- Keep the Vanessa AI card on the right.
+- Keep the current CTA buttons.
+
+==================================================
+HERO CONTENT UPDATE
+==================================================
+
+Change the main hero headline from:
+
+“AI first. Humans when it matters.”
+
+To:
+
+“Work Differently.”
+
+The word “Differently” should be highlighted, similar to the reference image.
+
+Suggested JSX structure:
+
+<h1 className="...">
+  Work <span className="...">Differently.</span>
+</h1>
+
+Highlight style:
+- Use the same purple/lavender color treatment currently used for the highlighted “Humans” word.
+- If “Humans” currently uses a gradient or special color, reuse that exact class/style for “Differently.”
+- Do not use the mockup’s serif/italic style unless that already matches the current design system.
+
+==================================================
+SUPPORTING TEXT
+==================================================
+
+Keep the supporting line below the headline:
+
+“AI first. Humans when it matters.”
+
+This should now become the subtitle/supporting statement, not the main headline.
+
+Also keep or add the short support line:
+
+“Marketplace speed. BPO quality. One platform.”
+
+If the current hero already has the longer tagline:
+“One System. Your unfair Advantage. Marketplace speed...”
+replace/simplify it for this hero version only with:
+
+Line 1:
+“AI first. Humans when it matters.”
+
+Line 2:
+“Marketplace speed. BPO quality. One platform.”
+
+Suggested structure:
+
+<p className="hero-subtitle">
+  AI first. Humans when it matters.
+</p>
+
+<p className="hero-supporting">
+  Marketplace speed. BPO quality. One platform.
+</p>
+
+==================================================
+BADGE / EYEBROW
+==================================================
+
+If the hero currently has the “Work Differently” pill/badge above the title, update it so it no longer duplicates the main headline.
+
+Replace the badge text with:
+
+“Vanessa AI Assistant is now live →”
+
+Optional small pill inside badge:
+“NEW”
+
+Do not keep “Work Differently” in the badge after it becomes the headline.
+
+==================================================
+CTA BUTTONS
+==================================================
+
+Keep the existing hero CTA buttons:
+- Launch AI Assistant
+- Get Managed Team
+- Find Work / Looking for work?
+
+Do not remove them.
+
+If the current hero has three buttons, keep three buttons.
+If it currently has two buttons, do not add a third unless already part of the current approved design.
+
+==================================================
+HERO VISUAL / VANESSA CARD
+==================================================
+
+Keep the current Vanessa AI card on the right.
+
+Do not replace talent photos or names.
+If the card contains talent matches:
+- Keep existing talent names/photos.
+- Keep Kyle Mendez.
+- If Kyle Mendez appears, add PH flag beside his name if not already present.
+
+Do not change the card layout unless needed to preserve responsive alignment.
+
+==================================================
+LAYOUT / RESPONSIVE
+==================================================
+
+Desktop:
+- Left side headline: “Work Differently.”
+- Right side Vanessa AI card
+- CTAs under supporting text
+
+Mobile/tablet:
+- Stack content cleanly.
+- Hero headline should not overflow.
+- Vanessa card should remain readable.
+
+Suggested headline size:
+Use current hero headline sizing, but make sure it works for the shorter text.
+
+Example:
+className="
+  text-6xl sm:text-7xl lg:text-8xl
+  font-bold tracking-tight
+"
+
+But use the current project’s existing hero heading classes if available.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The Hero should now read:
+
+Badge:
+NEW Vanessa AI Assistant is now live →
+
+Main headline:
+Work Differently.
+
+Subtitle:
+AI first. Humans when it matters.
+
+Supporting:
+Marketplace speed. BPO quality. One platform.
+
+CTA buttons remain below.
+
+Navigation and footer remain unchanged.
