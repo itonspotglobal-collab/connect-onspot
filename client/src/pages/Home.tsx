@@ -410,12 +410,12 @@ export default function Home() {
           ].map((stat) => (
             <div
               key={stat.label}
-              className="flex min-h-[150px] flex-col items-center justify-center px-6 py-8 text-center"
+              className="flex min-h-[120px] flex-col items-center justify-center px-6 py-7 text-center"
             >
-              <span className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-[#3F4698]">
+              <span className="text-4xl sm:text-5xl font-bold tracking-tight text-[#3F4698]">
                 {stat.value}
               </span>
-              <span className="mt-3 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+              <span className="mt-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
                 {stat.label}
               </span>
             </div>

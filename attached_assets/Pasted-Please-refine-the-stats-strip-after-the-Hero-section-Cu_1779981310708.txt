@@ -1,0 +1,179 @@
+Please refine the stats strip after the Hero section.
+
+Current issue:
+The stats strip is now correctly light and has 4 stats, but the numbers feel too large and the strip feels too tall/heavy for a supporting strip.
+
+Goal:
+Make the stats strip more balanced, lighter, and more refined.
+
+IMPORTANT:
+- Do NOT change the Navigation bar.
+- Do NOT change the Footer.
+- Do NOT change the Hero section.
+- Do NOT re-add the PH / Philippine-based stat.
+- Keep the strip as a light contrast section.
+- Only adjust the stats strip sizing, spacing, and visual weight.
+
+==================================================
+CONTENT TO KEEP
+==================================================
+
+Keep only these 4 stats:
+
+1. 72hrs
+   AVG. TIME TO HIRE
+
+2. 500+
+   GLOBAL CLIENTS
+
+3. 98%
+   CLIENT RETENTION
+
+4. 2,000+
+   TALENTS PLACED
+
+Do not add the PH stat back.
+
+==================================================
+SIZE ADJUSTMENT
+==================================================
+
+Reduce the stat number size.
+
+Current numbers look too large, likely around:
+text-6xl / text-7xl
+
+Change to a more refined size:
+
+className="
+  text-4xl
+  font-bold
+  tracking-tight
+  text-[#3F4698]
+  sm:text-5xl
+  lg:text-[56px]
+"
+
+If `56px` still feels too large, use:
+
+lg:text-5xl
+
+Avoid:
+- text-6xl
+- text-7xl
+- text-8xl
+
+==================================================
+STRIP HEIGHT / PADDING
+==================================================
+
+Reduce vertical height and padding.
+
+Current strip feels too tall. Use something closer to:
+
+Stat item wrapper:
+
+className="
+  flex min-h-[120px]
+  flex-col items-center justify-center
+  px-6 py-7 text-center
+"
+
+or slightly taller:
+
+className="
+  flex min-h-[132px]
+  flex-col items-center justify-center
+  px-6 py-8 text-center
+"
+
+Avoid:
+- min-h-[150px]
+- min-h-[180px]
+- py-12
+- py-16
+
+==================================================
+LABEL STYLE
+==================================================
+
+Keep labels smaller and subtle.
+
+Label class:
+
+className="
+  mt-3 text-[11px]
+  font-semibold uppercase
+  tracking-[0.24em]
+  text-slate-500
+"
+
+If labels feel too spaced out, reduce to:
+
+tracking-[0.18em]
+
+==================================================
+BACKGROUND AND BORDERS
+==================================================
+
+Keep the light background.
+
+Suggested section wrapper:
+
+className="
+  relative w-full
+  border-y border-slate-200/70
+  bg-[#F6F7FB]
+"
+
+Keep dividers subtle:
+
+divide-slate-200/70
+
+or:
+
+border-slate-200/70
+
+Do not use dark borders or white borders.
+
+==================================================
+GRID
+==================================================
+
+Keep 4 columns on desktop:
+
+className="
+  mx-auto grid max-w-[1600px]
+  grid-cols-2
+  divide-x-0 divide-y divide-slate-200/70
+  md:grid-cols-4 md:divide-x md:divide-y-0
+"
+
+Mobile/tablet:
+- 2x2 layout is fine.
+- No horizontal scrolling.
+
+==================================================
+VISUAL BALANCE
+==================================================
+
+The stats should feel like a credibility strip, not a main hero headline.
+
+Expected:
+- Numbers are strong but not oversized.
+- Labels are readable but subtle.
+- Strip height is compact.
+- Light background creates contrast after the dark hero.
+- Section does not dominate the page.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The stats strip should look cleaner and more proportional:
+- 4 stats only
+- light background
+- smaller number size
+- shorter strip height
+- refined dividers
+- brand-colored numbers
