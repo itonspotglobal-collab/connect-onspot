@@ -672,180 +672,229 @@ export default function Home() {
       </div>
 
       {/* ── 5. TRANSFORMATION STORIES ── */}
-      <div className="relative bg-white py-20 sm:py-28">
-        <div className="container mx-auto px-4 sm:px-6">
+      <div className="relative overflow-hidden bg-[#F6F7FB] py-20 sm:py-28">
+        {/* Decorative blobs */}
+        <div className="pointer-events-none absolute -top-24 right-0 h-72 w-72 rounded-full bg-[#3F4698]/10 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-0 left-0 h-80 w-80 rounded-full bg-[#3F4698]/5 blur-3xl" />
+
+        <div className="container relative z-10 mx-auto px-4 sm:px-6">
+          {/* Section header */}
           <div className="mb-12 sm:mb-16">
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#3F4698]">
+            <p className="text-xs font-bold uppercase tracking-[0.28em] text-[#3F4698]">
               Transformations
             </p>
-            <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900 max-w-2xl">
+            <h2 className="mt-4 max-w-3xl text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl">
               Real change.{" "}
-              <span className="italic text-[#3F4698]">Real results.</span>
+              <span className="text-[#3F4698]">Real results.</span>
             </h2>
-            <p className="mt-4 text-base sm:text-lg text-slate-500 max-w-xl">
-              How OnSpot reshapes how teams work — one partnership at a time.
+            <p className="mt-5 max-w-2xl text-lg leading-relaxed text-slate-600">
+              See how OnSpot helps teams move from overloaded operations to
+              intelligent, scalable outsourcing partnerships.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              {
-                quote:
-                  "The professionalism and consistency of the OnSpot team. Communication is always clear, and the structured daily and weekly updates make it simple to stay aligned.",
-                transformation: "From 12-hour workdays to automated excellence",
-                keyword: "automated excellence",
-                metric: "40% time saved",
-                name: "Elad B.",
-                role: "CEO / Founder, PineTech",
-              },
-              {
-                quote:
-                  "I've worked with several outsourcing companies, but none delivered like OnSpot. Shane and Ria helped me build my team, stayed involved, and ensured success. I finally feel like I'm working with a true partner.",
-                transformation:
-                  "From scattered processes to seamless orchestration",
-                keyword: "seamless orchestration",
-                metric: "3 weeks to full team",
-                name: "Eric M.",
-                role: "Operations Director, Flash Justice",
-              },
-              {
-                quote:
-                  "OnSpot's team is professional, responsive, and reliable — always going above and beyond. The efficiency and consistency they deliver gives me complete confidence in the partnership we've built.",
-                transformation:
-                  "From constant firefighting to proactive innovation",
-                keyword: "proactive innovation",
-                metric: "24/7 coverage",
-                name: "Fernando C.",
-                role: "CTO, Pinetech",
-              },
-            ].map((story) => (
-              <div
-                key={story.name}
-                className="flex flex-col rounded-3xl border border-slate-200/70 bg-white/80 p-8 shadow-sm hover:border-[#3F4698]/25 hover:shadow-md transition-all duration-300"
-              >
-                {/* Author block — top */}
-                <div className="mb-7 flex items-center gap-4">
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+          {/* Featured card + two smaller cards */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.15fr_1fr]">
+
+            {/* Featured testimonial */}
+            <div className="relative overflow-hidden rounded-[32px] border border-[#3F4698]/15 bg-white p-8 shadow-[0_24px_80px_rgba(63,70,152,0.12)] sm:p-10">
+              {/* Large decorative quote mark */}
+              <span className="pointer-events-none absolute right-8 top-6 select-none text-[120px] font-black leading-none text-[#3F4698]/5">
+                "
+              </span>
+
+              {/* Author row + metric */}
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#3F4698]/10 text-[#3F4698]">
                     <User className="h-6 w-6" />
                   </div>
                   <div>
-                    <p className="text-base font-semibold text-slate-900">
-                      {story.name}
-                    </p>
-                    <p className="mt-0.5 text-sm text-slate-500">
-                      {story.role}
-                    </p>
+                    <p className="text-base font-semibold text-slate-900">Elad B.</p>
+                    <p className="mt-0.5 text-sm text-slate-500">CEO / Founder, PineTech</p>
                   </div>
                 </div>
-
-                {/* Transformation headline */}
-                <h3 className="text-xl font-medium leading-snug text-slate-800 mb-4">
-                  {story.transformation
-                    .split(story.keyword)
-                    .map((part, i, arr) =>
-                      i < arr.length - 1 ? (
-                        <span key={i}>
-                          {part}
-                          <span className="italic text-[#3F4698]">
-                            {story.keyword}
-                          </span>
-                        </span>
-                      ) : (
-                        <span key={i}>{part}</span>
-                      ),
-                    )}
-                </h3>
-
-                {/* Metric badge */}
-                <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-[#3F4698]/10 px-3 py-1 text-xs font-semibold text-[#3F4698] mb-6">
-                  <TrendingUp className="h-3 w-3" />
-                  {story.metric}
+                <span className="rounded-full bg-[#3F4698]/10 px-4 py-2 text-sm font-semibold text-[#3F4698]">
+                  40% time saved
                 </span>
-
-                {/* Quote */}
-                <p className="flex-1 text-sm leading-relaxed text-slate-600">
-                  {story.quote}
-                </p>
               </div>
-            ))}
+
+              {/* Transformation headline */}
+              <h3 className="mt-8 text-2xl font-bold leading-snug text-slate-950 sm:text-3xl">
+                From 12-hour workdays to{" "}
+                <span className="italic text-[#3F4698]">automated excellence</span>
+              </h3>
+
+              {/* Quote */}
+              <p className="mt-5 text-base leading-relaxed text-slate-600">
+                "The professionalism and consistency of the OnSpot team.
+                Communication is always clear, and the structured daily and
+                weekly updates make it simple to stay aligned."
+              </p>
+
+              {/* Badge */}
+              <div className="mt-8 inline-flex items-center gap-2 rounded-full border border-[#3F4698]/20 bg-[#3F4698]/5 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-[#3F4698]">
+                <TrendingUp className="h-3 w-3" />
+                Client transformation
+              </div>
+            </div>
+
+            {/* Two smaller cards stacked */}
+            <div className="flex flex-col gap-6">
+              {[
+                {
+                  name: "Eric M.",
+                  role: "Operations Director, Flash Justice",
+                  metric: "3 weeks to full team",
+                  headline: "From scattered processes to",
+                  highlight: "seamless orchestration",
+                  quote:
+                    "I've worked with several outsourcing companies, but none delivered like OnSpot. Shane and Ria helped me build my team, stayed involved, and ensured success. I finally feel like I'm working with a true partner.",
+                },
+                {
+                  name: "Fernando C.",
+                  role: "CTO, Pinetech",
+                  metric: "24/7 coverage",
+                  headline: "From constant firefighting to",
+                  highlight: "proactive innovation",
+                  quote:
+                    "OnSpot's team is professional, responsive, and reliable — always going above and beyond. The efficiency and consistency they deliver gives me complete confidence.",
+                },
+              ].map((story) => (
+                <div
+                  key={story.name}
+                  className="flex flex-1 flex-col rounded-[28px] border border-slate-200/80 bg-white/90 p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#3F4698]/10 text-[#3F4698]">
+                        <User className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">{story.name}</p>
+                        <p className="text-xs text-slate-500">{story.role}</p>
+                      </div>
+                    </div>
+                    <span className="rounded-full bg-[#3F4698]/10 px-3 py-1 text-xs font-semibold text-[#3F4698]">
+                      {story.metric}
+                    </span>
+                  </div>
+                  <h3 className="mt-5 text-lg font-bold leading-snug text-slate-950">
+                    {story.headline}{" "}
+                    <span className="italic text-[#3F4698]">{story.highlight}</span>
+                  </h3>
+                  <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-slate-600 flex-1">
+                    "{story.quote}"
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
       {/* ── 6. WHY PARTNER / WHY ONSPOT ── */}
-      <div className="relative bg-[#f4f2fc] py-20 sm:py-28">
-        <div className="container mx-auto px-4 sm:px-6">
-          <div className="mb-12 sm:mb-16">
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#3F4698]">
-              Why OnSpot
-            </p>
-            <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900 max-w-2xl">
-              Not a service provider.{" "}
-              <span className="italic text-[#3F4698]">An architect.</span>
-            </h2>
-            <p className="mt-4 text-base sm:text-lg text-slate-500 max-w-xl">
-              We build the future where AI and human brilliance work as one —
-              and we'd be honored to build it with you.
-            </p>
-          </div>
+      <div className="relative overflow-hidden bg-[#F4F6FF] py-20 sm:py-28">
+        <div className="pointer-events-none absolute -bottom-24 right-0 h-96 w-96 rounded-full bg-[#3F4698]/8 blur-3xl" />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {[
-              {
-                icon: <Bot className="h-6 w-6" />,
-                iconBg: "bg-[#3F4698]/10 text-[#3F4698]",
-                title: "AI-first infrastructure",
-                tagline: "Intelligent by design",
-                taglineColor: "text-[#3F4698]",
-                body: "Every system and workflow enhanced by intelligence that amplifies human potential — not automation for its own sake.",
-              },
-              {
-                icon: <Users className="h-6 w-6" />,
-                iconBg: "bg-[#3F4698]/10 text-[#3F4698]",
-                title: "Human-centered culture",
-                tagline: "People, not resources",
-                taglineColor: "text-[#3F4698]",
-                body: "Elite Filipino talent treated as partners. We invest in their growth because your success depends on it.",
-              },
-              {
-                icon: <Globe className="h-6 w-6" />,
-                iconBg: "bg-[#3F4698]/10 text-[#3F4698]",
-                title: "Connected ecosystem",
-                tagline: "Seamless integration",
-                taglineColor: "text-[#3F4698]",
-                body: "Your tools, your workflow, working in harmony. We don't disrupt what you've built — we elevate it.",
-              },
-              {
-                icon: <TrendingUp className="h-6 w-6" />,
-                iconBg: "bg-[#3F4698]/10 text-[#3F4698]",
-                title: "Scalable excellence",
-                tagline: "Grow without compromise",
-                taglineColor: "text-[#3F4698]",
-                body: "Scale from 1 to 100 without losing quality, culture, or control. Same excellence at every stage.",
-              },
-            ].map((card) => (
-              <div
-                key={card.title}
-                className="rounded-2xl border border-slate-200/80 bg-white p-8 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#3F4698]/10"
-              >
-                <div
-                  className={`flex h-12 w-12 items-center justify-center rounded-2xl ${card.iconBg} mb-6`}
-                >
-                  {card.icon}
-                </div>
-                <h3 className="text-xl font-semibold text-slate-900 mb-1">
-                  {card.title}
-                </h3>
-                <p
-                  className={`text-sm font-semibold mb-3 ${card.taglineColor}`}
-                >
-                  {card.tagline}
-                </p>
-                <p className="text-sm leading-relaxed text-slate-500">
-                  {card.body}
-                </p>
+        <div className="container relative z-10 mx-auto px-4 sm:px-6">
+          <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
+
+            {/* Left — dark brand panel */}
+            <div className="rounded-[36px] bg-[#3F4698] p-8 text-white shadow-[0_30px_100px_rgba(63,70,152,0.25)] sm:p-10">
+              <p className="text-xs font-bold uppercase tracking-[0.28em] text-white/60">
+                Why OnSpot
+              </p>
+              <h2 className="mt-4 text-3xl font-bold leading-tight text-white sm:text-4xl">
+                Not a service provider.{" "}
+                <span className="italic text-white/80">An architect.</span>
+              </h2>
+              <p className="mt-5 text-base leading-relaxed text-white/70">
+                We design the operating layer behind modern outsourcing —
+                combining AI-ready systems, vetted talent, and human
+                accountability so your team can scale without losing control.
+              </p>
+
+              {/* Tag pills */}
+              <div className="mt-8 flex flex-wrap gap-2">
+                {[
+                  "No inflated middlemen",
+                  "Built-in accountability",
+                  "AI-ready workflows",
+                  "Vetted Filipino talent",
+                  "Scale without chaos",
+                ].map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full bg-white/10 px-4 py-2 text-sm text-white/85"
+                  >
+                    {tag}
+                  </span>
+                ))}
               </div>
-            ))}
+
+              {/* Mini proof stats */}
+              <div className="mt-10 grid grid-cols-3 gap-4 border-t border-white/15 pt-6">
+                {[
+                  { value: "72hr", label: "Avg. match time" },
+                  { value: "500+", label: "Clients" },
+                  { value: "98%",  label: "Retention" },
+                ].map((s) => (
+                  <div key={s.label} className="text-center">
+                    <p className="text-2xl font-bold text-white">{s.value}</p>
+                    <p className="mt-1 text-xs text-white/55">{s.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right — 2×2 advantage cards */}
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+              {[
+                {
+                  icon: <Bot className="h-6 w-6" />,
+                  title: "AI-first infrastructure",
+                  tagline: "Intelligent by design",
+                  body: "Every system and workflow enhanced by intelligence that amplifies human potential — not automation for its own sake.",
+                },
+                {
+                  icon: <Users className="h-6 w-6" />,
+                  title: "Human-centered culture",
+                  tagline: "People, not resources",
+                  body: "Elite Filipino talent treated as partners. We invest in their growth because your success depends on it.",
+                },
+                {
+                  icon: <Globe className="h-6 w-6" />,
+                  title: "Connected ecosystem",
+                  tagline: "Seamless integration",
+                  body: "Your tools, your workflow, working in harmony. We don't disrupt what you've built — we elevate it.",
+                },
+                {
+                  icon: <TrendingUp className="h-6 w-6" />,
+                  title: "Scalable excellence",
+                  tagline: "Grow without compromise",
+                  body: "Scale from 1 to 100 without losing quality, culture, or control. Same excellence at every stage.",
+                },
+              ].map((card) => (
+                <div
+                  key={card.title}
+                  className="rounded-[28px] border border-[#3F4698]/12 bg-white p-7 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
+                >
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#3F4698]/10 text-[#3F4698]">
+                    {card.icon}
+                  </div>
+                  <h3 className="mt-6 text-xl font-bold text-slate-950">
+                    {card.title}
+                  </h3>
+                  <p className="mt-2 text-sm font-semibold text-[#3F4698]">
+                    {card.tagline}
+                  </p>
+                  <p className="mt-4 text-sm leading-relaxed text-slate-600">
+                    {card.body}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

@@ -1,0 +1,485 @@
+Please redesign the following two homepage sections into a more visually stunning, premium, outsourcing-focused design inspired by Mindvalley-style visual storytelling:
+
+1. Transformation Stories
+2. Why OnSpot / Why Partner with OnSpot
+
+Goal:
+Make these sections feel more engaging, persuasive, and visually premium. The sections should encourage visitors to trust OnSpot as an outsourcing partner and understand the real transformation clients experience.
+
+IMPORTANT:
+- Do NOT change the Navigation bar.
+- Do NOT change the Footer.
+- Do NOT change the Hero section.
+- Do NOT change section order.
+- Do NOT remove these sections.
+- Keep OnSpot brand colors.
+- Use the brand blue-violet color: #3F4698
+- Do NOT use bright neon purple.
+- Do NOT use green/teal accents.
+- Keep the content focused on outsourcing, client trust, operational transformation, and human + AI-enabled support.
+- Make sure it remains responsive.
+
+==================================================
+SECTION 1: TRANSFORMATION STORIES
+==================================================
+
+Current section:
+“Real change. Real results.”
+
+Goal:
+Turn this into a more visual client-review / transformation section.
+
+Design idea:
+Use a large, premium testimonial feature layout instead of three small flat cards.
+
+Suggested layout:
+- Left side: bold section heading and short supporting copy
+- Right side: large featured testimonial card
+- Below or beside it: two smaller testimonial cards
+
+Desktop layout idea:
+
+[ Left intro column ] [ Large featured testimonial card ]
+                     [ Two smaller proof cards below / beside ]
+
+Alternative:
+Use a 3-card layout, but make the first card larger and more visually dominant.
+
+==================================================
+TRANSFORMATION STORIES CONTENT
+==================================================
+
+Keep or adapt the existing testimonial content:
+
+Section label:
+TRANSFORMATIONS
+
+Headline:
+Real change. Real results.
+
+Supporting text:
+See how OnSpot helps teams move from overloaded operations to intelligent, scalable outsourcing partnerships.
+
+Use client-review language:
+- From 12-hour workdays to automated excellence
+- From scattered processes to seamless orchestration
+- From constant firefighting to proactive innovation
+
+Client reviewers:
+- Elad B.
+  CEO / Founder, PineTech
+
+- Eric M.
+  Operations Director, Flash Justice
+
+- Fernando C.
+  CTO, Pinetech
+
+==================================================
+TRANSFORMATION STORIES VISUAL STYLE
+==================================================
+
+Section background:
+Use a premium light background with subtle brand gradient.
+
+Suggested:
+className="
+  relative overflow-hidden bg-[#F6F7FB]
+"
+
+Add soft decorative background blobs:
+- very subtle blue-violet radial gradient
+- no harsh colors
+
+Example background effects:
+<div className="absolute -top-24 right-0 h-72 w-72 rounded-full bg-[#3F4698]/10 blur-3xl" />
+<div className="absolute bottom-0 left-0 h-80 w-80 rounded-full bg-[#3F4698]/5 blur-3xl" />
+
+Section header:
+- Keep left aligned on desktop.
+- Center on mobile.
+
+Label:
+className="
+  text-xs font-bold uppercase tracking-[0.28em] text-[#3F4698]
+"
+
+Headline:
+className="
+  mt-4 max-w-3xl text-4xl font-bold tracking-tight text-slate-950
+  sm:text-5xl lg:text-6xl
+"
+
+Highlight:
+“Real results.”
+Use:
+text-[#3F4698]
+
+Subtitle:
+className="
+  mt-5 max-w-2xl text-lg leading-relaxed text-slate-600
+"
+
+==================================================
+FEATURED TESTIMONIAL CARD
+==================================================
+
+Make the first testimonial feel like a featured client review.
+
+Suggested card:
+className="
+  relative overflow-hidden rounded-[32px]
+  border border-[#3F4698]/15
+  bg-white p-8 shadow-[0_24px_80px_rgba(63,70,152,0.14)]
+"
+
+Inside featured card:
+- top row with client avatar/photo/fallback icon
+- name and company role
+- metric pill
+- large transformation headline
+- quote
+- small “Client transformation” badge
+
+Suggested structure:
+
+<div className="featured-testimonial-card">
+  <div className="flex items-center justify-between gap-4">
+    <div className="flex items-center gap-4">
+      <Avatar />
+      <div>
+        <p>Elad B.</p>
+        <p>CEO / Founder, PineTech</p>
+      </div>
+    </div>
+
+    <span>40% time saved</span>
+  </div>
+
+  <h3>From 12-hour workdays to automated excellence</h3>
+
+  <p>
+    “The professionalism and consistency of the OnSpot team...”
+  </p>
+</div>
+
+Avatar:
+- If real photo exists, use it.
+- If no real photo exists, use a soft brand-colored icon fallback.
+
+Fallback avatar:
+className="
+  flex h-14 w-14 items-center justify-center rounded-full
+  bg-[#3F4698]/10 text-[#3F4698]
+"
+
+Metric pill:
+className="
+  rounded-full bg-[#3F4698]/10 px-4 py-2
+  text-sm font-semibold text-[#3F4698]
+"
+
+Transformation headline:
+className="
+  mt-8 text-2xl font-bold leading-snug text-slate-950
+  sm:text-3xl
+"
+
+Quote:
+className="
+  mt-5 text-base leading-relaxed text-slate-600
+"
+
+Optional visual accent:
+Add a large subtle quote mark in the background:
+className="
+  absolute right-8 top-8 text-8xl font-black text-[#3F4698]/5
+"
+
+==================================================
+SMALL TESTIMONIAL CARDS
+==================================================
+
+The other two testimonials can be smaller support cards.
+
+Suggested:
+className="
+  rounded-[28px] border border-slate-200/80
+  bg-white/90 p-6 shadow-sm
+  transition duration-300 hover:-translate-y-1 hover:shadow-lg
+"
+
+Each small card should show:
+- reviewer row
+- metric pill
+- transformation headline
+- short quote preview
+
+Do not make the cards too text-heavy.
+
+==================================================
+SECTION 2: WHY ONSPOT / WHY PARTNER
+==================================================
+
+Current section:
+“Not a service provider. An architect.”
+
+Goal:
+Make this section feel like the strategic reason to outsource with OnSpot.
+
+It should answer:
+- Why partner with OnSpot?
+- Why is OnSpot different from traditional outsourcing?
+- Why does this reduce operational burden?
+- Why is it safer/faster/smarter?
+
+Design idea:
+Create a visually stronger “operating system for outsourced work” section.
+
+Suggested layout:
+- Dark or light brand panel
+- Left side: headline + short statement
+- Right side: 4 advantage cards
+- Add a central visual element like an “OnSpot Operating Layer” or “Outsourcing Intelligence Stack”
+
+==================================================
+WHY ONSPOT CONTENT
+==================================================
+
+Section label:
+WHY ONSPOT
+
+Headline:
+Not a service provider. An architect.
+
+Supporting text:
+We design the operating layer behind modern outsourcing — combining AI-ready systems, vetted talent, and human accountability so your team can scale without losing control.
+
+Keep the four pillars:
+
+1. AI-first infrastructure
+Tagline:
+Intelligent by design
+Body:
+Every system and workflow is enhanced by intelligence that amplifies human potential — not automation for its own sake.
+
+2. Human-centered culture
+Tagline:
+People, not resources
+Body:
+Elite Filipino talent treated as partners. We invest in their growth because your success depends on it.
+
+3. Connected ecosystem
+Tagline:
+Seamless integration
+Body:
+Your tools, your workflow, working in harmony. We don't disrupt what you've built — we elevate it.
+
+4. Scalable excellence
+Tagline:
+Grow without compromise
+Body:
+Scale from 1 to 100 without losing quality, culture, or control. Same excellence at every stage.
+
+==================================================
+WHY ONSPOT VISUAL STYLE OPTION A: LIGHT PREMIUM
+==================================================
+
+Use this if the page currently feels mostly light:
+
+Section wrapper:
+className="
+  relative overflow-hidden bg-[#F4F6FF] py-28
+"
+
+Add background:
+- subtle radial glow in #3F4698
+- faint grid pattern if already available
+- keep it elegant
+
+Layout:
+className="
+  mx-auto grid max-w-7xl grid-cols-1 gap-12 px-6
+  lg:grid-cols-[0.8fr_1.2fr] lg:items-center
+"
+
+Left intro card:
+className="
+  rounded-[36px] bg-[#3F4698] p-10 text-white
+  shadow-[0_30px_100px_rgba(63,70,152,0.25)]
+"
+
+Inside left intro card:
+- label
+- headline
+- supporting text
+- mini proof row:
+  “72hr avg. match time”
+  “500+ clients”
+  “98% retention”
+
+This makes the section feel outsourcing-focused and credible.
+
+Mini proof row:
+className="
+  mt-10 grid grid-cols-3 gap-4 border-t border-white/15 pt-6
+"
+
+==================================================
+WHY ONSPOT VISUAL STYLE OPTION B: DARK BRAND PANEL
+==================================================
+
+Use this if you want it more dramatic and Mindvalley-inspired:
+
+Section wrapper:
+className="
+  relative overflow-hidden bg-[#252A70] py-28 text-white
+"
+
+Headline text:
+white
+
+Highlight:
+#B8B7FF or a lighter version of brand color
+
+Cards:
+className="
+  rounded-[28px] border border-white/12
+  bg-white/[0.07] p-7
+  backdrop-blur-md
+  transition hover:-translate-y-1 hover:bg-white/[0.10]
+"
+
+Icon boxes:
+className="
+  flex h-12 w-12 items-center justify-center rounded-2xl
+  bg-white/10 text-white
+"
+
+This makes the section more cinematic.
+
+But if the page already has many dark sections, use Option A instead.
+
+==================================================
+RECOMMENDED OPTION
+==================================================
+
+Use Option A: Light Premium with one strong dark brand panel on the left.
+
+Reason:
+The Hero is already dark violet, so this section should feel premium but not too heavy. A light background with a dark OnSpot panel gives contrast while keeping the page breathable.
+
+==================================================
+WHY ONSPOT CARD GRID
+==================================================
+
+Right-side cards:
+Use 2x2 grid.
+
+className="
+  grid grid-cols-1 gap-5 sm:grid-cols-2
+"
+
+Each card:
+className="
+  rounded-[28px] border border-[#3F4698]/12
+  bg-white p-7 shadow-sm
+  transition duration-300 hover:-translate-y-1 hover:shadow-xl
+"
+
+Icon:
+className="
+  flex h-12 w-12 items-center justify-center rounded-2xl
+  bg-[#3F4698]/10 text-[#3F4698]
+"
+
+Card title:
+className="
+  mt-6 text-xl font-bold text-slate-950
+"
+
+Tagline:
+className="
+  mt-2 text-sm font-semibold text-[#3F4698]
+"
+
+Body:
+className="
+  mt-4 text-sm leading-relaxed text-slate-600
+"
+
+==================================================
+ADD OUTSOURCING STORYTELLING
+==================================================
+
+Add small visual labels/mini tags where appropriate:
+
+Examples:
+- No inflated middlemen
+- Built-in accountability
+- AI-ready workflows
+- Vetted Filipino talent
+- Scale without chaos
+
+These can appear as small pills inside the Why OnSpot intro panel.
+
+Pill style:
+className="
+  rounded-full bg-white/10 px-4 py-2 text-sm text-white/85
+"
+
+==================================================
+COMBINE BOTH SECTIONS INTO A STORY
+==================================================
+
+The transition should feel like:
+
+Transformation Stories:
+“These are the outcomes clients experience.”
+
+Why OnSpot:
+“This is the architecture behind those outcomes.”
+
+Make sure the two sections flow visually:
+- Transformation Stories light clean background
+- Why OnSpot light lavender background with strong dark brand panel
+- consistent brand accent #3F4698
+- no green/teal accents
+
+==================================================
+RESPONSIVE REQUIREMENTS
+==================================================
+
+Desktop:
+- Transformation section should feel editorial and premium.
+- Why OnSpot should use a strong 2-column layout.
+
+Tablet:
+- Stack columns cleanly.
+- Cards remain readable.
+
+Mobile:
+- Single column.
+- Featured testimonial first.
+- Why OnSpot intro panel first, then advantage cards.
+- No horizontal scrolling.
+
+==================================================
+CLEANUP
+==================================================
+
+Remove the old flat versions of these two sections:
+- plain 3 small testimonial cards only
+- plain 2x2 cards without a stronger visual anchor
+
+Make sure there is only one Transformation Stories section and one Why OnSpot section.
+
+Remove teal/green styling from both sections.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The Transformation Stories section should look like a premium client review / outcome section, with one featured testimonial and two supporting stories.
+
+The Why OnSpot section should look like a persuasive outsourcing strategy section, with a strong OnSpot brand panel and four advantage cards explaining why companies should outsource with OnSpot.
