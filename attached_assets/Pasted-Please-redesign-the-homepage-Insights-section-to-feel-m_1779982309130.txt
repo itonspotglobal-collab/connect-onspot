@@ -1,0 +1,314 @@
+Please redesign the homepage Insights section to feel more visual and engaging, inspired by Mindvalley-style visual sections, while keeping users on the homepage.
+
+Current issue:
+The Insights section currently feels like a standard blog/news card grid. We do not want readers to immediately leave the homepage for the Insights page. We want this section to act as a visual teaser that adds credibility and interest while keeping the homepage flow intact.
+
+Goal:
+Make the Insights section more visual, more immersive, and less like a traditional blog archive.
+
+IMPORTANT:
+- Do NOT change the Navigation bar.
+- Do NOT change the Footer.
+- Do NOT change the Hero section.
+- Do NOT change other homepage sections.
+- Do NOT remove the Insights section.
+- Do NOT use the exact Mindvalley design, only use it as inspiration.
+- Keep OnSpot branding and colors.
+- Keep real published Insights/blog content and images.
+- Do not hardcode fake articles if real insight data exists.
+- Keep the “Explore all insights →” link, but make it secondary/subtle.
+
+==================================================
+DESIGN DIRECTION
+==================================================
+
+Change the Insights section from a standard 3-card blog grid into a more visual “featured insight gallery” or “visual knowledge strip.”
+
+The section should feel like:
+- visual-first
+- premium
+- editorial
+- homepage-friendly
+- easy to scan
+- not too text-heavy
+
+The user should be able to get value from the section without immediately clicking away.
+
+==================================================
+SECTION HEADER
+==================================================
+
+Keep the existing header content:
+
+Label:
+“INSIGHTS”
+
+Headline:
+“Thinking ahead, so you can move faster.”
+
+Subtitle:
+“Perspectives on AI, talent, and the future of work — from the team building it.”
+
+Keep “faster.” highlighted using the brand color:
+#3F4698
+
+The “Explore all insights →” link should remain, but visually secondary:
+- top-right on desktop
+- below subtitle on mobile
+- not too loud
+
+==================================================
+NEW VISUAL LAYOUT
+==================================================
+
+Replace the current standard equal blog cards with a more visual layout.
+
+Preferred layout:
+A horizontal row of 3 visual insight tiles.
+
+Each tile should be image-forward:
+- large image area
+- dark gradient overlay
+- category pill
+- short title
+- optional 1-line description
+- optional date/author in smaller text
+- “Read preview” or arrow affordance
+
+Desktop:
+3 tiles in one row.
+
+Suggested grid:
+className="
+  mt-14 grid grid-cols-1 gap-6
+  lg:grid-cols-3
+"
+
+Tile style:
+className="
+  group relative min-h-[420px] overflow-hidden
+  rounded-[28px] border border-slate-200/70
+  bg-slate-900 shadow-sm
+  transition duration-500
+  hover:-translate-y-1 hover:shadow-xl
+"
+
+Image:
+className="
+  absolute inset-0 h-full w-full object-cover
+  transition duration-700 group-hover:scale-105
+"
+
+Overlay:
+className="
+  absolute inset-0
+  bg-gradient-to-t from-slate-950/90 via-slate-950/45 to-slate-950/10
+"
+
+Content:
+className="
+  relative z-10 flex h-full flex-col justify-end
+  p-6 sm:p-7
+"
+
+==================================================
+CARD CONTENT
+==================================================
+
+Each visual tile should show:
+
+1. Category pill
+2. Title
+3. Short excerpt or one-line takeaway
+4. Metadata or small arrow
+
+Category pill:
+className="
+  mb-4 inline-flex w-fit rounded-full
+  bg-white/15 px-3 py-1
+  text-[11px] font-semibold uppercase tracking-[0.18em]
+  text-white backdrop-blur-md
+"
+
+Title:
+className="
+  text-xl font-semibold leading-tight text-white
+  sm:text-2xl
+"
+
+Excerpt:
+className="
+  mt-3 line-clamp-2 text-sm leading-relaxed text-white/72
+"
+
+Meta / action:
+className="
+  mt-5 inline-flex items-center gap-2
+  text-sm font-semibold text-white/85
+"
+
+Use:
+“Read preview →”
+or:
+“Read article →”
+
+If we want to keep users on the homepage more, use:
+“Read preview →”
+and optionally open a small modal/expand preview if already easy to implement.
+
+If no modal exists, keep link to article but make it less dominant.
+
+==================================================
+OPTIONAL: MAKE CENTER TILE SLIGHTLY FEATURED
+==================================================
+
+To make the section more visual, the middle tile can be slightly taller or more prominent on desktop.
+
+Example:
+- First and third: min-h-[400px]
+- Center: min-h-[460px] lg:-mt-6
+
+Only do this if it remains clean and responsive.
+
+Suggested:
+For index === 1:
+className includes:
+lg:-mt-6 lg:min-h-[460px]
+
+Do not make the layout messy.
+
+==================================================
+ALTERNATIVE LAYOUT IF PREFERRED
+==================================================
+
+If the current images work better in a wider format, use a “featured row” instead:
+
+- One large visual tile on the left
+- Two smaller stacked visual tiles on the right
+
+But the previous version already looked too blog/news-like, so only use this if it is more immersive and less article-card-heavy.
+
+Preferred remains:
+3 visual tiles in a straight horizontal row.
+
+==================================================
+KEEP USERS ON HOMEPAGE
+==================================================
+
+Avoid making this section feel like a full blog archive.
+
+Do:
+- use short excerpts
+- use strong visuals
+- use subtle CTA
+- avoid too much metadata
+- avoid large “Read Article” buttons
+- keep “Explore all insights” secondary
+
+Do not:
+- show long article descriptions
+- show heavy metadata rows
+- make every card feel like a separate page destination
+- add too many articles
+
+Show only 3 insights.
+
+==================================================
+DATA SOURCE
+==================================================
+
+Use the current real Insights/blog data already used by this section.
+
+Use:
+- title
+- category
+- image/cover
+- excerpt
+- date/author if already available
+- slug/link
+
+Priority:
+1. Featured insights if available
+2. Latest published insights
+3. First 3 available insights
+
+Do not invent fake titles/images if real data exists.
+
+==================================================
+CARD IMAGE REQUIREMENTS
+==================================================
+
+Images should fill the tile beautifully.
+
+Use:
+object-cover
+
+Do not:
+- distort images
+- stretch logos
+- use object-contain for article covers unless needed
+- leave white gaps inside the image area
+
+For images with text embedded, align so the main subject remains visible.
+
+If text in the image conflicts with overlay title, consider:
+- slightly darken the overlay
+- position title at bottom
+- avoid duplicating too much image text in the overlay if it looks cluttered
+
+==================================================
+BACKGROUND
+==================================================
+
+Keep the section background light and clean.
+
+Suggested:
+bg-[#F6F7FB]
+or
+bg-slate-50
+
+Do not use dark section background here because the hero is already dark. This section should feel like a calm contrast.
+
+==================================================
+RESPONSIVE REQUIREMENTS
+==================================================
+
+Desktop:
+- 3 visual insight tiles in one row.
+- Tiles should feel immersive and image-forward.
+
+Laptop:
+- 3 tiles still fit cleanly.
+
+Tablet:
+- 1 or 2 columns depending on space.
+
+Mobile:
+- stack tiles vertically.
+- images remain readable.
+- no horizontal page scroll.
+
+==================================================
+CLEANUP
+==================================================
+
+Remove the current standard blog-card styling from this section:
+- white card body with large text block
+- heavy metadata rows
+- traditional archive-style layout
+
+Keep only the new visual tile version.
+
+Make sure there is only one Insights section on the homepage.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The Insights section should feel like a visual editorial preview, not a blog archive:
+- strong images
+- gradient overlays
+- short titles/excerpts
+- subtle “Read preview” or “Read article” action
+- Explore all insights link remains secondary
+- users can continue scrolling the homepage without feeling pushed away immediately
