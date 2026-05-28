@@ -1,0 +1,185 @@
+Please reapply the real photos from the previous/current design in the homepage sections.
+
+Current issue:
+The “The Proof” section is now showing generic blurred placeholder lifestyle images instead of the actual talent photos from the previous design. Some testimonial author areas may also have placeholder icons instead of the previous real photos.
+
+Goal:
+Restore/reapply the real photo assets that were used in the previous design.
+
+IMPORTANT:
+- Do NOT replace the current Navigation bar.
+- Do NOT replace the Footer.
+- Do NOT change the overall section layout unless needed to fit the real photos.
+- Do NOT use generic placeholder/lifestyle images.
+- Do NOT use blurred placeholder photos.
+- Do NOT use initials-only circles if real photos already exist in the project.
+- Use the existing real talent photo assets from the previous design.
+- Keep the current talent names.
+- Keep Kyle Mendez and add PH flag beside his name if not already present.
+- Keep Alexandra Lopez and the rest of the existing talent profiles.
+
+==================================================
+1. THE PROOF SECTION — RESTORE TALENT PHOTOS
+==================================================
+
+Find the previous talent/profile image assets used before the mockup changes.
+
+Look for image imports/assets/data related to:
+- Kyle Mendez
+- Alexandra Lopez
+- Andrea Pinzon
+- Christopher Alba
+- Rachel Castro
+- Amir Singh
+- Jennifer Dizon
+- Andrei Losanto
+- talentPhotos
+- teamMembers
+- proofProfiles
+- profileImages
+- `/assets/talent`
+- `/assets/team`
+- `/public/talent`
+- `/public/team`
+
+Replace the current placeholder/blurred images in “The Proof” section with those actual real photos.
+
+The Proof section should still have:
+- Heading: “The Proof”
+- Supporting text: “Powered by professionals from US, Philippines, and beyond.”
+- Highlight: “The Superhuman BPO Network.”
+- Talent grid
+
+But the profile cards/images must use the real previous photos.
+
+==================================================
+2. PHOTO DISPLAY STYLE
+==================================================
+
+Use the current section layout, but make photos clear and professional.
+
+Photo cards:
+- Do not blur the images.
+- Do not add heavy opacity overlays.
+- Do not use placeholder stock/lifestyle images.
+- Do not stretch or distort photos.
+
+Suggested image class:
+
+className="
+  h-full w-full object-cover
+"
+
+If using circular profile photos:
+
+className="
+  h-28 w-28 rounded-full object-cover
+"
+
+If using rounded rectangular cards:
+
+className="
+  h-64 w-full rounded-2xl object-cover
+"
+
+Use whichever style matches the current section layout, but make sure the actual talent photos are clear and recognizable.
+
+==================================================
+3. KEEP PROFILE TEXT
+==================================================
+
+Under each photo/profile, keep the talent name and role.
+
+Example:
+
+Kyle Mendez 🇵🇭
+Recruitment Specialist
+
+Alexandra Lopez
+Executive Assistant
+
+Do not remove roles.
+
+Add flags where currently required:
+- Kyle Mendez should have 🇵🇭 beside the name.
+- If the existing data already includes flags for other talents, keep them.
+
+==================================================
+4. TRANSFORMATION STORIES / TESTIMONIAL AUTHOR PHOTOS
+==================================================
+
+If the Transformation Stories section currently uses placeholder icons in the author area, restore the previous real author photos if they existed.
+
+Look for previous testimonial author image assets for:
+- Elad B.
+- Eric M.
+- Fernando C.
+
+If real author photos exist:
+- Use them instead of generic user icons/initials.
+- Do not blur them.
+- Keep them circular and small in the author row.
+
+Suggested author avatar:
+
+className="
+  h-12 w-12 rounded-full object-cover
+"
+
+If no real photo exists for a specific testimonial author, keep the current initials/avatar fallback for that person only.
+
+==================================================
+5. DO NOT BREAK SECTION DESIGN
+==================================================
+
+Keep the current updated layout/reference styling:
+- “The Proof” section layout should remain clean.
+- Talent grid should remain responsive.
+- Testimonial cards should remain clean.
+- Only replace placeholder images with real existing image assets.
+
+Do not reintroduce old section designs if only the photos need to be restored.
+
+==================================================
+6. RESPONSIVE REQUIREMENTS
+==================================================
+
+Desktop:
+- Talent photos appear in a clean grid.
+- Images are clear and not distorted.
+
+Tablet:
+- Grid adjusts to 2 columns if needed.
+
+Mobile:
+- Grid stacks cleanly.
+- Photos remain visible and not cropped awkwardly.
+
+==================================================
+7. CLEANUP
+==================================================
+
+Remove or stop using the generic placeholder/blurred image sources in this section.
+
+Search for placeholders like:
+- random stock image URLs
+- unsplash/pexels placeholders
+- generic blurred backgrounds
+- CSS blur filters
+- opacity overlays
+- initials-only fallback used even though photo exists
+
+Remove blur/filter classes from talent images, such as:
+- blur
+- filter blur-sm
+- opacity-50
+- grayscale
+- backdrop-blur on the image itself
+
+Keep subtle card hover effects if they do not obscure the photo.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The “The Proof” section should use the same real talent photos from the previous design, not blurred placeholders. Kyle Mendez should include the PH flag. The testimonial author photos should also be restored if those real assets exist.

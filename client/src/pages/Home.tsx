@@ -39,6 +39,15 @@ import PinetechLogo from "../assets/logos/Pinetech.png";
 import SafewayLogo from "../assets/logos/Safeway.png";
 import VertexLogo from "../assets/logos/Vertex.png";
 
+import photoAlex from "../assets/logos/Alex.png";
+import photoSofia from "../assets/logos/Sofia.png";
+import photoJames from "../assets/logos/James.png";
+import photoMaria from "../assets/logos/Maria.png";
+import photoStefan from "../assets/logos/Stefan.png";
+import photoNicole from "../assets/logos/nicole.png";
+import photoAmira from "../assets/logos/Amira.png";
+import photoJonathan from "../assets/logos/jonathan.png";
+
 const trustedBrands = [
   { name: "Flash Justice", logo: FlashLogo },
   { name: "Future Motors EV", logo: FutureEVLogo },
@@ -1050,67 +1059,67 @@ export default function Home() {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 sm:gap-6">
             {[
               {
+                photo: null,
                 initials: "KM",
                 name: "Kyle Mendez",
                 flag: "🇵🇭",
                 role: "Senior Data Analyst",
-                years: "5 yrs",
                 gradient: "from-violet-400 to-violet-700",
               },
               {
+                photo: photoAlex,
                 initials: "AL",
                 name: "Alexandra Lopez",
                 flag: "",
                 role: "CX & Operations Lead",
-                years: "4 yrs",
                 gradient: "from-teal-400 to-teal-700",
               },
               {
-                initials: "RD",
-                name: "Rica Dela Cruz",
-                flag: "🇵🇭",
-                role: "Bilingual Support Agent",
-                years: "3 yrs",
-                gradient: "from-rose-400 to-pink-700",
-              },
-              {
-                initials: "MT",
-                name: "Marcus Tan",
-                flag: "🇵🇭",
-                role: "Project Manager",
-                years: "6 yrs",
-                gradient: "from-blue-400 to-blue-700",
-              },
-              {
+                photo: photoSofia,
                 initials: "SR",
                 name: "Sofia Reyes",
                 flag: "🇵🇭",
                 role: "Marketing Specialist",
-                years: "4 yrs",
                 gradient: "from-amber-400 to-orange-600",
               },
               {
+                photo: photoJames,
                 initials: "JW",
                 name: "James Wei",
                 flag: "",
                 role: "Business Analyst",
-                years: "5 yrs",
                 gradient: "from-sky-400 to-sky-700",
               },
               {
-                initials: "AG",
-                name: "Ana Gonzalez",
+                photo: photoMaria,
+                initials: "MS",
+                name: "Maria Santos",
                 flag: "🇵🇭",
-                role: "HR Specialist",
-                years: "3 yrs",
+                role: "Virtual Assistant",
+                gradient: "from-rose-400 to-pink-700",
+              },
+              {
+                photo: photoStefan,
+                initials: "SK",
+                name: "Stefan K.",
+                flag: "",
+                role: "Account Manager",
+                gradient: "from-blue-400 to-blue-700",
+              },
+              {
+                photo: photoNicole,
+                initials: "ND",
+                name: "Nicole D.",
+                flag: "🇵🇭",
+                role: "Customer Success",
                 gradient: "from-green-400 to-green-700",
               },
               {
-                initials: "DP",
-                name: "David Park",
+                photo: photoAmira,
+                initials: "AS",
+                name: "Amira S.",
                 flag: "",
-                role: "Software Developer",
-                years: "7 yrs",
+                role: "Operations Coordinator",
                 gradient: "from-indigo-400 to-indigo-700",
               },
             ].map((person) => (
@@ -1118,20 +1127,26 @@ export default function Home() {
                 key={person.name}
                 className="group flex flex-col items-center text-center p-5 sm:p-6 rounded-2xl cursor-pointer hover:bg-violet-50 transition-all duration-300"
               >
-                <div
-                  className={`flex h-24 w-24 sm:h-28 sm:w-28 items-center justify-center rounded-full bg-gradient-to-br ${person.gradient} ring-4 ring-white shadow-lg mb-4 text-2xl sm:text-3xl font-semibold text-white`}
-                >
-                  {person.initials}
-                </div>
+                {person.photo ? (
+                  <img
+                    src={person.photo}
+                    alt={person.name}
+                    className="h-24 w-24 sm:h-28 sm:w-28 rounded-full object-cover object-top ring-4 ring-white shadow-lg mb-4"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div
+                    className={`flex h-24 w-24 sm:h-28 sm:w-28 items-center justify-center rounded-full bg-gradient-to-br ${person.gradient} ring-4 ring-white shadow-lg mb-4 text-2xl sm:text-3xl font-semibold text-white`}
+                  >
+                    {person.initials}
+                  </div>
+                )}
                 <p className="text-sm sm:text-base font-semibold text-slate-900">
                   {person.name}
                   {person.flag && <span className="ml-1">{person.flag}</span>}
                 </p>
                 <p className="mt-1 text-xs sm:text-sm text-slate-500 leading-snug">
                   {person.role}
-                </p>
-                <p className="mt-1 text-xs text-slate-400">
-                  {person.years} exp.
                 </p>
               </div>
             ))}
