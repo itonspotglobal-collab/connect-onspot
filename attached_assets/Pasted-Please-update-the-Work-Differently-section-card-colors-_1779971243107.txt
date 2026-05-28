@@ -1,0 +1,178 @@
+Please update the Work Differently section card colors so both cards feel uniform and match the OnSpot dark purple branding.
+
+Current issue:
+The “For Professionals” card is green/teal, while the “For Companies” card is purple. The green card feels off-brand and not uniform.
+
+Goal:
+Change the “For Professionals” card from green/teal to the same purple/lavender color family as the “For Companies” card.
+
+IMPORTANT:
+- Do NOT change the Navigation bar.
+- Do NOT change the Footer.
+- Do NOT change the section layout.
+- Do NOT change the text content.
+- Do NOT change the card structure.
+- Only adjust the “For Professionals” card color styling.
+- Both cards should feel like they belong to the same OnSpot darkish purple brand system.
+
+==================================================
+COLOR UPDATE
+==================================================
+
+Make the “For Professionals” card match the purple/lavender styling of the “For Companies” card.
+
+Change green/teal classes such as:
+- bg-teal-*
+- bg-emerald-*
+- bg-green-*
+- border-teal-*
+- border-emerald-*
+- border-green-*
+- text-teal-*
+- text-emerald-*
+- text-green-*
+- hover:bg-teal-*
+- hover:bg-emerald-*
+- hover:bg-green-*
+
+Replace them with purple/indigo/violet branding classes.
+
+Suggested shared card styling:
+
+For Companies card:
+className="
+  rounded-3xl border border-indigo-300/70
+  bg-indigo-50/70
+  p-8 sm:p-10
+"
+
+For Professionals card:
+className="
+  rounded-3xl border border-indigo-300/70
+  bg-indigo-50/70
+  p-8 sm:p-10
+"
+
+If you want slight variation while staying purple:
+For Professionals card can use:
+
+className="
+  rounded-3xl border border-violet-300/70
+  bg-violet-50/70
+  p-8 sm:p-10
+"
+
+But do not use green or teal.
+
+==================================================
+LABEL COLORS
+==================================================
+
+For both card labels:
+
+“FOR COMPANIES”
+“FOR PROFESSIONALS”
+
+Use purple/indigo:
+
+className="
+  text-xs font-semibold uppercase tracking-[0.22em]
+  text-indigo-600
+"
+
+or:
+text-violet-600
+
+Do not use teal/green for the Professionals label.
+
+==================================================
+ICON COLORS
+==================================================
+
+For both cards, make icon backgrounds and icon colors part of the purple brand system.
+
+Suggested icon block:
+
+className="
+  flex h-9 w-9 shrink-0 items-center justify-center
+  rounded-xl bg-indigo-100 text-indigo-600
+"
+
+or stronger:
+
+className="
+  flex h-9 w-9 shrink-0 items-center justify-center
+  rounded-xl bg-violet-100 text-violet-600
+"
+
+Do not use:
+- bg-teal-*
+- text-teal-*
+- bg-emerald-*
+- text-emerald-*
+- bg-green-*
+- text-green-*
+
+==================================================
+DIVIDERS
+==================================================
+
+Make the divider lines consistent between both cards.
+
+Use:
+
+className="border-indigo-200/70"
+
+or:
+
+className="border-slate-200/70"
+
+Avoid teal divider lines in the Professionals card.
+
+==================================================
+CTA BUTTON COLORS
+==================================================
+
+For the “Find your next opportunity →” button, remove teal styling and use purple/indigo.
+
+Current likely classes to replace:
+- border-teal-600
+- text-teal-700
+- hover:bg-teal-600
+
+Replace with:
+
+className="
+  mt-10 flex w-full items-center justify-center
+  rounded-full border border-indigo-500
+  px-6 py-3
+  text-sm font-semibold text-indigo-600
+  transition hover:bg-indigo-500 hover:text-white
+"
+
+Use the same or very similar style as the “Find the right talent →” button.
+
+==================================================
+SECTION BACKGROUND
+==================================================
+
+Keep the current section background if it already works.
+
+If the section background has a cyan/green tint that was only supporting the green card, make it more purple-neutral:
+
+Suggested:
+className="
+  bg-gradient-to-br from-[#f4f2ff] via-[#f8f7ff] to-[#eef3ff]
+"
+
+But only adjust the section background if the green tint remains visually obvious.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The Work Differently section should now have two visually consistent cards:
+- both using purple/lavender/indigo tones
+- no green/teal professional card
+- both matching the OnSpot darkish purple branding
+- same layout and content as before

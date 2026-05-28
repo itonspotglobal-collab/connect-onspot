@@ -27,6 +27,7 @@ import {
   Calendar,
   ArrowUpRight,
   User,
+  BookOpen,
 } from "lucide-react";
 import { SiX, SiThreads, SiTiktok, SiYoutube } from "react-icons/si";
 import { Link } from "wouter";
@@ -583,151 +584,70 @@ export default function Home() {
               </a>
             </div>
 
-            {/* Cards grid */}
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-              {/* Main featured card — spans 2 cols on desktop */}
-              {featuredPosts[0] &&
-                (() => {
-                  const post = featuredPosts[0];
-                  const dateStr = post.publishedAt
-                    ? new Date(post.publishedAt).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })
-                    : null;
-                  return (
-                    <a
-                      href={`/insights/${post.slug}`}
-                      className="group relative col-span-1 lg:col-span-2 block overflow-hidden rounded-3xl shadow-md hover:shadow-2xl transition-shadow duration-500"
-                    >
-                      {/* Image or gradient placeholder */}
-                      <div className="relative aspect-[16/9] w-full overflow-hidden bg-gradient-to-br from-indigo-600 via-violet-600 to-blue-700">
-                        {post.coverImageUrl && (
-                          <img
-                            src={post.coverImageUrl}
-                            alt={post.title}
-                            className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                            loading="lazy"
-                          />
-                        )}
-                        {/* Dark wash overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/50 to-slate-950/10" />
-                      </div>
+            {/* 3-card equal row */}
+            <div className="mt-2 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {featuredPosts.slice(0, 3).map((post) => {
+                const dateStr = post.publishedAt
+                  ? new Date(post.publishedAt).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })
+                  : null;
+                return (
+                  <a
+                    key={post.id}
+                    href={`/insights/${post.slug}`}
+                    className="group flex h-full flex-col rounded-3xl border border-slate-200/70 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg overflow-hidden"
+                  >
+                    {/* Thumbnail */}
+                    <div className="aspect-[16/9] w-full overflow-hidden bg-gradient-to-br from-indigo-600 via-violet-600 to-blue-700 shrink-0">
+                      {post.coverImageUrl ? (
+                        <img
+                          src={post.coverImageUrl}
+                          alt={post.title}
+                          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <BookOpen className="h-10 w-10 text-white/40" />
+                        </div>
+                      )}
+                    </div>
 
-                      {/* Content overlay */}
-                      <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8">
-                        <span className="inline-flex rounded-full bg-indigo-500/90 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white">
-                          {post.category || "Industry Insights"}
-                        </span>
-                        <h3 className="mt-4 text-xl sm:text-2xl lg:text-3xl font-bold leading-tight text-white line-clamp-2">
-                          {post.title}
-                        </h3>
-                        <p className="mt-3 text-sm sm:text-base leading-relaxed text-white/75 line-clamp-2">
+                    {/* Card body */}
+                    <div className="flex flex-1 flex-col p-6">
+                      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600">
+                        {post.category || "Industry Insights"}
+                      </span>
+                      <h3 className="mt-3 text-lg font-semibold leading-snug text-slate-900 line-clamp-2">
+                        {post.title}
+                      </h3>
+                      {post.excerpt && (
+                        <p className="mt-3 text-sm leading-relaxed text-slate-500 line-clamp-3 flex-1">
                           {post.excerpt}
                         </p>
-                        <div className="mt-5 flex flex-wrap items-center gap-4 text-xs text-white/60">
-                          {post.author && <span>{post.author}</span>}
-                          {dateStr && (
-                            <span className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              {dateStr}
-                            </span>
-                          )}
-                          {post.readTime && (
-                            <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {post.readTime}
-                            </span>
-                          )}
-                          {(post.views ?? 0) > 0 && (
-                            <span className="flex items-center gap-1">
-                              <Eye className="h-3 w-3" />
-                              {post.views?.toLocaleString()} views
-                            </span>
-                          )}
-                        </div>
-                        <div className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-white group-hover:text-white/80 transition-colors">
-                          Read Article
-                          <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                        </div>
-                      </div>
-                    </a>
-                  );
-                })()}
-
-              {/* Side cards — stack vertically */}
-              <div className="col-span-1 flex flex-col gap-6">
-                {featuredPosts.slice(1, 3).map((post) => {
-                  const dateStr = post.publishedAt
-                    ? new Date(post.publishedAt).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })
-                    : null;
-                  return (
-                    <a
-                      key={post.id}
-                      href={`/insights/${post.slug}`}
-                      className="group relative flex-1 block overflow-hidden rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-500 min-h-[200px]"
-                    >
-                      {/* Image or gradient placeholder */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-violet-700 via-blue-700 to-cyan-700">
-                        {post.coverImageUrl && (
-                          <img
-                            src={post.coverImageUrl}
-                            alt={post.title}
-                            className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                            loading="lazy"
-                          />
+                      )}
+                      <div className="mt-auto pt-5 flex flex-wrap items-center gap-3 text-xs text-slate-400 border-t border-slate-100">
+                        {post.author && <span>{post.author}</span>}
+                        {dateStr && (
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {dateStr}
+                          </span>
                         )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/50 to-slate-950/10" />
+                        {post.readTime && (
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {post.readTime}
+                          </span>
+                        )}
                       </div>
-
-                      {/* Content */}
-                      <div className="absolute inset-x-0 bottom-0 p-5">
-                        <span className="inline-flex rounded-full bg-indigo-500/80 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white">
-                          {post.category || "Insights"}
-                        </span>
-                        <h4 className="mt-2.5 text-base font-bold leading-snug text-white line-clamp-2">
-                          {post.title}
-                        </h4>
-                        <div className="mt-2 flex flex-wrap items-center gap-3 text-[11px] text-white/60">
-                          {post.author && <span>{post.author}</span>}
-                          {dateStr && (
-                            <span className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              {dateStr}
-                            </span>
-                          )}
-                          {post.readTime && (
-                            <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {post.readTime}
-                            </span>
-                          )}
-                        </div>
-                        <div className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-white/80 group-hover:text-white transition-colors">
-                          Read Article
-                          <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                        </div>
-                      </div>
-                    </a>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* View all link */}
-            <div className="mt-10 text-center">
-              <a
-                href="/insights"
-                className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-6 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-indigo-400 hover:text-indigo-600 hover:shadow-md"
-              >
-                View all insights
-                <ArrowUpRight className="h-4 w-4" />
-              </a>
+                    </div>
+                  </a>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -741,10 +661,11 @@ export default function Home() {
         <div className="container relative z-10 mx-auto px-4 sm:px-6">
           <div className="text-center mb-12 sm:mb-16">
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-600">
-              Two paths
+              Work differently.
             </p>
             <h2 className="mx-auto mt-4 max-w-2xl text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900">
-              Whether you're building a team or building a career.
+              Whether you're scaling a team or growing a career — OnSpot is
+              built for both sides of great work.
             </h2>
           </div>
 
@@ -760,17 +681,38 @@ export default function Home() {
 
               <div className="mt-8 flex flex-col flex-1 divide-y divide-slate-200/80">
                 {[
-                  { icon: <Zap className="h-5 w-5" />, title: "Hire in days", sub: "72-hour match average" },
-                  { icon: <SlidersHorizontal className="h-5 w-5" />, title: "Hire your way", sub: "Contract, project, full-time" },
-                  { icon: <ArrowRight className="h-5 w-5" />, title: "No middlemen", sub: "Direct access, zero markups" },
-                  { icon: <Globe className="h-5 w-5" />, title: "50+ countries", sub: "Global reach, local expertise" },
+                  {
+                    icon: <Zap className="h-5 w-5" />,
+                    title: "Hire in days",
+                    sub: "72-hour match average",
+                  },
+                  {
+                    icon: <SlidersHorizontal className="h-5 w-5" />,
+                    title: "Hire your way",
+                    sub: "Contract, project, full-time",
+                  },
+                  {
+                    icon: <ArrowRight className="h-5 w-5" />,
+                    title: "No middlemen",
+                    sub: "Direct access, zero markups",
+                  },
+                  {
+                    icon: <Globe className="h-5 w-5" />,
+                    title: "50+ countries",
+                    sub: "Global reach, local expertise",
+                  },
                 ].map((item) => (
-                  <div key={item.title} className="flex items-center gap-4 py-5">
+                  <div
+                    key={item.title}
+                    className="flex items-center gap-4 py-5"
+                  >
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600">
                       {item.icon}
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-slate-900">{item.title}</p>
+                      <p className="text-sm font-semibold text-slate-900">
+                        {item.title}
+                      </p>
                       <p className="text-sm text-slate-500">{item.sub}</p>
                     </div>
                   </div>
@@ -788,8 +730,8 @@ export default function Home() {
             </div>
 
             {/* Card 2: For Professionals */}
-            <div className="rounded-3xl border border-teal-200 bg-teal-50/70 p-8 sm:p-10 shadow-sm flex flex-col">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-teal-600">
+            <div className="rounded-3xl border border-violet-200 bg-violet-50/70 p-8 sm:p-10 shadow-sm flex flex-col">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-violet-600">
                 For professionals
               </p>
               <h3 className="mt-3 text-2xl font-bold text-slate-900">
@@ -798,27 +740,48 @@ export default function Home() {
 
               <div className="mt-8 flex flex-col flex-1 divide-y divide-slate-200/80">
                 {[
-                  { icon: <TrendingUp className="h-5 w-5" />, title: "Steady pipeline", sub: "No gaps, no chasing" },
-                  { icon: <Star className="h-5 w-5" />, title: "Top global brands", sub: "Builds your reputation fast" },
-                  { icon: <Clock className="h-5 w-5" />, title: "Your terms", sub: "Remote, flexible schedule" },
-                  { icon: <CheckCircle2 className="h-5 w-5" />, title: "Zero gatekeeping", sub: "Pure merit, open access" },
+                  {
+                    icon: <TrendingUp className="h-5 w-5" />,
+                    title: "Steady pipeline",
+                    sub: "No gaps, no chasing",
+                  },
+                  {
+                    icon: <Star className="h-5 w-5" />,
+                    title: "Top global brands",
+                    sub: "Builds your reputation fast",
+                  },
+                  {
+                    icon: <Clock className="h-5 w-5" />,
+                    title: "Your terms",
+                    sub: "Remote, flexible schedule",
+                  },
+                  {
+                    icon: <CheckCircle2 className="h-5 w-5" />,
+                    title: "Zero gatekeeping",
+                    sub: "Pure merit, open access",
+                  },
                 ].map((item) => (
-                  <div key={item.title} className="flex items-center gap-4 py-5">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-500/10 text-teal-600">
+                  <div
+                    key={item.title}
+                    className="flex items-center gap-4 py-5"
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-600">
                       {item.icon}
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-slate-900">{item.title}</p>
+                      <p className="text-sm font-semibold text-slate-900">
+                        {item.title}
+                      </p>
                       <p className="text-sm text-slate-500">{item.sub}</p>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div className="mt-6 pt-6 border-t border-teal-200">
+              <div className="mt-6 pt-6 border-t border-violet-200">
                 <a
                   href="/find-best-matches"
-                  className="flex w-full items-center justify-center rounded-full border border-teal-600 px-6 py-3 text-sm font-semibold text-teal-700 transition hover:bg-teal-600 hover:text-white"
+                  className="flex w-full items-center justify-center rounded-full border border-violet-500 px-6 py-3 text-sm font-semibold text-violet-600 transition hover:bg-violet-500 hover:text-white"
                 >
                   Find your next opportunity →
                 </a>
@@ -920,26 +883,32 @@ export default function Home() {
                     <p className="text-base font-semibold text-slate-900">
                       {story.name}
                     </p>
-                    <p className="mt-0.5 text-sm text-slate-500">{story.role}</p>
+                    <p className="mt-0.5 text-sm text-slate-500">
+                      {story.role}
+                    </p>
                   </div>
                 </div>
 
                 {/* Transformation headline */}
                 <h3 className="text-xl font-medium leading-snug text-slate-800 mb-4">
-                  {story.transformation.split(story.keyword).map((part, i, arr) =>
-                    i < arr.length - 1 ? (
-                      <span key={i}>
-                        {part}
-                        <span className="italic text-violet-600">{story.keyword}</span>
-                      </span>
-                    ) : (
-                      <span key={i}>{part}</span>
-                    ),
-                  )}
+                  {story.transformation
+                    .split(story.keyword)
+                    .map((part, i, arr) =>
+                      i < arr.length - 1 ? (
+                        <span key={i}>
+                          {part}
+                          <span className="italic text-violet-600">
+                            {story.keyword}
+                          </span>
+                        </span>
+                      ) : (
+                        <span key={i}>{part}</span>
+                      ),
+                    )}
                 </h3>
 
                 {/* Metric badge */}
-                <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 mb-6">
+                <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-600 mb-6">
                   <TrendingUp className="h-3 w-3" />
                   {story.metric}
                 </span>
@@ -983,10 +952,10 @@ export default function Home() {
               },
               {
                 icon: <Users className="h-6 w-6" />,
-                iconBg: "bg-teal-100 text-teal-600",
+                iconBg: "bg-indigo-100 text-indigo-600",
                 title: "Human-centered culture",
                 tagline: "People, not resources",
-                taglineColor: "text-teal-600",
+                taglineColor: "text-indigo-600",
                 body: "Elite Filipino talent treated as partners. We invest in their growth because your success depends on it.",
               },
               {
@@ -999,10 +968,10 @@ export default function Home() {
               },
               {
                 icon: <TrendingUp className="h-6 w-6" />,
-                iconBg: "bg-teal-100 text-teal-600",
+                iconBg: "bg-violet-100 text-violet-600",
                 title: "Scalable excellence",
                 tagline: "Grow without compromise",
-                taglineColor: "text-teal-600",
+                taglineColor: "text-violet-600",
                 body: "Scale from 1 to 100 without losing quality, culture, or control. Same excellence at every stage.",
               },
             ].map((card) => (
@@ -1018,7 +987,9 @@ export default function Home() {
                 <h3 className="text-xl font-semibold text-slate-900 mb-1">
                   {card.title}
                 </h3>
-                <p className={`text-sm font-semibold mb-3 ${card.taglineColor}`}>
+                <p
+                  className={`text-sm font-semibold mb-3 ${card.taglineColor}`}
+                >
                   {card.tagline}
                 </p>
                 <p className="text-sm leading-relaxed text-slate-500">
@@ -1041,8 +1012,8 @@ export default function Home() {
               The people behind the platform.
             </h2>
             <p className="mt-4 text-base sm:text-lg text-slate-500 mx-auto max-w-xl">
-              Powered by professionals from the US, Philippines, and beyond.
-              The Superhuman BPO Network.
+              Powered by professionals from the US, Philippines, and beyond. The
+              Superhuman BPO Network.
             </p>
           </div>
 

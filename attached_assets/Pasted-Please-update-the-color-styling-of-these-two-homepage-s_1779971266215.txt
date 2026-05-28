@@ -1,0 +1,257 @@
+Please update the color styling of these two homepage sections to better match the OnSpot brand colors:
+
+1. Transformation Stories / “Real change. Real results.”
+2. Why OnSpot / “Not a service provider. An architect.”
+
+Current issue:
+These sections still use mixed green/teal accent colors. We want them to feel more consistent with the OnSpot brand, especially the dark violet / purple / indigo color system used elsewhere.
+
+IMPORTANT:
+- Do NOT change the Navigation bar.
+- Do NOT change the Footer.
+- Do NOT change the section content.
+- Do NOT change the section order.
+- Do NOT redesign the layout.
+- Only adjust color styling: backgrounds, badges, icons, accents, borders, and highlight text.
+- Avoid green/teal unless it is absolutely necessary for a status/success indicator.
+- Use purple/indigo/violet colors instead.
+
+==================================================
+GLOBAL BRAND COLOR DIRECTION
+==================================================
+
+Use OnSpot-style colors:
+- Dark violet/navy: `#3F4698` or the same navbar color
+- Indigo: `#4F46E5`
+- Violet: `#7C3AED`
+- Soft lavender: `#F4F2FF`
+- Light indigo card tint: `#EEF2FF`
+- Border: `rgba(79, 70, 229, 0.18)` or Tailwind `border-indigo-200/70`
+
+Remove or replace classes like:
+- text-teal-*
+- text-green-*
+- text-emerald-*
+- bg-teal-*
+- bg-green-*
+- bg-emerald-*
+- border-teal-*
+- border-green-*
+- border-emerald-*
+
+Use instead:
+- text-indigo-600
+- text-violet-600
+- bg-indigo-50
+- bg-violet-50
+- bg-purple-50
+- border-indigo-200/70
+- border-violet-200/70
+
+==================================================
+1. TRANSFORMATION STORIES SECTION
+==================================================
+
+Section:
+“Real change. Real results.”
+
+Keep the layout and content, but update colors.
+
+Section background:
+Use a clean light background or very subtle lavender.
+
+Suggested:
+className="
+  bg-white
+"
+
+or if it needs tint:
+className="
+  bg-[#FAF9FF]
+"
+
+Label:
+“TRANSFORMATIONS”
+
+Use:
+className="
+  text-indigo-600
+"
+
+Headline highlight:
+“Real results.”
+
+Use the same purple/violet highlight used elsewhere.
+
+Suggested:
+className="
+  text-violet-600
+"
+
+or:
+className="
+  bg-gradient-to-r from-[#7C3AED] to-[#4F46E5]
+  bg-clip-text text-transparent
+"
+
+Testimonial cards:
+Keep white cards, subtle border.
+
+Suggested:
+className="
+  rounded-3xl border border-indigo-100
+  bg-white
+  shadow-sm
+"
+
+Avatar fallback circles:
+Replace green/teal/orange initial circles with purple/indigo/lavender style.
+
+Suggested fallback avatar:
+className="
+  flex h-16 w-16 shrink-0 items-center justify-center
+  rounded-full bg-indigo-100 text-indigo-600
+"
+
+If different avatars need variation, use purple/violet variations only:
+- bg-indigo-100 text-indigo-600
+- bg-violet-100 text-violet-600
+- bg-purple-100 text-purple-600
+
+Metric badges:
+Replace green badge styling with purple/indigo styling.
+
+Current examples:
+- 40% time saved
+- 3 weeks to full team
+- 24/7 coverage
+
+Suggested metric badge:
+className="
+  mt-4 inline-flex items-center rounded-full
+  bg-indigo-50 px-3 py-1
+  text-xs font-semibold text-indigo-600
+"
+
+or:
+className="
+  bg-violet-50 text-violet-600
+"
+
+Remove:
+- bg-emerald-50
+- text-emerald-700
+- bg-green-*
+- text-green-*
+
+Quote marks / accent icons:
+Use:
+text-indigo-400
+or
+text-violet-400
+
+Dividers:
+Use:
+border-indigo-100
+or
+border-slate-200/70
+
+==================================================
+2. WHY ONSPOT SECTION
+==================================================
+
+Section:
+“Not a service provider. An architect.”
+
+Current issue:
+Some cards/icons are teal/green. Make all accents purple/indigo.
+
+Section background:
+Keep soft lavender, but make it more consistent with brand.
+
+Suggested:
+className="
+  bg-[#F4F2FF]
+"
+
+or:
+className="
+  bg-gradient-to-br from-[#F4F2FF] via-[#F8F7FF] to-[#EEF2FF]
+"
+
+Label:
+“WHY ONSPOT”
+
+Use:
+text-indigo-600
+
+Headline highlight:
+“An architect.”
+
+Use:
+text-violet-600
+
+or the same purple gradient used for other highlights.
+
+Cards:
+Keep white cards.
+
+Suggested:
+className="
+  rounded-3xl border border-indigo-100
+  bg-white
+  shadow-sm
+"
+
+Icon boxes:
+Replace teal/green icon boxes with indigo/violet/lavender.
+
+Suggested:
+className="
+  flex h-11 w-11 items-center justify-center
+  rounded-2xl bg-indigo-100 text-indigo-600
+"
+
+For variety, use only brand-safe variants:
+- bg-indigo-100 text-indigo-600
+- bg-violet-100 text-violet-600
+- bg-purple-100 text-purple-600
+
+Do not use:
+- bg-teal-*
+- bg-emerald-*
+- text-teal-*
+- text-emerald-*
+
+Small taglines inside cards:
+Examples:
+- Intelligent by design
+- People, not resources
+- Seamless integration
+- Grow without compromise
+
+Use:
+text-indigo-600
+or
+text-violet-600
+
+Body text:
+Keep neutral:
+text-slate-600 or text-slate-500
+
+==================================================
+3. CONSISTENCY CHECK
+==================================================
+
+After updating:
+- There should be no teal/green accent colors in these two sections.
+- The sections should visually match the Work Differently cards and OnSpot dark purple branding.
+- The content and layout should remain unchanged.
+- Cards should still be readable and not too dark.
+- Purple accents should feel premium, not overly bright.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The Transformation Stories and Why OnSpot sections should now use a consistent OnSpot purple/indigo/violet color system. The green/teal accents should be replaced with brand-aligned purple/lavender accents while keeping the same layout and content.

@@ -1,0 +1,234 @@
+Please adjust the homepage Insights section layout.
+
+Current issue:
+The Insights section currently uses a featured/news layout:
+- one large featured article on the left
+- two smaller stacked articles on the right
+
+Requested change:
+Replace that layout with a straight horizontal line of blog/news cards, like the second reference image.
+
+IMPORTANT:
+- Do NOT change the Navigation bar.
+- Do NOT change the Footer.
+- Do NOT change the Hero section.
+- Do NOT change the other homepage sections.
+- Only update the Insights section layout.
+- Keep using real published Insights/blog data from the project.
+- Do not hardcode fake articles if real insight data exists.
+- Do not copy the exact reference font style.
+- Keep current OnSpot typography and brand styling.
+
+==================================================
+INSIGHTS HEADER
+==================================================
+
+Keep the Insights header content:
+
+Label:
+“INSIGHTS”
+
+Headline:
+“Thinking ahead, so you can move faster.”
+
+Subtitle:
+“Perspectives on AI, talent, and the future of work — from the team building it.”
+
+Keep the “Explore all insights →” link on the right side of the header on desktop.
+
+Responsive:
+- Desktop: heading/subtitle on left, link on right.
+- Mobile: link can sit below the subtitle.
+
+==================================================
+NEW CARD LAYOUT
+==================================================
+
+Change the article layout from:
+
+large featured card + two stacked side cards
+
+to:
+
+3 article cards in one straight horizontal row.
+
+Desktop layout:
+- 3 equal-width cards in one row.
+- Each card should have the same width and height.
+- Cards should be aligned in a straight line.
+
+Tablet:
+- 2 cards per row or horizontal scroll if already used elsewhere.
+
+Mobile:
+- stack cards vertically, or use a horizontal scroll carousel if the project already supports that pattern.
+- No page-level horizontal overflow.
+
+Suggested card grid:
+
+<div className="mt-14 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+  {articles.slice(0, 3).map(...)}
+</div>
+
+==================================================
+CARD STRUCTURE
+==================================================
+
+Each card should follow the second reference:
+
+Card:
+- white background
+- rounded corners
+- subtle border
+- soft shadow or none
+- consistent padding
+- top image/thumbnail block
+- category label
+- title
+- excerpt
+- author/read time/date metadata
+
+Suggested card class:
+
+className="
+  group flex h-full flex-col
+  rounded-3xl border border-slate-200/70
+  bg-white p-6 shadow-sm
+  transition hover:-translate-y-1 hover:shadow-lg
+"
+
+Thumbnail area:
+Use the article image if available.
+
+If the reference/mockup currently uses soft icon blocks, only use those as a fallback when no article image exists.
+
+Thumbnail wrapper:
+
+className="
+  mb-7 aspect-[16/9]
+  overflow-hidden rounded-2xl bg-slate-100
+"
+
+Image:
+className="
+  h-full w-full object-cover
+  transition duration-500 group-hover:scale-105
+"
+
+Fallback icon block:
+className="
+  flex h-full w-full items-center justify-center
+  bg-indigo-100 text-indigo-500
+"
+
+==================================================
+ARTICLE DATA
+==================================================
+
+Use real insight/article data already available in the project.
+
+Show the first 3 published/latest/featured insights.
+
+Priority:
+1. Featured posts if available.
+2. Latest published posts by date.
+3. First 3 available insights.
+
+Card fields:
+- category/tag
+- title
+- excerpt
+- author
+- date
+- readTime
+- slug/link
+
+Do not show the large overlay-style article card in this section anymore.
+
+==================================================
+TEXT STYLE
+==================================================
+
+Category:
+className="
+  text-xs font-semibold uppercase tracking-[0.18em]
+  text-indigo-600
+"
+
+Title:
+className="
+  mt-4 text-xl font-semibold leading-snug text-slate-950
+"
+
+Excerpt:
+className="
+  mt-4 text-sm leading-relaxed text-slate-600
+"
+
+Metadata:
+className="
+  mt-auto pt-6 text-sm text-slate-400
+"
+
+==================================================
+EXPLORE LINKS
+==================================================
+
+Keep the “Explore all insights →” link in the header.
+
+If there is also a bottom “View all insights” button, remove it unless the current design requires it.
+
+Do not show duplicate “Explore all insights” and “View all insights” CTAs in the same section.
+
+Preferred:
+Only keep the top-right “Explore all insights →” link.
+
+==================================================
+REMOVE OLD FEATURED LAYOUT
+==================================================
+
+Remove or stop rendering:
+- the large featured article card
+- the two small stacked right-side article cards
+- any layout using `lg:grid-cols-[2fr_1fr]`
+- any layout with one big card and side column
+
+Replace it with the 3-card row.
+
+Search for classes like:
+- `lg:grid-cols-[1.4fr_0.8fr]`
+- `lg:grid-cols-[2fr_1fr]`
+- `featuredArticle`
+- `sideArticles`
+- `largeArticle`
+- `mainInsight`
+
+Refactor them into a single mapped card list.
+
+==================================================
+RESPONSIVE REQUIREMENTS
+==================================================
+
+Desktop:
+- 3 insight cards in one straight row.
+
+Laptop:
+- 3 cards should still fit cleanly if space allows.
+
+Tablet:
+- 2 cards per row is acceptable.
+
+Mobile:
+- cards stack vertically.
+- no horizontal overflow.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The Insights section should look like the second reference:
+- header at top
+- “Explore all insights →” on the right
+- three equal article cards in one straight line
+- no large featured card layout
+- no stacked side articles
