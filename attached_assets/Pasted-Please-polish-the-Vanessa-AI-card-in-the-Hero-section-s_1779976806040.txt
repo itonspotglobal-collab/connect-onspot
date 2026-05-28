@@ -1,0 +1,227 @@
+Please polish the Vanessa AI card in the Hero section so it looks sharper, more premium/HD, and has a subtle hover interaction.
+
+Current issue:
+The Vanessa AI card is working, but it looks slightly soft/low-detail and static.
+
+Goal:
+Make the Vanessa AI card visually sharper and add a subtle hover effect where it lifts/pops slightly.
+
+IMPORTANT:
+- Do NOT change the Navigation bar.
+- Do NOT change the Footer.
+- Do NOT change the hero headline/copy/buttons.
+- Do NOT move the Vanessa card layout drastically.
+- Do NOT replace the Vanessa card with an image screenshot.
+- Keep it built as HTML/CSS so it stays sharp on all screens.
+- Only improve visual quality, spacing, shadows, borders, and hover animation.
+
+==================================================
+1. MAKE THE CARD LOOK SHARPER / HD
+==================================================
+
+Improve the Vanessa AI card by using:
+- cleaner borders
+- stronger contrast
+- sharper text
+- better spacing
+- subtle glass effect
+- less blurry/washed-out content
+
+Card wrapper suggested class:
+
+className="
+  group relative w-full max-w-[520px]
+  rounded-[28px]
+  border border-white/18
+  bg-white/[0.075]
+  p-6 sm:p-7
+  shadow-[0_28px_90px_rgba(0,0,0,0.28)]
+  backdrop-blur-xl
+  transition-all duration-500 ease-out
+  will-change-transform
+  hover:-translate-y-2
+  hover:scale-[1.015]
+  hover:border-white/28
+  hover:bg-white/[0.095]
+  hover:shadow-[0_38px_110px_rgba(0,0,0,0.36)]
+"
+
+If hover scale feels too much, use:
+hover:scale-[1.01]
+
+==================================================
+2. ADD SUBTLE GLOW ON HOVER
+==================================================
+
+Add a soft background glow behind the card.
+
+Example:
+
+<div className="absolute -inset-8 -z-10 rounded-[36px] bg-[#3F4698]/30 blur-3xl opacity-60 transition-opacity duration-500 group-hover:opacity-90" />
+
+or:
+
+<div className="absolute -inset-10 -z-10 rounded-[40px] bg-gradient-to-r from-[#3F4698]/35 to-[#565CC0]/25 blur-3xl opacity-50 group-hover:opacity-80 transition-opacity duration-500" />
+
+Keep it subtle. Do not make it neon.
+
+==================================================
+3. SHARPEN INNER UI ELEMENTS
+==================================================
+
+For chat bubbles and talent match rows:
+- Increase opacity slightly
+- Improve border contrast
+- Keep text readable
+
+Suggested chat bubble:
+
+className="
+  rounded-2xl border border-white/10
+  bg-white/[0.12]
+  px-5 py-4
+  text-sm font-medium text-white/82
+"
+
+Highlighted user query bubble:
+
+className="
+  rounded-2xl border border-white/12
+  bg-[#6B5BEA]/45
+  px-5 py-4
+  text-sm font-semibold text-white
+"
+
+Talent match rows:
+
+className="
+  flex items-center justify-between
+  rounded-2xl border border-white/12
+  bg-white/[0.10]
+  px-4 py-3.5
+  transition duration-300
+  group-hover:bg-white/[0.13]
+"
+
+Make text clearer:
+- Names: text-white/95 font-semibold
+- Roles: text-white/55
+- Match badge: bg-emerald-400/15 text-emerald-300 border border-emerald-300/20
+
+==================================================
+4. IMPROVE HEADER DETAILS
+==================================================
+
+Card header:
+- Avatar icon should be crisp
+- “Vanessa AI” should be clear
+- Online status should stand out subtly
+
+Suggested icon circle:
+
+className="
+  flex h-11 w-11 items-center justify-center
+  rounded-full bg-[#6F63FF]
+  text-white shadow-lg shadow-[#6F63FF]/25
+"
+
+Title:
+className="text-base font-bold text-white"
+
+Status:
+className="text-sm font-medium text-emerald-300"
+
+Divider:
+className="my-5 h-px w-full bg-white/12"
+
+==================================================
+5. ADD MICRO-ANIMATION TO CARD CONTENT
+==================================================
+
+On hover, allow small internal movement for premium feel.
+
+Example:
+- Match rows slightly move right on hover
+- CTA arrow button brightens
+
+Talent row class:
+className="
+  ... transition-transform duration-300 group-hover:translate-x-1
+"
+
+Input/arrow button:
+className="
+  transition-all duration-300 group-hover:shadow-lg group-hover:shadow-[#7C3AED]/25
+"
+
+Keep movement subtle.
+
+==================================================
+6. AVOID LOW-QUALITY / BLURRY EFFECTS
+==================================================
+
+Do not apply blur to the card contents.
+
+Avoid:
+- opacity below 50% on important text
+- blur-sm on card content
+- scale transforms on text-heavy inner blocks
+- image screenshots of the UI
+
+Glass blur should only be background/backdrop:
+backdrop-blur-xl
+
+Not:
+filter blur
+blur-sm
+blur-md
+on text or rows.
+
+==================================================
+7. ACCESSIBILITY / REDUCED MOTION
+==================================================
+
+Respect reduced motion if the project supports it.
+
+Add:
+
+motion-reduce:transition-none
+motion-reduce:hover:transform-none
+
+Example:
+
+className="
+  transition-all duration-500 ease-out
+  hover:-translate-y-2 hover:scale-[1.015]
+  motion-reduce:transition-none
+  motion-reduce:hover:translate-y-0
+  motion-reduce:hover:scale-100
+"
+
+==================================================
+8. RESPONSIVE BEHAVIOR
+==================================================
+
+Desktop:
+- Card should look sharp, premium, and slightly interactive on hover.
+- Hover lift/pop should be visible but not distracting.
+
+Laptop:
+- Card remains readable and does not overflow.
+
+Tablet/mobile:
+- Hover effect does not matter, but card should still look crisp.
+- No horizontal scrolling.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The Vanessa AI card should look more HD/premium:
+- sharper text
+- clearer chat bubbles
+- cleaner borders
+- better glass effect
+- subtle hover lift/pop
+- soft glow on hover
+- no blur on content

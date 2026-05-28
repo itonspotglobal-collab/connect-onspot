@@ -400,108 +400,116 @@ export default function Home() {
 
               {/* ── RIGHT: Vanessa AI Card ── */}
               <div className="hero-fade-up-delay flex items-center justify-center lg:justify-start">
+                {/* Outer group for hover orchestration */}
                 <div
-                  className="w-full max-w-[460px] lg:max-w-[500px] rounded-2xl border border-white/15 bg-white/[0.07] backdrop-blur-xl shadow-[0_32px_80px_-20px_rgba(83,74,183,0.45)] p-5 sm:p-6"
+                  className="group relative w-full max-w-[480px] lg:max-w-[520px]"
                   style={{ transform: "rotate(1deg)" }}
                 >
-                  {/* Card header */}
-                  <div className="flex items-center gap-3 pb-4 border-b border-white/10 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-400 to-blue-600 flex items-center justify-center flex-shrink-0">
-                      <Bot className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-white">
-                        Vanessa AI
-                      </p>
-                      <p className="text-xs text-emerald-400 flex items-center gap-1.5">
-                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                        Online · Talent matching active
-                      </p>
-                    </div>
-                    <div className="flex gap-1">
-                      <span className="w-2.5 h-2.5 rounded-full bg-white/20"></span>
-                      <span className="w-2.5 h-2.5 rounded-full bg-white/20"></span>
-                      <span className="w-2.5 h-2.5 rounded-full bg-white/20"></span>
-                    </div>
-                  </div>
+                  {/* Soft ambient glow — behind card */}
+                  <div className="absolute -inset-8 -z-10 rounded-[44px] bg-gradient-to-br from-[#3F4698]/35 to-[#565CC0]/20 blur-3xl opacity-55 transition-opacity duration-500 group-hover:opacity-85" />
 
-                  {/* Chat bubbles */}
-                  <div className="space-y-3 mb-4">
-                    <div className="flex justify-end">
-                      <div className="max-w-[78%] bg-violet-500/30 border border-violet-400/20 rounded-2xl rounded-br-sm px-4 py-2.5">
-                        <p className="text-xs sm:text-sm text-white/90 leading-relaxed">
-                          Find me a top Filipino VA for customer support
+                  {/* Card */}
+                  <div className="relative rounded-[28px] border border-white/18 bg-white/[0.075] p-6 sm:p-7 shadow-[0_28px_90px_rgba(0,0,0,0.28)] backdrop-blur-xl transition-all duration-500 ease-out will-change-transform hover:-translate-y-2 hover:scale-[1.012] hover:border-white/28 hover:bg-white/[0.095] hover:shadow-[0_38px_110px_rgba(0,0,0,0.36)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:hover:scale-100">
+
+                    {/* Card header */}
+                    <div className="flex items-center gap-3.5 pb-5 border-b border-white/12 mb-5">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#6F63FF] shadow-lg shadow-[#6F63FF]/30">
+                        <Bot className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-base font-bold text-white leading-tight">
+                          Vanessa AI
+                        </p>
+                        <p className="text-sm font-medium text-emerald-300 flex items-center gap-1.5 mt-0.5">
+                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.7)]"></span>
+                          Online · Talent matching active
                         </p>
                       </div>
-                    </div>
-                    <div className="flex justify-start">
-                      <div className="max-w-[85%] bg-white/[0.08] border border-white/10 rounded-2xl rounded-bl-sm px-4 py-2.5">
-                        <p className="text-xs sm:text-sm text-white/80 leading-relaxed">
-                          Found 3 top matches from our pre-assessed talent pool:
-                        </p>
+                      <div className="flex gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-white/25"></span>
+                        <span className="w-2.5 h-2.5 rounded-full bg-white/25"></span>
+                        <span className="w-2.5 h-2.5 rounded-full bg-white/25"></span>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Match cards */}
-                  <div className="space-y-2.5">
-                    {[
-                      {
-                        initials: "KM",
-                        name: "Kyle Mendez 🇵🇭",
-                        role: "Customer Support Specialist",
-                        match: "97%",
-                      },
-                      {
-                        initials: "AL",
-                        name: "Alexandra Lopez",
-                        role: "CX & Operations Lead",
-                        match: "94%",
-                      },
-                      {
-                        initials: "RD",
-                        name: "Rica Dela Cruz",
-                        role: "Bilingual Support Agent",
-                        match: "91%",
-                      },
-                    ].map((person) => (
-                      <div
-                        key={person.name}
-                        className="flex items-center gap-3 rounded-xl bg-white/[0.06] border border-white/10 px-3.5 py-2.5"
-                      >
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-400/60 to-blue-500/60 flex items-center justify-center flex-shrink-0">
-                          <span className="text-[10px] font-bold text-white">
-                            {person.initials}
+                    {/* Chat bubbles */}
+                    <div className="space-y-3 mb-5">
+                      <div className="flex justify-end">
+                        <div className="max-w-[78%] rounded-2xl rounded-br-sm border border-white/12 bg-[#6B5BEA]/45 px-5 py-3">
+                          <p className="text-sm font-semibold text-white leading-snug">
+                            Find me a top Filipino VA for customer support
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex justify-start">
+                        <div className="max-w-[85%] rounded-2xl rounded-bl-sm border border-white/10 bg-white/[0.12] px-5 py-3">
+                          <p className="text-sm font-medium text-white/82 leading-snug">
+                            Found 3 top matches from our pre-assessed talent pool:
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Match rows */}
+                    <div className="space-y-2">
+                      {[
+                        {
+                          initials: "KM",
+                          name: "Kyle Mendez 🇵🇭",
+                          role: "Customer Support Specialist",
+                          match: "97%",
+                        },
+                        {
+                          initials: "AL",
+                          name: "Alexandra Lopez",
+                          role: "CX & Operations Lead",
+                          match: "94%",
+                        },
+                        {
+                          initials: "RD",
+                          name: "Rica Dela Cruz",
+                          role: "Bilingual Support Agent",
+                          match: "91%",
+                        },
+                      ].map((person) => (
+                        <div
+                          key={person.name}
+                          className="flex items-center gap-3 rounded-2xl border border-white/12 bg-white/[0.10] px-4 py-3.5 transition-all duration-300 group-hover:bg-white/[0.13] group-hover:translate-x-0.5 motion-reduce:group-hover:translate-x-0"
+                        >
+                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#6F63FF]/70 to-blue-500/60 flex items-center justify-center shrink-0 shadow-sm">
+                            <span className="text-[11px] font-bold text-white">
+                              {person.initials}
+                            </span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-white/95 truncate">
+                              {person.name}
+                            </p>
+                            <p className="text-[10px] text-white/55 truncate mt-0.5">
+                              {person.role}
+                            </p>
+                          </div>
+                          <span className="text-[10px] font-bold text-emerald-300 bg-emerald-400/15 border border-emerald-300/20 rounded-full px-2.5 py-0.5 shrink-0">
+                            {person.match}
                           </span>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-white truncate">
-                            {person.name}
-                          </p>
-                          <p className="text-[10px] text-white/55 truncate">
-                            {person.role}
-                          </p>
-                        </div>
-                        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 rounded-full px-2 py-0.5 flex-shrink-0">
-                          {person.match}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Footer prompt */}
-                  <div className="mt-4 pt-3 border-t border-white/10 flex items-center gap-2">
-                    <div className="flex-1 rounded-xl bg-white/[0.05] border border-white/10 px-3 py-2">
-                      <p className="text-xs text-white/30">
-                        Ask Vanessa anything...
-                      </p>
+                      ))}
                     </div>
-                    <button
-                      onClick={openVanessa}
-                      className="w-8 h-8 rounded-xl bg-violet-600 flex items-center justify-center flex-shrink-0 hover:bg-violet-500 transition-colors"
-                    >
-                      <ArrowRight className="w-3.5 h-3.5 text-white" />
-                    </button>
+
+                    {/* Footer prompt */}
+                    <div className="mt-5 pt-4 border-t border-white/12 flex items-center gap-2.5">
+                      <div className="flex-1 rounded-xl border border-white/12 bg-white/[0.07] px-4 py-2.5">
+                        <p className="text-xs text-white/35 font-medium">
+                          Ask Vanessa anything...
+                        </p>
+                      </div>
+                      <button
+                        onClick={openVanessa}
+                        className="w-9 h-9 rounded-xl bg-[#6F63FF] flex items-center justify-center shrink-0 shadow-md shadow-[#6F63FF]/30 transition-all duration-300 group-hover:shadow-lg group-hover:shadow-[#6F63FF]/40 hover:bg-[#7C70FF]"
+                      >
+                        <ArrowRight className="w-4 h-4 text-white" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
