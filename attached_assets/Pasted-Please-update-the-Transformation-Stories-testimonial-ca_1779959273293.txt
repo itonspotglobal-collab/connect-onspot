@@ -1,0 +1,235 @@
+Please update the Transformation Stories testimonial cards to match the attached reference layout.
+
+Current issue:
+The author row is currently placed at the bottom of each card with small colored initial circles. The design should instead follow the reference where the author block is at the top of each testimonial card.
+
+Goal:
+Move the author/profile block to the top of each testimonial card and style it like the reference.
+
+IMPORTANT:
+- Do NOT change the Navigation bar.
+- Do NOT change the Footer.
+- Do NOT redesign the whole homepage.
+- Only update the Transformation Stories/testimonial card layout.
+- Keep the existing testimonial content.
+- Keep the existing names:
+  - Elad B.
+  - Eric M.
+  - Fernando C.
+- Keep the existing roles:
+  - CEO/Founder, PineTech
+  - Operations Director, Flash Justice
+  - CTO, Pinetech
+
+==================================================
+NEW TESTIMONIAL CARD STRUCTURE
+==================================================
+
+Each testimonial card should follow this order:
+
+1. Author block at the top
+2. Transformation headline below
+3. Metric badge
+4. Testimonial/quote body
+
+Current order may be:
+- quote mark
+- headline
+- metric
+- quote
+- author block at bottom
+
+Change it to:
+
+<div className="story-card">
+  <div className="story-author-top">
+    <Avatar />
+    <div>
+      <div className="story-name">Elad B.</div>
+      <div className="story-role">CEO/Founder, PineTech</div>
+    </div>
+  </div>
+
+  <h3 className="story-transformation">
+    From 12-hour workdays to automated excellence
+  </h3>
+
+  <div className="story-metric">40% time saved</div>
+
+  <p className="story-quote">...</p>
+</div>
+
+==================================================
+AUTHOR AVATAR STYLE
+==================================================
+
+Use the same avatar/photo style as the previous/reference design.
+
+For Elad B.:
+- If a real photo exists, use it.
+- If no real photo exists, use the current fallback icon/avatar.
+
+For Eric M.:
+- If a real photo exists, use it.
+- If no real photo exists, use the current fallback icon/avatar.
+
+For Fernando C.:
+- Use the real Fernando photo if available.
+- The screenshot shows Fernando has an actual photo; keep/use it if the project has `FernandoPhoto`.
+
+Important:
+- Do not use the colored initial circles for this section anymore.
+- Prefer circular avatar images or neutral gray user-icon fallback like the reference.
+- Do not blur the avatar image.
+- Do not distort the avatar image.
+
+Suggested avatar classes:
+
+For real photo:
+className="
+  h-16 w-16 shrink-0 rounded-full object-cover
+"
+
+For fallback icon circle:
+className="
+  flex h-16 w-16 shrink-0 items-center justify-center
+  rounded-full bg-slate-300 text-white
+"
+
+If using a user icon inside fallback:
+className="h-7 w-7 text-white"
+
+==================================================
+AUTHOR BLOCK STYLE
+==================================================
+
+Suggested top author wrapper:
+
+className="
+  mb-8 flex items-center gap-4
+"
+
+Name:
+className="
+  text-base font-semibold text-slate-900
+"
+
+Role:
+className="
+  mt-1 text-sm text-slate-600
+"
+
+==================================================
+CARD STYLE
+==================================================
+
+Keep the current card style generally, but make it closer to the reference:
+- large rounded card
+- soft white or very light lavender/white background
+- subtle border
+- enough padding
+- no overly strong shadow
+
+Suggested card class:
+
+className="
+  rounded-3xl border border-slate-200/70
+  bg-white/80 p-8
+  shadow-sm
+"
+
+If section background is light lavender, card can remain white/80.
+
+==================================================
+REMOVE OLD BOTTOM AUTHOR ROW
+==================================================
+
+Remove the old author row from the bottom of each card.
+
+Do not duplicate the author info.
+
+There should only be one author block per testimonial card, and it should be at the top.
+
+==================================================
+QUOTE MARK
+==================================================
+
+The reference does not emphasize a large quote mark at the top.
+
+If the current card has a large quote mark:
+- Remove it, or
+- make it very subtle and not positioned above the author block.
+
+Preferred:
+Remove the large quote mark for this layout.
+
+==================================================
+TRANSFORMATION HEADLINE STYLE
+==================================================
+
+Transformation headline should appear under the author block.
+
+Example:
+“From 12-hour workdays to automated excellence”
+
+Suggested style:
+
+className="
+  text-xl font-medium leading-snug text-slate-800
+"
+
+Keep the current wording.
+
+==================================================
+METRIC BADGE
+==================================================
+
+Keep the metric badge after the headline.
+
+Examples:
+- 40% time saved
+- 3 weeks to full team
+- 24/7 coverage
+
+Style:
+className="
+  mt-4 inline-flex items-center rounded-full
+  bg-emerald-50 px-3 py-1
+  text-xs font-semibold text-emerald-700
+"
+
+==================================================
+QUOTE BODY
+==================================================
+
+Place the testimonial paragraph below the metric.
+
+Suggested:
+className="
+  mt-6 text-sm leading-relaxed text-slate-600
+"
+
+==================================================
+RESPONSIVE REQUIREMENTS
+==================================================
+
+Desktop:
+- Three cards in one row.
+- Author block at top of each card.
+
+Tablet/mobile:
+- Cards stack cleanly.
+- Author block stays at top.
+- No horizontal scrolling.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The Transformation Stories cards should now look like the reference:
+- author/avatar at the top
+- transformation headline below
+- metric badge
+- testimonial text
+- no old bottom author row
+- no colored initial circles unless used only as a fallback

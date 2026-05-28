@@ -26,6 +26,7 @@ import {
   Eye,
   Calendar,
   ArrowUpRight,
+  User,
 } from "lucide-react";
 import { SiX, SiThreads, SiTiktok, SiYoutube } from "react-icons/si";
 import { Link } from "wouter";
@@ -880,84 +881,73 @@ export default function Home() {
                 quote:
                   "The professionalism and consistency of the OnSpot team. Communication is always clear, and the structured daily and weekly updates make it simple to stay aligned.",
                 transformation: "From 12-hour workdays to automated excellence",
+                keyword: "automated excellence",
                 metric: "40% time saved",
                 name: "Elad B.",
                 role: "CEO / Founder, PineTech",
-                initials: "EB",
-                color: "from-violet-400 to-violet-700",
               },
               {
                 quote:
                   "I've worked with several outsourcing companies, but none delivered like OnSpot. Shane and Ria helped me build my team, stayed involved, and ensured success. I finally feel like I'm working with a true partner.",
                 transformation:
                   "From scattered processes to seamless orchestration",
+                keyword: "seamless orchestration",
                 metric: "3 weeks to full team",
                 name: "Eric M.",
                 role: "Operations Director, Flash Justice",
-                initials: "EM",
-                color: "from-teal-400 to-teal-700",
               },
               {
                 quote:
                   "OnSpot's team is professional, responsive, and reliable — always going above and beyond. The efficiency and consistency they deliver gives me complete confidence in the partnership we've built.",
                 transformation:
                   "From constant firefighting to proactive innovation",
+                keyword: "proactive innovation",
                 metric: "24/7 coverage",
                 name: "Fernando C.",
                 role: "CTO, Pinetech",
-                initials: "FC",
-                color: "from-amber-400 to-orange-600",
               },
             ].map((story) => (
               <div
                 key={story.name}
-                className="flex flex-col rounded-2xl border border-slate-200 bg-white p-8 shadow-sm hover:border-violet-200 hover:shadow-md transition-all duration-300"
+                className="flex flex-col rounded-3xl border border-slate-200/70 bg-white/80 p-8 shadow-sm hover:border-violet-200 hover:shadow-md transition-all duration-300"
               >
-                <p className="text-4xl font-serif italic text-violet-300 leading-none mb-1">
-                  "
-                </p>
-                <h3 className="text-lg font-semibold text-slate-900 leading-snug mb-3">
-                  {story.transformation
-                    .split(
-                      /automated excellence|seamless orchestration|proactive innovation/,
-                    )
-                    .map((part, i, arr) =>
-                      i < arr.length - 1 ? (
-                        <span key={i}>
-                          {part}
-                          <span className="italic text-violet-600">
-                            {
-                              story.transformation.match(
-                                /automated excellence|seamless orchestration|proactive innovation/,
-                              )?.[0]
-                            }
-                          </span>
-                        </span>
-                      ) : (
-                        <span key={i}>{part}</span>
-                      ),
-                    )}
+                {/* Author block — top */}
+                <div className="mb-7 flex items-center gap-4">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                    <User className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <p className="text-base font-semibold text-slate-900">
+                      {story.name}
+                    </p>
+                    <p className="mt-0.5 text-sm text-slate-500">{story.role}</p>
+                  </div>
+                </div>
+
+                {/* Transformation headline */}
+                <h3 className="text-xl font-medium leading-snug text-slate-800 mb-4">
+                  {story.transformation.split(story.keyword).map((part, i, arr) =>
+                    i < arr.length - 1 ? (
+                      <span key={i}>
+                        {part}
+                        <span className="italic text-violet-600">{story.keyword}</span>
+                      </span>
+                    ) : (
+                      <span key={i}>{part}</span>
+                    ),
+                  )}
                 </h3>
-                <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700 mb-5">
+
+                {/* Metric badge */}
+                <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 mb-6">
                   <TrendingUp className="h-3 w-3" />
                   {story.metric}
                 </span>
-                <p className="flex-1 text-sm leading-relaxed text-slate-500 mb-6">
+
+                {/* Quote */}
+                <p className="flex-1 text-sm leading-relaxed text-slate-600">
                   {story.quote}
                 </p>
-                <div className="flex items-center gap-3 pt-5 border-t border-slate-100">
-                  <div
-                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${story.color} text-sm font-bold text-white`}
-                  >
-                    {story.initials}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">
-                      {story.name}
-                    </p>
-                    <p className="text-xs text-slate-400">{story.role}</p>
-                  </div>
-                </div>
               </div>
             ))}
           </div>
