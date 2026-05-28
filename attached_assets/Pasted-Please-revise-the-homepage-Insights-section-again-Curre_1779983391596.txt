@@ -1,0 +1,245 @@
+Please revise the homepage Insights section again.
+
+Current issue:
+The new visual overlay cards do not look good:
+- cards are uneven
+- image text competes with overlay text
+- titles are hard to read
+- the middle card is too cropped/zoomed
+- the section feels messy instead of premium
+
+Goal:
+Use a clean, readable, balanced 3-card layout that is still visual, but not text-over-image heavy.
+
+IMPORTANT:
+- Do NOT change the Navigation bar.
+- Do NOT change the Footer.
+- Do NOT change other homepage sections.
+- Only update the Insights section.
+- Keep real published Insights/blog content and images.
+- Keep 3 insight cards in a straight row on desktop.
+- Do not use large text overlays directly on top of busy images.
+- Do not use uneven card heights.
+- Do not use a large featured + side card layout.
+
+==================================================
+DESIGN DIRECTION
+==================================================
+
+Use a clean “visual teaser card” layout:
+
+Each card should have:
+1. Image on top
+2. White content area below
+3. Category label
+4. Title
+5. Short excerpt
+6. subtle metadata or “Read preview →”
+
+This keeps it visual, but readable.
+
+The images should not have large title text overlaid on them.
+
+==================================================
+SECTION HEADER
+==================================================
+
+Keep the current header:
+
+Label:
+INSIGHTS
+
+Headline:
+Thinking ahead, so you can move faster.
+
+Subtitle:
+Perspectives on AI, talent, and the future of work — from the team building it.
+
+Top-right link:
+Explore all insights ↗
+
+Use the brand accent color:
+#3F4698
+
+==================================================
+CARD LAYOUT
+==================================================
+
+Use 3 equal cards in a straight row on desktop.
+
+Suggested wrapper:
+
+<div className="
+  mt-14 grid grid-cols-1 gap-6
+  md:grid-cols-2
+  lg:grid-cols-3
+">
+  ...
+</div>
+
+Card class:
+
+className="
+  group flex h-full min-h-[520px] flex-col overflow-hidden
+  rounded-[28px] border border-slate-200/80
+  bg-white shadow-sm
+  transition duration-300
+  hover:-translate-y-1 hover:shadow-xl
+"
+
+All cards should be the same height.
+
+==================================================
+IMAGE AREA
+==================================================
+
+Use image on top only.
+
+Image wrapper:
+
+className="
+  relative aspect-[16/9] w-full overflow-hidden bg-slate-100
+"
+
+Image:
+
+className="
+  h-full w-full object-cover
+  transition duration-500 group-hover:scale-105
+"
+
+IMPORTANT:
+- Do not overlay the article title on top of the image.
+- Do not place a dark gradient over the full card.
+- Do not crop so aggressively that logos/text inside the image are cut off.
+
+For images with embedded text, use:
+object-contain bg-slate-100
+
+ONLY for those problematic images if needed.
+
+For example:
+- If the Ghana / Unity in Diversity image is being cropped badly, use `object-contain` for that image.
+- Otherwise use `object-cover`.
+
+If possible, add a per-article property like:
+imageFit: "contain" | "cover"
+
+Then render:
+
+className={`h-full w-full ${article.imageFit === "contain" ? "object-contain p-4" : "object-cover"} transition duration-500 group-hover:scale-105`}
+
+==================================================
+CONTENT AREA
+==================================================
+
+Content wrapper:
+
+className="
+  flex flex-1 flex-col p-6
+"
+
+Category:
+
+className="
+  text-xs font-semibold uppercase tracking-[0.18em]
+  text-[#3F4698]
+"
+
+Title:
+
+className="
+  mt-4 text-xl font-semibold leading-snug text-slate-950
+"
+
+Excerpt:
+
+className="
+  mt-4 line-clamp-3 text-sm leading-relaxed text-slate-600
+"
+
+Footer/meta/action:
+
+className="
+  mt-auto border-t border-slate-100 pt-5
+  text-sm text-slate-500
+"
+
+Use either:
+- author + date
+or
+- “Read preview →”
+
+Preferred for homepage retention:
+Use “Read preview →” as the visible action.
+
+If linking to article detail, keep it subtle:
+className="
+  inline-flex items-center gap-2 font-semibold text-[#3F4698]
+  transition hover:gap-3
+"
+
+==================================================
+REMOVE CURRENT OVERLAY CARD DESIGN
+==================================================
+
+Remove/replace the current overlay card approach:
+- no text over busy images
+- no dark full-card gradient overlays
+- no different center-card height
+- no center card zoom/feature treatment
+- no `lg:-mt-*`
+- no `min-h-[460px]` for one card only
+- no absolute bottom content over image
+
+The final cards should be equal and clean.
+
+==================================================
+OPTIONAL: SOFT VISUAL POLISH
+==================================================
+
+To keep it more visual without hurting readability:
+- Add a very subtle top image hover zoom.
+- Add a small brand-colored accent line above card content or in the category.
+- Keep white card background.
+- Keep rounded corners and subtle shadow.
+
+Do not make it too flashy.
+
+==================================================
+EXPLORE ALL INSIGHTS LINK
+==================================================
+
+Keep only one “Explore all insights ↗” link at the top right.
+
+Remove any duplicate bottom “View all insights” button if it exists.
+
+==================================================
+RESPONSIVE REQUIREMENTS
+==================================================
+
+Desktop:
+- 3 equal cards in one row.
+- All cards same height.
+- Text is readable.
+
+Tablet:
+- 2 columns.
+
+Mobile:
+- 1 column.
+- No horizontal overflow.
+- Images remain readable.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The Insights section should look clean and premium:
+- 3 equal cards
+- image on top
+- readable white content area below
+- no overlay text on images
+- no uneven card heights
+- no messy/cropped middle card
+- still visual, but much easier to read

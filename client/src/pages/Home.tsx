@@ -451,49 +451,48 @@ export default function Home() {
               </a>
             </div>
 
-            {/* 3 visual insight tiles */}
-            <div className="mt-2 grid grid-cols-1 gap-6 lg:grid-cols-3">
-              {featuredPosts.slice(0, 3).map((post, idx) => (
+            {/* 3 equal insight cards */}
+            <div className="mt-14 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {featuredPosts.slice(0, 3).map((post) => (
                 <a
                   key={post.id}
                   href={`/insights/${post.slug}`}
-                  className={[
-                    "group relative overflow-hidden rounded-[28px] border border-slate-200/60 bg-slate-900 shadow-sm",
-                    "transition duration-500 hover:-translate-y-1 hover:shadow-xl",
-                    idx === 1 ? "lg:-mt-6 min-h-[460px]" : "min-h-[420px]",
-                  ].join(" ")}
+                  className="group flex h-full flex-col overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
                 >
-                  {/* Background image */}
-                  {post.coverImageUrl ? (
-                    <img
-                      src={post.coverImageUrl}
-                      alt={post.title}
-                      className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-700 via-violet-700 to-blue-800" />
-                  )}
-
-                  {/* Gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/92 via-slate-950/45 to-slate-950/10" />
+                  {/* Image */}
+                  <div className="relative aspect-[16/9] w-full shrink-0 overflow-hidden bg-slate-100">
+                    {post.coverImageUrl ? (
+                      <img
+                        src={post.coverImageUrl}
+                        alt={post.title}
+                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-600 via-violet-600 to-blue-700">
+                        <BookOpen className="h-10 w-10 text-white/40" />
+                      </div>
+                    )}
+                  </div>
 
                   {/* Content */}
-                  <div className="relative z-10 flex h-full min-h-[inherit] flex-col justify-end p-6 sm:p-7">
-                    <span className="mb-4 inline-flex w-fit rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur-md">
-                      {post.category || "Insights"}
+                  <div className="flex flex-1 flex-col p-6">
+                    <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#3F4698]">
+                      {post.category || "Industry Insights"}
                     </span>
-                    <h3 className="text-xl font-semibold leading-tight text-white sm:text-2xl line-clamp-2">
+                    <h3 className="mt-4 text-xl font-semibold leading-snug text-slate-950 line-clamp-2">
                       {post.title}
                     </h3>
                     {post.excerpt && (
-                      <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-white/70">
+                      <p className="mt-4 line-clamp-3 text-sm leading-relaxed text-slate-600 flex-1">
                         {post.excerpt}
                       </p>
                     )}
-                    <div className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-white/85">
-                      Read article
-                      <ArrowUpRight className="h-4 w-4" />
+                    <div className="mt-auto border-t border-slate-100 pt-5">
+                      <span className="inline-flex items-center gap-2 text-sm font-semibold text-[#3F4698] transition-[gap] duration-200 hover:gap-3">
+                        Read preview
+                        <ArrowUpRight className="h-4 w-4" />
+                      </span>
                     </div>
                   </div>
                 </a>
