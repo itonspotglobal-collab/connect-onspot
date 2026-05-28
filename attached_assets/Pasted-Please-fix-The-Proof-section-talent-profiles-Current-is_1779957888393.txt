@@ -1,0 +1,199 @@
+Please fix “The Proof” section talent profiles.
+
+Current issue:
+The talent photos and profiles still do not match the previous design. The section now shows different names/photos like Alexandra Lopez, Sofia Reyes, James Wei, etc., and Kyle Mendez is still an initials circle. This is incorrect.
+
+Goal:
+Restore the exact talent profiles/photos from the previous approved design, not new/random placeholder people.
+
+IMPORTANT:
+- Do NOT use stock/generated/random profile photos.
+- Do NOT use the current wrong names/photos.
+- Do NOT replace the previous approved talent list.
+- Do NOT show Kyle Mendez as initials only if a real photo existed previously.
+- Reuse the exact talent data and image assets from the previous design/version of the project.
+- Keep the current section layout if possible, but the people/photos must match the previous approved design.
+
+==================================================
+1. Restore previous approved talent list
+==================================================
+
+Find the previous talent/team data used before the recent mockup changes.
+
+Look for old data arrays/components/files such as:
+- teamMembers
+- talentProfiles
+- proofProfiles
+- superhumanTalent
+- TeamProfiles
+- ProofSection
+- TalentSection
+- `src/data/talent`
+- `src/data/team`
+- `src/assets/talent`
+- `src/assets/team`
+- `public/talent`
+- `public/team`
+
+Restore the exact previous approved profiles.
+
+The previous approved list should include names such as:
+- Kyle Mendez
+- Alexandra Lopez
+- Andrea Pinzon
+- Christopher Alba
+- Rachel Castro
+- Amir Singh
+- Jennifer Dizon
+- Andrei Losanto
+
+Do not replace them with:
+- Sofia Reyes
+- James Wei
+- Maria Santos
+- Stefan K.
+- Nicole D.
+- Amira S.
+or any other new placeholder names unless they were part of the previous approved design.
+
+==================================================
+2. Restore the correct photos
+==================================================
+
+Use the same real photo assets that were used in the previous design.
+
+Do not use:
+- blurred lifestyle image tiles
+- generic profile images
+- AI-generated looking headshots
+- initials circles, unless the old approved design used initials for that exact person
+- placeholder stock photos
+
+The current screenshot shows Kyle Mendez as a “KM” initials circle. Please replace this with the previous approved Kyle Mendez photo if available in the project assets/history.
+
+If the previous photo assets are no longer referenced but still exist in the repo, reconnect them.
+
+Search the repo for image files and imports related to the approved names.
+
+Possible filenames may include:
+- kyle
+- mendez
+- alexandra
+- lopez
+- andrea
+- pinzon
+- christopher
+- alba
+- rachel
+- castro
+- amir
+- singh
+- jennifer
+- dizon
+- andrei
+- losanto
+
+==================================================
+3. Remove incorrect current placeholder profiles
+==================================================
+
+Remove or replace the current wrong profile data:
+- Sofia Reyes
+- James Wei
+- Maria Santos
+- Stefan K.
+- Nicole D.
+- Amira S.
+
+These should not appear in The Proof section unless they existed in the old approved design.
+
+==================================================
+4. Keep flags accurate
+==================================================
+
+Add flags beside the names where required.
+
+At minimum:
+- Kyle Mendez 🇵🇭
+
+If the old approved data had flags for the rest, preserve them.
+
+Do not use lowercase text like “PH” unless that is the project’s approved style. Prefer the flag emoji or existing flag badge style.
+
+==================================================
+5. Section heading copy
+==================================================
+
+Keep the current/reference section heading if already implemented:
+
+Label:
+“THE PROOF”
+
+Headline:
+“The people behind the platform.”
+
+Subtitle:
+“Powered by professionals from the US, Philippines, and beyond. The Superhuman BPO Network.”
+
+Do not change this copy unless needed for consistency.
+
+==================================================
+6. Photo display style
+==================================================
+
+Keep the profile photos clean and visible.
+
+If current layout uses circular photos:
+- keep circular photos
+- use real photos
+- no blur
+- no grayscale
+- no opacity overlay
+- no distortion
+
+Suggested image class:
+
+className="
+  h-28 w-28 rounded-full object-cover
+"
+
+If using larger circular photos:
+
+className="
+  h-32 w-32 rounded-full object-cover
+"
+
+Make sure each photo is centered and not cropped badly.
+
+==================================================
+7. Responsive layout
+==================================================
+
+Keep the grid responsive:
+
+Desktop:
+- 4 columns x 2 rows
+
+Tablet:
+- 2 columns
+
+Mobile:
+- 1 or 2 columns, whichever looks better
+
+No horizontal scrolling.
+
+==================================================
+8. Expected result
+==================================================
+
+The Proof section should show the same approved talent profiles and photos as the previous design, including:
+- Kyle Mendez
+- Alexandra Lopez
+- Andrea Pinzon
+- Christopher Alba
+- Rachel Castro
+- Amir Singh
+- Jennifer Dizon
+- Andrei Losanto
+
+Kyle Mendez should have the PH flag beside the name. The current random replacement profiles should be removed.
