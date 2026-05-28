@@ -1,0 +1,183 @@
+Please update the highlighted/accent text color across the homepage so it better matches the OnSpot brand color.
+
+Current issue:
+Some highlighted words are too bright purple, such as:
+- “Real results.”
+- “An architect.”
+- “faster.”
+- card labels and small accent text
+- buttons/icons in the Work Differently cards
+
+Goal:
+Make the highlighted text color closer to the OnSpot navbar/brand blue-violet color shown in the reference swatch.
+
+Use this brand color as the main highlight color:
+
+#3F4698
+
+IMPORTANT:
+- Do NOT change the Navigation bar.
+- Do NOT change the Footer.
+- Do NOT change section layouts.
+- Do NOT change copy/text content.
+- Do NOT change the hero layout.
+- Only update highlight/accent colors.
+- Keep the site readable and premium.
+- Avoid bright neon purple.
+
+==================================================
+GLOBAL ACCENT COLOR
+==================================================
+
+Create or reuse a single accent color variable/class if possible.
+
+Preferred CSS variable:
+
+:root {
+  --onspot-brand: #3F4698;
+  --onspot-brand-soft: rgba(63, 70, 152, 0.10);
+  --onspot-brand-border: rgba(63, 70, 152, 0.22);
+}
+
+Then use it for highlights/accent text.
+
+If using Tailwind directly, replace bright purple classes with:
+
+text-[#3F4698]
+border-[#3F4698]
+bg-[#3F4698]
+bg-[#3F4698]/10
+border-[#3F4698]/25
+
+==================================================
+UPDATE THESE HOMEPAGE HIGHLIGHTS
+==================================================
+
+1. Insights section
+Update the highlighted word:
+
+“faster.”
+
+From bright purple to:
+text-[#3F4698]
+
+or if gradient is required:
+bg-gradient-to-r from-[#3F4698] to-[#565CC0] bg-clip-text text-transparent
+
+2. Transformation Stories section
+Update:
+
+“Real results.”
+
+Use:
+text-[#3F4698]
+
+Also update:
+- TRANSFORMATIONS label
+- metric badges
+- quote/accent words such as automated, seamless, proactive
+
+Use brand blue-violet instead of bright purple.
+
+3. Why OnSpot section
+Update:
+
+“An architect.”
+
+Use:
+text-[#3F4698]
+
+Also update:
+- WHY ONSPOT label
+- icon boxes
+- small card taglines such as “Intelligent by design”, “People, not resources”, etc.
+
+4. Work Differently section
+Update accents to use the same brand color:
+- WORK DIFFERENTLY label
+- FOR COMPANIES label
+- FOR PROFESSIONALS label
+- icon colors
+- CTA outlines/text
+- card borders if currently too bright purple
+
+Use:
+text-[#3F4698]
+border-[#3F4698]/30
+bg-[#3F4698]/10
+
+5. Insights cards
+Update category labels:
+- INDUSTRY INSIGHTS
+- INDUSTRY TRENDS
+
+Use:
+text-[#3F4698]
+
+6. Buttons / outline accents
+Where outline buttons are purple, use:
+border-[#3F4698]
+text-[#3F4698]
+hover:bg-[#3F4698]
+hover:text-white
+
+==================================================
+REPLACE THESE CLASSES
+==================================================
+
+Search for overly bright purple classes like:
+
+text-purple-600
+text-purple-700
+text-violet-600
+text-violet-700
+text-[#7C3AED]
+text-[#8B5CF6]
+text-[#7B3FF2]
+from-[#7C3AED]
+to-[#8B5CF6]
+border-purple-*
+border-violet-*
+bg-purple-*
+bg-violet-*
+
+Replace with brand-aligned values:
+
+text-[#3F4698]
+border-[#3F4698]/25
+bg-[#3F4698]/10
+
+For filled icons/buttons:
+bg-[#3F4698]
+text-white
+
+For subtle icon boxes:
+bg-[#3F4698]/10
+text-[#3F4698]
+
+==================================================
+KEEP SOFT BACKGROUNDS SUBTLE
+==================================================
+
+Soft section backgrounds can remain light lavender, but make sure they are not overly purple.
+
+Good examples:
+bg-[#F5F6FF]
+bg-[#F4F2FF]
+bg-[#F8F7FF]
+
+Avoid strong saturated purple backgrounds in light sections.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The highlighted text and accent elements across:
+- Insights
+- Work Differently
+- Transformation Stories
+- Why OnSpot
+- article cards
+- CTA outlines/icons
+
+should now feel more unified and match the OnSpot brand blue-violet color #3F4698 instead of bright purple/neon violet.

@@ -563,12 +563,12 @@ export default function Home() {
             {/* Section header */}
             <div className="mb-10 sm:mb-14 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-600">
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#3F4698]">
                   Insights
                 </p>
                 <h2 className="mt-3 text-3xl sm:text-4xl font-semibold text-slate-900 max-w-xl">
                   Thinking ahead, so you can move{" "}
-                  <span className="text-violet-600">faster.</span>
+                  <span className="text-[#3F4698]">faster.</span>
                 </h2>
                 <p className="mt-3 text-base sm:text-lg text-slate-500 max-w-xl">
                   Perspectives on AI, talent, and the future of work — from the
@@ -577,7 +577,7 @@ export default function Home() {
               </div>
               <a
                 href="/insights"
-                className="shrink-0 inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors"
+                className="shrink-0 inline-flex items-center gap-1.5 text-sm font-semibold text-[#3F4698] hover:text-[#3F4698]/80 transition-colors"
               >
                 Explore all insights
                 <ArrowUpRight className="h-4 w-4" />
@@ -618,7 +618,7 @@ export default function Home() {
 
                     {/* Card body */}
                     <div className="flex flex-1 flex-col p-6">
-                      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600">
+                      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#3F4698]">
                         {post.category || "Industry Insights"}
                       </span>
                       <h3 className="mt-3 text-lg font-semibold leading-snug text-slate-900 line-clamp-2">
@@ -660,7 +660,7 @@ export default function Home() {
 
         <div className="container relative z-10 mx-auto px-4 sm:px-6">
           <div className="text-center mb-12 sm:mb-16">
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-600">
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#3F4698]">
               Work differently.
             </p>
             <h2 className="mx-auto mt-4 max-w-2xl text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900">
@@ -671,8 +671,8 @@ export default function Home() {
 
           <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-8 lg:grid-cols-2">
             {/* Card 1: For Companies */}
-            <div className="rounded-3xl border border-indigo-200 bg-indigo-50/70 p-8 sm:p-10 shadow-sm flex flex-col">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-indigo-500">
+            <div className="rounded-3xl border border-[#3F4698]/25 bg-[#3F4698]/[0.04] p-8 sm:p-10 shadow-sm flex flex-col">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#3F4698]">
                 For companies
               </p>
               <h3 className="mt-3 text-2xl font-bold text-slate-900">
@@ -706,7 +706,7 @@ export default function Home() {
                     key={item.title}
                     className="flex items-center gap-4 py-5"
                   >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#3F4698]/10 text-[#3F4698]">
                       {item.icon}
                     </div>
                     <div>
@@ -719,10 +719,10 @@ export default function Home() {
                 ))}
               </div>
 
-              <div className="mt-6 pt-6 border-t border-indigo-200">
+              <div className="mt-6 pt-6 border-t border-[#3F4698]/20">
                 <a
                   href="/hire-talent"
-                  className="flex w-full items-center justify-center rounded-full border border-indigo-500 px-6 py-3 text-sm font-semibold text-indigo-600 transition hover:bg-indigo-500 hover:text-white"
+                  className="flex w-full items-center justify-center rounded-full border border-[#3F4698] px-6 py-3 text-sm font-semibold text-[#3F4698] transition hover:bg-[#3F4698] hover:text-white"
                 >
                   Find the right talent →
                 </a>
@@ -730,8 +730,8 @@ export default function Home() {
             </div>
 
             {/* Card 2: For Professionals */}
-            <div className="rounded-3xl border border-violet-200 bg-violet-50/70 p-8 sm:p-10 shadow-sm flex flex-col">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-violet-600">
+            <div className="rounded-3xl border border-[#3F4698]/25 bg-[#3F4698]/[0.04] p-8 sm:p-10 shadow-sm flex flex-col">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#3F4698]">
                 For professionals
               </p>
               <h3 className="mt-3 text-2xl font-bold text-slate-900">
@@ -765,7 +765,7 @@ export default function Home() {
                     key={item.title}
                     className="flex items-center gap-4 py-5"
                   >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-600">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#3F4698]/10 text-[#3F4698]">
                       {item.icon}
                     </div>
                     <div>
@@ -778,10 +778,10 @@ export default function Home() {
                 ))}
               </div>
 
-              <div className="mt-6 pt-6 border-t border-violet-200">
+              <div className="mt-6 pt-6 border-t border-[#3F4698]/20">
                 <a
                   href="/find-best-matches"
-                  className="flex w-full items-center justify-center rounded-full border border-violet-500 px-6 py-3 text-sm font-semibold text-violet-600 transition hover:bg-violet-500 hover:text-white"
+                  className="flex w-full items-center justify-center rounded-full border border-[#3F4698] px-6 py-3 text-sm font-semibold text-[#3F4698] transition hover:bg-[#3F4698] hover:text-white"
                 >
                   Find your next opportunity →
                 </a>
@@ -826,12 +826,12 @@ export default function Home() {
       <div className="relative bg-white py-20 sm:py-28">
         <div className="container mx-auto px-4 sm:px-6">
           <div className="mb-12 sm:mb-16">
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-violet-600">
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#3F4698]">
               Transformations
             </p>
             <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900 max-w-2xl">
               Real change.{" "}
-              <span className="italic text-violet-600">Real results.</span>
+              <span className="italic text-[#3F4698]">Real results.</span>
             </h2>
             <p className="mt-4 text-base sm:text-lg text-slate-500 max-w-xl">
               How OnSpot reshapes how teams work — one partnership at a time.
@@ -872,7 +872,7 @@ export default function Home() {
             ].map((story) => (
               <div
                 key={story.name}
-                className="flex flex-col rounded-3xl border border-slate-200/70 bg-white/80 p-8 shadow-sm hover:border-violet-200 hover:shadow-md transition-all duration-300"
+                className="flex flex-col rounded-3xl border border-slate-200/70 bg-white/80 p-8 shadow-sm hover:border-[#3F4698]/25 hover:shadow-md transition-all duration-300"
               >
                 {/* Author block — top */}
                 <div className="mb-7 flex items-center gap-4">
@@ -897,7 +897,7 @@ export default function Home() {
                       i < arr.length - 1 ? (
                         <span key={i}>
                           {part}
-                          <span className="italic text-violet-600">
+                          <span className="italic text-[#3F4698]">
                             {story.keyword}
                           </span>
                         </span>
@@ -908,7 +908,7 @@ export default function Home() {
                 </h3>
 
                 {/* Metric badge */}
-                <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-600 mb-6">
+                <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-[#3F4698]/10 px-3 py-1 text-xs font-semibold text-[#3F4698] mb-6">
                   <TrendingUp className="h-3 w-3" />
                   {story.metric}
                 </span>
@@ -927,12 +927,12 @@ export default function Home() {
       <div className="relative bg-[#f4f2fc] py-20 sm:py-28">
         <div className="container mx-auto px-4 sm:px-6">
           <div className="mb-12 sm:mb-16">
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-violet-600">
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#3F4698]">
               Why OnSpot
             </p>
             <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900 max-w-2xl">
               Not a service provider.{" "}
-              <span className="italic text-violet-600">An architect.</span>
+              <span className="italic text-[#3F4698]">An architect.</span>
             </h2>
             <p className="mt-4 text-base sm:text-lg text-slate-500 max-w-xl">
               We build the future where AI and human brilliance work as one —
@@ -944,40 +944,40 @@ export default function Home() {
             {[
               {
                 icon: <Bot className="h-6 w-6" />,
-                iconBg: "bg-violet-100 text-violet-600",
+                iconBg: "bg-[#3F4698]/10 text-[#3F4698]",
                 title: "AI-first infrastructure",
                 tagline: "Intelligent by design",
-                taglineColor: "text-violet-600",
+                taglineColor: "text-[#3F4698]",
                 body: "Every system and workflow enhanced by intelligence that amplifies human potential — not automation for its own sake.",
               },
               {
                 icon: <Users className="h-6 w-6" />,
-                iconBg: "bg-indigo-100 text-indigo-600",
+                iconBg: "bg-[#3F4698]/10 text-[#3F4698]",
                 title: "Human-centered culture",
                 tagline: "People, not resources",
-                taglineColor: "text-indigo-600",
+                taglineColor: "text-[#3F4698]",
                 body: "Elite Filipino talent treated as partners. We invest in their growth because your success depends on it.",
               },
               {
                 icon: <Globe className="h-6 w-6" />,
-                iconBg: "bg-violet-100 text-violet-600",
+                iconBg: "bg-[#3F4698]/10 text-[#3F4698]",
                 title: "Connected ecosystem",
                 tagline: "Seamless integration",
-                taglineColor: "text-violet-600",
+                taglineColor: "text-[#3F4698]",
                 body: "Your tools, your workflow, working in harmony. We don't disrupt what you've built — we elevate it.",
               },
               {
                 icon: <TrendingUp className="h-6 w-6" />,
-                iconBg: "bg-violet-100 text-violet-600",
+                iconBg: "bg-[#3F4698]/10 text-[#3F4698]",
                 title: "Scalable excellence",
                 tagline: "Grow without compromise",
-                taglineColor: "text-violet-600",
+                taglineColor: "text-[#3F4698]",
                 body: "Scale from 1 to 100 without losing quality, culture, or control. Same excellence at every stage.",
               },
             ].map((card) => (
               <div
                 key={card.title}
-                className="rounded-2xl border border-slate-200/80 bg-white p-8 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-violet-500/10"
+                className="rounded-2xl border border-slate-200/80 bg-white p-8 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#3F4698]/10"
               >
                 <div
                   className={`flex h-12 w-12 items-center justify-center rounded-2xl ${card.iconBg} mb-6`}
@@ -1005,7 +1005,7 @@ export default function Home() {
       <div className="relative bg-white py-20 sm:py-28">
         <div className="container mx-auto px-4 sm:px-6">
           <div className="mb-12 sm:mb-16 text-center">
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-violet-600">
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#3F4698]">
               The Proof
             </p>
             <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900 mx-auto max-w-2xl">
@@ -1086,7 +1086,7 @@ export default function Home() {
             ].map((person) => (
               <div
                 key={person.name}
-                className="group flex flex-col items-center text-center p-5 sm:p-6 rounded-2xl cursor-pointer hover:bg-violet-50 transition-all duration-300"
+                className="group flex flex-col items-center text-center p-5 sm:p-6 rounded-2xl cursor-pointer hover:bg-[#3F4698]/5 transition-all duration-300"
               >
                 {person.photo ? (
                   <img
@@ -1116,7 +1116,7 @@ export default function Home() {
           <div className="mt-12 text-center">
             <Link
               href="/talent-pool"
-              className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-7 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-violet-400 hover:text-violet-600 hover:shadow-md"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-7 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-[#3F4698]/50 hover:text-[#3F4698] hover:shadow-md"
             >
               Browse all talent
               <ArrowUpRight className="h-4 w-4" />
