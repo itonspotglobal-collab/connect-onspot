@@ -353,12 +353,8 @@ export default function Home() {
               className="hero-fade-up inline-flex items-center gap-2.5 bg-white/8 backdrop-blur-md px-5 py-2.5 rounded-full border border-white/20"
               data-testid="badge-superhuman-bpo"
             >
-              <span className="text-xs font-bold bg-gradient-to-r from-violet-400 to-blue-400 bg-clip-text text-transparent uppercase tracking-widest">
-                NEW
-              </span>
-              <div className="w-px h-3.5 bg-white/20 flex-shrink-0"></div>
-              <span className="text-sm sm:text-base font-medium text-white/80">
-                Vanessa AI Assistant is now live →
+              <span className="text-base font-semibold text-white/90 sm:text-lg">
+                AI first. Humans when it matters.
               </span>
             </div>
 
@@ -450,7 +446,6 @@ export default function Home() {
       <div className="bg-[#FAF9F6] py-20 sm:py-24">
         <div className="mx-auto max-w-7xl px-6">
           <div className="grid gap-10 lg:grid-cols-[220px_1fr_auto] lg:items-start">
-
             {/* Left: label + heading */}
             <div className="lg:pt-1">
               <p className="flex items-center gap-3 text-xs font-bold uppercase tracking-[0.24em] text-[#3F4698]">
@@ -471,21 +466,24 @@ export default function Home() {
                       id: 1,
                       slug: "ai-operating-model",
                       category: "AI OPERATIONS",
-                      title: "The new operating model: AI agents and human teams",
+                      title:
+                        "The new operating model: AI agents and human teams",
                       readTime: "6 min read",
                     },
                     {
                       id: 2,
                       slug: "philippines-global-operations",
                       category: "TALENT",
-                      title: "Why the Philippines is the future of global operations",
+                      title:
+                        "Why the Philippines is the future of global operations",
                       readTime: "8 min read",
                     },
                     {
                       id: 3,
                       slug: "founder-playbook",
                       category: "FOUNDER OPS",
-                      title: "From burnout to 4-day weeks: a founder's playbook",
+                      title:
+                        "From burnout to 4-day weeks: a founder's playbook",
                       readTime: "5 min read",
                     },
                   ]
@@ -521,7 +519,6 @@ export default function Home() {
                 <ArrowRight className="h-4 w-4" />
               </a>
             </div>
-
           </div>
         </div>
       </div>
@@ -752,11 +749,16 @@ export default function Home() {
 
         {/* Mosaic gallery — 9 tiles, 3-row layout, no gaps */}
         <div className="relative z-10 mx-auto mt-14 grid max-w-[1800px] grid-cols-2 gap-1.5 px-4 [grid-auto-rows:120px] md:grid-cols-12 md:[grid-auto-rows:145px] lg:[grid-auto-rows:165px]">
-
           {/* Tile 0 — Collaboration that scales: large left, 2 rows tall */}
           {/* md: cols 1-6, rows 1-2 */}
           <div className="group relative col-span-2 row-span-2 overflow-hidden bg-slate-800 md:col-span-6 md:row-span-2">
-            <img src={CollaborationThatScales} alt="Collaboration that scales" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <img
+              src={CollaborationThatScales}
+              alt="Collaboration that scales"
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105"
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-80" />
             <div className="absolute bottom-4 left-4 z-20 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
               Collaboration that scales
@@ -766,7 +768,13 @@ export default function Home() {
           {/* Tile 1 — Executive Support: top-right, row 1 */}
           {/* md: cols 7-9, row 1 */}
           <div className="group relative overflow-hidden bg-slate-800 md:col-span-3">
-            <img src={ExecutiveSupport} alt="Executive Support" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <img
+              src={ExecutiveSupport}
+              alt="Executive Support"
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105"
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-80" />
             <div className="absolute bottom-3 left-3 z-20 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
               Executive Support
@@ -776,7 +784,13 @@ export default function Home() {
           {/* Tile 2 — Always Connected: top-right, row 1 */}
           {/* md: cols 10-12, row 1 */}
           <div className="group relative overflow-hidden bg-slate-800 md:col-span-3">
-            <img src={AlwaysConnected} alt="Always Connected" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <img
+              src={AlwaysConnected}
+              alt="Always Connected"
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105"
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-80" />
             <div className="absolute bottom-3 left-3 z-20 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
               Always Connected
@@ -786,7 +800,13 @@ export default function Home() {
           {/* Tile 3 — Built for the future of work: mid-right, row 2 */}
           {/* md: cols 7-9, row 2 */}
           <div className="group relative overflow-hidden bg-slate-800 md:col-span-3">
-            <img src={FutureOfWork} alt="Built for the future of work" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <img
+              src={FutureOfWork}
+              alt="Built for the future of work"
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105"
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-80" />
             <div className="absolute bottom-3 left-3 z-20 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
               Built for the future of work
@@ -796,7 +816,13 @@ export default function Home() {
           {/* Tile 4 — Focused expertise: mid-right, row 2 */}
           {/* md: cols 10-12, row 2 */}
           <div className="group relative overflow-hidden bg-slate-800 md:col-span-3">
-            <img src={FocusedExpertise} alt="Focused expertise" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <img
+              src={FocusedExpertise}
+              alt="Focused expertise"
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105"
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-80" />
             <div className="absolute bottom-3 left-3 z-20 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
               Focused expertise
@@ -806,7 +832,13 @@ export default function Home() {
           {/* Tile 5 — Engineering talent: bottom row, col 1 */}
           {/* md: cols 1-3, row 3 */}
           <div className="group relative overflow-hidden bg-slate-800 md:col-span-3">
-            <img src={EngineeringTalent} alt="Engineering talent" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <img
+              src={EngineeringTalent}
+              alt="Engineering talent"
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105"
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-80" />
             <div className="absolute bottom-3 left-3 z-20 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
               Engineering talent
@@ -816,7 +848,13 @@ export default function Home() {
           {/* Tile 6 — Aligned, every day: bottom row, col 2 */}
           {/* md: cols 4-6, row 3 */}
           <div className="group relative overflow-hidden bg-slate-800 md:col-span-3">
-            <img src={AlignedEveryDay} alt="Aligned, every day" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <img
+              src={AlignedEveryDay}
+              alt="Aligned, every day"
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105"
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-80" />
             <div className="absolute bottom-3 left-3 z-20 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
               Aligned, every day
@@ -826,7 +864,13 @@ export default function Home() {
           {/* Tile 7 — Winning together: bottom row, col 3 */}
           {/* md: cols 7-9, row 3 */}
           <div className="group relative overflow-hidden bg-slate-800 md:col-span-3">
-            <img src={WinningTogether} alt="Winning together" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <img
+              src={WinningTogether}
+              alt="Winning together"
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105"
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-80" />
             <div className="absolute bottom-3 left-3 z-20 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
               Winning together
@@ -836,13 +880,18 @@ export default function Home() {
           {/* Tile 8 — Culture first: bottom row, col 4 */}
           {/* md: cols 10-12, row 3 */}
           <div className="group relative overflow-hidden bg-slate-800 md:col-span-3">
-            <img src={CultureFirst} alt="Culture first" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <img
+              src={CultureFirst}
+              alt="Culture first"
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105"
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-80" />
             <div className="absolute bottom-3 left-3 z-20 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
               Culture first
             </div>
           </div>
-
         </div>
 
         {/* Bottom caption */}
@@ -1078,9 +1127,15 @@ export default function Home() {
                   <div className="absolute -top-5 left-8 z-20 flex h-11 w-11 items-center justify-center rounded-xl bg-[#EEEAFE] text-[#3F4698] shadow-sm ring-4 ring-white">
                     {card.icon}
                   </div>
-                  <h3 className="text-xl font-bold text-slate-950">{card.title}</h3>
-                  <p className="mt-2 text-sm font-semibold text-[#3F4698]">{card.tagline}</p>
-                  <p className="mt-4 text-sm leading-relaxed text-slate-600">{card.body}</p>
+                  <h3 className="text-xl font-bold text-slate-950">
+                    {card.title}
+                  </h3>
+                  <p className="mt-2 text-sm font-semibold text-[#3F4698]">
+                    {card.tagline}
+                  </p>
+                  <p className="mt-4 text-sm leading-relaxed text-slate-600">
+                    {card.body}
+                  </p>
                 </div>
               </div>
             ))}
