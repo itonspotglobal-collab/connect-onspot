@@ -1059,12 +1059,11 @@ export default function Home() {
                     className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105"
                     loading="lazy"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#3F4698]/18 via-transparent to-transparent" />
                 </div>
 
                 {/* Card body with floating icon badge */}
                 <div className="relative px-8 pb-8 pt-10">
-                  <div className="absolute -top-5 left-8 z-20 flex h-11 w-11 items-center justify-center rounded-xl bg-[#EEEAFE] text-[#3F4698] shadow-md ring-4 ring-white">
+                  <div className="absolute -top-5 left-8 z-20 flex h-11 w-11 items-center justify-center rounded-xl bg-[#EEEAFE] text-[#3F4698] shadow-sm ring-4 ring-white">
                     {card.icon}
                   </div>
                   <h3 className="text-xl font-bold text-slate-950">{card.title}</h3>

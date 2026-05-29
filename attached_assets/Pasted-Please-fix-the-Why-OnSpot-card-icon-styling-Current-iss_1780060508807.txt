@@ -1,0 +1,140 @@
+Please fix the “Why OnSpot” card icon styling.
+
+Current issue:
+I only asked for a solid background behind the small icon, but now there is a glowing white/fade effect spreading into the image area. This white glow/fade should be removed.
+
+Goal:
+- Remove the white glowing/fade effect over the photo.
+- Keep only a small solid icon badge.
+- The photo should stay clean and natural.
+- The icon should remain visible with a solid background.
+
+IMPORTANT:
+- Do NOT change the Navigation bar.
+- Do NOT change the Footer.
+- Do NOT change the Hero section.
+- Do NOT change the Why OnSpot layout.
+- Do NOT change the photos.
+- Do NOT change the text.
+- Only fix the image overlay/glow and icon badge styling.
+
+==================================================
+REMOVE THE WHITE GLOW / IMAGE FADE
+==================================================
+
+Find and remove any overlay that creates a white fade or glow over the bottom of the image.
+
+Remove styles/elements like:
+
+bg-gradient-to-t from-white
+from-white/90
+from-white/80
+via-white
+via-white/50
+to-transparent
+blur
+backdrop-blur
+absolute inset-x-0 bottom-0 h-20
+absolute inset-0 bg-gradient-to-t from-white
+
+Any pseudo-element or div that creates a white gradient between the image and card body should be removed.
+
+The card image should NOT have a white fade at the bottom.
+
+Acceptable image overlay only if needed:
+Use either no overlay, or a very subtle dark brand overlay.
+
+Preferred:
+No overlay on the card photos.
+
+If an overlay is required, use this only:
+
+className="
+  absolute inset-0 bg-black/0
+"
+
+Do not use white gradient overlays.
+
+==================================================
+KEEP ONLY SOLID ICON BADGE
+==================================================
+
+The icon badge should be a small solid rounded square placed over the boundary between photo and content.
+
+Use this badge style:
+
+className="
+  absolute -top-5 left-8 z-20
+  flex h-11 w-11 items-center justify-center
+  rounded-xl bg-[#EEEAFE]
+  text-[#3F4698]
+  shadow-sm
+  ring-4 ring-white
+"
+
+Icon inside:
+
+className="h-5 w-5"
+
+Important:
+- Solid lavender background only.
+- Purple icon.
+- Small white ring only around the badge.
+- No large white glow.
+- No white arch.
+- No white gradient.
+- No blur effect.
+- No backdrop blur.
+
+==================================================
+CARD STRUCTURE SHOULD LOOK LIKE THIS
+==================================================
+
+Image area:
+
+<div className="relative h-44 w-full overflow-hidden bg-slate-100 sm:h-48">
+  <img
+    src={card.image}
+    alt={card.title}
+    className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105"
+  />
+</div>
+
+Content area:
+
+<div className="relative px-8 pb-8 pt-10">
+  <div className="absolute -top-5 left-8 z-20 flex h-11 w-11 items-center justify-center rounded-xl bg-[#EEEAFE] text-[#3F4698] shadow-sm ring-4 ring-white">
+    <Icon className="h-5 w-5" />
+  </div>
+
+  <h3>...</h3>
+  <p>...</p>
+</div>
+
+Do not put the icon badge inside the image wrapper if it causes extra overlays.
+Put it inside the content wrapper with `absolute -top-5`.
+
+==================================================
+CHECK ALL FOUR CARDS
+==================================================
+
+Apply this to all four Why OnSpot cards:
+
+1. AI-first infrastructure
+2. Human-centered culture
+3. Connected ecosystem
+4. Scalable excellence
+
+All four cards should have:
+- no white glow on photos
+- same icon badge size
+- same icon badge placement
+- same solid badge background
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The photos should look clean with no white fade/glow at the bottom.
+
+Only the icon should have a small solid lavender background with a subtle white ring, making it visible without affecting the photo.
