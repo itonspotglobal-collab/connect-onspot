@@ -1,0 +1,306 @@
+Please update the “Superhuman Network” / mosaic gallery section.
+
+Current issue:
+The label “Team Excellence” is visible even when the photo is not hovered. All gallery labels should only appear on hover.
+
+Also, I will upload 9 new photos in Replit. Please replace the current gallery photos and labels with the new 9-photo set.
+
+IMPORTANT:
+- Do NOT change the Navigation bar.
+- Do NOT change the Footer.
+- Do NOT change the Hero section.
+- Do NOT change other homepage sections.
+- Keep the existing dark Superhuman Network section background.
+- Keep the existing section heading/copy.
+- Keep the mosaic/gallery layout style.
+- Replace only the gallery images and labels.
+- Do not use the old photos anymore.
+- Do not generate text inside the photos.
+- Labels should be rendered as HTML/CSS overlays, not baked into images.
+
+==================================================
+FIX LABEL HOVER BEHAVIOR
+==================================================
+
+Currently, “Team Excellence” appears by default on the first/large image.
+
+Please fix this so ALL labels are hidden by default and only appear when the user hovers over each image tile.
+
+Remove any class like:
+opacity-100
+always-visible
+md:opacity-100
+first:opacity-100
+
+For every gallery tile label, use this behavior:
+
+className="
+  absolute bottom-4 left-4 z-10
+  translate-y-2 rounded-full bg-white/15 px-3 py-1.5
+  text-[11px] font-bold uppercase tracking-[0.16em]
+  text-white opacity-0 backdrop-blur-md
+  transition-all duration-300
+  group-hover:translate-y-0 group-hover:opacity-100
+"
+
+If mobile needs labels visible because hover is unavailable, use this:
+opacity-100 translate-y-0 md:opacity-0 md:translate-y-2 md:group-hover:translate-y-0 md:group-hover:opacity-100
+
+But preferred desktop behavior:
+- hidden by default
+- visible on hover
+
+==================================================
+NEW LABEL ORDER
+==================================================
+
+Replace the existing labels with these exact labels in this exact order from top-left to right, then continuing through the mosaic:
+
+1. Collaboration that scales
+2. Executive Support
+3. Always Connected
+4. Built for the future of work
+5. Focused expertise
+6. Engineering talent
+7. Aligned, every day
+8. Winning together
+9. Culture first
+
+Use exact capitalization and punctuation.
+
+==================================================
+NEW PHOTO ASSETS
+==================================================
+
+I will upload 9 photos into Replit.
+
+Please place them in a clear assets folder, for example:
+
+client/src/assets/superhuman-network/
+
+Suggested filenames:
+
+1. collaboration-that-scales.jpg
+2. executive-support.jpg
+3. always-connected.jpg
+4. future-of-work.jpg
+5. focused-expertise.jpg
+6. engineering-talent.jpg
+7. aligned-every-day.jpg
+8. winning-together.jpg
+9. culture-first.jpg
+
+Import them into the homepage component:
+
+import CollaborationThatScales from "@assets/superhuman-network/collaboration-that-scales.jpg";
+import ExecutiveSupport from "@assets/superhuman-network/executive-support.jpg";
+import AlwaysConnected from "@assets/superhuman-network/always-connected.jpg";
+import FutureOfWork from "@assets/superhuman-network/future-of-work.jpg";
+import FocusedExpertise from "@assets/superhuman-network/focused-expertise.jpg";
+import EngineeringTalent from "@assets/superhuman-network/engineering-talent.jpg";
+import AlignedEveryDay from "@assets/superhuman-network/aligned-every-day.jpg";
+import WinningTogether from "@assets/superhuman-network/winning-together.jpg";
+import CultureFirst from "@assets/superhuman-network/culture-first.jpg";
+
+If the project uses a different asset import style, follow the existing project convention.
+
+==================================================
+UPDATE GALLERY DATA
+==================================================
+
+Replace the current gallery data with this 9-item array:
+
+const superhumanNetworkImages = [
+  {
+    label: "Collaboration that scales",
+    image: CollaborationThatScales,
+  },
+  {
+    label: "Executive Support",
+    image: ExecutiveSupport,
+  },
+  {
+    label: "Always Connected",
+    image: AlwaysConnected,
+  },
+  {
+    label: "Built for the future of work",
+    image: FutureOfWork,
+  },
+  {
+    label: "Focused expertise",
+    image: FocusedExpertise,
+  },
+  {
+    label: "Engineering talent",
+    image: EngineeringTalent,
+  },
+  {
+    label: "Aligned, every day",
+    image: AlignedEveryDay,
+  },
+  {
+    label: "Winning together",
+    image: WinningTogether,
+  },
+  {
+    label: "Culture first",
+    image: CultureFirst,
+  },
+];
+
+If the existing gallery component uses `src` instead of `image`, use `src`.
+
+==================================================
+MOSAIC LAYOUT FOR 9 PHOTOS
+==================================================
+
+Keep the mosaic style, but update it to support 9 photos.
+
+Desktop layout suggestion:
+Use a 12-column grid with varied tile sizes.
+
+Wrapper:
+
+className="
+  mx-auto mt-14 grid max-w-[1800px]
+  grid-cols-12 auto-rows-[150px] gap-1.5 px-4
+  sm:auto-rows-[180px]
+  lg:auto-rows-[210px]
+"
+
+Suggested tile classes by index:
+
+0 Collaboration that scales:
+className="col-span-12 row-span-2 md:col-span-5 md:row-span-2"
+
+1 Executive Support:
+className="col-span-6 row-span-1 md:col-span-3 md:row-span-1"
+
+2 Always Connected:
+className="col-span-6 row-span-1 md:col-span-4 md:row-span-1"
+
+3 Built for the future of work:
+className="col-span-12 row-span-1 md:col-span-3 md:row-span-1"
+
+4 Focused expertise:
+className="col-span-6 row-span-1 md:col-span-3 md:row-span-1"
+
+5 Engineering talent:
+className="col-span-6 row-span-1 md:col-span-4 md:row-span-1"
+
+6 Aligned, every day:
+className="col-span-6 row-span-1 md:col-span-3 md:row-span-1"
+
+7 Winning together:
+className="col-span-6 row-span-1 md:col-span-4 md:row-span-1"
+
+8 Culture first:
+className="col-span-12 row-span-1 md:col-span-5 md:row-span-1"
+
+Adjust only if needed to avoid layout gaps.
+
+==================================================
+TILE STYLE
+==================================================
+
+Each tile should be a group:
+
+className="
+  group relative overflow-hidden bg-white/5
+"
+
+Image:
+
+className="
+  h-full w-full object-cover object-center
+  transition duration-700 group-hover:scale-105
+"
+
+Overlay:
+Keep a subtle dark overlay to make hover label readable, but do not darken the photos too much.
+
+className="
+  absolute inset-0
+  bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent
+  opacity-60 transition duration-300
+  group-hover:opacity-80
+"
+
+Label:
+Hidden by default, visible on hover only:
+
+className="
+  absolute bottom-4 left-4 z-10
+  translate-y-2 rounded-full bg-white/15 px-3 py-1.5
+  text-[11px] font-bold uppercase tracking-[0.16em]
+  text-white opacity-0 backdrop-blur-md
+  transition-all duration-300
+  group-hover:translate-y-0 group-hover:opacity-100
+"
+
+==================================================
+PHOTO ORDER REQUIREMENT
+==================================================
+
+The visual order must match the label order:
+Top-left to right:
+1. Collaboration that scales
+2. Executive Support
+3. Always Connected
+
+Continue through the next visible row:
+4. Built for the future of work
+5. Focused expertise
+6. Engineering talent
+
+Then:
+7. Aligned, every day
+8. Winning together
+9. Culture first
+
+Do not shuffle the images.
+
+==================================================
+REMOVE OLD DATA
+==================================================
+
+Remove old labels:
+- Team Excellence
+- Remote Teams
+- Global Delivery
+- Client Operations
+- Human Accountability
+- Talent Support
+- AI-Ready Workflows
+- Real Work
+
+Remove old image imports used only by this gallery.
+
+==================================================
+RESPONSIVE REQUIREMENTS
+==================================================
+
+Desktop:
+- 9-photo mosaic
+- labels hidden until hover
+- images clear and not distorted
+
+Tablet:
+- mosaic can simplify but should still look intentional
+
+Mobile:
+- use 1 or 2 columns
+- if hover does not work, labels may be visible by default on mobile only
+- no horizontal scrolling
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The Superhuman Network gallery should:
+- use the 9 newly uploaded photos
+- use the 9 new labels in the correct order
+- show no labels by default on desktop
+- reveal each label only when hovering over that specific image
+- keep the premium dark mosaic look

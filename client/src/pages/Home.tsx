@@ -55,14 +55,15 @@ import WhyHumanCenteredCulture from "../assets/why-onspot/why-human-centered-cul
 import WhyConnectedEcosystem from "../assets/why-onspot/why-connected-ecosystem.png";
 import WhyScalableExcellence from "../assets/why-onspot/why-scalable-excellence.png";
 
-import SuperhumanTeamExcellence from "../assets/superhuman-network/superhuman-team-excellence.png";
-import SuperhumanRemoteTeams from "../assets/superhuman-network/superhuman-remote-teams.png";
-import SuperhumanGlobalDelivery from "../assets/superhuman-network/superhuman-global-delivery.png";
-import SuperhumanClientOperations from "../assets/superhuman-network/superhuman-client-operations.png";
-import SuperhumanHumanAccountability from "../assets/superhuman-network/superhuman-human-accountability.png";
-import SuperhumanTalentSupport from "../assets/superhuman-network/superhuman-talent-support.png";
-import SuperhumanAIReadyWorkflows from "../assets/superhuman-network/superhuman-ai-ready-workflows.png";
-import SuperhumanRealWork from "../assets/superhuman-network/superhuman-real-work.png";
+import CollaborationThatScales from "@assets/Collaboration-that-scales_1780059195131.png";
+import ExecutiveSupport from "@assets/Executive-support_1780059195131.png";
+import AlwaysConnected from "@assets/Always-connected_1780059195130.png";
+import FutureOfWork from "@assets/uilt-for-the-future-of-work_1780059195132.png";
+import FocusedExpertise from "@assets/Focused-expertise_1780059195132.png";
+import EngineeringTalent from "@assets/Engineering-talent_1780059195131.png";
+import AlignedEveryDay from "@assets/Aligned-every-day_1780059195130.png";
+import WinningTogether from "@assets/Winning-together_1780059195132.png";
+import CultureFirst from "@assets/Culture-first_1780059195131.png";
 
 import KyleMendezPhoto from "@assets/Kyle_Mendez_1774430604161.jpeg";
 import AlexandraLopezPhoto from "@assets/Alexandra_Lopez_1774430604160.jpg";
@@ -746,79 +747,90 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Mosaic gallery */}
-        <div className="relative z-10 mx-auto mt-14 grid max-w-[1800px] grid-cols-2 gap-1.5 px-4 [grid-auto-rows:140px] md:grid-cols-12 md:[grid-auto-rows:200px] lg:[grid-auto-rows:220px]">
-          {/* Tile 0 — large left, 2 rows */}
+        {/* Mosaic gallery — 9 tiles */}
+        <div className="relative z-10 mx-auto mt-14 grid max-w-[1800px] grid-cols-2 gap-1.5 px-4 [grid-auto-rows:150px] md:grid-cols-12 md:[grid-auto-rows:180px] lg:[grid-auto-rows:210px]">
+
+          {/* Tile 0 — Collaboration that scales: large left, 2 rows */}
           <div className="group relative col-span-2 row-span-2 overflow-hidden bg-slate-800 md:col-span-5 md:row-span-2">
-            <img src={SuperhumanTeamExcellence} alt="Team Excellence" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-55" />
-            <div className="absolute bottom-4 left-4 z-10 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white backdrop-blur-md">
-              Team Excellence
+            <img src={CollaborationThatScales} alt="Collaboration that scales" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-80" />
+            <div className="absolute bottom-4 left-4 z-10 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+              Collaboration that scales
             </div>
           </div>
 
-          {/* Tile 1 */}
-          <div className="group relative overflow-hidden bg-slate-800 md:col-span-4">
-            <img src={SuperhumanRemoteTeams} alt="Remote Teams" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-55" />
-            <div className="absolute bottom-3 left-3 z-10 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition duration-300 group-hover:opacity-100">
-              Remote Teams
-            </div>
-          </div>
-
-          {/* Tile 2 */}
+          {/* Tile 1 — Executive Support */}
           <div className="group relative overflow-hidden bg-slate-800 md:col-span-3">
-            <img src={SuperhumanGlobalDelivery} alt="Global Delivery" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-55" />
-            <div className="absolute bottom-3 left-3 z-10 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition duration-300 group-hover:opacity-100">
-              Global Delivery
+            <img src={ExecutiveSupport} alt="Executive Support" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-80" />
+            <div className="absolute bottom-3 left-3 z-10 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+              Executive Support
             </div>
           </div>
 
-          {/* Tile 3 */}
+          {/* Tile 2 — Always Connected */}
           <div className="group relative overflow-hidden bg-slate-800 md:col-span-4">
-            <img src={SuperhumanClientOperations} alt="Client Operations" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-55" />
-            <div className="absolute bottom-3 left-3 z-10 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition duration-300 group-hover:opacity-100">
-              Client Operations
+            <img src={AlwaysConnected} alt="Always Connected" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-80" />
+            <div className="absolute bottom-3 left-3 z-10 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+              Always Connected
             </div>
           </div>
 
-          {/* Tile 4 */}
+          {/* Tile 3 — Built for the future of work */}
+          <div className="group relative col-span-2 overflow-hidden bg-slate-800 md:col-span-3">
+            <img src={FutureOfWork} alt="Built for the future of work" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-80" />
+            <div className="absolute bottom-3 left-3 z-10 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+              Built for the future of work
+            </div>
+          </div>
+
+          {/* Tile 4 — Focused expertise */}
           <div className="group relative overflow-hidden bg-slate-800 md:col-span-3">
-            <img src={SuperhumanHumanAccountability} alt="Human Accountability" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-55" />
-            <div className="absolute bottom-3 left-3 z-10 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition duration-300 group-hover:opacity-100">
-              Human Accountability
+            <img src={FocusedExpertise} alt="Focused expertise" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-80" />
+            <div className="absolute bottom-3 left-3 z-10 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+              Focused expertise
             </div>
           </div>
 
-          {/* Tile 5 */}
-          <div className="group relative overflow-hidden bg-slate-800 md:col-span-3">
-            <img src={SuperhumanTalentSupport} alt="Talent Support" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-55" />
-            <div className="absolute bottom-3 left-3 z-10 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition duration-300 group-hover:opacity-100">
-              Talent Support
-            </div>
-          </div>
-
-          {/* Tile 6 */}
-          <div className="group relative overflow-hidden bg-slate-800 md:col-span-5">
-            <img src={SuperhumanAIReadyWorkflows} alt="AI-Ready Workflows" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-55" />
-            <div className="absolute bottom-3 left-3 z-10 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition duration-300 group-hover:opacity-100">
-              AI-Ready Workflows
-            </div>
-          </div>
-
-          {/* Tile 7 */}
+          {/* Tile 5 — Engineering talent */}
           <div className="group relative overflow-hidden bg-slate-800 md:col-span-4">
-            <img src={SuperhumanRealWork} alt="Real Work" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-55" />
-            <div className="absolute bottom-3 left-3 z-10 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition duration-300 group-hover:opacity-100">
-              Real Work
+            <img src={EngineeringTalent} alt="Engineering talent" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-80" />
+            <div className="absolute bottom-3 left-3 z-10 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+              Engineering talent
             </div>
           </div>
+
+          {/* Tile 6 — Aligned, every day */}
+          <div className="group relative overflow-hidden bg-slate-800 md:col-span-3">
+            <img src={AlignedEveryDay} alt="Aligned, every day" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-80" />
+            <div className="absolute bottom-3 left-3 z-10 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+              Aligned, every day
+            </div>
+          </div>
+
+          {/* Tile 7 — Winning together */}
+          <div className="group relative overflow-hidden bg-slate-800 md:col-span-4">
+            <img src={WinningTogether} alt="Winning together" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-80" />
+            <div className="absolute bottom-3 left-3 z-10 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+              Winning together
+            </div>
+          </div>
+
+          {/* Tile 8 — Culture first */}
+          <div className="group relative col-span-2 overflow-hidden bg-slate-800 md:col-span-5">
+            <img src={CultureFirst} alt="Culture first" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-80" />
+            <div className="absolute bottom-3 left-3 z-10 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+              Culture first
+            </div>
+          </div>
+
         </div>
 
         {/* Bottom caption */}
