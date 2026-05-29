@@ -474,20 +474,20 @@ export default function Home() {
             </div>
 
             {/* 3 equal insight cards */}
-            <div className="mt-14 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-14 grid grid-cols-1 gap-7 md:grid-cols-2 lg:grid-cols-3">
               {featuredPosts.slice(0, 3).map((post) => (
                 <a
                   key={post.id}
                   href={`/insights/${post.slug}`}
-                  className="group flex h-full flex-col overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
+                  className="group flex h-full min-h-[520px] flex-col overflow-hidden rounded-[24px] border border-slate-200/80 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
                 >
-                  {/* Image */}
-                  <div className="relative aspect-[16/9] w-full shrink-0 overflow-hidden bg-slate-100">
+                  {/* Inset image with category pill */}
+                  <div className="relative mx-5 mt-5 aspect-[16/10] overflow-hidden rounded-2xl bg-slate-100">
                     {post.coverImageUrl ? (
                       <img
                         src={post.coverImageUrl}
                         alt={post.title}
-                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                        className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105"
                         loading="lazy"
                       />
                     ) : (
@@ -495,26 +495,24 @@ export default function Home() {
                         <BookOpen className="h-10 w-10 text-white/40" />
                       </div>
                     )}
+                    {/* Category pill over image */}
+                    <span className="absolute left-4 top-4 z-10 rounded-full bg-white/95 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-800 shadow-sm backdrop-blur">
+                      {post.category || "Industry Insights"}
+                    </span>
                   </div>
 
                   {/* Content */}
                   <div className="flex flex-1 flex-col p-6">
-                    <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#3F4698]">
-                      {post.category || "Industry Insights"}
-                    </span>
-                    <h3 className="mt-4 text-xl font-semibold leading-snug text-slate-950 line-clamp-2">
+                    <h3 className="text-xl font-bold leading-snug text-slate-950 line-clamp-2">
                       {post.title}
                     </h3>
                     {post.excerpt && (
-                      <p className="mt-4 line-clamp-3 text-sm leading-relaxed text-slate-600 flex-1">
+                      <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-slate-600 flex-1">
                         {post.excerpt}
                       </p>
                     )}
-                    <div className="mt-auto border-t border-slate-100 pt-5">
-                      <span className="inline-flex items-center gap-2 text-sm font-semibold text-[#3F4698] transition-[gap] duration-200 hover:gap-3">
-                        Read preview
-                        <ArrowUpRight className="h-4 w-4" />
-                      </span>
+                    <div className="mt-auto border-t border-slate-100 pt-4 text-sm text-slate-500">
+                      {(post as any).author || "OnSpot Team"} · {(post as any).readTime || "5 min read"}
                     </div>
                   </div>
                 </a>
@@ -619,11 +617,11 @@ export default function Home() {
             {/* Card 2: For Professionals */}
             <div className="group flex h-full flex-col overflow-hidden rounded-[28px] border border-[#3F4698]/25 bg-[#F7F5FF] shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
               {/* Image header */}
-              <div className="relative h-44 w-full overflow-hidden sm:h-52">
+              <div className="relative h-56 w-full overflow-hidden sm:h-64">
                 <img
                   src={WorkProfessionalsPhoto}
                   alt="Professional remote work"
-                  className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                  className="h-full w-full object-cover object-[center_45%] transition duration-700 group-hover:scale-105"
                   loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#3F4698]/35 via-[#3F4698]/10 to-transparent" />

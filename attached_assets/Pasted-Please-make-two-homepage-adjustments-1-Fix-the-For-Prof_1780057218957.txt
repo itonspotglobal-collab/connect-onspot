@@ -1,0 +1,297 @@
+Please make two homepage adjustments:
+
+1. Fix the “For Professionals” photo crop in the Work Differently section.
+2. Update the Insights section to follow the cleaner reference layout.
+
+IMPORTANT:
+- Do NOT change the Navigation bar.
+- Do NOT change the Footer.
+- Do NOT change the Hero section.
+- Do NOT change unrelated homepage sections.
+- Keep the existing copy unless specified below.
+- Keep OnSpot branding colors.
+- Use #3F4698 as the main brand accent.
+
+==================================================
+PART 1: FIX WORK DIFFERENTLY PROFESSIONALS PHOTO
+==================================================
+
+Current issue:
+The “For Professionals” image only shows part of the person/face and does not show the full professional work scene. It looks awkwardly cropped.
+
+Goal:
+Make the Professionals image show the laptop/work scene better.
+
+Update only the image display/crop for the “For Professionals” card.
+
+Do not replace the image unless the crop cannot be fixed.
+
+Try this first:
+
+Image wrapper:
+className="
+  relative h-56 w-full overflow-hidden
+  sm:h-64
+"
+
+Image class:
+className="
+  h-full w-full object-cover object-[center_45%]
+  transition duration-700 group-hover:scale-105
+"
+
+If the face is still cut awkwardly, use:
+
+object-[center_35%]
+
+or:
+
+object-center
+
+If the image still does not show enough of the scene, change the image fit for this card only to:
+
+className="
+  h-full w-full object-contain bg-slate-100
+  transition duration-700 group-hover:scale-105
+"
+
+But preferred is object-cover with better positioning.
+
+Keep the label pill:
+FOR PROFESSIONALS
+
+Make sure:
+- no image distortion
+- no object-fill
+- no face awkwardly cut
+- laptop/work setup remains visible
+- card still matches the Companies card height
+
+==================================================
+PART 2: UPDATE INSIGHTS SECTION LAYOUT
+==================================================
+
+Current issue:
+The Insights section needs to better follow the reference. It should be clean, readable, and card-based, not dark overlay-heavy.
+
+Goal:
+Use 3 equal insight cards in one row on desktop, matching the reference style:
+- image on top
+- category pill over the image
+- content below on white card
+- title and excerpt readable
+- author/date/read time at bottom
+
+Do NOT use full-image overlay cards.
+Do NOT place article titles over busy images.
+Do NOT make uneven card heights.
+Do NOT use a large featured card plus small cards.
+
+==================================================
+INSIGHTS HEADER
+==================================================
+
+Keep the header:
+
+Label:
+INSIGHTS
+
+Headline:
+Thinking ahead, so you can move faster.
+
+Subtitle:
+Perspectives on AI, talent, and the future of work — from the team building it.
+
+Keep “faster.” highlighted with:
+#3F4698
+
+Keep:
+Explore all insights ↗
+
+Position:
+- top right on desktop
+- below subtitle or aligned nicely on mobile
+
+==================================================
+INSIGHT CARD GRID
+==================================================
+
+Use a 3-card grid:
+
+className="
+  mt-14 grid grid-cols-1 gap-7
+  md:grid-cols-2
+  lg:grid-cols-3
+"
+
+Each card:
+
+className="
+  group flex h-full min-h-[560px] flex-col overflow-hidden
+  rounded-[24px] border border-slate-200/80
+  bg-white shadow-sm
+  transition duration-300
+  hover:-translate-y-1 hover:shadow-xl
+"
+
+All cards should be equal height.
+
+==================================================
+INSIGHT IMAGE AREA
+==================================================
+
+Image wrapper:
+
+className="
+  relative mx-6 mt-6 aspect-[16/10] overflow-hidden rounded-2xl bg-slate-100
+"
+
+Image:
+
+className="
+  h-full w-full object-cover object-center
+  transition duration-700 group-hover:scale-105
+"
+
+For images with embedded text that gets cropped badly, use per-card fit:
+
+imageFit: "contain"
+
+Then render:
+
+className={`
+  h-full w-full transition duration-700 group-hover:scale-105
+  ${article.imageFit === "contain" ? "object-contain p-3 bg-slate-100" : "object-cover object-center"}
+`}
+
+Use object-contain only for images that need it.
+
+==================================================
+CATEGORY PILL ON IMAGE
+==================================================
+
+Place category pill over the image, like the reference.
+
+Pill:
+
+className="
+  absolute left-4 top-4 z-10
+  rounded-full bg-white/95 px-4 py-2
+  text-[11px] font-bold uppercase tracking-[0.16em]
+  text-slate-800 shadow-sm backdrop-blur
+"
+
+Use the actual category text:
+AI OPERATIONS
+TALENT STRATEGY
+FOUNDER OPS
+or current article category.
+
+==================================================
+INSIGHT CONTENT AREA
+==================================================
+
+Content wrapper:
+
+className="
+  flex flex-1 flex-col p-6
+"
+
+Title:
+
+className="
+  text-2xl font-bold leading-tight text-slate-950
+"
+
+Do not use the old serif title if it conflicts with the current site typography.
+Keep the current website font style.
+
+Excerpt:
+
+className="
+  mt-4 line-clamp-3 text-base leading-relaxed text-slate-600
+"
+
+Bottom meta:
+
+className="
+  mt-auto border-t border-slate-100 pt-5
+  text-sm text-slate-500
+"
+
+Meta layout:
+author · read time
+or:
+author · date · read time
+
+Keep it subtle.
+
+==================================================
+EXPLORE ALL INSIGHTS LINK
+==================================================
+
+Top right link:
+
+className="
+  inline-flex items-center gap-2 text-sm font-semibold text-[#3F4698]
+  underline underline-offset-8 transition hover:gap-3
+"
+
+Remove any duplicate bottom “View all insights” button if it exists.
+
+There should only be one “Explore all insights” CTA in this section.
+
+==================================================
+CARD CONTENT EXAMPLE
+==================================================
+
+Card 1:
+Category: AI OPERATIONS
+Title: The new operating model: AI agents and human teams
+Excerpt: How leading companies are restructuring around AI-first workflows without losing the human touch.
+Meta: Shane Cruz · 6 min read
+
+Card 2:
+Category: TALENT STRATEGY
+Title: Why the Philippines is the future of global operations
+Excerpt: A deep dive into the workforce, infrastructure, and cultural fit driving the next wave of offshore excellence.
+Meta: Ria Mendoza · 8 min read
+
+Card 3:
+Category: FOUNDER OPS
+Title: From burnout to 4-day weeks: a founder's playbook
+Excerpt: What it actually takes to reclaim your time — three founders share what worked and what didn't.
+Meta: OnSpot Team · 5 min read
+
+Use real existing published article data if available. Do not hardcode these if the app already has real data. Only use these as fallback/mock display values.
+
+==================================================
+RESPONSIVE REQUIREMENTS
+==================================================
+
+Desktop:
+- 3 equal cards in one row
+- images are fully visible and not awkwardly cropped
+- text is readable
+
+Tablet:
+- 2 columns
+
+Mobile:
+- 1 column
+- no horizontal overflow
+- category pill stays readable
+- Explore link positions nicely
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+1. The Professionals card photo should no longer look awkwardly cropped.
+2. The Insights section should match the reference better:
+   - clean card layout
+   - image on top
+   - category pill over image
+   - readable content below
+   - three equal cards
+   - no messy overlays
