@@ -1,0 +1,360 @@
+Please add a new visual section directly after the “Trusted By” section.
+
+Section inspiration:
+Use the attached reference design with a dark premium header and a wide mosaic/gallery of people/work/team imagery.
+
+Goal:
+Create a visually engaging “Superhuman Network” section that communicates:
+- real professionals
+- real client work
+- global outsourcing support
+- human expertise behind the platform
+- OnSpot is not just software; it is a people-powered outsourcing network
+
+IMPORTANT:
+- Do NOT change the Navigation bar.
+- Do NOT change the Footer.
+- Do NOT change the Hero section.
+- Do NOT remove or replace the Trusted By section.
+- Do NOT replace client logos.
+- Add this new section immediately AFTER the Trusted By section.
+- Use AI-generated-style photos or existing approved visual assets.
+- Do NOT use the same wrong Work Differently photos if they do not fit.
+- Keep the design premium and OnSpot-branded.
+- Use the OnSpot dark violet/navy background color family.
+
+==================================================
+SECTION PLACEMENT
+==================================================
+
+Final placement should be:
+
+Hero
+Stats strip
+Trusted By
+NEW: Superhuman Network visual gallery section
+Work Differently
+Insights / other sections...
+
+Place the new section directly below the Trusted By logo section.
+
+==================================================
+SECTION CONTENT
+==================================================
+
+Section label:
+THE SUPERHUMAN NETWORK
+
+Main headline:
+Real people. Real work. Real impact.
+
+Supporting copy:
+A global team of professionals delivering for clients around the world — every single day.
+
+Optional small proof line:
+Built for companies that need speed, quality, and human accountability.
+
+Keep copy short and visual.
+
+==================================================
+SECTION BACKGROUND
+==================================================
+
+Use a dark OnSpot brand section.
+
+Suggested wrapper:
+
+className="
+  relative overflow-hidden bg-[#17152E] py-24 text-white
+"
+
+or if matching the hero/nav better:
+
+className="
+  relative overflow-hidden bg-[#252A70] py-24 text-white
+"
+
+Preferred:
+Use a darker premium navy/violet like #17152E for this visual gallery section, but make sure it still feels connected to OnSpot branding.
+
+Add subtle background glow:
+
+<div className="absolute left-1/2 top-0 h-80 w-80 -translate-x-1/2 rounded-full bg-[#3F4698]/25 blur-3xl" />
+
+==================================================
+HEADER DESIGN
+==================================================
+
+Header should be centered above the gallery.
+
+Label:
+
+className="
+  text-xs font-bold uppercase tracking-[0.28em] text-white/70
+"
+
+Optional small line before label:
+Use a small horizontal line like the reference.
+
+Example:
+<div className="mx-auto mb-4 h-px w-10 bg-white/40" />
+
+Headline:
+
+className="
+  mx-auto max-w-4xl text-center text-4xl font-bold tracking-tight text-white
+  sm:text-5xl lg:text-6xl
+"
+
+Highlight “Real impact.” with a softer lavender:
+
+className="text-[#B8B7FF]"
+
+Supporting copy:
+
+className="
+  mx-auto mt-5 max-w-2xl text-center text-base leading-relaxed text-white/60
+  sm:text-lg
+"
+
+==================================================
+GALLERY / MOSAIC LAYOUT
+==================================================
+
+Below the header, create a full-width mosaic image gallery.
+
+The gallery should feel like the reference:
+- varied image sizes
+- horizontal collage
+- premium editorial feel
+- not a boring equal card grid
+- images separated by small dark gutters
+- full-width visual impact
+
+Suggested desktop layout:
+
+<div className="
+  mx-auto mt-14 grid max-w-[1800px]
+  grid-cols-12 auto-rows-[150px] gap-1.5 px-4
+  sm:auto-rows-[180px]
+  lg:auto-rows-[210px]
+">
+  ...
+</div>
+
+Use 8 image tiles.
+
+Suggested tile layout:
+1. Large left tile:
+   col-span-6 row-span-2
+
+2. Top middle tile:
+   col-span-3 row-span-1
+
+3. Top right tile:
+   col-span-3 row-span-1
+
+4. Middle center tile:
+   col-span-3 row-span-2
+
+5. Middle right tile:
+   col-span-3 row-span-1
+
+6. Lower right tile:
+   col-span-3 row-span-1
+
+7. Bottom left small tile:
+   col-span-3 row-span-1
+
+8. Bottom middle small tile:
+   col-span-3 row-span-1
+
+Example JSX:
+
+<div className="grid ...">
+  <GalleryTile className="col-span-12 row-span-2 md:col-span-6 md:row-span-2" image={...} />
+  <GalleryTile className="col-span-6 row-span-1 md:col-span-3" image={...} />
+  <GalleryTile className="col-span-6 row-span-1 md:col-span-3" image={...} />
+  <GalleryTile className="col-span-12 row-span-2 md:col-span-3 md:row-span-2" image={...} />
+  <GalleryTile className="col-span-6 row-span-1 md:col-span-3" image={...} />
+  <GalleryTile className="col-span-6 row-span-1 md:col-span-3" image={...} />
+  <GalleryTile className="col-span-6 row-span-1 md:col-span-3" image={...} />
+  <GalleryTile className="col-span-6 row-span-1 md:col-span-3" image={...} />
+</div>
+
+Make sure the mosaic is responsive and does not overflow.
+
+==================================================
+IMAGE DIRECTION
+==================================================
+
+Use AI-generated-style images that fit outsourcing and professional work.
+
+Image themes:
+1. remote professionals working on laptops
+2. customer support / operations professional
+3. diverse team collaboration
+4. hands together / teamwork
+5. people in virtual meeting
+6. analyst / admin professional at workstation
+7. client meeting / strategy session
+8. Filipino or global professionals in modern workspace
+
+Avoid:
+- party photos
+- training-room photos
+- random unrelated lifestyle images
+- overly corporate stock photos that feel fake
+- images with distorted hands/faces/text
+- images with unreadable embedded text
+
+If assets do not already exist, add AI-generated images to the project assets folder with names like:
+
+- network-remote-team.jpg
+- network-customer-support.jpg
+- network-collaboration.jpg
+- network-teamwork-hands.jpg
+- network-virtual-meeting.jpg
+- network-analyst-work.jpg
+- network-client-strategy.jpg
+- network-global-professional.jpg
+
+Import them into the homepage file.
+
+Example:
+
+import NetworkRemoteTeam from "@assets/network-remote-team.jpg";
+import NetworkSupport from "@assets/network-customer-support.jpg";
+import NetworkCollaboration from "@assets/network-collaboration.jpg";
+import NetworkTeamwork from "@assets/network-teamwork-hands.jpg";
+import NetworkVirtualMeeting from "@assets/network-virtual-meeting.jpg";
+import NetworkAnalyst from "@assets/network-analyst-work.jpg";
+import NetworkStrategy from "@assets/network-client-strategy.jpg";
+import NetworkProfessional from "@assets/network-global-professional.jpg";
+
+==================================================
+IMAGE TILE STYLE
+==================================================
+
+Each tile should be full-color, sharp, and cinematic.
+
+Tile wrapper:
+
+className="
+  group relative overflow-hidden rounded-none bg-white/5
+"
+
+If you prefer softened corners:
+Use rounded-2xl for individual tiles, but reference uses strong rectangular mosaic. Keep gutters small.
+
+Image:
+
+className="
+  h-full w-full object-cover
+  transition duration-700 group-hover:scale-105
+"
+
+Overlay:
+Use subtle overlay only:
+
+className="
+  absolute inset-0 bg-gradient-to-t from-[#17152E]/35 via-transparent to-transparent
+  opacity-70 transition-opacity duration-300 group-hover:opacity-40
+"
+
+Do not darken images too much.
+
+==================================================
+OPTIONAL HOVER LABELS
+==================================================
+
+On hover, show short labels such as:
+- Client Operations
+- Talent Support
+- Remote Teams
+- AI-Ready Workflows
+- Human Accountability
+- Global Delivery
+
+But keep labels subtle. This section is mostly visual.
+
+Hover label:
+
+<div className="
+  absolute bottom-4 left-4 rounded-full
+  bg-white/15 px-3 py-1.5
+  text-xs font-semibold uppercase tracking-[0.16em]
+  text-white opacity-0 backdrop-blur-md
+  transition duration-300 group-hover:opacity-100
+">
+  Remote Teams
+</div>
+
+If labels make the gallery cluttered, omit them.
+
+==================================================
+BOTTOM COPY / CTA OPTIONAL
+==================================================
+
+Below the gallery, add a small centered statement or CTA only if it helps.
+
+Suggested statement:
+
+“Behind every workflow is a real person making the work better.”
+
+Optional CTA:
+“Meet the network →”
+
+But do not add too many CTAs. If there is already a “Browse all talent” button later, keep this minimal.
+
+Preferred:
+No button here, just the visual section.
+
+==================================================
+RESPONSIVE REQUIREMENTS
+==================================================
+
+Desktop:
+- Large mosaic layout.
+- Full-width visual impact.
+- Varied tile sizes.
+
+Tablet:
+- Still mosaic but simpler.
+- 2-column layout acceptable.
+
+Mobile:
+- Stack images in a clean 2-column or 1-column grid.
+- Avoid tiny cropped faces.
+- No horizontal scrolling.
+- Header remains readable.
+
+Suggested mobile:
+grid-cols-2 auto-rows-[140px]
+
+For the large tile:
+col-span-2 row-span-2
+
+==================================================
+PERFORMANCE
+==================================================
+
+Use optimized images if available.
+Add:
+loading="lazy"
+decoding="async"
+
+But if the first gallery image is above the fold after trusted by, lazy loading is fine.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+A new dark, premium, visually stunning “Superhuman Network” section appears immediately after Trusted By.
+
+It should show:
+- centered headline and short copy
+- a wide mosaic of professional outsourcing/teamwork images
+- OnSpot dark brand background
+- strong visual storytelling that reinforces real people, real work, real impact
+- no changes to navbar/footer/client logos

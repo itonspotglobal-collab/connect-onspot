@@ -1,0 +1,216 @@
+Please update the “Work Differently” section image headers.
+
+Current issue:
+The cards are using the wrong photos. The current images show OnSpot team/event/training photos, but we want the AI-generated reference-style images instead.
+
+Goal:
+Replace the current two card header photos with images that match the attached AI-generated reference:
+- For Companies: professional office/team collaboration, high-five or business team success moment
+- For Professionals: close-up laptop/remote work/career-focused professional work image
+
+IMPORTANT:
+- Do NOT change the Navigation bar.
+- Do NOT change the Footer.
+- Do NOT change the Hero section.
+- Do NOT change the section copy.
+- Do NOT change the overall card layout.
+- Do NOT use the current party/group/team-training photos in this section.
+- Keep the OnSpot purple/indigo card styling.
+- Keep the two cards equal height.
+- Only replace and tune the image headers.
+
+==================================================
+IMAGE REQUIREMENTS
+==================================================
+
+Use images that visually match the AI-generated reference:
+
+For Companies card:
+Use a professional business collaboration image:
+- people in an office
+- partnership/team success
+- high-five or positive business meeting
+- bright, clean, premium
+- not a party/event photo
+- not a crowded group photo
+
+For Professionals card:
+Use a professional remote-work image:
+- hands typing on laptop
+- laptop/workstation
+- career/freelance/remote work feel
+- clean, premium, focused
+- not a classroom/training room photo
+- not a group of people sitting at computers
+
+If the exact AI-generated images are already provided/uploaded into the project assets, use those files.
+
+If not yet in the project assets:
+- Add the two provided reference images to the project assets folder.
+- Name them clearly:
+  - `work-differently-companies.png`
+  - `work-differently-professionals.png`
+- Import them into the homepage file.
+
+Example:
+
+import WorkCompaniesImage from "@assets/work-differently-companies.png";
+import WorkProfessionalsImage from "@assets/work-differently-professionals.png";
+
+Then use:
+- WorkCompaniesImage for the For Companies card
+- WorkProfessionalsImage for the For Professionals card
+
+==================================================
+CARD IMAGE HEADER STYLE
+==================================================
+
+Keep the image header at the top of each card.
+
+Recommended image wrapper:
+
+className="
+  relative h-44 w-full overflow-hidden
+  sm:h-52
+"
+
+or if the card looks better with slightly taller images:
+
+className="
+  relative h-48 w-full overflow-hidden
+  sm:h-56
+"
+
+Image:
+
+className="
+  h-full w-full object-cover
+  transition duration-700
+  group-hover:scale-105
+"
+
+Make sure images are not distorted:
+- Use `object-cover`
+- Use `object-center`
+- Do not stretch the image manually
+- Do not use `object-fill`
+
+For the Professionals laptop image, if the crop cuts off the hands/laptop too much, use:
+
+className="
+  h-full w-full object-cover object-center
+"
+
+or:
+object-[center_center]
+
+==================================================
+PHOTO OVERLAY
+==================================================
+
+Keep only a subtle brand overlay so the photos feel integrated with OnSpot branding.
+
+Overlay:
+
+className="
+  absolute inset-0
+  bg-gradient-to-t from-[#3F4698]/25 via-[#3F4698]/5 to-transparent
+"
+
+Do not make the overlay too dark.
+The image should remain clear.
+
+==================================================
+LABEL PILL
+==================================================
+
+Keep the label pill on top of the image:
+
+FOR COMPANIES
+FOR PROFESSIONALS
+
+Suggested pill:
+
+className="
+  absolute bottom-4 left-5
+  inline-flex items-center gap-2
+  rounded-full bg-white/90 px-3 py-1.5
+  text-[11px] font-bold uppercase tracking-[0.18em]
+  text-[#3F4698] shadow-sm backdrop-blur
+"
+
+Do not duplicate the same label inside the body if it already appears on the image.
+
+==================================================
+REMOVE WRONG IMAGE SOURCES
+==================================================
+
+Search for the current image variables/sources used by this section.
+
+Remove/replace any image source that points to:
+- team party photo
+- company event photo
+- training/classroom photo
+- OnSpot staff group photo
+- office training room with many people
+
+These should not be used in the Work Differently card headers.
+
+They may still be used elsewhere if needed, but not here.
+
+==================================================
+KEEP CARD CONTENT SAME
+==================================================
+
+Do not change the text:
+
+For Companies:
+Hire faster. Spend less.
+
+Features:
+- Hire in days
+- Hire your way
+- No middlemen
+- 50+ countries
+
+CTA:
+Find the right talent →
+
+For Professionals:
+Real work. Real growth.
+
+Features:
+- Steady pipeline
+- Top global brands
+- Your terms
+- Zero gatekeeping
+
+CTA:
+Find your next opportunity →
+
+==================================================
+RESPONSIVE REQUIREMENTS
+==================================================
+
+Desktop:
+- Two equal cards side by side.
+- Images are clean and premium.
+- Cropping looks intentional.
+
+Tablet:
+- Cards can stack or remain two columns depending on current layout.
+
+Mobile:
+- Cards stack vertically.
+- Image headers remain visible and not awkwardly cropped.
+- No horizontal overflow.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The Work Differently section should look closer to the attached AI-generated reference:
+- For Companies uses a professional business collaboration/high-five style image
+- For Professionals uses a laptop/remote work image
+- No team party or training-room photos
+- Cards remain branded, clean, and uniform

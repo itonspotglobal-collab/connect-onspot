@@ -41,8 +41,17 @@ import PinetechLogo from "../assets/logos/Pinetech.png";
 import SafewayLogo from "../assets/logos/Safeway.png";
 import VertexLogo from "../assets/logos/Vertex.png";
 
-import WorkCompaniesPhoto from "@assets/Happy_Tribe_1775044319872.png";
-import WorkProfessionalsPhoto from "@assets/Deep_Work_1775045176826.png";
+import WorkCompaniesPhoto from "@assets/Client_Energy_1775045176826.png";
+import WorkProfessionalsPhoto from "@assets/Built_to_Live_1775042849148.png";
+
+import GalleryImg1 from "@assets/Team_Flow_1775045176827.png";
+import GalleryImg2 from "@assets/Deep_Work_1775045176826.png";
+import GalleryImg3 from "@assets/Culture_Photo_1775044319871.png";
+import GalleryImg4 from "@assets/Founder_Energy_1775042849148.png";
+import GalleryImg5 from "@assets/Happy_Tribe_1775044319872.png";
+import GalleryImg6 from "@assets/Team_Lifestyle_1775044319872.png";
+import GalleryImg7 from "@assets/Leadership_Lifestyle_1775042849148.png";
+import GalleryImg8 from "@assets/Life_+_Work_1775045176827.png";
 
 import KyleMendezPhoto from "@assets/Kyle_Mendez_1774430604161.jpeg";
 import AlexandraLopezPhoto from "@assets/Alexandra_Lopez_1774430604160.jpg";
@@ -399,17 +408,16 @@ export default function Home() {
             </div>
           </div>
         </div>
-
       </div>
 
       {/* ── Stats strip — light contrast band after hero ── */}
       <div className="relative w-full border-y border-slate-200/70 bg-[#F6F7FB]">
         <div className="mx-auto grid max-w-[1600px] grid-cols-2 divide-y divide-slate-200/70 md:grid-cols-4 md:divide-x md:divide-y-0">
           {[
-            { value: "72hrs",   label: "AVG. TIME TO HIRE" },
-            { value: "500+",    label: "GLOBAL CLIENTS" },
-            { value: "98%",     label: "CLIENT RETENTION" },
-            { value: "2,000+",  label: "TALENTS PLACED" },
+            { value: "72hrs", label: "AVG. TIME TO HIRE" },
+            { value: "500+", label: "GLOBAL CLIENTS" },
+            { value: "98%", label: "CLIENT RETENTION" },
+            { value: "2,000+", label: "TALENTS PLACED" },
           ].map((stat) => (
             <div
               key={stat.label}
@@ -546,18 +554,41 @@ export default function Home() {
 
                 <div className="mt-6 flex flex-col flex-1">
                   {[
-                    { icon: <Zap className="h-5 w-5" />,              title: "Hire in days",    sub: "72-hour match average"         },
-                    { icon: <SlidersHorizontal className="h-5 w-5" />, title: "Hire your way",   sub: "Contract, project, full-time"  },
-                    { icon: <ArrowRight className="h-5 w-5" />,        title: "No middlemen",    sub: "Direct access, zero markups"   },
-                    { icon: <Globe className="h-5 w-5" />,             title: "50+ countries",   sub: "Global reach, local expertise" },
+                    {
+                      icon: <Zap className="h-5 w-5" />,
+                      title: "Hire in days",
+                      sub: "72-hour match average",
+                    },
+                    {
+                      icon: <SlidersHorizontal className="h-5 w-5" />,
+                      title: "Hire your way",
+                      sub: "Contract, project, full-time",
+                    },
+                    {
+                      icon: <ArrowRight className="h-5 w-5" />,
+                      title: "No middlemen",
+                      sub: "Direct access, zero markups",
+                    },
+                    {
+                      icon: <Globe className="h-5 w-5" />,
+                      title: "50+ countries",
+                      sub: "Global reach, local expertise",
+                    },
                   ].map((item) => (
-                    <div key={item.title} className="flex gap-4 border-b border-[#3F4698]/10 py-5">
+                    <div
+                      key={item.title}
+                      className="flex gap-4 border-b border-[#3F4698]/10 py-5"
+                    >
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#3F4698]/10 text-[#3F4698]">
                         {item.icon}
                       </div>
                       <div>
-                        <p className="font-semibold text-slate-950">{item.title}</p>
-                        <p className="mt-1 text-sm text-slate-600">{item.sub}</p>
+                        <p className="font-semibold text-slate-950">
+                          {item.title}
+                        </p>
+                        <p className="mt-1 text-sm text-slate-600">
+                          {item.sub}
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -598,18 +629,41 @@ export default function Home() {
 
                 <div className="mt-6 flex flex-col flex-1">
                   {[
-                    { icon: <TrendingUp className="h-5 w-5" />,  title: "Steady pipeline",    sub: "No gaps, no chasing"          },
-                    { icon: <Star className="h-5 w-5" />,         title: "Top global brands",  sub: "Builds your reputation fast"  },
-                    { icon: <Clock className="h-5 w-5" />,        title: "Your terms",         sub: "Remote, flexible schedule"    },
-                    { icon: <CheckCircle2 className="h-5 w-5" />, title: "Zero gatekeeping",   sub: "Pure merit, open access"      },
+                    {
+                      icon: <TrendingUp className="h-5 w-5" />,
+                      title: "Steady pipeline",
+                      sub: "No gaps, no chasing",
+                    },
+                    {
+                      icon: <Star className="h-5 w-5" />,
+                      title: "Top global brands",
+                      sub: "Builds your reputation fast",
+                    },
+                    {
+                      icon: <Clock className="h-5 w-5" />,
+                      title: "Your terms",
+                      sub: "Remote, flexible schedule",
+                    },
+                    {
+                      icon: <CheckCircle2 className="h-5 w-5" />,
+                      title: "Zero gatekeeping",
+                      sub: "Pure merit, open access",
+                    },
                   ].map((item) => (
-                    <div key={item.title} className="flex gap-4 border-b border-[#3F4698]/10 py-5">
+                    <div
+                      key={item.title}
+                      className="flex gap-4 border-b border-[#3F4698]/10 py-5"
+                    >
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#3F4698]/10 text-[#3F4698]">
                         {item.icon}
                       </div>
                       <div>
-                        <p className="font-semibold text-slate-950">{item.title}</p>
-                        <p className="mt-1 text-sm text-slate-600">{item.sub}</p>
+                        <p className="font-semibold text-slate-950">
+                          {item.title}
+                        </p>
+                        <p className="mt-1 text-sm text-slate-600">
+                          {item.sub}
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -640,9 +694,6 @@ export default function Home() {
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
           <div className="text-center space-y-8 sm:space-y-12">
             <div className="space-y-4 sm:space-y-5 mx-auto">
-              <p className="text-xs sm:text-sm font-medium uppercase tracking-[0.2em] bg-gradient-to-r from-violet-600/80 to-blue-600/80 bg-clip-text text-transparent">
-                Trusted by
-              </p>
               <h2
                 className="font-light tracking-tight leading-tight mx-auto"
                 style={{
@@ -660,7 +711,114 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ── 5. TRANSFORMATION STORIES ── */}
+      {/* ── 5. SUPERHUMAN NETWORK ── */}
+      <div className="relative overflow-hidden bg-[#17152E] py-24 text-white">
+        {/* Background glow */}
+        <div className="pointer-events-none absolute left-1/2 top-0 h-80 w-80 -translate-x-1/2 rounded-full bg-[#3F4698]/25 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-20 left-10 h-64 w-64 rounded-full bg-[#3F4698]/15 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-20 right-10 h-64 w-64 rounded-full bg-violet-700/10 blur-3xl" />
+
+        {/* Header */}
+        <div className="relative z-10 px-4 text-center">
+          <div className="mx-auto mb-4 h-px w-10 bg-white/40" />
+          <p className="text-xs font-bold uppercase tracking-[0.28em] text-white/60">
+            The Superhuman Network
+          </p>
+          <h2
+            className="mx-auto mt-5 max-w-4xl font-bold tracking-tight"
+            style={{ fontSize: "clamp(2rem, 5vw, 3.5rem)" }}
+          >
+            Real people. Real work.{" "}
+            <span className="text-[#B8B7FF]">Real impact.</span>
+          </h2>
+          <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-white/55 sm:text-lg">
+            A global team of professionals delivering for clients around the
+            world — every single day.
+          </p>
+        </div>
+
+        {/* Mosaic gallery */}
+        <div className="relative z-10 mx-auto mt-14 grid max-w-[1800px] grid-cols-2 gap-1.5 px-4 [grid-auto-rows:140px] md:grid-cols-12 md:[grid-auto-rows:200px] lg:[grid-auto-rows:220px]">
+          {/* Tile 0 — large left, 2 rows */}
+          <div className="group relative col-span-2 row-span-2 overflow-hidden bg-slate-800 md:col-span-5 md:row-span-2">
+            <img src={GalleryImg1} alt="Team collaboration" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/40 via-transparent to-transparent opacity-70 transition-opacity duration-300 group-hover:opacity-30" />
+            <div className="absolute bottom-4 left-4 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition duration-300 group-hover:opacity-100">
+              Team Excellence
+            </div>
+          </div>
+
+          {/* Tile 1 */}
+          <div className="group relative overflow-hidden bg-slate-800 md:col-span-4">
+            <img src={GalleryImg2} alt="Remote work" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/40 via-transparent to-transparent opacity-70 transition-opacity duration-300 group-hover:opacity-30" />
+            <div className="absolute bottom-4 left-4 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition duration-300 group-hover:opacity-100">
+              Remote Teams
+            </div>
+          </div>
+
+          {/* Tile 2 */}
+          <div className="group relative overflow-hidden bg-slate-800 md:col-span-3">
+            <img src={GalleryImg3} alt="Culture" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/40 via-transparent to-transparent opacity-70 transition-opacity duration-300 group-hover:opacity-30" />
+            <div className="absolute bottom-4 left-4 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition duration-300 group-hover:opacity-100">
+              Global Delivery
+            </div>
+          </div>
+
+          {/* Tile 3 */}
+          <div className="group relative overflow-hidden bg-slate-800 md:col-span-4">
+            <img src={GalleryImg4} alt="Founder energy" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/40 via-transparent to-transparent opacity-70 transition-opacity duration-300 group-hover:opacity-30" />
+            <div className="absolute bottom-4 left-4 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition duration-300 group-hover:opacity-100">
+              Client Operations
+            </div>
+          </div>
+
+          {/* Tile 4 */}
+          <div className="group relative overflow-hidden bg-slate-800 md:col-span-3">
+            <img src={GalleryImg5} alt="Happy team" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/40 via-transparent to-transparent opacity-70 transition-opacity duration-300 group-hover:opacity-30" />
+            <div className="absolute bottom-4 left-4 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition duration-300 group-hover:opacity-100">
+              Human Accountability
+            </div>
+          </div>
+
+          {/* Tile 5 */}
+          <div className="group relative overflow-hidden bg-slate-800 md:col-span-3">
+            <img src={GalleryImg6} alt="Team lifestyle" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/40 via-transparent to-transparent opacity-70 transition-opacity duration-300 group-hover:opacity-30" />
+            <div className="absolute bottom-4 left-4 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition duration-300 group-hover:opacity-100">
+              Talent Support
+            </div>
+          </div>
+
+          {/* Tile 6 */}
+          <div className="group relative overflow-hidden bg-slate-800 md:col-span-5">
+            <img src={GalleryImg7} alt="Leadership lifestyle" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/40 via-transparent to-transparent opacity-70 transition-opacity duration-300 group-hover:opacity-30" />
+            <div className="absolute bottom-4 left-4 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition duration-300 group-hover:opacity-100">
+              AI-Ready Workflows
+            </div>
+          </div>
+
+          {/* Tile 7 */}
+          <div className="group relative overflow-hidden bg-slate-800 md:col-span-4">
+            <img src={GalleryImg8} alt="Life and work" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/40 via-transparent to-transparent opacity-70 transition-opacity duration-300 group-hover:opacity-30" />
+            <div className="absolute bottom-4 left-4 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition duration-300 group-hover:opacity-100">
+              Real Work
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom caption */}
+        <p className="relative z-10 mx-auto mt-12 max-w-xl px-4 text-center text-sm leading-relaxed text-white/40">
+          Behind every workflow is a real person making the work better.
+        </p>
+      </div>
+
+      {/* ── 6. TRANSFORMATION STORIES ── */}
       <div className="relative overflow-hidden bg-[#F6F7FB] py-20 sm:py-28">
         {/* Decorative blobs */}
         <div className="pointer-events-none absolute -top-24 right-0 h-72 w-72 rounded-full bg-[#3F4698]/10 blur-3xl" />
@@ -673,8 +831,7 @@ export default function Home() {
               Transformations
             </p>
             <h2 className="mt-4 max-w-3xl text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl">
-              Real change.{" "}
-              <span className="text-[#3F4698]">Real results.</span>
+              Real change. <span className="text-[#3F4698]">Real results.</span>
             </h2>
             <p className="mt-5 max-w-2xl text-lg leading-relaxed text-slate-600">
               See how OnSpot helps teams move from overloaded operations to
@@ -684,7 +841,6 @@ export default function Home() {
 
           {/* Featured card + two smaller cards */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.15fr_1fr]">
-
             {/* Featured testimonial */}
             <div className="relative overflow-hidden rounded-[32px] border border-[#3F4698]/15 bg-white p-8 shadow-[0_24px_80px_rgba(63,70,152,0.12)] sm:p-10">
               {/* Large decorative quote mark */}
@@ -699,8 +855,12 @@ export default function Home() {
                     <User className="h-6 w-6" />
                   </div>
                   <div>
-                    <p className="text-base font-semibold text-slate-900">Elad B.</p>
-                    <p className="mt-0.5 text-sm text-slate-500">CEO / Founder, PineTech</p>
+                    <p className="text-base font-semibold text-slate-900">
+                      Elad B.
+                    </p>
+                    <p className="mt-0.5 text-sm text-slate-500">
+                      CEO / Founder, PineTech
+                    </p>
                   </div>
                 </div>
                 <span className="rounded-full bg-[#3F4698]/10 px-4 py-2 text-sm font-semibold text-[#3F4698]">
@@ -711,7 +871,9 @@ export default function Home() {
               {/* Transformation headline */}
               <h3 className="mt-8 text-2xl font-bold leading-snug text-slate-950 sm:text-3xl">
                 From 12-hour workdays to{" "}
-                <span className="italic text-[#3F4698]">automated excellence</span>
+                <span className="italic text-[#3F4698]">
+                  automated excellence
+                </span>
               </h3>
 
               {/* Quote */}
@@ -760,7 +922,9 @@ export default function Home() {
                         <User className="h-5 w-5" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-slate-900">{story.name}</p>
+                        <p className="text-sm font-semibold text-slate-900">
+                          {story.name}
+                        </p>
                         <p className="text-xs text-slate-500">{story.role}</p>
                       </div>
                     </div>
@@ -770,7 +934,9 @@ export default function Home() {
                   </div>
                   <h3 className="mt-5 text-lg font-bold leading-snug text-slate-950">
                     {story.headline}{" "}
-                    <span className="italic text-[#3F4698]">{story.highlight}</span>
+                    <span className="italic text-[#3F4698]">
+                      {story.highlight}
+                    </span>
                   </h3>
                   <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-slate-600 flex-1">
                     "{story.quote}"
@@ -788,7 +954,6 @@ export default function Home() {
 
         <div className="container relative z-10 mx-auto px-4 sm:px-6">
           <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
-
             {/* Left — dark brand panel */}
             <div className="rounded-[36px] bg-[#3F4698] p-8 text-white shadow-[0_30px_100px_rgba(63,70,152,0.25)] sm:p-10">
               <p className="text-xs font-bold uppercase tracking-[0.28em] text-white/60">
@@ -827,7 +992,7 @@ export default function Home() {
                 {[
                   { value: "72hr", label: "Avg. match time" },
                   { value: "500+", label: "Clients" },
-                  { value: "98%",  label: "Retention" },
+                  { value: "98%", label: "Retention" },
                 ].map((s) => (
                   <div key={s.label} className="text-center">
                     <p className="text-2xl font-bold text-white">{s.value}</p>
@@ -906,14 +1071,54 @@ export default function Home() {
 
           <div className="mx-auto mt-20 grid w-full max-w-7xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              { photo: KyleMendezPhoto,        name: "Kyle Mendez",       flag: "🇵🇭", role: "Senior Data Analyst"    },
-              { photo: AlexandraLopezPhoto,    name: "Alexandra Lopez",   flag: "🇵🇭", role: "CX & Operations Lead"   },
-              { photo: AndreaPinzonPhoto,      name: "Andrea Pinzon",     flag: "🇵🇭", role: "Virtual Assistant"      },
-              { photo: ChristopherAlbaPhoto,   name: "Christopher Alba",  flag: "🇵🇭", role: "Technical Support"      },
-              { photo: RachelCastroPhoto,      name: "Rachel Castro",     flag: "🇵🇭", role: "Social Media Manager"   },
-              { photo: AmirSinghPhoto,         name: "Amir Singh",        flag: "🇺🇸", role: "SEO Specialist"         },
-              { photo: JenniferDizonPhoto,     name: "Jennifer Dizon",    flag: "🇵🇭", role: "Customer Service"       },
-              { photo: AndreiLosantoPhoto,     name: "Andrei Losanto",    flag: "🇵🇭", role: "Full Stack Developer"   },
+              {
+                photo: KyleMendezPhoto,
+                name: "Kyle Mendez",
+                flag: "🇵🇭",
+                role: "Senior Data Analyst",
+              },
+              {
+                photo: AlexandraLopezPhoto,
+                name: "Alexandra Lopez",
+                flag: "🇵🇭",
+                role: "CX & Operations Lead",
+              },
+              {
+                photo: AndreaPinzonPhoto,
+                name: "Andrea Pinzon",
+                flag: "🇵🇭",
+                role: "Virtual Assistant",
+              },
+              {
+                photo: ChristopherAlbaPhoto,
+                name: "Christopher Alba",
+                flag: "🇵🇭",
+                role: "Technical Support",
+              },
+              {
+                photo: RachelCastroPhoto,
+                name: "Rachel Castro",
+                flag: "🇵🇭",
+                role: "Social Media Manager",
+              },
+              {
+                photo: AmirSinghPhoto,
+                name: "Amir Singh",
+                flag: "🇺🇸",
+                role: "SEO Specialist",
+              },
+              {
+                photo: JenniferDizonPhoto,
+                name: "Jennifer Dizon",
+                flag: "🇵🇭",
+                role: "Customer Service",
+              },
+              {
+                photo: AndreiLosantoPhoto,
+                name: "Andrei Losanto",
+                flag: "🇵🇭",
+                role: "Full Stack Developer",
+              },
             ].map((person) => (
               <div
                 key={person.name}
@@ -933,8 +1138,7 @@ export default function Home() {
                 {/* Name + role — always visible mobile, hover-only desktop */}
                 <div className="absolute inset-x-0 bottom-0 z-10 translate-y-0 p-5 text-white opacity-100 transition-all duration-300 md:translate-y-4 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100">
                   <h3 className="text-base font-bold text-white leading-tight">
-                    {person.name}{" "}
-                    <span aria-hidden="true">{person.flag}</span>
+                    {person.name} <span aria-hidden="true">{person.flag}</span>
                   </h3>
                   <p className="mt-0.5 text-sm font-medium text-white/80">
                     {person.role}
