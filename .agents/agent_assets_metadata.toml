@@ -78,3 +78,9 @@ id = "9vHcBUBasWdsNfzu7TY2V"
 uri = "file://client/src/assets/why-onspot/why-scalable-excellence.png"
 type = "image"
 title = "generated_image"
+
+[[generated]]
+id = "v1DSYWbv_4aUnJw2RDonc"
+uri = "file://client/src/assets/work-differently/work-differently-professionals-remote-work.png"
+type = "image"
+title = "generated_image"

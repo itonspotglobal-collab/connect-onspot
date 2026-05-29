@@ -42,7 +42,7 @@ import SafewayLogo from "../assets/logos/Safeway.png";
 import VertexLogo from "../assets/logos/Vertex.png";
 
 import WorkCompaniesPhoto from "@assets/Client_Energy_1775045176826.png";
-import WorkProfessionalsPhoto from "@assets/Built_to_Live_1775042849148.png";
+import WorkProfessionalsPhoto from "../assets/work-differently/work-differently-professionals-remote-work.png";
 
 import GalleryImg1 from "@assets/Team_Flow_1775045176827.png";
 import GalleryImg2 from "@assets/Deep_Work_1775045176826.png";

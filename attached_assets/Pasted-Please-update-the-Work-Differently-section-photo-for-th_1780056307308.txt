@@ -1,0 +1,151 @@
+Please update the “Work Differently” section photo for the “For Professionals / Real work. Real growth.” card.
+
+Current issue:
+The current photo for the Professionals card shows people jumping outdoors. It does not relate to remote work, professional growth, steady work, or career opportunities.
+
+Goal:
+Replace only the “For Professionals” card image with a realistic professional work image that matches the topic.
+
+IMPORTANT:
+- Do NOT change the Navigation bar.
+- Do NOT change the Footer.
+- Do NOT change the Hero section.
+- Do NOT change the Work Differently section copy.
+- Do NOT change the For Companies card unless needed for visual balance.
+- Do NOT use casual outdoor/lifestyle photos.
+- Do NOT use party, travel, or event photos.
+- Keep the current card layout and styling.
+- Replace only the image for the “For Professionals” card.
+
+==================================================
+FOR PROFESSIONALS IMAGE DIRECTION
+==================================================
+
+Use/generate a realistic AI photo that represents:
+
+- remote work
+- professional career growth
+- steady work pipeline
+- laptop-based work
+- focused professional
+- modern workspace
+- premium but natural atmosphere
+
+The image should feel like:
+“A professional is doing real client work remotely.”
+
+Avoid:
+- people jumping outdoors
+- vacation/lifestyle imagery
+- classroom/training photos
+- party photos
+- obvious AI-looking faces/hands
+- fake logos
+- readable screen text
+- overly futuristic sci-fi visuals
+
+==================================================
+AI IMAGE PROMPT
+==================================================
+
+Generate or add an image using this prompt:
+
+“Realistic editorial photograph of a focused professional working on a laptop in a modern home office or coworking space, calm productive atmosphere, natural light, career growth and remote work opportunity, subtle professional background, no readable screen text, no logos, no distorted hands or faces, premium realistic photography.”
+
+Suggested filename:
+
+work-differently-professionals-remote-work.jpg
+
+Save it in:
+
+client/src/assets/work-differently/
+
+If this folder does not exist, create it or use the same assets folder pattern already used by the project.
+
+==================================================
+IMPORT IMAGE
+==================================================
+
+Import the new image into the homepage file.
+
+Example:
+
+import WorkDifferentlyProfessionalsImage from "@assets/work-differently/work-differently-professionals-remote-work.jpg";
+
+If the project does not support the `@assets` alias in that folder, use the existing import path convention.
+
+==================================================
+REPLACE IMAGE SOURCE
+==================================================
+
+Find the data/object/card for the Professionals card.
+
+It may look like:
+
+{
+  label: "FOR PROFESSIONALS",
+  title: "Real work. Real growth.",
+  image: ...
+}
+
+Replace the current image source with:
+
+image: WorkDifferentlyProfessionalsImage
+
+or if the component uses `src`, use:
+
+src: WorkDifferentlyProfessionalsImage
+
+Do not change the Companies image unless absolutely necessary.
+
+==================================================
+IMAGE DISPLAY
+==================================================
+
+Keep the image header style:
+
+className="
+  h-full w-full object-cover object-center
+  transition duration-700 group-hover:scale-105
+"
+
+If the crop is awkward, use:
+
+object-[center_45%]
+
+or:
+
+object-top
+
+Do not use:
+- object-fill
+- distorted fixed width/height
+- grayscale
+- blur
+
+==================================================
+PHOTO OVERLAY
+==================================================
+
+Keep the subtle brand overlay if currently used:
+
+className="
+  absolute inset-0
+  bg-gradient-to-t from-[#3F4698]/25 via-[#3F4698]/5 to-transparent
+"
+
+Make sure the image remains clearly visible.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The For Professionals card should now show a realistic remote-work/professional-growth image that relates to:
+
+Real work. Real growth.
+Steady pipeline.
+Top global brands.
+Your terms.
+Zero gatekeeping.
+
+It should no longer show people jumping outdoors.
