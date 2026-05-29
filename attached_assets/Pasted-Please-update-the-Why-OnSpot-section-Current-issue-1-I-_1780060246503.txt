@@ -1,0 +1,232 @@
+Please update the “Why OnSpot” section.
+
+Current issue:
+1. I will upload 4 replacement photos in Replit. Please use those 4 photos for the four feature cards.
+2. The small icon badges overlapping the card image/content area do not look right. They appear too low/awkward and the white rounded box behind the icon is too bulky compared with the reference.
+
+Goal:
+- Replace the current four feature card photos with the 4 uploaded photos.
+- Keep the top-right main image as-is unless I upload a separate replacement for it.
+- Fix the small icon badges so they look cleaner, properly aligned, and more like the reference.
+- Keep the section layout and copy.
+
+IMPORTANT:
+- Do NOT change the Navigation bar.
+- Do NOT change the Footer.
+- Do NOT change the Hero section.
+- Do NOT change other homepage sections.
+- Do NOT change the Why OnSpot text.
+- Do NOT change the card order.
+- Do NOT use the old photos for these four cards after replacement.
+- Keep OnSpot brand color #3F4698.
+
+==================================================
+PHOTO REPLACEMENT
+==================================================
+
+I will upload 4 photos into Replit.
+
+Please place them in:
+
+client/src/assets/why-onspot/
+
+Use clear filenames:
+
+1. why-ai-first-infrastructure.jpg
+2. why-human-centered-culture.jpg
+3. why-connected-ecosystem.jpg
+4. why-scalable-excellence.jpg
+
+Then import them into the homepage file:
+
+import WhyAIFirstInfrastructure from "@assets/why-onspot/why-ai-first-infrastructure.jpg";
+import WhyHumanCenteredCulture from "@assets/why-onspot/why-human-centered-culture.jpg";
+import WhyConnectedEcosystem from "@assets/why-onspot/why-connected-ecosystem.jpg";
+import WhyScalableExcellence from "@assets/why-onspot/why-scalable-excellence.jpg";
+
+If the project uses another asset import convention, follow the existing pattern.
+
+Assign them exactly in this order:
+
+AI-first infrastructure → WhyAIFirstInfrastructure
+Human-centered culture → WhyHumanCenteredCulture
+Connected ecosystem → WhyConnectedEcosystem
+Scalable excellence → WhyScalableExcellence
+
+Do not shuffle them.
+
+==================================================
+KEEP CARD COPY
+==================================================
+
+Keep the existing four cards and copy:
+
+1. AI-first infrastructure
+Subtitle:
+Intelligent by design
+
+2. Human-centered culture
+Subtitle:
+People, not resources
+
+3. Connected ecosystem
+Subtitle:
+Seamless integration
+
+4. Scalable excellence
+Subtitle:
+Grow without compromise
+
+==================================================
+IMAGE DISPLAY
+==================================================
+
+Each card image header should remain clean and consistent.
+
+Image wrapper:
+
+className="
+  relative h-44 w-full overflow-hidden bg-slate-100
+  sm:h-48
+"
+
+Image:
+
+className="
+  h-full w-full object-cover object-center
+  transition duration-700 group-hover:scale-105
+"
+
+If any image crops awkwardly, adjust only that item with object position, for example:
+
+object-[center_35%]
+object-[center_45%]
+object-top
+
+Do not use:
+- object-fill
+- stretched images
+- distorted width/height
+
+==================================================
+FIX SMALL ICON BADGES
+==================================================
+
+Current issue:
+The icon badge overlaps awkwardly and the white shape is too large/incorrect.
+
+Please update the icon badge to look more refined and like the reference:
+- small rounded square icon
+- sits slightly overlapping between image and content
+- not too low
+- not too bulky
+- clean lavender background
+- subtle white ring only
+- icon color uses #3F4698
+
+Recommended structure:
+
+Card:
+className="
+  group overflow-hidden rounded-[24px]
+  border border-[#3F4698]/15 bg-white shadow-sm
+  transition duration-300 hover:-translate-y-1 hover:shadow-xl
+"
+
+Image area:
+className="
+  relative h-44 w-full overflow-hidden bg-slate-100 sm:h-48
+"
+
+Content wrapper:
+className="
+  relative px-8 pb-8 pt-9
+"
+
+Icon badge:
+className="
+  absolute -top-5 left-8
+  flex h-10 w-10 items-center justify-center
+  rounded-xl bg-[#EEEAFE] text-[#3F4698]
+  ring-4 ring-white shadow-sm
+"
+
+Icon size:
+className="h-5 w-5"
+
+Important:
+- Do NOT use a huge white rounded blob behind the icon.
+- Do NOT place the icon too far inside the image.
+- Do NOT place the icon too low into the text.
+- The badge should overlap the boundary between image and white content by around 20px.
+- Use `absolute -top-5 left-8`.
+
+If the current code has:
+ring-8 ring-white
+h-12 w-12
+rounded-2xl
+please reduce it to the values above.
+
+==================================================
+CARD CONTENT SPACING
+==================================================
+
+Because the icon overlaps the content, make sure text does not collide with it.
+
+Content wrapper should use:
+pt-9 or pt-10
+
+Title:
+className="
+  text-xl font-bold text-slate-950
+"
+
+Subtitle:
+className="
+  mt-2 text-sm font-semibold text-[#3F4698]
+"
+
+Body:
+className="
+  mt-4 text-sm leading-relaxed text-slate-600
+"
+
+==================================================
+TOP RIGHT MAIN IMAGE
+==================================================
+
+Do not replace the top-right main image unless I upload a fifth image specifically for it.
+
+Keep its layout:
+- rounded image
+- professional office/operations look
+- no changes needed unless existing code requires cleanup
+
+==================================================
+RESPONSIVE REQUIREMENTS
+==================================================
+
+Desktop:
+- top intro + top image remain side by side
+- four cards in 2x2 grid
+- badges are aligned consistently on all cards
+
+Tablet:
+- cards remain clean and consistent
+
+Mobile:
+- cards stack
+- icon badge still overlaps correctly
+- no text collision
+- no horizontal overflow
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The Why OnSpot section should:
+- use my 4 uploaded photos for the 4 feature cards
+- keep the current layout and copy
+- have cleaner small icon badges, similar to the reference
+- remove the bulky/awkward white badge look
+- look more polished and aligned with OnSpot branding

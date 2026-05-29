@@ -50,10 +50,10 @@ import GalleryImg3 from "@assets/Culture_Photo_1775044319871.png";
 import GalleryImg7 from "@assets/Leadership_Lifestyle_1775042849148.png";
 
 import WhyOnSpotMainOffice from "../assets/why-onspot/why-onspot-main-office.png";
-import WhyAIFirstInfrastructure from "../assets/why-onspot/why-ai-first-infrastructure.png";
-import WhyHumanCenteredCulture from "../assets/why-onspot/why-human-centered-culture.png";
-import WhyConnectedEcosystem from "../assets/why-onspot/why-connected-ecosystem.png";
-import WhyScalableExcellence from "../assets/why-onspot/why-scalable-excellence.png";
+import WhyAIFirstInfrastructure from "@assets/AI-First_1780060255446.png";
+import WhyHumanCenteredCulture from "@assets/human-centered_1780060255447.png";
+import WhyConnectedEcosystem from "@assets/connected-ecosystem_1780060255447.png";
+import WhyScalableExcellence from "@assets/scalable-excellence_1780060255447.png";
 
 import CollaborationThatScales from "@assets/Collaboration-that-scales_1780059195131.png";
 import ExecutiveSupport from "@assets/Executive-support_1780059195131.png";
@@ -1049,22 +1049,22 @@ export default function Home() {
             ].map((card) => (
               <div
                 key={card.title}
-                className="group overflow-hidden rounded-[28px] border border-[#3F4698]/12 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
+                className="group overflow-hidden rounded-[24px] border border-[#3F4698]/15 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
               >
                 {/* Photo header */}
-                <div className="relative h-44 w-full overflow-hidden bg-slate-100">
+                <div className="relative h-44 w-full overflow-hidden bg-slate-100 sm:h-48">
                   <img
                     src={card.img}
                     alt={card.imgAlt}
                     className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105"
                     loading="lazy"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#3F4698]/20 via-transparent to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#3F4698]/18 via-transparent to-transparent" />
                 </div>
 
                 {/* Card body with floating icon badge */}
-                <div className="relative px-8 pb-8 pt-10">
-                  <div className="absolute -top-6 left-8 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#3F4698]/10 text-[#3F4698] ring-8 ring-white">
+                <div className="relative px-8 pb-8 pt-9">
+                  <div className="absolute -top-5 left-8 flex h-10 w-10 items-center justify-center rounded-xl bg-[#EEEAFE] text-[#3F4698] shadow-sm ring-4 ring-white">
                     {card.icon}
                   </div>
                   <h3 className="text-xl font-bold text-slate-950">{card.title}</h3>
