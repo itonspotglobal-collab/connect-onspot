@@ -1,0 +1,305 @@
+Please make two homepage updates:
+
+1. Change the Insights section from image cards into a text-only list layout.
+2. Slightly darken the Stats strip background so it is grayish-white, not pure white.
+
+IMPORTANT:
+- Do NOT change the Navigation bar.
+- Do NOT change the Footer.
+- Do NOT change the Hero section.
+- Do NOT change the stats text/content.
+- Do NOT remove the Stats strip.
+- Do NOT remove the Insights section.
+- Remove photos only from the Insights section.
+- Keep OnSpot brand color #3F4698.
+
+==================================================
+PART 1: INSIGHTS SECTION — TEXT ONLY
+==================================================
+
+Current issue:
+The Insights section uses image cards. We want to remove the photos and simplify it into a text-only section like the reference.
+
+Goal:
+Replace the current 3 image cards with a clean editorial text list.
+
+Reference direction:
+- Left side: section label and small heading
+- Right side: list of latest insights
+- Each insight row has:
+  - category pill
+  - article title
+  - read time
+- A “View all →” link on the right
+- No photos
+- No image cards
+- No heavy card layout
+
+==================================================
+INSIGHTS SECTION LAYOUT
+==================================================
+
+Use a clean horizontal layout on desktop.
+
+Suggested structure:
+
+<section className="insights-section bg-[#FAF9F6] py-20 sm:py-24">
+  <div className="mx-auto max-w-7xl px-6">
+    <div className="grid gap-10 lg:grid-cols-[220px_1fr_120px] lg:items-start">
+      left heading
+      middle insight list
+      right view all link
+    </div>
+  </div>
+</section>
+
+Background:
+Use a soft off-white:
+bg-[#FAF9F6]
+or:
+bg-[#FBFAF7]
+
+Do not use pure white.
+
+==================================================
+LEFT SIDE
+==================================================
+
+Label:
+INSIGHTS
+
+Label style:
+
+className="
+  flex items-center gap-3 text-xs font-bold uppercase tracking-[0.24em] text-[#3F4698]
+"
+
+Optional small line before label:
+
+<span className="h-px w-8 bg-[#3F4698]" />
+
+Heading:
+Latest thinking
+
+Heading style:
+
+className="
+  mt-4 text-2xl font-semibold tracking-tight text-slate-950
+"
+
+Do not use the big “Thinking ahead...” headline in this compact version unless it is already needed elsewhere. For this new text-only section, use:
+Latest thinking
+
+==================================================
+MIDDLE LIST
+==================================================
+
+Use 3 insight rows.
+
+Each row layout on desktop:
+
+className="
+  grid grid-cols-[150px_1fr_90px] items-center gap-6
+  border-b border-slate-200/80 py-4
+  last:border-b-0
+"
+
+Category pill:
+
+className="
+  inline-flex w-fit items-center justify-center rounded-full
+  bg-[#EEEAFE] px-4 py-2
+  text-[11px] font-bold uppercase tracking-[0.14em]
+  text-[#3F4698]
+"
+
+Title:
+
+className="
+  text-base font-semibold leading-snug text-slate-950
+  transition hover:text-[#3F4698]
+  sm:text-lg
+"
+
+Read time:
+
+className="
+  text-right text-sm text-slate-500
+"
+
+Rows/content:
+
+1.
+Category:
+AI OPERATIONS
+Title:
+The new operating model: AI agents and human teams
+Read time:
+6 min read
+
+2.
+Category:
+TALENT
+Title:
+Why the Philippines is the future of global operations
+Read time:
+8 min read
+
+3.
+Category:
+FOUNDER OPS
+Title:
+From burnout to 4-day weeks: a founder’s playbook
+Read time:
+5 min read
+
+Use real existing published article data if the project already has it. If not, use the above as fallback.
+
+==================================================
+RIGHT SIDE LINK
+==================================================
+
+Use:
+View all →
+
+Style:
+
+className="
+  inline-flex items-center gap-2 whitespace-nowrap
+  text-sm font-semibold text-[#3F4698]
+  transition hover:gap-3
+"
+
+Place it vertically centered with the list on desktop if possible.
+
+On mobile, place it below the list.
+
+==================================================
+REMOVE CURRENT INSIGHTS IMAGE CARD UI
+==================================================
+
+Remove the image card grid from the Insights section:
+- remove article image wrappers
+- remove image imports used only by the homepage Insights cards if no longer needed
+- remove image overlays
+- remove category pills positioned over images
+- remove card shadows/heavy rounded image cards
+
+The Insights section should be text-only.
+
+==================================================
+MOBILE RESPONSIVE INSIGHTS
+==================================================
+
+On mobile:
+- stack the left heading, list, and view all link
+- each row should stack nicely:
+  category pill
+  title
+  read time
+- no horizontal overflow
+
+Mobile row style can be:
+
+className="
+  border-b border-slate-200/80 py-5 last:border-b-0
+"
+
+Inside row:
+category pill on top, title below, read time below title.
+
+==================================================
+PART 2: STATS STRIP BACKGROUND
+==================================================
+
+Current issue:
+The stats strip background is too white/light. We want it to be slightly darker, grayish-white, but not gray.
+
+Stats strip content:
+72hrs
+AVG. TIME TO HIRE
+
+500+
+GLOBAL CLIENTS
+
+98%
+CLIENT RETENTION
+
+2,000+
+TALENTS PLACED
+
+Keep these exactly.
+
+Remove/keep removed:
+Do not bring back the Philippine-based item if it was already removed.
+
+==================================================
+STATS STRIP BACKGROUND COLOR
+==================================================
+
+Change the stats strip background from pure white or very light white to a soft grayish-white.
+
+Use one of these:
+
+Preferred:
+bg-[#F1F2F6]
+
+Alternative:
+bg-[#F3F4F8]
+
+Do NOT use:
+- pure white #FFFFFF
+- dark gray
+- strong purple background
+- gradient background
+
+The strip should feel like a clean contrast section after the dark hero.
+
+==================================================
+STATS STRIP STYLING
+==================================================
+
+Stats wrapper:
+
+className="
+  border-y border-slate-200 bg-[#F1F2F6]
+"
+
+Stats grid:
+
+className="
+  mx-auto grid max-w-7xl grid-cols-2 md:grid-cols-4
+"
+
+Each stat cell:
+
+className="
+  border-slate-200 px-6 py-10 text-center
+  md:border-r md:last:border-r-0
+"
+
+Number style:
+Keep branded purple, but slightly refined:
+
+className="
+  text-5xl font-bold tracking-tight text-[#3F4698]
+  sm:text-6xl
+"
+
+If numbers still feel too large, use:
+
+text-4xl sm:text-5xl
+
+Label style:
+
+className="
+  mt-3 text-xs font-bold uppercase tracking-[0.22em] text-slate-500
+"
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The Insights section should become a simple text-only “Latest thinking” list with no photos.
+
+The Stats strip should have a soft grayish-white background, enough contrast from the hero and page background, but still light and clean.

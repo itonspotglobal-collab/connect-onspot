@@ -423,8 +423,8 @@ export default function Home() {
       </div>
 
       {/* ── Stats strip — light contrast band after hero ── */}
-      <div className="relative w-full border-y border-slate-200/70 bg-[#F6F7FB]">
-        <div className="mx-auto grid max-w-[1600px] grid-cols-2 divide-y divide-slate-200/70 md:grid-cols-4 md:divide-x md:divide-y-0">
+      <div className="relative w-full border-y border-slate-200 bg-[#F1F2F6]">
+        <div className="mx-auto grid max-w-[1600px] grid-cols-2 divide-y divide-slate-200 md:grid-cols-4 md:divide-x md:divide-y-0">
           {[
             { value: "72hrs", label: "AVG. TIME TO HIRE" },
             { value: "500+", label: "GLOBAL CLIENTS" },
@@ -435,7 +435,7 @@ export default function Home() {
               key={stat.label}
               className="flex min-h-[120px] flex-col items-center justify-center px-6 py-7 text-center"
             >
-              <span className="text-4xl sm:text-5xl font-bold tracking-tight text-[#3F4698]">
+              <span className="text-4xl font-bold tracking-tight text-[#3F4698] sm:text-5xl">
                 {stat.value}
               </span>
               <span className="mt-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
@@ -446,82 +446,85 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ── 2. FEATURED INSIGHTS ── */}
-      {featuredPosts.length > 0 && (
-        <div className="relative bg-slate-50 py-20 sm:py-28">
-          <div className="container mx-auto px-4 sm:px-6">
-            {/* Section header */}
-            <div className="mb-10 sm:mb-14 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#3F4698]">
-                  Insights
-                </p>
-                <h2 className="mt-3 text-3xl sm:text-4xl font-semibold text-slate-900 max-w-xl">
-                  Thinking ahead, so you can move{" "}
-                  <span className="text-[#3F4698]">faster.</span>
-                </h2>
-                <p className="mt-3 text-base sm:text-lg text-slate-500 max-w-xl">
-                  Perspectives on AI, talent, and the future of work — from the
-                  team building it.
-                </p>
-              </div>
-              <a
-                href="/insights"
-                className="shrink-0 inline-flex items-center gap-1.5 text-sm font-semibold text-[#3F4698] hover:text-[#3F4698]/80 transition-colors"
-              >
-                Explore all insights
-                <ArrowUpRight className="h-4 w-4" />
-              </a>
+      {/* ── 2. FEATURED INSIGHTS — text-only list ── */}
+      <div className="bg-[#FAF9F6] py-20 sm:py-24">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="grid gap-10 lg:grid-cols-[220px_1fr_auto] lg:items-start">
+
+            {/* Left: label + heading */}
+            <div className="lg:pt-1">
+              <p className="flex items-center gap-3 text-xs font-bold uppercase tracking-[0.24em] text-[#3F4698]">
+                <span className="h-px w-8 bg-[#3F4698]" />
+                Insights
+              </p>
+              <h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-950">
+                Latest thinking
+              </h2>
             </div>
 
-            {/* 3 equal insight cards */}
-            <div className="mt-14 grid grid-cols-1 gap-7 md:grid-cols-2 lg:grid-cols-3">
-              {featuredPosts.slice(0, 3).map((post) => (
+            {/* Middle: insight rows */}
+            <div className="divide-y divide-slate-200/80">
+              {(featuredPosts.length > 0
+                ? featuredPosts.slice(0, 3)
+                : [
+                    {
+                      id: 1,
+                      slug: "ai-operating-model",
+                      category: "AI OPERATIONS",
+                      title: "The new operating model: AI agents and human teams",
+                      readTime: "6 min read",
+                    },
+                    {
+                      id: 2,
+                      slug: "philippines-global-operations",
+                      category: "TALENT",
+                      title: "Why the Philippines is the future of global operations",
+                      readTime: "8 min read",
+                    },
+                    {
+                      id: 3,
+                      slug: "founder-playbook",
+                      category: "FOUNDER OPS",
+                      title: "From burnout to 4-day weeks: a founder's playbook",
+                      readTime: "5 min read",
+                    },
+                  ]
+              ).map((post) => (
                 <a
                   key={post.id}
                   href={`/insights/${post.slug}`}
-                  className="group flex h-full min-h-[520px] flex-col overflow-hidden rounded-[24px] border border-slate-200/80 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
+                  className="group grid grid-cols-1 gap-3 py-5 last:pb-0 sm:grid-cols-[160px_1fr_90px] sm:items-center sm:gap-6"
                 >
-                  {/* Inset image with category pill */}
-                  <div className="relative mx-5 mt-5 aspect-[16/10] overflow-hidden rounded-2xl bg-slate-100">
-                    {post.coverImageUrl ? (
-                      <img
-                        src={post.coverImageUrl}
-                        alt={post.title}
-                        className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-600 via-violet-600 to-blue-700">
-                        <BookOpen className="h-10 w-10 text-white/40" />
-                      </div>
-                    )}
-                    {/* Category pill over image */}
-                    <span className="absolute left-4 top-4 z-10 rounded-full bg-white/95 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-800 shadow-sm backdrop-blur">
-                      {post.category || "Industry Insights"}
-                    </span>
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex flex-1 flex-col p-6">
-                    <h3 className="text-xl font-bold leading-snug text-slate-950 line-clamp-2">
-                      {post.title}
-                    </h3>
-                    {post.excerpt && (
-                      <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-slate-600 flex-1">
-                        {post.excerpt}
-                      </p>
-                    )}
-                    <div className="mt-auto border-t border-slate-100 pt-4 text-sm text-slate-500">
-                      {(post as any).author || "OnSpot Team"} · {(post as any).readTime || "5 min read"}
-                    </div>
-                  </div>
+                  {/* Category pill */}
+                  <span className="inline-flex w-fit items-center justify-center rounded-full bg-[#EEEAFE] px-4 py-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#3F4698]">
+                    {(post as any).category || "Industry Insights"}
+                  </span>
+                  {/* Title */}
+                  <h3 className="text-base font-semibold leading-snug text-slate-950 transition-colors group-hover:text-[#3F4698] sm:text-lg">
+                    {post.title}
+                  </h3>
+                  {/* Read time */}
+                  <span className="text-sm text-slate-500 sm:text-right">
+                    {(post as any).readTime || "5 min read"}
+                  </span>
                 </a>
               ))}
             </div>
+
+            {/* Right: view all link */}
+            <div className="flex lg:justify-end lg:pt-1">
+              <a
+                href="/insights"
+                className="inline-flex items-center gap-2 whitespace-nowrap text-sm font-semibold text-[#3F4698] transition-all hover:gap-3"
+              >
+                View all
+                <ArrowRight className="h-4 w-4" />
+              </a>
+            </div>
+
           </div>
         </div>
-      )}
+      </div>
 
       {/* ── 3. WORK DIFFERENTLY ── */}
       <div className="relative overflow-hidden bg-gradient-to-br from-[#eef2ff] via-[#f7f4ff] to-[#dff8ff] py-20 sm:py-24">
