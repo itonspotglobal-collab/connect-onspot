@@ -1,0 +1,194 @@
+Please update the “Superhuman Network” mosaic gallery layout to match the attached inspiration layout more closely.
+
+Current issue:
+The gallery currently looks uneven and leaves an empty dark area at the bottom/right. The layout does not match the inspiration. We want a tighter, intentional editorial mosaic with no awkward empty spaces.
+
+Goal:
+Change the gallery layout to match the reference:
+- large tile on the left
+- stacked mixed-size tiles in the center and right
+- tight gutters
+- no empty gaps
+- clean masonry/mosaic feel
+- labels appear only on hover
+- keep the dark premium section background
+
+IMPORTANT:
+- Do NOT change the Navigation bar.
+- Do NOT change the Footer.
+- Do NOT change the Hero section.
+- Do NOT change section heading text.
+- Do NOT change the uploaded photos themselves.
+- Do NOT remove the Superhuman Network section.
+- Keep the current 9 labels and photos.
+- Only adjust the layout and hover behavior.
+
+==================================================
+SECTION HEADING
+==================================================
+
+Keep the existing heading/copy:
+
+Label:
+THE SUPERHUMAN NETWORK
+
+Headline:
+Real people. Real work. Real impact.
+
+Supporting copy:
+A global team of professionals delivering for clients around the world — every single day.
+
+Do not change this copy.
+
+==================================================
+FIX LABEL VISIBILITY
+==================================================
+
+All labels should be hidden by default and appear only on hover.
+
+Remove any default visible label styles such as:
+- opacity-100
+- md:opacity-100
+- first item always visible
+- static label display
+
+Use this for every tile label:
+
+className="
+  absolute bottom-4 left-4 z-20
+  translate-y-2 rounded-full bg-white/15 px-3 py-1.5
+  text-[11px] font-bold uppercase tracking-[0.16em]
+  text-white opacity-0 backdrop-blur-md
+  transition-all duration-300
+  group-hover:translate-y-0 group-hover:opacity-100
+"
+
+For mobile only, labels may stay visible if needed:
+
+className="
+  absolute bottom-4 left-4 z-20
+  rounded-full bg-white/15 px-3 py-1.5
+  text-[11px] font-bold uppercase tracking-[0.16em]
+  text-white backdrop-blur-md
+  opacity-100 md:translate-y-2 md:opacity-0
+  transition-all duration-300
+  md:group-hover:translate-y-0 md:group-hover:opacity-100
+"
+
+==================================================
+PHOTO/LABEL ORDER
+==================================================
+
+Keep the 9 images in this exact order:
+
+1. Collaboration that scales
+2. Executive Support
+3. Always Connected
+4. Built for the future of work
+5. Focused expertise
+6. Engineering talent
+7. Aligned, every day
+8. Winning together
+9. Culture first
+
+Do not shuffle the data array.
+
+==================================================
+NEW DESKTOP MOSAIC LAYOUT
+==================================================
+
+Use CSS grid with 12 columns and 6 rows.
+
+Wrapper:
+
+className="
+  mx-auto mt-14 grid max-w-[1800px]
+  grid-cols-12 auto-rows-[120px] gap-1.5 px-4
+  sm:auto-rows-[145px]
+  lg:auto-rows-[165px]
+"
+
+This creates a compact mosaic and avoids empty spaces.
+
+Apply these tile classes by index:
+
+Index 0 — Collaboration that scales:
+className="
+  col-span-12 row-span-2
+  md:col-span-6 md:row-span-3
+"
+
+Index 1 — Executive Support:
+className="
+  col-span-6 row-span-1
+  md:col-span-3 md:row-span-1
+"
+
+Index 2 — Always Connected:
+className="
+  col-span-6 row-span-1
+  md:col-span-3 md:row-span-1
+"
+
+Index 3 — Built for the future of work:
+className="
+  col-span-6 row-span-1
+  md:col-span-3 md:row-span-2
+"
+
+Index 4 — Focused expertise:
+className="
+  col-span-6 row-span-1
+  md:col-span-3 md:row-span-2
+"
+
+Index 5 — Engineering talent:
+className="
+  col-span-6 row-span-1
+  md:col-span-3 md:row-span-2
+"
+
+Index 6 — Aligned, every day:
+className="
+  col-span-6 row-span-1
+  md:col-span-3 md:row-span-1
+"
+
+Index 7 — Winning together:
+className="
+  col-span-6 row-span-1
+  md:col-span-3 md:row-span-1
+"
+
+Index 8 — Culture first:
+className="
+  col-span-12 row-span-1
+  md:col-span-3 md:row-span-1
+"
+
+This should create an intentional layout:
+- large left tile
+- mixed image tiles on the right
+- no empty bottom-right dark space
+
+If this exact layout still leaves a visual gap, adjust using `grid-flow-dense` on the wrapper:
+
+className="
+  mx-auto mt-14 grid max-w-[1800px]
+  grid-flow-dense grid-cols-12 auto-rows-[120px] gap-1.5 px-4
+  sm:auto-rows-[145px]
+  lg:auto-rows-[165px]
+"
+
+==================================================
+ALTERNATIVE IF CSS GRID STILL GAPS
+==================================================
+
+If the current component does not handle index-based class names well, replace the gallery markup with a fixed desktop grid:
+
+<div className="mx-auto mt-14 grid max-w-[1800px] grid-cols-12 grid-rows-6 gap-1.5 px-4 h-[760px]">
+  <Tile className="col-span-6 row-span-3" ... />
+  <Tile className="col-span-3 row-span-1" ... />
+  <Tile className="col-span-3 row-span-1" ... />
+  <Tile className="col-span-3 row-span-2" ... />
+  <Tile className="col-span-

@@ -747,86 +747,95 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Mosaic gallery — 9 tiles */}
-        <div className="relative z-10 mx-auto mt-14 grid max-w-[1800px] grid-cols-2 gap-1.5 px-4 [grid-auto-rows:150px] md:grid-cols-12 md:[grid-auto-rows:180px] lg:[grid-auto-rows:210px]">
+        {/* Mosaic gallery — 9 tiles, 3-row layout, no gaps */}
+        <div className="relative z-10 mx-auto mt-14 grid max-w-[1800px] grid-cols-2 gap-1.5 px-4 [grid-auto-rows:120px] md:grid-cols-12 md:[grid-auto-rows:145px] lg:[grid-auto-rows:165px]">
 
-          {/* Tile 0 — Collaboration that scales: large left, 2 rows */}
-          <div className="group relative col-span-2 row-span-2 overflow-hidden bg-slate-800 md:col-span-5 md:row-span-2">
+          {/* Tile 0 — Collaboration that scales: large left, 2 rows tall */}
+          {/* md: cols 1-6, rows 1-2 */}
+          <div className="group relative col-span-2 row-span-2 overflow-hidden bg-slate-800 md:col-span-6 md:row-span-2">
             <img src={CollaborationThatScales} alt="Collaboration that scales" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-80" />
-            <div className="absolute bottom-4 left-4 z-10 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+            <div className="absolute bottom-4 left-4 z-20 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
               Collaboration that scales
             </div>
           </div>
 
-          {/* Tile 1 — Executive Support */}
+          {/* Tile 1 — Executive Support: top-right, row 1 */}
+          {/* md: cols 7-9, row 1 */}
           <div className="group relative overflow-hidden bg-slate-800 md:col-span-3">
             <img src={ExecutiveSupport} alt="Executive Support" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-80" />
-            <div className="absolute bottom-3 left-3 z-10 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+            <div className="absolute bottom-3 left-3 z-20 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
               Executive Support
             </div>
           </div>
 
-          {/* Tile 2 — Always Connected */}
-          <div className="group relative overflow-hidden bg-slate-800 md:col-span-4">
+          {/* Tile 2 — Always Connected: top-right, row 1 */}
+          {/* md: cols 10-12, row 1 */}
+          <div className="group relative overflow-hidden bg-slate-800 md:col-span-3">
             <img src={AlwaysConnected} alt="Always Connected" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-80" />
-            <div className="absolute bottom-3 left-3 z-10 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+            <div className="absolute bottom-3 left-3 z-20 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
               Always Connected
             </div>
           </div>
 
-          {/* Tile 3 — Built for the future of work */}
-          <div className="group relative col-span-2 overflow-hidden bg-slate-800 md:col-span-3">
+          {/* Tile 3 — Built for the future of work: mid-right, row 2 */}
+          {/* md: cols 7-9, row 2 */}
+          <div className="group relative overflow-hidden bg-slate-800 md:col-span-3">
             <img src={FutureOfWork} alt="Built for the future of work" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-80" />
-            <div className="absolute bottom-3 left-3 z-10 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+            <div className="absolute bottom-3 left-3 z-20 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
               Built for the future of work
             </div>
           </div>
 
-          {/* Tile 4 — Focused expertise */}
+          {/* Tile 4 — Focused expertise: mid-right, row 2 */}
+          {/* md: cols 10-12, row 2 */}
           <div className="group relative overflow-hidden bg-slate-800 md:col-span-3">
             <img src={FocusedExpertise} alt="Focused expertise" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-80" />
-            <div className="absolute bottom-3 left-3 z-10 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+            <div className="absolute bottom-3 left-3 z-20 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
               Focused expertise
             </div>
           </div>
 
-          {/* Tile 5 — Engineering talent */}
-          <div className="group relative overflow-hidden bg-slate-800 md:col-span-4">
+          {/* Tile 5 — Engineering talent: bottom row, col 1 */}
+          {/* md: cols 1-3, row 3 */}
+          <div className="group relative overflow-hidden bg-slate-800 md:col-span-3">
             <img src={EngineeringTalent} alt="Engineering talent" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-80" />
-            <div className="absolute bottom-3 left-3 z-10 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+            <div className="absolute bottom-3 left-3 z-20 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
               Engineering talent
             </div>
           </div>
 
-          {/* Tile 6 — Aligned, every day */}
+          {/* Tile 6 — Aligned, every day: bottom row, col 2 */}
+          {/* md: cols 4-6, row 3 */}
           <div className="group relative overflow-hidden bg-slate-800 md:col-span-3">
             <img src={AlignedEveryDay} alt="Aligned, every day" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-80" />
-            <div className="absolute bottom-3 left-3 z-10 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+            <div className="absolute bottom-3 left-3 z-20 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
               Aligned, every day
             </div>
           </div>
 
-          {/* Tile 7 — Winning together */}
-          <div className="group relative overflow-hidden bg-slate-800 md:col-span-4">
+          {/* Tile 7 — Winning together: bottom row, col 3 */}
+          {/* md: cols 7-9, row 3 */}
+          <div className="group relative overflow-hidden bg-slate-800 md:col-span-3">
             <img src={WinningTogether} alt="Winning together" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-80" />
-            <div className="absolute bottom-3 left-3 z-10 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+            <div className="absolute bottom-3 left-3 z-20 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
               Winning together
             </div>
           </div>
 
-          {/* Tile 8 — Culture first */}
-          <div className="group relative col-span-2 overflow-hidden bg-slate-800 md:col-span-5">
+          {/* Tile 8 — Culture first: bottom row, col 4 */}
+          {/* md: cols 10-12, row 3 */}
+          <div className="group relative overflow-hidden bg-slate-800 md:col-span-3">
             <img src={CultureFirst} alt="Culture first" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-80" />
-            <div className="absolute bottom-3 left-3 z-10 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+            <div className="absolute bottom-3 left-3 z-20 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
               Culture first
             </div>
           </div>
