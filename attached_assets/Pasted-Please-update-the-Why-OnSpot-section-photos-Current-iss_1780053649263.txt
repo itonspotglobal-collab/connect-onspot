@@ -1,0 +1,255 @@
+Please update the “Why OnSpot” section photos.
+
+Current issue:
+The section is still using real/casual OnSpot team photos. We want professional AI-generated photos like the reference, but they should NOT look obviously AI-generated. They should look realistic, premium, and natural.
+
+Goal:
+Replace the current photos in the Why OnSpot section with realistic AI-generated professional images:
+- subtle
+- natural
+- believable
+- outsourcing/business related
+- no distorted faces/hands
+- no fake logos
+- no readable screen text
+- not overly futuristic
+
+IMPORTANT:
+- Do NOT change the Navigation bar.
+- Do NOT change the Footer.
+- Do NOT change the Hero section.
+- Do NOT change other homepage sections.
+- Do NOT change the Why OnSpot copy.
+- Do NOT change the Why OnSpot layout unless needed for image quality.
+- Keep the current reference-style layout:
+  - top intro on the left
+  - top image on the right
+  - four image cards below
+- Replace only the photos.
+- Remove current real/casual team photos from this section.
+
+==================================================
+PHOTO STYLE REQUIREMENTS
+==================================================
+
+All new images should look like realistic premium photography.
+
+Avoid:
+- obviously AI-looking faces
+- plastic-looking skin
+- distorted hands
+- extra fingers
+- fake text on walls/screens
+- fake logos
+- overly futuristic sci-fi effects
+- too much glow
+- cartoon-like people
+- stock-photo exaggeration
+- party/event/training photos
+
+Use:
+- natural lighting
+- real workplace environments
+- diverse but realistic professionals
+- modern offices
+- laptops and meetings
+- clean outsourcing/operations visuals
+- subtle AI/workflow hints only where relevant
+
+Do not bake any labels or text into the images. All labels/text should remain HTML/CSS.
+
+==================================================
+GENERATE/ADD THESE IMAGES
+==================================================
+
+Create or replace these 5 images:
+
+1. Top right section image
+
+Filename:
+why-onspot-main-office.jpg
+
+Prompt:
+“Realistic editorial photograph of a modern operations office with diverse professionals working at laptops and collaborating quietly, warm natural light, premium business environment, outsourcing operations team, clean desks, no visible logos, no readable text, no distorted faces or hands, natural photography.”
+
+2. AI-first infrastructure card
+
+Filename:
+why-ai-first-infrastructure.jpg
+
+Prompt:
+“Realistic close-up photograph of a professional using a laptop with abstract workflow dashboard visuals on screen, modern office desk, subtle blue-violet lighting, AI-enabled operations feel, no readable text, no logos, no distorted hands, natural realistic photography.”
+
+3. Human-centered culture card
+
+Filename:
+why-human-centered-culture.jpg
+
+Prompt:
+“Realistic photograph of two professionals having a supportive one-on-one conversation in a modern office lounge, warm natural light, human-centered outsourcing culture, calm and trustworthy mood, no logos, no readable text, no distorted faces or hands.”
+
+4. Connected ecosystem card
+
+Filename:
+why-connected-ecosystem.jpg
+
+Prompt:
+“Realistic photograph of a modern team workspace with laptops, tablets, and abstract integration dashboards visible as non-readable interface shapes, professionals collaborating in the background, connected operations ecosystem, natural light, no logos, no readable text, no distorted hands or faces.”
+
+5. Scalable excellence card
+
+Filename:
+why-scalable-excellence.jpg
+
+Prompt:
+“Realistic photograph of a small business strategy meeting in a modern conference room, professionals discussing growth and operations with laptops and notebooks, premium but natural business atmosphere, no readable text, no logos, no distorted faces or hands.”
+
+Save them in:
+
+client/src/assets/why-onspot/
+
+==================================================
+IMPORT IMAGES
+==================================================
+
+Import the generated images into the homepage file.
+
+Example:
+
+import WhyOnSpotMainOffice from "@assets/why-onspot/why-onspot-main-office.jpg";
+import WhyAIFirstInfrastructure from "@assets/why-onspot/why-ai-first-infrastructure.jpg";
+import WhyHumanCenteredCulture from "@assets/why-onspot/why-human-centered-culture.jpg";
+import WhyConnectedEcosystem from "@assets/why-onspot/why-connected-ecosystem.jpg";
+import WhyScalableExcellence from "@assets/why-onspot/why-scalable-excellence.jpg";
+
+If the project does not support this exact alias, use the same asset import pattern already used in the project.
+
+==================================================
+REPLACE CURRENT PHOTO SOURCES
+==================================================
+
+Replace the current image sources in this section only.
+
+Top right image should use:
+WhyOnSpotMainOffice
+
+Cards should use:
+
+AI-first infrastructure:
+WhyAIFirstInfrastructure
+
+Human-centered culture:
+WhyHumanCenteredCulture
+
+Connected ecosystem:
+WhyConnectedEcosystem
+
+Scalable excellence:
+WhyScalableExcellence
+
+Remove from this section any image source that points to:
+- restaurant/team dinner photos
+- training-room photos
+- group selfies
+- event photos
+- casual team photos
+- travel/outing photos
+
+Those photos can remain in the assets folder, but they should not render in Why OnSpot.
+
+==================================================
+KEEP CURRENT WHY ONSPOT CONTENT
+==================================================
+
+Do not change this text:
+
+Label:
+WHY ONSPOT
+
+Headline:
+Not a service provider.
+An architect.
+
+Description:
+We design the operating layer behind modern outsourcing — combining AI-ready systems, vetted talent, and human accountability so your team can scale without losing control.
+
+Cards:
+1. AI-first infrastructure
+   Intelligent by design
+
+2. Human-centered culture
+   People, not resources
+
+3. Connected ecosystem
+   Seamless integration
+
+4. Scalable excellence
+   Grow without compromise
+
+==================================================
+IMAGE DISPLAY RULES
+==================================================
+
+Use object-cover and object-center by default.
+
+Image class:
+
+className="
+  h-full w-full object-cover object-center
+  transition duration-700 group-hover:scale-105
+"
+
+If any image crops awkwardly:
+- use object-top for people-centered images
+- use object-[center_35%] where needed
+
+Do not stretch images:
+- no object-fill
+- no fixed width/height distortion
+
+==================================================
+TOP IMAGE STYLE
+==================================================
+
+Keep the top right image clean and premium.
+
+Suggested wrapper:
+
+className="
+  relative h-64 overflow-hidden rounded-[28px]
+  border border-white/70 bg-white shadow-sm
+  lg:h-72
+"
+
+Optional subtle overlay:
+
+className="
+  absolute inset-0 bg-gradient-to-t from-[#3F4698]/15 to-transparent
+"
+
+Keep it subtle. The photo should stay clear.
+
+==================================================
+CARD IMAGE STYLE
+==================================================
+
+Each card image header:
+
+className="
+  relative h-44 w-full overflow-hidden bg-slate-100
+  sm:h-48
+"
+
+Overlay:
+
+className="
+  absolute inset-0 bg-gradient-to-t from-[#3F4698]/18 via-transparent to-transparent
+"
+
+Keep overlay light. Do not darken too much.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The Why OnSpot section should still follow the reference-style layout, but the images should now look like realistic professional outsourcing/business photos, not obvious AI and not casual real event/team photos.

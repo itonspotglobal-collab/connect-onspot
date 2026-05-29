@@ -48,3 +48,33 @@ id = "7o8zkCUCQOfnLVZT5nngd"
 uri = "file://client/src/assets/superhuman-network/superhuman-real-work.png"
 type = "image"
 title = "generated_image"
+
+[[generated]]
+id = "ElHcRDftCEh05iUmwhIxh"
+uri = "file://client/src/assets/why-onspot/why-onspot-main-office.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "zD2YJiefLanjRB2lNqzeb"
+uri = "file://client/src/assets/why-onspot/why-ai-first-infrastructure.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "szwrzt1FMNETpqqI6ajqH"
+uri = "file://client/src/assets/why-onspot/why-human-centered-culture.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "fns1UZ-ik5kWe4CEyrO5O"
+uri = "file://client/src/assets/why-onspot/why-connected-ecosystem.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "9vHcBUBasWdsNfzu7TY2V"
+uri = "file://client/src/assets/why-onspot/why-scalable-excellence.png"
+type = "image"
+title = "generated_image"

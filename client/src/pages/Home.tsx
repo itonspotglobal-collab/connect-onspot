@@ -49,6 +49,12 @@ import GalleryImg2 from "@assets/Deep_Work_1775045176826.png";
 import GalleryImg3 from "@assets/Culture_Photo_1775044319871.png";
 import GalleryImg7 from "@assets/Leadership_Lifestyle_1775042849148.png";
 
+import WhyOnSpotMainOffice from "../assets/why-onspot/why-onspot-main-office.png";
+import WhyAIFirstInfrastructure from "../assets/why-onspot/why-ai-first-infrastructure.png";
+import WhyHumanCenteredCulture from "../assets/why-onspot/why-human-centered-culture.png";
+import WhyConnectedEcosystem from "../assets/why-onspot/why-connected-ecosystem.png";
+import WhyScalableExcellence from "../assets/why-onspot/why-scalable-excellence.png";
+
 import SuperhumanTeamExcellence from "../assets/superhuman-network/superhuman-team-excellence.png";
 import SuperhumanRemoteTeams from "../assets/superhuman-network/superhuman-remote-teams.png";
 import SuperhumanGlobalDelivery from "../assets/superhuman-network/superhuman-global-delivery.png";
@@ -986,12 +992,12 @@ export default function Home() {
             {/* Right: large image */}
             <div className="relative h-64 overflow-hidden rounded-[28px] border border-white/70 shadow-sm lg:h-72">
               <img
-                src={GalleryImg7}
+                src={WhyOnSpotMainOffice}
                 alt="Modern professional workspace"
-                className="h-full w-full object-cover"
+                className="h-full w-full object-cover object-center"
                 loading="lazy"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#3F4698]/20 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#3F4698]/15 to-transparent" />
             </div>
           </div>
 
@@ -1000,7 +1006,7 @@ export default function Home() {
             {[
               {
                 icon: <Bot className="h-6 w-6" />,
-                img: GalleryImg2,
+                img: WhyAIFirstInfrastructure,
                 imgAlt: "AI workflow and laptop",
                 title: "AI-first infrastructure",
                 tagline: "Intelligent by design",
@@ -1008,7 +1014,7 @@ export default function Home() {
               },
               {
                 icon: <Users className="h-6 w-6" />,
-                img: GalleryImg3,
+                img: WhyHumanCenteredCulture,
                 imgAlt: "Team culture",
                 title: "Human-centered culture",
                 tagline: "People, not resources",
@@ -1016,7 +1022,7 @@ export default function Home() {
               },
               {
                 icon: <Globe className="h-6 w-6" />,
-                img: WorkCompaniesPhoto,
+                img: WhyConnectedEcosystem,
                 imgAlt: "Connected workflow",
                 title: "Connected ecosystem",
                 tagline: "Seamless integration",
@@ -1024,7 +1030,7 @@ export default function Home() {
               },
               {
                 icon: <TrendingUp className="h-6 w-6" />,
-                img: GalleryImg1,
+                img: WhyScalableExcellence,
                 imgAlt: "Scalable team",
                 title: "Scalable excellence",
                 tagline: "Grow without compromise",
