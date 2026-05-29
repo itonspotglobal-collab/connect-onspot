@@ -1,0 +1,318 @@
+Please update the “Superhuman Network” / visual mosaic gallery section.
+
+Current issue:
+The gallery currently uses real team/event/travel/party photos. We want the section to use AI-generated, professional, outsourcing-related photos that match each tile label.
+
+Goal:
+Generate or replace the current gallery images with AI-generated-style photos based on the exact labels below:
+
+1. Team Excellence
+2. Remote Teams
+3. Global Delivery
+4. Client Operations
+5. Human Accountability
+6. Talent Support
+7. AI-Ready Workflows
+8. Real Work
+
+IMPORTANT:
+- Do NOT change the Navigation bar.
+- Do NOT change the Footer.
+- Do NOT change the Hero section.
+- Do NOT remove the Superhuman Network section.
+- Do NOT change the section layout unless needed to preserve image quality.
+- Do NOT use party photos, travel photos, outing photos, or casual event photos.
+- Keep the dark OnSpot background and mosaic layout.
+- Keep the section copy:
+  “Real people. Real work. Real impact.”
+- Use premium, realistic, professional images.
+- Avoid distorted hands, distorted faces, fake logos, or unreadable text.
+- Do not include text inside the generated images.
+- Labels should remain as overlay text in HTML/CSS, not baked into the images.
+
+==================================================
+IMAGE GENERATION DIRECTION
+==================================================
+
+Generate 8 AI photos, one for each gallery label.
+
+Use a consistent visual style:
+- realistic photography
+- premium business/outsourcing aesthetic
+- modern office or remote-work environment
+- diverse global professionals
+- clean lighting
+- subtle AI/workflow hints where relevant
+- no visible logos
+- no readable screen text
+- no weird hands or distorted faces
+- no overly futuristic sci-fi look
+
+Preferred tone:
+Modern, professional, human, trustworthy, global operations.
+
+==================================================
+IMAGE PROMPTS BY LABEL
+==================================================
+
+1. TEAM EXCELLENCE
+
+Prompt:
+“Realistic premium photograph of a diverse professional operations team collaborating in a modern office, confident and focused, laptops and planning boards visible, warm natural light, outsourcing team excellence, clean corporate environment, no text, no logos, no distorted faces or hands.”
+
+Suggested file:
+superhuman-team-excellence.jpg
+
+2. REMOTE TEAMS
+
+Prompt:
+“Realistic photograph of remote professionals working together on laptops in a hybrid video meeting setup, modern home office and coworking atmosphere, connected global team, calm productive mood, no readable screen text, no logos, no distorted faces or hands.”
+
+Suggested file:
+superhuman-remote-teams.jpg
+
+3. GLOBAL DELIVERY
+
+Prompt:
+“Realistic premium photograph representing global outsourcing delivery, diverse professionals coordinating across time zones, laptop screens with abstract dashboard shapes, world map style visual in background without readable text, professional operations center, no logos, no distorted hands or faces.”
+
+Suggested file:
+superhuman-global-delivery.jpg
+
+4. CLIENT OPERATIONS
+
+Prompt:
+“Realistic photograph of a client operations team reviewing workflows in a modern meeting room, people discussing dashboards and service processes, laptops and notebooks on table, professional outsourcing operations, natural light, no readable text, no logos, no distorted hands or faces.”
+
+Suggested file:
+superhuman-client-operations.jpg
+
+5. HUMAN ACCOUNTABILITY
+
+Prompt:
+“Realistic photograph showing a professional manager and team member in a thoughtful one-on-one discussion, trust, accountability, human support, modern office environment, warm lighting, authentic expressions, no text, no logos, no distorted faces or hands.”
+
+Suggested file:
+superhuman-human-accountability.jpg
+
+6. TALENT SUPPORT
+
+Prompt:
+“Realistic photograph of a mentor supporting a young professional at a laptop, coaching, training, career growth, modern workspace, supportive Filipino and global talent environment, warm professional tone, no readable text, no logos, no distorted hands or faces.”
+
+Suggested file:
+superhuman-talent-support.jpg
+
+7. AI-READY WORKFLOWS
+
+Prompt:
+“Realistic premium photograph of professionals using AI-enabled workflow dashboards, modern laptop and tablet setup with abstract interface graphics, operations automation, human plus AI collaboration, blue-violet lighting accents, no readable text, no logos, no distorted hands or faces.”
+
+Suggested file:
+superhuman-ai-ready-workflows.jpg
+
+8. REAL WORK
+
+Prompt:
+“Realistic photograph of a focused professional completing meaningful client work on a laptop, notes and coffee on desk, modern remote work setting, calm productive atmosphere, human-centered outsourcing, no readable screen text, no logos, no distorted hands or faces.”
+
+Suggested file:
+superhuman-real-work.jpg
+
+==================================================
+SAVE GENERATED IMAGES
+==================================================
+
+Save the generated images in:
+
+client/src/assets/superhuman-network/
+
+Use these exact filenames:
+
+- superhuman-team-excellence.jpg
+- superhuman-remote-teams.jpg
+- superhuman-global-delivery.jpg
+- superhuman-client-operations.jpg
+- superhuman-human-accountability.jpg
+- superhuman-talent-support.jpg
+- superhuman-ai-ready-workflows.jpg
+- superhuman-real-work.jpg
+
+If the project uses a different asset folder pattern, follow the existing project convention, but keep the filenames clear.
+
+==================================================
+IMPORT IMAGES
+==================================================
+
+Import the images into the homepage component.
+
+Example:
+
+import SuperhumanTeamExcellence from "@assets/superhuman-network/superhuman-team-excellence.jpg";
+import SuperhumanRemoteTeams from "@assets/superhuman-network/superhuman-remote-teams.jpg";
+import SuperhumanGlobalDelivery from "@assets/superhuman-network/superhuman-global-delivery.jpg";
+import SuperhumanClientOperations from "@assets/superhuman-network/superhuman-client-operations.jpg";
+import SuperhumanHumanAccountability from "@assets/superhuman-network/superhuman-human-accountability.jpg";
+import SuperhumanTalentSupport from "@assets/superhuman-network/superhuman-talent-support.jpg";
+import SuperhumanAIReadyWorkflows from "@assets/superhuman-network/superhuman-ai-ready-workflows.jpg";
+import SuperhumanRealWork from "@assets/superhuman-network/superhuman-real-work.jpg";
+
+If `@assets` does not work for this folder, use the same relative import style already used in the homepage file.
+
+==================================================
+UPDATE GALLERY DATA
+==================================================
+
+Replace the current gallery image data with this:
+
+const superhumanNetworkImages = [
+  {
+    label: "Team Excellence",
+    image: SuperhumanTeamExcellence,
+  },
+  {
+    label: "Remote Teams",
+    image: SuperhumanRemoteTeams,
+  },
+  {
+    label: "Global Delivery",
+    image: SuperhumanGlobalDelivery,
+  },
+  {
+    label: "Client Operations",
+    image: SuperhumanClientOperations,
+  },
+  {
+    label: "Human Accountability",
+    image: SuperhumanHumanAccountability,
+  },
+  {
+    label: "Talent Support",
+    image: SuperhumanTalentSupport,
+  },
+  {
+    label: "AI-Ready Workflows",
+    image: SuperhumanAIReadyWorkflows,
+  },
+  {
+    label: "Real Work",
+    image: SuperhumanRealWork,
+  },
+];
+
+Make sure the property names match the existing gallery component.
+If the existing component uses `src` instead of `image`, use `src`.
+
+==================================================
+REPLACE CURRENT PHOTOS
+==================================================
+
+Remove the current photo sources used in this section, especially:
+- team party/group photos
+- training room photos
+- travel/adventure photos
+- casual restaurant/event photos
+- real OnSpot outing photos
+
+These should not appear in the Superhuman Network gallery anymore.
+
+Only this section should use the new AI-generated images.
+
+==================================================
+GALLERY LABELS
+==================================================
+
+Keep labels as HTML overlay text, not image text.
+
+Label style:
+
+className="
+  absolute bottom-4 left-4 z-10
+  rounded-full bg-white/15 px-3 py-1.5
+  text-[11px] font-bold uppercase tracking-[0.16em]
+  text-white backdrop-blur-md
+"
+
+Labels should appear either:
+- always visible on the main/large tile
+- on hover for other tiles
+
+If labels are hard to see, add a stronger bottom gradient overlay.
+
+==================================================
+IMAGE TILE QUALITY
+==================================================
+
+Use:
+
+<img
+  src={item.image}
+  alt={item.label}
+  loading="lazy"
+  decoding="async"
+  className="
+    h-full w-full object-cover
+    transition duration-700 group-hover:scale-105
+  "
+/>
+
+Make sure images:
+- fill the tile
+- do not stretch
+- do not look pixelated
+- do not crop faces awkwardly
+
+Use `object-center` by default.
+
+For individual images that crop badly, use custom object position:
+- object-top
+- object-center
+- object-[center_35%]
+
+==================================================
+OVERLAY
+==================================================
+
+Keep a subtle dark overlay to match the section.
+
+Suggested:
+
+className="
+  absolute inset-0
+  bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent
+  opacity-80 transition duration-300
+  group-hover:opacity-55
+"
+
+Do not make images too dark.
+
+==================================================
+RESPONSIVE REQUIREMENTS
+==================================================
+
+Desktop:
+- keep the existing mosaic layout
+- images should be sharp and professional
+
+Tablet:
+- maintain a clean 2-column mosaic if needed
+
+Mobile:
+- stack or use a 2-column grid
+- no horizontal scrolling
+- labels must remain readable
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The Superhuman Network section should keep the same dark premium mosaic style, but all current casual/event photos should be replaced with AI-generated professional outsourcing-related images matching these labels:
+
+Team Excellence
+Remote Teams
+Global Delivery
+Client Operations
+Human Accountability
+Talent Support
+AI-Ready Workflows
+Real Work

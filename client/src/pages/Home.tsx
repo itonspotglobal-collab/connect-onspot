@@ -47,11 +47,16 @@ import WorkProfessionalsPhoto from "@assets/Built_to_Live_1775042849148.png";
 import GalleryImg1 from "@assets/Team_Flow_1775045176827.png";
 import GalleryImg2 from "@assets/Deep_Work_1775045176826.png";
 import GalleryImg3 from "@assets/Culture_Photo_1775044319871.png";
-import GalleryImg4 from "@assets/Founder_Energy_1775042849148.png";
-import GalleryImg5 from "@assets/Happy_Tribe_1775044319872.png";
-import GalleryImg6 from "@assets/Team_Lifestyle_1775044319872.png";
 import GalleryImg7 from "@assets/Leadership_Lifestyle_1775042849148.png";
-import GalleryImg8 from "@assets/Life_+_Work_1775045176827.png";
+
+import SuperhumanTeamExcellence from "../assets/superhuman-network/superhuman-team-excellence.png";
+import SuperhumanRemoteTeams from "../assets/superhuman-network/superhuman-remote-teams.png";
+import SuperhumanGlobalDelivery from "../assets/superhuman-network/superhuman-global-delivery.png";
+import SuperhumanClientOperations from "../assets/superhuman-network/superhuman-client-operations.png";
+import SuperhumanHumanAccountability from "../assets/superhuman-network/superhuman-human-accountability.png";
+import SuperhumanTalentSupport from "../assets/superhuman-network/superhuman-talent-support.png";
+import SuperhumanAIReadyWorkflows from "../assets/superhuman-network/superhuman-ai-ready-workflows.png";
+import SuperhumanRealWork from "../assets/superhuman-network/superhuman-real-work.png";
 
 import KyleMendezPhoto from "@assets/Kyle_Mendez_1774430604161.jpeg";
 import AlexandraLopezPhoto from "@assets/Alexandra_Lopez_1774430604160.jpg";
@@ -741,72 +746,72 @@ export default function Home() {
         <div className="relative z-10 mx-auto mt-14 grid max-w-[1800px] grid-cols-2 gap-1.5 px-4 [grid-auto-rows:140px] md:grid-cols-12 md:[grid-auto-rows:200px] lg:[grid-auto-rows:220px]">
           {/* Tile 0 — large left, 2 rows */}
           <div className="group relative col-span-2 row-span-2 overflow-hidden bg-slate-800 md:col-span-5 md:row-span-2">
-            <img src={GalleryImg1} alt="Team collaboration" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/40 via-transparent to-transparent opacity-70 transition-opacity duration-300 group-hover:opacity-30" />
-            <div className="absolute bottom-4 left-4 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition duration-300 group-hover:opacity-100">
+            <img src={SuperhumanTeamExcellence} alt="Team Excellence" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-55" />
+            <div className="absolute bottom-4 left-4 z-10 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white backdrop-blur-md">
               Team Excellence
             </div>
           </div>
 
           {/* Tile 1 */}
           <div className="group relative overflow-hidden bg-slate-800 md:col-span-4">
-            <img src={GalleryImg2} alt="Remote work" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/40 via-transparent to-transparent opacity-70 transition-opacity duration-300 group-hover:opacity-30" />
-            <div className="absolute bottom-4 left-4 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition duration-300 group-hover:opacity-100">
+            <img src={SuperhumanRemoteTeams} alt="Remote Teams" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-55" />
+            <div className="absolute bottom-3 left-3 z-10 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition duration-300 group-hover:opacity-100">
               Remote Teams
             </div>
           </div>
 
           {/* Tile 2 */}
           <div className="group relative overflow-hidden bg-slate-800 md:col-span-3">
-            <img src={GalleryImg3} alt="Culture" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/40 via-transparent to-transparent opacity-70 transition-opacity duration-300 group-hover:opacity-30" />
-            <div className="absolute bottom-4 left-4 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition duration-300 group-hover:opacity-100">
+            <img src={SuperhumanGlobalDelivery} alt="Global Delivery" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-55" />
+            <div className="absolute bottom-3 left-3 z-10 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition duration-300 group-hover:opacity-100">
               Global Delivery
             </div>
           </div>
 
           {/* Tile 3 */}
           <div className="group relative overflow-hidden bg-slate-800 md:col-span-4">
-            <img src={GalleryImg4} alt="Founder energy" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/40 via-transparent to-transparent opacity-70 transition-opacity duration-300 group-hover:opacity-30" />
-            <div className="absolute bottom-4 left-4 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition duration-300 group-hover:opacity-100">
+            <img src={SuperhumanClientOperations} alt="Client Operations" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-55" />
+            <div className="absolute bottom-3 left-3 z-10 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition duration-300 group-hover:opacity-100">
               Client Operations
             </div>
           </div>
 
           {/* Tile 4 */}
           <div className="group relative overflow-hidden bg-slate-800 md:col-span-3">
-            <img src={GalleryImg5} alt="Happy team" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/40 via-transparent to-transparent opacity-70 transition-opacity duration-300 group-hover:opacity-30" />
-            <div className="absolute bottom-4 left-4 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition duration-300 group-hover:opacity-100">
+            <img src={SuperhumanHumanAccountability} alt="Human Accountability" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-55" />
+            <div className="absolute bottom-3 left-3 z-10 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition duration-300 group-hover:opacity-100">
               Human Accountability
             </div>
           </div>
 
           {/* Tile 5 */}
           <div className="group relative overflow-hidden bg-slate-800 md:col-span-3">
-            <img src={GalleryImg6} alt="Team lifestyle" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/40 via-transparent to-transparent opacity-70 transition-opacity duration-300 group-hover:opacity-30" />
-            <div className="absolute bottom-4 left-4 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition duration-300 group-hover:opacity-100">
+            <img src={SuperhumanTalentSupport} alt="Talent Support" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-55" />
+            <div className="absolute bottom-3 left-3 z-10 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition duration-300 group-hover:opacity-100">
               Talent Support
             </div>
           </div>
 
           {/* Tile 6 */}
           <div className="group relative overflow-hidden bg-slate-800 md:col-span-5">
-            <img src={GalleryImg7} alt="Leadership lifestyle" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/40 via-transparent to-transparent opacity-70 transition-opacity duration-300 group-hover:opacity-30" />
-            <div className="absolute bottom-4 left-4 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition duration-300 group-hover:opacity-100">
+            <img src={SuperhumanAIReadyWorkflows} alt="AI-Ready Workflows" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-55" />
+            <div className="absolute bottom-3 left-3 z-10 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition duration-300 group-hover:opacity-100">
               AI-Ready Workflows
             </div>
           </div>
 
           {/* Tile 7 */}
           <div className="group relative overflow-hidden bg-slate-800 md:col-span-4">
-            <img src={GalleryImg8} alt="Life and work" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/40 via-transparent to-transparent opacity-70 transition-opacity duration-300 group-hover:opacity-30" />
-            <div className="absolute bottom-4 left-4 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition duration-300 group-hover:opacity-100">
+            <img src={SuperhumanRealWork} alt="Real Work" loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-55" />
+            <div className="absolute bottom-3 left-3 z-10 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition duration-300 group-hover:opacity-100">
               Real Work
             </div>
           </div>

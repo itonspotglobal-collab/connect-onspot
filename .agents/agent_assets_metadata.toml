@@ -1,0 +1,50 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "NEpWqqNBFvtlj1MX42VnX"
+uri = "file://client/src/assets/superhuman-network/superhuman-team-excellence.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "bcvNHkEHopZ23mUGHV9JG"
+uri = "file://client/src/assets/superhuman-network/superhuman-remote-teams.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "mtwPYubrLkaRszOJLUR8C"
+uri = "file://client/src/assets/superhuman-network/superhuman-global-delivery.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "GWsjtCRBVDfxJS9JgewQH"
+uri = "file://client/src/assets/superhuman-network/superhuman-client-operations.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "0_AZZLpBDyu9XE4gcTKy_"
+uri = "file://client/src/assets/superhuman-network/superhuman-human-accountability.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "B3l9bAFMOTGN4jtpfCQ9T"
+uri = "file://client/src/assets/superhuman-network/superhuman-talent-support.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Vt3dbsmqHZeYb-BHVa8j7"
+uri = "file://client/src/assets/superhuman-network/superhuman-ai-ready-workflows.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "7o8zkCUCQOfnLVZT5nngd"
+uri = "file://client/src/assets/superhuman-network/superhuman-real-work.png"
+type = "image"
+title = "generated_image"
