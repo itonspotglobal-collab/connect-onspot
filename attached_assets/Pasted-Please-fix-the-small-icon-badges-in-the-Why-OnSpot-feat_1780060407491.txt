@@ -1,0 +1,92 @@
+Please fix the small icon badges in the “Why OnSpot” feature cards.
+
+Current issue:
+The icon badge overlaps the image/content boundary, but the white/transparent backing makes it look awkward and the icon is not clearly visible. I do NOT want the large white arch/outline effect.
+
+Goal:
+Put a clean solid background behind each small icon so the icon is visible and polished.
+
+IMPORTANT:
+- Do NOT change the Navigation bar.
+- Do NOT change the Footer.
+- Do NOT change the Hero section.
+- Do NOT change the Why OnSpot section layout.
+- Do NOT change the photos.
+- Do NOT change the text.
+- Only fix the small icon badges on the Why OnSpot cards.
+
+==================================================
+ICON BADGE UPDATE
+==================================================
+
+Find the icon badge inside each Why OnSpot card.
+
+Replace the current badge style with a solid lavender/purple background.
+
+Use this style:
+
+className="
+  absolute -top-5 left-8 z-20
+  flex h-11 w-11 items-center justify-center
+  rounded-xl bg-[#EEEAFE]
+  text-[#3F4698]
+  shadow-md
+  ring-4 ring-white
+"
+
+Icon inside:
+
+className="h-5 w-5"
+
+Important:
+- The badge background must be solid, not transparent.
+- Keep the icon color #3F4698.
+- Keep the background #EEEAFE.
+- Keep the white ring, but it should be subtle and clean.
+- Do NOT use a large white arch behind the icon.
+- Do NOT use `ring-8`.
+- Do NOT use a huge `h-14 w-14`.
+- Do NOT use `bg-white/50` or transparent backgrounds.
+
+==================================================
+CONTENT WRAPPER POSITION
+==================================================
+
+The card content wrapper should stay relative:
+
+className="
+  relative px-8 pb-8 pt-10
+"
+
+The badge should sit slightly above the white content area, overlapping the image edge.
+
+It should look like:
+- a small solid lavender rounded square
+- clearly visible on top of the image/content boundary
+- clean and intentional
+
+==================================================
+REMOVE OLD BADGE STYLES
+==================================================
+
+Remove or replace any old badge styles like:
+
+- bg-white/70
+- backdrop-blur
+- ring-8
+- rounded-2xl if it makes the shape too bulky
+- very large h/w values
+- any extra white wrapper or pseudo-element behind the icon
+
+Make sure there is only ONE badge element per card icon.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The icon badges should now look clean and visible:
+- solid lavender background
+- purple icon
+- small white ring
+- no awkward large white shape
+- consistent placement across all four cards
