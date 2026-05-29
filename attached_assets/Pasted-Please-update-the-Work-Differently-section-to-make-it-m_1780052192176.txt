@@ -1,0 +1,322 @@
+Please update the “Work Differently” section to make it more visual by adding photos to each card, following the attached reference direction.
+
+Current issue:
+The “Work Differently” section is clean, but it feels too plain and text-heavy. We want it to feel more visual and engaging while still matching OnSpot branding.
+
+Goal:
+Add an image/photo header to each of the two cards:
+1. For Companies
+2. For Professionals
+
+IMPORTANT:
+- Do NOT change the Navigation bar.
+- Do NOT change the Footer.
+- Do NOT change the Hero section.
+- Do NOT change other homepage sections.
+- Do NOT change the section copy unless specified below.
+- Keep the current two-card layout.
+- Keep the OnSpot brand color direction.
+- Do NOT bring back green/teal as the main card color.
+- Use purple/indigo/lavender brand styling.
+- Use photos as visual headers only.
+- Make sure the cards remain responsive.
+
+==================================================
+SECTION STRUCTURE
+==================================================
+
+Keep the section heading:
+
+Label:
+WORK DIFFERENTLY.
+
+Headline:
+Whether you're scaling a team or growing a career — OnSpot is built for both sides of great work.
+
+Below the heading, keep two cards side by side on desktop:
+
+Left card:
+FOR COMPANIES
+
+Right card:
+FOR PROFESSIONALS
+
+==================================================
+ADD IMAGE HEADER TO EACH CARD
+==================================================
+
+Each card should have a photo at the top, similar to the reference.
+
+For Companies image direction:
+Use an image that communicates:
+- business team
+- hiring
+- collaboration
+- office partnership
+- team success
+
+For Professionals image direction:
+Use an image that communicates:
+- remote work
+- laptop
+- professional growth
+- career opportunity
+- flexible work
+
+Use existing project assets if there are already suitable images.
+If there are no existing images, use the available/approved image assets already in the project, or add new assets only if they are already provided.
+
+Do NOT use distorted or low-quality images.
+
+==================================================
+CARD LAYOUT
+==================================================
+
+Each card should follow this structure:
+
+<Card>
+  <ImageHeader />
+  <CardBody>
+    <Label />
+    <Headline />
+    <FeatureList />
+    <CTA />
+  </CardBody>
+</Card>
+
+Suggested card wrapper:
+
+className="
+  overflow-hidden rounded-[28px]
+  border border-[#3F4698]/25
+  bg-[#F4F6FF]
+  shadow-sm
+  transition duration-300
+  hover:-translate-y-1 hover:shadow-xl
+"
+
+If both cards use the same color, use:
+bg-[#F4F6FF]
+
+If you want a slight variation while staying branded:
+- Companies: bg-[#F4F6FF]
+- Professionals: bg-[#F7F5FF]
+
+Do NOT use mint/green/teal for the Professionals card.
+
+==================================================
+IMAGE HEADER STYLE
+==================================================
+
+Image header wrapper:
+
+className="
+  relative h-44 w-full overflow-hidden
+  sm:h-52
+"
+
+Image:
+
+className="
+  h-full w-full object-cover
+  transition duration-700
+  group-hover:scale-105
+"
+
+Add a subtle overlay so the photo blends with branding:
+
+className="
+  absolute inset-0
+  bg-gradient-to-t from-[#3F4698]/35 via-[#3F4698]/10 to-transparent
+"
+
+Optional:
+Add the small card label as a pill on top of the image, like the reference.
+
+Label pill on image:
+className="
+  absolute bottom-4 left-5
+  inline-flex items-center gap-2
+  rounded-full bg-white/90 px-3 py-1.5
+  text-[11px] font-bold uppercase tracking-[0.18em]
+  text-[#3F4698] shadow-sm backdrop-blur
+"
+
+Example:
+FOR COMPANIES
+FOR PROFESSIONALS
+
+If using the label pill on image, do not duplicate the same label too close inside the card body. Either:
+- keep label pill only on image, or
+- keep body label and make the image pill smaller.
+
+Preferred:
+Use label pill on image and remove the duplicate label inside the body.
+
+==================================================
+CARD BODY STYLE
+==================================================
+
+Card body:
+
+className="
+  p-8 sm:p-10
+"
+
+Headline:
+Keep current text:
+
+For Companies:
+Hire faster. Spend less.
+
+For Professionals:
+Real work. Real growth.
+
+Style:
+className="
+  text-2xl font-bold leading-tight text-slate-950
+  sm:text-3xl
+"
+
+Feature list:
+Keep current items:
+
+Companies:
+- Hire in days
+  72-hour match average
+- Hire your way
+  Contract, project, full-time
+- No middlemen
+  Direct access, zero markups
+- 50+ countries
+  Global reach, local expertise
+
+Professionals:
+- Steady pipeline
+  No gaps, no chasing
+- Top global brands
+  Builds your reputation fast
+- Your terms
+  Remote, flexible schedule
+- Zero gatekeeping
+  Pure merit, open access
+
+==================================================
+FEATURE ITEM STYLE
+==================================================
+
+Keep icon + text row style.
+
+Icon:
+Use brand purple/indigo only.
+
+className="
+  flex h-10 w-10 shrink-0 items-center justify-center
+  rounded-xl bg-[#3F4698]/10 text-[#3F4698]
+"
+
+Feature row:
+className="
+  flex gap-4 border-b border-[#3F4698]/10 py-5
+"
+
+Feature title:
+className="
+  font-semibold text-slate-950
+"
+
+Feature description:
+className="
+  mt-1 text-sm text-slate-600
+"
+
+==================================================
+CTA STYLE
+==================================================
+
+Keep CTAs:
+
+Companies:
+Find the right talent →
+
+Professionals:
+Find your next opportunity →
+
+CTA button:
+className="
+  mt-8 flex w-full items-center justify-center
+  rounded-full border border-[#3F4698]
+  px-6 py-3 text-sm font-semibold
+  text-[#3F4698]
+  transition hover:bg-[#3F4698] hover:text-white
+"
+
+==================================================
+VISUAL BALANCE
+==================================================
+
+Make the two cards equal height.
+
+Use:
+className="grid items-stretch"
+
+Each card:
+className="flex h-full flex-col"
+
+Card body:
+className="flex flex-1 flex-col"
+
+CTA should align toward the bottom.
+
+Use:
+className="mt-auto"
+
+for the CTA area if needed.
+
+==================================================
+RESPONSIVE REQUIREMENTS
+==================================================
+
+Desktop:
+- Two large cards side by side.
+- Each card has a photo header.
+- Cards equal height.
+- Visuals are clear and not distorted.
+
+Tablet:
+- Cards can stack or remain two columns if space allows.
+
+Mobile:
+- Cards stack vertically.
+- Image headers remain readable.
+- No horizontal scrolling.
+- CTA buttons full width.
+
+==================================================
+COLOR REQUIREMENTS
+==================================================
+
+Keep colors uniform and aligned with OnSpot branding.
+
+Use:
+- #3F4698 for accents
+- soft lavender/light indigo backgrounds
+- white/soft cards
+- slate text
+
+Avoid:
+- green/teal card backgrounds
+- neon purple
+- overly saturated gradients
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The Work Differently section should feel more visual and premium:
+- two large cards
+- each card has a strong image header
+- image blends with brand color
+- content remains readable
+- both cards use unified purple/indigo OnSpot branding
+- section still clearly explains the two paths: companies and professionals

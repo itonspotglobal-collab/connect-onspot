@@ -41,6 +41,9 @@ import PinetechLogo from "../assets/logos/Pinetech.png";
 import SafewayLogo from "../assets/logos/Safeway.png";
 import VertexLogo from "../assets/logos/Vertex.png";
 
+import WorkCompaniesPhoto from "@assets/Happy_Tribe_1775044319872.png";
+import WorkProfessionalsPhoto from "@assets/Deep_Work_1775045176826.png";
+
 import KyleMendezPhoto from "@assets/Kyle_Mendez_1774430604161.jpeg";
 import AlexandraLopezPhoto from "@assets/Alexandra_Lopez_1774430604160.jpg";
 import AndreaPinzonPhoto from "@assets/Andrea_Pinzon_1774264095055.jpeg";
@@ -518,122 +521,108 @@ export default function Home() {
             </h2>
           </div>
 
-          <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-8 lg:grid-cols-2">
+          <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-8 lg:grid-cols-2 items-stretch">
             {/* Card 1: For Companies */}
-            <div className="rounded-3xl border border-[#3F4698]/25 bg-[#3F4698]/[0.04] p-8 sm:p-10 shadow-sm flex flex-col">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#3F4698]">
-                For companies
-              </p>
-              <h3 className="mt-3 text-2xl font-bold text-slate-900">
-                Hire faster. Spend less.
-              </h3>
-
-              <div className="mt-8 flex flex-col flex-1 divide-y divide-slate-200/80">
-                {[
-                  {
-                    icon: <Zap className="h-5 w-5" />,
-                    title: "Hire in days",
-                    sub: "72-hour match average",
-                  },
-                  {
-                    icon: <SlidersHorizontal className="h-5 w-5" />,
-                    title: "Hire your way",
-                    sub: "Contract, project, full-time",
-                  },
-                  {
-                    icon: <ArrowRight className="h-5 w-5" />,
-                    title: "No middlemen",
-                    sub: "Direct access, zero markups",
-                  },
-                  {
-                    icon: <Globe className="h-5 w-5" />,
-                    title: "50+ countries",
-                    sub: "Global reach, local expertise",
-                  },
-                ].map((item) => (
-                  <div
-                    key={item.title}
-                    className="flex items-center gap-4 py-5"
-                  >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#3F4698]/10 text-[#3F4698]">
-                      {item.icon}
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900">
-                        {item.title}
-                      </p>
-                      <p className="text-sm text-slate-500">{item.sub}</p>
-                    </div>
-                  </div>
-                ))}
+            <div className="group flex h-full flex-col overflow-hidden rounded-[28px] border border-[#3F4698]/25 bg-[#F4F6FF] shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+              {/* Image header */}
+              <div className="relative h-44 w-full overflow-hidden sm:h-52">
+                <img
+                  src={WorkCompaniesPhoto}
+                  alt="Team collaboration"
+                  className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#3F4698]/35 via-[#3F4698]/10 to-transparent" />
+                <span className="absolute bottom-4 left-5 inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-[#3F4698] shadow-sm backdrop-blur">
+                  For companies
+                </span>
               </div>
 
-              <div className="mt-6 pt-6 border-t border-[#3F4698]/20">
-                <a
-                  href="/hire-talent"
-                  className="flex w-full items-center justify-center rounded-full border border-[#3F4698] px-6 py-3 text-sm font-semibold text-[#3F4698] transition hover:bg-[#3F4698] hover:text-white"
-                >
-                  Find the right talent →
-                </a>
+              {/* Card body */}
+              <div className="flex flex-1 flex-col p-8 sm:p-10">
+                <h3 className="text-2xl font-bold leading-tight text-slate-950 sm:text-3xl">
+                  Hire faster. Spend less.
+                </h3>
+
+                <div className="mt-6 flex flex-col flex-1">
+                  {[
+                    { icon: <Zap className="h-5 w-5" />,              title: "Hire in days",    sub: "72-hour match average"         },
+                    { icon: <SlidersHorizontal className="h-5 w-5" />, title: "Hire your way",   sub: "Contract, project, full-time"  },
+                    { icon: <ArrowRight className="h-5 w-5" />,        title: "No middlemen",    sub: "Direct access, zero markups"   },
+                    { icon: <Globe className="h-5 w-5" />,             title: "50+ countries",   sub: "Global reach, local expertise" },
+                  ].map((item) => (
+                    <div key={item.title} className="flex gap-4 border-b border-[#3F4698]/10 py-5">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#3F4698]/10 text-[#3F4698]">
+                        {item.icon}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-950">{item.title}</p>
+                        <p className="mt-1 text-sm text-slate-600">{item.sub}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-auto pt-6">
+                  <a
+                    href="/hire-talent"
+                    className="flex w-full items-center justify-center rounded-full border border-[#3F4698] px-6 py-3 text-sm font-semibold text-[#3F4698] transition hover:bg-[#3F4698] hover:text-white"
+                  >
+                    Find the right talent →
+                  </a>
+                </div>
               </div>
             </div>
 
             {/* Card 2: For Professionals */}
-            <div className="rounded-3xl border border-[#3F4698]/25 bg-[#3F4698]/[0.04] p-8 sm:p-10 shadow-sm flex flex-col">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#3F4698]">
-                For professionals
-              </p>
-              <h3 className="mt-3 text-2xl font-bold text-slate-900">
-                Real work. Real growth.
-              </h3>
-
-              <div className="mt-8 flex flex-col flex-1 divide-y divide-slate-200/80">
-                {[
-                  {
-                    icon: <TrendingUp className="h-5 w-5" />,
-                    title: "Steady pipeline",
-                    sub: "No gaps, no chasing",
-                  },
-                  {
-                    icon: <Star className="h-5 w-5" />,
-                    title: "Top global brands",
-                    sub: "Builds your reputation fast",
-                  },
-                  {
-                    icon: <Clock className="h-5 w-5" />,
-                    title: "Your terms",
-                    sub: "Remote, flexible schedule",
-                  },
-                  {
-                    icon: <CheckCircle2 className="h-5 w-5" />,
-                    title: "Zero gatekeeping",
-                    sub: "Pure merit, open access",
-                  },
-                ].map((item) => (
-                  <div
-                    key={item.title}
-                    className="flex items-center gap-4 py-5"
-                  >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#3F4698]/10 text-[#3F4698]">
-                      {item.icon}
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900">
-                        {item.title}
-                      </p>
-                      <p className="text-sm text-slate-500">{item.sub}</p>
-                    </div>
-                  </div>
-                ))}
+            <div className="group flex h-full flex-col overflow-hidden rounded-[28px] border border-[#3F4698]/25 bg-[#F7F5FF] shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+              {/* Image header */}
+              <div className="relative h-44 w-full overflow-hidden sm:h-52">
+                <img
+                  src={WorkProfessionalsPhoto}
+                  alt="Professional remote work"
+                  className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#3F4698]/35 via-[#3F4698]/10 to-transparent" />
+                <span className="absolute bottom-4 left-5 inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-[#3F4698] shadow-sm backdrop-blur">
+                  For professionals
+                </span>
               </div>
 
-              <div className="mt-6 pt-6 border-t border-[#3F4698]/20">
-                <a
-                  href="/find-best-matches"
-                  className="flex w-full items-center justify-center rounded-full border border-[#3F4698] px-6 py-3 text-sm font-semibold text-[#3F4698] transition hover:bg-[#3F4698] hover:text-white"
-                >
-                  Find your next opportunity →
-                </a>
+              {/* Card body */}
+              <div className="flex flex-1 flex-col p-8 sm:p-10">
+                <h3 className="text-2xl font-bold leading-tight text-slate-950 sm:text-3xl">
+                  Real work. Real growth.
+                </h3>
+
+                <div className="mt-6 flex flex-col flex-1">
+                  {[
+                    { icon: <TrendingUp className="h-5 w-5" />,  title: "Steady pipeline",    sub: "No gaps, no chasing"          },
+                    { icon: <Star className="h-5 w-5" />,         title: "Top global brands",  sub: "Builds your reputation fast"  },
+                    { icon: <Clock className="h-5 w-5" />,        title: "Your terms",         sub: "Remote, flexible schedule"    },
+                    { icon: <CheckCircle2 className="h-5 w-5" />, title: "Zero gatekeeping",   sub: "Pure merit, open access"      },
+                  ].map((item) => (
+                    <div key={item.title} className="flex gap-4 border-b border-[#3F4698]/10 py-5">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#3F4698]/10 text-[#3F4698]">
+                        {item.icon}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-950">{item.title}</p>
+                        <p className="mt-1 text-sm text-slate-600">{item.sub}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-auto pt-6">
+                  <a
+                    href="/find-best-matches"
+                    className="flex w-full items-center justify-center rounded-full border border-[#3F4698] px-6 py-3 text-sm font-semibold text-[#3F4698] transition hover:bg-[#3F4698] hover:text-white"
+                  >
+                    Find your next opportunity →
+                  </a>
+                </div>
               </div>
             </div>
           </div>
