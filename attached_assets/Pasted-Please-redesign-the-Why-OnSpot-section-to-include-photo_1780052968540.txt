@@ -1,0 +1,380 @@
+Please redesign the “Why OnSpot” section to include photos and follow the visual direction of the attached reference.
+
+Current issue:
+The current Why OnSpot section is clean, but it feels too static and card-heavy. We want it to feel more visual, premium, and persuasive, with image cards like the reference.
+
+Goal:
+Update the Why OnSpot section so it uses:
+- a strong text intro on the upper left
+- a large image on the upper right
+- four visual cards below
+- each card has an AI-generated-style image header
+- card content below the image
+- OnSpot purple/indigo brand styling
+
+IMPORTANT:
+- Do NOT change the Navigation bar.
+- Do NOT change the Footer.
+- Do NOT change the Hero section.
+- Do NOT change other homepage sections.
+- Do NOT change the section copy unless needed for layout.
+- Keep the same four Why OnSpot pillars.
+- Use OnSpot brand color #3F4698.
+- Do NOT use green/teal as the main accent color.
+- Use AI-generated or approved stock-style photos that feel modern, professional, and outsourcing-related.
+
+==================================================
+SECTION CONTENT
+==================================================
+
+Keep this section content:
+
+Label:
+WHY ONSPOT
+
+Headline:
+Not a service provider. An architect.
+
+Supporting copy:
+We design the operating layer behind modern outsourcing — combining AI-ready systems, vetted talent, and human accountability so your team can scale without losing control.
+
+Four pillars:
+
+1. AI-first infrastructure
+Tagline:
+Intelligent by design
+Body:
+Every system and workflow enhanced by intelligence that amplifies human potential — not automation for its own sake.
+
+2. Human-centered culture
+Tagline:
+People, not resources
+Body:
+Elite Filipino talent treated as partners. We invest in their growth because your success depends on it.
+
+3. Connected ecosystem
+Tagline:
+Seamless integration
+Body:
+Your tools, your workflow, working in harmony. We don't disrupt what you've built — we elevate it.
+
+4. Scalable excellence
+Tagline:
+Grow without compromise
+Body:
+Scale from 1 to 100 without losing quality, culture, or control. Same excellence at every stage.
+
+==================================================
+LAYOUT REFERENCE
+==================================================
+
+Follow the structure of the second reference image:
+
+Top row:
+- Left side: section label, headline, paragraph
+- Right side: wide rounded image
+
+Below:
+- 2x2 grid of image cards
+- each card has image on top and content below
+
+Suggested section structure:
+
+<section className="why-onspot-section">
+  <div className="mx-auto max-w-7xl px-6">
+    <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-start">
+      <div>
+        label
+        headline
+        paragraph
+      </div>
+
+      <div className="top-image-card">
+        image
+      </div>
+    </div>
+
+    <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2">
+      pillar cards
+    </div>
+  </div>
+</section>
+
+==================================================
+SECTION BACKGROUND
+==================================================
+
+Use a soft branded light background, similar to the reference.
+
+Suggested:
+
+className="
+  relative overflow-hidden bg-[#F4F2FF] py-24 sm:py-28
+"
+
+or:
+
+className="
+  relative overflow-hidden bg-gradient-to-br
+  from-[#F6F4FF] via-[#F8F7FF] to-[#EEF2FF]
+  py-24 sm:py-28
+"
+
+Add subtle background glow only if it looks good:
+
+<div className="absolute -top-24 right-0 h-72 w-72 rounded-full bg-[#3F4698]/10 blur-3xl" />
+<div className="absolute bottom-0 left-0 h-80 w-80 rounded-full bg-[#3F4698]/5 blur-3xl" />
+
+==================================================
+TOP INTRO STYLE
+==================================================
+
+Label:
+
+className="
+  text-xs font-bold uppercase tracking-[0.28em] text-[#3F4698]
+"
+
+Headline:
+
+className="
+  mt-4 max-w-2xl text-4xl font-bold tracking-tight text-slate-950
+  sm:text-5xl lg:text-6xl
+"
+
+Highlight “An architect.”:
+
+className="text-[#3F4698] italic"
+
+Supporting copy:
+
+className="
+  mt-6 max-w-xl text-base leading-relaxed text-slate-600
+  sm:text-lg
+"
+
+==================================================
+TOP RIGHT IMAGE
+==================================================
+
+Add a large rounded image on the upper right.
+
+Image direction:
+Use an AI-generated photo that represents:
+- modern outsourcing operations
+- office collaboration
+- global team
+- AI-enabled workflow
+- professional workspace
+
+Suggested asset name:
+why-onspot-hero-office.jpg
+
+If the asset does not exist, generate/add an AI image with this prompt:
+
+“Modern premium office workspace with diverse professionals collaborating on laptops, subtle AI operations dashboard screens, warm natural light, clean corporate environment, realistic photography, no text, no logos, no distorted faces or hands.”
+
+Image wrapper:
+
+className="
+  relative h-64 overflow-hidden rounded-[28px]
+  border border-white/70 bg-white shadow-sm
+  lg:h-72
+"
+
+Image:
+
+className="
+  h-full w-full object-cover
+"
+
+Optional overlay:
+
+className="
+  absolute inset-0 bg-gradient-to-t from-[#3F4698]/20 to-transparent
+"
+
+==================================================
+PILLAR CARD IMAGE DIRECTIONS
+==================================================
+
+Each pillar card should have a unique image header.
+
+1. AI-first infrastructure
+Image prompt:
+“Close-up of a laptop with glowing AI workflow dashboard, modern outsourcing operations, dark screen with abstract data lines, realistic photography, no readable text, no logos.”
+
+Suggested asset:
+why-ai-infrastructure.jpg
+
+2. Human-centered culture
+Image prompt:
+“Diverse Filipino and global professionals collaborating in a modern office, friendly team discussion, human-centered outsourcing culture, realistic photography, warm light, no text, no logos.”
+
+Suggested asset:
+why-human-culture.jpg
+
+3. Connected ecosystem
+Image prompt:
+“Professional workspace with multiple screens showing connected workflow dashboards and integrations, people working together, modern operations hub, realistic photography, no readable text, no logos.”
+
+Suggested asset:
+why-connected-ecosystem.jpg
+
+4. Scalable excellence
+Image prompt:
+“Modern business team in a strategy meeting with laptops and notes, scaling operations, premium office environment, realistic photography, natural light, no text, no logos.”
+
+Suggested asset:
+why-scalable-excellence.jpg
+
+Important:
+AI images should be realistic and professional.
+Avoid distorted people, bad hands, unreadable text, fake logos, and overly futuristic sci-fi visuals.
+
+==================================================
+PILLAR CARD DESIGN
+==================================================
+
+Card wrapper:
+
+className="
+  group overflow-hidden rounded-[28px]
+  border border-[#3F4698]/12
+  bg-white shadow-sm
+  transition duration-300
+  hover:-translate-y-1 hover:shadow-xl
+"
+
+Image header:
+
+className="
+  relative h-44 w-full overflow-hidden bg-slate-100
+"
+
+or for more visual impact:
+
+className="
+  relative h-48 w-full overflow-hidden bg-slate-100
+"
+
+Image:
+
+className="
+  h-full w-full object-cover
+  transition duration-700 group-hover:scale-105
+"
+
+Overlay:
+
+className="
+  absolute inset-0 bg-gradient-to-t from-[#3F4698]/20 via-transparent to-transparent
+"
+
+Icon badge:
+Place the icon slightly overlapping the image and content area, like the reference.
+
+Wrapper:
+
+className="
+  relative px-8 pb-8 pt-10
+"
+
+Icon badge:
+
+className="
+  absolute -top-6 left-8
+  flex h-12 w-12 items-center justify-center
+  rounded-2xl bg-[#3F4698]/10 text-[#3F4698]
+  ring-8 ring-white
+"
+
+Title:
+
+className="
+  text-xl font-bold text-slate-950
+"
+
+Tagline:
+
+className="
+  mt-2 text-sm font-semibold text-[#3F4698]
+"
+
+Body:
+
+className="
+  mt-4 text-sm leading-relaxed text-slate-600
+"
+
+==================================================
+IMAGE GENERATION / ASSET HANDLING
+==================================================
+
+If Replit can generate AI photos:
+Generate one image per needed asset using the prompts above.
+
+Save them in:
+client/src/assets/why-onspot/
+
+Suggested filenames:
+- why-onspot-hero-office.jpg
+- why-ai-infrastructure.jpg
+- why-human-culture.jpg
+- why-connected-ecosystem.jpg
+- why-scalable-excellence.jpg
+
+Then import them into the homepage file:
+
+import WhyHeroOffice from "@assets/why-onspot/why-onspot-hero-office.jpg";
+import WhyAIInfrastructure from "@assets/why-onspot/why-ai-infrastructure.jpg";
+import WhyHumanCulture from "@assets/why-onspot/why-human-culture.jpg";
+import WhyConnectedEcosystem from "@assets/why-onspot/why-connected-ecosystem.jpg";
+import WhyScalableExcellence from "@assets/why-onspot/why-scalable-excellence.jpg";
+
+If the project does not support the `@assets` alias in that folder, use the same import path pattern already used in the project.
+
+==================================================
+REMOVE OLD WHY ONSPOT LAYOUT
+==================================================
+
+Remove/replace the current layout where:
+- one dark blue panel appears on the left
+- four plain cards appear on the right
+
+Replace with:
+- top intro + top image
+- four image cards in a 2x2 grid
+
+Do not keep both versions.
+
+==================================================
+RESPONSIVE REQUIREMENTS
+==================================================
+
+Desktop:
+- top intro and image side by side
+- four cards in 2x2 grid
+- images look sharp and premium
+
+Tablet:
+- top intro/image can stack
+- cards remain 2 columns if space allows
+
+Mobile:
+- everything stacks in one column
+- image heights can reduce to h-40 or h-44
+- no horizontal scrolling
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The Why OnSpot section should look like the attached reference:
+- soft branded background
+- editorial intro on the left
+- large image on the upper right
+- four image-based cards below
+- each card has a professional photo header
+- content remains readable
+- all accents use OnSpot brand #3F4698

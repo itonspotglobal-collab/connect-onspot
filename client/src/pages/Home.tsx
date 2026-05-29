@@ -949,106 +949,109 @@ export default function Home() {
       </div>
 
       {/* ── 6. WHY PARTNER / WHY ONSPOT ── */}
-      <div className="relative overflow-hidden bg-[#F4F6FF] py-20 sm:py-28">
-        <div className="pointer-events-none absolute -bottom-24 right-0 h-96 w-96 rounded-full bg-[#3F4698]/8 blur-3xl" />
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#F6F4FF] via-[#F8F7FF] to-[#EEF2FF] py-24 sm:py-28">
+        <div className="pointer-events-none absolute -top-24 right-0 h-72 w-72 rounded-full bg-[#3F4698]/10 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-0 left-0 h-80 w-80 rounded-full bg-[#3F4698]/5 blur-3xl" />
 
-        <div className="container relative z-10 mx-auto px-4 sm:px-6">
-          <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
-            {/* Left — dark brand panel */}
-            <div className="rounded-[36px] bg-[#3F4698] p-8 text-white shadow-[0_30px_100px_rgba(63,70,152,0.25)] sm:p-10">
-              <p className="text-xs font-bold uppercase tracking-[0.28em] text-white/60">
-                Why OnSpot
-              </p>
-              <h2 className="mt-4 text-3xl font-bold leading-tight text-white sm:text-4xl">
+        <div className="container relative z-10 mx-auto max-w-7xl px-4 sm:px-6">
+          {/* Top row — intro left, image right */}
+          <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-center">
+            {/* Left: label + headline + copy */}
+            <div>
+              <div className="flex items-center gap-3">
+                <div className="h-px w-8 bg-[#3F4698]/50" />
+                <p className="text-xs font-bold uppercase tracking-[0.28em] text-[#3F4698]">
+                  Why OnSpot
+                </p>
+              </div>
+              <h2
+                className="mt-4 font-bold leading-tight tracking-tight text-slate-950"
+                style={{ fontSize: "clamp(2rem, 5vw, 3.5rem)" }}
+              >
                 Not a service provider.{" "}
-                <span className="italic text-white/80">An architect.</span>
+                <span className="italic text-[#3F4698]">An architect.</span>
               </h2>
-              <p className="mt-5 text-base leading-relaxed text-white/70">
+              <p className="mt-6 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
                 We design the operating layer behind modern outsourcing —
                 combining AI-ready systems, vetted talent, and human
                 accountability so your team can scale without losing control.
               </p>
-
-              {/* Tag pills */}
-              <div className="mt-8 flex flex-wrap gap-2">
-                {[
-                  "No inflated middlemen",
-                  "Built-in accountability",
-                  "AI-ready workflows",
-                  "Vetted Filipino talent",
-                  "Scale without chaos",
-                ].map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-full bg-white/10 px-4 py-2 text-sm text-white/85"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-
-              {/* Mini proof stats */}
-              <div className="mt-10 grid grid-cols-3 gap-4 border-t border-white/15 pt-6">
-                {[
-                  { value: "72hr", label: "Avg. match time" },
-                  { value: "500+", label: "Clients" },
-                  { value: "98%", label: "Retention" },
-                ].map((s) => (
-                  <div key={s.label} className="text-center">
-                    <p className="text-2xl font-bold text-white">{s.value}</p>
-                    <p className="mt-1 text-xs text-white/55">{s.label}</p>
-                  </div>
-                ))}
-              </div>
             </div>
 
-            {/* Right — 2×2 advantage cards */}
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-              {[
-                {
-                  icon: <Bot className="h-6 w-6" />,
-                  title: "AI-first infrastructure",
-                  tagline: "Intelligent by design",
-                  body: "Every system and workflow enhanced by intelligence that amplifies human potential — not automation for its own sake.",
-                },
-                {
-                  icon: <Users className="h-6 w-6" />,
-                  title: "Human-centered culture",
-                  tagline: "People, not resources",
-                  body: "Elite Filipino talent treated as partners. We invest in their growth because your success depends on it.",
-                },
-                {
-                  icon: <Globe className="h-6 w-6" />,
-                  title: "Connected ecosystem",
-                  tagline: "Seamless integration",
-                  body: "Your tools, your workflow, working in harmony. We don't disrupt what you've built — we elevate it.",
-                },
-                {
-                  icon: <TrendingUp className="h-6 w-6" />,
-                  title: "Scalable excellence",
-                  tagline: "Grow without compromise",
-                  body: "Scale from 1 to 100 without losing quality, culture, or control. Same excellence at every stage.",
-                },
-              ].map((card) => (
-                <div
-                  key={card.title}
-                  className="rounded-[28px] border border-[#3F4698]/12 bg-white p-7 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
-                >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#3F4698]/10 text-[#3F4698]">
+            {/* Right: large image */}
+            <div className="relative h-64 overflow-hidden rounded-[28px] border border-white/70 shadow-sm lg:h-72">
+              <img
+                src={GalleryImg7}
+                alt="Modern professional workspace"
+                className="h-full w-full object-cover"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#3F4698]/20 to-transparent" />
+            </div>
+          </div>
+
+          {/* Four pillar cards — 2×2 grid */}
+          <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2">
+            {[
+              {
+                icon: <Bot className="h-6 w-6" />,
+                img: GalleryImg2,
+                imgAlt: "AI workflow and laptop",
+                title: "AI-first infrastructure",
+                tagline: "Intelligent by design",
+                body: "Every system and workflow enhanced by intelligence that amplifies human potential — not automation for its own sake.",
+              },
+              {
+                icon: <Users className="h-6 w-6" />,
+                img: GalleryImg3,
+                imgAlt: "Team culture",
+                title: "Human-centered culture",
+                tagline: "People, not resources",
+                body: "Elite Filipino talent treated as partners. We invest in their growth because your success depends on it.",
+              },
+              {
+                icon: <Globe className="h-6 w-6" />,
+                img: WorkCompaniesPhoto,
+                imgAlt: "Connected workflow",
+                title: "Connected ecosystem",
+                tagline: "Seamless integration",
+                body: "Your tools, your workflow, working in harmony. We don't disrupt what you've built — we elevate it.",
+              },
+              {
+                icon: <TrendingUp className="h-6 w-6" />,
+                img: GalleryImg1,
+                imgAlt: "Scalable team",
+                title: "Scalable excellence",
+                tagline: "Grow without compromise",
+                body: "Scale from 1 to 100 without losing quality, culture, or control. Same excellence at every stage.",
+              },
+            ].map((card) => (
+              <div
+                key={card.title}
+                className="group overflow-hidden rounded-[28px] border border-[#3F4698]/12 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
+              >
+                {/* Photo header */}
+                <div className="relative h-44 w-full overflow-hidden bg-slate-100">
+                  <img
+                    src={card.img}
+                    alt={card.imgAlt}
+                    className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#3F4698]/20 via-transparent to-transparent" />
+                </div>
+
+                {/* Card body with floating icon badge */}
+                <div className="relative px-8 pb-8 pt-10">
+                  <div className="absolute -top-6 left-8 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#3F4698]/10 text-[#3F4698] ring-8 ring-white">
                     {card.icon}
                   </div>
-                  <h3 className="mt-6 text-xl font-bold text-slate-950">
-                    {card.title}
-                  </h3>
-                  <p className="mt-2 text-sm font-semibold text-[#3F4698]">
-                    {card.tagline}
-                  </p>
-                  <p className="mt-4 text-sm leading-relaxed text-slate-600">
-                    {card.body}
-                  </p>
+                  <h3 className="text-xl font-bold text-slate-950">{card.title}</h3>
+                  <p className="mt-2 text-sm font-semibold text-[#3F4698]">{card.tagline}</p>
+                  <p className="mt-4 text-sm leading-relaxed text-slate-600">{card.body}</p>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
