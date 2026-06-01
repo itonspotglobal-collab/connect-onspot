@@ -447,81 +447,81 @@ export default function Home() {
 
       {/* ── 2. FEATURED INSIGHTS — text-only list ── */}
       <div className="bg-[#FAF9F6] py-12 sm:py-14 lg:py-16">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="grid gap-6 lg:grid-cols-[199px_1fr_auto] lg:items-start">
+        <div className="mx-auto max-w-[1800px] px-6 sm:px-10 lg:px-16">
+          <div className="grid grid-cols-1 gap-10 lg:grid-cols-[300px_1fr] lg:gap-16">
+
             {/* Left: label + heading */}
-            <div className="lg:pt-1">
-              <p className="flex items-center gap-3 text-xs font-bold uppercase tracking-[0.24em] text-[#3F4698]">
-                <span className="h-px w-8 bg-[#3F4698]" />
-                Insights
-              </p>
-              <h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-950">
+            <div className="lg:pt-2">
+              <div className="flex items-center gap-4">
+                <span className="h-px w-10 bg-[#3F4698]" />
+                <span className="text-xs font-bold uppercase tracking-[0.32em] text-[#3F4698]">Insights</span>
+              </div>
+              <h2 className="mt-5 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
                 Latest Insights
               </h2>
             </div>
 
-            {/* Middle: insight rows */}
-            <div className="divide-y divide-slate-199/80">
-              {(featuredPosts.length > 0
-                ? featuredPosts.slice(0, 3)
-                : [
-                    {
-                      id: 1,
-                      slug: "ai-operating-model",
-                      category: "AI OPERATIONS",
-                      title:
-                        "The new operating model: AI agents and human teams",
-                      readTime: "6 min read",
-                    },
-                    {
-                      id: 2,
-                      slug: "philippines-global-operations",
-                      category: "TALENT",
-                      title:
-                        "Why the Philippines is the future of global operations",
-                      readTime: "8 min read",
-                    },
-                    {
-                      id: 3,
-                      slug: "founder-playbook",
-                      category: "FOUNDER OPS",
-                      title:
-                        "From burnout to 4-day weeks: a founder's playbook",
-                      readTime: "5 min read",
-                    },
-                  ]
-              ).map((post) => (
+            {/* Right: view all + rows */}
+            <div>
+              <div className="mb-4 flex items-center justify-end">
                 <a
-                  key={post.id}
-                  href={`/insights/${post.slug}`}
-                  className="group grid grid-cols-1 gap-3 py-5 last:pb-0 sm:grid-cols-[160px_1fr_90px] sm:items-center sm:gap-6"
+                  href="/insights"
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-[#3F4698] transition-all hover:gap-3"
                 >
-                  {/* Category pill */}
-                  <span className="inline-flex w-fit items-center justify-center rounded-full bg-[#EEEAFE] px-4 py-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#3F4698]">
-                    {(post as any).category || "Industry Insights"}
-                  </span>
-                  {/* Title */}
-                  <h3 className="text-base font-semibold leading-snug text-slate-950 transition-colors group-hover:text-[#3F4698] sm:text-lg">
-                    {post.title}
-                  </h3>
-                  {/* Read time */}
-                  <span className="text-sm text-slate-500 sm:text-right">
-                    {(post as any).readTime || "5 min read"}
-                  </span>
+                  View all
+                  <ArrowRight className="h-4 w-4" />
                 </a>
-              ))}
+              </div>
+
+              <div className="divide-y divide-slate-200">
+                {(featuredPosts.length > 0
+                  ? featuredPosts.slice(0, 3)
+                  : [
+                      {
+                        id: 1,
+                        slug: "ai-operating-model",
+                        category: "AI OPERATIONS",
+                        title: "The new operating model: AI agents and human teams",
+                        readTime: "6 min read",
+                      },
+                      {
+                        id: 2,
+                        slug: "philippines-global-operations",
+                        category: "TALENT",
+                        title: "Why the Philippines is the future of global operations",
+                        readTime: "8 min read",
+                      },
+                      {
+                        id: 3,
+                        slug: "founder-playbook",
+                        category: "FOUNDER OPS",
+                        title: "From burnout to 4-day weeks: a founder's playbook",
+                        readTime: "5 min read",
+                      },
+                    ]
+                ).map((post) => (
+                  <a
+                    key={post.id}
+                    href={`/insights/${post.slug}`}
+                    className="group grid grid-cols-1 gap-3 py-6 md:grid-cols-[220px_1fr_110px] md:items-center md:gap-6"
+                  >
+                    {/* Category pill — fixed height, no-wrap */}
+                    <span className="inline-flex h-9 w-fit items-center justify-center whitespace-nowrap rounded-full bg-[#EEEAFE] px-5 text-[11px] font-bold uppercase tracking-[0.18em] text-[#3F4698]">
+                      {(post as any).category || "Industry Insights"}
+                    </span>
+                    {/* Title */}
+                    <h3 className="text-xl font-semibold leading-snug text-slate-950 transition-colors group-hover:text-[#3F4698] sm:text-2xl">
+                      {post.title}
+                    </h3>
+                    {/* Read time */}
+                    <span className="text-sm text-slate-500 md:text-right">
+                      {(post as any).readTime || "5 min read"}
+                    </span>
+                  </a>
+                ))}
+              </div>
             </div>
 
-            {/* Right: view all link */}
-            <div className="flex lg:justify-end lg:pt-1">
-              <a
-                href="/insights"
-                className="inline-flex items-center gap-2 whitespace-nowrap text-sm font-semibold text-[#3F4698] transition-all hover:gap-3"
-              >
-                View all
-                <ArrowRight className="h-4 w-4" />
-              </a>
-            </div>
           </div>
         </div>
       </div>

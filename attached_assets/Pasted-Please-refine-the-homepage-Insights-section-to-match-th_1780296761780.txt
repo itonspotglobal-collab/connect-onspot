@@ -1,0 +1,208 @@
+Please refine the homepage Insights section to match the attached goal screenshot.
+
+Current issue:
+The Insights section still feels too large and the first blog category label is not uniform with the labels below it.
+
+Goal:
+Make the Insights section compact and polished like the reference screenshot, while keeping it visible as a highlighted content section.
+
+IMPORTANT:
+- Do not redesign the full homepage.
+- Only adjust the Insights section.
+- Keep the current fonts, colors, and OnSpot styling.
+- Make it responsive for desktop, laptop, tablet, and mobile.
+
+==================================================
+1. COMPRESS THE INSIGHTS SECTION
+==================================================
+
+The section should feel smaller and tighter, not like a major full-page feature.
+
+Reduce:
+- top padding
+- bottom padding
+- vertical gaps between rows
+- excessive whitespace around the section
+
+Suggested section padding:
+Use:
+py-12 sm:py-14 lg:py-16
+
+Instead of:
+py-20 / py-24 / py-32
+
+Suggested main container:
+className="
+  mx-auto w-full max-w-[1800px]
+  px-6 sm:px-10 lg:px-16
+"
+
+==================================================
+2. MATCH THE REFERENCE LAYOUT
+==================================================
+
+Desktop layout should look like this:
+
+Left column:
+- small “INSIGHTS” label with line
+- “Latest Insights” heading
+
+Right column:
+- View all link at top-right
+- three insight rows
+
+Suggested overall layout:
+
+<section>
+  <div className="mx-auto grid max-w-[1800px] grid-cols-1 gap-10 px-6 sm:px-10 lg:grid-cols-[300px_1fr] lg:gap-16 lg:px-16">
+    <div>
+      label + heading
+    </div>
+
+    <div>
+      top-right View all
+      insight rows
+    </div>
+  </div>
+</section>
+
+==================================================
+3. INSIGHT ROW LAYOUT
+==================================================
+
+Each insight row should use 3 columns on desktop:
+
+1. category label
+2. blog title
+3. read time
+
+Suggested row class:
+
+className="
+  grid grid-cols-1 gap-4
+  border-b border-slate-200
+  py-6
+  md:grid-cols-[260px_1fr_120px]
+  md:items-center
+"
+
+For the first row, do not add extra top padding that makes it huge. Use the same row spacing as the others.
+
+Read time:
+className="
+  text-left text-base text-slate-500
+  md:text-right
+"
+
+Blog title:
+className="
+  text-xl sm:text-2xl
+  font-semibold leading-snug text-slate-950
+"
+
+==================================================
+4. MAKE ALL CATEGORY LABELS UNIFORM
+==================================================
+
+Current issue:
+The first blog label “INDUSTRY INSIGHTS” appears larger/taller and wraps to two lines, while the other labels are shorter.
+
+Fix:
+Make the first label match the others visually.
+
+Options:
+- Change first label text from “INDUSTRY INSIGHTS” to “INDUSTRY TRENDS”
+OR
+- Keep “INDUSTRY INSIGHTS” but make the pill wide enough and text small enough so it stays on one line.
+
+Preferred:
+Keep the text if needed, but make all category pills the same height and consistent.
+
+Category pill style:
+
+className="
+  inline-flex h-12 min-w-[220px]
+  items-center justify-center
+  rounded-full bg-violet-100
+  px-6
+  text-xs font-semibold uppercase
+  tracking-[0.22em]
+  text-indigo-700
+  whitespace-nowrap
+"
+
+If the text still wraps, use:
+text-[11px]
+tracking-[0.18em]
+
+Important:
+- All category labels should have the same height.
+- All category labels should appear on one line.
+- First label should not be taller than the others.
+- Do not let “INDUSTRY INSIGHTS” break into two lines.
+
+==================================================
+5. SECTION HEADER STYLE
+==================================================
+
+Insights label:
+Use a small line before the word INSIGHTS.
+
+Suggested:
+<div className="mb-8 flex items-center gap-4">
+  <span className="h-px w-12 bg-indigo-700"></span>
+  <span className="text-sm font-semibold uppercase tracking-[0.35em] text-indigo-700">
+    INSIGHTS
+  </span>
+</div>
+
+Latest Insights heading:
+className="
+  text-3xl sm:text-4xl
+  font-semibold tracking-tight text-slate-950
+"
+
+View all link:
+className="
+  mb-4 flex items-center justify-end gap-2
+  text-lg font-semibold text-indigo-700
+  hover:text-indigo-900
+"
+
+==================================================
+6. RESPONSIVE BEHAVIOR
+==================================================
+
+Desktop:
+- Left heading column, right article list.
+- Rows use category / title / read-time layout.
+
+Tablet:
+- Section can stack.
+- Article rows can still show category above title if needed.
+
+Mobile:
+- Stack everything vertically.
+- Category pill appears above title.
+- Read time appears below title or aligned left.
+- Keep spacing compact.
+
+Mobile row:
+className="
+  border-b border-slate-200 py-5
+"
+
+Do not cause horizontal scrolling.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The Insights section should look like the attached goal screenshot:
+- compact white section
+- left “INSIGHTS” label and “Latest Insights”
+- right-side article list
+- “View all” at top right
+- clean row dividers
+- uniform category pills
+- first blog label no longer wraps or looks bigger than the others
