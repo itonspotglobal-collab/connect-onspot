@@ -353,8 +353,8 @@ export default function Home() {
               className="hero-fade-up inline-flex items-center gap-2.5 bg-white/8 backdrop-blur-md px-5 py-2.5 rounded-full border border-white/20"
               data-testid="badge-superhuman-bpo"
             >
-              <span className="text-base font-semibold text-white/90 sm:text-lg">
-                AI first. Humans when it matters.
+              <span className="text-sm sm:text-base font-large text-white/90">
+                AI First. Humans When it Matters.
               </span>
             </div>
 
@@ -375,7 +375,10 @@ export default function Home() {
               </p>
               <p className="mt-3 text-base sm:text-lg md:text-xl leading-relaxed text-white/55">
                 Marketplace speed, BPO quality, and a talent pool built for the
-                work AI creates — not just the work it replaces.
+                work AI creates
+              </p>
+              <p className="mt-3 text-base sm:text-lg md:text-xl leading-relaxed text-white/55">
+                — not just the work it replaces.
               </p>
             </div>
 
@@ -443,9 +446,9 @@ export default function Home() {
       </div>
 
       {/* ── 2. FEATURED INSIGHTS — text-only list ── */}
-      <div className="bg-[#FAF9F6] py-20 sm:py-24">
+      <div className="bg-[#FAF9F6] py-12 sm:py-14 lg:py-16">
         <div className="mx-auto max-w-7xl px-6">
-          <div className="grid gap-10 lg:grid-cols-[220px_1fr_auto] lg:items-start">
+          <div className="grid gap-6 lg:grid-cols-[199px_1fr_auto] lg:items-start">
             {/* Left: label + heading */}
             <div className="lg:pt-1">
               <p className="flex items-center gap-3 text-xs font-bold uppercase tracking-[0.24em] text-[#3F4698]">
@@ -453,12 +456,12 @@ export default function Home() {
                 Insights
               </p>
               <h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-950">
-                Latest thinking
+                Latest Insights
               </h2>
             </div>
 
             {/* Middle: insight rows */}
-            <div className="divide-y divide-slate-200/80">
+            <div className="divide-y divide-slate-199/80">
               {(featuredPosts.length > 0
                 ? featuredPosts.slice(0, 3)
                 : [
@@ -543,11 +546,11 @@ export default function Home() {
             {/* Card 1: For Companies */}
             <div className="group flex h-full flex-col overflow-hidden rounded-[28px] border border-[#3F4698]/25 bg-[#F4F6FF] shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
               {/* Image header */}
-              <div className="relative h-44 w-full overflow-hidden sm:h-52">
+              <div className="relative h-[260px] w-full overflow-hidden sm:h-[300px] lg:h-[320px]">
                 <img
                   src={WorkCompaniesPhoto}
                   alt="Team collaboration"
-                  className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                  className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105"
                   loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#3F4698]/35 via-[#3F4698]/10 to-transparent" />
@@ -618,7 +621,7 @@ export default function Home() {
             {/* Card 2: For Professionals */}
             <div className="group flex h-full flex-col overflow-hidden rounded-[28px] border border-[#3F4698]/25 bg-[#F7F5FF] shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
               {/* Image header */}
-              <div className="relative h-56 w-full overflow-hidden sm:h-64">
+              <div className="relative h-[260px] w-full overflow-hidden sm:h-[300px] lg:h-[320px]">
                 <img
                   src={WorkProfessionalsPhoto}
                   alt="Professional remote work"
@@ -748,7 +751,7 @@ export default function Home() {
         </div>
 
         {/* Mosaic gallery — 9 tiles, 3-row layout, no gaps */}
-        <div className="relative z-10 mx-auto mt-14 grid max-w-[1800px] grid-cols-2 gap-1.5 px-4 [grid-auto-rows:120px] md:grid-cols-12 md:[grid-auto-rows:145px] lg:[grid-auto-rows:165px]">
+        <div className="relative z-10 mx-auto mt-14 grid max-w-[1800px] grid-cols-2 gap-1.5 px-4 [grid-auto-rows:140px] md:grid-cols-12 md:[grid-auto-rows:165px] lg:[grid-auto-rows:185px]">
           {/* Tile 0 — Collaboration that scales: large left, 2 rows tall */}
           {/* md: cols 1-6, rows 1-2 */}
           <div className="group relative col-span-2 row-span-2 overflow-hidden bg-slate-800 md:col-span-6 md:row-span-2">
@@ -821,7 +824,7 @@ export default function Home() {
               alt="Focused expertise"
               loading="lazy"
               decoding="async"
-              className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105"
+              className="h-full w-full object-cover object-top transition duration-700 group-hover:scale-105"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-80" />
             <div className="absolute bottom-3 left-3 z-20 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">

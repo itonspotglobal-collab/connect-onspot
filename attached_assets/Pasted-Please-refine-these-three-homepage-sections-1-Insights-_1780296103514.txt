@@ -1,0 +1,219 @@
+Please refine these three homepage sections:
+
+1. Insights Section
+2. Work Differently Section
+3. Superhuman Network Section
+
+IMPORTANT:
+- Do not redesign the full homepage.
+- Keep the current design language, fonts, colors, and branding.
+- Only adjust spacing, sizing, alignment, and image cropping.
+- Make all changes responsive for desktop, laptop, tablet, and mobile.
+
+==================================================
+1. INSIGHTS SECTION — COMPRESS / REDUCE WHITE SPACE
+==================================================
+
+Current issue:
+The Insights section takes too much vertical space and pulls too much attention. We still want to highlight it, but it should feel more compact.
+
+Goal:
+Make the Insights section smaller and tighter, so it remains visible but does not distract from higher-priority homepage sections.
+
+Requirements:
+- Reduce top and bottom padding.
+- Reduce large vertical gaps between the section title and article rows.
+- Reduce spacing between each insight item.
+- Keep the section readable and premium.
+- Keep “Latest Insights” and the “View all” link.
+- Do not remove the section.
+
+Suggested section spacing:
+Replace large padding like:
+py-24 / py-32
+
+With:
+py-12 sm:py-14 lg:py-16
+
+If currently using very large margins:
+mt-20, mb-20, gap-16
+
+Reduce to:
+mt-8, mb-8, gap-6
+
+Suggested article row spacing:
+- Reduce row padding from py-8 or py-10 to py-5 or py-6.
+- Keep subtle dividers.
+- Keep category pills smaller.
+
+Example article row:
+className="
+  grid grid-cols-1 gap-4 border-b border-slate-200 py-5
+  md:grid-cols-[220px_1fr_120px]
+  md:items-center
+"
+
+Category pill:
+className="
+  inline-flex w-fit rounded-full
+  bg-violet-100 px-5 py-2
+  text-xs font-semibold uppercase tracking-[0.18em]
+  text-indigo-700
+"
+
+Title:
+className="
+  text-lg sm:text-xl font-semibold leading-snug text-slate-950
+"
+
+Read time:
+className="
+  text-sm sm:text-base text-slate-500
+"
+
+Section header:
+className="
+  mb-6 flex items-end justify-between gap-6
+"
+
+Expected result:
+The Insights section should feel like a compact content highlight, not a major feature block. It should take less height and have less white space while still looking polished.
+
+==================================================
+2. WORK DIFFERENTLY SECTION — EVEN PHOTO HEIGHTS
+==================================================
+
+Current issue:
+The photos in the “For Companies” and “For Professionals” cards are not even. The For Companies photo does not align visually with the For Professionals photo.
+
+Goal:
+Make both card photos the same height, same crop behavior, and visually aligned.
+
+Requirements:
+- Both top images should have equal height on desktop.
+- Both images should use the same aspect ratio.
+- Both images should start at the same vertical position.
+- Both image bottoms should align.
+- Do not stretch or distort the images.
+- Use object-cover, but control object-position if needed.
+
+Suggested image wrapper:
+className="
+  relative h-[260px] sm:h-[300px] lg:h-[320px]
+  w-full overflow-hidden
+"
+
+Suggested image:
+className="
+  h-full w-full object-cover
+"
+
+For Companies image:
+If faces/content are too high or low, use:
+className="h-full w-full object-cover object-center"
+
+or:
+style={{ objectPosition: "center center" }}
+
+For Professionals image:
+Use the same:
+className="h-full w-full object-cover object-center"
+
+Important:
+- Do not let one card image use a different height like h-64 while the other uses h-72.
+- Do not let image natural dimensions control card height.
+- Do not use different aspect ratios between cards.
+- If the card content below differs, keep the image area fixed and let the card body handle height.
+
+Card layout:
+Use equal card structure:
+- image block
+- label badge overlay
+- body content
+
+If the cards are in a grid, use:
+className="grid grid-cols-1 gap-8 lg:grid-cols-2 items-stretch"
+
+Each card:
+className="flex h-full flex-col overflow-hidden rounded-3xl ..."
+
+Expected result:
+The For Companies and For Professionals images should look even, aligned, and intentionally paired.
+
+==================================================
+3. SUPERHUMAN NETWORK — FIX CROPPED FACES / IMAGE POSITIONING
+==================================================
+
+Current issue:
+Some photos in the Superhuman Network image mosaic are cropped badly. In particular, individual profile photos have faces cut off or not shown properly because of the image size/crop.
+
+Goal:
+Adjust image cropping so important faces are visible, especially individual people photos.
+
+Requirements:
+- Keep the mosaic layout.
+- Do not replace the whole section design.
+- Adjust image fit and object-position per image where needed.
+- Prioritize showing faces clearly.
+- Avoid cutting off heads/chins in individual portraits.
+- Keep the images filling their grid cells cleanly.
+
+General image style:
+className="
+  h-full w-full object-cover
+"
+
+But add specific object-position values for problematic photos.
+
+For individual/person images:
+Use one of these depending on the image:
+- object-center
+- object-top
+- object-[center_25%]
+- object-[center_30%]
+- object-[center_35%]
+
+Example:
+<img
+  src="..."
+  className="h-full w-full object-cover object-[center_25%]"
+/>
+
+For the photo where the person’s face is cropped:
+- Move crop upward if the face is too low:
+  object-[center_25%]
+- Move crop downward if forehead/top is cut:
+  object-[center_40%]
+- If full face needs to show and cropping still fails, use object-contain with a dark background only for that specific image:
+  className="h-full w-full object-contain bg-slate-900"
+
+Preferred:
+Use object-cover with better object-position first.
+
+For portrait/individual photo cells:
+If the cell is too short to show faces properly, slightly increase the row height or specific cell height.
+
+Example mosaic container:
+className="
+  grid auto-rows-[180px] md:auto-rows-[220px] lg:auto-rows-[260px]
+"
+
+For individual portrait cells:
+className="min-h-[260px]"
+
+Do not make all images object-contain because the mosaic may look inconsistent. Only use it where cropping is impossible to fix.
+
+Expected result:
+The Superhuman Network photo mosaic should still look dynamic, but individual faces should be visible and not awkwardly cropped. The “Focused Expertise” card/photo should show the person’s face properly.
+
+==================================================
+FINAL CHECK
+==================================================
+
+After making these changes, please verify:
+- Insights section is more compact.
+- Work Differently card photos are equal height and aligned.
+- Superhuman Network portrait images show faces clearly.
+- No image is stretched or distorted.
+- No horizontal scrolling.
+- Layout remains responsive across large desktop, laptop, tablet, and mobile.
