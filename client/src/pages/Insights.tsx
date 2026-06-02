@@ -315,7 +315,7 @@ function ArticleCard({ article }: { article: ArticleItem }) {
       className="overflow-hidden transition-all duration-300 group flex flex-col cursor-pointer h-full bg-white border-slate-200/80 hover-elevate"
       onClick={() => navigate(`/insights/${article.slug}`)}
     >
-      <div className="aspect-video bg-slate-100 relative overflow-hidden flex-shrink-0">
+      <div className="h-32 w-full overflow-hidden bg-slate-100 relative flex-shrink-0">
         <img
           src={article.image}
           alt={article.title}
@@ -327,27 +327,23 @@ function ArticleCard({ article }: { article: ArticleItem }) {
             (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
           }}
         />
-        <div className="absolute bottom-0 left-0 right-0 px-4 py-2 bg-gradient-to-t from-black/60 to-transparent flex items-end justify-between">
-          <Badge
-            variant="secondary"
-            className="text-[10px] uppercase tracking-wider bg-white/20 text-white border-white/30 backdrop-blur-sm"
-          >
-            {article.category}
+        {article.featured && (
+          <Badge className="absolute top-2 right-2 text-[10px] bg-amber-400 text-black border-0">
+            Featured
           </Badge>
-          {article.featured && (
-            <Badge className="text-[10px] bg-amber-400 text-black border-0">
-              Featured
-            </Badge>
-          )}
-        </div>
+        )}
       </div>
 
       <CardContent className="p-5 flex flex-col flex-1 gap-3">
+        <span className="inline-flex h-8 w-fit items-center whitespace-nowrap rounded-full bg-violet-100 px-4 text-[10px] font-semibold uppercase tracking-[0.16em] text-indigo-600">
+          {article.category}
+        </span>
+
         <h4 className="text-base font-bold leading-snug line-clamp-2 text-slate-900 group-hover:text-[#474ead] transition-colors">
           {article.title}
         </h4>
 
-        <p className="text-sm text-slate-500 line-clamp-3 leading-relaxed flex-1">
+        <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed flex-1">
           {article.excerpt ||
             "Read the full article for insights and analysis."}
         </p>
@@ -1761,6 +1757,31 @@ export default function Insights() {
           </section>
         )}
 
+      {/* ── Page header — compact two-column layout ───────────────────────── */}
+      <section className="bg-[#f8f8fb] py-14 sm:py-16">
+        <div className="mx-auto max-w-7xl px-6 sm:px-8">
+          <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-600">
+                Insights
+              </p>
+              <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+                Ideas worth sharing.
+              </h1>
+              <p className="mt-4 max-w-md text-base leading-relaxed text-slate-600">
+                Perspectives on customer experience, global talent, and the future of work.
+              </p>
+            </div>
+            <a
+              href="/insights"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-medium text-indigo-600 transition hover:border-indigo-200 hover:bg-indigo-50 self-start md:self-auto flex-shrink-0"
+            >
+              Explore all <ArrowRight className="w-4 h-4" />
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* ── Main content area ─────────────────────────────────────────────── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {!isLoading && isEmpty && (
@@ -1868,26 +1889,6 @@ export default function Insights() {
                 </a>
               </div>
             ))}
-          </div>
-        </section>
-
-        {/* ── Hero / title section ──────────────────────────────────────────── */}
-        <section className="mb-10">
-          <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(71,78,173,0.08),transparent_50%),radial-gradient(ellipse_at_80%_10%,rgba(142,147,255,0.06),transparent_40%)] pointer-events-none" />
-            <div className="px-8 py-14 text-center relative sm:px-12 lg:px-16">
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#474ead]/20 bg-[#474ead]/6 px-4 py-2 text-xs uppercase tracking-[0.3em] text-[#474ead]">
-                Insights &amp; Resources
-              </div>
-              <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-slate-900 mb-4 leading-tight">
-                Outsourcing Intelligence Hub
-              </h1>
-              <p className="text-lg text-slate-600 max-w-3xl mx-auto leading-8">
-                Stay ahead with expert analysis, industry trends, and actionable
-                insights on global outsourcing, BPO services, and workforce
-                optimization.
-              </p>
-            </div>
           </div>
         </section>
 
