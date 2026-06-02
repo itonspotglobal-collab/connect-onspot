@@ -449,12 +449,13 @@ export default function Home() {
       <div className="bg-[#FAF9F6] py-12 sm:py-14 lg:py-16">
         <div className="mx-auto max-w-[1800px] px-6 sm:px-10 lg:px-16">
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-[300px_1fr] lg:gap-16">
-
             {/* Left: label + heading */}
             <div className="lg:pt-2">
               <div className="flex items-center gap-4">
                 <span className="h-px w-10 bg-[#3F4698]" />
-                <span className="text-xs font-bold uppercase tracking-[0.32em] text-[#3F4698]">Insights</span>
+                <span className="text-xs font-bold uppercase tracking-[0.32em] text-[#3F4698]">
+                  Insights
+                </span>
               </div>
               <h2 className="mt-5 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
                 Latest Insights
@@ -481,21 +482,24 @@ export default function Home() {
                         id: 1,
                         slug: "ai-operating-model",
                         category: "AI OPERATIONS",
-                        title: "The new operating model: AI agents and human teams",
+                        title:
+                          "The new operating model: AI agents and human teams",
                         readTime: "6 min read",
                       },
                       {
                         id: 2,
                         slug: "philippines-global-operations",
                         category: "TALENT",
-                        title: "Why the Philippines is the future of global operations",
+                        title:
+                          "Why the Philippines is the future of global operations",
                         readTime: "8 min read",
                       },
                       {
                         id: 3,
                         slug: "founder-playbook",
                         category: "FOUNDER OPS",
-                        title: "From burnout to 4-day weeks: a founder's playbook",
+                        title:
+                          "From burnout to 4-day weeks: a founder's playbook",
                         readTime: "5 min read",
                       },
                     ]
@@ -521,7 +525,6 @@ export default function Home() {
                 ))}
               </div>
             </div>
-
           </div>
         </div>
       </div>
@@ -745,8 +748,8 @@ export default function Home() {
             <span className="text-[#B8B7FF]">Real impact.</span>
           </h2>
           <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-white/55 sm:text-lg">
-            A global team of professionals delivering for clients around the
-            world — every single day.
+            <span className="block">A global team of professionals delivering for clients around the world</span>
+            <span className="mt-1 block">— every single day.</span>
           </p>
         </div>
 
