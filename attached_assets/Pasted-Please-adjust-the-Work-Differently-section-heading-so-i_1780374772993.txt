@@ -1,0 +1,93 @@
+Please adjust the Work Differently section heading so it fits into exactly two clean lines on desktop/laptop, without making the title too small.
+
+Current issue:
+The heading is too large, so the desired first line wraps into multiple lines.
+
+Current heading:
+“Whether you're scaling a team or growing a career — OnSpot is built for both sides of great work.”
+
+Desired desktop/laptop format:
+
+Line 1:
+Whether you're scaling a team or growing a career
+
+Line 2:
+— OnSpot is built for both sides of great work.
+
+Goal:
+Make the heading size and width balanced so the first phrase fits on one line, and the second phrase fits on one line beneath it.
+
+IMPORTANT:
+- Keep the headline prominent.
+- Do not make it too small.
+- Keep it centered.
+- Keep the current font family and weight.
+- Keep the em dash before OnSpot.
+- Do not rewrite the text.
+- Make it responsive.
+
+Suggested JSX:
+
+<h2 className="work-differently-title ...">
+  <span className="block whitespace-nowrap">
+    Whether you're scaling a team or growing a career
+  </span>
+  <span className="mt-2 block whitespace-nowrap">
+    — OnSpot is built for both sides of great work.
+  </span>
+</h2>
+
+Suggested desktop styling:
+
+className="
+  mx-auto max-w-[1400px]
+  text-center font-bold tracking-tight text-slate-950
+  leading-[1.08]
+  text-[clamp(40px,4.1vw,68px)]
+"
+
+This should keep it large enough to feel like a title, but small enough to fit the two desired lines on large screens.
+
+Responsive behavior:
+- Desktop/laptop: keep each span on one line using `whitespace-nowrap`.
+- Tablet/mobile: allow natural wrapping so it does not overflow.
+
+Use responsive classes like:
+
+<h2
+  className="
+    mx-auto max-w-[1400px]
+    text-center font-bold tracking-tight text-slate-950
+    leading-[1.08]
+    text-[clamp(40px,4.1vw,68px)]
+  "
+>
+  <span className="block lg:whitespace-nowrap">
+    Whether you're scaling a team or growing a career
+  </span>
+  <span className="mt-2 block lg:whitespace-nowrap">
+    — OnSpot is built for both sides of great work.
+  </span>
+</h2>
+
+For smaller screens:
+- Do not force nowrap below `lg`.
+- Let the heading wrap naturally.
+- Use smaller responsive sizing if needed:
+
+className="
+  text-4xl sm:text-5xl
+  lg:text-[clamp(42px,4vw,64px)]
+"
+
+Also increase the heading container width if needed:
+- Use `max-w-[1400px]` or `max-w-[1500px]`
+- Do not keep it at `max-w-5xl` if that causes wrapping.
+
+Expected result:
+On desktop/laptop, the heading should appear as exactly:
+
+Whether you're scaling a team or growing a career
+— OnSpot is built for both sides of great work.
+
+The title should still feel bold and highlighted, but not so large that it breaks into 3–4 lines.
