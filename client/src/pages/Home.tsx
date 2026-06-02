@@ -740,12 +740,9 @@ export default function Home() {
           <p className="text-xs font-bold uppercase tracking-[0.28em] text-white/60">
             The Superhuman Network
           </p>
-          <h2
-            className="mx-auto mt-5 max-w-4xl font-bold tracking-tight"
-            style={{ fontSize: "clamp(2rem, 5vw, 3.5rem)" }}
-          >
-            Real people. Real work.{" "}
-            <span className="text-[#B8B7FF]">Real impact.</span>
+          <h2 className="mx-auto mt-5 max-w-[1200px] px-6 text-center font-bold leading-[1.05] tracking-tight text-white text-[clamp(44px,6vw,96px)]">
+            <span className="block">Real people. Real work.</span>
+            <span className="mt-3 block text-[#B8B7FF]">Real impact.</span>
           </h2>
           <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-white/55 sm:text-lg">
             <span className="block">A global team of professionals delivering for clients around the world</span>
