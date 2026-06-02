@@ -445,87 +445,100 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ── 2. FEATURED INSIGHTS — text-only list ── */}
-      <div className="bg-[#FAF9F6] py-12 sm:py-14 lg:py-16">
-        <div className="mx-auto max-w-[1800px] px-6 sm:px-10 lg:px-16">
-          <div className="grid grid-cols-1 gap-10 lg:grid-cols-[300px_1fr] lg:gap-16">
-            {/* Left: label + heading */}
-            <div className="lg:pt-2">
-              <div className="flex items-center gap-4">
-                <span className="h-px w-10 bg-[#3F4698]" />
-                <span className="text-xs font-bold uppercase tracking-[0.32em] text-[#3F4698]">
-                  Insights
-                </span>
-              </div>
-              <h2 className="mt-5 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-                Latest Insights
-              </h2>
-            </div>
+      {/* ── 2. FEATURED INSIGHTS — card grid ── */}
+      <div className="bg-white py-12 sm:py-14 lg:py-16">
+        <div className="mx-auto w-full max-w-[1500px] px-6 sm:px-8 lg:px-12 xl:px-16">
 
-            {/* Right: view all + rows */}
+          {/* Header */}
+          <div className="mb-8 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
             <div>
-              <div className="mb-4 flex items-center justify-end">
-                <a
-                  href="/insights"
-                  className="inline-flex items-center gap-2 text-sm font-semibold text-[#3F4698] transition-all hover:gap-3"
-                >
-                  View all
-                  <ArrowRight className="h-4 w-4" />
-                </a>
-              </div>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-indigo-600">
+                Insights
+              </p>
+              <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+                Ideas worth sharing.
+              </h2>
+              <p className="mt-3 max-w-md text-sm leading-relaxed text-slate-600 sm:text-base">
+                Perspectives on customer experience, global talent, and the future of work.
+              </p>
+            </div>
+            <a
+              href="/insights"
+              className="inline-flex shrink-0 items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-indigo-600 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50"
+            >
+              Explore all
+              <ArrowRight className="h-4 w-4" />
+            </a>
+          </div>
 
-              <div className="divide-y divide-slate-200">
-                {(featuredPosts.length > 0
-                  ? featuredPosts.slice(0, 3)
-                  : [
-                      {
-                        id: 1,
-                        slug: "ai-operating-model",
-                        category: "AI OPERATIONS",
-                        title:
-                          "The new operating model: AI agents and human teams",
-                        readTime: "6 min read",
-                      },
-                      {
-                        id: 2,
-                        slug: "philippines-global-operations",
-                        category: "TALENT",
-                        title:
-                          "Why the Philippines is the future of global operations",
-                        readTime: "8 min read",
-                      },
-                      {
-                        id: 3,
-                        slug: "founder-playbook",
-                        category: "FOUNDER OPS",
-                        title:
-                          "From burnout to 4-day weeks: a founder's playbook",
-                        readTime: "5 min read",
-                      },
-                    ]
-                ).map((post) => (
-                  <a
-                    key={post.id}
-                    href={`/insights/${post.slug}`}
-                    className="group grid grid-cols-1 gap-3 py-6 md:grid-cols-[220px_1fr_110px] md:items-center md:gap-6"
-                  >
-                    {/* Category pill — fixed height, no-wrap */}
-                    <span className="inline-flex h-9 w-fit items-center justify-center whitespace-nowrap rounded-full bg-[#EEEAFE] px-5 text-[11px] font-bold uppercase tracking-[0.18em] text-[#3F4698]">
+          {/* Card grid */}
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {(featuredPosts.length > 0
+              ? featuredPosts.slice(0, 3)
+              : [
+                  {
+                    id: 1,
+                    slug: "leveraging-ghanas-tech-talent-philippines-customer-service",
+                    category: "INDUSTRY INSIGHTS",
+                    title: "How Technology is Shaping the Future of Customer Service",
+                    readTime: "5 min read",
+                    coverImageUrl: null as string | null,
+                  },
+                  {
+                    id: 2,
+                    slug: "leveraging-ghanas-tech-talent-philippines-customer-service",
+                    category: "INDUSTRY TRENDS",
+                    title: "Leveraging Ghana's Tech Talent and World-Class Service in the Philippines",
+                    readTime: "5 min read",
+                    coverImageUrl: null as string | null,
+                  },
+                  {
+                    id: 3,
+                    slug: "philippines-gold-standard-customer-service-culture",
+                    category: "INDUSTRY TRENDS",
+                    title: "The Checklist for Winning Your Virtual Interview",
+                    readTime: "5 min read",
+                    coverImageUrl: null as string | null,
+                  },
+                ]
+            ).map((post) => {
+              const thumb = (post as any).coverImageUrl as string | null | undefined;
+              return (
+                <a
+                  key={post.id}
+                  href={`/insights/${post.slug}`}
+                  className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+                >
+                  {/* Thumbnail */}
+                  {thumb ? (
+                    <div className="h-28 w-full overflow-hidden bg-slate-100 sm:h-32">
+                      <img
+                        src={thumb}
+                        alt={post.title}
+                        className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                      />
+                    </div>
+                  ) : (
+                    <div className="h-28 w-full bg-gradient-to-br from-indigo-100 via-violet-100 to-cyan-100 sm:h-32" />
+                  )}
+
+                  {/* Card body */}
+                  <div className="flex min-h-[190px] flex-col p-6">
+                    <span className="inline-flex w-fit items-center whitespace-nowrap rounded-full bg-violet-100 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-indigo-600">
                       {(post as any).category || "Industry Insights"}
                     </span>
-                    {/* Title */}
-                    <h3 className="text-xl font-semibold leading-snug text-slate-950 transition-colors group-hover:text-[#3F4698] sm:text-2xl">
+                    <h3 className="mt-5 text-lg font-semibold leading-snug text-slate-950 transition-colors group-hover:text-indigo-600">
                       {post.title}
                     </h3>
-                    {/* Read time */}
-                    <span className="text-sm text-slate-500 md:text-right">
+                    <span className="mt-auto pt-8 text-sm font-medium text-slate-500">
                       {(post as any).readTime || "5 min read"}
                     </span>
-                  </a>
-                ))}
-              </div>
-            </div>
+                  </div>
+                </a>
+              );
+            })}
           </div>
+
         </div>
       </div>
 
