@@ -446,19 +446,19 @@ export default function Home() {
       </div>
 
       {/* ── 2. FEATURED INSIGHTS — card grid ── */}
-      <div className="bg-white py-12 sm:py-14 lg:py-16">
-        <div className="mx-auto w-full max-w-[1500px] px-6 sm:px-8 lg:px-12 xl:px-16">
+      <div className="bg-white py-8 sm:py-10 lg:py-12">
+        <div className="mx-auto w-full max-w-[1700px] px-6 sm:px-8 lg:px-10 xl:px-12">
 
           {/* Header */}
-          <div className="mb-8 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-indigo-600">
                 Insights
               </p>
-              <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+              <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
                 Ideas worth sharing.
               </h2>
-              <p className="mt-3 max-w-md text-sm leading-relaxed text-slate-600 sm:text-base">
+              <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-600">
                 Perspectives on customer experience, global talent, and the future of work.
               </p>
             </div>
@@ -472,7 +472,7 @@ export default function Home() {
           </div>
 
           {/* Card grid */}
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {(featuredPosts.length > 0
               ? featuredPosts.slice(0, 3)
               : [
@@ -507,11 +507,11 @@ export default function Home() {
                 <a
                   key={post.id}
                   href={`/insights/${post.slug}`}
-                  className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+                  className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                 >
                   {/* Thumbnail */}
                   {thumb ? (
-                    <div className="h-28 w-full overflow-hidden bg-slate-100 sm:h-32">
+                    <div className="h-24 w-full overflow-hidden bg-slate-100 sm:h-28">
                       <img
                         src={thumb}
                         alt={post.title}
@@ -519,18 +519,18 @@ export default function Home() {
                       />
                     </div>
                   ) : (
-                    <div className="h-28 w-full bg-gradient-to-br from-indigo-100 via-violet-100 to-cyan-100 sm:h-32" />
+                    <div className="h-24 w-full bg-gradient-to-br from-indigo-100 via-violet-100 to-cyan-100 sm:h-28" />
                   )}
 
                   {/* Card body */}
-                  <div className="flex min-h-[190px] flex-col p-6">
-                    <span className="inline-flex w-fit items-center whitespace-nowrap rounded-full bg-violet-100 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-indigo-600">
+                  <div className="flex flex-col p-5">
+                    <span className="inline-flex w-fit items-center whitespace-nowrap rounded-full bg-violet-100 px-3.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-indigo-600">
                       {(post as any).category || "Industry Insights"}
                     </span>
-                    <h3 className="mt-5 text-lg font-semibold leading-snug text-slate-950 transition-colors group-hover:text-indigo-600">
+                    <h3 className="mt-4 min-h-[52px] text-base font-semibold leading-snug text-slate-950 transition-colors group-hover:text-indigo-600 sm:text-lg">
                       {post.title}
                     </h3>
-                    <span className="mt-auto pt-8 text-sm font-medium text-slate-500">
+                    <span className="mt-6 text-sm font-medium text-slate-500">
                       {(post as any).readTime || "5 min read"}
                     </span>
                   </div>

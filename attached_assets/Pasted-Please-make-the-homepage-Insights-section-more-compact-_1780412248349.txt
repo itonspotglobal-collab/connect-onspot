@@ -1,0 +1,221 @@
+Please make the homepage Insights section more compact.
+
+Current issue:
+The updated Insights card layout looks good, but it takes too much height. The cards are too tall, with too much empty space inside. It is okay to stretch the section/card width to fit the screen better, but the height should be reduced.
+
+Goal:
+Keep the current card-style Insights layout, but make it shorter and more compact.
+
+IMPORTANT:
+- Do not redesign the section.
+- Keep the “INSIGHTS” label, “Ideas worth sharing.” heading, description, Explore all button, and three article cards.
+- Keep the thumbnails.
+- Keep the current clean card style.
+- Reduce height and vertical whitespace.
+- Make it responsive.
+
+==================================================
+1. REDUCE SECTION VERTICAL PADDING
+==================================================
+
+Use smaller top/bottom padding.
+
+Suggested section class:
+
+className="
+  bg-white
+  py-8 sm:py-10 lg:py-12
+"
+
+Avoid:
+py-16, py-20, py-24, py-32
+
+==================================================
+2. STRETCH WIDTH BUT CONTROL HEIGHT
+==================================================
+
+Use a wider container so the cards have more horizontal space and do not need too much height.
+
+Suggested container:
+
+className="
+  mx-auto w-full max-w-[1700px]
+  px-6 sm:px-8 lg:px-10 xl:px-12
+"
+
+Card grid:
+
+className="
+  grid grid-cols-1 gap-4
+  md:grid-cols-2
+  lg:grid-cols-3
+"
+
+Reduce large gaps like `gap-8`, `gap-10`, or `gap-12`.
+
+==================================================
+3. MAKE HEADER MORE COMPACT
+==================================================
+
+Reduce spacing between the header and the cards.
+
+Header wrapper:
+
+className="
+  mb-6 flex flex-col gap-4
+  md:flex-row md:items-end md:justify-between
+"
+
+Heading:
+
+className="
+  mt-2 text-3xl font-semibold tracking-tight text-slate-950
+  sm:text-4xl
+"
+
+Description:
+
+className="
+  mt-2 max-w-md text-sm leading-relaxed text-slate-600
+"
+
+Explore button:
+Keep it as-is visually, but avoid extra margin/padding around it.
+
+==================================================
+4. REDUCE THUMBNAIL HEIGHT
+==================================================
+
+The thumbnail should be visible but not too tall.
+
+Suggested thumbnail wrapper:
+
+className="
+  h-20 w-full overflow-hidden bg-slate-100
+  sm:h-24
+  lg:h-24
+"
+
+If this feels too short, use:
+
+className="
+  h-24 w-full overflow-hidden bg-slate-100
+  sm:h-28
+"
+
+But do not exceed `h-28`.
+
+Thumbnail image:
+
+className="
+  h-full w-full object-cover
+"
+
+==================================================
+5. REDUCE CARD BODY HEIGHT AND PADDING
+==================================================
+
+The card body has too much empty space. Reduce padding and remove large min-height.
+
+Card body should be:
+
+className="
+  flex flex-col p-5
+"
+
+Avoid:
+- min-h-[190px]
+- min-h-[220px]
+- p-8
+- pt-8
+- large `mt-auto pt-8` spacing
+
+Use:
+
+Read time:
+className="
+  mt-6 text-sm font-medium text-slate-500
+"
+
+If card titles vary in height and alignment is needed, use a smaller min-height only for the title area:
+
+Title:
+className="
+  mt-4 min-h-[52px]
+  text-base sm:text-lg
+  font-semibold leading-snug text-slate-950
+"
+
+Do not make the whole card body very tall.
+
+==================================================
+6. COMPACT CATEGORY PILLS
+==================================================
+
+Category pills should remain readable but smaller.
+
+Suggested:
+
+className="
+  inline-flex w-fit items-center rounded-full
+  bg-violet-100 px-3.5 py-1
+  text-[10px] font-semibold uppercase
+  tracking-[0.14em]
+  text-indigo-600
+  whitespace-nowrap
+"
+
+Make sure “INDUSTRY INSIGHTS” does not wrap.
+
+==================================================
+7. CARD HEIGHT TARGET
+==================================================
+
+Target card height on desktop:
+- Around 260px to 310px total
+- Thumbnail: around 96px
+- Body: compact, no unnecessary empty area
+
+Avoid cards that are 350px+ tall unless content requires it.
+
+Card style:
+
+className="
+  overflow-hidden rounded-2xl
+  border border-slate-200
+  bg-white
+  shadow-sm
+  transition hover:-translate-y-0.5 hover:shadow-md
+"
+
+==================================================
+8. RESPONSIVE BEHAVIOR
+==================================================
+
+Desktop:
+- Three cards in one row.
+- Cards are wide and compact.
+- Thumbnails are visible but short.
+
+Laptop:
+- Same if space allows.
+
+Tablet:
+- Two columns.
+- Cards remain compact.
+
+Mobile:
+- One column.
+- Cards can be slightly taller naturally, but avoid huge blank spaces.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The Insights section should still look like the current card layout, but shorter and more compact:
+- less vertical padding
+- smaller thumbnails
+- tighter card padding
+- less empty space inside cards
+- wider layout if needed
+- clean and readable without becoming a major attention-heavy section
