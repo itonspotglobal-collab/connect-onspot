@@ -539,9 +539,9 @@ export default function Home() {
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#3F4698]">
               Work differently.
             </p>
-            <h2 className="mx-auto mt-4 max-w-[1400px] text-center font-semibold leading-[1.08] tracking-tight text-slate-900 text-4xl sm:text-5xl lg:text-[clamp(42px,4.1vw,68px)]">
-              <span className="block lg:whitespace-nowrap">Whether you're scaling a team or growing a career</span>
-              <span className="mt-2 block lg:whitespace-nowrap">— OnSpot is built for both sides of great work.</span>
+            <h2 className="mx-auto mt-4 max-w-[1500px] px-6 sm:px-8 lg:px-10 text-center font-semibold leading-[1.08] tracking-tight text-slate-900 text-[clamp(34px,3.55vw,58px)]">
+              <span className="block xl:whitespace-nowrap">Whether you're scaling a team or growing a career</span>
+              <span className="mt-2 block xl:whitespace-nowrap">— OnSpot is built for both sides of great work.</span>
             </h2>
           </div>
 

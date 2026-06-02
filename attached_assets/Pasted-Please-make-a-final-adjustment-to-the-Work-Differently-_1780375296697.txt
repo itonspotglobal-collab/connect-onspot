@@ -1,0 +1,86 @@
+Please make a final adjustment to the Work Differently section heading.
+
+Current issue:
+The heading is almost correct, but it is still too wide and gets cut off horizontally on the right side. We want the heading to fit cleanly inside the viewport.
+
+Desired layout on desktop/laptop:
+
+Line 1:
+Whether you're scaling a team or growing a career
+
+Line 2:
+— OnSpot is built for both sides of great work.
+
+Goal:
+Keep the title large and prominent, but reduce the size just enough so both lines fit cleanly without being cut off.
+
+IMPORTANT:
+- Do not make the title small.
+- Do not allow horizontal overflow.
+- Do not let the text get clipped at the sides.
+- Keep it centered.
+- Keep the same font family and bold weight.
+- Keep the two-line structure.
+- Let it wrap naturally on tablet/mobile.
+
+Recommended fix:
+
+1. Use a slightly smaller fluid font size
+Replace the current oversized heading size with:
+
+className="
+  mx-auto max-w-[1500px]
+  px-6 sm:px-8 lg:px-10
+  text-center font-bold tracking-tight text-slate-950
+  leading-[1.08]
+  text-[clamp(34px,3.55vw,58px)]
+"
+
+This should still look like a major section title, but not overflow.
+
+2. Keep each line on one line only for larger screens
+Use:
+
+<span className="block xl:whitespace-nowrap">
+  Whether you're scaling a team or growing a career
+</span>
+
+<span className="mt-2 block xl:whitespace-nowrap">
+  — OnSpot is built for both sides of great work.
+</span>
+
+Important:
+- Use `xl:whitespace-nowrap`, not `lg:whitespace-nowrap`, so smaller laptop screens can wrap if needed.
+- Do not use `whitespace-nowrap` globally because it causes overflow.
+
+3. Add container padding
+Make sure the heading container has side padding:
+
+px-6 sm:px-8 lg:px-10
+
+This prevents the text from touching or clipping against the viewport edge.
+
+4. Prevent section overflow
+Make sure the section wrapper does not allow horizontal overflow:
+
+className="
+  relative overflow-hidden
+"
+
+or at minimum:
+overflow-x-hidden
+
+5. Mobile/tablet behavior
+For tablet and mobile:
+- The text can wrap naturally.
+- It does not need to stay exactly two lines.
+- It should never overflow horizontally.
+
+Expected result:
+On large desktop screens, the heading appears as two clean lines:
+
+Whether you're scaling a team or growing a career
+— OnSpot is built for both sides of great work.
+
+On smaller screens, it wraps naturally without being cut off.
+The title remains bold, large, and visually important.
