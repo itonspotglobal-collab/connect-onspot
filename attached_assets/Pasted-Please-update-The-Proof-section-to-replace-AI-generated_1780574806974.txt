@@ -1,0 +1,238 @@
+Please update “The Proof” section to replace AI-generated photos with actual OnSpot employee photos.
+
+Current issue:
+The Proof section currently uses AI-generated or generic team images. We want to start replacing them with real OnSpot employees to make the section more authentic and trustworthy.
+
+Goal:
+Use the real employee photos that I will upload in Replit and display them in “The Proof” section.
+
+Employees to include:
+1. Nur Laminero — CEO of OnSpot
+2. Jake Wainberg — Founder & President
+3. Val Legaspi — IT Administrator
+4. Mark Anthony Apostol — Head of People
+
+IMPORTANT:
+- I will attach/upload the employee photos in Replit.
+- Please use those uploaded assets, not AI-generated or stock images.
+- Do not use placeholder photos if the actual uploaded photos are available.
+- Keep the existing “The Proof” section content and overall section design direction.
+- Only update the team/photo cards and make the section feel more authentic.
+
+==================================================
+1. ASSET SETUP
+==================================================
+
+Please add the uploaded employee photos to the project assets folder.
+
+Suggested folder:
+client/src/assets/team/
+
+Suggested filenames:
+- nur-laminero.jpg
+- jake-wainberg.jpg
+- val-legaspi.jpg
+- mark-anthony-apostol.jpg
+
+If the uploaded images have different names, either:
+- rename them clearly, or
+- import them using their existing filenames.
+
+Example imports:
+
+import nurLaminero from "@/assets/team/nur-laminero.jpg";
+import jakeWainberg from "@/assets/team/jake-wainberg.jpg";
+import valLegaspi from "@/assets/team/val-legaspi.jpg";
+import markAnthonyApostol from "@/assets/team/mark-anthony-apostol.jpg";
+
+Use the project’s existing import path convention.
+
+==================================================
+2. TEAM DATA
+==================================================
+
+Create or update the team/proof data array.
+
+Example:
+
+const proofTeam = [
+  {
+    name: "Nur Laminero",
+    role: "CEO of OnSpot",
+    image: nurLaminero,
+  },
+  {
+    name: "Jake Wainberg",
+    role: "Founder & President",
+    image: jakeWainberg,
+  },
+  {
+    name: "Val Legaspi",
+    role: "IT Administrator",
+    image: valLegaspi,
+  },
+  {
+    name: "Mark Anthony Apostol",
+    role: "Head of People",
+    image: markAnthonyApostol,
+  },
+];
+
+==================================================
+3. REMOVE AI-GENERATED PHOTOS
+==================================================
+
+Remove or stop rendering the existing AI-generated/generic images in “The Proof” section.
+
+Do not leave any old generated images mixed with the real employee photos unless there are more team profiles that still need assets later.
+
+For now, show these four real team members only.
+
+==================================================
+4. CARD LAYOUT
+==================================================
+
+Display the employees in a clean, premium grid.
+
+Desktop:
+- 4 cards in one row if space allows.
+
+Laptop:
+- 4 cards in one row or 2x2 if needed.
+
+Tablet:
+- 2 columns.
+
+Mobile:
+- 1 column.
+
+Suggested grid:
+
+className="
+  mt-14 grid grid-cols-1 gap-6
+  sm:grid-cols-2
+  xl:grid-cols-4
+"
+
+Card style:
+
+className="
+  group overflow-hidden rounded-[2rem]
+  border border-slate-200/70
+  bg-white/75
+  shadow-sm
+  backdrop-blur-md
+  transition
+  hover:-translate-y-1
+  hover:shadow-xl
+"
+
+==================================================
+5. PHOTO STYLE
+==================================================
+
+Photos should look polished and consistent.
+
+Image wrapper:
+className="
+  relative aspect-[4/5] w-full overflow-hidden bg-slate-100
+"
+
+Image:
+className="
+  h-full w-full object-cover
+  transition duration-500 group-hover:scale-[1.03]
+"
+
+Important:
+- Do not stretch images.
+- Use object-cover.
+- Adjust object-position per person if needed so faces are visible.
+- Avoid cutting off heads/faces.
+
+Default:
+className="h-full w-full object-cover object-center"
+
+If a face is too high/low:
+- object-[center_25%]
+- object-[center_30%]
+- object-[center_35%]
+
+==================================================
+6. CARD CONTENT
+==================================================
+
+Below each photo, show:
+
+Name:
+className="
+  text-xl font-semibold tracking-tight text-slate-950
+"
+
+Role:
+className="
+  mt-1 text-sm font-medium text-slate-600
+"
+
+Card body:
+className="p-5 sm:p-6"
+
+Example:
+
+<div className="p-6">
+  <h3>{member.name}</h3>
+  <p>{member.role}</p>
+</div>
+
+==================================================
+7. SECTION TEXT
+==================================================
+
+Keep the existing section label/headline/subtitle:
+
+Label:
+“THE PROOF”
+
+Headline:
+“The people behind the platform.”
+
+Subtitle:
+“Powered by professionals from the US, Philippines, and beyond. The Superhuman BPO Network.”
+
+Do not replace this text unless there is already updated copy.
+
+==================================================
+8. OPTIONAL APPLE-INSPIRED POLISH
+==================================================
+
+Add a subtle overlay on image hover only:
+
+<div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
+
+Do not make the photos too dark.
+
+==================================================
+9. ACCESSIBILITY
+==================================================
+
+Each image should have descriptive alt text:
+
+alt="Nur Laminero, CEO of OnSpot"
+alt="Jake Wainberg, Founder and President"
+alt="Val Legaspi, IT Administrator"
+alt="Mark Anthony Apostol, Head of People"
+
+==================================================
+10. RESPONSIVE CHECK
+==================================================
+
+After updating:
+- Real photos show correctly.
+- No AI-generated photos remain in The Proof section.
+- Faces are visible and not awkwardly cropped.
+- Cards align consistently.
+- Section remains responsive.
+- No horizontal scrolling.
+
+Expected result:
+“The Proof” section should now feel more authentic and trustworthy by showing real OnSpot employees instead of AI-generated images.
