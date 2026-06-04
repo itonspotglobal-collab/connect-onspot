@@ -1,0 +1,133 @@
+Please make these final typography updates.
+
+IMPORTANT:
+- Do not redesign the full homepage.
+- Keep all current sections, layouts, and content.
+- Only adjust the requested text styling and size.
+- Make sure there is no horizontal overflow.
+- Keep responsive behavior for desktop, laptop, tablet, and mobile.
+
+==================================================
+1. INSIGHTS TITLE — ADD GRADIENT COLOR
+==================================================
+
+Current:
+The main “Insights” title is dark text.
+
+Goal:
+Apply an OnSpot-style gradient to the word “Insights”.
+
+Text:
+Insights
+
+Suggested JSX:
+
+<h2 className="...">
+  <span className="bg-gradient-to-r from-indigo-700 via-violet-600 to-blue-500 bg-clip-text text-transparent">
+    Insights
+  </span>
+</h2>
+
+Suggested full class:
+
+className="
+  text-[clamp(56px,7vw,116px)]
+  font-semibold
+  tracking-[-0.06em]
+  leading-[0.95]
+"
+
+Important:
+- Only the word “Insights” needs the gradient.
+- Keep “Ideas worth sharing.” as the subtitle.
+- Keep the description below as normal slate text.
+- Make sure the gradient text renders properly in browser.
+
+==================================================
+2. INCREASE “TRANSFORMATIONS” LABEL SIZE
+==================================================
+
+Current:
+The “TRANSFORMATIONS” label is still too small/subtle.
+
+Goal:
+Increase the size so it reads clearly as a section label.
+
+Text:
+TRANSFORMATIONS
+
+Suggested class:
+
+className="
+  text-lg sm:text-xl lg:text-2xl
+  font-semibold uppercase
+  tracking-[0.22em]
+  text-indigo-700
+"
+
+If the section label currently has too much letter spacing, reduce it slightly:
+tracking-[0.18em]
+
+Important:
+- Do not make it bigger than the main heading “Real change. Real results.”
+- It should be a strong label, not the headline.
+
+==================================================
+3. INCREASE “WHY ONSPOT” LABEL SIZE
+==================================================
+
+Current:
+The “WHY ONSPOT” label is also too small.
+
+Goal:
+Increase it to match the improved Transformations label.
+
+Text:
+WHY ONSPOT
+
+Suggested wrapper if it has a line:
+
+className="
+  flex items-center gap-5
+"
+
+Line:
+className="
+  h-px w-16 bg-indigo-600/70
+"
+
+Label:
+className="
+  text-lg sm:text-xl lg:text-2xl
+  font-semibold uppercase
+  tracking-[0.22em]
+  text-indigo-700
+"
+
+If the label becomes too wide on mobile:
+- Use `text-base sm:text-xl lg:text-2xl`
+- Keep it readable and balanced.
+
+==================================================
+4. KEEP LABEL STYLE CONSISTENT
+==================================================
+
+If there are shared components/classes for section labels, update the shared class carefully so it improves:
+- TRANSFORMATIONS
+- WHY ONSPOT
+
+But do not accidentally make tiny card labels/buttons huge.
+
+Only apply this larger style to major section labels/eyebrows.
+
+==================================================
+RESPONSIVE CHECK
+==================================================
+
+After changes:
+- “Insights” should have a gradient and remain the main title.
+- “Ideas worth sharing.” should remain a subtitle.
+- “TRANSFORMATIONS” should be visibly larger.
+- “WHY ONSPOT” should be visibly larger.
+- No text should clip or overflow.
+- Mobile should wrap naturally.

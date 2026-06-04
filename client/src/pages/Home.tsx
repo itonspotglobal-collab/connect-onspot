@@ -444,8 +444,10 @@ export default function Home() {
           {/* Header */}
           <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
             <div>
-              <h2 className="text-[clamp(52px,7vw,112px)] font-semibold tracking-[-0.06em] leading-[0.95] text-slate-950">
-                Insights
+              <h2 className="text-[clamp(56px,7vw,116px)] font-semibold tracking-[-0.06em] leading-[0.95]">
+                <span className="bg-gradient-to-r from-indigo-700 via-violet-600 to-blue-500 bg-clip-text text-transparent">
+                  Insights
+                </span>
               </h2>
               <p className="mt-4 text-2xl font-medium tracking-[-0.035em] leading-tight text-slate-700 sm:text-3xl lg:text-4xl">
                 Ideas worth sharing.
@@ -957,7 +959,7 @@ export default function Home() {
         <div className="container relative z-10 mx-auto px-4 sm:px-6">
           {/* Section header */}
           <div className="mb-14 sm:mb-18">
-            <p className="text-sm font-semibold uppercase tracking-[0.32em] text-indigo-700 sm:text-base">
+            <p className="text-lg font-semibold uppercase tracking-[0.18em] text-indigo-700 sm:text-xl lg:text-2xl">
               Transformations
             </p>
             <h2 className="mt-5 max-w-[1300px] break-words text-[clamp(48px,6vw,96px)] font-semibold tracking-[-0.055em] leading-[1.02] text-slate-950">
@@ -1124,8 +1126,8 @@ export default function Home() {
             {/* Left: label + headline + copy */}
             <div>
               <div className="flex items-center gap-5">
-                <div className="h-px w-16 bg-indigo-600/60" />
-                <p className="text-sm font-semibold uppercase tracking-[0.32em] text-indigo-700 sm:text-base">
+                <div className="h-px w-16 bg-indigo-600/70" />
+                <p className="text-base font-semibold uppercase tracking-[0.18em] text-indigo-700 sm:text-xl lg:text-2xl">
                   Why OnSpot
                 </p>
               </div>
