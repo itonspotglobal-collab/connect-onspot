@@ -1263,7 +1263,8 @@ export default function Home() {
                 name: "Val Legaspi",
                 flag: "🇵🇭",
                 role: "IT Administrator",
-                objectPosition: "object-[center_30%]",
+                objectPosition: "object-[center_42%]",
+                extraScale: "scale-[1.55]",
                 isReal: true,
               },
               {
@@ -1346,7 +1347,7 @@ export default function Home() {
                 <img
                   src={person.photo}
                   alt={person.name}
-                  className={`h-full w-full object-cover transition duration-700 group-hover:scale-105 ${person.objectPosition}`}
+                  className={`h-full w-full object-cover transition duration-700 ${person.objectPosition}${"extraScale" in person ? ` ${(person as any).extraScale} group-hover:scale-[1.6]` : " group-hover:scale-105"}`}
                   loading="lazy"
                 />
 

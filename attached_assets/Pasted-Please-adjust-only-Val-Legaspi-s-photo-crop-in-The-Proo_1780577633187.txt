@@ -1,0 +1,70 @@
+Please adjust only Val Legaspi’s photo crop in “The Proof” section.
+
+Current issue:
+Val Legaspi’s photo is too zoomed out compared to Mark Anthony Apostol’s photo. Val’s head/body level looks much smaller, while Mark appears closer and better framed.
+
+Goal:
+Zoom in Val’s image enough so his head level and body scale visually match Mark’s card.
+
+IMPORTANT:
+- Do not change the whole Proof section layout.
+- Do not change Mark’s photo.
+- Do not change the other employee/generated cards.
+- Do not replace Val’s image.
+- Only adjust Val Legaspi’s image crop/scale/object-position.
+- Keep the hover effect and card overlay behavior.
+
+Suggested fix:
+Find Val Legaspi’s image/card and apply a custom class or inline style only to his image.
+
+Example data approach:
+
+{
+  name: "Val Legaspi",
+  role: "IT Administrator",
+  image: valLegaspi,
+  imageClassName: "scale-[1.55] object-cover object-[center_42%]"
+}
+
+Then apply it in the image:
+
+<img
+  src={member.image}
+  alt={`${member.name}, ${member.role}`}
+  className={cn(
+    "h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]",
+    member.imageClassName
+  )}
+/>
+
+Important:
+If the normal hover scale conflicts with Val’s custom scale, use separate base and hover classes:
+
+For Val:
+className="
+  h-full w-full object-cover
+  scale-[1.55]
+  object-[center_42%]
+  transition duration-500
+  group-hover:scale-[1.6]
+"
+
+Try these options and choose the best visual match:
+
+Option 1:
+scale-[1.45] object-[center_42%]
+
+Option 2:
+scale-[1.55] object-[center_45%]
+
+Option 3:
+scale-[1.65] object-[center_45%]
+
+Goal crop:
+- Val’s head should appear closer in size to Mark’s head.
+- Val’s upper body should be more visible, similar framing to Mark.
+- Do not crop Val’s face/head.
+- Do not zoom so much that the image becomes awkward or blurry.
+
+Expected result:
+Val Legaspi’s card should visually match Mark Anthony Apostol’s framing better, with similar head level and body scale.
