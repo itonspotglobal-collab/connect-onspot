@@ -1351,11 +1351,6 @@ export default function Home() {
 
                 {/* Name + role */}
                 <div className="absolute inset-x-0 bottom-0 z-10 translate-y-0 p-5 text-white opacity-100 transition-all duration-300 md:translate-y-4 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100">
-                  {person.isReal && (
-                    <span className="mb-2 inline-flex rounded-full bg-indigo-500/80 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm">
-                      OnSpot Team
-                    </span>
-                  )}
                   <h3 className="text-base font-bold leading-tight text-white">
                     {person.name} <span aria-hidden="true">{person.flag}</span>
                   </h3>
