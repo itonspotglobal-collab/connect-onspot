@@ -131,160 +131,18 @@ function getCardStyle(
 }
 
 function TrustedLogos() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [visibleCount, setVisibleCount] = useState(5);
-  const [isPaused, setIsPaused] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Offsets per breakpoint
-  const nearOffset = visibleCount === 5 ? 260 : visibleCount === 3 ? 190 : 0;
-  const farOffset = visibleCount === 5 ? 470 : visibleCount === 3 ? 340 : 0;
-
-  const nextSlide = useCallback(() => {
-    setCurrentIndex((prev) => (prev + 1) % trustedBrands.length);
-  }, []);
-
-  const prevSlide = useCallback(() => {
-    setCurrentIndex(
-      (prev) => (prev - 1 + trustedBrands.length) % trustedBrands.length,
-    );
-  }, []);
-
-  const goTo = useCallback((index: number) => {
-    setCurrentIndex(index);
-    setIsPaused(true);
-    setTimeout(() => setIsPaused(false), 3000);
-  }, []);
-
-  const handleArrow = useCallback(
-    (dir: "prev" | "next") => {
-      if (dir === "next") nextSlide();
-      else prevSlide();
-      setIsPaused(true);
-      setTimeout(() => setIsPaused(false), 3000);
-    },
-    [nextSlide, prevSlide],
-  );
-
-  // Resize → update visibleCount
-  useEffect(() => {
-    const update = () => {
-      if (window.innerWidth < 640) setVisibleCount(1);
-      else if (window.innerWidth < 1024) setVisibleCount(3);
-      else setVisibleCount(5);
-    };
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, []);
-
-  // Autoplay
-  useEffect(() => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    if (!isPaused) {
-      intervalRef.current = setInterval(nextSlide, 3500);
-    }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [isPaused, nextSlide]);
-
-  // Compute visible slots
-  const visibleOffsets: number[] =
-    visibleCount === 5
-      ? [-2, -1, 0, 1, 2]
-      : visibleCount === 3
-        ? [-1, 0, 1]
-        : [0];
-
-  const visibleItems = visibleOffsets.map((offset) => {
-    const index =
-      (currentIndex + offset + trustedBrands.length) % trustedBrands.length;
-    return { ...trustedBrands[index], offset, isActive: offset === 0 };
-  });
-
   return (
-    <div className="mt-10 sm:mt-14 w-full select-none">
-      {/* Carousel stage */}
-      <div
-        className="relative mx-auto h-[220px] sm:h-[250px] w-full max-w-6xl overflow-visible"
-        style={{ perspective: "1200px" }}
-        onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={() => setIsPaused(false)}
-      >
-        {/* Cards */}
-        {visibleItems.map(({ name, logo, offset, isActive }) => {
-          const style = getCardStyle(offset, nearOffset, farOffset);
-          return (
-            <div
-              key={name}
-              className={[
-                "absolute left-1/2 top-1/2 flex items-center justify-center rounded-3xl bg-white",
-                "transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]",
-                isActive
-                  ? "h-36 sm:h-40 w-[280px] sm:w-[340px] border border-purple-300/70 shadow-2xl"
-                  : Math.abs(offset) === 1
-                    ? "h-28 sm:h-32 w-[240px] sm:w-[300px] border border-slate-200/70 shadow-md"
-                    : "h-24 sm:h-28 w-[210px] sm:w-[260px] border border-slate-200/60 shadow-sm",
-              ].join(" ")}
-              style={{
-                ...style,
-                transformStyle: "preserve-3d",
-                willChange: "transform, opacity",
-              }}
-            >
-              <img
-                src={logo}
-                alt={name}
-                loading="lazy"
-                className={[
-                  "object-contain transition-all duration-700",
-                  isActive
-                    ? "max-h-20 max-w-[200px] sm:max-w-[230px]"
-                    : Math.abs(offset) === 1
-                      ? "max-h-14 max-w-[150px] sm:max-w-[170px]"
-                      : "max-h-12 max-w-[120px] sm:max-w-[140px]",
-                ].join(" ")}
-              />
-            </div>
-          );
-        })}
-
-        {/* Left arrow */}
-        <button
-          onClick={() => handleArrow("prev")}
-          aria-label="Previous logo"
-          className="absolute left-2 sm:left-4 top-1/2 z-[60] -translate-y-1/2 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full border border-slate-200 bg-white shadow-lg transition hover:scale-105 hover:shadow-xl"
-        >
-          <ChevronLeft className="h-5 w-5 text-slate-600" />
-        </button>
-
-        {/* Right arrow */}
-        <button
-          onClick={() => handleArrow("next")}
-          aria-label="Next logo"
-          className="absolute right-2 sm:right-4 top-1/2 z-[60] -translate-y-1/2 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full border border-slate-200 bg-white shadow-lg transition hover:scale-105 hover:shadow-xl"
-        >
-          <ChevronRight className="h-5 w-5 text-slate-600" />
-        </button>
-      </div>
-
-      {/* Dot indicators */}
-      <div className="mt-10 flex items-center justify-center gap-2">
-        {trustedBrands.map((brand, index) => (
-          <button
-            key={brand.name}
-            onClick={() => goTo(index)}
-            aria-label={`Go to ${brand.name}`}
-            className={[
-              "rounded-full transition-all duration-500",
-              index === currentIndex
-                ? "h-2.5 w-6 bg-violet-500"
-                : "h-2 w-2 bg-slate-300 hover:bg-slate-400",
-            ].join(" ")}
+    <div className="mx-auto mt-10 grid max-w-[1100px] grid-cols-2 items-center justify-items-center gap-x-10 gap-y-8 px-6 sm:grid-cols-3 lg:grid-cols-6">
+      {trustedBrands.map(({ name, logo }) => (
+        <div key={name} className="flex items-center justify-center">
+          <img
+            src={logo}
+            alt={name}
+            loading="lazy"
+            className="max-h-12 max-w-[160px] object-contain opacity-60 transition duration-200 hover:opacity-100"
           />
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -580,16 +438,16 @@ export default function Home() {
       </div>
 
       {/* ── 3. WORK DIFFERENTLY ── */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#eef2ff] via-[#f7f4ff] to-[#dff8ff] py-20 sm:py-24">
-        <div className="pointer-events-none absolute -left-24 top-10 h-72 w-72 rounded-full bg-purple-400/20 blur-3xl" />
-        <div className="pointer-events-none absolute -right-24 bottom-10 h-72 w-72 rounded-full bg-cyan-300/20 blur-3xl" />
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#f5f3ff] via-[#f7f9ff] to-[#eafaff] pt-20 pb-16 sm:pt-24 sm:pb-20 lg:pt-28 lg:pb-24">
+        <div className="pointer-events-none absolute -left-32 top-16 h-80 w-80 rounded-full bg-violet-300/15 blur-3xl" />
+        <div className="pointer-events-none absolute -right-32 bottom-16 h-80 w-80 rounded-full bg-cyan-300/15 blur-3xl" />
 
         <div className="container relative z-10 mx-auto px-4 sm:px-6">
           <div className="text-center mb-12 sm:mb-16">
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#3F4698]">
+            <p className="text-sm font-semibold uppercase tracking-[0.28em] text-indigo-700 sm:text-base">
               Work differently.
             </p>
-            <h2 className="mx-auto mt-4 max-w-[1500px] px-6 sm:px-8 lg:px-10 text-center font-semibold leading-[1.08] tracking-tight text-slate-900 text-[clamp(34px,3.55vw,58px)]">
+            <h2 className="mx-auto mt-5 max-w-[1500px] px-6 text-center font-semibold leading-[1.06] tracking-[-0.04em] text-slate-950 text-[clamp(42px,4.2vw,72px)]">
               <span className="block xl:whitespace-nowrap">
                 Whether you're scaling a team or growing a career
               </span>
@@ -599,9 +457,9 @@ export default function Home() {
             </h2>
           </div>
 
-          <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-8 lg:grid-cols-2 items-stretch">
+          <div className="mx-auto grid w-full max-w-[1280px] grid-cols-1 gap-6 lg:grid-cols-2 items-stretch">
             {/* Card 1: For Companies */}
-            <div className="group flex h-full flex-col overflow-hidden rounded-[28px] border border-[#3F4698]/25 bg-[#F4F6FF] shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+            <div className="group flex h-full flex-col overflow-hidden rounded-[2rem] border border-indigo-100/80 bg-white/70 shadow-[0_20px_60px_rgba(80,80,180,0.08)] backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(80,80,180,0.14)]">
               {/* Image header */}
               <div className="relative h-[260px] w-full overflow-hidden sm:h-[300px] lg:h-[320px]">
                 <img
@@ -676,7 +534,7 @@ export default function Home() {
             </div>
 
             {/* Card 2: For Professionals */}
-            <div className="group flex h-full flex-col overflow-hidden rounded-[28px] border border-[#3F4698]/25 bg-[#F7F5FF] shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+            <div className="group flex h-full flex-col overflow-hidden rounded-[2rem] border border-indigo-100/80 bg-white/70 shadow-[0_20px_60px_rgba(80,80,180,0.08)] backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(80,80,180,0.14)]">
               {/* Image header */}
               <div className="relative h-[260px] w-full overflow-hidden sm:h-[300px] lg:h-[320px]">
                 <img
@@ -753,29 +611,13 @@ export default function Home() {
         </div>
       </div>
       {/* ── 4. TRUSTED BY ── */}
-      <div
-        className="relative overflow-hidden bg-[#f7f9ff] dark:bg-background"
-        style={{ padding: "clamp(2.5rem, 6vw, 8rem) 0" }}
-      >
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[85%] pointer-events-none">
-          <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-b from-violet-500/5 via-blue-500/3 to-transparent blur-sm"></div>
-          <div className="h-px bg-gradient-to-r from-transparent via-violet-400/25 to-transparent"></div>
-        </div>
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#f5f3ff] via-[#f7f9ff] to-[#eafaff] pt-10 pb-20 sm:pt-12 sm:pb-24 lg:pt-14 lg:pb-28">
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
-          <div className="text-center space-y-8 sm:space-y-12">
-            <div className="space-y-4 sm:space-y-5 mx-auto">
-              <h2
-                className="font-light tracking-tight leading-tight mx-auto"
-                style={{
-                  fontSize: "clamp(1.75rem, 4vw, 3rem)",
-                  textWrap: "balance",
-                  maxWidth: "62ch",
-                }}
-              >
-                Trusted by global brands, hundreds of entrepreneurs, and
-                thousands of professionals worldwide.
-              </h2>
-            </div>
+          <div className="text-center space-y-10 sm:space-y-14">
+            <h2 className="mx-auto font-medium leading-[1.12] tracking-[-0.035em] text-slate-900 text-[clamp(30px,2.8vw,48px)]" style={{ textWrap: "balance", maxWidth: "58ch" }}>
+              Trusted by global brands, hundreds of entrepreneurs, and
+              thousands of professionals worldwide.
+            </h2>
             <TrustedLogos />
           </div>
         </div>

@@ -1,0 +1,369 @@
+Please refine the Work Differently and Trusted By sections to feel more visually polished, minimal, and Apple-inspired.
+
+Reference inspiration:
+Apple homepage style: clean, minimal, visually spacious, strong typography, soft neutral backgrounds, and focused section moments.
+
+IMPORTANT:
+- Do not copy Apple’s site exactly.
+- Keep OnSpot branding, colors, and content.
+- Do not redesign the entire homepage.
+- Focus only on these visible sections:
+  1. Work Differently
+  2. Trusted By / client logos
+- Make the background between these sections feel uniform and seamless.
+- Improve typography hierarchy and visual balance.
+
+==================================================
+1. MAKE THE BACKGROUND UNIFORM
+==================================================
+
+Current issue:
+The Work Differently section and Trusted By section feel visually separated by different backgrounds or section breaks. It makes the page feel less premium.
+
+Goal:
+Use one continuous soft background across both sections so they feel like part of the same visual story.
+
+Suggested shared background:
+
+className="
+  bg-gradient-to-br from-[#f5f3ff] via-[#f7f9ff] to-[#eafaff]
+"
+
+or a cleaner Apple-like neutral:
+
+className="
+  bg-[#f5f5f7]
+"
+
+Preferred:
+Use a very soft OnSpot gradient, but keep it subtle.
+
+Apply the same background to:
+- Work Differently section
+- Trusted By section
+
+Remove hard divider lines or abrupt background changes between them unless needed.
+
+If both sections are separate components, wrap them in one parent background container:
+
+<div className="bg-gradient-to-br from-[#f5f3ff] via-[#f7f9ff] to-[#eafaff]">
+  <WorkDifferentlySection />
+  <TrustedBySection />
+</div>
+
+Make sure neither child section overrides this with a different background like:
+- bg-white
+- bg-slate-50
+- bg-[#...]
+unless intentionally transparent.
+
+Use:
+bg-transparent
+
+for child sections if needed.
+
+==================================================
+2. INCREASE “WORK DIFFERENTLY” LABEL SIZE
+==================================================
+
+Current issue:
+The “WORK DIFFERENTLY.” label is too small and gets lost.
+
+Goal:
+Make the label more visible as a section eyebrow, but still refined.
+
+Text:
+“WORK DIFFERENTLY.”
+
+Suggested style:
+
+className="
+  text-center text-sm sm:text-base
+  font-semibold uppercase
+  tracking-[0.28em]
+  text-indigo-700
+"
+
+If it still feels too small:
+className="
+  text-center text-base
+  font-semibold uppercase
+  tracking-[0.3em]
+  text-indigo-700
+"
+
+Do not make it huge. It should be noticeable, not dominant.
+
+==================================================
+3. REFINE WORK DIFFERENTLY HEADLINE SIZE
+==================================================
+
+Current issue:
+The headline above the cards is visually awkward. It is large, but not balanced, and the Trusted By text below feels weak compared to it.
+
+Goal:
+Make the Work Differently headline feel like a premium Apple-style hero section title:
+- large
+- clean
+- centered
+- not overflowing
+- balanced line breaks
+
+Desired text format:
+
+Line 1:
+Whether you're scaling a team or growing a career
+
+Line 2:
+— OnSpot is built for both sides of great work.
+
+Suggested JSX:
+
+<h2 className="...">
+  <span className="block xl:whitespace-nowrap">
+    Whether you're scaling a team or growing a career
+  </span>
+  <span className="mt-2 block xl:whitespace-nowrap">
+    — OnSpot is built for both sides of great work.
+  </span>
+</h2>
+
+Suggested class:
+
+className="
+  mx-auto mt-5 max-w-[1500px]
+  px-6 text-center
+  text-[clamp(42px,4.2vw,72px)]
+  font-semibold tracking-[-0.04em]
+  leading-[1.06]
+  text-slate-950
+"
+
+Important:
+- Use `xl:whitespace-nowrap`, not global nowrap.
+- On smaller screens, allow wrapping naturally.
+- Do not let the heading overflow horizontally.
+- Keep it visually strong but not clunky.
+
+==================================================
+4. IMPROVE WORK DIFFERENTLY SECTION SPACING
+==================================================
+
+Current issue:
+The section feels cramped vertically around the cards and the background transition.
+
+Goal:
+Make it more premium and intentionally spaced without becoming too tall.
+
+Suggested section wrapper:
+
+className="
+  relative overflow-hidden
+  bg-transparent
+  pt-20 sm:pt-24 lg:pt-28
+  pb-16 sm:pb-20 lg:pb-24
+"
+
+Cards wrapper:
+
+className="
+  mx-auto mt-14 grid w-full max-w-[1200px]
+  grid-cols-1 gap-6
+  lg:grid-cols-2
+"
+
+If cards look too small compared to the headline, use:
+max-w-[1280px]
+
+Keep the cards centered.
+
+==================================================
+5. MAKE THE WORK DIFFERENTLY CARDS MORE PREMIUM
+==================================================
+
+Current cards are okay, but should feel more Apple-like:
+- softer borders
+- slightly larger image moments
+- calmer shadows
+- cleaner spacing
+
+Card style:
+
+className="
+  overflow-hidden rounded-[2rem]
+  border border-indigo-100/80
+  bg-white/70
+  shadow-[0_20px_60px_rgba(80,80,180,0.08)]
+  backdrop-blur-md
+"
+
+Image wrapper:
+Make both images same size.
+
+className="
+  relative h-[260px] sm:h-[300px] lg:h-[320px]
+  w-full overflow-hidden
+"
+
+Image:
+className="
+  h-full w-full object-cover object-center
+"
+
+Card body:
+className="
+  p-7 sm:p-8
+"
+
+==================================================
+6. TRUSTED BY SECTION: FIX FONT SIZE ABOVE LOGOS
+==================================================
+
+Current issue:
+The text above the logos is too small/weak and not visually pleasing.
+
+Current text:
+“Trusted by global brands, hundreds of entrepreneurs, and thousands of professionals worldwide.”
+
+Goal:
+Make this text feel like a clean Apple-style statement:
+- larger
+- lighter weight than the Work Differently headline
+- centered
+- elegant
+- not overpowering
+
+Suggested class:
+
+className="
+  mx-auto max-w-[1150px]
+  text-center
+  text-[clamp(32px,3.2vw,56px)]
+  font-medium
+  tracking-[-0.035em]
+  leading-[1.12]
+  text-slate-900
+"
+
+If it still feels too big, use:
+text-[clamp(30px,2.8vw,48px)]
+
+==================================================
+7. TRUSTED BY SECTION SPACING
+==================================================
+
+Current issue:
+Trusted By feels disconnected and awkward below Work Differently.
+
+Goal:
+Make it flow naturally below Work Differently with the same background.
+
+Suggested Trusted By wrapper:
+
+className="
+  bg-transparent
+  pt-10 sm:pt-12 lg:pt-14
+  pb-20 sm:pb-24 lg:pb-28
+"
+
+If there is a large gap between Work Differently and Trusted By, reduce it.
+If it feels too close, use a subtle top padding, not a divider.
+
+==================================================
+8. TRUSTED BY LOGOS: MAKE IT MINIMAL AND STABLE
+==================================================
+
+Current issue:
+The logo carousel/cards feel over-designed compared to Apple’s minimal style.
+
+Goal:
+Make the client logo area more minimal, stable, and polished.
+
+If the requirement is still static logos:
+- Remove carousel controls
+- Remove arrows
+- Remove dots
+- Remove center zoom
+- Display logos as a clean static row/grid
+
+Suggested logo layout:
+
+className="
+  mx-auto mt-12 grid max-w-[1100px]
+  grid-cols-2 items-center justify-items-center
+  gap-x-10 gap-y-8
+  sm:grid-cols-3
+  lg:grid-cols-6
+"
+
+Logo image:
+
+className="
+  max-h-12 max-w-[160px]
+  object-contain
+  opacity-70
+  grayscale-0
+  transition hover:opacity-100
+"
+
+If colored logos are required, keep them colored but use opacity to soften.
+
+Do not use heavy cards unless required.
+
+If logo cards are still preferred:
+Use very subtle cards:
+
+className="
+  flex h-24 w-full items-center justify-center
+  rounded-2xl bg-white/50
+  ring-1 ring-slate-200/60
+"
+
+But preferred Apple-like approach:
+Plain logos directly on the background.
+
+==================================================
+9. SECTION ORDER CHECK
+==================================================
+
+If the final section order requires Trusted By before Work Differently, follow the final page order.
+
+However, based on the current visible screenshot, if Work Differently is currently above Trusted By and that is intentional for this task, keep it but visually unify them.
+
+If there is a mismatch with the final homepage order, prioritize the final section order previously requested:
+Hero → Trusted By → Work Differently → ...
+
+If moving sections is needed, do it carefully without duplicates.
+
+==================================================
+10. RESPONSIVE BEHAVIOR
+==================================================
+
+Desktop:
+- Work Differently headline should fit in two clean lines.
+- Trusted By statement should be large enough to feel premium.
+- Logos should display in one clean row/grid.
+
+Laptop:
+- No horizontal clipping.
+- Headline may wrap naturally if needed.
+
+Tablet/mobile:
+- Headings can wrap into more lines.
+- Cards stack.
+- Logos become 2 or 3 columns.
+- No horizontal scrolling.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+These sections should feel more like a premium Apple-inspired editorial/product page:
+- uniform soft background
+- larger, cleaner typography
+- stronger “WORK DIFFERENTLY.” label
+- balanced Work Differently headline
+- more elegant Trusted By statement
+- minimal logo presentation
+- less clutter, fewer unnecessary visual effects
+- visually cohesive transition between sections
