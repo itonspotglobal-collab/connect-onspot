@@ -363,7 +363,7 @@ export default function Home() {
               <h1 className="text-6xl sm:text-7xl lg:text-8xl font-bold tracking-tight leading-[1.05] text-white">
                 Work{" "}
                 <span className="bg-gradient-to-r from-violet-300 via-blue-200 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_24px_rgba(167,139,250,0.45)]">
-                  Differently.
+                  Differently
                 </span>
               </h1>
             </div>
@@ -374,11 +374,10 @@ export default function Home() {
                 One System. Your unfair Advantage.
               </p>
               <p className="mt-3 text-base sm:text-lg md:text-xl leading-relaxed text-white/55">
-                Marketplace speed, BPO quality, and a talent pool built for the
-                work AI creates
+                The only outsourcing system built for the world that's coming
               </p>
               <p className="mt-3 text-base sm:text-lg md:text-xl leading-relaxed text-white/55">
-                — not just the work it replaces.
+                — not the one that's leaving.
               </p>
             </div>
 
@@ -426,9 +425,9 @@ export default function Home() {
         <div className="mx-auto grid max-w-[1600px] grid-cols-2 divide-y divide-slate-200 md:grid-cols-4 md:divide-x md:divide-y-0">
           {[
             { value: "72hrs", label: "AVG. TIME TO HIRE" },
-            { value: "500+", label: "GLOBAL CLIENTS" },
-            { value: "98%", label: "CLIENT RETENTION" },
-            { value: "2,000+", label: "TALENTS PLACED" },
+            { value: "200+", label: "GLOBAL CLIENTS" },
+            { value: "60%", label: "CLIENT COSTING SAVED" },
+            { value: "2,000+", label: "TALENTS MATCHED" },
           ].map((stat) => (
             <div
               key={stat.label}
@@ -446,19 +445,19 @@ export default function Home() {
       </div>
 
       {/* ── 2. FEATURED INSIGHTS — card grid ── */}
-      <div className="bg-white py-8 sm:py-10 lg:py-12">
-        <div className="mx-auto w-full max-w-[1700px] px-6 sm:px-8 lg:px-10 xl:px-12">
+      <div className="bg-[#f7f8fb] py-14 sm:py-16 lg:py-20">
+        <div className="mx-auto w-full max-w-[1440px] px-6 sm:px-8 lg:px-12">
 
           {/* Header */}
-          <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-indigo-600">
                 Insights
               </p>
-              <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+              <h2 className="mt-2 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
                 Ideas worth sharing.
               </h2>
-              <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-600">
+              <p className="mt-3 max-w-lg text-base leading-relaxed text-slate-600">
                 Perspectives on customer experience, global talent, and the future of work.
               </p>
             </div>
@@ -471,73 +470,111 @@ export default function Home() {
             </a>
           </div>
 
-          {/* Card grid */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {(featuredPosts.length > 0
-              ? featuredPosts.slice(0, 3)
-              : [
-                  {
-                    id: 1,
-                    slug: "leveraging-ghanas-tech-talent-philippines-customer-service",
-                    category: "INDUSTRY INSIGHTS",
-                    title: "How Technology is Shaping the Future of Customer Service",
-                    readTime: "5 min read",
-                    coverImageUrl: null as string | null,
-                  },
-                  {
-                    id: 2,
-                    slug: "leveraging-ghanas-tech-talent-philippines-customer-service",
-                    category: "INDUSTRY TRENDS",
-                    title: "Leveraging Ghana's Tech Talent and World-Class Service in the Philippines",
-                    readTime: "5 min read",
-                    coverImageUrl: null as string | null,
-                  },
-                  {
-                    id: 3,
-                    slug: "philippines-gold-standard-customer-service-culture",
-                    category: "INDUSTRY TRENDS",
-                    title: "The Checklist for Winning Your Virtual Interview",
-                    readTime: "5 min read",
-                    coverImageUrl: null as string | null,
-                  },
-                ]
-            ).map((post) => {
-              const thumb = (post as any).coverImageUrl as string | null | undefined;
-              return (
-                <a
-                  key={post.id}
-                  href={`/insights/${post.slug}`}
-                  className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-                >
-                  {/* Thumbnail */}
-                  {thumb ? (
-                    <div className="h-24 w-full overflow-hidden bg-slate-100 sm:h-28">
-                      <img
-                        src={thumb}
-                        alt={post.title}
-                        className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                      />
-                    </div>
-                  ) : (
-                    <div className="h-24 w-full bg-gradient-to-br from-indigo-100 via-violet-100 to-cyan-100 sm:h-28" />
-                  )}
+          {/* Editorial layout */}
+          {(() => {
+            const staticPosts = [
+              {
+                id: 1,
+                slug: "process-efficiency-foundation-customer-service",
+                category: "PROCESS OPTIMIZATION",
+                title: "Process Efficiency: The Foundation of Exceptional Customer Service",
+                readTime: "6 min read",
+                coverImageUrl: null as string | null,
+              },
+              {
+                id: 2,
+                slug: "leveraging-ghanas-tech-talent-philippines-customer-service",
+                category: "GLOBAL OUTSOURCING",
+                title: "Leveraging Ghana's Tech Talent and the World-Class Customer Service of the Philippines",
+                readTime: "5 min read",
+                coverImageUrl: null as string | null,
+              },
+              {
+                id: 3,
+                slug: "ghana-software-development-outsourcing-goldmine",
+                category: "TECHNOLOGY",
+                title: "Ghana's Software Development Capabilities: An Untapped Goldmine for Outsourcing",
+                readTime: "4 min read",
+                coverImageUrl: null as string | null,
+              },
+            ];
+            const posts = featuredPosts.length > 0 ? featuredPosts.slice(0, 3) : staticPosts;
+            const [featured, ...secondary] = posts;
+            const featuredThumb = (featured as any).coverImageUrl as string | null | undefined;
 
-                  {/* Card body */}
-                  <div className="flex flex-col p-5">
-                    <span className="inline-flex w-fit items-center whitespace-nowrap rounded-full bg-violet-100 px-3.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-indigo-600">
-                      {(post as any).category || "Industry Insights"}
+            return (
+              <div className="grid gap-6">
+
+                {/* Featured article */}
+                <a
+                  href={`/insights/${featured.slug}`}
+                  className="group relative overflow-hidden rounded-[2rem] bg-slate-900 shadow-sm"
+                >
+                  {featuredThumb ? (
+                    <img
+                      src={featuredThumb}
+                      alt={featured.title}
+                      className="h-[280px] w-full object-cover transition duration-500 group-hover:scale-[1.02] sm:h-[360px] lg:h-[440px]"
+                    />
+                  ) : (
+                    <div className="h-[280px] w-full bg-gradient-to-br from-indigo-900 via-violet-900 to-slate-900 sm:h-[360px] lg:h-[440px]" />
+                  )}
+                  {/* Dark overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                  {/* Text */}
+                  <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8 lg:p-10">
+                    <span className="text-xs font-semibold uppercase tracking-[0.18em] text-white/75">
+                      {(featured as any).category || "Insights"}
                     </span>
-                    <h3 className="mt-4 min-h-[52px] text-base font-semibold leading-snug text-slate-950 transition-colors group-hover:text-indigo-600 sm:text-lg">
-                      {post.title}
+                    <h3 className="mt-3 max-w-4xl text-2xl font-semibold leading-tight text-white sm:text-3xl lg:text-4xl">
+                      {featured.title}
                     </h3>
-                    <span className="mt-6 text-sm font-medium text-slate-500">
-                      {(post as any).readTime || "5 min read"}
-                    </span>
+                    <p className="mt-3 text-sm font-medium text-white/70">
+                      {(featured as any).readTime || "5 min read"}
+                    </p>
                   </div>
                 </a>
-              );
-            })}
-          </div>
+
+                {/* Two smaller cards */}
+                <div className="grid gap-6 lg:grid-cols-2">
+                  {secondary.map((post) => {
+                    const thumb = (post as any).coverImageUrl as string | null | undefined;
+                    return (
+                      <a
+                        key={post.id}
+                        href={`/insights/${post.slug}`}
+                        className="group overflow-hidden rounded-[1.75rem] bg-white shadow-sm ring-1 ring-slate-200/80 transition hover:-translate-y-0.5 hover:shadow-md"
+                      >
+                        {thumb ? (
+                          <div className="h-48 overflow-hidden bg-slate-100 sm:h-56 lg:h-60">
+                            <img
+                              src={thumb}
+                              alt={post.title}
+                              className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                            />
+                          </div>
+                        ) : (
+                          <div className="h-48 bg-gradient-to-br from-indigo-100 via-violet-100 to-cyan-100 sm:h-56 lg:h-60" />
+                        )}
+                        <div className="p-6 sm:p-7">
+                          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                            {(post as any).category || "Insights"}
+                          </span>
+                          <h3 className="mt-3 text-xl font-semibold leading-tight text-slate-950 transition-colors group-hover:text-indigo-700 sm:text-2xl">
+                            {post.title}
+                          </h3>
+                          <p className="mt-5 text-sm font-medium text-slate-500">
+                            {(post as any).readTime || "5 min read"}
+                          </p>
+                        </div>
+                      </a>
+                    );
+                  })}
+                </div>
+
+              </div>
+            );
+          })()}
 
         </div>
       </div>
@@ -553,8 +590,12 @@ export default function Home() {
               Work differently.
             </p>
             <h2 className="mx-auto mt-4 max-w-[1500px] px-6 sm:px-8 lg:px-10 text-center font-semibold leading-[1.08] tracking-tight text-slate-900 text-[clamp(34px,3.55vw,58px)]">
-              <span className="block xl:whitespace-nowrap">Whether you're scaling a team or growing a career</span>
-              <span className="mt-2 block xl:whitespace-nowrap">— OnSpot is built for both sides of great work.</span>
+              <span className="block xl:whitespace-nowrap">
+                Whether you're scaling a team or growing a career
+              </span>
+              <span className="mt-2 block xl:whitespace-nowrap">
+                — OnSpot is built for both sides of great work.
+              </span>
             </h2>
           </div>
 
@@ -758,7 +799,10 @@ export default function Home() {
             <span className="mt-3 block text-[#B8B7FF]">Real impact.</span>
           </h2>
           <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-white/55 sm:text-lg">
-            <span className="block">A global team of professionals delivering for clients around the world</span>
+            <span className="block">
+              A global team of professionals delivering for clients around the
+              world
+            </span>
             <span className="mt-1 block">— every single day.</span>
           </p>
         </div>

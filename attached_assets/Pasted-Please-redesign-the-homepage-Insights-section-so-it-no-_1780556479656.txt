@@ -1,0 +1,364 @@
+Please redesign the homepage Insights section so it no longer feels like a horizontal strip after the stats section.
+
+Current issue:
+The Insights section currently looks like another strip/card row directly below the stats section, which creates a “double strip” effect:
+1. Stats strip
+2. Insights strip
+
+Goal:
+Update the Insights section into a minimal, clean Apple Newsroom-inspired layout:
+- More editorial
+- More spacious but not too tall
+- Not a strip
+- Not visually competing with the Stats section
+- Still compact enough for the homepage
+
+IMPORTANT:
+- Do not copy Apple’s design exactly.
+- Use Apple Newsroom only as inspiration for minimal layout, large image treatment, clean spacing, and editorial hierarchy.
+- Keep OnSpot branding, fonts, colors, and article content.
+- Keep the section on the homepage.
+- Make it responsive.
+
+==================================================
+1. SECTION FEEL / BACKGROUND
+==================================================
+
+The Insights section should feel like a contained editorial/newsroom block, not a full-width strip.
+
+Use a soft light background that separates it from the stats section.
+
+Suggested section:
+
+className="
+  bg-[#f7f8fb]
+  py-14 sm:py-16 lg:py-20
+"
+
+Avoid:
+- plain white strip directly touching stats
+- border-y section styling
+- full-width stat-like row styling
+- cards that feel like another data strip
+
+Add enough top spacing from the Stats section so the transition feels intentional:
+
+className="
+  mt-0
+"
+
+If the previous stats section ends abruptly, add padding in the Insights section instead of adding another strip border.
+
+==================================================
+2. CONTAINER
+==================================================
+
+Use a centered max-width container, similar to a newsroom layout.
+
+Suggested:
+
+className="
+  mx-auto w-full max-w-[1440px]
+  px-6 sm:px-8 lg:px-12
+"
+
+Do not use max-w-[1800px] for this section because that makes it look like a full-width strip.
+
+==================================================
+3. HEADER LAYOUT
+==================================================
+
+Create a clean header like:
+
+Left:
+- INSIGHTS label
+- Ideas worth sharing.
+- Short description
+
+Right:
+- Explore all button
+
+Suggested wrapper:
+
+className="
+  mb-8 flex flex-col gap-5
+  md:flex-row md:items-end md:justify-between
+"
+
+Label:
+“INSIGHTS”
+
+className="
+  text-xs font-semibold uppercase tracking-[0.22em]
+  text-indigo-600
+"
+
+Headline:
+“Ideas worth sharing.”
+
+className="
+  mt-2 text-4xl font-semibold tracking-tight text-slate-950
+  sm:text-5xl
+"
+
+Description:
+“Perspectives on customer experience, global talent, and the future of work.”
+
+className="
+  mt-3 max-w-lg text-base leading-relaxed text-slate-600
+"
+
+Explore all button:
+
+className="
+  inline-flex items-center gap-2 rounded-full
+  border border-slate-200 bg-white
+  px-5 py-2.5 text-sm font-medium text-indigo-600
+  shadow-sm transition
+  hover:border-indigo-200 hover:bg-indigo-50
+"
+
+==================================================
+4. NEWSROOM-STYLE ARTICLE LAYOUT
+==================================================
+
+Instead of three equal cards in a straight strip, use an editorial layout:
+
+Desktop layout:
+- One large featured article on top/full width
+- Two smaller articles below in a two-column grid
+
+This avoids the strip look and feels more like a newsroom.
+
+Suggested layout:
+
+<div className="grid gap-6">
+  <FeaturedArticleCard />
+  <div className="grid gap-6 lg:grid-cols-2">
+    <SmallArticleCard />
+    <SmallArticleCard />
+  </div>
+</div>
+
+==================================================
+5. FEATURED ARTICLE CARD
+==================================================
+
+The first article should be a large featured card inspired by Apple Newsroom.
+
+Use article:
+“Process Efficiency: The Foundation of Exceptional Customer Service”
+or if the original first insight should remain:
+“How Technology is Shaping the Future of Customer Service”
+
+Preferred if current data uses it:
+“Process Efficiency: The Foundation of Exceptional Customer Service”
+
+Featured card:
+- Large image
+- Rounded corners
+- Text overlay at bottom
+- Dark gradient overlay on image for readability
+- Not too tall
+
+Suggested featured card:
+
+className="
+  group relative overflow-hidden rounded-[2rem]
+  bg-slate-900 shadow-sm
+"
+
+Image wrapper:
+className="
+  h-[320px] sm:h-[380px] lg:h-[460px]
+"
+
+Image:
+className="
+  h-full w-full object-cover
+  transition duration-500 group-hover:scale-[1.02]
+"
+
+Overlay:
+className="
+  absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent
+"
+
+Content:
+className="
+  absolute inset-x-0 bottom-0 p-6 sm:p-8 lg:p-10
+"
+
+Category:
+className="
+  text-xs font-semibold uppercase tracking-[0.18em]
+  text-white/80
+"
+
+Title:
+className="
+  mt-3 max-w-4xl text-3xl font-semibold leading-tight text-white
+  sm:text-4xl lg:text-5xl
+"
+
+Read time:
+className="
+  mt-4 text-sm font-medium text-white/75
+"
+
+==================================================
+6. SMALL ARTICLE CARDS
+==================================================
+
+The remaining two articles should be smaller cards below the featured article.
+
+Small card layout:
+- Image on top
+- Text below
+- Rounded white card
+- Compact height
+
+Suggested small card:
+
+className="
+  overflow-hidden rounded-[1.75rem]
+  bg-white shadow-sm ring-1 ring-slate-200/80
+  transition hover:-translate-y-0.5 hover:shadow-md
+"
+
+Image wrapper:
+className="
+  h-48 sm:h-56 lg:h-64 overflow-hidden bg-slate-100
+"
+
+Image:
+className="
+  h-full w-full object-cover
+"
+
+Content:
+className="
+  p-6 sm:p-7
+"
+
+Category:
+className="
+  text-xs font-semibold uppercase tracking-[0.18em]
+  text-slate-500
+"
+
+Title:
+className="
+  mt-3 text-2xl font-semibold leading-tight text-slate-950
+"
+
+Read time:
+className="
+  mt-5 text-sm font-medium text-slate-500
+"
+
+==================================================
+7. ARTICLE CONTENT
+==================================================
+
+Use the current three published articles from the site.
+
+Example:
+
+Featured:
+Category:
+“PROCESS OPTIMIZATION”
+Title:
+“Process Efficiency: The Foundation of Exceptional Customer Service”
+Read time:
+“6 min read”
+
+Small card 1:
+Category:
+“GLOBAL OUTSOURCING”
+Title:
+“Leveraging Ghana's Tech Talent and the World-Class Customer Service of the Philippines”
+Read time:
+“5 min read”
+
+Small card 2:
+Category:
+“TECHNOLOGY”
+Title:
+“Ghana's Software Development Capabilities: An Untapped Goldmine for Outsourcing”
+Read time:
+“4 min read”
+
+Use the current article thumbnail images already displayed in the site.
+
+==================================================
+8. REMOVE STRIP-LIKE CARD ROW
+==================================================
+
+Remove the current three-equal-card row layout that makes the section look like a strip.
+
+Avoid:
+className="
+  grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3
+"
+
+as the main layout for this section.
+
+Use:
+- one featured article
+- two smaller cards below
+
+This makes it feel editorial and less like another horizontal band.
+
+==================================================
+9. RESPONSIVE BEHAVIOR
+==================================================
+
+Desktop:
+- Featured article large on top.
+- Two smaller cards below.
+
+Laptop:
+- Same structure, slightly smaller image heights.
+
+Tablet:
+- Featured article on top.
+- Small cards stacked or two columns if space allows.
+
+Mobile:
+- Everything stacks.
+- Featured image height around 280px.
+- Title sizes reduce naturally.
+- No horizontal scrolling.
+
+Mobile featured image:
+h-[280px]
+
+Mobile featured title:
+text-2xl sm:text-3xl
+
+==================================================
+10. SPACING CONTROL
+==================================================
+
+The section should feel premium but not excessive.
+
+Target:
+- Section padding: py-14 to py-20
+- Header bottom margin: mb-8
+- Card gap: gap-6
+- No giant empty white space
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The Insights section should no longer look like a second strip after the Stats section.
+
+It should feel like a clean, minimal newsroom/editorial module:
+- soft light background
+- compact header
+- one large featured article image card
+- two smaller article cards below
+- polished, Apple-inspired spacing
+- OnSpot branding retained
