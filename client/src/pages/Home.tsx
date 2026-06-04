@@ -445,21 +445,17 @@ export default function Home() {
       </div>
 
       {/* ── 2. FEATURED INSIGHTS — card grid ── */}
-      <div className="bg-[#f7f8fb] py-14 sm:py-16 lg:py-20">
-        <div className="mx-auto w-full max-w-[1440px] px-6 sm:px-8 lg:px-12">
-
+      <div className="bg-white py-8 sm:py-10 lg:py-12">
+        <div className="mx-auto w-full max-w-[1700px] px-6 sm:px-8 lg:px-10 xl:px-12">
           {/* Header */}
-          <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+          <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-indigo-600">
                 Insights
               </p>
-              <h2 className="mt-2 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+              <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
                 Ideas worth sharing.
               </h2>
-              <p className="mt-3 max-w-lg text-base leading-relaxed text-slate-600">
-                Perspectives on customer experience, global talent, and the future of work.
-              </p>
             </div>
             <a
               href="/insights"
@@ -470,112 +466,78 @@ export default function Home() {
             </a>
           </div>
 
-          {/* Editorial layout */}
-          {(() => {
-            const staticPosts = [
-              {
-                id: 1,
-                slug: "process-efficiency-foundation-customer-service",
-                category: "PROCESS OPTIMIZATION",
-                title: "Process Efficiency: The Foundation of Exceptional Customer Service",
-                readTime: "6 min read",
-                coverImageUrl: null as string | null,
-              },
-              {
-                id: 2,
-                slug: "leveraging-ghanas-tech-talent-philippines-customer-service",
-                category: "GLOBAL OUTSOURCING",
-                title: "Leveraging Ghana's Tech Talent and the World-Class Customer Service of the Philippines",
-                readTime: "5 min read",
-                coverImageUrl: null as string | null,
-              },
-              {
-                id: 3,
-                slug: "ghana-software-development-outsourcing-goldmine",
-                category: "TECHNOLOGY",
-                title: "Ghana's Software Development Capabilities: An Untapped Goldmine for Outsourcing",
-                readTime: "4 min read",
-                coverImageUrl: null as string | null,
-              },
-            ];
-            const posts = featuredPosts.length > 0 ? featuredPosts.slice(0, 3) : staticPosts;
-            const [featured, ...secondary] = posts;
-            const featuredThumb = (featured as any).coverImageUrl as string | null | undefined;
-
-            return (
-              <div className="grid gap-6">
-
-                {/* Featured article */}
+          {/* Card grid */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {(featuredPosts.length > 0
+              ? featuredPosts.slice(0, 3)
+              : [
+                  {
+                    id: 1,
+                    slug: "leveraging-ghanas-tech-talent-philippines-customer-service",
+                    category: "INDUSTRY INSIGHTS",
+                    title:
+                      "How Technology is Shaping the Future of Customer Service",
+                    readTime: "5 min read",
+                    coverImageUrl: null as string | null,
+                  },
+                  {
+                    id: 2,
+                    slug: "leveraging-ghanas-tech-talent-philippines-customer-service",
+                    category: "INDUSTRY TRENDS",
+                    title:
+                      "Leveraging Ghana's Tech Talent and World-Class Service in the Philippines",
+                    readTime: "5 min read",
+                    coverImageUrl: null as string | null,
+                  },
+                  {
+                    id: 3,
+                    slug: "philippines-gold-standard-customer-service-culture",
+                    category: "INDUSTRY TRENDS",
+                    title: "The Checklist for Winning Your Virtual Interview",
+                    readTime: "5 min read",
+                    coverImageUrl: null as string | null,
+                  },
+                ]
+            ).map((post) => {
+              const thumb = (post as any).coverImageUrl as
+                | string
+                | null
+                | undefined;
+              return (
                 <a
-                  href={`/insights/${featured.slug}`}
-                  className="group relative overflow-hidden rounded-[2rem] bg-slate-900 shadow-sm"
+                  key={post.id}
+                  href={`/insights/${post.slug}`}
+                  className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                 >
-                  {featuredThumb ? (
-                    <img
-                      src={featuredThumb}
-                      alt={featured.title}
-                      className="h-[280px] w-full object-cover transition duration-500 group-hover:scale-[1.02] sm:h-[360px] lg:h-[440px]"
-                    />
+                  {/* Thumbnail */}
+                  {thumb ? (
+                    <div className="h-24 w-full overflow-hidden bg-slate-100 sm:h-28">
+                      <img
+                        src={thumb}
+                        alt={post.title}
+                        className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                      />
+                    </div>
                   ) : (
-                    <div className="h-[280px] w-full bg-gradient-to-br from-indigo-900 via-violet-900 to-slate-900 sm:h-[360px] lg:h-[440px]" />
+                    <div className="h-24 w-full bg-gradient-to-br from-indigo-100 via-violet-100 to-cyan-100 sm:h-28" />
                   )}
-                  {/* Dark overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-                  {/* Text */}
-                  <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8 lg:p-10">
-                    <span className="text-xs font-semibold uppercase tracking-[0.18em] text-white/75">
-                      {(featured as any).category || "Insights"}
+
+                  {/* Card body */}
+                  <div className="flex flex-col p-5">
+                    <span className="inline-flex w-fit items-center whitespace-nowrap rounded-full bg-violet-100 px-3.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-indigo-600">
+                      {(post as any).category || "Industry Insights"}
                     </span>
-                    <h3 className="mt-3 max-w-4xl text-2xl font-semibold leading-tight text-white sm:text-3xl lg:text-4xl">
-                      {featured.title}
+                    <h3 className="mt-4 min-h-[52px] text-base font-semibold leading-snug text-slate-950 transition-colors group-hover:text-indigo-600 sm:text-lg">
+                      {post.title}
                     </h3>
-                    <p className="mt-3 text-sm font-medium text-white/70">
-                      {(featured as any).readTime || "5 min read"}
-                    </p>
+                    <span className="mt-6 text-sm font-medium text-slate-500">
+                      {(post as any).readTime || "5 min read"}
+                    </span>
                   </div>
                 </a>
-
-                {/* Two smaller cards */}
-                <div className="grid gap-6 lg:grid-cols-2">
-                  {secondary.map((post) => {
-                    const thumb = (post as any).coverImageUrl as string | null | undefined;
-                    return (
-                      <a
-                        key={post.id}
-                        href={`/insights/${post.slug}`}
-                        className="group overflow-hidden rounded-[1.75rem] bg-white shadow-sm ring-1 ring-slate-200/80 transition hover:-translate-y-0.5 hover:shadow-md"
-                      >
-                        {thumb ? (
-                          <div className="h-48 overflow-hidden bg-slate-100 sm:h-56 lg:h-60">
-                            <img
-                              src={thumb}
-                              alt={post.title}
-                              className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
-                            />
-                          </div>
-                        ) : (
-                          <div className="h-48 bg-gradient-to-br from-indigo-100 via-violet-100 to-cyan-100 sm:h-56 lg:h-60" />
-                        )}
-                        <div className="p-6 sm:p-7">
-                          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                            {(post as any).category || "Insights"}
-                          </span>
-                          <h3 className="mt-3 text-xl font-semibold leading-tight text-slate-950 transition-colors group-hover:text-indigo-700 sm:text-2xl">
-                            {post.title}
-                          </h3>
-                          <p className="mt-5 text-sm font-medium text-slate-500">
-                            {(post as any).readTime || "5 min read"}
-                          </p>
-                        </div>
-                      </a>
-                    );
-                  })}
-                </div>
-
-              </div>
-            );
-          })()}
-
+              );
+            })}
+          </div>
         </div>
       </div>
 
