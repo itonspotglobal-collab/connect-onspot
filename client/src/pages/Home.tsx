@@ -131,18 +131,150 @@ function getCardStyle(
 }
 
 function TrustedLogos() {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [visibleCount, setVisibleCount] = useState(5);
+  const [isPaused, setIsPaused] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const nearOffset = visibleCount === 5 ? 260 : visibleCount === 3 ? 190 : 0;
+  const farOffset = visibleCount === 5 ? 470 : visibleCount === 3 ? 340 : 0;
+
+  const nextSlide = useCallback(() => {
+    setCurrentIndex((prev) => (prev + 1) % trustedBrands.length);
+  }, []);
+
+  const prevSlide = useCallback(() => {
+    setCurrentIndex(
+      (prev) => (prev - 1 + trustedBrands.length) % trustedBrands.length,
+    );
+  }, []);
+
+  const goTo = useCallback((index: number) => {
+    setCurrentIndex(index);
+    setIsPaused(true);
+    setTimeout(() => setIsPaused(false), 3000);
+  }, []);
+
+  const handleArrow = useCallback(
+    (dir: "prev" | "next") => {
+      if (dir === "next") nextSlide();
+      else prevSlide();
+      setIsPaused(true);
+      setTimeout(() => setIsPaused(false), 3000);
+    },
+    [nextSlide, prevSlide],
+  );
+
+  useEffect(() => {
+    const update = () => {
+      if (window.innerWidth < 640) setVisibleCount(1);
+      else if (window.innerWidth < 1024) setVisibleCount(3);
+      else setVisibleCount(5);
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  useEffect(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    if (!isPaused) {
+      intervalRef.current = setInterval(nextSlide, 3500);
+    }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [isPaused, nextSlide]);
+
+  const visibleOffsets: number[] =
+    visibleCount === 5
+      ? [-2, -1, 0, 1, 2]
+      : visibleCount === 3
+        ? [-1, 0, 1]
+        : [0];
+
+  const visibleItems = visibleOffsets.map((offset) => {
+    const index =
+      (currentIndex + offset + trustedBrands.length) % trustedBrands.length;
+    return { ...trustedBrands[index], offset, isActive: offset === 0 };
+  });
+
   return (
-    <div className="mx-auto mt-10 grid max-w-[1100px] grid-cols-2 items-center justify-items-center gap-x-10 gap-y-8 px-6 sm:grid-cols-3 lg:grid-cols-6">
-      {trustedBrands.map(({ name, logo }) => (
-        <div key={name} className="flex items-center justify-center">
-          <img
-            src={logo}
-            alt={name}
-            loading="lazy"
-            className="max-h-12 max-w-[160px] object-contain opacity-60 transition duration-200 hover:opacity-100"
+    <div className="mt-12 w-full select-none">
+      <div
+        className="relative mx-auto h-[200px] sm:h-[230px] w-full max-w-[1100px] overflow-visible px-14"
+        style={{ perspective: "1200px" }}
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+      >
+        {visibleItems.map(({ name, logo, offset, isActive }) => {
+          const style = getCardStyle(offset, nearOffset, farOffset);
+          return (
+            <div
+              key={name}
+              className={[
+                "absolute left-1/2 top-1/2 flex items-center justify-center",
+                "rounded-2xl bg-white/70 backdrop-blur-sm",
+                "transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                isActive
+                  ? "h-32 sm:h-36 w-[260px] sm:w-[320px] border border-purple-300/70 bg-white shadow-xl z-20"
+                  : Math.abs(offset) === 1
+                    ? "h-24 sm:h-28 w-[220px] sm:w-[270px] border border-slate-200/70 shadow-sm z-10 opacity-55"
+                    : "h-20 sm:h-24 w-[190px] sm:w-[240px] border border-slate-200/60 shadow-sm z-[5] opacity-35",
+              ].join(" ")}
+              style={{
+                ...style,
+                transformStyle: "preserve-3d",
+                willChange: "transform, opacity",
+              }}
+            >
+              <img
+                src={logo}
+                alt={name}
+                loading="lazy"
+                className={[
+                  "object-contain transition-all duration-500",
+                  isActive
+                    ? "max-h-16 max-w-[200px]"
+                    : "max-h-10 max-w-[140px]",
+                ].join(" ")}
+              />
+            </div>
+          );
+        })}
+
+        <button
+          onClick={() => handleArrow("prev")}
+          aria-label="Previous client logo"
+          className="absolute left-0 top-1/2 z-[60] -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white shadow-md transition hover:shadow-lg"
+        >
+          <ChevronLeft className="h-4 w-4 text-slate-500" />
+        </button>
+
+        <button
+          onClick={() => handleArrow("next")}
+          aria-label="Next client logo"
+          className="absolute right-0 top-1/2 z-[60] -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white shadow-md transition hover:shadow-lg"
+        >
+          <ChevronRight className="h-4 w-4 text-slate-500" />
+        </button>
+      </div>
+
+      <div className="mt-8 flex items-center justify-center gap-2">
+        {trustedBrands.map((brand, index) => (
+          <button
+            key={brand.name}
+            onClick={() => goTo(index)}
+            aria-label={`Go to ${brand.name}`}
+            className={[
+              "rounded-full transition-all duration-500",
+              index === currentIndex
+                ? "h-2 w-5 bg-violet-500"
+                : "h-1.5 w-1.5 bg-slate-300 hover:bg-slate-400",
+            ].join(" ")}
           />
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
@@ -437,17 +569,19 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ── 3. WORK DIFFERENTLY ── */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#f5f3ff] via-[#f7f9ff] to-[#eafaff] pt-20 pb-16 sm:pt-24 sm:pb-20 lg:pt-28 lg:pb-24">
-        <div className="pointer-events-none absolute -left-32 top-16 h-80 w-80 rounded-full bg-violet-300/15 blur-3xl" />
-        <div className="pointer-events-none absolute -right-32 bottom-16 h-80 w-80 rounded-full bg-cyan-300/15 blur-3xl" />
+      {/* ── 3 + 4. WORK DIFFERENTLY + TRUSTED BY (shared bg) ── */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#f5f3ff] via-[#f7f9ff] to-[#eafaff]">
+        <div className="pointer-events-none absolute -left-40 top-20 h-[520px] w-[520px] rounded-full bg-violet-300/10 blur-3xl" />
+        <div className="pointer-events-none absolute -right-40 bottom-20 h-[520px] w-[520px] rounded-full bg-cyan-300/10 blur-3xl" />
 
-        <div className="container relative z-10 mx-auto px-4 sm:px-6">
-          <div className="text-center mb-12 sm:mb-16">
-            <p className="text-sm font-semibold uppercase tracking-[0.28em] text-indigo-700 sm:text-base">
-              Work differently.
-            </p>
-            <h2 className="mx-auto mt-5 max-w-[1500px] px-6 text-center font-semibold leading-[1.06] tracking-[-0.04em] text-slate-950 text-[clamp(42px,4.2vw,72px)]">
+        {/* ── 3. WORK DIFFERENTLY ── */}
+        <div className="relative overflow-x-hidden bg-transparent pt-20 pb-14 sm:pt-24 sm:pb-16 lg:pt-28 lg:pb-20">
+          <div className="container relative z-10 mx-auto px-4 sm:px-6">
+            <div className="text-center mb-12 sm:mb-16">
+              <p className="text-sm font-semibold uppercase tracking-[0.28em] text-indigo-700 sm:text-base">
+                Work differently.
+              </p>
+              <h2 className="mx-auto mt-5 max-w-[1400px] px-6 sm:px-8 lg:px-10 text-center font-semibold leading-[1.08] tracking-[-0.035em] text-slate-950 text-[clamp(34px,3.45vw,56px)]">
               <span className="block xl:whitespace-nowrap">
                 Whether you're scaling a team or growing a career
               </span>
@@ -610,15 +744,16 @@ export default function Home() {
           </div>
         </div>
       </div>
-      {/* ── 4. TRUSTED BY ── */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#f5f3ff] via-[#f7f9ff] to-[#eafaff] pt-10 pb-20 sm:pt-12 sm:pb-24 lg:pt-14 lg:pb-28">
-        <div className="container mx-auto px-4 sm:px-6 relative z-10">
-          <div className="text-center space-y-10 sm:space-y-14">
-            <h2 className="mx-auto font-medium leading-[1.12] tracking-[-0.035em] text-slate-900 text-[clamp(30px,2.8vw,48px)]" style={{ textWrap: "balance", maxWidth: "58ch" }}>
-              Trusted by global brands, hundreds of entrepreneurs, and
-              thousands of professionals worldwide.
-            </h2>
-            <TrustedLogos />
+        {/* ── 4. TRUSTED BY ── */}
+        <div className="relative bg-transparent pt-8 pb-20 sm:pt-10 sm:pb-24 lg:pt-12 lg:pb-28">
+          <div className="container mx-auto px-4 sm:px-6 relative z-10">
+            <div className="text-center space-y-10 sm:space-y-14">
+              <h2 className="mx-auto font-medium leading-[1.12] tracking-[-0.035em] text-slate-900 text-[clamp(30px,3vw,48px)]" style={{ textWrap: "balance", maxWidth: "58ch" }}>
+                Trusted by global brands, hundreds of entrepreneurs, and
+                thousands of professionals worldwide.
+              </h2>
+              <TrustedLogos />
+            </div>
           </div>
         </div>
       </div>

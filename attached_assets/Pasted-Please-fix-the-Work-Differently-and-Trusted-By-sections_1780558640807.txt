@@ -1,0 +1,335 @@
+Please fix the Work Differently and Trusted By sections.
+
+Current issues:
+1. The Work Differently heading is too large and overflows horizontally.
+2. The title does not look polished or balanced.
+3. The Trusted By client logo carousel was removed, but we still want the carousel.
+4. The Work Differently and Trusted By backgrounds should feel connected as one continuous section.
+5. The current transition between the two sections feels awkward.
+
+Goal:
+Make this area feel more premium, minimal, and visually cohesive while restoring the client logo carousel.
+
+IMPORTANT:
+- Do not redesign the whole homepage.
+- Only update the Work Differently + Trusted By area.
+- Keep OnSpot branding.
+- Keep the Work Differently cards.
+- Restore the Trusted By carousel.
+- Make both sections share one continuous soft background.
+- Do not allow horizontal overflow.
+
+==================================================
+1. COMBINE BACKGROUND OF WORK DIFFERENTLY + TRUSTED BY
+==================================================
+
+Wrap both sections inside one shared background container.
+
+Suggested structure:
+
+<div className="work-trust-wrapper">
+  <WorkDifferentlySection />
+  <TrustedBySection />
+</div>
+
+Shared wrapper background:
+
+className="
+  relative overflow-hidden
+  bg-gradient-to-br from-[#f5f3ff] via-[#f7f9ff] to-[#eafaff]
+"
+
+Then make both child sections transparent:
+
+Work Differently section:
+className="bg-transparent"
+
+Trusted By section:
+className="bg-transparent"
+
+Remove separate backgrounds from either child section if they conflict:
+- bg-white
+- bg-slate-50
+- bg-[#f...]
+- separate gradients
+
+The Work Differently and Trusted By areas should feel like one continuous visual block.
+
+==================================================
+2. FIX WORK DIFFERENTLY TITLE SIZE AND OVERFLOW
+==================================================
+
+Current issue:
+The heading is too big and gets cut off on the right side.
+
+Desired desktop/laptop format:
+
+Line 1:
+Whether you're scaling a team or growing a career
+
+Line 2:
+— OnSpot is built for both sides of great work.
+
+Requirements:
+- Keep this exact two-line structure on larger screens.
+- Keep it large and premium, but not huge.
+- Do not let it overflow.
+- Keep it centered.
+- Use responsive sizing.
+- On tablet/mobile, allow natural wrapping.
+
+Suggested JSX:
+
+<h2 className="work-differently-title">
+  <span className="block xl:whitespace-nowrap">
+    Whether you're scaling a team or growing a career
+  </span>
+  <span className="mt-2 block xl:whitespace-nowrap">
+    — OnSpot is built for both sides of great work.
+  </span>
+</h2>
+
+Suggested class:
+
+className="
+  mx-auto mt-5 max-w-[1400px]
+  px-6 sm:px-8 lg:px-10
+  text-center
+  text-[clamp(34px,3.45vw,56px)]
+  font-semibold
+  tracking-[-0.035em]
+  leading-[1.08]
+  text-slate-950
+"
+
+Important:
+- Use `xl:whitespace-nowrap`, NOT global `whitespace-nowrap`.
+- Do not use font sizes above 60px here.
+- Add `overflow-x-hidden` to the section/wrapper if needed.
+- The title should never clip outside the viewport.
+
+Work Differently section wrapper should include:
+
+className="
+  relative overflow-hidden bg-transparent
+  pt-20 sm:pt-24 lg:pt-28
+  pb-14 sm:pb-16 lg:pb-20
+"
+
+==================================================
+3. KEEP “WORK DIFFERENTLY.” LABEL VISIBLE BUT REFINED
+==================================================
+
+Keep the label:
+
+WORK DIFFERENTLY.
+
+Suggested class:
+
+className="
+  text-center text-sm sm:text-base
+  font-semibold uppercase
+  tracking-[0.28em]
+  text-indigo-700
+"
+
+==================================================
+4. KEEP WORK DIFFERENTLY CARDS BALANCED
+==================================================
+
+Keep the two cards, but make sure they are centered and not too wide.
+
+Cards wrapper:
+
+className="
+  mx-auto mt-12 grid w-full max-w-[1220px]
+  grid-cols-1 gap-6
+  lg:grid-cols-2
+"
+
+Cards should not stretch too far across the entire screen.
+
+Keep card image heights even:
+
+Image wrapper:
+className="
+  relative h-[240px] sm:h-[280px] lg:h-[300px]
+  w-full overflow-hidden
+"
+
+Image:
+className="
+  h-full w-full object-cover object-center
+"
+
+==================================================
+5. RESTORE TRUSTED BY LOGO CAROUSEL
+==================================================
+
+The Trusted By client logo carousel should be restored.
+
+We want:
+- Client logos displayed in a carousel
+- Center logo/card highlighted
+- Side logos/cards smaller/subtle
+- Manual left/right arrows
+- Dots/pagination optional but okay
+- Smooth transition
+- Colored logos
+- Not a flat static row
+
+Do NOT use the plain static logo row.
+
+Restore the carousel behavior from before if available.
+
+Carousel requirements:
+- Center active logo is larger
+- Side logos are smaller/lighter
+- Left arrow on the left side
+- Right arrow on the right side
+- Autoplay can remain if it already exists, but it should move smoothly forward only
+- No jumping back and forth
+- No horizontal page overflow
+
+Suggested carousel structure:
+
+<div className="relative mx-auto mt-12 w-full max-w-[1100px] overflow-visible px-14">
+  <button aria-label="Previous client logo" className="absolute left-0 top-1/2 ...">...</button>
+
+  <div className="relative h-[180px] overflow-visible">
+    logo cards positioned/animated here
+  </div>
+
+  <button aria-label="Next client logo" className="absolute right-0 top-1/2 ...">...</button>
+</div>
+
+If using the previous coverflow-style logic:
+- currentIndex should represent the active center logo
+- visible offsets should be [-2, -1, 0, 1, 2] on desktop
+- next moves currentIndex + 1
+- previous moves currentIndex - 1
+
+Example logic:
+
+const visibleOffsets = visibleCount === 5 ? [-2, -1, 0, 1, 2] : visibleCount === 3 ? [-1, 0, 1] : [0];
+
+const visibleLogos = visibleOffsets.map((offset) => {
+  const index = (currentIndex + offset + logos.length) % logos.length;
+  return {
+    ...logos[index],
+    offset,
+    index,
+    isActive: offset === 0,
+  };
+});
+
+==================================================
+6. TRUSTED BY TITLE / TEXT SIZE
+==================================================
+
+Current Trusted By text is okay but should feel polished and balanced.
+
+Text:
+“Trusted by global brands, hundreds of entrepreneurs, and thousands of professionals worldwide.”
+
+Suggested class:
+
+className="
+  mx-auto max-w-[1100px]
+  text-center
+  text-[clamp(30px,3vw,48px)]
+  font-medium
+  tracking-[-0.035em]
+  leading-[1.12]
+  text-slate-900
+"
+
+Do not make it bigger than the Work Differently headline.
+
+Trusted By section wrapper:
+
+className="
+  bg-transparent
+  pt-8 sm:pt-10 lg:pt-12
+  pb-20 sm:pb-24 lg:pb-28
+"
+
+==================================================
+7. CAROUSEL CARD STYLE
+==================================================
+
+Use subtle cards like before.
+
+Base card:
+className="
+  flex items-center justify-center
+  rounded-2xl border border-slate-200/70
+  bg-white/70
+  shadow-sm
+  backdrop-blur-sm
+  transition-all duration-500 ease-out
+"
+
+Active card:
+className="
+  scale-110 opacity-100 shadow-xl border-purple-300/70 bg-white z-20
+"
+
+Inactive/side card:
+className="
+  scale-90 opacity-55 shadow-sm z-10
+"
+
+Logo image:
+Active:
+className="max-h-16 max-w-[200px] object-contain transition-all duration-500"
+
+Inactive:
+className="max-h-10 max-w-[140px] object-contain transition-all duration-500"
+
+==================================================
+8. FIX OVERFLOW
+==================================================
+
+There must be no horizontal overflow.
+
+Add these if needed:
+- wrapper: overflow-hidden
+- section: overflow-x-hidden
+- heading: px-6
+- avoid global whitespace-nowrap
+
+Check the page in desktop and laptop widths.
+
+==================================================
+9. RESPONSIVE BEHAVIOR
+==================================================
+
+Desktop:
+- Work Differently heading fits cleanly in two lines.
+- Cards are centered and balanced.
+- Trusted By carousel appears below with center active logo.
+
+Laptop:
+- Heading should not clip.
+- Carousel should not overflow.
+
+Tablet:
+- Heading wraps naturally.
+- Cards stack if needed.
+- Carousel can show 3 logos.
+
+Mobile:
+- Heading wraps naturally.
+- Cards stack.
+- Carousel can show 1 logo.
+- No horizontal scrolling.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The Work Differently section should look polished and not oversized.
+The Trusted By carousel should be restored.
+Both sections should share one continuous soft background.
+The area should feel visually cohesive, minimal, and premium instead of broken into disconnected blocks.
