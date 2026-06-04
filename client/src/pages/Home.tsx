@@ -344,10 +344,10 @@ export default function Home() {
           <div className="mx-auto flex w-full max-w-5xl flex-col items-center justify-center text-center">
             {/* Badge */}
             <div
-              className="hero-fade-up inline-flex items-center gap-2.5 bg-white/8 backdrop-blur-md px-5 py-2.5 rounded-full border border-white/20"
+              className="hero-fade-up inline-flex items-center justify-center gap-2.5 rounded-full border border-white/20 bg-white/8 px-6 py-3 backdrop-blur-md"
               data-testid="badge-superhuman-bpo"
             >
-              <span className="text-sm sm:text-base font-large text-white/90">
+              <span className="text-lg font-semibold tracking-[-0.02em] text-white/90 sm:text-xl lg:text-2xl">
                 AI First. Humans When it Matters.
               </span>
             </div>
@@ -364,7 +364,7 @@ export default function Home() {
 
             {/* Supporting copy */}
             <div className="hero-fade-up-delay mx-auto mt-8 max-w-3xl">
-              <p className="text-xl sm:text-2xl font-semibold tracking-wide text-white/85">
+              <p className="text-base font-semibold tracking-wide text-white/75 sm:text-lg">
                 One System. Your unfair Advantage.
               </p>
               <p className="mt-3 text-base sm:text-lg md:text-xl leading-relaxed text-white/55">
@@ -444,13 +444,13 @@ export default function Home() {
           {/* Header */}
           <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.32em] text-indigo-700 sm:text-base">
+              <h2 className="text-[clamp(52px,7vw,112px)] font-semibold tracking-[-0.06em] leading-[0.95] text-slate-950">
                 Insights
-              </p>
-              <h2 className="mt-4 text-[clamp(40px,4.5vw,72px)] font-semibold tracking-[-0.055em] leading-[0.98] text-slate-950">
-                Ideas worth sharing.
               </h2>
-              <p className="mt-5 max-w-2xl text-lg leading-relaxed text-slate-600 sm:text-xl">
+              <p className="mt-4 text-2xl font-medium tracking-[-0.035em] leading-tight text-slate-700 sm:text-3xl lg:text-4xl">
+                Ideas worth sharing.
+              </p>
+              <p className="mt-4 max-w-2xl text-lg leading-relaxed text-slate-600 sm:text-xl">
                 Perspectives on customer experience, global talent, and the
                 future of work.
               </p>
@@ -591,8 +591,8 @@ export default function Home() {
         <div className="relative overflow-x-hidden bg-transparent pt-20 pb-14 sm:pt-24 sm:pb-16 lg:pt-28 lg:pb-20">
           <div className="container relative z-10 mx-auto px-4 sm:px-6">
             <div className="text-center mb-12 sm:mb-16">
-              <p className="text-sm font-semibold uppercase tracking-[0.28em] text-indigo-700 sm:text-base">
-                Work differently
+              <p className="text-2xl font-semibold tracking-[0.04em] text-indigo-700 sm:text-3xl lg:text-4xl">
+                Work Differently
               </p>
               <h2 className="mx-auto mt-5 max-w-[1400px] px-6 sm:px-8 lg:px-10 text-center font-semibold leading-[1.08] tracking-[-0.035em] text-slate-950 text-[clamp(34px,3.45vw,56px)]">
                 <span className="block xl:whitespace-nowrap">
@@ -942,7 +942,7 @@ export default function Home() {
         </div>
 
         {/* Bottom caption */}
-        <p className="relative z-10 mx-auto mt-16 max-w-4xl px-4 text-center text-2xl font-medium leading-snug tracking-[-0.03em] text-white/65 sm:text-3xl lg:text-4xl">
+        <p className="relative z-10 mx-auto mt-10 max-w-[1200px] px-6 text-center text-xl font-medium leading-snug tracking-[-0.025em] text-white/60 sm:text-2xl lg:whitespace-nowrap lg:text-3xl">
           Behind every workflow is a{" "}
           <span className="text-white/85">real person</span> making the work
           better.
@@ -961,8 +961,7 @@ export default function Home() {
               Transformations
             </p>
             <h2 className="mt-5 max-w-[1300px] break-words text-[clamp(48px,6vw,96px)] font-semibold tracking-[-0.055em] leading-[1.02] text-slate-950">
-              Real change.{" "}
-              <span className="text-[#3F4698]">Real results.</span>
+              Real change. <span className="text-[#3F4698]">Real results.</span>
             </h2>
             <p className="mt-6 max-w-3xl text-xl leading-relaxed text-slate-600 sm:text-2xl">
               See how OnSpot helps teams move from overloaded operations to
@@ -972,7 +971,6 @@ export default function Home() {
 
           {/* Featured card + two smaller cards */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.15fr_1fr] lg:items-stretch">
-
             {/* ── Featured testimonial ── */}
             <div className="relative flex h-full flex-col overflow-hidden rounded-[2rem] border border-white/70 bg-white/80 p-8 shadow-[0_24px_80px_rgba(80,80,180,0.12)] backdrop-blur-xl sm:p-10 lg:p-12">
               {/* Corner glows */}
@@ -991,8 +989,12 @@ export default function Home() {
                     <User className="h-6 w-6" />
                   </div>
                   <div>
-                    <p className="text-base font-semibold text-slate-900">Elad B.</p>
-                    <p className="mt-0.5 text-sm text-slate-500">CEO / Founder, PineTech</p>
+                    <p className="text-base font-semibold text-slate-900">
+                      Elad B.
+                    </p>
+                    <p className="mt-0.5 text-sm text-slate-500">
+                      CEO / Founder, PineTech
+                    </p>
                   </div>
                 </div>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20">
@@ -1007,7 +1009,7 @@ export default function Home() {
                   Before
                 </p>
                 <h3 className="mt-1 text-2xl font-semibold leading-snug text-slate-800 sm:text-3xl">
-                  12-hour workdays
+                  12-Hour Workdays
                 </h3>
 
                 <div className="my-5 flex items-center gap-3">
@@ -1022,7 +1024,7 @@ export default function Home() {
                   After
                 </p>
                 <h3 className="mt-1 text-2xl font-semibold italic leading-snug text-indigo-700 sm:text-3xl">
-                  automated excellence
+                  Automated Excellence
                 </h3>
               </div>
 
@@ -1049,8 +1051,8 @@ export default function Home() {
                   name: "Eric M.",
                   role: "Operations Director, Flash Justice",
                   metric: "3 weeks to full team",
-                  before: "scattered processes",
-                  after: "seamless orchestration",
+                  before: "Scattered Processes",
+                  after: "Seamless Orchestration",
                   quote:
                     "I've worked with several outsourcing companies, but none delivered like OnSpot. Shane and Ria helped me build my team, stayed involved, and ensured success. I finally feel like I'm working with a true partner.",
                 },
@@ -1058,8 +1060,8 @@ export default function Home() {
                   name: "Fernando C.",
                   role: "CTO, Pinetech",
                   metric: "24/7 coverage",
-                  before: "constant firefighting",
-                  after: "proactive innovation",
+                  before: "Constant Firefighting",
+                  after: "Proactive Innovation",
                   quote:
                     "OnSpot's team is professional, responsive, and reliable — always going above and beyond. The efficiency and consistency they deliver gives me complete confidence.",
                 },
@@ -1078,7 +1080,9 @@ export default function Home() {
                         <User className="h-4 w-4" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-slate-900">{story.name}</p>
+                        <p className="text-sm font-semibold text-slate-900">
+                          {story.name}
+                        </p>
                         <p className="text-xs text-slate-500">{story.role}</p>
                       </div>
                     </div>
@@ -1089,12 +1093,13 @@ export default function Home() {
 
                   {/* Transformation headline — compact horizontal */}
                   <h3 className="mt-6 text-xl font-semibold leading-snug text-slate-950 sm:text-2xl">
-                    From{" "}
-                    <span className="text-slate-700">{story.before}</span>
+                    From <span className="text-slate-700">{story.before}</span>
                     <span className="mx-2 text-indigo-400">
                       <ArrowRight className="inline h-4 w-4" />
                     </span>
-                    <span className="italic text-indigo-700">{story.after}</span>
+                    <span className="italic text-indigo-700">
+                      {story.after}
+                    </span>
                   </h3>
 
                   {/* Quote */}
@@ -1126,7 +1131,9 @@ export default function Home() {
               </div>
               <h2 className="mt-6 max-w-[1400px] break-words text-[clamp(42px,6vw,96px)] font-semibold tracking-[-0.06em] leading-[0.98] text-slate-950">
                 Not a service provider.{" "}
-                <span className="block italic text-indigo-700">An architect.</span>
+                <span className="block italic text-indigo-700">
+                  An architect.
+                </span>
               </h2>
               <p className="mt-8 max-w-4xl text-xl leading-relaxed text-slate-600 sm:text-2xl">
                 We design the operating layer behind modern outsourcing —
@@ -1222,18 +1229,13 @@ export default function Home() {
       <div className="relative bg-white py-20 sm:py-28">
         <div className="container mx-auto px-4 sm:px-6">
           <div className="mb-12 sm:mb-16 text-center">
-            <p className="text-sm font-semibold uppercase tracking-[0.32em] text-indigo-700 sm:text-base">
-              The Proof
-            </p>
             <h2 className="mt-5 mx-auto max-w-[1200px] break-words text-center text-[clamp(46px,6vw,96px)] font-semibold tracking-[-0.055em] leading-[1.02] text-slate-950">
-              The people behind the platform.
+              The{" "}
+              <span className="bg-gradient-to-r from-indigo-600 via-violet-500 to-blue-500 bg-clip-text text-transparent">
+                People
+              </span>{" "}
+              Behind the Platform
             </h2>
-            <p className="mt-6 mx-auto max-w-5xl text-center text-xl leading-relaxed text-slate-600 sm:text-2xl lg:text-3xl">
-              <span className="block">
-                Powered by professionals from the US, Philippines, and beyond.
-              </span>
-              <span className="block">The Superhuman BPO Network.</span>
-            </p>
           </div>
 
           <div className="mx-auto mt-20 grid w-full max-w-7xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">

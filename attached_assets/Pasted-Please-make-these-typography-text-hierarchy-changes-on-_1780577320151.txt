@@ -1,0 +1,259 @@
+Please make these typography/text hierarchy changes on the homepage.
+
+IMPORTANT:
+- Do not redesign the full homepage.
+- Keep the current section order, content, colors, and layout.
+- Only adjust the requested text hierarchy, font sizes, and specific gradient styling.
+- Make sure nothing overflows horizontally.
+- Keep everything responsive for desktop, laptop, tablet, and mobile.
+
+==================================================
+1. INSIGHTS SECTION — MAKE “INSIGHTS” THE MAIN TITLE
+==================================================
+
+Current issue:
+The word “INSIGHTS” is currently a small eyebrow label, while “Ideas worth sharing.” is the main heading.
+
+Goal:
+Make “INSIGHTS” the Heading 1 / main section title, then make “Ideas worth sharing.” the subtitle/supporting line.
+
+Desired hierarchy:
+
+Main title:
+INSIGHTS
+
+Subtitle:
+Ideas worth sharing.
+
+Description:
+Perspectives on customer experience, global talent, and the future of work.
+
+Implementation:
+Change the text structure so it looks like:
+
+<h2>Insights</h2>
+<p>Ideas worth sharing.</p>
+<p>Perspectives on customer experience, global talent, and the future of work.</p>
+
+Use title case or uppercase depending on design preference, but the visual main title should be “Insights”.
+
+Suggested main title style:
+
+className="
+  text-[clamp(52px,7vw,112px)]
+  font-semibold
+  tracking-[-0.06em]
+  leading-[0.95]
+  text-slate-950
+"
+
+Suggested subtitle style for “Ideas worth sharing.”:
+
+className="
+  mt-4 text-2xl sm:text-3xl lg:text-4xl
+  font-medium
+  tracking-[-0.035em]
+  leading-tight
+  text-slate-700
+"
+
+Suggested description:
+
+className="
+  mt-4 max-w-2xl
+  text-lg sm:text-xl
+  leading-relaxed
+  text-slate-600
+"
+
+Important:
+- “Insights” should visually be the title.
+- “Ideas worth sharing.” should no longer look bigger than “Insights”.
+- Keep the section clean and editorial.
+
+==================================================
+2. WORK DIFFERENTLY LABEL — INCREASE SIZE
+==================================================
+
+Current issue:
+The “WORK DIFFERENTLY” label is too small compared to the card titles like “Real work. Real growth.”
+
+Goal:
+Increase “WORK DIFFERENTLY” so it feels more visible and closer in presence to the card titles, but still works as a section label.
+
+Text:
+WORK DIFFERENTLY
+
+Suggested style:
+
+className="
+  text-center
+  text-2xl sm:text-3xl lg:text-4xl
+  font-semibold
+  tracking-[-0.02em]
+  text-indigo-700
+"
+
+Important:
+- Remove excessive letter spacing if it makes it look tiny.
+- Do not keep it as a small all-caps eyebrow.
+- It should feel like a visible section heading/label.
+- It should not overpower the main Work Differently headline.
+
+If uppercase tracking is required, use only slight tracking:
+tracking-[0.08em]
+not tracking-[0.3em].
+
+==================================================
+3. SUPERHUMAN NETWORK CLOSING LINE — ONE LINE, SMALLER
+==================================================
+
+Text:
+“Behind every workflow is a real person making the work better.”
+
+Current issue:
+It is too large and wraps into two lines.
+
+Goal:
+Decrease the text size enough so it becomes one line on desktop/laptop, but still visible and meaningful.
+
+Suggested class:
+
+className="
+  mx-auto mt-10 max-w-[1200px]
+  px-6
+  text-center
+  text-xl sm:text-2xl lg:text-3xl
+  font-medium
+  tracking-[-0.025em]
+  leading-snug
+  text-white/60
+  lg:whitespace-nowrap
+"
+
+Important:
+- Desktop/laptop: should fit as one line.
+- Tablet/mobile: allow natural wrapping by only using `lg:whitespace-nowrap`.
+- Do not make it tiny.
+- Keep it centered.
+- No horizontal overflow.
+
+Optional highlight:
+Keep “real person” slightly brighter if already implemented:
+
+<span className="text-white/85">real person</span>
+
+==================================================
+4. THE PROOF SECTION — ADD GRADIENT TO “PEOPLE”
+==================================================
+
+Current heading:
+“The People Behind the Platform”
+
+Goal:
+Add gradient color to the word “People” only, or at least make “People” the visual highlight.
+
+Desired visual:
+The People Behind the Platform
+
+With “People” using a subtle OnSpot gradient.
+
+Suggested JSX:
+
+<h2 className="...">
+  The{" "}
+  <span className="bg-gradient-to-r from-indigo-600 via-violet-500 to-blue-500 bg-clip-text text-transparent">
+    People
+  </span>{" "}
+  Behind the Platform
+</h2>
+
+Suggested heading style:
+
+className="
+  mx-auto max-w-[1200px]
+  text-center
+  text-[clamp(48px,6vw,96px)]
+  font-semibold
+  tracking-[-0.055em]
+  leading-[1.02]
+  text-slate-950
+"
+
+Important:
+- Only “People” should have the gradient.
+- Keep the rest of the heading dark.
+- Make sure the gradient text works on Safari/Chrome.
+- Do not make the whole heading gradient.
+
+==================================================
+5. HERO / AI HUMAN ADVANTAGE LABEL — INCREASE SIZE
+==================================================
+
+Text:
+“AI First. Humans When it Matters.”
+
+Current issue:
+This pill/label is too small.
+
+Goal:
+Increase its size so it is slightly bigger than the text:
+“One System. Your unfair Advantage.”
+
+Important:
+- It should be bigger than “One System. Your unfair Advantage.”
+- It should not compete with the main hero title.
+- Keep the pill/badge style.
+- Keep it centered.
+
+Suggested badge wrapper:
+
+className="
+  inline-flex items-center justify-center
+  rounded-full
+  border border-white/20
+  bg-white/8
+  px-7 py-3.5
+  text-xl sm:text-2xl lg:text-3xl
+  font-semibold
+  tracking-[-0.02em]
+  text-white/90
+  backdrop-blur-md
+"
+
+If this is too large for the pill, use:
+
+className="
+  inline-flex items-center justify-center
+  rounded-full border border-white/20 bg-white/8
+  px-6 py-3
+  text-lg sm:text-xl lg:text-2xl
+  font-semibold
+  text-white/90
+  backdrop-blur-md
+"
+
+Also make sure “One System. Your unfair Advantage.” remains smaller, for example:
+
+className="
+  text-base sm:text-lg lg:text-xl
+  font-medium
+  text-white/75
+"
+
+or if currently larger:
+reduce it slightly so the badge clearly feels bigger.
+
+==================================================
+RESPONSIVE CHECK
+==================================================
+
+After changes, verify:
+- Insights title hierarchy is correct.
+- Work Differently label is visible and not tiny.
+- “Behind every workflow...” fits one line on desktop/laptop.
+- “People” in The Proof heading has a gradient.
+- “AI First. Humans When it Matters.” is larger than “One System. Your unfair Advantage.”
+- No text is clipped at the sides.
+- No horizontal scrolling.
+- Mobile still wraps naturally and remains readable.
