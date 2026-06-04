@@ -67,16 +67,12 @@ import CultureFirst from "@assets/Culture-first_1780059195131.png";
 
 import NurLamineroPhoto from "@assets/Nur_1780574815788.png";
 import JakeWainbergPhoto from "@assets/Jake_1780574815787.png";
-import ValLegaspiPhoto from "@assets/val_1780574815788.png";
 import MarkApostolPhoto from "@assets/Macky_1780574815788.png";
 import KyleMendezPhoto from "@assets/Kyle_Mendez_1774430604161.jpeg";
 import AlexandraLopezPhoto from "@assets/Alexandra_Lopez_1774430604160.jpg";
 import AndreaPinzonPhoto from "@assets/Andrea_Pinzon_1774264095055.jpeg";
 import ChristopherAlbaPhoto from "@assets/Christopher_Alba_1774264095055.jpg";
 import RachelCastroPhoto from "@assets/Rachel_Caztro_1774264095056.jpg";
-import AmirSinghPhoto from "@assets/Amir_Singh_1774264095055.jpg";
-import JenniferDizonPhoto from "@assets/Jennifer_Dizon_1774430604160.jpg";
-import AndreiLosantoPhoto from "@assets/Andrei_Losanto_1774430604160.jpg";
 
 const trustedBrands = [
   { name: "Flash Justice", logo: FlashLogo },
@@ -1259,15 +1255,6 @@ export default function Home() {
                 isReal: true,
               },
               {
-                photo: ValLegaspiPhoto,
-                name: "Val Legaspi",
-                flag: "🇵🇭",
-                role: "IT Administrator",
-                objectPosition: "object-[center_44%]",
-                extraScale: "scale-[2.15]",
-                isReal: true,
-              },
-              {
                 photo: MarkApostolPhoto,
                 name: "Mark Anthony Apostol",
                 flag: "🇵🇭",
@@ -1312,30 +1299,6 @@ export default function Home() {
                 name: "Rachel Castro",
                 flag: "🇵🇭",
                 role: "Social Media Manager",
-                objectPosition: "object-top",
-                isReal: false,
-              },
-              {
-                photo: AmirSinghPhoto,
-                name: "Amir Singh",
-                flag: "🇺🇸",
-                role: "SEO Specialist",
-                objectPosition: "object-top",
-                isReal: false,
-              },
-              {
-                photo: JenniferDizonPhoto,
-                name: "Jennifer Dizon",
-                flag: "🇵🇭",
-                role: "Customer Service",
-                objectPosition: "object-top",
-                isReal: false,
-              },
-              {
-                photo: AndreiLosantoPhoto,
-                name: "Andrei Losanto",
-                flag: "🇵🇭",
-                role: "Full Stack Developer",
                 objectPosition: "object-top",
                 isReal: false,
               },
