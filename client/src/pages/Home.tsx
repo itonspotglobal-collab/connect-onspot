@@ -437,7 +437,6 @@ export default function Home() {
       {/* ── 2. FEATURED INSIGHTS — card grid ── */}
       <div className="bg-[#f7f8fb] py-14 sm:py-16 lg:py-20">
         <div className="mx-auto w-full max-w-[1440px] px-6 sm:px-8 lg:px-12">
-
           {/* Header */}
           <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
             <div>
@@ -448,7 +447,8 @@ export default function Home() {
                 Ideas worth sharing.
               </h2>
               <p className="mt-3 max-w-lg text-base leading-relaxed text-slate-600">
-                Perspectives on customer experience, global talent, and the future of work.
+                Perspectives on customer experience, global talent, and the
+                future of work.
               </p>
             </div>
             <a
@@ -467,7 +467,8 @@ export default function Home() {
                 id: 1,
                 slug: "process-efficiency-foundation-customer-service",
                 category: "PROCESS OPTIMIZATION",
-                title: "Process Efficiency: The Foundation of Exceptional Customer Service",
+                title:
+                  "Process Efficiency: The Foundation of Exceptional Customer Service",
                 readTime: "6 min read",
                 coverImageUrl: null as string | null,
               },
@@ -475,7 +476,8 @@ export default function Home() {
                 id: 2,
                 slug: "leveraging-ghanas-tech-talent-philippines-customer-service",
                 category: "GLOBAL OUTSOURCING",
-                title: "Leveraging Ghana's Tech Talent and the World-Class Customer Service of the Philippines",
+                title:
+                  "Leveraging Ghana's Tech Talent and the World-Class Customer Service of the Philippines",
                 readTime: "5 min read",
                 coverImageUrl: null as string | null,
               },
@@ -483,18 +485,24 @@ export default function Home() {
                 id: 3,
                 slug: "ghana-software-development-outsourcing-goldmine",
                 category: "TECHNOLOGY",
-                title: "Ghana's Software Development Capabilities: An Untapped Goldmine for Outsourcing",
+                title:
+                  "Ghana's Software Development Capabilities: An Untapped Goldmine for Outsourcing",
                 readTime: "4 min read",
                 coverImageUrl: null as string | null,
               },
             ];
-            const posts = featuredPosts.length > 0 ? featuredPosts.slice(0, 3) : staticPosts;
+            const posts =
+              featuredPosts.length > 0
+                ? featuredPosts.slice(0, 3)
+                : staticPosts;
             const [featured, ...secondary] = posts;
-            const featuredThumb = (featured as any).coverImageUrl as string | null | undefined;
+            const featuredThumb = (featured as any).coverImageUrl as
+              | string
+              | null
+              | undefined;
 
             return (
               <div className="grid gap-6">
-
                 {/* Featured article */}
                 <a
                   href={`/insights/${featured.slug}`}
@@ -528,7 +536,10 @@ export default function Home() {
                 {/* Two smaller cards */}
                 <div className="grid gap-6 lg:grid-cols-2">
                   {secondary.map((post) => {
-                    const thumb = (post as any).coverImageUrl as string | null | undefined;
+                    const thumb = (post as any).coverImageUrl as
+                      | string
+                      | null
+                      | undefined;
                     return (
                       <a
                         key={post.id}
@@ -561,11 +572,9 @@ export default function Home() {
                     );
                   })}
                 </div>
-
               </div>
             );
           })()}
-
         </div>
       </div>
 
@@ -579,176 +588,179 @@ export default function Home() {
           <div className="container relative z-10 mx-auto px-4 sm:px-6">
             <div className="text-center mb-12 sm:mb-16">
               <p className="text-sm font-semibold uppercase tracking-[0.28em] text-indigo-700 sm:text-base">
-                Work differently.
+                Work differently
               </p>
               <h2 className="mx-auto mt-5 max-w-[1400px] px-6 sm:px-8 lg:px-10 text-center font-semibold leading-[1.08] tracking-[-0.035em] text-slate-950 text-[clamp(34px,3.45vw,56px)]">
-              <span className="block xl:whitespace-nowrap">
-                Whether you're scaling a team or growing a career
-              </span>
-              <span className="mt-2 block xl:whitespace-nowrap">
-                — OnSpot is built for both sides of great work.
-              </span>
-            </h2>
-          </div>
-
-          <div className="mx-auto grid w-full max-w-[1280px] grid-cols-1 gap-6 lg:grid-cols-2 items-stretch">
-            {/* Card 1: For Companies */}
-            <div className="group flex h-full flex-col overflow-hidden rounded-[2rem] border border-indigo-100/80 bg-white/70 shadow-[0_20px_60px_rgba(80,80,180,0.08)] backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(80,80,180,0.14)]">
-              {/* Image header */}
-              <div className="relative h-[260px] w-full overflow-hidden sm:h-[300px] lg:h-[320px]">
-                <img
-                  src={WorkCompaniesPhoto}
-                  alt="Team collaboration"
-                  className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#3F4698]/35 via-[#3F4698]/10 to-transparent" />
-                <span className="absolute bottom-4 left-5 inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-[#3F4698] shadow-sm backdrop-blur">
-                  For companies
+                <span className="block xl:whitespace-nowrap">
+                  Whether you're scaling a team or growing a career
                 </span>
-              </div>
-
-              {/* Card body */}
-              <div className="flex flex-1 flex-col p-8 sm:p-10">
-                <h3 className="text-2xl font-bold leading-tight text-slate-950 sm:text-3xl">
-                  Hire faster. Spend less.
-                </h3>
-
-                <div className="mt-6 flex flex-col flex-1">
-                  {[
-                    {
-                      icon: <Zap className="h-5 w-5" />,
-                      title: "Hire in days",
-                      sub: "72-hour match average",
-                    },
-                    {
-                      icon: <SlidersHorizontal className="h-5 w-5" />,
-                      title: "Hire your way",
-                      sub: "Contract, project, full-time",
-                    },
-                    {
-                      icon: <ArrowRight className="h-5 w-5" />,
-                      title: "No middlemen",
-                      sub: "Direct access, zero markups",
-                    },
-                    {
-                      icon: <Globe className="h-5 w-5" />,
-                      title: "50+ countries",
-                      sub: "Global reach, local expertise",
-                    },
-                  ].map((item) => (
-                    <div
-                      key={item.title}
-                      className="flex gap-4 border-b border-[#3F4698]/10 py-5"
-                    >
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#3F4698]/10 text-[#3F4698]">
-                        {item.icon}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-slate-950">
-                          {item.title}
-                        </p>
-                        <p className="mt-1 text-sm text-slate-600">
-                          {item.sub}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-auto pt-6">
-                  <a
-                    href="/hire-talent"
-                    className="flex w-full items-center justify-center rounded-full border border-[#3F4698] px-6 py-3 text-sm font-semibold text-[#3F4698] transition hover:bg-[#3F4698] hover:text-white"
-                  >
-                    Find the right talent →
-                  </a>
-                </div>
-              </div>
+                <span className="mt-2 block xl:whitespace-nowrap">
+                  — OnSpot is built for both sides of great work.
+                </span>
+              </h2>
             </div>
 
-            {/* Card 2: For Professionals */}
-            <div className="group flex h-full flex-col overflow-hidden rounded-[2rem] border border-indigo-100/80 bg-white/70 shadow-[0_20px_60px_rgba(80,80,180,0.08)] backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(80,80,180,0.14)]">
-              {/* Image header */}
-              <div className="relative h-[260px] w-full overflow-hidden sm:h-[300px] lg:h-[320px]">
-                <img
-                  src={WorkProfessionalsPhoto}
-                  alt="Professional remote work"
-                  className="h-full w-full object-cover object-[center_45%] transition duration-700 group-hover:scale-105"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#3F4698]/35 via-[#3F4698]/10 to-transparent" />
-                <span className="absolute bottom-4 left-5 inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-[#3F4698] shadow-sm backdrop-blur">
-                  For professionals
-                </span>
-              </div>
-
-              {/* Card body */}
-              <div className="flex flex-1 flex-col p-8 sm:p-10">
-                <h3 className="text-2xl font-bold leading-tight text-slate-950 sm:text-3xl">
-                  Real work. Real growth.
-                </h3>
-
-                <div className="mt-6 flex flex-col flex-1">
-                  {[
-                    {
-                      icon: <TrendingUp className="h-5 w-5" />,
-                      title: "Steady pipeline",
-                      sub: "No gaps, no chasing",
-                    },
-                    {
-                      icon: <Star className="h-5 w-5" />,
-                      title: "Top global brands",
-                      sub: "Builds your reputation fast",
-                    },
-                    {
-                      icon: <Clock className="h-5 w-5" />,
-                      title: "Your terms",
-                      sub: "Remote, flexible schedule",
-                    },
-                    {
-                      icon: <CheckCircle2 className="h-5 w-5" />,
-                      title: "Zero gatekeeping",
-                      sub: "Pure merit, open access",
-                    },
-                  ].map((item) => (
-                    <div
-                      key={item.title}
-                      className="flex gap-4 border-b border-[#3F4698]/10 py-5"
-                    >
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#3F4698]/10 text-[#3F4698]">
-                        {item.icon}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-slate-950">
-                          {item.title}
-                        </p>
-                        <p className="mt-1 text-sm text-slate-600">
-                          {item.sub}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+            <div className="mx-auto grid w-full max-w-[1280px] grid-cols-1 gap-6 lg:grid-cols-2 items-stretch">
+              {/* Card 1: For Companies */}
+              <div className="group flex h-full flex-col overflow-hidden rounded-[2rem] border border-indigo-100/80 bg-white/70 shadow-[0_20px_60px_rgba(80,80,180,0.08)] backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(80,80,180,0.14)]">
+                {/* Image header */}
+                <div className="relative h-[260px] w-full overflow-hidden sm:h-[300px] lg:h-[320px]">
+                  <img
+                    src={WorkCompaniesPhoto}
+                    alt="Team collaboration"
+                    className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#3F4698]/35 via-[#3F4698]/10 to-transparent" />
+                  <span className="absolute bottom-4 left-5 inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-[#3F4698] shadow-sm backdrop-blur">
+                    For companies
+                  </span>
                 </div>
 
-                <div className="mt-auto pt-6">
-                  <a
-                    href="/find-best-matches"
-                    className="flex w-full items-center justify-center rounded-full border border-[#3F4698] px-6 py-3 text-sm font-semibold text-[#3F4698] transition hover:bg-[#3F4698] hover:text-white"
-                  >
-                    Find your next opportunity →
-                  </a>
+                {/* Card body */}
+                <div className="flex flex-1 flex-col p-8 sm:p-10">
+                  <h3 className="text-2xl font-bold leading-tight text-slate-950 sm:text-3xl">
+                    Hire faster. Spend less.
+                  </h3>
+
+                  <div className="mt-6 flex flex-col flex-1">
+                    {[
+                      {
+                        icon: <Zap className="h-5 w-5" />,
+                        title: "Hire in days",
+                        sub: "72-hour match average",
+                      },
+                      {
+                        icon: <SlidersHorizontal className="h-5 w-5" />,
+                        title: "Hire your way",
+                        sub: "Contract, project, full-time",
+                      },
+                      {
+                        icon: <ArrowRight className="h-5 w-5" />,
+                        title: "No middlemen",
+                        sub: "Direct access, zero markups",
+                      },
+                      {
+                        icon: <Globe className="h-5 w-5" />,
+                        title: "50+ countries",
+                        sub: "Global reach, local expertise",
+                      },
+                    ].map((item) => (
+                      <div
+                        key={item.title}
+                        className="flex gap-4 border-b border-[#3F4698]/10 py-5"
+                      >
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#3F4698]/10 text-[#3F4698]">
+                          {item.icon}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-slate-950">
+                            {item.title}
+                          </p>
+                          <p className="mt-1 text-sm text-slate-600">
+                            {item.sub}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-auto pt-6">
+                    <a
+                      href="/hire-talent"
+                      className="flex w-full items-center justify-center rounded-full border border-[#3F4698] px-6 py-3 text-sm font-semibold text-[#3F4698] transition hover:bg-[#3F4698] hover:text-white"
+                    >
+                      Find the right talent →
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 2: For Professionals */}
+              <div className="group flex h-full flex-col overflow-hidden rounded-[2rem] border border-indigo-100/80 bg-white/70 shadow-[0_20px_60px_rgba(80,80,180,0.08)] backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(80,80,180,0.14)]">
+                {/* Image header */}
+                <div className="relative h-[260px] w-full overflow-hidden sm:h-[300px] lg:h-[320px]">
+                  <img
+                    src={WorkProfessionalsPhoto}
+                    alt="Professional remote work"
+                    className="h-full w-full object-cover object-[center_45%] transition duration-700 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#3F4698]/35 via-[#3F4698]/10 to-transparent" />
+                  <span className="absolute bottom-4 left-5 inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-[#3F4698] shadow-sm backdrop-blur">
+                    For professionals
+                  </span>
+                </div>
+
+                {/* Card body */}
+                <div className="flex flex-1 flex-col p-8 sm:p-10">
+                  <h3 className="text-2xl font-bold leading-tight text-slate-950 sm:text-3xl">
+                    Real work. Real growth.
+                  </h3>
+
+                  <div className="mt-6 flex flex-col flex-1">
+                    {[
+                      {
+                        icon: <TrendingUp className="h-5 w-5" />,
+                        title: "Steady pipeline",
+                        sub: "No gaps, no chasing",
+                      },
+                      {
+                        icon: <Star className="h-5 w-5" />,
+                        title: "Top global brands",
+                        sub: "Builds your reputation fast",
+                      },
+                      {
+                        icon: <Clock className="h-5 w-5" />,
+                        title: "Your terms",
+                        sub: "Remote, flexible schedule",
+                      },
+                      {
+                        icon: <CheckCircle2 className="h-5 w-5" />,
+                        title: "Zero gatekeeping",
+                        sub: "Pure merit, open access",
+                      },
+                    ].map((item) => (
+                      <div
+                        key={item.title}
+                        className="flex gap-4 border-b border-[#3F4698]/10 py-5"
+                      >
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#3F4698]/10 text-[#3F4698]">
+                          {item.icon}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-slate-950">
+                            {item.title}
+                          </p>
+                          <p className="mt-1 text-sm text-slate-600">
+                            {item.sub}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-auto pt-6">
+                    <a
+                      href="/find-best-matches"
+                      className="flex w-full items-center justify-center rounded-full border border-[#3F4698] px-6 py-3 text-sm font-semibold text-[#3F4698] transition hover:bg-[#3F4698] hover:text-white"
+                    >
+                      Find your next opportunity →
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
         {/* ── 4. TRUSTED BY ── */}
         <div className="relative bg-transparent pt-8 pb-20 sm:pt-10 sm:pb-24 lg:pt-12 lg:pb-28">
           <div className="container mx-auto px-4 sm:px-6 relative z-10">
             <div className="text-center space-y-10 sm:space-y-14">
-              <h2 className="mx-auto font-medium leading-[1.12] tracking-[-0.035em] text-slate-900 text-[clamp(30px,3vw,48px)]" style={{ textWrap: "balance", maxWidth: "58ch" }}>
+              <h2
+                className="mx-auto font-medium leading-[1.12] tracking-[-0.035em] text-slate-900 text-[clamp(30px,3vw,48px)]"
+                style={{ textWrap: "balance", maxWidth: "58ch" }}
+              >
                 Trusted by global brands, hundreds of entrepreneurs, and
                 thousands of professionals worldwide.
               </h2>
@@ -769,19 +781,13 @@ export default function Home() {
         <div className="relative z-10 px-4 text-center">
           <div className="mx-auto mb-4 h-px w-10 bg-white/40" />
           <p className="text-xs font-bold uppercase tracking-[0.28em] text-white/60">
-            The Superhuman Network
+            The Superhuman System
           </p>
           <h2 className="mx-auto mt-5 max-w-[1200px] px-6 text-center font-bold leading-[1.05] tracking-tight text-white text-[clamp(44px,6vw,96px)]">
             <span className="block">Real people. Real work.</span>
             <span className="mt-3 block text-[#B8B7FF]">Real impact.</span>
           </h2>
-          <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-white/55 sm:text-lg">
-            <span className="block">
-              A global team of professionals delivering for clients around the
-              world
-            </span>
-            <span className="mt-1 block">— every single day.</span>
-          </p>
+          <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-white/55 sm:text-lg"></p>
         </div>
 
         {/* Mosaic gallery — 9 tiles, 3-row layout, no gaps */}
@@ -939,85 +945,106 @@ export default function Home() {
 
       {/* ── 6. TRANSFORMATION STORIES ── */}
       <div className="relative overflow-hidden bg-[#F6F7FB] py-20 sm:py-28">
-        {/* Decorative blobs */}
-        <div className="pointer-events-none absolute -top-24 right-0 h-72 w-72 rounded-full bg-[#3F4698]/10 blur-3xl" />
-        <div className="pointer-events-none absolute bottom-0 left-0 h-80 w-80 rounded-full bg-[#3F4698]/5 blur-3xl" />
+        <div className="pointer-events-none absolute -top-32 right-0 h-96 w-96 rounded-full bg-indigo-400/8 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-0 left-0 h-80 w-80 rounded-full bg-violet-400/6 blur-3xl" />
 
         <div className="container relative z-10 mx-auto px-4 sm:px-6">
           {/* Section header */}
-          <div className="mb-12 sm:mb-16">
-            <p className="text-xs font-bold uppercase tracking-[0.28em] text-[#3F4698]">
+          <div className="mb-14 sm:mb-18">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-indigo-700">
               Transformations
             </p>
-            <h2 className="mt-4 max-w-3xl text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl">
-              Real change. <span className="text-[#3F4698]">Real results.</span>
+            <h2 className="mt-4 max-w-3xl text-4xl font-semibold tracking-[-0.04em] leading-tight text-slate-950 sm:text-5xl lg:text-6xl">
+              Real change.{" "}
+              <span className="text-[#3F4698]">Real results.</span>
             </h2>
-            <p className="mt-5 max-w-2xl text-lg leading-relaxed text-slate-600">
+            <p className="mt-5 max-w-3xl text-lg leading-relaxed text-slate-600">
               See how OnSpot helps teams move from overloaded operations to
               intelligent, scalable outsourcing partnerships.
             </p>
           </div>
 
           {/* Featured card + two smaller cards */}
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.15fr_1fr]">
-            {/* Featured testimonial */}
-            <div className="relative overflow-hidden rounded-[32px] border border-[#3F4698]/15 bg-white p-8 shadow-[0_24px_80px_rgba(63,70,152,0.12)] sm:p-10">
-              {/* Large decorative quote mark */}
-              <span className="pointer-events-none absolute right-8 top-6 select-none text-[120px] font-black leading-none text-[#3F4698]/5">
-                "
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.15fr_1fr] lg:items-stretch">
+
+            {/* ── Featured testimonial ── */}
+            <div className="relative flex h-full flex-col overflow-hidden rounded-[2rem] border border-white/70 bg-white/80 p-8 shadow-[0_24px_80px_rgba(80,80,180,0.12)] backdrop-blur-xl sm:p-10 lg:p-12">
+              {/* Corner glows */}
+              <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-indigo-300/20 blur-3xl" />
+              <div className="pointer-events-none absolute -left-16 bottom-0 h-56 w-56 rounded-full bg-cyan-200/18 blur-3xl" />
+
+              {/* Decorative quote mark */}
+              <span className="pointer-events-none absolute right-8 top-4 select-none font-serif text-[120px] leading-none text-indigo-100/70">
+                &#8220;
               </span>
 
-              {/* Author row + metric */}
-              <div className="flex flex-wrap items-center justify-between gap-4">
+              {/* Author row + metric badge */}
+              <div className="relative flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#3F4698]/10 text-[#3F4698]">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100">
                     <User className="h-6 w-6" />
                   </div>
                   <div>
-                    <p className="text-base font-semibold text-slate-900">
-                      Elad B.
-                    </p>
-                    <p className="mt-0.5 text-sm text-slate-500">
-                      CEO / Founder, PineTech
-                    </p>
+                    <p className="text-base font-semibold text-slate-900">Elad B.</p>
+                    <p className="mt-0.5 text-sm text-slate-500">CEO / Founder, PineTech</p>
                   </div>
                 </div>
-                <span className="rounded-full bg-[#3F4698]/10 px-4 py-2 text-sm font-semibold text-[#3F4698]">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20">
+                  <Zap className="h-3.5 w-3.5" />
                   40% time saved
                 </span>
               </div>
 
-              {/* Transformation headline */}
-              <h3 className="mt-8 text-2xl font-bold leading-snug text-slate-950 sm:text-3xl">
-                From 12-hour workdays to{" "}
-                <span className="italic text-[#3F4698]">
+              {/* Before → After */}
+              <div className="relative mt-10">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                  Before
+                </p>
+                <h3 className="mt-1 text-2xl font-semibold leading-snug text-slate-800 sm:text-3xl">
+                  12-hour workdays
+                </h3>
+
+                <div className="my-5 flex items-center gap-3">
+                  <span className="h-px flex-1 bg-slate-200" />
+                  <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-100">
+                    transformed into
+                  </span>
+                  <span className="h-px flex-1 bg-slate-200" />
+                </div>
+
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600">
+                  After
+                </p>
+                <h3 className="mt-1 text-2xl font-semibold italic leading-snug text-indigo-700 sm:text-3xl">
                   automated excellence
-                </span>
-              </h3>
+                </h3>
+              </div>
 
               {/* Quote */}
-              <p className="mt-5 text-base leading-relaxed text-slate-600">
+              <p className="relative mt-6 text-base leading-relaxed text-slate-600">
                 "The professionalism and consistency of the OnSpot team.
                 Communication is always clear, and the structured daily and
                 weekly updates make it simple to stay aligned."
               </p>
 
-              {/* Badge */}
-              <div className="mt-8 inline-flex items-center gap-2 rounded-full border border-[#3F4698]/20 bg-[#3F4698]/5 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-[#3F4698]">
-                <TrendingUp className="h-3 w-3" />
-                Client transformation
+              {/* Footer badge */}
+              <div className="mt-auto pt-8">
+                <div className="inline-flex items-center gap-2 rounded-full border border-indigo-200/70 bg-indigo-50 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-indigo-700">
+                  <TrendingUp className="h-3 w-3" />
+                  Client transformation
+                </div>
               </div>
             </div>
 
-            {/* Two smaller cards stacked */}
-            <div className="flex flex-col gap-6">
+            {/* ── Two smaller cards stacked ── */}
+            <div className="grid gap-6">
               {[
                 {
                   name: "Eric M.",
                   role: "Operations Director, Flash Justice",
                   metric: "3 weeks to full team",
-                  headline: "From scattered processes to",
-                  highlight: "seamless orchestration",
+                  before: "scattered processes",
+                  after: "seamless orchestration",
                   quote:
                     "I've worked with several outsourcing companies, but none delivered like OnSpot. Shane and Ria helped me build my team, stayed involved, and ensured success. I finally feel like I'm working with a true partner.",
                 },
@@ -1025,39 +1052,47 @@ export default function Home() {
                   name: "Fernando C.",
                   role: "CTO, Pinetech",
                   metric: "24/7 coverage",
-                  headline: "From constant firefighting to",
-                  highlight: "proactive innovation",
+                  before: "constant firefighting",
+                  after: "proactive innovation",
                   quote:
                     "OnSpot's team is professional, responsive, and reliable — always going above and beyond. The efficiency and consistency they deliver gives me complete confidence.",
                 },
               ].map((story) => (
                 <div
                   key={story.name}
-                  className="flex flex-1 flex-col rounded-[28px] border border-slate-200/80 bg-white/90 p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
+                  className="group relative flex flex-col overflow-hidden rounded-[1.75rem] border border-white/70 bg-white/75 p-7 shadow-[0_18px_60px_rgba(80,80,180,0.10)] backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_80px_rgba(80,80,180,0.16)] sm:p-8"
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-3">
+                  {/* Top accent line */}
+                  <div className="absolute inset-x-0 top-0 h-[3px] rounded-t-[1.75rem] bg-gradient-to-r from-indigo-500/70 via-violet-400/70 to-cyan-300/70" />
+
+                  {/* Author row + metric */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#3F4698]/10 text-[#3F4698]">
-                        <User className="h-5 w-5" />
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100">
+                        <User className="h-4 w-4" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-slate-900">
-                          {story.name}
-                        </p>
+                        <p className="text-sm font-semibold text-slate-900">{story.name}</p>
                         <p className="text-xs text-slate-500">{story.role}</p>
                       </div>
                     </div>
-                    <span className="rounded-full bg-[#3F4698]/10 px-3 py-1 text-xs font-semibold text-[#3F4698]">
+                    <span className="inline-flex items-center rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200/70">
                       {story.metric}
                     </span>
                   </div>
-                  <h3 className="mt-5 text-lg font-bold leading-snug text-slate-950">
-                    {story.headline}{" "}
-                    <span className="italic text-[#3F4698]">
-                      {story.highlight}
+
+                  {/* Transformation headline — compact horizontal */}
+                  <h3 className="mt-6 text-xl font-semibold leading-snug text-slate-950 sm:text-2xl">
+                    From{" "}
+                    <span className="text-slate-700">{story.before}</span>
+                    <span className="mx-2 text-indigo-400">
+                      <ArrowRight className="inline h-4 w-4" />
                     </span>
+                    <span className="italic text-indigo-700">{story.after}</span>
                   </h3>
-                  <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-slate-600 flex-1">
+
+                  {/* Quote */}
+                  <p className="mt-4 flex-1 text-sm leading-relaxed text-slate-600">
                     "{story.quote}"
                   </p>
                 </div>
