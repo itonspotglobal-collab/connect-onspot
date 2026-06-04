@@ -1,0 +1,333 @@
+Please refine the typography hierarchy for several homepage sections so the section labels and important supporting lines feel more intentional and Apple-inspired.
+
+Current issue:
+Some section labels and closing/supporting text feel too small or too subtle, so they do not highlight the section enough. The page should feel minimal and premium, but the key section labels should be easier to recognize.
+
+IMPORTANT:
+- Do not redesign the full homepage.
+- Keep current content and section order.
+- Keep OnSpot branding and colors.
+- Make typography more polished, readable, and visually intentional.
+- Avoid making everything huge.
+- Use responsive fluid text sizes.
+- Make sure there is no horizontal overflow.
+
+==================================================
+GLOBAL SECTION LABEL / EYEBROW STYLE
+==================================================
+
+Please create or reuse one consistent “section eyebrow” style across these labels:
+- INSIGHTS
+- TRANSFORMATIONS
+- WHY ONSPOT
+- THE PROOF
+
+Current issue:
+These labels are too small and not prominent enough.
+
+Goal:
+Make them feel like premium section labels.
+
+Suggested shared class:
+
+className="
+  inline-flex items-center gap-4
+  text-sm sm:text-base
+  font-semibold uppercase
+  tracking-[0.32em]
+  text-indigo-700
+"
+
+If the label has a decorative line before it, keep it:
+
+Line:
+className="h-px w-14 bg-indigo-600/70"
+
+Label:
+className="
+  text-sm sm:text-base
+  font-semibold uppercase
+  tracking-[0.32em]
+  text-indigo-700
+"
+
+Do not make the eyebrow larger than the headline. It should be a strong label, not a title.
+
+==================================================
+1. INSIGHTS SECTION
+==================================================
+
+Current issue:
+The INSIGHTS label and section header do not highlight the Insights section enough.
+
+Update:
+- Increase the INSIGHTS label size using the shared eyebrow style.
+- Make the headline feel more editorial and Apple-inspired.
+
+Keep content:
+“INSIGHTS”
+“Ideas worth sharing.”
+“Perspectives on customer experience, global talent, and the future of work.”
+
+Suggested label:
+className="
+  text-sm sm:text-base
+  font-semibold uppercase
+  tracking-[0.32em]
+  text-indigo-700
+"
+
+Suggested headline:
+className="
+  mt-4 text-[clamp(44px,5vw,88px)]
+  font-semibold tracking-[-0.055em]
+  leading-[0.98]
+  text-slate-950
+"
+
+Suggested description:
+className="
+  mt-5 max-w-2xl
+  text-lg sm:text-xl
+  leading-relaxed
+  text-slate-600
+"
+
+Important:
+- Keep Insights visually clean and minimal.
+- Do not make the section too tall.
+- If the headline becomes too large for the current card layout, reduce to:
+  text-[clamp(40px,4.5vw,72px)]
+
+==================================================
+2. SUPERHUMAN NETWORK CLOSING LINE
+==================================================
+
+Text:
+“Behind every workflow is a real person making the work better.”
+
+Current issue:
+This closing line is too small and too faint. It should feel like a meaningful closing statement for the Superhuman Network section.
+
+Goal:
+Increase the size and make it feel intentional, while still subtle on the dark background.
+
+Suggested class:
+
+className="
+  mx-auto mt-12 max-w-4xl
+  text-center
+  text-2xl sm:text-3xl lg:text-4xl
+  font-medium
+  tracking-[-0.03em]
+  leading-snug
+  text-white/65
+"
+
+Optional:
+Highlight “real person” slightly:
+
+Behind every workflow is a <span className="text-white/85">real person</span> making the work better.
+
+If implementing the highlight, do not rewrite the sentence. Only wrap the words “real person” in a span.
+
+Make sure there is enough spacing above and below this closing line:
+- mt-12 or mt-16 after the mosaic
+- pb section spacing remains balanced
+
+==================================================
+3. TRANSFORMATIONS SECTION
+==================================================
+
+Current issue:
+The “TRANSFORMATIONS” label has the same issue as Insights. It is too small/subtle.
+
+Update:
+- Increase “TRANSFORMATIONS” using the shared eyebrow style.
+- Make the main heading feel large and premium, but not clipped.
+
+Keep content:
+“TRANSFORMATIONS”
+“Real change. Real results.”
+“See how OnSpot helps teams move from overloaded operations to intelligent, scalable outsourcing partnerships.”
+
+Suggested label:
+className="
+  text-sm sm:text-base
+  font-semibold uppercase
+  tracking-[0.32em]
+  text-indigo-700
+"
+
+Suggested heading:
+className="
+  mt-5 max-w-[1300px]
+  text-[clamp(48px,6vw,96px)]
+  font-semibold
+  tracking-[-0.055em]
+  leading-[1.02]
+  text-slate-950
+"
+
+Keep “Real results.” in the accent color.
+
+Suggested description:
+className="
+  mt-6 max-w-3xl
+  text-xl sm:text-2xl
+  leading-relaxed
+  text-slate-600
+"
+
+If this heading currently overflows, add:
+className includes "break-words"
+and make sure section has:
+overflow-hidden
+
+==================================================
+4. WHY ONSPOT SECTION
+==================================================
+
+Current issue:
+“WHY ONSPOT” should be more prominent, similar to the Insights label.
+
+Update:
+- Increase the “WHY ONSPOT” label using the shared eyebrow style.
+- Keep the main headline large but controlled.
+
+Keep content:
+“WHY ONSPOT”
+“No service provider. An architect.”
+
+Suggested label with line:
+className="
+  flex items-center gap-5
+  text-sm sm:text-base
+  font-semibold uppercase
+  tracking-[0.32em]
+  text-indigo-700
+"
+
+Line:
+className="h-px w-16 bg-indigo-600/60"
+
+Suggested heading:
+className="
+  mt-6 max-w-[1400px]
+  text-[clamp(52px,7vw,112px)]
+  font-semibold
+  tracking-[-0.06em]
+  leading-[0.98]
+  text-slate-950
+"
+
+Accent line:
+“An architect.”
+
+Suggested accent class:
+className="
+  block italic text-indigo-700
+"
+
+Suggested description:
+className="
+  mt-8 max-w-4xl
+  text-xl sm:text-2xl lg:text-3xl
+  leading-relaxed
+  text-slate-600
+"
+
+Important:
+- Do not let the heading clip horizontally.
+- Use max-width and responsive clamp.
+
+==================================================
+5. THE PROOF SECTION
+==================================================
+
+Current issue:
+“The Proof” section text should feel more premium and highlighted. The label, headline, and subtitle should be upgraded together.
+
+Keep content:
+“THE PROOF”
+“The people behind the platform.”
+“Powered by professionals from the US, Philippines, and beyond. The Superhuman BPO Network.”
+
+Update label:
+className="
+  text-sm sm:text-base
+  font-semibold uppercase
+  tracking-[0.32em]
+  text-indigo-700
+"
+
+Update headline:
+className="
+  mt-5 mx-auto max-w-[1200px]
+  text-center
+  text-[clamp(46px,6vw,96px)]
+  font-semibold
+  tracking-[-0.055em]
+  leading-[1.02]
+  text-slate-950
+"
+
+Update subtitle:
+className="
+  mt-6 mx-auto max-w-5xl
+  text-center
+  text-xl sm:text-2xl lg:text-3xl
+  leading-relaxed
+  text-slate-600
+"
+
+Optional formatting for subtitle:
+Place it as two lines for cleaner Apple-like layout:
+
+<span className="block">
+  Powered by professionals from the US, Philippines, and beyond.
+</span>
+<span className="block">
+  The Superhuman BPO Network.
+</span>
+
+Make sure this remains responsive.
+
+==================================================
+APPLE-INSPIRED TYPOGRAPHY NOTES
+==================================================
+
+Use:
+- larger section titles
+- strong tracking-tight on big headlines
+- generous but controlled line-height
+- wide max-widths
+- clear hierarchy
+- fewer tiny labels
+
+Avoid:
+- oversized text that clips
+- overly bold all-caps everywhere
+- tiny labels that disappear
+- excessive whitespace
+- horizontal scrolling
+
+==================================================
+RESPONSIVE CHECK
+==================================================
+
+After changes, verify:
+- No text is clipped at the viewport edges.
+- No horizontal scrolling.
+- Section labels are readable.
+- Headings remain large but balanced.
+- Mobile headings wrap naturally.
+- Tablet/laptop layouts still look clean.
+
+Expected result:
+The key section labels and supporting lines should feel more intentional and premium:
+- INSIGHTS is easier to notice.
+- “Behind every workflow...” feels like a meaningful closing statement.
+- TRANSFORMATIONS label stands out better.
+- WHY ONSPOT label feels stronger.
+- THE PROOF label, headline, and subtitle feel more Apple-inspired and visually polished.
