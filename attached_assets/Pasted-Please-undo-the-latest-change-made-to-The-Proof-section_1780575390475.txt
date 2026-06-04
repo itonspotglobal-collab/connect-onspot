@@ -1,0 +1,205 @@
+Please undo the latest change made to “The Proof” section.
+
+Current issue:
+The latest update replaced the entire Proof/team layout with only four real employee cards:
+- Nur Laminero
+- Jake Wainberg
+- Val Legaspi
+- Mark Anthony Apostol
+
+That is not what we wanted.
+
+Goal:
+Bring back the previous “The Proof” section layout/setup, including the existing AI-generated/generic team employees and original visual structure. Then add the real OnSpot employees into that existing setup instead of replacing everything.
+
+IMPORTANT:
+- Do not remove all AI-generated/generic employees.
+- Do not replace the whole Proof section with only 4 cards.
+- Restore the previous Proof layout and design.
+- Keep the existing AI/generated employee cards/profiles that were there before.
+- Add the real employees as additional people in the same section.
+- Use the uploaded real photos where available.
+
+Real people to add:
+1. Nur Laminero — CEO of OnSpot
+2. Jake Wainberg — Founder & President
+3. Val Legaspi — IT Administrator
+4. Mark Anthony Apostol — Head of People
+
+--------------------------------------------------
+1. RESTORE PREVIOUS LAYOUT
+--------------------------------------------------
+
+Please revert “The Proof” section layout back to the version before the latest change.
+
+That previous layout should include:
+- The original heading and subtitle:
+  - THE PROOF
+  - The people behind the platform.
+  - Powered by professionals from the US, Philippines, and beyond. The Superhuman BPO Network.
+- The original visual/team layout
+- The existing AI-generated/generic employee profiles or cards
+- The same section styling and spacing used before the replacement
+
+Do not keep the current plain four-card-only layout.
+
+--------------------------------------------------
+2. ADD REAL EMPLOYEES INTO THE EXISTING TEAM DATA
+--------------------------------------------------
+
+Find the existing team/proof member data array.
+
+Do not replace the array with only the four real people.
+
+Instead, append or insert these real employees into the existing array:
+
+const realOnSpotTeamMembers = [
+  {
+    name: "Nur Laminero",
+    role: "CEO of OnSpot",
+    image: nurLaminero,
+    isRealEmployee: true,
+  },
+  {
+    name: "Jake Wainberg",
+    role: "Founder & President",
+    image: jakeWainberg,
+    isRealEmployee: true,
+  },
+  {
+    name: "Val Legaspi",
+    role: "IT Administrator",
+    image: valLegaspi,
+    isRealEmployee: true,
+  },
+  {
+    name: "Mark Anthony Apostol",
+    role: "Head of People",
+    image: markAnthonyApostol,
+    isRealEmployee: true,
+  },
+];
+
+Then combine with the existing team members:
+
+const proofTeam = [
+  ...existingTeamMembers,
+  ...realOnSpotTeamMembers,
+];
+
+or insert the real employees near the beginning if that looks better:
+
+const proofTeam = [
+  ...realOnSpotTeamMembers,
+  ...existingTeamMembers,
+];
+
+But do not delete the existing AI/generic members.
+
+--------------------------------------------------
+3. USE UPLOADED REAL PHOTOS
+--------------------------------------------------
+
+Use the real employee photos uploaded in Replit.
+
+Suggested folder:
+client/src/assets/team/
+
+Suggested imports:
+
+import nurLaminero from "@/assets/team/nur-laminero.jpg";
+import jakeWainberg from "@/assets/team/jake-wainberg.jpg";
+import valLegaspi from "@/assets/team/val-legaspi.jpg";
+import markAnthonyApostol from "@/assets/team/mark-anthony-apostol.jpg";
+
+If the uploaded files have different names, use the actual uploaded filenames or rename them clearly.
+
+--------------------------------------------------
+4. REAL EMPLOYEE CARDS SHOULD FIT EXISTING DESIGN
+--------------------------------------------------
+
+Do not create a separate visual style that breaks the section.
+
+The real employee cards should use the same card style/layout as the existing Proof section people.
+
+Use the same:
+- card sizing
+- border radius
+- image ratio
+- spacing
+- hover behavior
+- name typography
+- role typography
+
+If the section uses a carousel/mosaic/grid, the real employees should be added into that same component.
+
+--------------------------------------------------
+5. OPTIONAL SUBTLE REAL EMPLOYEE BADGE
+--------------------------------------------------
+
+If it fits the design, add a subtle badge for real OnSpot staff.
+
+Example badge:
+“OnSpot Team”
+
+Style:
+className="
+  inline-flex rounded-full bg-indigo-50 px-3 py-1
+  text-xs font-semibold text-indigo-700
+"
+
+But only add this if it does not clutter the card.
+
+--------------------------------------------------
+6. PHOTO CROPPING
+--------------------------------------------------
+
+For uploaded real photos:
+- Do not stretch images.
+- Use object-cover.
+- Adjust object-position so faces are visible.
+
+Image:
+className="h-full w-full object-cover object-center"
+
+If faces are cropped:
+- object-[center_25%]
+- object-[center_30%]
+- object-[center_35%]
+
+Alt text:
+- “Nur Laminero, CEO of OnSpot”
+- “Jake Wainberg, Founder and President”
+- “Val Legaspi, IT Administrator”
+- “Mark Anthony Apostol, Head of People”
+
+--------------------------------------------------
+7. REMOVE ONLY THE BAD REPLACEMENT
+--------------------------------------------------
+
+Remove the recently added simplified four-card-only layout.
+
+Keep or restore the previous Proof layout.
+
+The final result should NOT show only four cards.
+
+It should show:
+- the original Proof section setup
+- existing AI/generated professionals
+- plus the four real OnSpot employees
+
+--------------------------------------------------
+8. RESPONSIVE CHECK
+--------------------------------------------------
+
+After the fix:
+- The Proof section layout should look like it did before the bad replacement.
+- Existing generated/team profiles should still appear.
+- Real employee photos should also appear.
+- No duplicate headings.
+- No duplicate Proof sections.
+- No horizontal scrolling.
+- Mobile/tablet should still stack or scroll as before.
+
+Expected result:
+The Proof section should return to the original setup and simply include Nur, Jake, Val, and Mark as additional real people in the team/proof area, instead of replacing the whole section.

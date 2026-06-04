@@ -69,6 +69,14 @@ import NurLamineroPhoto from "@assets/Nur_1780574815788.png";
 import JakeWainbergPhoto from "@assets/Jake_1780574815787.png";
 import ValLegaspiPhoto from "@assets/val_1780574815788.png";
 import MarkApostolPhoto from "@assets/Macky_1780574815788.png";
+import KyleMendezPhoto from "@assets/Kyle_Mendez_1774430604161.jpeg";
+import AlexandraLopezPhoto from "@assets/Alexandra_Lopez_1774430604160.jpg";
+import AndreaPinzonPhoto from "@assets/Andrea_Pinzon_1774264095055.jpeg";
+import ChristopherAlbaPhoto from "@assets/Christopher_Alba_1774264095055.jpg";
+import RachelCastroPhoto from "@assets/Rachel_Caztro_1774264095056.jpg";
+import AmirSinghPhoto from "@assets/Amir_Singh_1774264095055.jpg";
+import JenniferDizonPhoto from "@assets/Jennifer_Dizon_1774430604160.jpg";
+import AndreiLosantoPhoto from "@assets/Andrei_Losanto_1774430604160.jpg";
 
 const trustedBrands = [
   { name: "Flash Justice", logo: FlashLogo },
@@ -1228,59 +1236,130 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="mx-auto mt-14 grid w-full max-w-7xl grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mx-auto mt-20 grid w-full max-w-7xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {[
               {
                 photo: NurLamineroPhoto,
                 name: "Nur Laminero",
+                flag: "🇵🇭",
                 role: "CEO of OnSpot",
-                alt: "Nur Laminero, CEO of OnSpot",
                 objectPosition: "object-[center_25%]",
+                isReal: true,
               },
               {
                 photo: JakeWainbergPhoto,
                 name: "Jake Wainberg",
+                flag: "🇺🇸",
                 role: "Founder & President",
-                alt: "Jake Wainberg, Founder and President",
                 objectPosition: "object-[center_20%]",
+                isReal: true,
               },
               {
                 photo: ValLegaspiPhoto,
                 name: "Val Legaspi",
+                flag: "🇵🇭",
                 role: "IT Administrator",
-                alt: "Val Legaspi, IT Administrator",
                 objectPosition: "object-[center_30%]",
+                isReal: true,
               },
               {
                 photo: MarkApostolPhoto,
                 name: "Mark Anthony Apostol",
+                flag: "🇵🇭",
                 role: "Head of People",
-                alt: "Mark Anthony Apostol, Head of People",
                 objectPosition: "object-[center_20%]",
+                isReal: true,
+              },
+              {
+                photo: KyleMendezPhoto,
+                name: "Kyle Mendez",
+                flag: "🇵🇭",
+                role: "Senior Data Analyst",
+                objectPosition: "object-top",
+                isReal: false,
+              },
+              {
+                photo: AlexandraLopezPhoto,
+                name: "Alexandra Lopez",
+                flag: "🇵🇭",
+                role: "CX & Operations Lead",
+                objectPosition: "object-top",
+                isReal: false,
+              },
+              {
+                photo: AndreaPinzonPhoto,
+                name: "Andrea Pinzon",
+                flag: "🇵🇭",
+                role: "Virtual Assistant",
+                objectPosition: "object-top",
+                isReal: false,
+              },
+              {
+                photo: ChristopherAlbaPhoto,
+                name: "Christopher Alba",
+                flag: "🇵🇭",
+                role: "Technical Support",
+                objectPosition: "object-top",
+                isReal: false,
+              },
+              {
+                photo: RachelCastroPhoto,
+                name: "Rachel Castro",
+                flag: "🇵🇭",
+                role: "Social Media Manager",
+                objectPosition: "object-top",
+                isReal: false,
+              },
+              {
+                photo: AmirSinghPhoto,
+                name: "Amir Singh",
+                flag: "🇺🇸",
+                role: "SEO Specialist",
+                objectPosition: "object-top",
+                isReal: false,
+              },
+              {
+                photo: JenniferDizonPhoto,
+                name: "Jennifer Dizon",
+                flag: "🇵🇭",
+                role: "Customer Service",
+                objectPosition: "object-top",
+                isReal: false,
+              },
+              {
+                photo: AndreiLosantoPhoto,
+                name: "Andrei Losanto",
+                flag: "🇵🇭",
+                role: "Full Stack Developer",
+                objectPosition: "object-top",
+                isReal: false,
               },
             ].map((person) => (
               <div
                 key={person.name}
-                className="group overflow-hidden rounded-[2rem] border border-slate-200/70 bg-white/75 shadow-sm backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:shadow-xl"
+                className="group relative aspect-[4/3] overflow-hidden rounded-3xl bg-slate-100 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-xl"
               >
-                {/* Photo */}
-                <div className="relative aspect-[4/5] w-full overflow-hidden bg-slate-100">
-                  <img
-                    src={person.photo}
-                    alt={person.alt}
-                    className={`h-full w-full object-cover transition duration-500 group-hover:scale-[1.03] ${person.objectPosition}`}
-                    loading="lazy"
-                  />
-                  {/* Subtle hover overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 transition duration-300 group-hover:opacity-100" />
-                </div>
+                <img
+                  src={person.photo}
+                  alt={person.name}
+                  className={`h-full w-full object-cover transition duration-700 group-hover:scale-105 ${person.objectPosition}`}
+                  loading="lazy"
+                />
 
-                {/* Card content */}
-                <div className="p-5 sm:p-6">
-                  <h3 className="text-xl font-semibold tracking-tight text-slate-950">
-                    {person.name}
+                {/* Gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/25 to-transparent opacity-100 md:opacity-0 md:transition-opacity md:duration-300 md:group-hover:opacity-100" />
+
+                {/* Name + role */}
+                <div className="absolute inset-x-0 bottom-0 z-10 translate-y-0 p-5 text-white opacity-100 transition-all duration-300 md:translate-y-4 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100">
+                  {person.isReal && (
+                    <span className="mb-2 inline-flex rounded-full bg-indigo-500/80 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm">
+                      OnSpot Team
+                    </span>
+                  )}
+                  <h3 className="text-base font-bold leading-tight text-white">
+                    {person.name} <span aria-hidden="true">{person.flag}</span>
                   </h3>
-                  <p className="mt-1 text-sm font-medium text-slate-600">
+                  <p className="mt-0.5 text-sm font-medium text-white/80">
                     {person.role}
                   </p>
                 </div>
