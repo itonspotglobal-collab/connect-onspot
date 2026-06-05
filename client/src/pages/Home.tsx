@@ -1364,7 +1364,7 @@ export default function Home() {
                     <img
                       src={person.photo}
                       alt={person.name}
-                      className="absolute left-1/2 top-1/2 h-auto w-[145%] max-w-none -translate-x-1/2 -translate-y-[58%] transition-transform duration-500 group-hover:scale-[1.03]"
+                      className="absolute left-1/2 top-1/2 h-auto w-[158%] max-w-none -translate-x-1/2 -translate-y-[62%] transition-transform duration-500 group-hover:scale-[1.03]"
                       loading="lazy"
                     />
                   </div>
