@@ -56,14 +56,14 @@ import WhyConnectedEcosystem from "@assets/connected-ecosystem_1780060255447.png
 import WhyScalableExcellence from "@assets/scalable-excellence_1780060255447.png";
 
 import CollaborationThatScales from "@assets/Collaboration-that-scales_1780059195131.png";
-import ExecutiveSupport from "@assets/Executive-support_1780059195131.png";
-import AlwaysConnected from "@assets/Always-connected_1780059195130.png";
-import FutureOfWork from "@assets/uilt-for-the-future-of-work_1780059195132.png";
-import FocusedExpertise from "@assets/Focused-expertise_1780059195132.png";
-import EngineeringTalent from "@assets/Engineering-talent_1780059195131.png";
-import AlignedEveryDay from "@assets/Aligned-every-day_1780059195130.png";
-import WinningTogether from "@assets/Winning-together_1780059195132.png";
-import CultureFirst from "@assets/Culture-first_1780059195131.png";
+import ExecutiveSupport from "@assets/Executive_Support_1780638507560.png";
+import AlwaysConnected from "@assets/Always_Connected_1780638514689.png";
+import FutureOfWork from "@assets/Built_for_the_future_of_work_1780638559714.png";
+import FocusedExpertise from "@assets/Focused_expertise_1780638559714.png";
+import EngineeringTalent from "@assets/Engineering_talent_1780638559714.png";
+import AlignedEveryDay from "@assets/Aligned,_every_day_1780638559713.png";
+import WinningTogether from "@assets/winning_together_1780638637254.png";
+import CultureFirst from "@assets/Culture_first_1780638648875.png";
 
 import NurLamineroPhoto from "@assets/Nur_1780574815788.png";
 import JakeWainbergPhoto from "@assets/Jake_1780574815787.png";
