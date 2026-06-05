@@ -41,8 +41,8 @@ import PinetechLogo from "../assets/logos/Pinetech.png";
 import SafewayLogo from "../assets/logos/Safeway.png";
 import VertexLogo from "../assets/logos/Vertex.png";
 
-import WorkCompaniesPhoto from "@assets/Work_diff1_1780058152129.png";
-import WorkProfessionalsPhoto from "@assets/Work_diff2_1780058152129.png";
+import WorkCompaniesPhoto from "@assets/image_1780637381322.png";
+import WorkProfessionalsPhoto from "@assets/image_1780637420236.png";
 
 import GalleryImg1 from "@assets/Team_Flow_1775045176827.png";
 import GalleryImg2 from "@assets/Deep_Work_1775045176826.png";
