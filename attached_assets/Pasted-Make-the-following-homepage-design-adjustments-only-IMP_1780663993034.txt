@@ -1,0 +1,371 @@
+Make the following homepage design adjustments only.
+
+IMPORTANT:
+- Do not change the section order.
+- Do not change any written content.
+- Do not remove any existing buttons or links.
+- Do not modify the footer navigation columns.
+- Preserve responsive behavior.
+- Apply visual hierarchy using an inverted-pyramid / box-style structure.
+
+==================================================
+1. TRANSFORMATIONS SECTION
+==================================================
+
+Keep the existing content:
+
+Eyebrow:
+“TRANSFORMATIONS”
+
+Headline:
+“Real change. Real results.”
+
+Supporting copy:
+“See how OnSpot helps teams move from overloaded operations to intelligent, scalable outsourcing partnerships.”
+
+Apply a clear inverted-pyramid hierarchy:
+
+- Eyebrow: smallest
+- Headline: largest
+- Supporting copy: smaller and narrower than the headline
+- Transformation cards below the text
+
+Required layout:
+- Left-align the entire heading block.
+- Give the heading block a controlled maximum width.
+- Keep the supporting copy narrower than the headline.
+- Do not allow the heading to feel oversized or cropped.
+
+Use:
+
+Eyebrow:
+- text-[18px] lg:text-[20px]
+- font-semibold
+- uppercase
+- tracking-[0.22em]
+- text-[#4B46C8]
+
+Headline:
+- text-[52px] md:text-[64px] lg:text-[76px]
+- leading-[0.96]
+- font-semibold
+- tracking-[-0.045em]
+- max-w-[1000px]
+
+Highlight “Real results.” using:
+- text-[#4B46C8]
+
+Supporting copy:
+- mt-6
+- max-w-[680px]
+- text-[20px] lg:text-[22px]
+- leading-[1.45]
+- text-[#56647A]
+
+Heading container:
+className="
+  mx-auto
+  w-full
+  max-w-[1500px]
+  px-6
+  sm:px-10
+  lg:px-16
+"
+
+==================================================
+2. WHY ONSPOT SECTION
+==================================================
+
+Keep the existing content:
+
+Eyebrow:
+“WHY ONSPOT”
+
+Headline:
+“Not a service provider.”
+“An architect.”
+
+Supporting copy:
+“We design the operating layer behind modern outsourcing — combining AI-ready systems, vetted talent, and human accountability so your team can scale without losing control.”
+
+Apply a box-style hierarchy:
+
+- Eyebrow at the top
+- Main headline underneath
+- “An architect.” as the visual emphasis
+- Supporting paragraph beneath
+- Existing section cards/content below
+
+Required design:
+- Left-align all text.
+- Keep the headline block narrower than the full section.
+- Make “An architect.” visually distinct but not larger than the first line.
+- Do not place an image next to the title.
+- Keep the CTA at the bottom of this section, not beside the title.
+
+Use:
+
+Eyebrow:
+- text-[18px] lg:text-[20px]
+- font-semibold
+- uppercase
+- tracking-[0.22em]
+- text-[#4B46C8]
+
+Main headline:
+- text-[54px] md:text-[68px] lg:text-[82px]
+- leading-[0.95]
+- font-semibold
+- tracking-[-0.05em]
+- max-w-[950px]
+
+First line:
+- text-[#070A1A]
+
+Second line “An architect.”:
+- block
+- mt-2
+- italic
+- text-[#4F46D8]
+
+Supporting copy:
+- mt-8
+- max-w-[760px]
+- text-[20px] lg:text-[23px]
+- leading-[1.45]
+- text-[#56647A]
+
+==================================================
+3. REPLACE THE CURRENT FINAL CTA SECTION DESIGN
+==================================================
+
+Replace the current boxed/card-style final CTA design shown in the third reference image.
+
+Restore the old full-width CTA section style shown in the fourth reference image.
+
+Keep the current content exactly:
+
+Badge:
+“72-hour match average”
+
+Headline:
+“Get matched with vetted Philippine talent in 72 hours”
+
+Supporting copy:
+“Tell us what you need. We'll line up pre-vetted candidates — no markups, no middlemen, no obligation.”
+
+Primary CTA:
+“Get matched — it's free”
+
+Small supporting line:
+“Takes 2 minutes · No credit card · First candidates in days”
+
+Stats:
+“70%” / “cost savings”
+“50+” / “countries served”
+“Dedicated” / “never shared teams”
+
+Talent link:
+“Looking for work instead? Join as talent →”
+
+--------------------------------------------------
+FINAL CTA SECTION LAYOUT
+--------------------------------------------------
+
+The section must be:
+- Full-width
+- Spacious
+- Center-aligned
+- No floating rounded card
+- No boxed container around the content
+- Similar to the old “Ready to Become Superhuman?” section
+- Positioned directly above the footer
+
+Section background:
+Use a soft full-width branded gradient:
+
+background:
+linear-gradient(
+  110deg,
+  #D6D8FF 0%,
+  #C9D8F8 52%,
+  #BCE8F2 100%
+)
+
+Section classes:
+
+className="
+  relative
+  w-full
+  overflow-hidden
+  bg-[linear-gradient(110deg,#D6D8FF_0%,#C9D8F8_52%,#BCE8F2_100%)]
+  px-6
+  py-24
+  sm:px-10
+  md:py-28
+  lg:px-16
+  lg:py-32
+"
+
+Inner content container:
+
+className="
+  mx-auto
+  flex
+  w-full
+  max-w-[1100px]
+  flex-col
+  items-center
+  text-center
+"
+
+--------------------------------------------------
+FINAL CTA VISUAL HIERARCHY
+--------------------------------------------------
+
+Use an inverted-pyramid structure:
+
+1. Badge
+2. Large headline
+3. Narrow supporting text
+4. Primary CTA
+5. Small reassurance text
+6. Stats row
+7. Talent link
+
+Badge:
+className="
+  inline-flex
+  items-center
+  gap-2
+  rounded-full
+  border
+  border-white/40
+  bg-white/35
+  px-5
+  py-2.5
+  text-[15px]
+  font-semibold
+  text-[#315FCB]
+  backdrop-blur-sm
+"
+
+Headline:
+- mt-8
+- max-w-[900px]
+- text-[48px] md:text-[62px] lg:text-[72px]
+- leading-[1.02]
+- font-semibold
+- tracking-[-0.045em]
+- text-[#080B1C]
+
+Supporting copy:
+- mt-6
+- max-w-[700px]
+- text-[19px] md:text-[21px]
+- leading-[1.5]
+- text-[#53627A]
+
+Primary button:
+- mt-10
+- rectangular, not pill-shaped
+- h-[60px]
+- px-8
+- rounded-[14px]
+- deep branded violet/blue gradient
+- white text
+- clearly visible
+
+Use:
+
+className="
+  inline-flex
+  h-[60px]
+  items-center
+  justify-center
+  gap-3
+  rounded-[14px]
+  bg-[linear-gradient(90deg,#6F35E8_0%,#2368E8_100%)]
+  px-8
+  text-[18px]
+  font-semibold
+  text-white
+  shadow-[0_12px_30px_rgba(62,67,193,0.28)]
+  transition-all
+  duration-300
+  hover:-translate-y-0.5
+  hover:shadow-[0_16px_34px_rgba(62,67,193,0.34)]
+"
+
+Reassurance text:
+- mt-4
+- text-[14px] md:text-[15px]
+- text-[#66758A]
+
+Stats row:
+- mt-12
+- pt-10
+- border-t border-[#66758A]/20
+- grid grid-cols-1 sm:grid-cols-3
+- gap-8 sm:gap-12
+- w-full
+- max-w-[760px]
+
+Stat value:
+- text-[28px] md:text-[32px]
+- font-semibold
+- text-[#080B1C]
+
+Stat label:
+- mt-1
+- text-[14px] md:text-[15px]
+- text-[#58677D]
+
+Talent link:
+- mt-10
+- text-[15px]
+- text-[#56647A]
+- underline-offset-4
+- link portion should be underlined and darker
+
+==================================================
+4. RESPONSIVE REQUIREMENTS
+==================================================
+
+Desktop:
+- Maintain the strong visual hierarchy.
+- Do not let the headline stretch too wide.
+- Do not crop any text.
+- Do not create excessive empty space.
+
+Tablet:
+- Reduce headline sizes smoothly.
+- Keep sections centered or left-aligned according to their existing structure.
+- Final CTA stats should remain in one row when space allows.
+
+Mobile:
+- Final CTA stats stack vertically.
+- Headline remains readable and does not overflow.
+- Side padding must be at least 24px.
+- Do not use fixed heights.
+- Use clamp() or responsive Tailwind sizes where appropriate.
+
+==================================================
+5. DO NOT CHANGE
+==================================================
+
+Do not change:
+- Any wording
+- Transformation cards
+- Why OnSpot cards
+- Footer content
+- Navigation
+- Existing links or destinations
+- Section order
+- Other homepage sections
+
+Expected result:
+- Transformations and Why OnSpot should have a polished, intentional visual hierarchy.
+- The final CTA should return to the old full-width gradient-section appearance.
+- The final CTA must keep the new “Get matched with vetted Philippine talent in 72 hours” content.
+- The final CTA should feel like a strong closing section, not a floating card.

@@ -982,14 +982,14 @@ export default function Home() {
 
         <div className="container relative z-10 mx-auto px-4 sm:px-6">
           {/* Section header */}
-          <div className="mb-14 sm:mb-18">
-            <p className="text-lg font-semibold uppercase tracking-[0.18em] text-indigo-700 sm:text-xl lg:text-2xl">
+          <div className="mb-14 mx-auto w-full max-w-[1500px] px-0">
+            <p className="text-[18px] font-semibold uppercase tracking-[0.22em] text-[#4B46C8] lg:text-[20px]">
               Transformations
             </p>
-            <h2 className="mt-5 max-w-[1300px] break-words text-[clamp(48px,6vw,96px)] font-semibold tracking-[-0.055em] leading-[1.02] text-slate-950">
-              Real change. <span className="text-[#3F4698]">Real results.</span>
+            <h2 className="mt-5 max-w-[1000px] text-[52px] font-semibold tracking-[-0.045em] leading-[0.96] text-slate-950 md:text-[64px] lg:text-[76px]">
+              Real change. <span className="text-[#4B46C8]">Real results.</span>
             </h2>
-            <p className="mt-6 max-w-3xl text-xl leading-relaxed text-slate-600 sm:text-2xl">
+            <p className="mt-6 max-w-[680px] text-[20px] leading-[1.45] text-[#56647A] lg:text-[22px]">
               See how OnSpot helps teams move from overloaded operations to
               intelligent, scalable outsourcing partnerships.
             </p>
@@ -1158,19 +1158,16 @@ export default function Home() {
         <div className="container relative z-10 mx-auto max-w-[1400px] px-6 sm:px-8 lg:px-12">
           {/* Header — full-width typography, no image */}
           <div className="max-w-5xl">
-            <div className="flex items-center gap-5">
-              <div className="h-px w-14 bg-indigo-600/70 sm:w-16" />
-              <p className="text-base font-semibold uppercase tracking-[0.22em] text-indigo-700 sm:text-lg lg:text-xl">
-                Why OnSpot
-              </p>
-            </div>
-            <h2 className="mt-6 max-w-[1100px] text-[clamp(48px,6vw,92px)] font-semibold tracking-[-0.055em] leading-[0.96] text-slate-950">
-              <span className="block">Not a service provider.</span>
-              <span className="mt-2 block text-[0.82em] italic bg-gradient-to-r from-indigo-700 via-violet-600 to-blue-500 bg-clip-text text-transparent">
+            <p className="text-[18px] font-semibold uppercase tracking-[0.22em] text-[#4B46C8] lg:text-[20px]">
+              Why OnSpot
+            </p>
+            <h2 className="mt-6 max-w-[950px] text-[54px] font-semibold tracking-[-0.05em] leading-[0.95] md:text-[68px] lg:text-[82px]">
+              <span className="block text-[#070A1A]">Not a service provider.</span>
+              <span className="mt-2 block italic text-[#4F46D8]">
                 An architect.
               </span>
             </h2>
-            <p className="mt-8 max-w-[900px] text-lg leading-relaxed text-slate-600 sm:text-xl lg:text-2xl">
+            <p className="mt-8 max-w-[760px] text-[20px] leading-[1.45] text-[#56647A] lg:text-[23px]">
               We design the operating layer behind modern outsourcing —
               combining AI-ready systems, vetted talent, and human
               accountability so your team can scale without losing control.
@@ -1406,64 +1403,65 @@ export default function Home() {
       </div>
 
       {/* ── 8. GET MATCHED FINAL CTA ── */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-[#deddf0] via-[#d4d5e8] to-[#c9cce2] py-16 sm:py-20 lg:py-24">
-        <div className="pointer-events-none absolute -left-24 top-1/3 h-72 w-72 rounded-full bg-violet-400/15 blur-3xl" />
-        <div className="pointer-events-none absolute -right-24 bottom-0 h-72 w-72 rounded-full bg-blue-400/15 blur-3xl" />
-        <div className="relative z-10 mx-auto max-w-[900px] px-6 sm:px-8">
-          <div className="relative overflow-hidden rounded-[2rem] border border-violet-200/60 bg-gradient-to-br from-[#f7f4ff] via-[#f7f3ea] to-[#edf5ff] px-6 py-12 text-center shadow-[0_20px_60px_rgba(79,70,229,0.10)] sm:px-10 lg:px-14">
-            {/* Decorative glows */}
-            <div className="pointer-events-none absolute -left-20 -top-20 h-56 w-56 rounded-full bg-violet-300/20 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-20 -right-20 h-56 w-56 rounded-full bg-blue-300/20 blur-3xl" />
+      <section className="relative w-full overflow-hidden bg-[linear-gradient(110deg,#D6D8FF_0%,#C9D8F8_52%,#BCE8F2_100%)] px-6 py-24 sm:px-10 md:py-28 lg:px-16 lg:py-32">
+        {/* Background glows */}
+        <div className="pointer-events-none absolute -left-32 top-0 h-96 w-96 rounded-full bg-violet-300/20 blur-3xl" />
+        <div className="pointer-events-none absolute -right-32 bottom-0 h-96 w-96 rounded-full bg-blue-300/20 blur-3xl" />
 
-            <div className="relative z-10">
-              <div className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-4 py-2 text-sm font-semibold text-blue-700">
-                <Zap className="h-4 w-4" />
-                72-hour match average
-              </div>
+        <div className="relative z-10 mx-auto flex w-full max-w-[1100px] flex-col items-center text-center">
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/35 px-5 py-2.5 text-[15px] font-semibold text-[#315FCB] backdrop-blur-sm">
+            <Zap className="h-4 w-4" />
+            72-hour match average
+          </div>
 
-              <h2 className="mx-auto mt-6 max-w-2xl text-[clamp(34px,4vw,56px)] font-semibold leading-tight tracking-[-0.04em] text-slate-950">
-                Get matched with vetted Philippine talent in 72 hours
-              </h2>
+          {/* Headline */}
+          <h2 className="mt-8 max-w-[900px] text-[48px] font-semibold leading-[1.02] tracking-[-0.045em] text-[#080B1C] md:text-[62px] lg:text-[72px]">
+            Get matched with vetted Philippine talent in 72 hours
+          </h2>
 
-              <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
-                Tell us what you need. We'll line up pre-vetted candidates — no markups, no middlemen, no obligation.
-              </p>
+          {/* Supporting copy */}
+          <p className="mt-6 max-w-[700px] text-[19px] leading-[1.5] text-[#53627A] md:text-[21px]">
+            Tell us what you need. We'll line up pre-vetted candidates — no markups, no middlemen, no obligation.
+          </p>
 
-              <a
-                href="#contact"
-                className="mt-8 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 px-8 py-4 text-base font-semibold text-white shadow-[0_12px_30px_rgba(79,70,229,0.28)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(79,70,229,0.38)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 sm:text-lg"
-              >
-                Get matched — it's free
-                <ArrowRight className="h-5 w-5" />
-              </a>
+          {/* Primary CTA */}
+          <a
+            href="#contact"
+            className="mt-10 inline-flex h-[60px] items-center justify-center gap-3 rounded-[14px] bg-[linear-gradient(90deg,#6F35E8_0%,#2368E8_100%)] px-8 text-[18px] font-semibold text-white shadow-[0_12px_30px_rgba(62,67,193,0.28)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(62,67,193,0.34)]"
+          >
+            Get matched — it's free
+            <ArrowRight className="h-5 w-5" />
+          </a>
 
-              <p className="mt-4 text-sm text-slate-500">
-                Takes 2 minutes · No credit card · First candidates in days
-              </p>
+          {/* Reassurance */}
+          <p className="mt-4 text-[14px] text-[#66758A] md:text-[15px]">
+            Takes 2 minutes · No credit card · First candidates in days
+          </p>
 
-              <div className="mx-auto mt-8 grid max-w-xl grid-cols-1 gap-6 border-t border-violet-200/60 pt-8 sm:grid-cols-3">
-                <div>
-                  <div className="text-2xl font-semibold text-slate-950">70%</div>
-                  <div className="mt-1 text-sm text-slate-600">cost savings</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-semibold text-slate-950">50+</div>
-                  <div className="mt-1 text-sm text-slate-600">countries served</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-semibold text-slate-950">Dedicated</div>
-                  <div className="mt-1 text-sm text-slate-600">never shared teams</div>
-                </div>
-              </div>
-
-              <p className="mt-8 text-sm text-slate-500">
-                Looking for work instead?{" "}
-                <a href="/find-best-matches" className="font-medium text-slate-700 underline underline-offset-4">
-                  Join as talent →
-                </a>
-              </p>
+          {/* Stats row */}
+          <div className="mt-12 grid w-full max-w-[760px] grid-cols-1 gap-8 border-t border-[#66758A]/20 pt-10 sm:grid-cols-3 sm:gap-12">
+            <div>
+              <div className="text-[28px] font-semibold text-[#080B1C] md:text-[32px]">70%</div>
+              <div className="mt-1 text-[14px] text-[#58677D] md:text-[15px]">cost savings</div>
+            </div>
+            <div>
+              <div className="text-[28px] font-semibold text-[#080B1C] md:text-[32px]">50+</div>
+              <div className="mt-1 text-[14px] text-[#58677D] md:text-[15px]">countries served</div>
+            </div>
+            <div>
+              <div className="text-[28px] font-semibold text-[#080B1C] md:text-[32px]">Dedicated</div>
+              <div className="mt-1 text-[14px] text-[#58677D] md:text-[15px]">never shared teams</div>
             </div>
           </div>
+
+          {/* Talent link */}
+          <p className="mt-10 text-[15px] text-[#56647A]">
+            Looking for work instead?{" "}
+            <a href="/find-best-matches" className="font-medium text-[#2C3A52] underline underline-offset-4">
+              Join as talent →
+            </a>
+          </p>
         </div>
       </section>
 
