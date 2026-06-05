@@ -1,0 +1,294 @@
+Please make these two final homepage adjustments:
+
+1. Match the text size of:
+   - “AI First. Humans When it Matters.”
+   - “One System. Your unfair Advantage.”
+
+2. Reduce the Insights section height so the full section fits within one desktop screen.
+
+IMPORTANT:
+- Do not redesign either section.
+- Keep the existing colors, images, content, and layout.
+- Only adjust typography, spacing, and section height.
+- Keep everything responsive.
+- Prevent horizontal overflow.
+
+==================================================
+1. HERO — MATCH THE TWO SUPPORTING TEXT SIZES
+==================================================
+
+Current issue:
+“AI First. Humans When it Matters.” is too large and overpowers:
+“One System. Your unfair Advantage.”
+
+Goal:
+Make both lines use the same font size and similar visual weight.
+
+Keep:
+- “AI First. Humans When it Matters.” inside the existing pill/badge.
+- “One System. Your unfair Advantage.” as the supporting line below the main title.
+
+Use the same responsive font size for both:
+
+Recommended shared text size:
+
+className="
+  text-base sm:text-lg lg:text-xl
+  font-semibold
+  leading-snug
+"
+
+AI First badge:
+
+className="
+  inline-flex items-center justify-center
+  rounded-full
+  border border-white/20
+  bg-white/[0.04]
+  px-6 py-3
+  text-base sm:text-lg lg:text-xl
+  font-semibold
+  leading-snug
+  text-white/90
+  backdrop-blur-md
+"
+
+One System line:
+
+className="
+  text-base sm:text-lg lg:text-xl
+  font-semibold
+  leading-snug
+  text-white/80
+"
+
+Important:
+- The badge should no longer use `text-2xl`, `text-3xl`, or larger.
+- Do not make the “One System...” line smaller than the badge.
+- Keep the badge visually highlighted through its border/background, not through oversized text.
+
+Expected result:
+Both lines should have the same text size. The badge remains noticeable because of its pill design, but it no longer overpowers the supporting headline.
+
+==================================================
+2. INSIGHTS SECTION — FIT WITHIN ONE DESKTOP SCREEN
+==================================================
+
+Current issue:
+The Insights section looks good, but it is too tall. The featured article and the two lower article cards extend beyond one desktop viewport.
+
+Goal:
+Compress the Insights section so the complete section can fit within approximately one desktop screen, similar to the hero section.
+
+Target:
+- At common desktop viewport heights around 850–1000px, the section header, featured article, and two smaller cards should all be visible without excessive scrolling.
+- Keep the editorial/newsroom layout.
+- Do not remove any articles.
+- Do not remove thumbnails.
+
+--------------------------------------------------
+2A. CONTROL SECTION HEIGHT AND PADDING
+--------------------------------------------------
+
+Use compact vertical padding:
+
+className="
+  bg-[#f7f8fb]
+  py-8 sm:py-10 lg:py-12
+"
+
+Avoid:
+- py-16
+- py-20
+- py-24
+- very large top/bottom margins
+
+Optional desktop target:
+
+className="
+  lg:min-h-[calc(100vh-64px)]
+  lg:flex lg:items-center
+"
+
+Do not force an exact fixed height if content becomes clipped. Prefer compact spacing.
+
+--------------------------------------------------
+2B. COMPACT THE HEADER
+--------------------------------------------------
+
+Reduce header spacing and typography slightly.
+
+Header wrapper:
+
+className="
+  mb-5 flex flex-col gap-3
+  md:flex-row md:items-end md:justify-between
+"
+
+Insights title:
+Keep the current gradient, but reduce it slightly if necessary:
+
+className="
+  text-[clamp(44px,5vw,76px)]
+  font-semibold
+  tracking-[-0.055em]
+  leading-[0.95]
+"
+
+Subtitle:
+“Ideas worth sharing.”
+
+className="
+  mt-2 text-xl sm:text-2xl lg:text-3xl
+  font-medium
+  tracking-[-0.03em]
+  leading-tight
+  text-slate-700
+"
+
+Description:
+
+className="
+  mt-2 max-w-xl
+  text-sm sm:text-base
+  leading-relaxed
+  text-slate-600
+"
+
+Explore all button:
+Keep compact:
+
+className="
+  inline-flex items-center gap-2
+  rounded-full border border-slate-200
+  bg-white px-4 py-2
+  text-sm font-medium text-indigo-600
+"
+
+--------------------------------------------------
+2C. REDUCE FEATURED ARTICLE HEIGHT
+--------------------------------------------------
+
+Current featured article is too tall.
+
+Change featured image/card height to:
+
+className="
+  h-[250px] sm:h-[290px] lg:h-[330px]
+"
+
+Do not exceed approximately 350px on desktop.
+
+Keep image:
+className="h-full w-full object-cover"
+
+Featured overlay content:
+Reduce padding:
+
+className="
+  absolute inset-x-0 bottom-0
+  p-5 sm:p-6 lg:p-7
+"
+
+Featured title:
+
+className="
+  mt-2 max-w-4xl
+  text-xl sm:text-2xl lg:text-3xl
+  font-semibold leading-tight text-white
+"
+
+Category/read time:
+Use compact `text-xs` or `text-sm`.
+
+--------------------------------------------------
+2D. MAKE LOWER CARDS SHORTER
+--------------------------------------------------
+
+Keep the two smaller article cards below, but make them compact.
+
+Lower card grid:
+
+className="
+  mt-4 grid gap-4 lg:grid-cols-2
+"
+
+Image wrapper:
+
+className="
+  h-28 sm:h-32 lg:h-36
+  overflow-hidden bg-slate-100
+"
+
+Card content:
+
+className="
+  p-4 sm:p-5
+"
+
+Small card title:
+
+className="
+  mt-2 text-base sm:text-lg
+  font-semibold leading-snug text-slate-950
+"
+
+Category:
+className="
+  text-[10px] sm:text-xs
+  font-semibold uppercase tracking-[0.14em]
+  text-slate-500
+"
+
+Read time:
+
+className="
+  mt-3 text-xs sm:text-sm
+  font-medium text-slate-500
+"
+
+Remove large card minimum heights and excessive internal spacing:
+- no `min-h-[300px]`
+- no `p-8`
+- no large `mt-8`
+
+--------------------------------------------------
+2E. USE A BALANCED DESKTOP CONTAINER
+--------------------------------------------------
+
+Suggested container:
+
+className="
+  mx-auto w-full max-w-[1380px]
+  px-6 sm:px-8 lg:px-10
+"
+
+This keeps the content wide enough while reducing image/card height.
+
+--------------------------------------------------
+2F. RESPONSIVE BEHAVIOR
+--------------------------------------------------
+
+Desktop/laptop:
+- Entire Insights section should fit within roughly one viewport.
+- Featured article remains visually dominant.
+- Smaller cards remain visible beneath it.
+
+Tablet/mobile:
+- Allow the section to grow naturally.
+- Do not force one-screen height.
+- Cards stack normally.
+- No clipping or horizontal scrolling.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+Hero:
+- “AI First. Humans When it Matters.” and “One System. Your unfair Advantage.” use the same text size.
+- The badge remains highlighted through styling, not oversized typography.
+
+Insights:
+- The section keeps its Apple-inspired editorial layout.
+- Header, featured article, and both lower cards fit within approximately one desktop screen.
+- The section feels compact, polished, and complete without looking cramped.

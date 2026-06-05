@@ -340,10 +340,10 @@ export default function Home() {
           <div className="mx-auto flex w-full max-w-5xl flex-col items-center justify-center text-center">
             {/* Badge */}
             <div
-              className="hero-fade-up inline-flex items-center justify-center gap-2.5 rounded-full border border-white/20 bg-white/8 px-6 py-3 backdrop-blur-md"
+              className="hero-fade-up inline-flex items-center justify-center gap-2.5 rounded-full border border-white/20 bg-white/[0.04] px-6 py-3 backdrop-blur-md"
               data-testid="badge-superhuman-bpo"
             >
-              <span className="text-lg font-semibold tracking-[-0.02em] text-white/90 sm:text-xl lg:text-2xl">
+              <span className="text-base font-semibold leading-snug text-white/90 sm:text-lg lg:text-xl">
                 AI First. Humans When it Matters.
               </span>
             </div>
@@ -360,7 +360,7 @@ export default function Home() {
 
             {/* Supporting copy */}
             <div className="hero-fade-up-delay mx-auto mt-8 max-w-3xl">
-              <p className="text-base font-semibold tracking-wide text-white/75 sm:text-lg">
+              <p className="text-base font-semibold leading-snug text-white/80 sm:text-lg lg:text-xl">
                 One System. Your unfair Advantage.
               </p>
               <p className="mt-3 text-base sm:text-lg md:text-xl leading-relaxed text-white/55">
@@ -435,27 +435,27 @@ export default function Home() {
       </div>
 
       {/* ── 2. FEATURED INSIGHTS — card grid ── */}
-      <div className="bg-[#f7f8fb] py-14 sm:py-16 lg:py-20">
-        <div className="mx-auto w-full max-w-[1440px] px-6 sm:px-8 lg:px-12">
+      <div className="bg-[#f7f8fb] py-8 sm:py-10 lg:py-12">
+        <div className="mx-auto w-full max-w-[1380px] px-6 sm:px-8 lg:px-10">
           {/* Header */}
-          <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+          <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <h2 className="text-[clamp(56px,7vw,116px)] font-semibold tracking-[-0.06em] leading-[0.95]">
+              <h2 className="text-[clamp(44px,5vw,76px)] font-semibold tracking-[-0.055em] leading-[0.95]">
                 <span className="bg-gradient-to-r from-indigo-700 via-violet-600 to-blue-500 bg-clip-text text-transparent">
                   Insights
                 </span>
               </h2>
-              <p className="mt-4 text-2xl font-medium tracking-[-0.035em] leading-tight text-slate-700 sm:text-3xl lg:text-4xl">
+              <p className="mt-2 text-xl font-medium tracking-[-0.03em] leading-tight text-slate-700 sm:text-2xl lg:text-3xl">
                 Ideas worth sharing.
               </p>
-              <p className="mt-4 max-w-2xl text-lg leading-relaxed text-slate-600 sm:text-xl">
+              <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-600 sm:text-base">
                 Perspectives on customer experience, global talent, and the
                 future of work.
               </p>
             </div>
             <a
               href="/insights"
-              className="inline-flex shrink-0 items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-indigo-600 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50"
+              className="inline-flex shrink-0 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-indigo-600 transition hover:border-indigo-200 hover:bg-indigo-50"
             >
               Explore all
               <ArrowRight className="h-4 w-4" />
@@ -514,29 +514,29 @@ export default function Home() {
                     <img
                       src={featuredThumb}
                       alt={featured.title}
-                      className="h-[280px] w-full object-cover transition duration-500 group-hover:scale-[1.02] sm:h-[360px] lg:h-[440px]"
+                      className="h-[250px] w-full object-cover transition duration-500 group-hover:scale-[1.02] sm:h-[290px] lg:h-[330px]"
                     />
                   ) : (
-                    <div className="h-[280px] w-full bg-gradient-to-br from-indigo-900 via-violet-900 to-slate-900 sm:h-[360px] lg:h-[440px]" />
+                    <div className="h-[250px] w-full bg-gradient-to-br from-indigo-900 via-violet-900 to-slate-900 sm:h-[290px] lg:h-[330px]" />
                   )}
                   {/* Dark overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
                   {/* Text */}
-                  <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8 lg:p-10">
+                  <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6 lg:p-7">
                     <span className="text-xs font-semibold uppercase tracking-[0.18em] text-white/75">
                       {(featured as any).category || "Insights"}
                     </span>
-                    <h3 className="mt-3 max-w-4xl text-2xl font-semibold leading-tight text-white sm:text-3xl lg:text-4xl">
+                    <h3 className="mt-2 max-w-4xl text-xl font-semibold leading-tight text-white sm:text-2xl lg:text-3xl">
                       {featured.title}
                     </h3>
-                    <p className="mt-3 text-sm font-medium text-white/70">
+                    <p className="mt-2 text-xs font-medium text-white/70 sm:text-sm">
                       {(featured as any).readTime || "5 min read"}
                     </p>
                   </div>
                 </a>
 
                 {/* Two smaller cards */}
-                <div className="grid gap-6 lg:grid-cols-2">
+                <div className="mt-4 grid gap-4 lg:grid-cols-2">
                   {secondary.map((post) => {
                     const thumb = (post as any).coverImageUrl as
                       | string
@@ -549,7 +549,7 @@ export default function Home() {
                         className="group overflow-hidden rounded-[1.75rem] bg-white shadow-sm ring-1 ring-slate-200/80 transition hover:-translate-y-0.5 hover:shadow-md"
                       >
                         {thumb ? (
-                          <div className="h-48 overflow-hidden bg-slate-100 sm:h-56 lg:h-60">
+                          <div className="h-28 overflow-hidden bg-slate-100 sm:h-32 lg:h-36">
                             <img
                               src={thumb}
                               alt={post.title}
@@ -557,16 +557,16 @@ export default function Home() {
                             />
                           </div>
                         ) : (
-                          <div className="h-48 bg-gradient-to-br from-indigo-100 via-violet-100 to-cyan-100 sm:h-56 lg:h-60" />
+                          <div className="h-28 bg-gradient-to-br from-indigo-100 via-violet-100 to-cyan-100 sm:h-32 lg:h-36" />
                         )}
-                        <div className="p-6 sm:p-7">
-                          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                        <div className="p-4 sm:p-5">
+                          <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 sm:text-xs">
                             {(post as any).category || "Insights"}
                           </span>
-                          <h3 className="mt-3 text-xl font-semibold leading-tight text-slate-950 transition-colors group-hover:text-indigo-700 sm:text-2xl">
+                          <h3 className="mt-2 text-base font-semibold leading-snug text-slate-950 transition-colors group-hover:text-indigo-700 sm:text-lg">
                             {post.title}
                           </h3>
-                          <p className="mt-5 text-sm font-medium text-slate-500">
+                          <p className="mt-3 text-xs font-medium text-slate-500 sm:text-sm">
                             {(post as any).readTime || "5 min read"}
                           </p>
                         </div>
