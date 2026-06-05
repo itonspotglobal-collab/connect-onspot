@@ -425,7 +425,7 @@ export default function Home() {
           <div className="col-span-2 flex items-center justify-center border-t border-slate-200 px-6 py-5 md:col-span-4 md:border-l-0 md:border-t xl:col-span-1 xl:border-l xl:border-t-0">
             <a
               href="#contact"
-              className="inline-flex h-[72px] w-full items-center justify-center gap-3 rounded-[14px] bg-[#AFA8FF] px-6 text-[18px] font-semibold text-white shadow-[0_8px_22px_rgba(99,84,230,0.22)] transition-all duration-300 hover:bg-[#9D95F6] hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#AFA8FF] focus:ring-offset-2 sm:w-[240px]"
+              className="inline-flex h-[72px] w-full items-center justify-center gap-3 rounded-[14px] border border-white/10 bg-[#5B45E8] px-6 text-[18px] font-semibold text-white shadow-[0_10px_24px_rgba(55,38,160,0.28)] transition-all duration-300 hover:bg-[#4B38CF] hover:-translate-y-0.5 active:bg-[#3F2FB5] focus:outline-none focus:ring-2 focus:ring-[#8E7CFF] focus:ring-offset-2 sm:w-[240px]"
             >
               <ArrowRight className="h-4 w-4" />
               Calculate your savings
@@ -967,7 +967,7 @@ export default function Home() {
         <div className="relative z-10 mt-8 flex justify-center">
           <a
             href="#people-behind-platform"
-            className="inline-flex items-center justify-center gap-3 rounded-full bg-[#A9A4FF] px-7 py-3 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(169,164,255,0.24)] transition-all duration-300 hover:bg-[#9690F5] hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#A9A4FF] focus:ring-offset-2 focus:ring-offset-[#17152F]"
+            className="inline-flex h-[48px] items-center justify-center gap-3 rounded-[14px] border border-white/10 bg-[#5B45E8] px-7 text-base font-semibold text-white shadow-[0_10px_24px_rgba(55,38,160,0.28)] transition-all duration-300 hover:bg-[#4B38CF] hover:-translate-y-0.5 active:bg-[#3F2FB5] focus:outline-none focus:ring-2 focus:ring-[#8E7CFF] focus:ring-offset-2 focus:ring-offset-[#17152F]"
           >
             Meet the people behind the work
             <ArrowRight className="h-4 w-4" />
