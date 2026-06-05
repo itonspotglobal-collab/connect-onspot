@@ -6376,6 +6376,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }),
     author: z.string().optional().transform((v) => (v && v.trim() ? v.trim() : undefined)),
     isFeatured: z.boolean().optional(),
+    showOnHomepage: z.boolean().optional(),
+    homepageOrder: z.number().int().nullable().optional(),
     status: z.enum(["draft", "published"]).optional(),
     readTime: z.string().optional().nullable(),
     likes: z.number().optional(),

@@ -1,0 +1,86 @@
+Please fix the Homepage Insights selection logic so it no longer depends on the existing Featured status.
+
+Current problem:
+- The new “Homepage Insights” admin section and home icons are visible.
+- Clicking the home icon does not properly control which posts appear on the homepage.
+- The homepage still appears to use the old logic where Featured posts are automatically shown.
+- “Featured” and “Show on Homepage” need to be two completely separate settings.
+
+Required behavior:
+
+1. Separate Featured from Homepage selection
+- `featured` should only control the Featured Stories/carousel on the Insights page.
+- `showOnHomepage` or `isHomepageInsight` should only control whether a post appears in the homepage Insights section.
+- Selecting or removing Featured must not affect homepage visibility.
+- Selecting or removing Homepage must not affect Featured status.
+
+2. Fix the home icon action in Insights Admin
+When clicking the home icon on a published post:
+- toggle the homepage-specific field only
+- immediately update the row/icon state
+- update the “Homepage Insights 0/3” counter
+- display the selected post in the Homepage Insights panel
+- persist the change through the API/database
+- preserve the state after refreshing the admin page
+
+3. Enforce the 3-post limit
+- Allow a maximum of 3 posts marked for the homepage.
+- If 3 are already selected, prevent selecting another.
+- Show a clear notification:
+  “Only 3 Insights posts can be shown on the homepage. Remove one first.”
+
+4. Update the homepage query/component
+The homepage Insights section must:
+- stop filtering posts by `featured`
+- fetch/filter only posts where:
+  - `showOnHomepage === true`
+  - status is Published
+- display up to 3 selected posts
+- respect homepage ordering if an order field exists
+
+Remove or replace logic similar to:
+- `posts.filter(post => post.featured)`
+- latest featured posts
+- featured-only API queries
+
+Use logic similar to:
+- `posts.filter(post => post.showOnHomepage && post.status === "Published")`
+
+5. Fix backend/API persistence
+Please verify the homepage-specific field exists and works end-to-end:
+- database/schema/model
+- shared TypeScript post type
+- create/update validation schema
+- update endpoint
+- admin list fetch response
+- public/homepage posts fetch response
+
+The update endpoint must accept and persist the homepage field without resetting unrelated fields.
+
+6. Handle existing data
+- Existing Featured posts should not automatically remain on the homepage unless explicitly marked for homepage.
+- Do not migrate every Featured post to homepage selection automatically.
+- Default missing homepage values to false.
+- If the homepage currently needs initial content, explicitly mark the intended 3 posts rather than tying them to Featured.
+
+7. Improve admin feedback
+- Outline home icon: not shown on homepage
+- Filled/highlighted home icon: shown on homepage
+- Tooltip should say:
+  - “Show on Homepage”
+  - “Remove from Homepage”
+- Disable or visually indicate the home action for drafts/unpublished posts
+
+8. Test the full flow
+Please verify:
+- select one post using the home icon
+- counter changes from 0/3 to 1/3
+- post appears in the Homepage Insights admin panel
+- homepage displays that post
+- refresh keeps the selection
+- Featured carousel remains unchanged
+- removing the home selection removes the post from the homepage
+- selecting Featured alone does not add it to the homepage
+
+Expected result:
+The homepage shows only the posts explicitly selected using the home icon. Featured posts no longer automatically appear on the homepage.
