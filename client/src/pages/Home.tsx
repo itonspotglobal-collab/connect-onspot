@@ -1363,8 +1363,8 @@ export default function Home() {
                   <img
                     src={person.photo}
                     alt={person.name}
-                    className="h-full w-full object-cover scale-[1.55] sm:scale-[1.75] transition-transform duration-500 group-hover:scale-[1.82]"
-                    style={{ objectPosition: "58% 72%" }}
+                    className="h-full w-full object-cover scale-[1.38] sm:scale-[1.42] transition-transform duration-500 group-hover:scale-[1.47]"
+                    style={{ objectPosition: "52% 18%" }}
                     loading="lazy"
                   />
                 ) : (
