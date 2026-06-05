@@ -1,0 +1,267 @@
+Please refine these two homepage sections:
+
+1. “Why OnSpot”
+2. “The People Behind the Platform”
+
+Do not redesign the whole page. Keep the current content, background colors, cards, photos, and overall visual direction. Only improve hierarchy, spacing, typography, and the ordering of the people cards.
+
+==================================================
+1. WHY ONSPOT — APPLY A CASCADING / INVERTED-PYRAMID HIERARCHY
+==================================================
+
+Current issue:
+The section title and description are all visually heavy and do not guide the eye clearly.
+
+Goal:
+Create a clear cascading hierarchy:
+- Small section label
+- Large primary statement
+- Slightly smaller highlighted secondary statement
+- Smaller supporting paragraph
+- Content cards below
+
+Keep this copy:
+- WHY ONSPOT
+- Not a service provider.
+- An architect.
+- We design the operating layer behind modern outsourcing — combining AI-ready systems, vetted talent, and human accountability so your team can scale without losing control.
+
+Use this structure:
+
+<section>
+  <div className="why-onspot-header">
+    <div className="why-onspot-label">
+      <span className="label-line" />
+      <span>WHY ONSPOT</span>
+    </div>
+
+    <h2>
+      <span className="block">Not a service provider.</span>
+      <span className="block accent">An architect.</span>
+    </h2>
+
+    <p>
+      We design the operating layer behind modern outsourcing —
+      combining AI-ready systems, vetted talent, and human accountability
+      so your team can scale without losing control.
+    </p>
+  </div>
+
+  existing cards/content below
+</section>
+
+Suggested label style:
+
+className="
+  flex items-center gap-5
+  text-base sm:text-lg lg:text-xl
+  font-semibold uppercase
+  tracking-[0.22em]
+  text-indigo-700
+"
+
+Label line:
+
+className="
+  h-px w-14 sm:w-16
+  bg-indigo-600/70
+"
+
+Suggested main title:
+
+className="
+  mt-6 max-w-[1100px]
+  text-[clamp(48px,6vw,92px)]
+  font-semibold
+  tracking-[-0.055em]
+  leading-[0.96]
+  text-slate-950
+"
+
+Style “An architect.” as the second-level visual emphasis:
+
+className="
+  mt-2 block
+  text-[0.82em]
+  italic
+  bg-gradient-to-r from-indigo-700 via-violet-600 to-blue-500
+  bg-clip-text text-transparent
+"
+
+Suggested supporting paragraph:
+
+className="
+  mt-8 max-w-[900px]
+  text-lg sm:text-xl lg:text-2xl
+  leading-relaxed
+  text-slate-600
+"
+
+Important:
+- Do not let the main headline fill the entire screen width.
+- Keep the text left-aligned.
+- The hierarchy should visually narrow as the user reads downward.
+- Keep generous spacing, but do not make the section excessively tall.
+- Keep the existing cards/images below the text.
+
+==================================================
+2. THE PEOPLE BEHIND THE PLATFORM — IMPROVE HIERARCHY
+==================================================
+
+Current issue:
+The heading is visually strong, but the section can feel flatter than intended.
+
+Goal:
+Create a clean centered cascading hierarchy:
+- Small section label
+- Large title
+- Supporting subtitle
+- People grid
+
+Keep existing content:
+- THE PROOF
+- The People Behind the Platform
+- Powered by professionals from the US, Philippines, and beyond.
+- The Superhuman BPO Network.
+
+Suggested structure:
+
+<div className="text-center">
+  <p>THE PROOF</p>
+
+  <h2>
+    The
+    <span className="gradient-word">People</span>
+    Behind the Platform
+  </h2>
+
+  <p>
+    <span className="block">
+      Powered by professionals from the US, Philippines, and beyond.
+    </span>
+    <span className="block">
+      The Superhuman BPO Network.
+    </span>
+  </p>
+</div>
+
+Suggested section label:
+
+className="
+  text-base sm:text-lg lg:text-xl
+  font-semibold uppercase
+  tracking-[0.24em]
+  text-indigo-700
+"
+
+Suggested title:
+
+className="
+  mx-auto mt-5 max-w-[1200px]
+  text-center
+  text-[clamp(48px,6vw,94px)]
+  font-semibold
+  tracking-[-0.055em]
+  leading-[0.98]
+  text-slate-950
+"
+
+Keep “People” gradient:
+
+className="
+  bg-gradient-to-r from-indigo-700 via-violet-600 to-blue-500
+  bg-clip-text text-transparent
+"
+
+Suggested subtitle:
+
+className="
+  mx-auto mt-6 max-w-4xl
+  text-center
+  text-lg sm:text-xl lg:text-2xl
+  leading-relaxed
+  text-slate-600
+"
+
+Grid spacing:
+
+className="
+  mx-auto mt-12 grid max-w-[1400px]
+  grid-cols-2 gap-5
+  lg:grid-cols-4
+"
+
+==================================================
+3. ALTERNATE PEOPLE ORDER: BOY, GIRL, BOY, GIRL
+==================================================
+
+Current issue:
+The people cards are not arranged in an alternating visual sequence.
+
+Goal:
+Reorder the 8 remaining people so the visible grid alternates:
+
+Boy → Girl → Boy → Girl
+Boy → Girl → Boy → Girl
+
+Do not remove any more people.
+
+Important:
+- Keep exactly 8 person cards.
+- Keep Nur Laminero, Jake Wainberg, and Mark Anthony Apostol.
+- Keep all current hover effects and names/roles.
+- Only reorder the data array.
+- Do not infer gender from names if the data already has a gender/category property.
+- Use the current visible photos to alternate the sequence.
+
+Suggested approach:
+
+const maleMembers = proofTeam.filter(
+  (person) => person.gender === "male"
+);
+
+const femaleMembers = proofTeam.filter(
+  (person) => person.gender === "female"
+);
+
+const alternatingTeam = [];
+
+for (
+  let index = 0;
+  index < Math.max(maleMembers.length, femaleMembers.length);
+  index++
+) {
+  if (maleMembers[index]) alternatingTeam.push(maleMembers[index]);
+  if (femaleMembers[index]) alternatingTeam.push(femaleMembers[index]);
+}
+
+Render `alternatingTeam` instead of the original array.
+
+If there is no gender property yet, add one only to the existing 8 people in the data array, then reorder them.
+
+Target desktop order:
+
+Row 1:
+Boy | Girl | Boy | Girl
+
+Row 2:
+Boy | Girl | Boy | Girl
+
+On tablet/mobile:
+- Preserve the same alternating reading order.
+- Do not create empty spaces.
+
+==================================================
+4. RESPONSIVE CHECK
+==================================================
+
+After implementing:
+- Why OnSpot has a clear cascading/inverted-pyramid hierarchy.
+- “Not a service provider.” remains the primary statement.
+- “An architect.” is visually emphasized but slightly smaller.
+- Supporting text is narrower and easier to read.
+- The Proof section has a clean label → title → subtitle → grid hierarchy.
+- The people grid alternates boy/girl across all 8 cards.
+- No horizontal overflow.
+- No clipped headings.
+- Mobile and tablet layouts remain clean.

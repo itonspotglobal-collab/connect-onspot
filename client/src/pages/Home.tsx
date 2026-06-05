@@ -1121,18 +1121,18 @@ export default function Home() {
           {/* Header — full-width typography, no image */}
           <div className="max-w-5xl">
             <div className="flex items-center gap-5">
-              <div className="h-px w-16 bg-indigo-600/70" />
-              <p className="text-base font-semibold uppercase tracking-[0.18em] text-indigo-700 sm:text-xl lg:text-2xl">
+              <div className="h-px w-14 bg-indigo-600/70 sm:w-16" />
+              <p className="text-base font-semibold uppercase tracking-[0.22em] text-indigo-700 sm:text-lg lg:text-xl">
                 Why OnSpot
               </p>
             </div>
-            <h2 className="mt-6 text-[clamp(56px,7vw,112px)] font-semibold tracking-[-0.06em] leading-[0.98] text-slate-950">
-              Not a service provider.{" "}
-              <span className="block italic text-indigo-700">
+            <h2 className="mt-6 max-w-[1100px] text-[clamp(48px,6vw,92px)] font-semibold tracking-[-0.055em] leading-[0.96] text-slate-950">
+              <span className="block">Not a service provider.</span>
+              <span className="mt-2 block text-[0.82em] italic bg-gradient-to-r from-indigo-700 via-violet-600 to-blue-500 bg-clip-text text-transparent">
                 An architect.
               </span>
             </h2>
-            <p className="mt-8 max-w-4xl text-xl leading-relaxed text-slate-600 sm:text-2xl lg:text-3xl">
+            <p className="mt-8 max-w-[900px] text-lg leading-relaxed text-slate-600 sm:text-xl lg:text-2xl">
               We design the operating layer behind modern outsourcing —
               combining AI-ready systems, vetted talent, and human
               accountability so your team can scale without losing control.
@@ -1214,16 +1214,23 @@ export default function Home() {
       <div className="relative bg-white py-20 sm:py-28">
         <div className="container mx-auto px-4 sm:px-6">
           <div className="mb-12 sm:mb-16 text-center">
-            <h2 className="mt-5 mx-auto max-w-[1200px] break-words text-center text-[clamp(46px,6vw,96px)] font-semibold tracking-[-0.055em] leading-[1.02] text-slate-950">
+            <p className="text-base font-semibold uppercase tracking-[0.24em] text-indigo-700 sm:text-lg lg:text-xl">
+              The Proof
+            </p>
+            <h2 className="mx-auto mt-5 max-w-[1200px] text-center text-[clamp(48px,6vw,94px)] font-semibold tracking-[-0.055em] leading-[0.98] text-slate-950">
               The{" "}
-              <span className="bg-gradient-to-r from-indigo-600 via-violet-500 to-blue-500 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-indigo-700 via-violet-600 to-blue-500 bg-clip-text text-transparent">
                 People
               </span>{" "}
               Behind the Platform
             </h2>
+            <p className="mx-auto mt-6 max-w-4xl text-center text-lg leading-relaxed text-slate-600 sm:text-xl lg:text-2xl">
+              <span className="block">Powered by professionals from the US, Philippines, and beyond.</span>
+              <span className="block">The Superhuman BPO Network.</span>
+            </p>
           </div>
 
-          <div className="mx-auto mt-20 grid w-full max-w-7xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mx-auto mt-12 grid max-w-[1400px] grid-cols-2 gap-5 lg:grid-cols-4">
             {[
               {
                 photo: NurLamineroPhoto,
@@ -1232,30 +1239,7 @@ export default function Home() {
                 role: "CEO of OnSpot",
                 objectPosition: "object-[center_25%]",
                 isReal: true,
-              },
-              {
-                photo: JakeWainbergPhoto,
-                name: "Jake Wainberg",
-                flag: "🇺🇸",
-                role: "Founder & President",
-                objectPosition: "object-[center_20%]",
-                isReal: true,
-              },
-              {
-                photo: MarkApostolPhoto,
-                name: "Mark Anthony Apostol",
-                flag: "🇵🇭",
-                role: "Head of People",
-                objectPosition: "object-[center_20%]",
-                isReal: true,
-              },
-              {
-                photo: KyleMendezPhoto,
-                name: "Kyle Mendez",
-                flag: "🇵🇭",
-                role: "Senior Data Analyst",
-                objectPosition: "object-top",
-                isReal: false,
+                gender: "male",
               },
               {
                 photo: AlexandraLopezPhoto,
@@ -1264,6 +1248,16 @@ export default function Home() {
                 role: "CX & Operations Lead",
                 objectPosition: "object-top",
                 isReal: false,
+                gender: "female",
+              },
+              {
+                photo: JakeWainbergPhoto,
+                name: "Jake Wainberg",
+                flag: "🇺🇸",
+                role: "Founder & President",
+                objectPosition: "object-[center_20%]",
+                isReal: true,
+                gender: "male",
               },
               {
                 photo: AndreaPinzonPhoto,
@@ -1272,14 +1266,16 @@ export default function Home() {
                 role: "Virtual Assistant",
                 objectPosition: "object-top",
                 isReal: false,
+                gender: "female",
               },
               {
-                photo: ChristopherAlbaPhoto,
-                name: "Christopher Alba",
+                photo: MarkApostolPhoto,
+                name: "Mark Anthony Apostol",
                 flag: "🇵🇭",
-                role: "Technical Support",
-                objectPosition: "object-top",
-                isReal: false,
+                role: "Head of People",
+                objectPosition: "object-[center_20%]",
+                isReal: true,
+                gender: "male",
               },
               {
                 photo: RachelCastroPhoto,
@@ -1288,6 +1284,25 @@ export default function Home() {
                 role: "Social Media Manager",
                 objectPosition: "object-top",
                 isReal: false,
+                gender: "female",
+              },
+              {
+                photo: KyleMendezPhoto,
+                name: "Kyle Mendez",
+                flag: "🇵🇭",
+                role: "Senior Data Analyst",
+                objectPosition: "object-top",
+                isReal: false,
+                gender: "male",
+              },
+              {
+                photo: ChristopherAlbaPhoto,
+                name: "Christopher Alba",
+                flag: "🇵🇭",
+                role: "Technical Support",
+                objectPosition: "object-top",
+                isReal: false,
+                gender: "male",
               },
             ].map((person) => (
               <div
