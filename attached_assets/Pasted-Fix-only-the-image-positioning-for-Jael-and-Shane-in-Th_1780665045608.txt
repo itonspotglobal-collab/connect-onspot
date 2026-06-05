@@ -1,0 +1,105 @@
+Fix only the image positioning for Jael and Shane in “The People Behind the Platform” grid.
+
+Problem:
+- Jael’s head sits too low compared with Nur’s.
+- Shane’s photo is too tightly cropped and his head sits too high/large compared with Mark’s.
+- The goal is to make both photos feel visually balanced with the neighboring cards.
+
+IMPORTANT:
+- Do not change the card size.
+- Do not change the grid layout.
+- Do not replace the image files.
+- Do not change the border radius.
+- Do not affect Nur, Jake, Mark, or the other photos.
+- Apply styles only to Jael and Shane.
+
+==================================================
+JAEL PHOTO
+==================================================
+
+Goal:
+Move Jael’s face slightly upward so her eye/head level aligns more closely with Nur’s, while still showing her full head and enough torso.
+
+Use this exact style for Jael’s image:
+
+style={{
+  width: "100%",
+  height: "100%",
+  objectFit: "cover",
+  objectPosition: "center 24%",
+  transform: "scale(1.03)",
+  transformOrigin: "center top"
+}}
+
+If using Tailwind, apply:
+
+className="
+  h-full
+  w-full
+  object-cover
+  object-[center_24%]
+  scale-[1.03]
+  origin-top
+"
+
+Expected result:
+- Jael’s face should sit at roughly the same vertical level as Nur’s.
+- Her head must remain fully visible.
+- Do not crop the top of her hair.
+- Do not show excessive sky.
+
+==================================================
+SHANE PHOTO
+==================================================
+
+Goal:
+Zoom Shane out slightly and lower the visual emphasis so his head/body proportion matches Mark’s more closely.
+
+Use this exact wrapper for Shane:
+
+className="
+  h-full
+  w-full
+  overflow-hidden
+  rounded-[inherit]
+  bg-[#F4F4F6]
+"
+
+Use this exact style for Shane’s image:
+
+style={{
+  width: "100%",
+  height: "100%",
+  objectFit: "cover",
+  objectPosition: "center 18%",
+  transform: "scale(0.92)",
+  transformOrigin: "center center"
+}}
+
+If using Tailwind, apply:
+
+className="
+  h-full
+  w-full
+  object-cover
+  object-[center_18%]
+  scale-[0.92]
+  origin-center
+"
+
+Expected result:
+- Shane should appear slightly more zoomed out.
+- More of Shane’s shoulders and upper body should be visible.
+- His head should align more naturally with Mark’s.
+- No empty borders should appear around the image.
+
+==================================================
+FINAL CHECK
+==================================================
+
+After applying the changes:
+- Compare Jael directly with Nur.
+- Compare Shane directly with Mark.
+- Their head levels should feel visually consistent.
+- Do not use the exact same crop settings for both images.
+- Do not modify any other photos or section styling.

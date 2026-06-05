@@ -1363,9 +1363,19 @@ export default function Home() {
                     src={person.photo}
                     alt={person.name}
                     className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                    style={{ objectPosition: "center 18%" }}
+                    style={{ objectPosition: "center 24%", transform: "scale(1.03)", transformOrigin: "center top" }}
                     loading="lazy"
                   />
+                ) : person.name === "Shane Rubio-Limiac" ? (
+                  <div className="h-full w-full overflow-hidden rounded-[inherit] bg-[#F4F4F6]">
+                    <img
+                      src={person.photo}
+                      alt={person.name}
+                      className="h-full w-full object-cover transition duration-700"
+                      style={{ objectPosition: "center 18%", transform: "scale(0.92)", transformOrigin: "center center" }}
+                      loading="lazy"
+                    />
+                  </div>
                 ) : (
                   <img
                     src={person.photo}
