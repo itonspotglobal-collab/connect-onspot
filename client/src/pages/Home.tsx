@@ -69,7 +69,7 @@ import NurLamineroPhoto from "@assets/Nur_1780574815788.png";
 import JakeWainbergPhoto from "@assets/Jake_1780574815787.png";
 import MarkApostolPhoto from "@assets/Macky_1780574815788.png";
 import RenierMacalinoPhoto from "@assets/REN_1780657869137.png";
-import AlexandraLopezPhoto from "@assets/Alexandra_Lopez_1774430604160.jpg";
+import JaelAtendidoPhoto from "@assets/jael_1780660692687.jpeg";
 import AndreaPinzonPhoto from "@assets/Andrea_Pinzon_1774264095055.jpeg";
 import ShaneRubioPhoto from "@assets/Shane_1780657863305.png";
 import RachelCastroPhoto from "@assets/Rachel_Caztro_1774264095056.jpg";
@@ -1291,11 +1291,11 @@ export default function Home() {
                 gender: "male",
               },
               {
-                photo: AlexandraLopezPhoto,
-                name: "Alexandra Lopez",
+                photo: JaelAtendidoPhoto,
+                name: "Jael Atendido",
                 flag: "🇵🇭",
-                role: "CX & Operations Lead",
-                objectPosition: "object-top",
+                role: "Executive Assistant",
+                objectPosition: "object-[center_15%]",
                 isReal: false,
                 gender: "female",
               },
