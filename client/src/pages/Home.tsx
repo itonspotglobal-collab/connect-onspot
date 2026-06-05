@@ -1196,6 +1196,7 @@ export default function Home() {
                 title: "Human-centered culture",
                 tagline: "People, not resources",
                 body: "Elite Filipino talent treated as partners. We invest in their growth because your success depends on it.",
+                imgPosition: "center 24%",
               },
               {
                 icon: <Globe className="h-6 w-6" />,
@@ -1223,7 +1224,8 @@ export default function Home() {
                   <img
                     src={card.img}
                     alt={card.imgAlt}
-                    className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105"
+                    className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                    style={(card as any).imgPosition ? { objectPosition: (card as any).imgPosition } : undefined}
                     loading="lazy"
                   />
                 </div>
