@@ -1,0 +1,380 @@
+Please add clear, noticeable CTA buttons to the specified homepage sections.
+
+IMPORTANT:
+- Do not redesign the sections.
+- Keep the existing section layouts, backgrounds, typography, cards, images, and spacing.
+- Add CTAs in a way that feels native to each section.
+- Match each CTA color/design to the section where it appears.
+- Make each CTA visually noticeable, but not oversized.
+- Use consistent rounded-pill or rounded-button styling across the page.
+- Keep everything responsive.
+- No horizontal overflow.
+
+==================================================
+GLOBAL CTA STYLE GUIDELINES
+==================================================
+
+Use a consistent base style:
+
+className="
+  inline-flex items-center justify-center gap-2
+  rounded-full
+  px-6 py-3
+  text-base font-semibold
+  transition duration-300
+  focus-visible:outline-none
+  focus-visible:ring-2
+  focus-visible:ring-offset-2
+"
+
+Preferred arrow icon:
+- ArrowRight
+- ChevronRight
+- MoveRight
+
+Use Lucide icons if already installed.
+
+Hover behavior:
+- slight upward movement
+- stronger shadow
+- subtle background shift
+
+Example:
+className includes:
+hover:-translate-y-0.5 hover:shadow-lg
+
+Do not use plain text links for these CTAs. They should look like real buttons.
+
+==================================================
+1. STATS STRIP — “CALCULATE YOUR SAVINGS”
+==================================================
+
+Current issue:
+The stats strip has the numbers:
+- 72hrs
+- 200+
+- 60%
+- 2,000+
+
+Goal:
+Add a clear CTA inside the strip:
+“Calculate your savings”
+
+Placement:
+- Add it as the fifth item at the end of the stats strip on desktop.
+- On smaller screens, place it below the stats grid as a full-width or centered CTA.
+- Keep it visually aligned with the stat cells.
+
+Suggested desktop grid:
+className="
+  grid grid-cols-2
+  md:grid-cols-4
+  xl:grid-cols-[repeat(4,1fr)_auto]
+"
+
+CTA cell:
+className="
+  flex items-center justify-center
+  border-l border-indigo-100
+  px-6 py-5
+"
+
+Suggested button:
+
+className="
+  inline-flex items-center justify-center gap-2
+  rounded-full
+  bg-gradient-to-r from-violet-600 to-indigo-600
+  px-6 py-3
+  text-base font-semibold text-white
+  shadow-md
+  transition
+  hover:-translate-y-0.5
+  hover:shadow-xl
+  focus-visible:ring-2
+  focus-visible:ring-violet-500
+  focus-visible:ring-offset-2
+"
+
+Text:
+Calculate your savings
+
+Optional icon:
+Calculator or ArrowRight
+
+Important:
+- Make it obvious and button-like.
+- Do not render it as plain pink text.
+- Keep the button compact enough to fit the strip.
+- On mobile, use:
+  className="w-full sm:w-auto"
+
+Suggested destination:
+- Link to the savings calculator section/modal if one exists.
+- If no calculator exists yet, use a placeholder anchor such as:
+  href="#contact"
+  or the project’s existing consultation/contact flow.
+
+==================================================
+2. INSIGHTS SECTION — “TALK TO AN EXPERT”
+==================================================
+
+Goal:
+Add a CTA below the Insights article cards:
+
+Text:
+Talk to an expert
+
+Placement:
+- Centered below the featured article and smaller cards.
+- Leave enough breathing room above it.
+- Keep it inside the Insights section container.
+
+Wrapper:
+className="
+  mt-8 flex justify-center
+"
+
+Button style:
+Match the Insights gradient title:
+
+className="
+  inline-flex items-center justify-center gap-2
+  rounded-full
+  bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-500
+  px-7 py-3.5
+  text-base font-semibold text-white
+  shadow-[0_12px_32px_rgba(79,70,229,0.25)]
+  transition
+  hover:-translate-y-0.5
+  hover:shadow-[0_18px_42px_rgba(79,70,229,0.32)]
+"
+
+Text:
+Talk to an expert
+
+Optional icon:
+MessageCircle or ArrowRight
+
+Important:
+- Keep it separate from “Explore all”.
+- “Explore all” remains for articles.
+- “Talk to an expert” should feel like the conversion CTA.
+
+==================================================
+3. BRAND LOGOS SECTION — ADD CTA
+==================================================
+
+Current section:
+The trusted-by/client-logo carousel with the line:
+“Trusted by global brands, hundreds of entrepreneurs, and thousands of professionals worldwide.”
+
+Goal:
+Add a CTA below the brand logos.
+
+Recommended text:
+Join 100+ companies hiring with OnSpot
+
+Placement:
+- Centered below the logo carousel.
+- Keep enough space between carousel indicators and the CTA.
+
+Wrapper:
+className="
+  mt-8 flex justify-center
+"
+
+Button style:
+Use a light-section CTA with violet text and border:
+
+className="
+  inline-flex items-center justify-center gap-2
+  rounded-full
+  border border-violet-300
+  bg-white/80
+  px-7 py-3.5
+  text-base font-semibold text-violet-700
+  shadow-sm
+  backdrop-blur-sm
+  transition
+  hover:-translate-y-0.5
+  hover:bg-violet-50
+  hover:shadow-md
+"
+
+Text:
+Join 100+ companies hiring with OnSpot
+
+Optional icon:
+ArrowRight
+
+Important:
+- Do not use plain magenta text.
+- Make it look like a real clickable CTA.
+- Keep it centered.
+
+==================================================
+4. REAL PEOPLE. REAL WORK. REAL IMPACT.
+==================================================
+
+Current issue:
+The small label “THE SUPERHUMAN SYSTEM” appears above:
+“Real people. Real work. Real impact.”
+
+Goal:
+Remove the “THE SUPERHUMAN SYSTEM” label entirely.
+
+Do not remove:
+- The main heading
+- The image mosaic
+- The closing sentence
+- The existing CTA below the mosaic, if present
+
+After removal:
+- Reduce the empty gap slightly.
+- Let the main heading begin cleanly without the small label.
+
+Keep:
+“Real people. Real work.”
+“Real impact.”
+
+==================================================
+5. TRANSFORMATIONS SECTION — “START YOUR TRANSFORMATION”
+==================================================
+
+Goal:
+Add a noticeable CTA below the transformation/testimonial cards.
+
+Text:
+Start your transformation
+
+Placement:
+- Centered below all transformation cards.
+- Keep it within the section container.
+
+Wrapper:
+className="
+  mt-10 flex justify-center
+"
+
+Button style:
+Match the section’s transformation purple:
+
+className="
+  inline-flex items-center justify-center gap-2
+  rounded-full
+  bg-gradient-to-r from-indigo-700 to-violet-600
+  px-7 py-3.5
+  text-base font-semibold text-white
+  shadow-[0_12px_32px_rgba(67,56,202,0.25)]
+  transition
+  hover:-translate-y-0.5
+  hover:shadow-[0_18px_42px_rgba(67,56,202,0.35)]
+"
+
+Text:
+Start your transformation
+
+Optional icon:
+Sparkles or ArrowRight
+
+Important:
+- Keep the CTA below the cards.
+- Do not place it inside Elad B.’s card.
+- It should feel like the natural next action after reading testimonials.
+
+==================================================
+6. WHY ONSPOT / “NOT A SERVICE PROVIDER” — “SEE HOW IT WORKS”
+==================================================
+
+Current section:
+“Not a service provider. An architect.”
+
+Goal:
+Add CTA:
+See how it works
+
+Note:
+Use the corrected text:
+“See how it works”
+not “See hot it works”.
+
+Placement:
+- Place below the supporting paragraph and above the section cards/content.
+- Keep it left-aligned with the heading and paragraph.
+
+Wrapper:
+className="
+  mt-8
+"
+
+Button style:
+Match the light section with a strong indigo CTA:
+
+className="
+  inline-flex items-center justify-center gap-2
+  rounded-full
+  bg-indigo-700
+  px-7 py-3.5
+  text-base font-semibold text-white
+  shadow-md
+  transition
+  hover:-translate-y-0.5
+  hover:bg-indigo-800
+  hover:shadow-xl
+"
+
+Text:
+See how it works
+
+Optional icon:
+PlayCircle or ArrowRight
+
+Suggested destination:
+- Link to the Superhuman System section
+- Or link to the Experience/demo section
+
+Example:
+href="#experience"
+
+==================================================
+7. CTA RESPONSIVE BEHAVIOR
+==================================================
+
+Desktop:
+- Buttons remain compact and aligned with their sections.
+- Strip CTA stays inside the stats strip.
+- Insights, Brands, and Transformations CTAs remain centered.
+- Why OnSpot CTA remains left-aligned.
+
+Mobile:
+- Buttons can use:
+  className="w-full sm:w-auto"
+- Keep horizontal padding inside the section container.
+- Do not allow buttons to overflow.
+- Strip CTA should move below the stats cells if necessary.
+
+==================================================
+8. ACCESSIBILITY
+==================================================
+
+- Use semantic `<a>` or `<button>` elements.
+- Add descriptive `aria-label` where needed.
+- Ensure sufficient color contrast.
+- Keep visible keyboard focus styles.
+- Do not use clickable `<div>` elements.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The homepage should now include clear, section-specific CTAs:
+
+- Stats strip: Calculate your savings
+- Insights: Talk to an expert
+- Brands logos: Join 100+ companies hiring with OnSpot
+- Real People section: “The Superhuman System” label removed
+- Transformations: Start your transformation
+- Why OnSpot: See how it works
+
+Each CTA should feel native to its section, visually noticeable, and clearly clickable.

@@ -402,7 +402,7 @@ export default function Home() {
 
       {/* ── Stats strip — light contrast band after hero ── */}
       <div className="relative w-full border-y border-slate-200 bg-[#F1F2F6]">
-        <div className="mx-auto grid max-w-[1600px] grid-cols-2 divide-y divide-slate-200 md:grid-cols-4 md:divide-x md:divide-y-0">
+        <div className="mx-auto grid max-w-[1600px] grid-cols-2 divide-y divide-slate-200 md:grid-cols-4 md:divide-x md:divide-y-0 xl:grid-cols-[repeat(4,1fr)_auto]">
           {[
             { value: "72hrs", label: "AVG. TIME TO HIRE" },
             { value: "200+", label: "GLOBAL CLIENTS" },
@@ -421,6 +421,16 @@ export default function Home() {
               </span>
             </div>
           ))}
+          {/* CTA cell — 5th column on xl, full-width row on smaller screens */}
+          <div className="col-span-2 flex items-center justify-center border-t border-slate-200 px-6 py-5 md:col-span-4 md:border-l-0 md:border-t xl:col-span-1 xl:border-l xl:border-t-0">
+            <a
+              href="#contact"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-3 text-base font-semibold text-white shadow-md transition hover:-translate-y-0.5 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 sm:w-auto"
+            >
+              <ArrowRight className="h-4 w-4" />
+              Calculate your savings
+            </a>
+          </div>
         </div>
       </div>
 
@@ -453,7 +463,7 @@ export default function Home() {
             </a>
           </div>
 
-          {/* Editorial layout */}
+          {/* Editorial layout — dynamic homepage posts with static fallback */}
           {(() => {
             const staticPosts = [
               {
@@ -568,6 +578,17 @@ export default function Home() {
               </div>
             );
           })()}
+
+          {/* Talk to an expert CTA */}
+          <div className="mt-10 flex justify-center">
+            <a
+              href="#contact"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-500 px-7 py-3.5 text-base font-semibold text-white shadow-[0_12px_32px_rgba(79,70,229,0.25)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(79,70,229,0.32)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+            >
+              <ArrowRight className="h-4 w-4" />
+              Talk to an expert
+            </a>
+          </div>
         </div>
       </div>
 
@@ -758,6 +779,15 @@ export default function Home() {
                 thousands of professionals worldwide.
               </h2>
               <TrustedLogos />
+              <div className="flex justify-center">
+                <a
+                  href="/find-best-matches"
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-violet-300 bg-white/80 px-7 py-3.5 text-base font-semibold text-violet-700 shadow-sm backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-violet-50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2"
+                >
+                  Join 100+ companies hiring with OnSpot
+                  <ArrowRight className="h-4 w-4" />
+                </a>
+              </div>
             </div>
           </div>
         </div>
@@ -772,10 +802,6 @@ export default function Home() {
 
         {/* Header */}
         <div className="relative z-10 px-4 text-center">
-          <div className="mx-auto mb-4 h-px w-10 bg-white/40" />
-          <p className="text-xs font-bold uppercase tracking-[0.28em] text-white/60">
-            The Superhuman System
-          </p>
           <h2 className="mx-auto mt-5 max-w-[1200px] px-6 text-center font-bold leading-[1.05] tracking-tight text-white text-[clamp(44px,6vw,96px)]">
             <span className="block">Real people. Real work.</span>
             <span className="mt-3 block text-[#B8B7FF]">Real impact.</span>
@@ -1099,6 +1125,17 @@ export default function Home() {
               ))}
             </div>
           </div>
+
+          {/* Start your transformation CTA */}
+          <div className="mt-10 flex justify-center">
+            <a
+              href="#contact"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-indigo-700 to-violet-600 px-7 py-3.5 text-base font-semibold text-white shadow-[0_12px_32px_rgba(67,56,202,0.25)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(67,56,202,0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+            >
+              <Sparkles className="h-4 w-4" />
+              Start your transformation
+            </a>
+          </div>
         </div>
       </div>
 
@@ -1127,6 +1164,15 @@ export default function Home() {
               combining AI-ready systems, vetted talent, and human
               accountability so your team can scale without losing control.
             </p>
+            <div className="mt-8">
+              <a
+                href="#experience"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-indigo-700 px-7 py-3.5 text-base font-semibold text-white shadow-md transition hover:-translate-y-0.5 hover:bg-indigo-800 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+              >
+                <ArrowRight className="h-4 w-4" />
+                See how it works
+              </a>
+            </div>
           </div>
 
           {/* Four pillar cards — 2×2 grid */}
