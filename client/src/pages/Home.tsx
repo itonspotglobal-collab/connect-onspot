@@ -69,7 +69,7 @@ import NurLamineroPhoto from "@assets/Nur_1780574815788.png";
 import JakeWainbergPhoto from "@assets/Jake_1780574815787.png";
 import MarkApostolPhoto from "@assets/Macky_1780574815788.png";
 import RenierMacalinoPhoto from "@assets/REN_1780657869137.png";
-import JaelAtendidoPhoto from "@assets/jael_1780660692687.jpeg";
+import JaelAtendidoPhoto from "@assets/Jael_1780664654354.png";
 import AndreaPinzonPhoto from "@assets/Andrea_Pinzon_1774264095055.jpeg";
 import ShaneRubioPhoto from "@assets/Shane_1780657863305.png";
 import RachelCastroPhoto from "@assets/Rachel_Caztro_1774264095056.jpg";
@@ -1331,7 +1331,7 @@ export default function Home() {
                 name: "Shane Rubio-Limiac",
                 flag: "🇵🇭",
                 role: "Head of Operations",
-                objectPosition: "object-[center_28%]",
+                objectPosition: "object-[center_18%]",
                 isReal: true,
                 gender: "female",
               },
@@ -1363,7 +1363,7 @@ export default function Home() {
                     src={person.photo}
                     alt={person.name}
                     className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                    style={{ objectPosition: "center 32%" }}
+                    style={{ objectPosition: "center 18%" }}
                     loading="lazy"
                   />
                 ) : (
