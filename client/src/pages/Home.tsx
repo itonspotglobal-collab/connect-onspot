@@ -428,7 +428,7 @@ export default function Home() {
               className="inline-flex h-[64px] min-w-[260px] w-full items-center justify-center gap-3 whitespace-nowrap rounded-[14px] border border-[#D9DDEB] bg-[#EEF0F8] px-8 text-[17px] font-semibold text-[#40499D] shadow-[0_6px_16px_rgba(63,73,157,0.12)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#E3E6F2] hover:shadow-[0_8px_18px_rgba(63,73,157,0.16)] focus:outline-none focus:ring-2 focus:ring-[#40499D]/25 focus:ring-offset-2 sm:w-auto"
             >
               <ArrowRight className="h-4 w-4" />
-              Calculate your savings
+              Calculate your Savings
             </a>
           </div>
         </div>
@@ -1164,7 +1164,9 @@ export default function Home() {
               Why OnSpot
             </p>
             <h2 className="mt-6 max-w-[950px] text-[54px] font-semibold tracking-[-0.05em] leading-[0.95] md:text-[68px] lg:text-[82px]">
-              <span className="block text-[#070A1A]">Not a service provider.</span>
+              <span className="block text-[#070A1A]">
+                Not a service provider.
+              </span>
               <span className="mt-2 block italic text-[#4F46D8]">
                 An architect.
               </span>
@@ -1273,7 +1275,9 @@ export default function Home() {
               Behind the Platform
             </h2>
             <p className="mx-auto mt-6 max-w-4xl text-center text-lg leading-relaxed text-slate-600 sm:text-xl lg:text-2xl">
-              <span className="block">Powered by professionals from the US, Philippines, and beyond.</span>
+              <span className="block">
+                Powered by professionals from the US, Philippines, and beyond.
+              </span>
               <span className="block">The Superhuman BPO Network.</span>
             </p>
           </div>
@@ -1359,20 +1363,20 @@ export default function Home() {
                 className="group relative aspect-[4/3] overflow-hidden rounded-3xl bg-slate-100 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-xl"
               >
                 {person.name === "Jael Atendido" ? (
-                  <img
-                    src={person.photo}
-                    alt={person.name}
-                    className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                    style={{ objectPosition: "center 24%", transform: "scale(1.03)", transformOrigin: "center top" }}
-                    loading="lazy"
-                  />
-                ) : person.name === "Shane Rubio-Limiac" ? (
-                  <div className="h-full w-full overflow-hidden rounded-[inherit] bg-[#F4F4F6]">
+                  <div className="relative h-full w-full overflow-hidden rounded-[inherit] bg-white">
                     <img
                       src={person.photo}
                       alt={person.name}
-                      className="h-full w-full object-cover transition duration-700"
-                      style={{ objectPosition: "center 18%", transform: "scale(0.92)", transformOrigin: "center center" }}
+                      className="absolute left-1/2 top-[-10%] h-[118%] w-auto max-w-none -translate-x-1/2 object-contain"
+                      loading="lazy"
+                    />
+                  </div>
+                ) : person.name === "Shane Rubio-Limiac" ? (
+                  <div className="relative h-full w-full overflow-hidden rounded-[inherit] bg-[#F7F7F9]">
+                    <img
+                      src={person.photo}
+                      alt={person.name}
+                      className="absolute left-1/2 top-1/2 h-[92%] w-auto max-w-none -translate-x-1/2 -translate-y-1/2 object-contain"
                       loading="lazy"
                     />
                   </div>
@@ -1433,7 +1437,8 @@ export default function Home() {
 
           {/* Supporting copy */}
           <p className="mt-6 max-w-[700px] text-[19px] leading-[1.5] text-[#53627A] md:text-[21px]">
-            Tell us what you need. We'll line up pre-vetted candidates — no markups, no middlemen, no obligation.
+            Tell us what you need. We'll line up pre-vetted candidates — no
+            markups, no middlemen, no obligation.
           </p>
 
           {/* Primary CTA */}
@@ -1453,23 +1458,38 @@ export default function Home() {
           {/* Stats row */}
           <div className="mt-12 grid w-full max-w-[760px] grid-cols-1 gap-8 border-t border-[#66758A]/20 pt-10 sm:grid-cols-3 sm:gap-12">
             <div>
-              <div className="text-[28px] font-semibold text-[#080B1C] md:text-[32px]">70%</div>
-              <div className="mt-1 text-[14px] text-[#58677D] md:text-[15px]">cost savings</div>
+              <div className="text-[28px] font-semibold text-[#080B1C] md:text-[32px]">
+                70%
+              </div>
+              <div className="mt-1 text-[14px] text-[#58677D] md:text-[15px]">
+                cost savings
+              </div>
             </div>
             <div>
-              <div className="text-[28px] font-semibold text-[#080B1C] md:text-[32px]">50+</div>
-              <div className="mt-1 text-[14px] text-[#58677D] md:text-[15px]">countries served</div>
+              <div className="text-[28px] font-semibold text-[#080B1C] md:text-[32px]">
+                50+
+              </div>
+              <div className="mt-1 text-[14px] text-[#58677D] md:text-[15px]">
+                countries served
+              </div>
             </div>
             <div>
-              <div className="text-[28px] font-semibold text-[#080B1C] md:text-[32px]">Dedicated</div>
-              <div className="mt-1 text-[14px] text-[#58677D] md:text-[15px]">never shared teams</div>
+              <div className="text-[28px] font-semibold text-[#080B1C] md:text-[32px]">
+                Dedicated
+              </div>
+              <div className="mt-1 text-[14px] text-[#58677D] md:text-[15px]">
+                never shared teams
+              </div>
             </div>
           </div>
 
           {/* Talent link */}
           <p className="mt-10 text-[15px] text-[#56647A]">
             Looking for work instead?{" "}
-            <a href="/find-best-matches" className="font-medium text-[#2C3A52] underline underline-offset-4">
+            <a
+              href="/find-best-matches"
+              className="font-medium text-[#2C3A52] underline underline-offset-4"
+            >
               Join as talent →
             </a>
           </p>

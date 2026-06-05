@@ -1,0 +1,112 @@
+Fix only Jael’s and Shane’s photos in “The People Behind the Platform” section.
+
+The current issue:
+- Jael’s head is still too low compared with Nur’s.
+- Shane’s image is too zoomed in and his head is too large compared with Mark’s.
+- Previous attempts used object-position and scale on the <img> element, but the results are inconsistent.
+
+This time, use separate inner image canvases inside the existing cards so the crop can be controlled precisely.
+
+IMPORTANT:
+- Do not change the card dimensions.
+- Do not change the grid.
+- Do not change any other photo.
+- Do not change border radius.
+- Do not replace the files.
+- Do not apply the same crop values to both images.
+
+==================================================
+JAEL — MOVE HEAD UP, KEEP NATURAL SCALE
+==================================================
+
+Goal:
+Jael’s eyes and forehead should sit at approximately the same vertical level as Nur’s in the adjacent card.
+
+Use this exact structure for Jael’s card:
+
+<div className="relative h-full w-full overflow-hidden rounded-[inherit] bg-white">
+  <img
+    src={jaelImage}
+    alt="Jael"
+    className="absolute left-1/2 top-[-10%] h-[118%] w-auto max-w-none -translate-x-1/2 object-contain"
+  />
+</div>
+
+If inline styles are required, use:
+
+style={{
+  position: "absolute",
+  left: "50%",
+  top: "-10%",
+  height: "118%",
+  width: "auto",
+  maxWidth: "none",
+  transform: "translateX(-50%)"
+}}
+
+Expected Jael result:
+- Full head visible.
+- Head sits higher, close to Nur’s head level.
+- Enough upper body remains visible.
+- No excessive sky.
+- No sideways stretching.
+
+==================================================
+SHANE — ZOOM OUT, LOWER HEAD SIZE
+==================================================
+
+Goal:
+Shane’s head and shoulders should visually match Mark’s scale more closely.
+
+Use this exact structure for Shane’s card:
+
+<div className="relative h-full w-full overflow-hidden rounded-[inherit] bg-[#F7F7F9]">
+  <img
+    src={shaneImage}
+    alt="Shane"
+    className="absolute left-1/2 top-1/2 h-[92%] w-auto max-w-none -translate-x-1/2 -translate-y-1/2 object-contain"
+  />
+</div>
+
+If inline styles are required, use:
+
+style={{
+  position: "absolute",
+  left: "50%",
+  top: "50%",
+  height: "92%",
+  width: "auto",
+  maxWidth: "none",
+  transform: "translate(-50%, -50%)"
+}}
+
+Expected Shane result:
+- Slightly more upper body is visible.
+- Head appears smaller and better balanced.
+- Head level aligns more closely with Mark’s.
+- No crop into the forehead or chin.
+- No image stretching.
+- No empty white border should be obvious; the wrapper background should softly fill any tiny gaps.
+
+==================================================
+DO NOT USE
+==================================================
+
+Do not use:
+- `object-cover` directly for Jael or Shane
+- identical `object-position` values
+- `scale()` on the card container
+- fixed pixel widths
+- CSS that affects all employee photos
+
+==================================================
+FINAL VISUAL CHECK
+==================================================
+
+After the change:
+- Compare Jael against Nur.
+- Compare Shane against Mark.
+- Jael’s eye/head line should be within roughly 10px of Nur’s.
+- Shane’s eye/head line should be within roughly 10px of Mark’s.
+- All four cards must remain the same size.
+- Only Jael and Shane should change.
