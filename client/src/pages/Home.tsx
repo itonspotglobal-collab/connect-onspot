@@ -68,10 +68,10 @@ import CultureFirst from "@assets/Culture_first_1780638648875.png";
 import NurLamineroPhoto from "@assets/Nur_1780574815788.png";
 import JakeWainbergPhoto from "@assets/Jake_1780574815787.png";
 import MarkApostolPhoto from "@assets/Macky_1780574815788.png";
-import KyleMendezPhoto from "@assets/Kyle_Mendez_1774430604161.jpeg";
+import RenierMacalinoPhoto from "@assets/REN_1780657869137.png";
 import AlexandraLopezPhoto from "@assets/Alexandra_Lopez_1774430604160.jpg";
 import AndreaPinzonPhoto from "@assets/Andrea_Pinzon_1774264095055.jpeg";
-import ChristopherAlbaPhoto from "@assets/Christopher_Alba_1774264095055.jpg";
+import ShaneRubioPhoto from "@assets/Shane_1780657863305.png";
 import RachelCastroPhoto from "@assets/Rachel_Caztro_1774264095056.jpg";
 
 const trustedBrands = [
@@ -1268,17 +1268,17 @@ export default function Home() {
                 gender: "male",
               },
               {
-                photo: RachelCastroPhoto,
-                name: "Rachel Castro",
+                photo: ShaneRubioPhoto,
+                name: "Shane Rubio-Limiac",
                 flag: "🇵🇭",
-                role: "Social Media Manager",
+                role: "Head of Operations",
                 objectPosition: "object-top",
-                isReal: false,
+                isReal: true,
                 gender: "female",
               },
               {
-                photo: KyleMendezPhoto,
-                name: "Kyle Mendez",
+                photo: RenierMacalinoPhoto,
+                name: "Renier Macalino",
                 flag: "🇵🇭",
                 role: "Senior Data Analyst",
                 objectPosition: "object-top",
@@ -1286,13 +1286,13 @@ export default function Home() {
                 gender: "male",
               },
               {
-                photo: ChristopherAlbaPhoto,
-                name: "Christopher Alba",
+                photo: RachelCastroPhoto,
+                name: "Rachel Castro",
                 flag: "🇵🇭",
-                role: "Technical Support",
+                role: "Social Media Manager",
                 objectPosition: "object-top",
                 isReal: false,
-                gender: "male",
+                gender: "female",
               },
             ].map((person) => (
               <div
