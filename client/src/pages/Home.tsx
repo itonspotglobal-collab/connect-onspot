@@ -1363,20 +1363,22 @@ export default function Home() {
                 className="group relative aspect-[4/3] overflow-hidden rounded-3xl bg-slate-100 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-xl"
               >
                 {person.name === "Jael Atendido" ? (
-                  <img
-                    src={person.photo}
-                    alt={person.name}
-                    className="h-full w-full object-cover"
-                    style={{ objectPosition: "center 14%", transform: "scale(1.10)", transformOrigin: "center top" }}
-                    loading="lazy"
-                  />
-                ) : person.name === "Shane Rubio-Limiac" ? (
-                  <div className="h-full w-full overflow-hidden rounded-[inherit] bg-[#F4F4F6]">
+                  <div className="h-full w-full overflow-hidden rounded-[inherit]">
                     <img
                       src={person.photo}
                       alt={person.name}
-                      className="h-full w-full object-cover"
-                      style={{ objectPosition: "center 38%", transform: "scale(0.90)", transformOrigin: "center center" }}
+                      className="block h-full w-full object-cover"
+                      style={{ objectPosition: "58% 62%" }}
+                      loading="lazy"
+                    />
+                  </div>
+                ) : person.name === "Shane Rubio-Limiac" ? (
+                  <div className="h-full w-full overflow-hidden rounded-[inherit]">
+                    <img
+                      src={person.photo}
+                      alt={person.name}
+                      className="block h-full w-full object-cover"
+                      style={{ objectPosition: "52% 36%" }}
                       loading="lazy"
                     />
                   </div>

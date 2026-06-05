@@ -1,0 +1,116 @@
+Fix only Jael’s and Shane’s image crops in “The People Behind the Platform” section.
+
+IMPORTANT:
+- Do not change the grid, card dimensions, spacing, border radius, or any other photos.
+- Remove all previous scale, transform, object-position, object-contain, absolute-position, and special wrapper overrides currently applied to Jael and Shane.
+- Start both image styles cleanly.
+- Use the original uploaded photos.
+- Both cards must remain fully filled with no white gaps.
+
+The two source images have very different compositions:
+- Jael is a wide full-body landscape image with excessive sky.
+- Shane is a close portrait image.
+They must use separate crop settings.
+
+==================================================
+JAEL IMAGE
+==================================================
+
+Goal:
+Crop out most of the excessive sky, enlarge Jael, and position her head at approximately the same height as Nur’s head.
+
+Apply this exact style to Jael’s image only:
+
+style={{
+  width: "100%",
+  height: "100%",
+  objectFit: "cover",
+  objectPosition: "58% 62%"
+}}
+
+Tailwind equivalent:
+
+className="
+  block
+  h-full
+  w-full
+  object-cover
+  object-[58%_62%]
+"
+
+Do not apply any scale or transform to Jael.
+
+Expected Jael result:
+- Her head and upper body become much larger.
+- Most of the sky is cropped out.
+- Her full head remains visible.
+- Her eye level is close to Nur’s eye level.
+- Some surfboard and ocean remain visible.
+
+==================================================
+SHANE IMAGE
+==================================================
+
+Goal:
+Zoom Shane out as much as possible within the card and position her face slightly higher, while still filling the card.
+
+Apply this exact style to Shane’s image only:
+
+style={{
+  width: "100%",
+  height: "100%",
+  objectFit: "cover",
+  objectPosition: "52% 36%"
+}}
+
+Tailwind equivalent:
+
+className="
+  block
+  h-full
+  w-full
+  object-cover
+  object-[52%_36%]
+"
+
+Do not apply any scale or transform to Shane.
+
+Expected Shane result:
+- More shoulders and upper torso are visible.
+- Her face is no longer excessively large.
+- Her head level feels closer to Mark’s.
+- The card remains fully filled with no white gaps.
+
+==================================================
+IMAGE WRAPPER FOR BOTH
+==================================================
+
+Both Jael’s and Shane’s image wrappers must use only:
+
+className="
+  h-full
+  w-full
+  overflow-hidden
+  rounded-[inherit]
+"
+
+Do not add:
+- background colors
+- padding
+- inner canvases
+- object-contain
+- absolute positioning
+- scale transforms
+- translate transforms
+
+==================================================
+FINAL VERIFICATION
+==================================================
+
+After applying:
+- Compare Jael’s eye level with Nur’s.
+- Compare Shane’s eye level and face size with Mark’s.
+- Jael should no longer look far away.
+- Shane should no longer look tightly zoomed in.
+- No white or colored gaps should appear.
+- Only Jael and Shane should change.
