@@ -1367,7 +1367,7 @@ export default function Home() {
                     src={person.photo}
                     alt={person.name}
                     className="h-full w-full object-cover"
-                    style={{ objectPosition: "center 20%", transform: "scale(1.02)", transformOrigin: "center top" }}
+                    style={{ objectPosition: "center 14%", transform: "scale(1.10)", transformOrigin: "center top" }}
                     loading="lazy"
                   />
                 ) : person.name === "Shane Rubio-Limiac" ? (
@@ -1376,7 +1376,7 @@ export default function Home() {
                       src={person.photo}
                       alt={person.name}
                       className="h-full w-full object-cover"
-                      style={{ objectPosition: "center 30%", transform: "scale(0.96)", transformOrigin: "center center" }}
+                      style={{ objectPosition: "center 38%", transform: "scale(0.90)", transformOrigin: "center center" }}
                       loading="lazy"
                     />
                   </div>

@@ -1,0 +1,107 @@
+Make one more precise adjustment to Jael and Shane only.
+
+Current issues:
+- Jael is still too small and sits too low in the frame.
+- Shane is now too zoomed in and fills too much of the card.
+- The goal is to visually match the head size and eye level of the neighboring photos.
+
+Do not change:
+- card dimensions
+- grid layout
+- border radius
+- image files
+- any other employee photo
+- overall section spacing
+
+==================================================
+JAEL — MAKE SLIGHTLY LARGER AND MOVE UP
+==================================================
+
+Goal:
+Jael’s face should be closer in size to Nur’s face and her eye level should sit slightly higher.
+
+Apply this exact styling to Jael only:
+
+style={{
+  width: "100%",
+  height: "100%",
+  objectFit: "cover",
+  objectPosition: "center 14%",
+  transform: "scale(1.10)",
+  transformOrigin: "center top"
+}}
+
+Tailwind equivalent:
+
+className="
+  h-full
+  w-full
+  object-cover
+  object-[center_14%]
+  scale-[1.10]
+  origin-top
+"
+
+Expected result:
+- Jael’s head should be visibly larger than it is now.
+- Her face should move upward.
+- The top of her head must remain visible.
+- Keep some surfboard and upper torso visible.
+- Do not crop excessively.
+
+==================================================
+SHANE — ZOOM OUT AND MOVE DOWN SLIGHTLY
+==================================================
+
+Goal:
+Shane’s face should be smaller and his crop should show more upper body, closer to Mark’s visual scale.
+
+Apply this exact styling to Shane only:
+
+style={{
+  width: "100%",
+  height: "100%",
+  objectFit: "cover",
+  objectPosition: "center 38%",
+  transform: "scale(0.90)",
+  transformOrigin: "center center"
+}}
+
+Tailwind equivalent:
+
+className="
+  h-full
+  w-full
+  object-cover
+  object-[center_38%]
+  scale-[0.90]
+  origin-center
+"
+
+Ensure Shane’s wrapper remains:
+
+className="
+  h-full
+  w-full
+  overflow-hidden
+  rounded-[inherit]
+  bg-[#F4F4F6]
+"
+
+Expected result:
+- Shane’s head should appear smaller.
+- More shoulders and torso should be visible.
+- His face should sit slightly lower.
+- The crop should feel balanced with Mark’s card.
+- Do not leave visible empty borders.
+
+==================================================
+FINAL CHECK
+==================================================
+
+After applying:
+- Jael should no longer look too far away.
+- Shane should no longer look overly zoomed in.
+- Jael’s head should align more closely with Nur’s.
+- Shane’s head should align more closely with Mark’s.
+- Only Jael and Shane should change.
