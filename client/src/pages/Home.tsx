@@ -425,7 +425,7 @@ export default function Home() {
           <div className="col-span-2 flex items-center justify-center border-t border-slate-200 px-6 py-5 md:col-span-4 md:border-l-0 md:border-t xl:col-span-1 xl:border-l xl:border-t-0">
             <a
               href="#contact"
-              className="inline-flex h-[64px] min-w-[260px] w-full items-center justify-center gap-3 whitespace-nowrap rounded-[14px] border border-[#3F49A6]/25 bg-[#2F3138] px-8 text-[17px] font-semibold text-[#3F49A6] shadow-[0_10px_24px_rgba(32,35,45,0.20)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#24262C] hover:text-[#5661C0] focus:outline-none focus:ring-2 focus:ring-[#3F49A6]/40 focus:ring-offset-2 sm:w-auto"
+              className="inline-flex h-[64px] min-w-[260px] w-full items-center justify-center gap-3 whitespace-nowrap rounded-[14px] border border-[#D9DDEB] bg-[#EEF0F8] px-8 text-[17px] font-semibold text-[#40499D] shadow-[0_6px_16px_rgba(63,73,157,0.12)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#E3E6F2] hover:shadow-[0_8px_18px_rgba(63,73,157,0.16)] focus:outline-none focus:ring-2 focus:ring-[#40499D]/25 focus:ring-offset-2 sm:w-auto"
             >
               <ArrowRight className="h-4 w-4" />
               Calculate your savings
