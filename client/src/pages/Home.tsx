@@ -962,6 +962,17 @@ export default function Home() {
           <span className="text-white/85">real person</span> making the work
           better.
         </p>
+
+        {/* Meet the people CTA */}
+        <div className="relative z-10 mt-8 flex justify-center">
+          <a
+            href="#people-behind-platform"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 px-7 py-3.5 text-base font-semibold text-white shadow-[0_12px_30px_rgba(168,85,247,0.28)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(168,85,247,0.38)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#17162f]"
+          >
+            Meet the people behind the work
+            <ArrowRight className="h-4 w-4" />
+          </a>
+        </div>
       </div>
 
       {/* ── 6. TRANSFORMATION STORIES ── */}
@@ -1385,53 +1396,59 @@ export default function Home() {
       {/* ── 8. GET MATCHED FINAL CTA ── */}
       <section className="bg-[#f7f6ef] py-16 sm:py-20 lg:py-24">
         <div className="mx-auto max-w-[900px] px-6 sm:px-8">
-          <div className="rounded-[2rem] border border-stone-200 bg-[#f4f1e8] px-6 py-12 text-center shadow-sm sm:px-10 lg:px-14">
-            <div className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-4 py-2 text-sm font-semibold text-blue-700">
-              <Zap className="h-4 w-4" />
-              72-hour match average
-            </div>
+          <div className="relative overflow-hidden rounded-[2rem] border border-violet-200/60 bg-gradient-to-br from-[#f7f4ff] via-[#f7f3ea] to-[#edf5ff] px-6 py-12 text-center shadow-[0_20px_60px_rgba(79,70,229,0.10)] sm:px-10 lg:px-14">
+            {/* Decorative glows */}
+            <div className="pointer-events-none absolute -left-20 -top-20 h-56 w-56 rounded-full bg-violet-300/20 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-20 -right-20 h-56 w-56 rounded-full bg-blue-300/20 blur-3xl" />
 
-            <h2 className="mx-auto mt-6 max-w-2xl text-[clamp(34px,4vw,56px)] font-semibold leading-tight tracking-[-0.04em] text-slate-950">
-              Get matched with vetted Philippine talent in 72 hours
-            </h2>
-
-            <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
-              Tell us what you need. We'll line up pre-vetted candidates — no markups, no middlemen, no obligation.
-            </p>
-
-            <a
-              href="#contact"
-              className="mt-8 inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-8 py-4 text-base font-semibold text-white shadow-md transition hover:-translate-y-0.5 hover:bg-blue-800 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 sm:text-lg"
-            >
-              Get matched — it's free
-              <ArrowRight className="h-5 w-5" />
-            </a>
-
-            <p className="mt-4 text-sm text-slate-500">
-              Takes 2 minutes · No credit card · First candidates in days
-            </p>
-
-            <div className="mx-auto mt-8 grid max-w-xl grid-cols-1 gap-6 border-t border-stone-300 pt-8 sm:grid-cols-3">
-              <div>
-                <div className="text-2xl font-semibold text-slate-950">70%</div>
-                <div className="mt-1 text-sm text-slate-600">cost savings</div>
+            <div className="relative z-10">
+              <div className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-4 py-2 text-sm font-semibold text-blue-700">
+                <Zap className="h-4 w-4" />
+                72-hour match average
               </div>
-              <div>
-                <div className="text-2xl font-semibold text-slate-950">50+</div>
-                <div className="mt-1 text-sm text-slate-600">countries served</div>
-              </div>
-              <div>
-                <div className="text-2xl font-semibold text-slate-950">Dedicated</div>
-                <div className="mt-1 text-sm text-slate-600">never shared teams</div>
-              </div>
-            </div>
 
-            <p className="mt-8 text-sm text-slate-500">
-              Looking for work instead?{" "}
-              <a href="/find-best-matches" className="font-medium text-slate-700 underline underline-offset-4">
-                Join as talent →
+              <h2 className="mx-auto mt-6 max-w-2xl text-[clamp(34px,4vw,56px)] font-semibold leading-tight tracking-[-0.04em] text-slate-950">
+                Get matched with vetted Philippine talent in 72 hours
+              </h2>
+
+              <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
+                Tell us what you need. We'll line up pre-vetted candidates — no markups, no middlemen, no obligation.
+              </p>
+
+              <a
+                href="#contact"
+                className="mt-8 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 px-8 py-4 text-base font-semibold text-white shadow-[0_12px_30px_rgba(79,70,229,0.28)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(79,70,229,0.38)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 sm:text-lg"
+              >
+                Get matched — it's free
+                <ArrowRight className="h-5 w-5" />
               </a>
-            </p>
+
+              <p className="mt-4 text-sm text-slate-500">
+                Takes 2 minutes · No credit card · First candidates in days
+              </p>
+
+              <div className="mx-auto mt-8 grid max-w-xl grid-cols-1 gap-6 border-t border-violet-200/60 pt-8 sm:grid-cols-3">
+                <div>
+                  <div className="text-2xl font-semibold text-slate-950">70%</div>
+                  <div className="mt-1 text-sm text-slate-600">cost savings</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-semibold text-slate-950">50+</div>
+                  <div className="mt-1 text-sm text-slate-600">countries served</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-semibold text-slate-950">Dedicated</div>
+                  <div className="mt-1 text-sm text-slate-600">never shared teams</div>
+                </div>
+              </div>
+
+              <p className="mt-8 text-sm text-slate-500">
+                Looking for work instead?{" "}
+                <a href="/find-best-matches" className="font-medium text-slate-700 underline underline-offset-4">
+                  Join as talent →
+                </a>
+              </p>
+            </div>
           </div>
         </div>
       </section>

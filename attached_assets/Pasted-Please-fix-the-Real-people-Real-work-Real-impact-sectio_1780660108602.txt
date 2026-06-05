@@ -1,0 +1,169 @@
+Please fix the “Real people. Real work. Real impact.” section and update the final CTA card styling.
+
+Do not redesign unrelated sections.
+
+==================================================
+1. ADD THE MISSING CTA BUTTON
+==================================================
+
+Current issue:
+The section currently ends with the sentence:
+
+“Behind every workflow is a real person making the work better.”
+
+The intended CTA:
+“Meet the people behind the work”
+
+is either missing or rendered as plain text.
+
+Goal:
+Add a real button directly below the supporting sentence.
+
+Placement:
+- Centered below:
+  “Behind every workflow is a real person making the work better.”
+- Keep approximately 24–32px of space between the sentence and the CTA.
+- Keep the button inside the dark navy section.
+
+Use this structure:
+
+<div className="mt-8 flex justify-center">
+  <a
+    href="#people-behind-platform"
+    className="
+      inline-flex items-center justify-center gap-2
+      rounded-full
+      bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500
+      px-7 py-3.5
+      text-base font-semibold text-white
+      shadow-[0_12px_30px_rgba(168,85,247,0.28)]
+      transition duration-300
+      hover:-translate-y-0.5
+      hover:shadow-[0_18px_42px_rgba(168,85,247,0.38)]
+      focus-visible:outline-none
+      focus-visible:ring-2
+      focus-visible:ring-violet-400
+      focus-visible:ring-offset-2
+      focus-visible:ring-offset-[#17162f]
+    "
+  >
+    Meet the people behind the work
+    <ArrowRight className="h-4 w-4" />
+  </a>
+</div>
+
+Important:
+- Do not render it as plain magenta text.
+- It must visibly look clickable.
+- Keep it centered.
+- Make sure it remains visible on mobile.
+
+==================================================
+2. REMOVE ANY SMALL LABEL ABOVE THE TITLE
+==================================================
+
+Remove any eyebrow/small label above:
+
+“Real people. Real work.”
+“Real impact.”
+
+Examples to remove:
+- THE SUPERHUMAN SYSTEM
+- any hidden or faint uppercase label
+- any leftover absolute-positioned text above the heading
+
+The section should begin cleanly with the main heading.
+
+==================================================
+3. KEEP THE EXISTING SECTION CONTENT
+==================================================
+
+Do not remove or replace:
+- dark navy background
+- main heading
+- gradient “Real impact.”
+- image mosaic
+- supporting sentence
+
+Keep the current layout and image grid.
+
+==================================================
+4. ADD BRAND-MATCHED GRADIENT TO THE FINAL CTA CARD
+==================================================
+
+Current issue:
+The final “Get matched with vetted Philippine talent in 72 hours” card looks too plain and does not visually connect with the OnSpot brand.
+
+Goal:
+Keep the light cream/card layout, but add a subtle branded gradient treatment.
+
+Do not make the entire section dark.
+
+Apply a soft, premium OnSpot gradient to the card background:
+
+className="
+  relative overflow-hidden
+  rounded-[2rem]
+  border border-violet-200/60
+  bg-gradient-to-br
+  from-[#f7f4ff]
+  via-[#f7f3ea]
+  to-[#edf5ff]
+  px-6 py-12
+  text-center
+  shadow-[0_20px_60px_rgba(79,70,229,0.10)]
+  sm:px-10
+  lg:px-14
+"
+
+Also add subtle decorative gradient glows using pseudo/background elements:
+
+<div className="pointer-events-none absolute -left-20 -top-20 h-56 w-56 rounded-full bg-violet-300/20 blur-3xl" />
+<div className="pointer-events-none absolute -bottom-20 -right-20 h-56 w-56 rounded-full bg-blue-300/20 blur-3xl" />
+
+Keep all card content above the glows:
+
+<div className="relative z-10">
+  existing CTA content
+</div>
+
+==================================================
+5. UPDATE FINAL CTA BUTTON TO MATCH THE BRAND
+==================================================
+
+Replace the solid blue button with a stronger OnSpot gradient:
+
+className="
+  mt-8 inline-flex items-center justify-center gap-2
+  rounded-xl
+  bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600
+  px-8 py-4
+  text-base sm:text-lg font-semibold text-white
+  shadow-[0_12px_30px_rgba(79,70,229,0.28)]
+  transition duration-300
+  hover:-translate-y-0.5
+  hover:shadow-[0_18px_42px_rgba(79,70,229,0.38)]
+  focus-visible:outline-none
+  focus-visible:ring-2
+  focus-visible:ring-indigo-500
+  focus-visible:ring-offset-2
+"
+
+Keep button text:
+“Get matched — it’s free”
+
+==================================================
+6. FINAL EXPECTED RESULT
+==================================================
+
+After implementation:
+
+- “Real people. Real work. Real impact.” has no small label above it.
+- The section includes a real CTA button:
+  “Meet the people behind the work”
+- The button is centered below the supporting sentence.
+- The button uses a violet/purple/fuchsia brand gradient.
+- The final get-matched card keeps its light premium appearance.
+- The final get-matched card now has a subtle OnSpot brand gradient.
+- The final CTA button uses the OnSpot violet/indigo/blue gradient.
+- No clipping, overflow, or broken mobile layouts.
