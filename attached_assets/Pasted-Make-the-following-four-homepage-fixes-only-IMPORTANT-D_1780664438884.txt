@@ -1,0 +1,216 @@
+Make the following four homepage fixes only.
+
+IMPORTANT:
+- Do not change section layouts.
+- Do not change any text content.
+- Do not replace images.
+- Do not change card sizes or border radii.
+- Preserve responsiveness.
+- Make only the targeted adjustments below.
+
+==================================================
+1. “CALCULATE YOUR SAVINGS” BUTTON — FORCE ONE LINE
+==================================================
+
+Problem:
+The button text currently wraps into two lines.
+
+Goal:
+Keep “Calculate your savings” on one line at all desktop and tablet widths.
+
+Required changes:
+- Increase the button width enough for one-line text.
+- Prevent wrapping.
+- Keep the arrow on the left.
+- Keep the existing deep violet color and rectangular shape.
+
+Use:
+
+className="
+  inline-flex
+  h-[64px]
+  min-w-[260px]
+  items-center
+  justify-center
+  gap-3
+  whitespace-nowrap
+  rounded-[14px]
+  bg-[#5B45E8]
+  px-8
+  text-[17px]
+  font-semibold
+  text-white
+  shadow-[0_10px_24px_rgba(55,38,160,0.28)]
+  transition-all
+  duration-300
+  hover:bg-[#4B38CF]
+  hover:-translate-y-0.5
+"
+
+Mobile:
+- Allow width to become `w-full`
+- Still keep the text on one line
+- Do not reduce font size below 15px
+
+==================================================
+2. JAEL PHOTO — ALIGN HEAD LEVEL WITH NUR
+==================================================
+
+Problem:
+Jael’s head sits lower than Nur’s head in the adjacent card.
+
+Goal:
+Align Jael’s head vertically with Nur’s head while keeping her face fully visible.
+
+Do not change:
+- Card size
+- Card position
+- Image file
+- Border radius
+
+For Jael’s image only:
+
+- Keep `object-cover`
+- Set `object-position` so the face moves upward slightly
+- Do not zoom excessively
+- Do not crop the top of her head
+
+Use this exact styling:
+
+className="
+  h-full
+  w-full
+  object-cover
+  object-[center_32%]
+"
+
+If Jael’s image uses inline styles, use:
+
+style={{
+  objectFit: "cover",
+  objectPosition: "center 32%"
+}}
+
+Expected result:
+- Jael’s eyes/head should sit at approximately the same vertical height as Nur’s.
+- Her full face and top of head must remain visible.
+- Do not show excessive torso or excessive sky.
+
+==================================================
+3. SHANE PHOTO — ZOOM OUT AND ALIGN WITH ADJACENT CARD
+==================================================
+
+Problem:
+Shane’s image appears too zoomed in compared with the adjacent photo.
+
+Goal:
+Show slightly more of Shane’s upper body and background so his head level feels balanced with the neighboring card.
+
+Do not change:
+- Card size
+- Image file
+- Grid layout
+- Border radius
+
+For Shane’s image only:
+
+Use a slightly less aggressive crop:
+
+className="
+  h-full
+  w-full
+  object-cover
+  object-[center_28%]
+  scale-[0.94]
+"
+
+Also ensure the image wrapper has:
+
+className="
+  h-full
+  w-full
+  overflow-hidden
+  bg-white
+"
+
+If scaling causes visible empty edges, use this instead:
+
+style={{
+  objectFit: "cover",
+  objectPosition: "center 28%",
+  transform: "scale(0.97)"
+}}
+
+Expected result:
+- Shane’s head should sit at a similar vertical level as the adjacent card.
+- More of his shoulders/body should be visible.
+- The image should not look tightly cropped.
+
+==================================================
+4. FIX THE “S” IN “INSIGHTS”
+==================================================
+
+Problem:
+The final “s” in “Insights” looks visually off because the gradient clipping/rendering is inconsistent.
+
+Goal:
+Render the full word cleanly and evenly with no malformed letter, clipping, or strange gradient edge.
+
+Replace the current gradient text implementation with:
+
+className="
+  inline-block
+  bg-[linear-gradient(90deg,#4F46E5_0%,#7C3AED_48%,#3B82F6_100%)]
+  bg-clip-text
+  text-transparent
+  text-[72px]
+  md:text-[88px]
+  lg:text-[96px]
+  font-semibold
+  leading-[0.95]
+  tracking-[-0.055em]
+  pb-[0.08em]
+"
+
+Important:
+- Keep the word exactly: `Insights`
+- Use `inline-block`
+- Add a small bottom padding so descenders/letter edges do not clip
+- Remove any `overflow-hidden` from the heading or its immediate wrapper
+- Remove any separate span wrapping only the final “s”
+- Apply the gradient to the entire word as one element
+- Do not use SVG text
+- Do not use text-shadow
+
+The heading wrapper must use:
+
+className="
+  overflow-visible
+  leading-none
+"
+
+Expected result:
+- The entire word “Insights” should appear as one clean gradient heading.
+- The final “s” should match the rest of the letters.
+- No clipping at the top, bottom, or right edge.
+
+==================================================
+DO NOT CHANGE
+==================================================
+
+Do not change:
+- Section order
+- Other buttons
+- Other images
+- Names, roles, or captions
+- Grid columns
+- Card dimensions
+- Navigation
+- Footer
+- Any unrelated typography
+
+Expected final outcome:
+- “Calculate your savings” displays on one line.
+- Jael’s head aligns with Nur’s.
+- Shane’s image is slightly zoomed out and balanced.
+- “Insights” renders cleanly with a consistent full-word gradient.

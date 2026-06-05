@@ -425,7 +425,7 @@ export default function Home() {
           <div className="col-span-2 flex items-center justify-center border-t border-slate-200 px-6 py-5 md:col-span-4 md:border-l-0 md:border-t xl:col-span-1 xl:border-l xl:border-t-0">
             <a
               href="#contact"
-              className="inline-flex h-[72px] w-full items-center justify-center gap-3 rounded-[14px] border border-white/10 bg-[#5B45E8] px-6 text-[18px] font-semibold text-white shadow-[0_10px_24px_rgba(55,38,160,0.28)] transition-all duration-300 hover:bg-[#4B38CF] hover:-translate-y-0.5 active:bg-[#3F2FB5] focus:outline-none focus:ring-2 focus:ring-[#8E7CFF] focus:ring-offset-2 sm:w-[240px]"
+              className="inline-flex h-[64px] w-full min-w-[260px] items-center justify-center gap-3 whitespace-nowrap rounded-[14px] border border-white/10 bg-[#5B45E8] px-8 text-[17px] font-semibold text-white shadow-[0_10px_24px_rgba(55,38,160,0.28)] transition-all duration-300 hover:bg-[#4B38CF] hover:-translate-y-0.5 active:bg-[#3F2FB5] focus:outline-none focus:ring-2 focus:ring-[#8E7CFF] focus:ring-offset-2 sm:w-auto"
             >
               <ArrowRight className="h-4 w-4" />
               Calculate your savings
@@ -443,9 +443,11 @@ export default function Home() {
           {/* Header */}
           <div className="mb-6 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
             <div className="max-w-3xl">
-              <h2 className="inline-block bg-gradient-to-r from-indigo-700 via-violet-600 to-blue-500 bg-clip-text pb-2 pr-2 text-[clamp(48px,5.2vw,78px)] font-semibold tracking-[-0.05em] leading-[1] text-transparent">
-                Insights
-              </h2>
+              <div className="overflow-visible leading-none">
+                <h2 className="inline-block bg-[linear-gradient(90deg,#4F46E5_0%,#7C3AED_48%,#3B82F6_100%)] bg-clip-text pb-[0.08em] text-[72px] font-semibold leading-[0.95] tracking-[-0.055em] text-transparent md:text-[88px] lg:text-[96px]">
+                  Insights
+                </h2>
+              </div>
               <p className="mt-3 text-2xl font-medium tracking-[-0.035em] leading-tight text-slate-700 sm:text-3xl lg:text-4xl">
                 Ideas worth sharing.
               </p>
@@ -1329,7 +1331,7 @@ export default function Home() {
                 name: "Shane Rubio-Limiac",
                 flag: "🇵🇭",
                 role: "Head of Operations",
-                objectPosition: "object-top",
+                objectPosition: "object-[center_28%]",
                 isReal: true,
                 gender: "female",
               },
@@ -1357,14 +1359,13 @@ export default function Home() {
                 className="group relative aspect-[4/3] overflow-hidden rounded-3xl bg-slate-100 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-xl"
               >
                 {person.name === "Jael Atendido" ? (
-                  <div className="relative h-full w-full overflow-hidden rounded-[inherit]">
-                    <img
-                      src={person.photo}
-                      alt={person.name}
-                      className="absolute left-1/2 top-1/2 h-auto w-[158%] max-w-none -translate-x-1/2 -translate-y-[48%] transition-transform duration-500 group-hover:scale-[1.03]"
-                      loading="lazy"
-                    />
-                  </div>
+                  <img
+                    src={person.photo}
+                    alt={person.name}
+                    className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                    style={{ objectPosition: "center 32%" }}
+                    loading="lazy"
+                  />
                 ) : (
                   <img
                     src={person.photo}
