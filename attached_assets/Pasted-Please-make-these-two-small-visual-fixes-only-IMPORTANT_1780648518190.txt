@@ -1,0 +1,142 @@
+Please make these two small visual fixes only.
+
+IMPORTANT:
+- Do not redesign either section.
+- Keep the current layout, content, spacing, and images.
+- Only adjust the Insights title so it fits cleanly and the Work Differently card background contrast.
+- Keep everything responsive.
+- No horizontal clipping or overflow.
+
+==================================================
+1. INSIGHTS TITLE — REDUCE SIZE SLIGHTLY SO IT DOES NOT LOOK CROPPED
+==================================================
+
+Current issue:
+The “Insights” title still looks slightly cropped/too large, especially around the final “s” and the overall word width.
+
+Goal:
+Reduce the title size slightly so the complete word fits comfortably and looks balanced.
+
+Use:
+
+className="
+  inline-block
+  bg-gradient-to-r from-indigo-700 via-violet-600 to-blue-500
+  bg-clip-text text-transparent
+  text-[clamp(48px,5.2vw,78px)]
+  font-semibold
+  tracking-[-0.05em]
+  leading-[1]
+  pb-2 pr-2
+"
+
+Important:
+- Add `pr-2` so the final “s” has enough room.
+- Add `pb-2` so no part of the letters is clipped vertically.
+- Remove any `overflow-hidden` from the direct heading wrapper.
+- Remove fixed widths or negative margins affecting the title.
+- Keep the title left-aligned with:
+  - “Ideas worth sharing.”
+  - the description below it.
+
+Suggested title wrapper:
+
+className="
+  w-fit max-w-full overflow-visible
+"
+
+Do not use:
+- whitespace-nowrap if it causes overflow
+- fixed pixel width
+- negative translate
+- negative margins
+
+Expected result:
+The full word “Insights” should be clearly visible, including the final “s”, with some breathing room around it.
+
+==================================================
+2. WORK DIFFERENTLY — CHANGE RIGHT CARD BACKGROUND
+==================================================
+
+Current issue:
+The “Real work. Real growth.” card background looks too similar to the surrounding section background, so the card blends into the page.
+
+Goal:
+Give the right card a clearly distinct but still soft background.
+
+Keep the left card:
+“Hire faster. Spend less.”
+
+Left card background:
+
+className="
+  bg-white
+"
+
+Change the right card:
+“Real work. Real growth.”
+
+Preferred right card background:
+
+className="
+  bg-[#e2e5ff]
+"
+
+Alternative if that is too dark:
+
+className="
+  bg-[#e8eaff]
+"
+
+Do not use:
+- transparent background
+- white/low-opacity background
+- the same gradient/background as the parent section
+
+Right card border:
+
+className="
+  border border-indigo-200/80
+"
+
+Right card shadow:
+
+className="
+  shadow-[0_18px_55px_rgba(79,70,229,0.12)]
+"
+
+Keep the card content area consistently colored from below the image through the CTA area.
+
+If the image remains separate, structure it like:
+
+<div className="overflow-hidden rounded-[2rem] border border-indigo-200/80 bg-[#e2e5ff]">
+  <div className="image-wrapper">...</div>
+  <div className="bg-[#e2e5ff] p-5 sm:p-6">
+    ...
+  </div>
+</div>
+
+Make sure these elements also use the new right-card background:
+- feature rows
+- bottom CTA area
+- spaces between rows
+
+Use slightly darker dividers on the right card:
+
+className="
+  border-indigo-200/70
+"
+
+The CTA can remain transparent, but it should sit visibly over the right-card background.
+
+==================================================
+RESPONSIVE CHECK
+==================================================
+
+After updating:
+- “Insights” is fully visible and no longer appears cropped.
+- The final “s” has enough spacing.
+- The right Work Differently card is clearly different from the section background.
+- The left and right cards remain visually related.
+- No layout, text, or card content changes.
+- No horizontal scrolling.

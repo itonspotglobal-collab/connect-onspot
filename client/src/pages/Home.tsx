@@ -443,7 +443,7 @@ export default function Home() {
           {/* Header */}
           <div className="mb-6 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
             <div className="max-w-3xl">
-              <h2 className="inline-block bg-gradient-to-r from-indigo-700 via-violet-600 to-blue-500 bg-clip-text pb-1 text-[clamp(54px,6vw,92px)] font-semibold tracking-[-0.06em] leading-[0.95] text-transparent">
+              <h2 className="inline-block bg-gradient-to-r from-indigo-700 via-violet-600 to-blue-500 bg-clip-text pb-2 pr-2 text-[clamp(48px,5.2vw,78px)] font-semibold tracking-[-0.05em] leading-[1] text-transparent">
                 Insights
               </h2>
               <p className="mt-3 text-2xl font-medium tracking-[-0.035em] leading-tight text-slate-700 sm:text-3xl lg:text-4xl">
@@ -680,7 +680,7 @@ export default function Home() {
               </div>
 
               {/* Card 2: For Professionals */}
-              <div className="group flex h-full flex-col overflow-hidden rounded-[2rem] border border-indigo-100/80 bg-[#eef0ff] shadow-[0_20px_60px_rgba(80,80,180,0.08)] backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(80,80,180,0.14)]">
+              <div className="group flex h-full flex-col overflow-hidden rounded-[2rem] border border-indigo-200/80 bg-[#e2e5ff] shadow-[0_18px_55px_rgba(79,70,229,0.12)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(79,70,229,0.18)]">
                 {/* Image header */}
                 <div className="relative h-[210px] w-full overflow-hidden sm:h-[230px] lg:h-[250px]">
                   <img
