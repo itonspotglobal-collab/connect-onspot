@@ -967,7 +967,7 @@ export default function Home() {
         <div className="relative z-10 mt-8 flex justify-center">
           <a
             href="#people-behind-platform"
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 px-7 py-3.5 text-base font-semibold text-white shadow-[0_12px_30px_rgba(168,85,247,0.28)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(168,85,247,0.38)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#17162f]"
+            className="inline-flex items-center justify-center gap-3 rounded-full bg-[#A9A4FF] px-7 py-3 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(169,164,255,0.24)] transition-all duration-300 hover:bg-[#9690F5] hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#A9A4FF] focus:ring-offset-2 focus:ring-offset-[#17152F]"
           >
             Meet the people behind the work
             <ArrowRight className="h-4 w-4" />
