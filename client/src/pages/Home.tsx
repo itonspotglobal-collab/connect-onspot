@@ -50,10 +50,10 @@ import GalleryImg3 from "@assets/Culture_Photo_1775044319871.png";
 import GalleryImg7 from "@assets/Leadership_Lifestyle_1775042849148.png";
 
 import WhyOnSpotMainOffice from "../assets/why-onspot/why-onspot-main-office.png";
-import WhyAIFirstInfrastructure from "@assets/AI-First_1780060255446.png";
-import WhyHumanCenteredCulture from "@assets/human-centered_1780060255447.png";
-import WhyConnectedEcosystem from "@assets/connected-ecosystem_1780060255447.png";
-import WhyScalableExcellence from "@assets/scalable-excellence_1780060255447.png";
+import WhyAIFirstInfrastructure from "@assets/Screenshot_2026-06-05_at_17.48.33_1780653139372.png";
+import WhyHumanCenteredCulture from "@assets/Screenshot_2026-06-05_at_17.48.54_1780653139379.png";
+import WhyConnectedEcosystem from "@assets/Screenshot_2026-06-05_at_17.49.53_1780653139380.png";
+import WhyScalableExcellence from "@assets/Screenshot_2026-06-05_at_17.50.17_1780653139381.png";
 
 import CollaborationThatScales from "@assets/Collaboration-that-scales_1780059195131.png";
 import ExecutiveSupport from "@assets/Executive_Support_1780638507560.png";
