@@ -69,7 +69,7 @@ import NurLamineroPhoto from "@assets/Nur_1780574815788.png";
 import JakeWainbergPhoto from "@assets/Jake_1780574815787.png";
 import MarkApostolPhoto from "@assets/Macky_1780574815788.png";
 import RenierMacalinoPhoto from "@assets/REN_1780657869137.png";
-import JaelAtendidoPhoto from "@assets/Jael_1780664654354.png";
+import JaelAtendidoPhoto from "@assets/Jael_1780665513434.png";
 import AndreaPinzonPhoto from "@assets/Andrea_Pinzon_1774264095055.jpeg";
 import ShaneRubioPhoto from "@assets/Shane_1780657863305.png";
 import RachelCastroPhoto from "@assets/Rachel_Caztro_1774264095056.jpg";
