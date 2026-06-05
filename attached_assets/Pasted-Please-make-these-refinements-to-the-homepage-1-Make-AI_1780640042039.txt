@@ -1,0 +1,227 @@
+Please make these refinements to the homepage:
+
+1. Make “AI First. Humans When it Matters.” slightly smaller.
+2. Add visible white space between the hero stats strip and the Insights section.
+3. Make the Insights section narrower and less horizontally stretched.
+
+IMPORTANT:
+- Do not redesign the hero or Insights section.
+- Keep the current colors, content, article layout, and overall design.
+- Only adjust the requested typography, spacing, and width.
+- Keep the layout responsive.
+- No horizontal overflow.
+
+==================================================
+1. MAKE “AI FIRST. HUMANS WHEN IT MATTERS.” SMALLER
+==================================================
+
+Current issue:
+The badge text still feels too large compared to “One System. Your unfair Advantage.”
+
+Goal:
+Make the badge text slightly smaller while keeping the badge visible and premium.
+
+Recommended badge class:
+
+className="
+  inline-flex items-center justify-center
+  rounded-full
+  border border-white/20
+  bg-white/[0.04]
+  px-5 py-2.5
+  text-sm sm:text-base lg:text-lg
+  font-semibold
+  leading-snug
+  text-white/90
+  backdrop-blur-md
+"
+
+Keep “One System. Your unfair Advantage.” as:
+
+className="
+  text-base sm:text-lg lg:text-xl
+  font-semibold
+  leading-snug
+  text-white/80
+"
+
+Expected result:
+The badge remains highlighted through the border and pill shape, but its text is slightly smaller than the “One System...” line.
+
+==================================================
+2. ADD WHITE SPACE BETWEEN STATS STRIP AND INSIGHTS
+==================================================
+
+Current issue:
+The Insights section begins immediately after the hero stats strip, making the sections feel connected like one long strip.
+
+Goal:
+Add a clear white breathing space between the bottom of the stats strip and the start of the Insights section.
+
+Preferred structure:
+
+<StatsSection />
+
+<div
+  aria-hidden="true"
+  className="h-16 bg-white sm:h-20 lg:h-24"
+/>
+
+<InsightsSection />
+
+Alternative:
+Apply top margin and white background directly to the Insights section:
+
+className="
+  mt-16 sm:mt-20 lg:mt-24
+  bg-[#f7f8fb]
+"
+
+However, preferred is a dedicated white spacer so the separation is visually obvious.
+
+Important:
+- The spacer should be solid white.
+- Do not use a gradient in the spacer.
+- Do not add borders.
+- Keep the distance visible but not excessive.
+
+==================================================
+3. MAKE THE INSIGHTS SECTION LESS STRETCHED SIDEWAYS
+==================================================
+
+Current issue:
+The Insights content stretches too far across the screen and feels elongated horizontally.
+
+Goal:
+Use a narrower centered container, similar to the attached reference, with comfortable margins on both sides.
+
+Change the main Insights container to:
+
+className="
+  mx-auto w-full max-w-[1180px]
+  px-5 sm:px-7 lg:px-8
+"
+
+Do not use:
+- max-w-[1380px]
+- max-w-[1440px]
+- max-w-[1700px]
+- max-w-[1800px]
+- full-width article cards
+
+The section should stay centered and contained.
+
+==================================================
+4. INSIGHTS SECTION SPACING
+==================================================
+
+Keep the Insights section compact:
+
+Section wrapper:
+
+className="
+  bg-[#f7f8fb]
+  py-8 sm:py-10 lg:py-12
+"
+
+Header wrapper:
+
+className="
+  mb-5 flex flex-col gap-3
+  md:flex-row md:items-end md:justify-between
+"
+
+Keep the current content:
+- Insights
+- Ideas worth sharing.
+- Description
+- Explore all button
+
+==================================================
+5. FEATURED ARTICLE WIDTH AND HEIGHT
+==================================================
+
+The featured article should use the contained section width and should not stretch to the screen edges.
+
+Featured card:
+
+className="
+  group relative w-full overflow-hidden
+  rounded-[1.75rem] bg-slate-900 shadow-sm
+"
+
+Featured image/card height:
+
+className="
+  h-[250px] sm:h-[285px] lg:h-[320px]
+"
+
+Do not exceed approximately 330px on desktop.
+
+Featured title:
+
+className="
+  mt-2 max-w-3xl
+  text-xl sm:text-2xl lg:text-3xl
+  font-semibold leading-tight text-white
+"
+
+==================================================
+6. SMALLER ARTICLE CARDS
+==================================================
+
+Keep the two lower articles inside the same contained width.
+
+Grid:
+
+className="
+  mt-4 grid gap-4 md:grid-cols-2
+"
+
+Small image wrapper:
+
+className="
+  h-28 sm:h-32 lg:h-36
+  overflow-hidden bg-slate-100
+"
+
+Card body:
+
+className="
+  p-4 sm:p-5
+"
+
+Do not stretch the cards wider than the main Insights container.
+
+==================================================
+7. RESPONSIVE BEHAVIOR
+==================================================
+
+Desktop:
+- White gap appears clearly after the stats strip.
+- Insights section is centered and narrower.
+- Featured card and lower cards do not stretch to screen edges.
+
+Laptop:
+- Maintain visible side margins.
+- Section still fits comfortably.
+
+Tablet/mobile:
+- Reduce spacer height slightly.
+- Insights cards stack naturally.
+- No clipping or horizontal scrolling.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+Hero:
+- “AI First. Humans When it Matters.” is slightly smaller and no longer competes with “One System. Your unfair Advantage.”
+
+Section transition:
+- A visible solid-white breathing space separates the hero stats strip from Insights.
+
+Insights:
+- The section remains editorial and polished.
+- It is centered inside a narrower container.
+- It no longer looks overly stretched or elongated sideways.

@@ -340,10 +340,10 @@ export default function Home() {
           <div className="mx-auto flex w-full max-w-5xl flex-col items-center justify-center text-center">
             {/* Badge */}
             <div
-              className="hero-fade-up inline-flex items-center justify-center gap-2.5 rounded-full border border-white/20 bg-white/[0.04] px-6 py-3 backdrop-blur-md"
+              className="hero-fade-up inline-flex items-center justify-center gap-2.5 rounded-full border border-white/20 bg-white/[0.04] px-5 py-2.5 backdrop-blur-md"
               data-testid="badge-superhuman-bpo"
             >
-              <span className="text-base font-semibold leading-snug text-white/90 sm:text-lg lg:text-xl">
+              <span className="text-sm font-semibold leading-snug text-white/90 sm:text-base lg:text-lg">
                 AI First. Humans When it Matters.
               </span>
             </div>
@@ -434,9 +434,12 @@ export default function Home() {
         </div>
       </div>
 
+      {/* ── White spacer between stats and Insights ── */}
+      <div aria-hidden="true" className="h-16 bg-white sm:h-20 lg:h-24" />
+
       {/* ── 2. FEATURED INSIGHTS — card grid ── */}
       <div className="bg-[#f7f8fb] py-8 sm:py-10 lg:py-12">
-        <div className="mx-auto w-full max-w-[1380px] px-6 sm:px-8 lg:px-10">
+        <div className="mx-auto w-full max-w-[1180px] px-5 sm:px-7 lg:px-8">
           {/* Header */}
           <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
