@@ -1,0 +1,93 @@
+Please fix only Jael Atendido’s image card inside the “The People Behind the Platform” section.
+
+Current issue:
+Jael’s card is showing mostly sky/background, while Jael’s face appears too low and partially hidden behind the text overlay. The image does not match the framing quality of the other profile cards.
+
+Goal:
+- Zoom into Jael’s actual face and upper body.
+- Position Jael’s face clearly inside the card.
+- Match the visual framing of the surrounding profile cards.
+- Keep the card size, rounded corners, hover effect, name, role, Philippine flag, and overlay styling unchanged.
+- Do not alter any other person’s card.
+
+Important:
+Do not use the default centered crop for Jael’s image.
+Apply a Jael-specific image position and zoom.
+
+Find the card/data entry for:
+
+Name:
+Jael Atendido
+
+Role:
+Executive Assistant
+
+For Jael’s image only, change the image styling to:
+
+className="
+  h-full
+  w-full
+  object-cover
+  scale-[1.75]
+  transition-transform
+  duration-500
+  group-hover:scale-[1.82]
+"
+
+Apply this specific object position:
+
+style={{
+  objectPosition: "58% 72%"
+}}
+
+The desired result:
+- Jael’s head should appear around the upper-middle area of the card.
+- Jael’s shoulders and upper body should be visible.
+- Very little empty sky should remain.
+- Jael’s face must not be covered by the bottom name/role overlay.
+- The framing should feel similar in scale to Mark Anthony Apostol’s card.
+
+Recommended JSX:
+
+<img
+  src={jael.image}
+  alt="Jael Atendido"
+  className="
+    h-full
+    w-full
+    object-cover
+    scale-[1.75]
+    transition-transform
+    duration-500
+    group-hover:scale-[1.82]
+  "
+  style={{ objectPosition: "58% 72%" }}
+/>
+
+Also ensure the image wrapper uses:
+
+<div className="relative h-full w-full overflow-hidden rounded-[inherit]">
+
+Do not:
+- replace Jael’s photo
+- resize the entire card
+- modify the grid
+- move or remove the text overlay
+- apply this crop to other profiles
+- hide Jael’s face behind the overlay
+
+Responsive requirement:
+Keep the same Jael-specific crop on desktop and tablet. On small mobile screens, slightly reduce the zoom only if needed:
+
+className="
+  h-full
+  w-full
+  object-cover
+  scale-[1.55]
+  sm:scale-[1.75]
+  transition-transform
+  duration-500
+  group-hover:scale-[1.82]
+"
+
+After making the change, visually verify Jael’s face is clearly visible and positioned above the name overlay.

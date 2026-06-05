@@ -1359,12 +1359,22 @@ export default function Home() {
                 key={person.name}
                 className="group relative aspect-[4/3] overflow-hidden rounded-3xl bg-slate-100 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-xl"
               >
-                <img
-                  src={person.photo}
-                  alt={person.name}
-                  className={`h-full w-full object-cover transition duration-700 ${person.objectPosition}${"extraScale" in person ? ` ${(person as any).extraScale} group-hover:scale-[2.2]` : " group-hover:scale-105"}`}
-                  loading="lazy"
-                />
+                {person.name === "Jael Atendido" ? (
+                  <img
+                    src={person.photo}
+                    alt={person.name}
+                    className="h-full w-full object-cover scale-[1.55] sm:scale-[1.75] transition-transform duration-500 group-hover:scale-[1.82]"
+                    style={{ objectPosition: "58% 72%" }}
+                    loading="lazy"
+                  />
+                ) : (
+                  <img
+                    src={person.photo}
+                    alt={person.name}
+                    className={`h-full w-full object-cover transition duration-700 ${person.objectPosition}${"extraScale" in person ? ` ${(person as any).extraScale} group-hover:scale-[2.2]` : " group-hover:scale-105"}`}
+                    loading="lazy"
+                  />
+                )}
 
                 {/* Gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/25 to-transparent opacity-100 md:opacity-0 md:transition-opacity md:duration-300 md:group-hover:opacity-100" />
