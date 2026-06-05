@@ -1394,8 +1394,10 @@ export default function Home() {
       </div>
 
       {/* ── 8. GET MATCHED FINAL CTA ── */}
-      <section className="bg-[#f7f6ef] py-16 sm:py-20 lg:py-24">
-        <div className="mx-auto max-w-[900px] px-6 sm:px-8">
+      <section className="relative overflow-hidden bg-gradient-to-b from-[#deddf0] via-[#d4d5e8] to-[#c9cce2] py-16 sm:py-20 lg:py-24">
+        <div className="pointer-events-none absolute -left-24 top-1/3 h-72 w-72 rounded-full bg-violet-400/15 blur-3xl" />
+        <div className="pointer-events-none absolute -right-24 bottom-0 h-72 w-72 rounded-full bg-blue-400/15 blur-3xl" />
+        <div className="relative z-10 mx-auto max-w-[900px] px-6 sm:px-8">
           <div className="relative overflow-hidden rounded-[2rem] border border-violet-200/60 bg-gradient-to-br from-[#f7f4ff] via-[#f7f3ea] to-[#edf5ff] px-6 py-12 text-center shadow-[0_20px_60px_rgba(79,70,229,0.10)] sm:px-10 lg:px-14">
             {/* Decorative glows */}
             <div className="pointer-events-none absolute -left-20 -top-20 h-56 w-56 rounded-full bg-violet-300/20 blur-3xl" />
