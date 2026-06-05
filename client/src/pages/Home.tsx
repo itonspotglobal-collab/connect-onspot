@@ -416,7 +416,7 @@ export default function Home() {
           {[
             { value: "72hrs", label: "AVG. TIME TO HIRE" },
             { value: "200+", label: "GLOBAL CLIENTS" },
-            { value: "60%", label: "CLIENT COSTING SAVED" },
+            { value: "60%", label: "CLIENT COST SAVINGS" },
             { value: "2,000+", label: "TALENTS MATCHED" },
           ].map((stat) => (
             <div
@@ -434,24 +434,22 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ── White spacer between stats and Insights ── */}
-      <div aria-hidden="true" className="h-16 bg-white sm:h-20 lg:h-24" />
+      {/* ── Spacer between stats and Insights ── */}
+      <div aria-hidden="true" className="h-24 bg-[#f7f8fb] sm:h-28 lg:h-36" />
 
       {/* ── 2. FEATURED INSIGHTS — card grid ── */}
       <div className="bg-[#f7f8fb] py-8 sm:py-10 lg:py-12">
         <div className="mx-auto w-full max-w-[1180px] px-5 sm:px-7 lg:px-8">
           {/* Header */}
-          <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-            <div>
-              <h2 className="text-[clamp(44px,5vw,76px)] font-semibold tracking-[-0.055em] leading-[0.95]">
-                <span className="bg-gradient-to-r from-indigo-700 via-violet-600 to-blue-500 bg-clip-text text-transparent">
-                  Insights
-                </span>
+          <div className="mb-6 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+            <div className="max-w-3xl">
+              <h2 className="inline-block bg-gradient-to-r from-indigo-700 via-violet-600 to-blue-500 bg-clip-text pb-1 text-[clamp(54px,6vw,92px)] font-semibold tracking-[-0.06em] leading-[0.95] text-transparent">
+                Insights
               </h2>
-              <p className="mt-2 text-xl font-medium tracking-[-0.03em] leading-tight text-slate-700 sm:text-2xl lg:text-3xl">
+              <p className="mt-3 text-2xl font-medium tracking-[-0.035em] leading-tight text-slate-700 sm:text-3xl lg:text-4xl">
                 Ideas worth sharing.
               </p>
-              <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-600 sm:text-base">
+              <p className="mt-3 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg">
                 Perspectives on customer experience, global talent, and the
                 future of work.
               </p>
@@ -583,18 +581,18 @@ export default function Home() {
         </div>
       </div>
 
+      {/* ── Spacer between Insights and Work Differently ── */}
+      <div aria-hidden="true" className="h-20 bg-[#f7f8fb] sm:h-24 lg:h-32" />
+
       {/* ── 3 + 4. WORK DIFFERENTLY + TRUSTED BY (shared bg) ── */}
       <div className="relative overflow-hidden bg-gradient-to-br from-[#f5f3ff] via-[#f7f9ff] to-[#eafaff]">
         <div className="pointer-events-none absolute -left-40 top-20 h-[520px] w-[520px] rounded-full bg-violet-300/10 blur-3xl" />
         <div className="pointer-events-none absolute -right-40 bottom-20 h-[520px] w-[520px] rounded-full bg-cyan-300/10 blur-3xl" />
 
         {/* ── 3. WORK DIFFERENTLY ── */}
-        <div className="relative overflow-x-hidden bg-transparent pt-20 pb-14 sm:pt-24 sm:pb-16 lg:pt-28 lg:pb-20">
+        <div className="relative overflow-x-hidden bg-transparent py-12 sm:py-14 lg:py-16">
           <div className="container relative z-10 mx-auto px-4 sm:px-6">
             <div className="text-center mb-12 sm:mb-16">
-              <p className="text-2xl font-semibold tracking-[0.04em] text-indigo-700 sm:text-3xl lg:text-4xl">
-                Work Differently
-              </p>
               <h2 className="mx-auto mt-5 max-w-[1400px] px-6 sm:px-8 lg:px-10 text-center font-semibold leading-[1.08] tracking-[-0.035em] text-slate-950 text-[clamp(34px,3.45vw,56px)]">
                 <span className="block xl:whitespace-nowrap">
                   Whether you're scaling a team or growing a career
@@ -607,9 +605,9 @@ export default function Home() {
 
             <div className="mx-auto grid w-full max-w-[1280px] grid-cols-1 gap-6 lg:grid-cols-2 items-stretch">
               {/* Card 1: For Companies */}
-              <div className="group flex h-full flex-col overflow-hidden rounded-[2rem] border border-indigo-100/80 bg-white/70 shadow-[0_20px_60px_rgba(80,80,180,0.08)] backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(80,80,180,0.14)]">
+              <div className="group flex h-full flex-col overflow-hidden rounded-[2rem] border border-indigo-100/80 bg-white/80 shadow-[0_20px_60px_rgba(80,80,180,0.08)] backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(80,80,180,0.14)]">
                 {/* Image header */}
-                <div className="relative h-[260px] w-full overflow-hidden sm:h-[300px] lg:h-[320px]">
+                <div className="relative h-[210px] w-full overflow-hidden sm:h-[230px] lg:h-[250px]">
                   <img
                     src={WorkCompaniesPhoto}
                     alt="Team collaboration"
@@ -623,12 +621,12 @@ export default function Home() {
                 </div>
 
                 {/* Card body */}
-                <div className="flex flex-1 flex-col p-8 sm:p-10">
+                <div className="flex flex-1 flex-col p-5 sm:p-6">
                   <h3 className="text-2xl font-bold leading-tight text-slate-950 sm:text-3xl">
                     Hire faster. Spend less.
                   </h3>
 
-                  <div className="mt-6 flex flex-col flex-1">
+                  <div className="mt-4 flex flex-col flex-1">
                     {[
                       {
                         icon: <Zap className="h-5 w-5" />,
@@ -653,16 +651,16 @@ export default function Home() {
                     ].map((item) => (
                       <div
                         key={item.title}
-                        className="flex gap-4 border-b border-[#3F4698]/10 py-5"
+                        className="flex items-start gap-3 border-b border-slate-200/80 py-3"
                       >
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#3F4698]/10 text-[#3F4698]">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#3F4698]/10 text-[#3F4698]">
                           {item.icon}
                         </div>
                         <div>
                           <p className="font-semibold text-slate-950">
                             {item.title}
                           </p>
-                          <p className="mt-1 text-sm text-slate-600">
+                          <p className="mt-0.5 text-sm text-slate-600">
                             {item.sub}
                           </p>
                         </div>
@@ -670,7 +668,7 @@ export default function Home() {
                     ))}
                   </div>
 
-                  <div className="mt-auto pt-6">
+                  <div className="mt-4">
                     <a
                       href="/hire-talent"
                       className="flex w-full items-center justify-center rounded-full border border-[#3F4698] px-6 py-3 text-sm font-semibold text-[#3F4698] transition hover:bg-[#3F4698] hover:text-white"
@@ -682,9 +680,9 @@ export default function Home() {
               </div>
 
               {/* Card 2: For Professionals */}
-              <div className="group flex h-full flex-col overflow-hidden rounded-[2rem] border border-indigo-100/80 bg-white/70 shadow-[0_20px_60px_rgba(80,80,180,0.08)] backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(80,80,180,0.14)]">
+              <div className="group flex h-full flex-col overflow-hidden rounded-[2rem] border border-indigo-100/80 bg-[#eef0ff] shadow-[0_20px_60px_rgba(80,80,180,0.08)] backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(80,80,180,0.14)]">
                 {/* Image header */}
-                <div className="relative h-[260px] w-full overflow-hidden sm:h-[300px] lg:h-[320px]">
+                <div className="relative h-[210px] w-full overflow-hidden sm:h-[230px] lg:h-[250px]">
                   <img
                     src={WorkProfessionalsPhoto}
                     alt="Professional remote work"
@@ -698,12 +696,12 @@ export default function Home() {
                 </div>
 
                 {/* Card body */}
-                <div className="flex flex-1 flex-col p-8 sm:p-10">
+                <div className="flex flex-1 flex-col p-5 sm:p-6">
                   <h3 className="text-2xl font-bold leading-tight text-slate-950 sm:text-3xl">
                     Real work. Real growth.
                   </h3>
 
-                  <div className="mt-6 flex flex-col flex-1">
+                  <div className="mt-4 flex flex-col flex-1">
                     {[
                       {
                         icon: <TrendingUp className="h-5 w-5" />,
@@ -728,16 +726,16 @@ export default function Home() {
                     ].map((item) => (
                       <div
                         key={item.title}
-                        className="flex gap-4 border-b border-[#3F4698]/10 py-5"
+                        className="flex items-start gap-3 border-b border-slate-200/80 py-3"
                       >
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#3F4698]/10 text-[#3F4698]">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#3F4698]/10 text-[#3F4698]">
                           {item.icon}
                         </div>
                         <div>
                           <p className="font-semibold text-slate-950">
                             {item.title}
                           </p>
-                          <p className="mt-1 text-sm text-slate-600">
+                          <p className="mt-0.5 text-sm text-slate-600">
                             {item.sub}
                           </p>
                         </div>
@@ -745,7 +743,7 @@ export default function Home() {
                     ))}
                   </div>
 
-                  <div className="mt-auto pt-6">
+                  <div className="mt-4">
                     <a
                       href="/find-best-matches"
                       className="flex w-full items-center justify-center rounded-full border border-[#3F4698] px-6 py-3 text-sm font-semibold text-[#3F4698] transition hover:bg-[#3F4698] hover:text-white"
@@ -973,32 +971,32 @@ export default function Home() {
           {/* Featured card + two smaller cards */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.15fr_1fr] lg:items-stretch">
             {/* ── Featured testimonial ── */}
-            <div className="relative flex h-full flex-col overflow-hidden rounded-[2rem] border border-white/70 bg-white/80 p-8 shadow-[0_24px_80px_rgba(80,80,180,0.12)] backdrop-blur-xl sm:p-10 lg:p-12">
+            <div className="relative flex h-full flex-col overflow-hidden rounded-[2rem] border border-indigo-200/70 bg-gradient-to-br from-indigo-950 via-indigo-900 to-violet-900 p-8 shadow-[0_24px_80px_rgba(49,46,129,0.24)] sm:p-10 lg:p-12">
               {/* Corner glows */}
-              <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-indigo-300/20 blur-3xl" />
-              <div className="pointer-events-none absolute -left-16 bottom-0 h-56 w-56 rounded-full bg-cyan-200/18 blur-3xl" />
+              <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-indigo-400/20 blur-3xl" />
+              <div className="pointer-events-none absolute -left-16 bottom-0 h-56 w-56 rounded-full bg-violet-400/15 blur-3xl" />
 
               {/* Decorative quote mark */}
-              <span className="pointer-events-none absolute right-8 top-4 select-none font-serif text-[120px] leading-none text-indigo-100/70">
+              <span className="pointer-events-none absolute right-8 top-4 select-none font-serif text-[120px] leading-none text-white/10">
                 &#8220;
               </span>
 
               {/* Author row + metric badge */}
               <div className="relative flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-white/20">
                     <User className="h-6 w-6" />
                   </div>
                   <div>
-                    <p className="text-base font-semibold text-slate-900">
+                    <p className="text-base font-semibold text-white">
                       Elad B.
                     </p>
-                    <p className="mt-0.5 text-sm text-slate-500">
+                    <p className="mt-0.5 text-sm text-white/65">
                       CEO / Founder, PineTech
                     </p>
                   </div>
                 </div>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/12 px-4 py-2 text-sm font-semibold text-white ring-1 ring-white/15">
                   <Zap className="h-3.5 w-3.5" />
                   40% time saved
                 </span>
@@ -1006,31 +1004,31 @@ export default function Home() {
 
               {/* Before → After */}
               <div className="relative mt-10">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/50">
                   Before
                 </p>
-                <h3 className="mt-1 text-2xl font-semibold leading-snug text-slate-800 sm:text-3xl">
+                <h3 className="mt-1 text-2xl font-semibold leading-snug text-white sm:text-3xl">
                   12-Hour Workdays
                 </h3>
 
                 <div className="my-5 flex items-center gap-3">
-                  <span className="h-px flex-1 bg-slate-200" />
-                  <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-100">
+                  <span className="h-px flex-1 bg-white/20" />
+                  <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/15">
                     transformed into
                   </span>
-                  <span className="h-px flex-1 bg-slate-200" />
+                  <span className="h-px flex-1 bg-white/20" />
                 </div>
 
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">
                   After
                 </p>
-                <h3 className="mt-1 text-2xl font-semibold italic leading-snug text-indigo-700 sm:text-3xl">
+                <h3 className="mt-1 text-2xl font-semibold italic leading-snug text-violet-200 sm:text-3xl">
                   Automated Excellence
                 </h3>
               </div>
 
               {/* Quote */}
-              <p className="relative mt-6 text-base leading-relaxed text-slate-600">
+              <p className="relative mt-6 text-base leading-relaxed text-white/75">
                 "The professionalism and consistency of the OnSpot team.
                 Communication is always clear, and the structured daily and
                 weekly updates make it simple to stay aligned."
@@ -1038,7 +1036,7 @@ export default function Home() {
 
               {/* Footer badge */}
               <div className="mt-auto pt-8">
-                <div className="inline-flex items-center gap-2 rounded-full border border-indigo-200/70 bg-indigo-50 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-indigo-700">
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-white/85 ring-1 ring-white/15">
                   <TrendingUp className="h-3 w-3" />
                   Client transformation
                 </div>
@@ -1119,40 +1117,26 @@ export default function Home() {
         <div className="pointer-events-none absolute -top-24 right-0 h-72 w-72 rounded-full bg-[#3F4698]/10 blur-3xl" />
         <div className="pointer-events-none absolute bottom-0 left-0 h-80 w-80 rounded-full bg-[#3F4698]/5 blur-3xl" />
 
-        <div className="container relative z-10 mx-auto max-w-7xl px-4 sm:px-6">
-          {/* Top row — intro left, image right */}
-          <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-center">
-            {/* Left: label + headline + copy */}
-            <div>
-              <div className="flex items-center gap-5">
-                <div className="h-px w-16 bg-indigo-600/70" />
-                <p className="text-base font-semibold uppercase tracking-[0.18em] text-indigo-700 sm:text-xl lg:text-2xl">
-                  Why OnSpot
-                </p>
-              </div>
-              <h2 className="mt-6 max-w-[1400px] break-words text-[clamp(42px,6vw,96px)] font-semibold tracking-[-0.06em] leading-[0.98] text-slate-950">
-                Not a service provider.{" "}
-                <span className="block italic text-indigo-700">
-                  An architect.
-                </span>
-              </h2>
-              <p className="mt-8 max-w-4xl text-xl leading-relaxed text-slate-600 sm:text-2xl">
-                We design the operating layer behind modern outsourcing —
-                combining AI-ready systems, vetted talent, and human
-                accountability so your team can scale without losing control.
+        <div className="container relative z-10 mx-auto max-w-[1400px] px-6 sm:px-8 lg:px-12">
+          {/* Header — full-width typography, no image */}
+          <div className="max-w-5xl">
+            <div className="flex items-center gap-5">
+              <div className="h-px w-16 bg-indigo-600/70" />
+              <p className="text-base font-semibold uppercase tracking-[0.18em] text-indigo-700 sm:text-xl lg:text-2xl">
+                Why OnSpot
               </p>
             </div>
-
-            {/* Right: large image */}
-            <div className="relative h-64 overflow-hidden rounded-[28px] border border-white/70 shadow-sm lg:h-72">
-              <img
-                src={WhyOnSpotMainOffice}
-                alt="Modern professional workspace"
-                className="h-full w-full object-cover object-center"
-                loading="lazy"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#3F4698]/15 to-transparent" />
-            </div>
+            <h2 className="mt-6 text-[clamp(56px,7vw,112px)] font-semibold tracking-[-0.06em] leading-[0.98] text-slate-950">
+              Not a service provider.{" "}
+              <span className="block italic text-indigo-700">
+                An architect.
+              </span>
+            </h2>
+            <p className="mt-8 max-w-4xl text-xl leading-relaxed text-slate-600 sm:text-2xl lg:text-3xl">
+              We design the operating layer behind modern outsourcing —
+              combining AI-ready systems, vetted talent, and human
+              accountability so your team can scale without losing control.
+            </p>
           </div>
 
           {/* Four pillar cards — 2×2 grid */}
@@ -1420,9 +1404,9 @@ export default function Home() {
                 />
 
                 <p className="text-xs sm:text-sm text-white/75 leading-relaxed max-w-md text-left transition-all duration-300">
-                  OnSpot is a technology company and hybrid marketplace–BPO
-                  delivering Philippine talent to global clients. Marketplace
-                  speed, BPO quality, and AI-ready operations — in one platform.
+                  OnSpot is the only outsourcing system built for the world
+                  that's coming—pairing AI-ready operations with world-class
+                  Philippine talent to power global businesses.
                 </p>
               </div>
 

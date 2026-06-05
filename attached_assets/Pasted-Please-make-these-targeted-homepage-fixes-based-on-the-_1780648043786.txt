@@ -1,0 +1,348 @@
+Please make these targeted homepage fixes based on the latest screenshots.
+
+IMPORTANT:
+- Do not redesign the full homepage.
+- Keep the current section order, content, colors, and general layouts.
+- Only apply the requested fixes.
+- Keep everything responsive.
+- Prevent horizontal clipping and page overflow.
+
+==================================================
+1. INSIGHTS SECTION — ALIGN TEXT, FIX “S”, ADD INVERTED PYRAMID HIERARCHY
+==================================================
+
+Current issues:
+- The “Insights” title alignment feels off.
+- The final “s” in “Insights” appears clipped or visually incorrect.
+- The text stack does not yet feel like a clear inverted-pyramid hierarchy.
+
+Goal:
+Create a clean left-aligned editorial hierarchy:
+
+Largest:
+Insights
+
+Medium:
+Ideas worth sharing.
+
+Smallest:
+Perspectives on customer experience, global talent, and the future of work.
+
+Fix the clipping:
+- Remove any fixed width, negative margin, transform, or overflow setting that clips the last letter.
+- Make sure the parent wrapper allows the full title to render.
+- Do not use `overflow-hidden` directly around the title.
+- Make sure the title has enough right-side room.
+
+Suggested header structure:
+
+<div className="max-w-3xl">
+  <h2 className="...">Insights</h2>
+  <p className="...">Ideas worth sharing.</p>
+  <p className="...">
+    Perspectives on customer experience, global talent, and the future of work.
+  </p>
+</div>
+
+Suggested styles:
+
+Insights title:
+className="
+  inline-block
+  bg-gradient-to-r from-indigo-700 via-violet-600 to-blue-500
+  bg-clip-text text-transparent
+  text-[clamp(54px,6vw,92px)]
+  font-semibold
+  tracking-[-0.06em]
+  leading-[0.95]
+  pb-1
+"
+
+Important:
+- Use `inline-block` so the gradient and full word render correctly.
+- Do not constrain the heading with a narrow width.
+- Add `pb-1` in case the letter shape is vertically clipped.
+
+Subtitle:
+className="
+  mt-3
+  text-2xl sm:text-3xl lg:text-4xl
+  font-medium
+  tracking-[-0.035em]
+  leading-tight
+  text-slate-700
+"
+
+Description:
+className="
+  mt-3 max-w-2xl
+  text-base sm:text-lg
+  leading-relaxed
+  text-slate-600
+"
+
+Header alignment:
+- Keep all three text elements aligned to the same left edge.
+- Do not center any of them.
+- Keep “Explore all” aligned separately to the right.
+
+Suggested header wrapper:
+
+className="
+  mb-6 flex flex-col gap-5
+  md:flex-row md:items-end md:justify-between
+"
+
+==================================================
+2. CHANGE THE BLANK SPACERS TO MATCH INSIGHTS BACKGROUND
+==================================================
+
+Current issue:
+The blank separation areas are pure white, while the Insights section uses a soft light background. The transition feels disconnected.
+
+Goal:
+Keep the blank breathing space, but make it the same color as the Insights background.
+
+Use the same background color as the Insights section, for example:
+
+bg-[#f7f8fb]
+
+Between stats strip and Insights:
+- Increase the blank space slightly.
+
+Suggested spacer:
+
+<div
+  aria-hidden="true"
+  className="h-24 bg-[#f7f8fb] sm:h-28 lg:h-36"
+/>
+
+Between Insights and Work Differently:
+- Keep a clear blank separation using the same background.
+
+Suggested spacer:
+
+<div
+  aria-hidden="true"
+  className="h-20 bg-[#f7f8fb] sm:h-24 lg:h-32"
+/>
+
+Important:
+- Do not use solid white.
+- Do not add borders or dividers.
+- Keep the space empty and calm.
+- If Insights and Work Differently share the same background already, increase section padding instead of adding a separate differently colored block.
+
+==================================================
+3. WORK DIFFERENTLY CARDS — ADD CONTRAST + FIT SECTION IN ONE PAGE
+==================================================
+
+Current issue:
+Both cards use almost the same background color, so they do not feel visually distinct.
+The section is also slightly too tall.
+
+Goal:
+- Keep the “Hire faster. Spend less.” card light.
+- Make the “Real work. Real growth.” card slightly darker.
+- Compress the section enough to fit comfortably in one desktop viewport.
+
+Left card:
+Use a very light background:
+
+className="
+  bg-white/80
+"
+
+Right card:
+Use a slightly darker cool-toned background:
+
+className="
+  bg-indigo-50/80
+"
+
+or:
+
+className="
+  bg-[#eef0ff]
+"
+
+Keep text readable and do not make it dark-violet.
+
+Card border:
+className="
+  border border-indigo-100/80
+"
+
+Image heights:
+Reduce slightly:
+
+className="
+  h-[210px] sm:h-[230px] lg:h-[250px]
+"
+
+Card body padding:
+Use:
+
+className="
+  p-5 sm:p-6
+"
+
+Feature rows:
+Reduce vertical spacing slightly:
+- smaller gaps
+- less padding between rows
+- compact icon boxes
+
+Suggested feature row:
+className="
+  flex items-start gap-3 py-3
+  border-b border-slate-200/80
+"
+
+CTA button:
+Keep at bottom but reduce vertical margin:
+className="
+  mt-4
+"
+
+Section padding:
+className="
+  py-12 sm:py-14 lg:py-16
+"
+
+Goal:
+On a standard desktop/laptop screen, the heading and both cards should fit comfortably without excessive scrolling.
+
+==================================================
+4. TRANSFORMATIONS — MAKE ELAD B. CARD DARKER FOR CONTRAST
+==================================================
+
+Current issue:
+Elad B.’s featured card blends too closely with the smaller testimonial cards.
+
+Goal:
+Give Elad B.’s featured card stronger contrast while keeping the same content and layout.
+
+Suggested featured card background:
+
+className="
+  relative overflow-hidden rounded-[2rem]
+  border border-indigo-200/70
+  bg-gradient-to-br from-indigo-950 via-indigo-900 to-violet-900
+  p-8 sm:p-10 lg:p-12
+  shadow-[0_24px_80px_rgba(49,46,129,0.24)]
+"
+
+Update text colors inside Elad’s card:
+
+Name:
+text-white
+
+Role:
+text-white/65
+
+Before label:
+text-white/50
+
+Before text:
+text-white
+
+After label:
+text-violet-300
+
+After text:
+text-violet-200
+
+Quote:
+text-white/75
+
+Metric badge:
+className="
+  bg-white/12 text-white
+  ring-1 ring-white/15
+"
+
+Bottom transformation badge:
+className="
+  bg-white/10 text-white/85
+  ring-1 ring-white/15
+"
+
+Important:
+- Only darken Elad’s featured card.
+- Keep the two right-side cards light.
+- Keep all existing content unchanged.
+- Maintain accessibility and contrast.
+
+==================================================
+5. WHY ONSPOT — REMOVE THE PHOTO NEXT TO THE TITLE
+==================================================
+
+Current issue:
+The photo beside the “Why OnSpot” title makes the header feel crowded.
+
+Goal:
+Remove the photo next to the title and let the typography occupy the section cleanly.
+
+Remove:
+- The image beside:
+  “Not a service provider. An architect.”
+
+After removing the image:
+- Expand the text container.
+- Keep the title and description aligned cleanly.
+- Do not leave an empty grid column.
+
+Suggested section header layout:
+
+className="
+  mx-auto max-w-[1400px]
+  px-6 sm:px-8 lg:px-12
+"
+
+Title area:
+className="
+  max-w-5xl
+"
+
+Suggested heading:
+className="
+  mt-6
+  text-[clamp(56px,7vw,112px)]
+  font-semibold
+  tracking-[-0.06em]
+  leading-[0.98]
+  text-slate-950
+"
+
+Keep:
+“An architect.”
+in the current accent/italic styling.
+
+Description:
+className="
+  mt-8 max-w-4xl
+  text-xl sm:text-2xl lg:text-3xl
+  leading-relaxed
+  text-slate-600
+"
+
+Important:
+- Remove the image element entirely.
+- Remove the unused grid column/layout.
+- Do not replace the image with another visual.
+- Let the typography be the focus.
+
+==================================================
+RESPONSIVE CHECK
+==================================================
+
+After implementing:
+- “Insights” is fully visible, including the final “s”.
+- Insights text follows a clear inverted-pyramid hierarchy.
+- Blank separation areas match the Insights background.
+- Work Differently cards have visible contrast.
+- Work Differently section is compact enough to fit comfortably in one viewport.
+- Elad B.’s card is darker and visually featured.
+- Why OnSpot no longer includes the photo beside the title.
+- No horizontal clipping or scrolling.
