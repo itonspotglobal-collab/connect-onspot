@@ -1,0 +1,287 @@
+Please apply the following homepage fixes exactly as shown in the attached references.
+
+IMPORTANT:
+- Do not redesign unrelated sections.
+- Keep all existing backgrounds, content, images, and section order unless explicitly requested below.
+- Preserve responsiveness and avoid horizontal overflow.
+- Use semantic links/buttons.
+- Match the current OnSpot visual system.
+
+==================================================
+1. REAL PEOPLE. REAL WORK. REAL IMPACT.
+==================================================
+
+Current issue:
+The previous update missed this section.
+
+Goal:
+Keep the section exactly as it currently looks:
+- dark navy background
+- centered headline
+- image mosaic
+- supporting line below the mosaic
+
+Make sure this section exists and remains visible in the homepage flow.
+
+Remove:
+- the small section label above the headline, such as:
+  “THE SUPERHUMAN SYSTEM”
+
+Keep:
+- “Real people. Real work.”
+- “Real impact.”
+- the image mosaic
+- “Behind every workflow is a real person making the work better.”
+
+Do not add another eyebrow/label above the title.
+
+Suggested structure:
+
+<section className="bg-[#17162f] py-16 sm:py-20 lg:py-24 text-white">
+  <div className="mx-auto max-w-[1500px] px-6 sm:px-8 lg:px-12">
+    <div className="text-center">
+      <h2 className="text-[clamp(48px,6vw,88px)] font-semibold leading-[0.98] tracking-[-0.055em]">
+        <span className="block text-white">Real people. Real work.</span>
+        <span className="mt-2 block bg-gradient-to-r from-violet-300 to-indigo-300 bg-clip-text text-transparent">
+          Real impact.
+        </span>
+      </h2>
+    </div>
+
+    existing mosaic
+
+    <p className="mt-8 text-center text-lg sm:text-xl text-white/65">
+      Behind every workflow is a real person making the work better.
+    </p>
+  </div>
+</section>
+
+==================================================
+2. WHY ONSPOT — MOVE “SEE HOW IT WORKS” TO THE BOTTOM
+==================================================
+
+Current issue:
+The “See how it works” button is currently below the description and above the cards.
+
+Goal:
+Move the button to the bottom of the Why OnSpot section, after all four cards.
+
+Keep:
+- WHY ONSPOT label
+- “Not a service provider.”
+- “An architect.”
+- the supporting paragraph
+- all four feature cards
+
+Remove the current button from its existing location.
+
+Add the CTA after the card grid:
+
+<div className="mt-10 flex justify-center">
+  <a
+    href="#experience"
+    className="
+      inline-flex items-center justify-center gap-2
+      rounded-full
+      bg-indigo-700
+      px-7 py-3.5
+      text-base font-semibold text-white
+      shadow-md
+      transition
+      hover:-translate-y-0.5
+      hover:bg-indigo-800
+      hover:shadow-xl
+      focus-visible:outline-none
+      focus-visible:ring-2
+      focus-visible:ring-indigo-500
+      focus-visible:ring-offset-2
+    "
+  >
+    See how it works
+    <ArrowRight className="h-4 w-4" />
+  </a>
+</div>
+
+Important:
+- Center the CTA below the full card grid.
+- Do not leave the button near the heading.
+- Keep enough spacing between the cards and CTA.
+
+==================================================
+3. THE PEOPLE BEHIND THE PLATFORM
+==================================================
+
+Remove:
+- the small label above the title:
+  “THE PROOF”
+
+Keep:
+- “The People Behind the Platform”
+- gradient styling on “People”
+- subtitle
+- all 8 people cards
+- current alternating order
+
+Replace the existing bottom button:
+- Remove “Browse all talent”
+- Add:
+  “Explore our talent network”
+
+Place it centered below the grid.
+
+Suggested CTA:
+
+<div className="mt-10 flex justify-center">
+  <a
+    href="#talent"
+    className="
+      inline-flex items-center justify-center gap-2
+      rounded-full
+      bg-gradient-to-r from-violet-600 to-indigo-600
+      px-7 py-3.5
+      text-base font-semibold text-white
+      shadow-md
+      transition
+      hover:-translate-y-0.5
+      hover:shadow-xl
+    "
+  >
+    Explore our talent network
+    <ArrowRight className="h-4 w-4" />
+  </a>
+</div>
+
+==================================================
+4. REMOVE THE EXISTING FINAL CTA SECTION
+==================================================
+
+Remove the current final CTA section that says:
+
+- “Ready to Become Superhuman?”
+- “AI first. Humans when it matters.”
+- “Join the Superhuman Revolution.”
+- Launch AI Assistant
+- Get Managed Team
+
+Delete that entire section.
+
+Do not leave empty spacing after removing it.
+
+==================================================
+5. REPLACE FINAL CTA WITH THE UPLOADED GET-MATCHED CTA
+==================================================
+
+Use the uploaded HTML reference as the design/content source for the new final CTA:
+`onspot_final_cta_get_matched.html`
+
+The uploaded CTA contains:
+- “72-hour match average”
+- “Get matched with vetted Philippine talent in 72 hours”
+- supporting copy
+- “Get matched — it’s free”
+- trust/supporting text
+- 70% cost savings
+- 50+ countries served
+- Dedicated never shared teams
+- “Looking for work instead? Join as talent →”
+
+Apply that CTA as the final section directly above the footer. :contentReference[oaicite:0]{index=0}
+
+Important implementation rules:
+- Convert the uploaded standalone HTML into the project’s React/Tailwind style.
+- Do not paste inline styles directly if the project uses Tailwind.
+- Match the current OnSpot design system.
+- Keep it compact and centered.
+- Use a soft light background, not a dark background.
+- Keep the main CTA button visually prominent.
+- Make the whole section responsive.
+
+Suggested React/Tailwind structure:
+
+<section className="bg-[#f7f6ef] py-16 sm:py-20 lg:py-24">
+  <div className="mx-auto max-w-[900px] px-6 sm:px-8">
+    <div className="rounded-[2rem] border border-stone-200 bg-[#f4f1e8] px-6 py-12 text-center shadow-sm sm:px-10 lg:px-14">
+      
+      <div className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-4 py-2 text-sm font-semibold text-blue-700">
+        <Zap className="h-4 w-4" />
+        72-hour match average
+      </div>
+
+      <h2 className="mx-auto mt-6 max-w-2xl text-[clamp(34px,4vw,56px)] font-semibold leading-tight tracking-[-0.04em] text-slate-950">
+        Get matched with vetted Philippine talent in 72 hours
+      </h2>
+
+      <p className="mx-auto mt-4 max-w-xl text-base sm:text-lg leading-relaxed text-slate-600">
+        Tell us what you need. We’ll line up pre-vetted candidates — no markups, no middlemen, no obligation.
+      </p>
+
+      <a
+        href="#contact"
+        className="
+          mt-8 inline-flex items-center justify-center gap-2
+          rounded-xl bg-blue-700 px-8 py-4
+          text-base sm:text-lg font-semibold text-white
+          shadow-md transition
+          hover:-translate-y-0.5 hover:bg-blue-800 hover:shadow-xl
+        "
+      >
+        Get matched — it’s free
+        <ArrowRight className="h-5 w-5" />
+      </a>
+
+      <p className="mt-4 text-sm text-slate-500">
+        Takes 2 minutes · No credit card · First candidates in days
+      </p>
+
+      <div className="mx-auto mt-8 grid max-w-xl grid-cols-1 gap-6 border-t border-stone-300 pt-8 sm:grid-cols-3">
+        <div>
+          <div className="text-2xl font-semibold text-slate-950">70%</div>
+          <div className="mt-1 text-sm text-slate-600">cost savings</div>
+        </div>
+        <div>
+          <div className="text-2xl font-semibold text-slate-950">50+</div>
+          <div className="mt-1 text-sm text-slate-600">countries served</div>
+        </div>
+        <div>
+          <div className="text-2xl font-semibold text-slate-950">Dedicated</div>
+          <div className="mt-1 text-sm text-slate-600">never shared teams</div>
+        </div>
+      </div>
+
+      <p className="mt-8 text-sm text-slate-500">
+        Looking for work instead?
+        <a href="#find-work" className="ml-1 font-medium text-slate-700 underline underline-offset-4">
+          Join as talent →
+        </a>
+      </p>
+    </div>
+  </div>
+</section>
+
+==================================================
+6. FOOTER PLACEMENT
+==================================================
+
+Final order at the bottom of the page should be:
+
+1. The People Behind the Platform
+2. Any remaining intended sections
+3. New “Get matched with vetted Philippine talent in 72 hours” CTA
+4. Footer
+
+Do not place the new CTA inside the footer.
+It should be the final standalone conversion section immediately above the footer.
+
+==================================================
+7. RESPONSIVE CHECK
+==================================================
+
+After implementing:
+- Real People section is present and has no small label above it.
+- Why OnSpot CTA appears only at the bottom of its section.
+- The Proof label is removed.
+- “Explore our talent network” replaces “Browse all talent”.
+- The old “Ready to Become Superhuman?” section is completely removed.
+- The new get-matched CTA is the final section before the footer.
+- No empty gaps, clipping, or horizontal overflow.
+- Mobile and tablet layouts remain clean.

@@ -1164,15 +1164,6 @@ export default function Home() {
               combining AI-ready systems, vetted talent, and human
               accountability so your team can scale without losing control.
             </p>
-            <div className="mt-8">
-              <a
-                href="#experience"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-indigo-700 px-7 py-3.5 text-base font-semibold text-white shadow-md transition hover:-translate-y-0.5 hover:bg-indigo-800 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
-              >
-                <ArrowRight className="h-4 w-4" />
-                See how it works
-              </a>
-            </div>
           </div>
 
           {/* Four pillar cards — 2×2 grid */}
@@ -1243,6 +1234,17 @@ export default function Home() {
               </div>
             ))}
           </div>
+
+          {/* See how it works CTA */}
+          <div className="mt-10 flex justify-center">
+            <a
+              href="#experience"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-indigo-700 px-7 py-3.5 text-base font-semibold text-white shadow-md transition hover:-translate-y-0.5 hover:bg-indigo-800 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+            >
+              See how it works
+              <ArrowRight className="h-4 w-4" />
+            </a>
+          </div>
         </div>
       </div>
 
@@ -1250,7 +1252,7 @@ export default function Home() {
       <div className="relative bg-white py-20 sm:py-28">
         <div className="container mx-auto px-4 sm:px-6">
           <div className="mb-12 sm:mb-16 text-center">
-            <p className="text-base font-semibold uppercase tracking-[0.24em] text-indigo-700 sm:text-lg lg:text-xl">
+            <p className="text-base font-semibold uppercase tracking-[0.24em] text-indigo-700 sr-only sm:text-lg lg:text-xl">
               The Proof
             </p>
             <h2 className="mx-auto mt-5 max-w-[1200px] text-center text-[clamp(48px,6vw,94px)] font-semibold tracking-[-0.055em] leading-[0.98] text-slate-950">
@@ -1368,71 +1370,71 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="mt-12 text-center">
-            <Link
+          <div className="mt-10 flex justify-center">
+            <a
               href="/talent-pool"
-              className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-7 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-[#3F4698]/50 hover:text-[#3F4698] hover:shadow-md"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 px-7 py-3.5 text-base font-semibold text-white shadow-md transition hover:-translate-y-0.5 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
             >
-              Browse all talent
-              <ArrowUpRight className="h-4 w-4" />
-            </Link>
+              Explore our talent network
+              <ArrowRight className="h-4 w-4" />
+            </a>
           </div>
         </div>
       </div>
 
-      {/* ── 8. FINAL CTA ── */}
-      <div className="relative py-16 sm:py-32 lg:py-40 overflow-hidden mt-8 sm:mt-16">
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-600/30 via-blue-600/30 to-cyan-500/30"></div>
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-full bg-gradient-radial from-violet-500/20 via-transparent to-transparent"></div>
-        </div>
+      {/* ── 8. GET MATCHED FINAL CTA ── */}
+      <section className="bg-[#f7f6ef] py-16 sm:py-20 lg:py-24">
+        <div className="mx-auto max-w-[900px] px-6 sm:px-8">
+          <div className="rounded-[2rem] border border-stone-200 bg-[#f4f1e8] px-6 py-12 text-center shadow-sm sm:px-10 lg:px-14">
+            <div className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-4 py-2 text-sm font-semibold text-blue-700">
+              <Zap className="h-4 w-4" />
+              72-hour match average
+            </div>
 
-        <div className="container mx-auto px-4 sm:px-6 relative z-10">
-          <div className="text-center max-w-4xl mx-auto space-y-12">
-            <div className="space-y-6">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight">
-                <span className="block">Ready to Become</span>
-                <span className="block bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent">
-                  Superhuman?
-                </span>
-              </h2>
+            <h2 className="mx-auto mt-6 max-w-2xl text-[clamp(34px,4vw,56px)] font-semibold leading-tight tracking-[-0.04em] text-slate-950">
+              Get matched with vetted Philippine talent in 72 hours
+            </h2>
 
-              <div className="space-y-4 max-w-2xl mx-auto">
-                <p className="text-lg sm:text-xl lg:text-2xl font-light text-foreground/90">
-                  AI first. Humans when it matters.
-                </p>
-                <p className="text-xl sm:text-2xl lg:text-3xl font-semibold">
-                  Join the Superhuman Revolution.
-                </p>
+            <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
+              Tell us what you need. We'll line up pre-vetted candidates — no markups, no middlemen, no obligation.
+            </p>
+
+            <a
+              href="#contact"
+              className="mt-8 inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-8 py-4 text-base font-semibold text-white shadow-md transition hover:-translate-y-0.5 hover:bg-blue-800 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 sm:text-lg"
+            >
+              Get matched — it's free
+              <ArrowRight className="h-5 w-5" />
+            </a>
+
+            <p className="mt-4 text-sm text-slate-500">
+              Takes 2 minutes · No credit card · First candidates in days
+            </p>
+
+            <div className="mx-auto mt-8 grid max-w-xl grid-cols-1 gap-6 border-t border-stone-300 pt-8 sm:grid-cols-3">
+              <div>
+                <div className="text-2xl font-semibold text-slate-950">70%</div>
+                <div className="mt-1 text-sm text-slate-600">cost savings</div>
+              </div>
+              <div>
+                <div className="text-2xl font-semibold text-slate-950">50+</div>
+                <div className="mt-1 text-sm text-slate-600">countries served</div>
+              </div>
+              <div>
+                <div className="text-2xl font-semibold text-slate-950">Dedicated</div>
+                <div className="mt-1 text-sm text-slate-600">never shared teams</div>
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 pt-8">
-              <Button
-                size="lg"
-                className="min-h-[56px] px-8 text-base sm:text-lg w-full sm:w-auto bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700"
-                onClick={openVanessa}
-                data-testid="button-launch-ai"
-              >
-                <Bot className="w-5 h-5 mr-2" />
-                Launch AI Assistant
-              </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                className="min-h-[56px] px-8 text-base sm:text-lg w-full sm:w-auto border-2 bg-background/50 backdrop-blur-sm hover:bg-background/80"
-                asChild
-                data-testid="button-get-team"
-              >
-                <Link href="/lead-intake">
-                  <Users className="w-5 h-5 mr-2" />
-                  Get Managed Team
-                </Link>
-              </Button>
-            </div>
+            <p className="mt-8 text-sm text-slate-500">
+              Looking for work instead?{" "}
+              <a href="/find-best-matches" className="font-medium text-slate-700 underline underline-offset-4">
+                Join as talent →
+              </a>
+            </p>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* ── 14. FOOTER ── */}
       <footer className="onspot-footer relative overflow-hidden bg-[#3F4698]">
