@@ -304,6 +304,7 @@ export interface IStorage {
   deletePost(id: string): Promise<boolean>;
   listPublishedPosts(options?: { category?: string; featured?: boolean }): Promise<Post[]>;
   listAllPosts(): Promise<Post[]>;
+  listHomepagePosts(): Promise<Post[]>;
   incrementPostViews(id: string): Promise<number>;
   incrementPostLikes(id: string): Promise<number>;
 
@@ -2310,6 +2311,8 @@ export class MemStorage implements IStorage {
       category: post.category,
       author: post.author,
       isFeatured: post.isFeatured ?? false,
+      showOnHomepage: post.showOnHomepage ?? false,
+      homepageOrder: post.homepageOrder ?? null,
       status: post.status || "draft",
       readTime: post.readTime || null,
       publishedAt: post.publishedAt || null,
@@ -2347,6 +2350,13 @@ export class MemStorage implements IStorage {
 
   async listAllPosts(): Promise<Post[]> {
     return Array.from(this.postsMap.values()).sort((a, b) => b.createdAt!.getTime() - a.createdAt!.getTime());
+  }
+
+  async listHomepagePosts(): Promise<Post[]> {
+    return Array.from(this.postsMap.values())
+      .filter((p) => p.showOnHomepage && p.status === "published")
+      .sort((a, b) => (a.homepageOrder ?? 99) - (b.homepageOrder ?? 99))
+      .slice(0, 3);
   }
 
   async incrementPostViews(id: string): Promise<number> {
@@ -2689,6 +2699,16 @@ export class DbStorage extends MemStorage {
       .from(posts)
       .orderBy(desc(posts.createdAt))
       .limit(1000);
+  }
+
+  async listHomepagePosts(): Promise<Post[]> {
+    const results = await db
+      .select()
+      .from(posts)
+      .where(and(eq(posts.status, "published"), eq(posts.showOnHomepage, true)))
+      .orderBy(asc(posts.homepageOrder))
+      .limit(3);
+    return results;
   }
 
   async incrementPostViews(id: string): Promise<number> {

@@ -305,12 +305,25 @@ export default function Home() {
   };
 
   const { data: postsData } = useQuery<{ success: boolean; posts: Post[] }>({
-    queryKey: ["/api/posts"],
-    staleTime: 5 * 60 * 1000,
+    queryKey: ["/api/posts/homepage"],
+    staleTime: 2 * 60 * 1000,
   });
 
-  const featuredPosts: Post[] = postsData?.posts
-    ? [...postsData.posts]
+  // Also fetch all published posts as fallback when no homepage posts are curated
+  const { data: allPostsData } = useQuery<{ success: boolean; posts: Post[] }>({
+    queryKey: ["/api/posts"],
+    staleTime: 5 * 60 * 1000,
+    enabled: !postsData?.posts?.length,
+  });
+
+  const featuredPosts: Post[] = (() => {
+    // Prefer explicitly curated homepage posts
+    if (postsData?.posts && postsData.posts.length > 0) {
+      return postsData.posts.slice(0, 3);
+    }
+    // Fallback: latest published posts sorted by date
+    if (allPostsData?.posts) {
+      return [...allPostsData.posts]
         .sort((a, b) => {
           if (a.isFeatured && !b.isFeatured) return -1;
           if (!a.isFeatured && b.isFeatured) return 1;
@@ -319,8 +332,10 @@ export default function Home() {
             new Date(a.publishedAt ?? a.createdAt).getTime()
           );
         })
-        .slice(0, 3)
-    : [];
+        .slice(0, 3);
+    }
+    return [];
+  })();
 
   return (
     <div>

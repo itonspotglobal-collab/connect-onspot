@@ -563,6 +563,8 @@ export const posts = pgTable("posts", {
   category: text("category").notNull(),
   author: text("author").notNull(),
   isFeatured: boolean("is_featured").default(false),
+  showOnHomepage: boolean("show_on_homepage").default(false),
+  homepageOrder: integer("homepage_order"),
   status: text("status").notNull().default("draft"), // draft | published
   views: integer("views").default(0),
   likes: integer("likes").default(0),

@@ -1,0 +1,90 @@
+Please add a new admin control that lets us choose which published Insights posts appear in the Homepage Insights section.
+
+Current behavior:
+- The homepage shows only 3 published Insights/blog posts.
+- There is currently no clear admin setting to choose which posts appear there.
+
+Goal:
+From the Insights Admin page, admins should be able to mark a post as “Show on Homepage” or remove it from the homepage.
+
+Requirements:
+
+1. Add a new homepage visibility control
+- Add a new action/toggle/icon to each post row in the Insights Admin list
+- Suggested label:
+  - “Show on Homepage”
+  - “Homepage”
+  - or a home icon with tooltip
+- Clearly show whether each post is currently selected for the homepage
+
+2. Limit homepage selection to 3 posts
+- The homepage Insights section should display a maximum of 3 posts
+- If 3 posts are already selected and an admin tries to select another:
+  - prevent the action
+  - show a clear message such as:
+    “Only 3 Insights posts can be shown on the homepage. Remove one first.”
+- Do not silently replace an existing post
+
+3. Only allow eligible posts
+A post should only be selectable for the homepage if:
+- status is Published
+- it has a valid title
+- it has a valid slug
+- preferably it has a thumbnail/cover image
+
+Draft or hidden posts should not appear on the homepage.
+
+4. Persist the selection
+- Add a field such as:
+  - `showOnHomepage`
+  - `isHomepageFeatured`
+  - or similar
+- Save it in the database/API
+- Include it in create, edit, update, and fetch responses
+- Existing posts should default to false unless currently shown on the homepage
+
+5. Update the homepage Insights section
+- Stop selecting homepage posts only by latest date or generic published status
+- Fetch/display only posts explicitly marked for homepage
+- Show a maximum of 3
+- Preserve the selected posts consistently after refresh/redeploy
+
+6. Add ordering control
+We should also be able to control the display order of the 3 selected homepage posts.
+
+Suggested options:
+- add order values 1, 2, and 3
+- or allow simple move up/down controls
+- or drag-and-drop ordering if easy to maintain
+
+The homepage should respect this order.
+
+7. Admin UI design
+In each post row, display a clear homepage state:
+- inactive home-outline icon when not selected
+- highlighted/filled home icon or badge when selected
+- tooltip such as “Show on Homepage” / “Remove from Homepage”
+
+Keep this separate from the existing “Featured” status because:
+- Featured controls the Insights featured carousel
+- Show on Homepage controls the homepage Insights section
+
+8. Handle deleting/unpublishing
+- If a homepage-selected post is unpublished, hidden, or deleted, automatically remove it from the homepage selection
+- The homepage should never show unpublished or missing posts
+
+9. Verify end-to-end
+Please update:
+- AdminInsights.tsx list page
+- Create/Edit Post form if needed
+- API validation and update endpoints
+- database/schema/model
+- homepage Insights query/component
+- types/interfaces/constants
+- seed/mock data if applicable
+
+Expected result:
+- Admins can explicitly choose up to 3 published posts for the homepage
+- Admin page clearly shows which posts are selected
+- Homepage displays only those selected posts in the chosen order
+- Existing Featured behavior remains unchanged

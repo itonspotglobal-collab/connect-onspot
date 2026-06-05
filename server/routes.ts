@@ -6467,6 +6467,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/posts/homepage - Return up to 3 explicitly selected homepage posts
+  app.get("/api/posts/homepage", async (req: Request, res: Response) => {
+    try {
+      const posts = await storage.listHomepagePosts();
+      res.json({ success: true, posts });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to fetch homepage posts", message: error.message });
+    }
+  });
+
   // GET /api/posts/all - Admin endpoint to fetch all posts including drafts
   app.get("/api/posts/all", async (req: Request, res: Response) => {
     try {
