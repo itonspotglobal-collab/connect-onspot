@@ -1296,25 +1296,25 @@ body.has-floating-bottom-right {
                 box-shadow 0.3s ease;
   }
 
-  /* Nav logo — crops the square PNG to show just the wordmark */
+  /* Nav logo — horizontal wordmark, 1060×370 aspect ratio */
   .nav-logo-img {
     display: block;
-    width: 140px;
-    height: 32px;
-    object-fit: cover;
-    object-position: center center;
+    height: 28px;
+    width: auto;
+    max-width: 148px;
+    object-fit: contain;
     flex-shrink: 0;
   }
   @media (min-width: 640px) {
     .nav-logo-img {
-      width: 152px;
-      height: 34px;
+      height: 30px;
+      max-width: 160px;
     }
   }
   @media (min-width: 1024px) {
     .nav-logo-img {
-      width: 165px;
-      height: 37px;
+      height: 32px;
+      max-width: 172px;
     }
   }
 

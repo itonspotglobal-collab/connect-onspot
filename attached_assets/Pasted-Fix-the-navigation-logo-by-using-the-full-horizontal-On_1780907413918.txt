@@ -1,0 +1,178 @@
+Fix the navigation logo by using the full horizontal OnSpot logo correctly.
+
+Problem:
+The current website logo does not match the actual OnSpot logo. It looks oversized/cropped vertically and the left icon portion appears clipped. The actual logo is a wide horizontal logo, so the nav should display the full horizontal version, not a cropped square/logo-icon version.
+
+Goal:
+Display the full OnSpot horizontal logo exactly like the source asset:
+- full “onSpot” wordmark visible
+- left rounded-square icon fully visible
+- no clipping at top, bottom, left, or right
+- not stretched
+- not distorted
+- visually balanced with the navbar
+
+Do not change:
+- nav links
+- Access Portal button
+- nav background color
+- page layout
+- hero section
+
+==================================================
+1. USE THE CORRECT LOGO SOURCE
+==================================================
+
+Find the logo used in the navigation bar.
+
+Make sure the navbar uses the full horizontal OnSpot logo asset, not:
+- favicon
+- icon-only version
+- square social preview image
+- cropped logo
+- background image version
+- CSS-masked version
+
+If there are multiple logo assets, choose the horizontal wordmark file.
+
+The logo should visually match the uploaded actual logo:
+wide horizontal “onSpot” wordmark with the icon on the left.
+
+==================================================
+2. REMOVE CLIPPING FROM LOGO WRAPPERS
+==================================================
+
+For the logo Link/wrapper, remove:
+- overflow-hidden
+- fixed tiny width
+- fixed tiny height
+- negative margins
+- absolute positioning
+- scale transforms
+- translate transforms
+
+Use this wrapper:
+
+className="
+  flex
+  h-full
+  w-[150px]
+  shrink-0
+  items-center
+  justify-start
+  overflow-visible
+  sm:w-[165px]
+  lg:w-[175px]
+"
+
+==================================================
+3. LOGO IMAGE / SVG SIZE
+==================================================
+
+Apply this directly to the actual logo image or SVG:
+
+className="
+  block
+  h-[30px]
+  w-auto
+  max-w-[150px]
+  object-contain
+  sm:h-[32px]
+  sm:max-w-[165px]
+  lg:h-[34px]
+  lg:max-w-[175px]
+"
+
+Important:
+- Do not use width-only sizing.
+- Do not use square dimensions like w-[40px] h-[40px].
+- Do not use object-cover.
+- Use object-contain only.
+- Do not crop the logo.
+
+==================================================
+4. IF THE LOGO IS INSIDE AN IMAGE CONTAINER
+==================================================
+
+If the logo image is inside a div with a fixed size, update that div to:
+
+className="
+  relative
+  flex
+  h-[34px]
+  w-[175px]
+  items-center
+  overflow-visible
+"
+
+The image inside should be:
+
+className="
+  h-full
+  w-auto
+  object-contain
+"
+
+==================================================
+5. IF THE LOGO IS AN SVG
+==================================================
+
+If the logo is an SVG, check the SVG file/component.
+
+Keep the original viewBox.
+
+Remove hardcoded crop-like dimensions or tiny values such as:
+
+width="40"
+height="40"
+
+or:
+
+width="60"
+height="20"
+
+Use:
+
+width="175"
+height="34"
+
+Also make sure the SVG does not have:
+- overflow="hidden" causing the logo to cut off
+- a wrong viewBox that only contains part of the logo
+- CSS max-height smaller than 34px
+
+If the SVG viewBox itself is cropped, replace the SVG with the correct full horizontal logo asset instead.
+
+==================================================
+6. NAVBAR HEIGHT
+==================================================
+
+Keep the navbar height at:
+
+className="
+  h-[64px]
+"
+
+or:
+
+className="
+  h-[64px]
+  lg:h-[68px]
+"
+
+The logo must be vertically centered within this height.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The navigation logo should match the uploaded actual OnSpot logo:
+- full horizontal logo visible
+- no clipping
+- no distortion
+- not too large
+- not too small
+- same proportions as the source image
+- visually similar height to the Access Portal button, but not as tall as the whole button
+
+Only the navigation logo should change.
