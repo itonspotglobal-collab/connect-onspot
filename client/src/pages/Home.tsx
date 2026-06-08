@@ -444,7 +444,7 @@ export default function Home() {
           <div className="mb-6 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
             <div className="max-w-3xl">
               <div className="overflow-visible leading-none">
-                <h2 className="inline-block bg-[linear-gradient(90deg,#4F46E5_0%,#7C3AED_48%,#3B82F6_100%)] bg-clip-text pb-[0.08em] text-[72px] font-semibold leading-[0.95] tracking-[-0.055em] text-transparent md:text-[88px] lg:text-[96px]">
+                <h2 className="inline-block overflow-visible bg-gradient-to-r from-[#6B35F5] via-[#7C4DFF] to-[#3B82F6] bg-clip-text pb-3 pr-3 text-[clamp(64px,8vw,112px)] font-bold leading-[1.08] tracking-[-0.055em] text-transparent">
                   Insights
                 </h2>
               </div>
@@ -605,12 +605,15 @@ export default function Home() {
         {/* ── 3. WORK DIFFERENTLY ── */}
         <div className="relative overflow-x-hidden bg-transparent py-12 sm:py-14 lg:py-16">
           <div className="container relative z-10 mx-auto px-4 sm:px-6">
-            <div className="text-center mb-12 sm:mb-16">
-              <h2 className="mx-auto mt-5 max-w-[1400px] px-6 sm:px-8 lg:px-10 text-center font-semibold leading-[1.08] tracking-[-0.035em] text-slate-950 text-[clamp(34px,3.45vw,56px)]">
-                <span className="block xl:whitespace-nowrap">
+            <div className="mx-auto max-w-[1180px] text-center mb-12 sm:mb-16">
+              <p className="mb-6 text-[15px] font-bold uppercase tracking-[0.32em] text-[#4B4FC4]">
+                Work Differently
+              </p>
+              <h2 className="mx-auto max-w-[1120px] text-balance text-[clamp(42px,5.2vw,76px)] font-bold leading-[1.05] tracking-[-0.045em] text-[#050A1F]">
+                <span className="block">
                   Whether you're scaling a team or growing a career
                 </span>
-                <span className="mt-2 block xl:whitespace-nowrap">
+                <span className="mt-2 block">
                   — OnSpot is built for both sides of great work.
                 </span>
               </h2>
@@ -693,7 +696,7 @@ export default function Home() {
               </div>
 
               {/* Card 2: For Professionals */}
-              <div className="group flex h-full flex-col overflow-hidden rounded-[2rem] border border-indigo-200/80 bg-[#e2e5ff] shadow-[0_18px_55px_rgba(79,70,229,0.12)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(79,70,229,0.18)]">
+              <div className="group flex h-full flex-col overflow-hidden rounded-[32px] border border-white/10 bg-[#2E3242] shadow-[0_24px_70px_rgba(22,26,44,0.22)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_32px_80px_rgba(22,26,44,0.30)]">
                 {/* Image header */}
                 <div className="relative h-[210px] w-full overflow-hidden sm:h-[230px] lg:h-[250px]">
                   <img
@@ -702,7 +705,7 @@ export default function Home() {
                     className="h-full w-full object-cover object-[center_45%] transition duration-700 group-hover:scale-105"
                     loading="lazy"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#3F4698]/35 via-[#3F4698]/10 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#2E3242]/70 via-[#2E3242]/20 to-transparent" />
                   <span className="absolute bottom-4 left-5 inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-[#3F4698] shadow-sm backdrop-blur">
                     For professionals
                   </span>
@@ -710,7 +713,7 @@ export default function Home() {
 
                 {/* Card body */}
                 <div className="flex flex-1 flex-col p-5 sm:p-6">
-                  <h3 className="text-2xl font-bold leading-tight text-slate-950 sm:text-3xl">
+                  <h3 className="text-2xl font-bold leading-tight text-white sm:text-3xl">
                     Real work. Real growth.
                   </h3>
 
@@ -739,16 +742,16 @@ export default function Home() {
                     ].map((item) => (
                       <div
                         key={item.title}
-                        className="flex items-start gap-3 border-b border-slate-200/80 py-3"
+                        className="flex items-start gap-3 border-b border-white/10 py-3"
                       >
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#3F4698]/10 text-[#3F4698]">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-[#B9B5FF]">
                           {item.icon}
                         </div>
                         <div>
-                          <p className="font-semibold text-slate-950">
+                          <p className="font-semibold text-white">
                             {item.title}
                           </p>
-                          <p className="mt-0.5 text-sm text-slate-600">
+                          <p className="mt-0.5 text-sm text-[#CBD2E1]">
                             {item.sub}
                           </p>
                         </div>
@@ -759,7 +762,7 @@ export default function Home() {
                   <div className="mt-4">
                     <a
                       href="/find-best-matches"
-                      className="flex w-full items-center justify-center rounded-full border border-[#3F4698] px-6 py-3 text-sm font-semibold text-[#3F4698] transition hover:bg-[#3F4698] hover:text-white"
+                      className="mt-8 inline-flex w-full items-center justify-center rounded-full border border-white/30 px-6 py-4 text-sm font-semibold text-white transition hover:bg-white/10"
                     >
                       Find your next opportunity →
                     </a>

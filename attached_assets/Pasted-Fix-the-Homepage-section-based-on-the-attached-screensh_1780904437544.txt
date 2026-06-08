@@ -1,0 +1,249 @@
+Fix the Homepage section based on the attached screenshots.
+
+Make these changes only:
+1. Navigation logo size
+2. Insights title crop
+3. Work Differently heading design
+4. Real Work / Real Growth card contrast
+
+Do not modify unrelated sections.
+
+==================================================
+1. NAVIGATION LOGO — MAKE SMALLER
+==================================================
+
+Problem:
+The OnSpot logo in the navigation bar is too large and visually overpowering.
+
+Update the nav logo size to:
+
+Desktop:
+- height: 36px
+- max-width: 150px
+
+Tablet:
+- height: 32px
+- max-width: 135px
+
+Mobile:
+- height: 30px
+- max-width: 125px
+
+Tailwind target:
+
+className="
+  h-[30px]
+  w-auto
+  max-w-[125px]
+  sm:h-8
+  sm:max-w-[135px]
+  lg:h-9
+  lg:max-w-[150px]
+  object-contain
+"
+
+Important:
+- Keep the logo aspect ratio.
+- Do not stretch or squeeze it.
+- Do not change the navigation bar height unless absolutely necessary.
+- Logo should sit vertically centered in the nav.
+
+==================================================
+2. INSIGHTS TITLE — FIX CROPPED “S”
+==================================================
+
+Problem:
+The word “Insights” looks cropped, especially around the final “s” and bottom of the letters.
+
+Fix by giving the heading more line-height, padding, and overflow visibility.
+
+Find the Insights h2/title and update it to:
+
+className="
+  inline-block
+  overflow-visible
+  pb-3
+  pr-3
+  leading-[1.08]
+  text-[clamp(64px,8vw,112px)]
+  font-bold
+  tracking-[-0.055em]
+  bg-gradient-to-r
+  from-[#6B35F5]
+  via-[#7C4DFF]
+  to-[#3B82F6]
+  bg-clip-text
+  text-transparent
+"
+
+If the parent container has overflow-hidden, remove it or change it to:
+
+className="overflow-visible"
+
+Important:
+- Do not crop the gradient text.
+- Do not let the descender/curve of the “s” get cut off.
+- Keep the title large and premium-looking.
+- Make sure the subtitle below still has proper spacing.
+
+==================================================
+3. WORK DIFFERENTLY HEADING — SEPARATE IT VISUALLY
+==================================================
+
+Problem:
+The heading “Whether you're scaling a team or growing a career — OnSpot is built for both sides of great work.” looks like it continues from the Insights section and feels poorly designed.
+
+Goal:
+Make it feel like a distinct section headline using clear spacing, hierarchy, and controlled line breaks.
+
+Replace the current heading rendering with this structure:
+
+<div className="mx-auto max-w-[1180px] text-center">
+  <p className="mb-6 text-[15px] font-bold uppercase tracking-[0.32em] text-[#4B4FC4]">
+    Work Differently
+  </p>
+
+  <h2 className="
+    mx-auto
+    max-w-[1120px]
+    text-balance
+    text-[clamp(42px,5.2vw,76px)]
+    font-bold
+    leading-[1.05]
+    tracking-[-0.045em]
+    text-[#050A1F]
+  ">
+    <span className="block">
+      Whether you're scaling a team or growing a career
+    </span>
+    <span className="block mt-2">
+      — OnSpot is built for both sides of great work.
+    </span>
+  </h2>
+</div>
+
+Update the Work Differently section wrapper spacing:
+
+className="
+  relative
+  overflow-hidden
+  bg-[#F6F8FF]
+  px-6
+  py-24
+  sm:py-28
+  lg:py-32
+"
+
+Add clear separation from the Insights section:
+- Add at least `mt-20` or `pt-24` before the Work Differently heading if needed.
+- There should be enough blank breathing room so it does not feel connected to Insights.
+
+Important:
+- Keep the two-line heading exactly:
+  Line 1: Whether you're scaling a team or growing a career
+  Line 2: — OnSpot is built for both sides of great work.
+- Do not make it overflow horizontally.
+- Do not make it look like a paragraph.
+- Keep it large, but not bigger than the main hero title.
+
+==================================================
+4. REAL WORK / REAL GROWTH CARD — DARK GREY CONTRAST
+==================================================
+
+Problem:
+The “Real work. Real growth.” card background is too close to the page background, so it lacks contrast.
+
+Change only the “For Professionals / Real work. Real growth.” card background to dark grey.
+
+Use:
+
+Card background:
+#2E3242
+
+Card border:
+rgba(255,255,255,0.10)
+
+Main heading text:
+#FFFFFF
+
+Body text:
+#CBD2E1
+
+Muted text:
+#AEB7CC
+
+Icon tile background:
+rgba(255,255,255,0.10)
+
+Icon color:
+#B9B5FF
+
+Divider:
+rgba(255,255,255,0.12)
+
+CTA button border:
+rgba(255,255,255,0.28)
+
+CTA button text:
+#FFFFFF
+
+CTA hover background:
+rgba(255,255,255,0.10)
+
+Apply to the professionals card container:
+
+className="
+  overflow-hidden
+  rounded-[32px]
+  border
+  border-white/10
+  bg-[#2E3242]
+  shadow-[0_24px_70px_rgba(22,26,44,0.22)]
+"
+
+For the text inside the card:
+- Card title: `text-white`
+- Feature title: `text-white`
+- Feature description: `text-[#CBD2E1]`
+- Icons: `text-[#B9B5FF]`
+- Icon box: `bg-white/10`
+- Dividers: `border-white/10`
+
+For the button inside the card:
+
+className="
+  mt-8
+  inline-flex
+  w-full
+  items-center
+  justify-center
+  rounded-full
+  border
+  border-white/30
+  px-6
+  py-4
+  text-sm
+  font-semibold
+  text-white
+  transition
+  hover:bg-white/10
+"
+
+Important:
+- Do not change the Companies card.
+- Keep both cards the same size and aligned.
+- Keep the top image of the Professionals card visible.
+- Only the lower content/card background should become dark grey if the image is already separate.
+- Ensure all text remains readable on the dark background.
+
+==================================================
+FINAL CHECK
+==================================================
+
+After applying:
+- Nav logo is smaller and clean.
+- “Insights” is not cropped.
+- Work Differently feels like a new section, not a continuation of Insights.
+- Work Differently heading uses the exact two-line structure.
+- “Real work. Real growth.” card has a dark grey contrast background and readable text.
+- No other sections are changed.
