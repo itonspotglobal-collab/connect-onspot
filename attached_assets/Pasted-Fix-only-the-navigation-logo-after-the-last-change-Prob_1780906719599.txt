@@ -1,0 +1,145 @@
+Fix only the navigation logo after the last change.
+
+Problem:
+The OnSpot logo is now too large and is clipped/cut off at the top-left of the navigation bar. It should be readable, but it must fit cleanly inside the navbar height.
+
+Goal:
+Make the logo balanced in the nav:
+- bigger than the tiny version
+- smaller than the current oversized/clipped version
+- fully visible
+- vertically centered
+- not clipped
+- not stretching the navbar
+
+Do not change:
+- nav links
+- Access Portal button
+- nav background color
+- hero section
+- page layout
+
+==================================================
+1. NAVBAR HEIGHT
+==================================================
+
+Set the navbar/header height to:
+
+className="
+  h-[64px]
+  lg:h-[68px]
+"
+
+Make sure the inner nav container uses:
+
+className="
+  flex
+  h-full
+  items-center
+"
+
+Do not use a nav height smaller than 64px.
+
+==================================================
+2. LOGO WRAPPER / LINK
+==================================================
+
+Set the logo wrapper/link to:
+
+className="
+  flex
+  h-full
+  w-[170px]
+  shrink-0
+  items-center
+  justify-start
+  overflow-visible
+"
+
+On desktop:
+
+className="
+  flex
+  h-full
+  w-[170px]
+  shrink-0
+  items-center
+  justify-start
+  overflow-visible
+  lg:w-[185px]
+"
+
+Remove from the logo wrapper if present:
+- fixed tiny height
+- negative margin
+- translate-y
+- scale
+- overflow-hidden
+- items-start
+- absolute positioning
+
+==================================================
+3. ACTUAL LOGO IMAGE / SVG
+==================================================
+
+Apply this directly to the actual logo image/SVG:
+
+className="
+  block
+  h-[36px]
+  w-auto
+  max-w-[155px]
+  object-contain
+  sm:h-[38px]
+  sm:max-w-[165px]
+  lg:h-[40px]
+  lg:max-w-[175px]
+"
+
+This is the final logo size. Do not exceed 40px desktop height.
+
+==================================================
+4. IF THE LOGO IS AN SVG
+==================================================
+
+If the OnSpot logo SVG has hardcoded dimensions, replace them with:
+
+width="175"
+height="40"
+
+Keep the original viewBox.
+
+Also make sure the SVG does not have:
+- position absolute
+- top negative values
+- transform scale
+- max-height smaller than 40px
+
+==================================================
+5. REMOVE THE PREVIOUS OVERSIZED VALUES
+==================================================
+
+Remove any previous values like:
+- h-[46px]
+- h-[50px]
+- min-w-[180px] on the image
+- max-w-[230px]
+- width="230"
+- height="46"
+- scale-[...]
+- -translate-y
+- mt negative values
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The OnSpot logo should:
+- sit fully inside the navigation bar
+- not touch or cross the top edge
+- not be cut off
+- be about 40px tall on desktop
+- visually align with the nav links
+- look readable but not oversized
+
+Only the logo should change.
