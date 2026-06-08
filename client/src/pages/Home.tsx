@@ -69,7 +69,7 @@ import NurLamineroPhoto from "@assets/Nur_1780574815788.png";
 import JakeWainbergPhoto from "@assets/Jake_1780574815787.png";
 import MarkApostolPhoto from "@assets/Macky_1780574815788.png";
 import RenierMacalinoPhoto from "@assets/REN_1780657869137.png";
-import JaelAtendidoPhoto from "@assets/Jael_1780665513434.png";
+import JaelAtendidoPhoto from "@assets/Jael_1780909035045.png";
 import AndreaPinzonPhoto from "@assets/Andrea_Pinzon_1774264095055.jpeg";
 import ShaneRubioPhoto from "@assets/Shane_1780657863305.png";
 import RachelCastroPhoto from "@assets/Rachel_Caztro_1774264095056.jpg";
@@ -1342,7 +1342,7 @@ export default function Home() {
                       src={person.photo}
                       alt={person.name}
                       className="block h-full w-full object-cover"
-                      style={{ objectPosition: "52% 16%", transform: "scale(1.55)", transformOrigin: "52% 16%" }}
+                      style={{ objectPosition: "50% 28%", transform: "scale(1.4)", transformOrigin: "50% 28%" }}
                       loading="lazy"
                     />
                   </div>
