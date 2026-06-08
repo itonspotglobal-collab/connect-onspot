@@ -1,0 +1,134 @@
+Fix only the OnSpot logo size in the navigation bar.
+
+Problem:
+The logo is still rendering extremely small, which means the current logo sizing class is being overridden or the wrong element is being resized.
+
+Goal:
+Make the logo clearly readable and balanced in the navigation bar, similar to the earlier version, but not oversized.
+
+IMPORTANT:
+- Do not change the nav links.
+- Do not change the Access Portal button.
+- Do not change the nav background color.
+- Do not change the homepage layout.
+- Fix the logo image/container only.
+
+==================================================
+1. FIND THE ACTUAL LOGO IMAGE
+==================================================
+
+Find the actual `<img>` or logo component being rendered in the nav. It may be inside a Link, div, or Logo component.
+
+The fix must be applied to the actual image/SVG element, not only the outer wrapper.
+
+==================================================
+2. USE THESE FINAL LOGO SIZES
+==================================================
+
+Desktop:
+- logo height: 42px
+- max width: 180px
+
+Tablet:
+- logo height: 38px
+- max width: 160px
+
+Mobile:
+- logo height: 34px
+- max width: 145px
+
+Use this class directly on the logo image/SVG:
+
+className="
+  block
+  h-[34px]
+  w-auto
+  max-w-[145px]
+  object-contain
+  sm:h-[38px]
+  sm:max-w-[160px]
+  lg:h-[42px]
+  lg:max-w-[180px]
+"
+
+==================================================
+3. FIX THE LOGO WRAPPER
+==================================================
+
+The logo wrapper/link should not shrink the logo.
+
+Use this on the logo Link/wrapper:
+
+className="
+  flex
+  shrink-0
+  items-center
+"
+
+Remove any of these from the logo wrapper or logo image if present:
+
+- h-4
+- h-5
+- h-6
+- w-8
+- w-10
+- max-w-[40px]
+- max-w-[60px]
+- scale-[...]
+- text-xs
+- overflow-hidden
+- justify-center with fixed tiny width
+
+==================================================
+4. IF LOGO IS AN SVG COMPONENT
+==================================================
+
+If the OnSpot logo is an imported SVG React component, apply:
+
+className="
+  block
+  h-[34px]
+  w-auto
+  sm:h-[38px]
+  lg:h-[42px]
+"
+
+and make sure the SVG does not have hardcoded width/height like:
+
+width="40"
+height="12"
+
+If it does, remove those hardcoded width/height values or replace them with:
+
+width="180"
+height="42"
+
+while keeping the viewBox intact.
+
+==================================================
+5. NAV HEIGHT CHECK
+==================================================
+
+If the nav height is causing the logo to look squeezed, set the nav container height to:
+
+className="
+  h-[64px]
+  sm:h-[68px]
+  lg:h-[72px]
+"
+
+Logo should be vertically centered inside this height.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The OnSpot logo should be clearly readable from desktop view:
+- not tiny
+- not squeezed
+- not blurry
+- not clipped
+- vertically centered
+- around the same visual height as a 42px logo on desktop
+
+Only the logo size should change.

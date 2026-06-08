@@ -741,13 +741,13 @@ export function TopNavigation() {
           {/* Zone 1: Logo */}
           <Link
             href="/"
-            className="flex items-center relative z-10 hover-elevate transition-all duration-300 flex-shrink-0"
+            className="flex shrink-0 items-center relative z-10"
             data-testid="logo-home"
           >
             <img
               src={onspotLogo}
               alt="OnSpot"
-              className="h-[34px] w-auto max-w-[145px] object-contain sm:h-10 sm:max-w-[165px] lg:h-[46px] lg:max-w-[190px]"
+              className="block h-[34px] w-auto max-w-[145px] object-contain sm:h-[38px] sm:max-w-[160px] lg:h-[42px] lg:max-w-[180px]"
             />
           </Link>
 
