@@ -1342,7 +1342,7 @@ export default function Home() {
                       src={person.photo}
                       alt={person.name}
                       className="block h-full w-full object-cover"
-                      style={{ objectPosition: "52% 43%", transform: "scale(1.55)", transformOrigin: "52% 43%" }}
+                      style={{ objectPosition: "52% 28%", transform: "scale(1.55)", transformOrigin: "52% 28%" }}
                       loading="lazy"
                     />
                   </div>
