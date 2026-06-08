@@ -1,0 +1,85 @@
+Fix only the Work Differently headline layout.
+
+Goal:
+Make the headline fit into exactly 2 lines on desktop:
+
+Line 1:
+Whether you're scaling a team or growing a career
+
+Line 2:
+— OnSpot is built for both sides of great work.
+
+The second line should highlight only “great work.” using the OnSpot blue-violet gradient.
+
+Do not change:
+- the cards below
+- the section background
+- the section order
+- any other homepage section
+
+Replace the current Work Differently heading with this structure:
+
+<div className="mx-auto max-w-[1500px] text-center">
+  <p className="
+    mb-7
+    text-[15px]
+    font-bold
+    uppercase
+    tracking-[0.34em]
+    text-[#4B4FC4]
+  ">
+    Work Differently
+  </p>
+
+  <h2 className="
+    mx-auto
+    max-w-[1450px]
+    text-center
+    text-[clamp(42px,4.65vw,74px)]
+    font-bold
+    leading-[1.05]
+    tracking-[-0.055em]
+    text-[#050A1F]
+  ">
+    <span className="block whitespace-nowrap">
+      Whether you're scaling a team or growing a career
+    </span>
+
+    <span className="mt-3 block whitespace-nowrap">
+      — OnSpot is built for both sides of
+      <span className="
+        ml-3
+        bg-gradient-to-r
+        from-[#6B35F5]
+        via-[#7C4DFF]
+        to-[#3B82F6]
+        bg-clip-text
+        text-transparent
+      ">
+        great work.
+      </span>
+    </span>
+  </h2>
+</div>
+
+Responsive rule:
+On screens below 1024px, allow wrapping so it does not overflow.
+
+Add this responsive fallback:
+
+- Use `lg:whitespace-nowrap` instead of `whitespace-nowrap` if needed.
+- On mobile/tablet, the headline may become 3–4 lines.
+- On desktop, it must be exactly 2 lines.
+
+If the text still wraps into more than 2 lines on desktop, reduce the desktop font size slightly:
+
+text-[clamp(40px,4.25vw,68px)]
+
+Final visual target on desktop:
+
+WORK DIFFERENTLY
+
+Whether you're scaling a team or growing a career
+— OnSpot is built for both sides of great work.
+
+Only “great work.” should have the gradient.
