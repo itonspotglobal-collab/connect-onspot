@@ -83,61 +83,11 @@ const trustedBrands = [
   { name: "Vertex Education", logo: VertexLogo },
 ];
 
-type CardStyle = {
-  transform: string;
-  zIndex: number;
-  opacity: number;
-};
-
-function getCardStyle(
-  offset: number,
-  nearOffset: number,
-  farOffset: number,
-): CardStyle {
-  const map: Record<string, CardStyle> = {
-    "0": {
-      transform: `translate(-50%, -50%) translateX(0px) scale(1.16)`,
-      zIndex: 50,
-      opacity: 1,
-    },
-    "-1": {
-      transform: `translate(-50%, -50%) translateX(-${nearOffset}px) scale(0.88) rotateY(10deg)`,
-      zIndex: 30,
-      opacity: 0.72,
-    },
-    "1": {
-      transform: `translate(-50%, -50%) translateX(${nearOffset}px) scale(0.88) rotateY(-10deg)`,
-      zIndex: 30,
-      opacity: 0.72,
-    },
-    "-2": {
-      transform: `translate(-50%, -50%) translateX(-${farOffset}px) scale(0.72) rotateY(16deg)`,
-      zIndex: 10,
-      opacity: 0.35,
-    },
-    "2": {
-      transform: `translate(-50%, -50%) translateX(${farOffset}px) scale(0.72) rotateY(-16deg)`,
-      zIndex: 10,
-      opacity: 0.35,
-    },
-  };
-  return (
-    map[String(offset)] ?? {
-      transform: "translate(-50%,-50%) scale(0)",
-      zIndex: 0,
-      opacity: 0,
-    }
-  );
-}
-
 function TrustedLogos() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [visibleCount, setVisibleCount] = useState(5);
   const [isPaused, setIsPaused] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const nearOffset = visibleCount === 5 ? 260 : visibleCount === 3 ? 190 : 0;
-  const farOffset = visibleCount === 5 ? 470 : visibleCount === 3 ? 340 : 0;
 
   const nextSlide = useCallback(() => {
     setCurrentIndex((prev) => (prev + 1) % trustedBrands.length);
@@ -155,15 +105,17 @@ function TrustedLogos() {
     setTimeout(() => setIsPaused(false), 3000);
   }, []);
 
-  const handleArrow = useCallback(
-    (dir: "prev" | "next") => {
-      if (dir === "next") nextSlide();
-      else prevSlide();
-      setIsPaused(true);
-      setTimeout(() => setIsPaused(false), 3000);
-    },
-    [nextSlide, prevSlide],
-  );
+  const handleNext = () => {
+    nextSlide();
+    setIsPaused(true);
+    setTimeout(() => setIsPaused(false), 4000);
+  };
+
+  const handlePrev = () => {
+    prevSlide();
+    setIsPaused(true);
+    setTimeout(() => setIsPaused(false), 4000);
+  };
 
   useEffect(() => {
     const update = () => {
@@ -186,81 +138,95 @@ function TrustedLogos() {
     };
   }, [isPaused, nextSlide]);
 
-  const visibleOffsets: number[] =
-    visibleCount === 5
-      ? [-2, -1, 0, 1, 2]
-      : visibleCount === 3
-        ? [-1, 0, 1]
-        : [0];
-
-  const visibleItems = visibleOffsets.map((offset) => {
-    const index =
+  const half = Math.floor(visibleCount / 2);
+  const visibleItems = Array.from({ length: visibleCount }, (_, position) => {
+    const offset = position - half;
+    const logoIndex =
       (currentIndex + offset + trustedBrands.length) % trustedBrands.length;
-    return { ...trustedBrands[index], offset, isActive: offset === 0 };
+    return {
+      ...trustedBrands[logoIndex],
+      logoIndex,
+      offset,
+      isActive: offset === 0,
+    };
   });
 
   return (
     <div className="mt-12 w-full select-none">
       <div
-        className="relative mx-auto h-[200px] sm:h-[230px] w-full max-w-[1100px] overflow-visible px-14"
-        style={{ perspective: "1200px" }}
+        className="relative mx-auto w-full max-w-7xl px-12 sm:px-16"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
       >
-        {visibleItems.map(({ name, logo, offset, isActive }) => {
-          const style = getCardStyle(offset, nearOffset, farOffset);
-          return (
-            <div
-              key={name}
-              className={[
-                "absolute left-1/2 top-1/2 flex items-center justify-center",
-                "rounded-2xl bg-white/70 backdrop-blur-sm",
-                "transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
-                isActive
-                  ? "h-32 sm:h-36 w-[260px] sm:w-[320px] border border-purple-300/70 bg-white shadow-xl z-20"
-                  : Math.abs(offset) === 1
-                    ? "h-24 sm:h-28 w-[220px] sm:w-[270px] border border-slate-200/70 shadow-sm z-10 opacity-55"
-                    : "h-20 sm:h-24 w-[190px] sm:w-[240px] border border-slate-200/60 shadow-sm z-[5] opacity-35",
-              ].join(" ")}
-              style={{
-                ...style,
-                transformStyle: "preserve-3d",
-                willChange: "transform, opacity",
-              }}
-            >
-              <img
-                src={logo}
-                alt={name}
-                loading="lazy"
-                className={[
-                  "object-contain transition-all duration-500",
-                  isActive
-                    ? "max-h-16 max-w-[200px]"
-                    : "max-h-10 max-w-[140px]",
-                ].join(" ")}
-              />
-            </div>
-          );
-        })}
-
+        {/* Previous arrow — left side */}
         <button
-          onClick={() => handleArrow("prev")}
+          onClick={handlePrev}
           aria-label="Previous client logo"
-          className="absolute left-0 top-1/2 z-[60] -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white shadow-md transition hover:shadow-lg"
+          className="absolute left-0 top-1/2 z-20 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white shadow-md transition hover:shadow-lg"
         >
           <ChevronLeft className="h-4 w-4 text-slate-500" />
         </button>
 
+        {/* Cards row */}
+        <div className="flex items-center justify-center gap-3 overflow-visible py-10 sm:gap-4 lg:gap-5">
+          {visibleItems.map(({ name, logo, offset, isActive }) => {
+            const absOffset = Math.abs(offset);
+            const cardWidth = isActive ? 268 : absOffset === 1 ? 210 : 176;
+            const cardHeight = isActive ? 136 : absOffset === 1 ? 108 : 88;
+            const scale = isActive ? 1 : absOffset === 1 ? 0.93 : 0.83;
+            const opacity = isActive ? 1 : absOffset === 1 ? 0.78 : 0.42;
+            const imgMaxH = isActive ? 64 : absOffset === 1 ? 44 : 34;
+            const imgMaxW = isActive ? 196 : absOffset === 1 ? 152 : 118;
+
+            return (
+              <div
+                key={`${name}-${offset}`}
+                className={[
+                  "flex shrink-0 items-center justify-center rounded-2xl border bg-white",
+                  "transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                  isActive
+                    ? "border-purple-300/70 shadow-xl"
+                    : absOffset === 1
+                      ? "border-slate-200/70 shadow-md"
+                      : "border-slate-200/50 shadow-sm",
+                ].join(" ")}
+                style={{
+                  width: cardWidth,
+                  height: cardHeight,
+                  transform: `scale(${scale})`,
+                  opacity,
+                  flexShrink: 0,
+                  willChange: "transform, opacity",
+                }}
+              >
+                <img
+                  src={logo}
+                  alt={name}
+                  loading="lazy"
+                  style={{
+                    maxHeight: imgMaxH,
+                    maxWidth: imgMaxW,
+                    objectFit: "contain",
+                    transition: "all 500ms",
+                  }}
+                />
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Next arrow — right side */}
         <button
-          onClick={() => handleArrow("next")}
+          onClick={handleNext}
           aria-label="Next client logo"
-          className="absolute right-0 top-1/2 z-[60] -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white shadow-md transition hover:shadow-lg"
+          className="absolute right-0 top-1/2 z-20 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white shadow-md transition hover:shadow-lg"
         >
           <ChevronRight className="h-4 w-4 text-slate-500" />
         </button>
       </div>
 
-      <div className="mt-8 flex items-center justify-center gap-2">
+      {/* Dots */}
+      <div className="mt-4 flex items-center justify-center gap-2">
         {trustedBrands.map((brand, index) => (
           <button
             key={brand.name}
