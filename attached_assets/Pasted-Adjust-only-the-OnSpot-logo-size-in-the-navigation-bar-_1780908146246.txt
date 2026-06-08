@@ -1,0 +1,96 @@
+Adjust only the OnSpot logo size in the navigation bar.
+
+Current state:
+The logo finally displays correctly and is not cropped, but it is slightly too small compared with the “Access Portal” button.
+
+Goal:
+Increase the logo just a little so it feels balanced with the Access Portal button, while keeping the current correct proportions and no clipping.
+
+Do not change:
+- logo asset/source
+- nav links
+- Access Portal button
+- nav background
+- navbar height
+- hero section
+- page layout
+
+==================================================
+1. LOGO WRAPPER
+==================================================
+
+Keep the current logo wrapper behavior, but make sure it has enough room:
+
+className="
+  flex
+  h-full
+  w-[170px]
+  shrink-0
+  items-center
+  justify-start
+  overflow-visible
+  sm:w-[180px]
+  lg:w-[190px]
+"
+
+Remove any wrapper values that force the logo smaller, such as:
+- w-[120px]
+- w-[130px]
+- max-w-[130px]
+- overflow-hidden
+- scale-[...]
+
+==================================================
+2. LOGO IMAGE / SVG SIZE
+==================================================
+
+Apply this directly to the actual logo image/SVG:
+
+className="
+  block
+  h-[34px]
+  w-auto
+  max-w-[160px]
+  object-contain
+  sm:h-[36px]
+  sm:max-w-[170px]
+  lg:h-[38px]
+  lg:max-w-[180px]
+"
+
+Important:
+- Do not exceed 38px height on desktop.
+- Do not use object-cover.
+- Do not stretch the logo.
+- Do not crop the logo.
+- Keep the full horizontal OnSpot wordmark visible.
+
+==================================================
+3. IF LOGO IS SVG WITH HARDCODED SIZE
+==================================================
+
+If the logo SVG has hardcoded width/height, update it to:
+
+width="180"
+height="38"
+
+Keep the original viewBox exactly the same.
+
+Do not use:
+- width="230"
+- height="46"
+- h-[46px]
+- min-w-[210px]
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The logo should be slightly larger than it is now:
+- full logo still visible
+- not clipped
+- not too large
+- visually balanced with the Access Portal button
+- vertically centered in the navbar
+
+Only the logo size should change.
