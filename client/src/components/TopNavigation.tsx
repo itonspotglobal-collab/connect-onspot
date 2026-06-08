@@ -743,11 +743,12 @@ export function TopNavigation() {
             href="/"
             className="flex shrink-0 items-center relative z-10"
             data-testid="logo-home"
+            style={{ minWidth: 0 }}
           >
             <img
               src={onspotLogo}
               alt="OnSpot"
-              className="block h-[34px] w-auto max-w-[145px] object-contain sm:h-[38px] sm:max-w-[160px] lg:h-[42px] lg:max-w-[180px]"
+              className="nav-logo-img"
             />
           </Link>
 

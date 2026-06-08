@@ -1,0 +1,172 @@
+Fix only the navigation bar OnSpot logo sizing.
+
+Problem:
+The logo is still tiny because the visible logo is likely constrained by its parent wrapper or rendered SVG/image width, not just the image height.
+
+Goal:
+Make the logo clearly visible and readable in the navigation bar.
+
+Do not change:
+- nav background
+- nav links
+- nav spacing
+- Access Portal button
+- page layout
+- hero section
+
+==================================================
+1. FIND THE REAL LOGO ELEMENT
+==================================================
+
+Find the actual rendered OnSpot logo in the Navbar/Header component.
+
+It may be:
+- an <img>
+- an imported SVG component
+- a div with background-image
+- an icon/logo component inside a Link
+
+Apply the size to BOTH:
+1. the logo wrapper/link
+2. the actual logo image/SVG inside it
+
+==================================================
+2. LOGO WRAPPER / LINK
+==================================================
+
+Set the logo wrapper/link to this:
+
+className="
+  flex
+  h-[64px]
+  min-w-[180px]
+  shrink-0
+  items-center
+  justify-start
+  overflow-visible
+"
+
+On larger screens:
+
+className="
+  flex
+  h-[64px]
+  min-w-[180px]
+  shrink-0
+  items-center
+  justify-start
+  overflow-visible
+  lg:min-w-[210px]
+"
+
+Remove any tiny width/height classes from the wrapper, especially:
+- w-8
+- w-10
+- w-12
+- h-4
+- h-5
+- h-6
+- max-w-[40px]
+- max-w-[60px]
+- overflow-hidden
+- scale-[...]
+
+==================================================
+3. ACTUAL LOGO IMAGE / SVG
+==================================================
+
+Apply this directly to the actual logo image or SVG:
+
+className="
+  block
+  h-[38px]
+  w-auto
+  min-w-[150px]
+  max-w-[190px]
+  object-contain
+  sm:h-[42px]
+  sm:min-w-[165px]
+  sm:max-w-[210px]
+  lg:h-[46px]
+  lg:min-w-[180px]
+  lg:max-w-[230px]
+"
+
+Important:
+- The logo must not be controlled only by `width`.
+- Do not use `max-w-[60px]`.
+- Do not use `h-4`, `h-5`, or `h-6`.
+- Do not use `w-auto` without a real height.
+- Do not use `scale()`.
+
+==================================================
+4. IF THE LOGO IS AN SVG
+==================================================
+
+If the logo is an SVG component, check the SVG itself.
+
+Remove hardcoded tiny values like:
+
+width="40"
+height="12"
+
+or
+
+width="60"
+height="20"
+
+Replace with:
+
+width="230"
+height="46"
+
+Keep the original viewBox exactly the same.
+
+Also make sure the SVG does not have CSS like:
+
+max-width: 40px;
+height: 12px;
+
+==================================================
+5. IF LOGO USES CSS BACKGROUND IMAGE
+==================================================
+
+If the logo is a div with background-image, use:
+
+className="
+  h-[46px]
+  w-[230px]
+  shrink-0
+  bg-contain
+  bg-left
+  bg-no-repeat
+"
+
+==================================================
+6. NAV CONTAINER HEIGHT
+==================================================
+
+If the nav height is smaller than the logo, set the nav height to:
+
+className="
+  h-[68px]
+  lg:h-[72px]
+"
+
+Keep all nav contents vertically centered.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+The OnSpot logo should be clearly readable, similar in visual weight to the nav menu text and Access Portal button.
+
+It should be:
+- around 46px tall on desktop
+- not tiny
+- not squeezed
+- not clipped
+- not blurry
+- vertically centered in the nav
+
+Only the logo size should change.
