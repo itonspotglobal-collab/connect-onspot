@@ -1,0 +1,168 @@
+Fix the navigation logo and redesign the Work Differently heading.
+
+Do not change the card layout, images, section order, or unrelated homepage sections.
+
+==================================================
+1. NAVIGATION LOGO — INCREASE SIZE, BUT NOT HUGE
+==================================================
+
+Problem:
+The OnSpot logo became too small in the navigation bar.
+
+Goal:
+Make it readable again while keeping it clean and balanced.
+
+Update the nav logo to these sizes:
+
+Desktop:
+- height: 46px
+- max-width: 190px
+
+Tablet:
+- height: 40px
+- max-width: 165px
+
+Mobile:
+- height: 34px
+- max-width: 145px
+
+Use this Tailwind class on the logo image:
+
+className="
+  h-[34px]
+  w-auto
+  max-w-[145px]
+  object-contain
+  sm:h-10
+  sm:max-w-[165px]
+  lg:h-[46px]
+  lg:max-w-[190px]
+"
+
+Important:
+- Do not stretch the logo.
+- Do not make it tiny.
+- Do not let it overflow outside the nav.
+- Keep it vertically centered.
+
+==================================================
+2. WORK DIFFERENTLY HEADING — INVERTED PYRAMID
+==================================================
+
+Problem:
+The current title feels too blocky and awkward. It also looks like a continuation of the Insights section.
+
+Goal:
+Make the title feel premium, intentional, and visually hierarchical using an inverted pyramid layout.
+
+Replace the current Work Differently heading with this exact structure:
+
+<div className="mx-auto max-w-[1240px] text-center">
+  <p className="
+    mb-7
+    text-[15px]
+    font-bold
+    uppercase
+    tracking-[0.34em]
+    text-[#4B4FC4]
+  ">
+    Work Differently
+  </p>
+
+  <h2 className="
+    mx-auto
+    max-w-[1180px]
+    text-balance
+    text-[clamp(44px,5.6vw,82px)]
+    font-bold
+    leading-[1.03]
+    tracking-[-0.055em]
+    text-[#050A1F]
+  ">
+    <span className="block">
+      Whether you're scaling a team
+    </span>
+
+    <span className="block">
+      or growing a career
+    </span>
+
+    <span className="mt-3 block text-[clamp(40px,5vw,74px)] leading-[1.05] tracking-[-0.055em]">
+      — OnSpot is built for
+    </span>
+
+    <span className="block">
+      both sides of
+      <span className="
+        ml-3
+        bg-gradient-to-r
+        from-[#6B35F5]
+        via-[#7C4DFF]
+        to-[#3B82F6]
+        bg-clip-text
+        text-transparent
+      ">
+        great work.
+      </span>
+    </span>
+  </h2>
+</div>
+
+==================================================
+3. WORK DIFFERENTLY SECTION SPACING
+==================================================
+
+Give this heading more breathing room so it feels like a new section, not connected to Insights.
+
+Use this on the section wrapper:
+
+className="
+  relative
+  overflow-hidden
+  bg-[#F6F8FF]
+  px-6
+  pt-28
+  pb-20
+  sm:pt-32
+  sm:pb-24
+  lg:pt-36
+  lg:pb-28
+"
+
+Important:
+- Keep the background consistent with the surrounding light section.
+- Do not make the heading touch the cards.
+- Keep at least 64px between the heading and the two cards below.
+- Do not make the title overflow horizontally.
+
+==================================================
+4. RESPONSIVE MOBILE VERSION
+==================================================
+
+On mobile, the heading should not be too huge.
+
+Use responsive text classes or CSS so that on small screens:
+- main heading is around 40px–48px
+- line-height stays tight but readable
+- each line remains centered
+- gradient only applies to “great work.”
+
+==================================================
+FINAL VISUAL TARGET
+==================================================
+
+The Work Differently title should read visually like:
+
+WORK DIFFERENTLY
+
+Whether you're scaling a team
+or growing a career
+— OnSpot is built for
+both sides of great work.
+
+With “great work.” in the OnSpot blue-violet gradient.
+
+The overall shape should feel like an inverted pyramid:
+- wider lines on top
+- shorter lines toward the bottom
+- clear emphasis on “great work.”

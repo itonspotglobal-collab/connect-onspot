@@ -603,18 +603,27 @@ export default function Home() {
         <div className="pointer-events-none absolute -right-40 bottom-20 h-[520px] w-[520px] rounded-full bg-cyan-300/10 blur-3xl" />
 
         {/* ── 3. WORK DIFFERENTLY ── */}
-        <div className="relative overflow-x-hidden bg-transparent py-12 sm:py-14 lg:py-16">
+        <div className="relative overflow-hidden bg-[#F6F8FF] px-6 pt-28 pb-20 sm:pt-32 sm:pb-24 lg:pt-36 lg:pb-28">
           <div className="container relative z-10 mx-auto px-4 sm:px-6">
-            <div className="mx-auto max-w-[1180px] text-center mb-12 sm:mb-16">
-              <p className="mb-6 text-[15px] font-bold uppercase tracking-[0.32em] text-[#4B4FC4]">
+            <div className="mx-auto max-w-[1240px] text-center mb-16 sm:mb-20">
+              <p className="mb-7 text-[15px] font-bold uppercase tracking-[0.34em] text-[#4B4FC4]">
                 Work Differently
               </p>
-              <h2 className="mx-auto max-w-[1120px] text-balance text-[clamp(42px,5.2vw,76px)] font-bold leading-[1.05] tracking-[-0.045em] text-[#050A1F]">
+              <h2 className="mx-auto max-w-[1180px] text-balance text-[clamp(44px,5.6vw,82px)] font-bold leading-[1.03] tracking-[-0.055em] text-[#050A1F]">
                 <span className="block">
-                  Whether you're scaling a team or growing a career
+                  Whether you're scaling a team
                 </span>
-                <span className="mt-2 block">
-                  — OnSpot is built for both sides of great work.
+                <span className="block">
+                  or growing a career
+                </span>
+                <span className="mt-3 block text-[clamp(40px,5vw,74px)] leading-[1.05] tracking-[-0.055em]">
+                  — OnSpot is built for
+                </span>
+                <span className="block">
+                  both sides of{" "}
+                  <span className="bg-gradient-to-r from-[#6B35F5] via-[#7C4DFF] to-[#3B82F6] bg-clip-text text-transparent">
+                    great work.
+                  </span>
                 </span>
               </h2>
             </div>

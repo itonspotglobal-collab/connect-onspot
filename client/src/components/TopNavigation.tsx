@@ -747,7 +747,7 @@ export function TopNavigation() {
             <img
               src={onspotLogo}
               alt="OnSpot"
-              className="h-[30px] w-auto max-w-[125px] object-contain sm:h-8 sm:max-w-[135px] lg:h-9 lg:max-w-[150px]"
+              className="h-[34px] w-auto max-w-[145px] object-contain sm:h-10 sm:max-w-[165px] lg:h-[46px] lg:max-w-[190px]"
             />
           </Link>
 
