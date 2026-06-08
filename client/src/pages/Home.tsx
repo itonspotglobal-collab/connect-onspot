@@ -73,6 +73,7 @@ import JaelAtendidoPhoto from "@assets/Jael_1780909035045.png";
 import AndreaPinzonPhoto from "@assets/Andrea_Pinzon_1774264095055.jpeg";
 import ShaneRubioPhoto from "@assets/Shane_1780657863305.png";
 import RachelCastroPhoto from "@assets/Rachel_Caztro_1774264095056.jpg";
+import JenniferDizonPhoto from "@assets/Jennifer_Dizon_1774430604160.jpg";
 
 const trustedBrands = [
   { name: "Flash Justice", logo: FlashLogo },
@@ -1197,7 +1198,11 @@ export default function Home() {
                     src={card.img}
                     alt={card.imgAlt}
                     className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                    style={(card as any).imgPosition ? { objectPosition: (card as any).imgPosition } : undefined}
+                    style={
+                      (card as any).imgPosition
+                        ? { objectPosition: (card as any).imgPosition }
+                        : undefined
+                    }
                     loading="lazy"
                   />
                 </div>
@@ -1323,12 +1328,12 @@ export default function Home() {
                 gender: "male",
               },
               {
-                photo: RachelCastroPhoto,
-                name: "Rachel Castro",
+                photo: JenniferDizonPhoto,
+                name: "Jennifer Dizon",
                 flag: "🇵🇭",
-                role: "Social Media Manager",
-                objectPosition: "object-top",
-                isReal: false,
+                role: "Executive Assistant",
+                objectPosition: "object-[center_20%]",
+                isReal: true,
                 gender: "female",
               },
             ].map((person) => (
@@ -1345,7 +1350,7 @@ export default function Home() {
                       className="absolute left-1/2 top-1/2 h-auto max-w-none"
                       style={{
                         width: "155%",
-                        transform: "translate(-50%, -68%)",
+                        transform: "translate(-50%, -53%)",
                       }}
                     />
                   </div>
@@ -1355,7 +1360,11 @@ export default function Home() {
                       src={person.photo}
                       alt={person.name}
                       className="block h-full w-full object-cover"
-                      style={{ objectPosition: "50% 34%", transform: "scale(0.88)", transformOrigin: "50% 34%" }}
+                      style={{
+                        objectPosition: "50% 34%",
+                        transform: "scale(0.88)",
+                        transformOrigin: "50% 34%",
+                      }}
                       loading="lazy"
                     />
                   </div>
