@@ -74,6 +74,8 @@ import AndreaPinzonPhoto from "@assets/Andrea_Pinzon_1774264095055.jpeg";
 import ShaneRubioPhoto from "@assets/Shane_1780657863305.png";
 import RachelCastroPhoto from "@assets/Rachel_Caztro_1774264095056.jpg";
 import JenniferDizonPhoto from "@assets/Jennifer_Dizon_1774430604160.jpg";
+import MarielTolentinoPhoto from "@assets/Mariel_Tolentino_1781014693257.png";
+import MelissaRayosPhoto from "@assets/Melissa_Nicka_Mae_Rayos_-_Talent_Acquisition_Specialist_1781015117632.png";
 
 const trustedBrands = [
   { name: "Flash Justice", logo: FlashLogo },
@@ -1264,11 +1266,11 @@ export default function Home() {
           <div className="mx-auto mt-12 grid max-w-[1400px] grid-cols-2 gap-5 lg:grid-cols-4">
             {[
               {
-                photo: NurLamineroPhoto,
-                name: "Nur Laminero",
-                flag: "🇵🇭",
-                role: "CEO of OnSpot",
-                objectPosition: "object-[center_25%]",
+                photo: JakeWainbergPhoto,
+                name: "Jake Wainberg",
+                flag: "🇺🇸",
+                role: "Founder & President",
+                objectPosition: "object-[center_20%]",
                 isReal: true,
                 gender: "male",
               },
@@ -1283,11 +1285,11 @@ export default function Home() {
                 gender: "female",
               },
               {
-                photo: JakeWainbergPhoto,
-                name: "Jake Wainberg",
-                flag: "🇺🇸",
-                role: "Founder & President",
-                objectPosition: "object-[center_20%]",
+                photo: NurLamineroPhoto,
+                name: "Nur Laminero",
+                flag: "🇵🇭",
+                role: "CEO of OnSpot",
+                objectPosition: "object-[center_25%]",
                 isReal: true,
                 gender: "male",
               },
@@ -1310,22 +1312,22 @@ export default function Home() {
                 gender: "male",
               },
               {
-                photo: RachelCastroPhoto,
-                name: "Rachel Castro",
+                photo: MarielTolentinoPhoto,
+                name: "Mariel Tolentino",
                 flag: "🇵🇭",
-                role: "Head of Operations",
-                objectPosition: "object-center",
+                role: "Content Creator",
+                objectPosition: "object-[center_28%]",
                 isReal: true,
                 gender: "female",
               },
               {
-                photo: RenierMacalinoPhoto,
-                name: "Renier Macalino",
+                photo: MelissaRayosPhoto,
+                name: "Melissa Rayos",
                 flag: "🇵🇭",
-                role: "Senior Data Analyst",
-                objectPosition: "object-top",
-                isReal: false,
-                gender: "male",
+                role: "Talent Acquisition Specialist",
+                objectPosition: "object-[center_18%]",
+                isReal: true,
+                gender: "female",
               },
               {
                 photo: JenniferDizonPhoto,
