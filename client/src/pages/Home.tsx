@@ -412,13 +412,13 @@ export default function Home() {
             {/* Header */}
             <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
               <div>
-                <p className="mb-4 text-sm font-bold uppercase tracking-[0.28em] text-white/75">
+                <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.32em] text-white/65">
                   Insights
                 </p>
-                <h2 className="max-w-[720px] text-[clamp(42px,6vw,76px)] font-bold leading-[0.95] tracking-[-0.055em] text-white">
+                <h2 className="max-w-[640px] text-[clamp(32px,4vw,56px)] font-bold leading-[0.96] tracking-[-0.055em] text-white">
                   Ideas worth sharing.
                 </h2>
-                <p className="mt-5 max-w-[620px] text-lg leading-relaxed text-white/80">
+                <p className="mt-4 max-w-[540px] text-[15px] leading-relaxed text-white/75">
                   Perspectives on customer experience, global talent, and the future of work.
                 </p>
               </div>
@@ -497,10 +497,10 @@ export default function Home() {
 
           {/* Headline */}
           <div className="mx-auto max-w-[1180px] text-center mb-12">
-            <p className="mb-4 text-xs font-bold uppercase tracking-[0.32em] text-white/70">
+            <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.34em] text-white/60">
               Work Differently
             </p>
-            <h2 className="mx-auto max-w-[1180px] text-center text-[clamp(34px,4.1vw,58px)] font-bold leading-[1.04] tracking-[-0.055em] text-white">
+            <h2 className="mx-auto max-w-[1100px] text-center text-[clamp(28px,3.4vw,50px)] font-bold leading-[1.06] tracking-[-0.05em] text-white">
               <span className="block lg:whitespace-nowrap">
                 Whether you're scaling a team or growing a career
               </span>
@@ -650,9 +650,9 @@ export default function Home() {
 
         {/* Header */}
         <div className="relative z-10 px-4 text-center">
-          <h2 className="mx-auto mt-5 max-w-[980px] px-6 text-center font-bold leading-[0.98] tracking-[-0.055em] text-white text-[clamp(42px,5.4vw,76px)]">
+          <h2 className="mx-auto mt-5 max-w-[900px] px-6 text-center font-bold leading-[0.98] tracking-[-0.055em] text-white text-[clamp(34px,4.4vw,64px)]">
             <span className="block">Real people. Real work.</span>
-            <span className="mt-2 block text-[#AAA8FF]">Real impact.</span>
+            <span className="mt-2 block text-[clamp(30px,3.8vw,56px)] text-[#AAA8FF]">Real impact.</span>
           </h2>
         </div>
 
@@ -1002,17 +1002,17 @@ export default function Home() {
         <div className="mx-auto max-w-[1320px]">
 
           {/* Header block */}
-          <div className="max-w-[780px]">
-            <p className="mb-4 text-xs font-bold uppercase tracking-[0.30em] text-[#4B4FC4]">
+          <div className="max-w-[720px]">
+            <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.32em] text-[#4B4FC4]">
               Why OnSpot
             </p>
-            <h2 className="max-w-[760px] text-[clamp(42px,5vw,74px)] font-bold leading-[0.96] tracking-[-0.06em] text-[#050A1F]">
+            <h2 className="max-w-[700px] text-[clamp(36px,4.4vw,64px)] font-bold leading-[0.96] tracking-[-0.06em] text-[#050A1F]">
               <span className="block">Not a service provider.</span>
-              <span className="mt-1 block max-w-[560px] bg-gradient-to-r from-[#6B35F5] via-[#7C4DFF] to-[#3B82F6] bg-clip-text italic text-transparent">
+              <span className="mt-1 block max-w-[480px] bg-gradient-to-r from-[#6B35F5] via-[#7C4DFF] to-[#3B82F6] bg-clip-text italic text-transparent">
                 An architect.
               </span>
             </h2>
-            <p className="mt-6 max-w-[660px] text-[clamp(17px,1.4vw,21px)] leading-[1.45] text-[#536077]">
+            <p className="mt-5 max-w-[600px] text-[clamp(15px,1.2vw,18px)] leading-[1.5] text-[#536077]">
               We design the operating layer behind modern outsourcing — combining AI-ready systems, vetted talent, and human accountability so your team can scale without losing control.
             </p>
           </div>
@@ -1094,14 +1094,14 @@ export default function Home() {
       <div className="relative bg-white py-20 sm:py-24 lg:py-28">
         <div className="container mx-auto px-4 sm:px-6">
           <div className="mb-12 text-center">
-            <h2 className="mx-auto mt-5 max-w-[1080px] text-center text-[clamp(44px,5.3vw,78px)] font-bold tracking-[-0.06em] leading-[0.98] text-[#050A1F]">
+            <h2 className="mx-auto max-w-[960px] text-center text-[clamp(36px,4.4vw,64px)] font-bold tracking-[-0.06em] leading-[0.98] text-[#050A1F]">
               The{" "}
               <span className="bg-gradient-to-r from-[#6B35F5] via-[#7C4DFF] to-[#3B82F6] bg-clip-text text-transparent">
                 People
               </span>{" "}
               Behind the Platform
             </h2>
-            <p className="mx-auto mt-5 max-w-[820px] text-center text-[clamp(18px,1.7vw,24px)] leading-[1.35] text-[#536077]">
+            <p className="mx-auto mt-4 max-w-[680px] text-center text-[clamp(15px,1.3vw,18px)] leading-[1.4] text-[#536077]">
               <span className="block">
                 Powered by professionals from the US, Philippines, and beyond.
               </span>

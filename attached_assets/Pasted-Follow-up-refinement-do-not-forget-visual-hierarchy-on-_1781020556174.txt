@@ -1,0 +1,138 @@
+Follow-up refinement: do not forget visual hierarchy on the updated homepage sections.
+
+The latest section changes are good, but please make sure the typography and layout follow a clear visual hierarchy, especially using an inverted pyramid / cascading hierarchy.
+
+Apply this to these sections:
+1. Insights
+2. Work Differently
+3. Real people. Real work. Real impact.
+4. Why OnSpot
+5. The People Behind the Platform
+
+General hierarchy rules:
+- Eyebrow/section label should be the smallest.
+- Main title should be the strongest, but not oversized.
+- Highlighted gradient words should draw attention without overpowering the full heading.
+- Supporting paragraph should be smaller and narrower than the title.
+- Cards/tables should sit below with enough spacing, but still fit comfortably in one screen where possible.
+- CTA buttons should be visually noticeable but not compete with the main headline.
+
+==================================================
+INSIGHTS
+==================================================
+
+Keep the gradient panel, but make sure the hierarchy is:
+
+Small label:
+INSIGHTS
+
+Main title:
+Ideas worth sharing.
+
+Description:
+Perspectives on customer experience, global talent, and the future of work.
+
+Then the 3 text-only insight cards.
+
+The title should be larger than the cards, but the whole section should not feel oversized.
+
+==================================================
+WORK DIFFERENTLY
+==================================================
+
+Make the hierarchy:
+
+Small label:
+WORK DIFFERENTLY
+
+Main title:
+Whether you're scaling a team or growing a career
+— OnSpot is built for both sides of great work.
+
+The phrase “great work.” should be highlighted with gradient, but it should not make the whole line feel unbalanced.
+
+Then the two-column content:
+- left intro card
+- right comparison table
+
+The section should feel like one complete screen, not too tall.
+
+==================================================
+REAL PEOPLE SECTION
+==================================================
+
+Make the hierarchy:
+
+Main title:
+Real people. Real work.
+Real impact.
+
+The “Real impact.” line should be highlighted but not too large.
+
+Then the collage.
+
+Then the closing sentence:
+Behind every workflow is a real person making the work better.
+
+Then the CTA:
+Meet the people behind the work
+
+The title should be smaller than before and the collage should still be the visual focus.
+
+==================================================
+WHY ONSPOT
+==================================================
+
+Make the hierarchy:
+
+Small label:
+WHY ONSPOT
+
+Main title:
+Not a service provider.
+An architect.
+
+“An architect.” should be highlighted in gradient/italic, but should feel connected to the first line.
+
+Then the paragraph.
+
+Then the four icon cards.
+
+Then the CTA:
+See how it works
+
+Do not let the heading take too much vertical space.
+
+==================================================
+THE PEOPLE BEHIND THE PLATFORM
+==================================================
+
+Make the hierarchy:
+
+Main title:
+The People Behind the Platform
+
+Only “People” should have the gradient highlight.
+
+Then subtitle:
+Powered by professionals from the US, Philippines, and beyond.
+The Superhuman BPO Network.
+
+Then the people grid.
+
+Then the CTA:
+Explore our talent network
+
+Reduce the title and people card sizes slightly if needed so the section fits better in one viewport.
+
+==================================================
+FINAL CHECK
+==================================================
+
+After applying:
+- Each section should have a clear top-to-bottom hierarchy.
+- Nothing should feel randomly oversized.
+- Dark and light sections should alternate clearly.
+- Text should feel premium, balanced, and easy to scan.
+- The page should feel cleaner and closer to Apple-inspired minimal design.
+- Do not change content or links.
