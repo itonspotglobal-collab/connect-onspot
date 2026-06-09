@@ -1,0 +1,383 @@
+Apply these homepage section refinements.
+
+Goal:
+Create a stronger dark/light alternation between sections and make key sections fit better within one viewport by reducing oversized typography and excessive vertical spacing.
+
+Do not change:
+- page content/copy
+- button links
+- navigation
+- footer
+- photos/crops in the People Behind the Platform grid
+- article/card content
+- section order
+
+==================================================
+1. SEPARATE INSIGHTS AND WORK DIFFERENTLY
+==================================================
+
+Current issue:
+Insights and Work Differently visually blend together because they share the same light background.
+
+Goal:
+Keep Insights as a light section, then make Work Differently a distinct darker section.
+
+Insights section:
+- Keep background light.
+- Add enough bottom spacing before Work Differently starts.
+
+Use:
+<section className="bg-[#F5F7FC] px-6 py-20 sm:py-24 lg:py-28">
+
+After the Insights panel/content, make sure the section has:
+pb-24 sm:pb-28 lg:pb-32
+
+Work Differently section:
+Change background to a dark brand gradient.
+
+Use this section wrapper:
+
+<section className="
+  relative
+  overflow-hidden
+  bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.28),transparent_34%),linear-gradient(135deg,#151632_0%,#232B74_52%,#11142B_100%)]
+  px-6
+  py-20
+  text-white
+  sm:py-24
+  lg:py-28
+">
+
+Inside this dark section, update text colors:
+- Eyebrow: text-white/70
+- Main heading: text-white
+- Muted body text: text-white/72
+- Card text should remain readable based on card background.
+
+==================================================
+2. WORK DIFFERENTLY — SMALLER TITLE AND FIT IN ONE SCREEN
+==================================================
+
+Current issue:
+Work Differently headline is too large and section does not fit comfortably in one screen.
+
+Goal:
+Reduce the headline size while keeping it premium and readable.
+
+Update the Work Differently header:
+
+<p className="
+  mb-4
+  text-xs
+  font-bold
+  uppercase
+  tracking-[0.32em]
+  text-white/70
+">
+  Work Differently
+</p>
+
+<h2 className="
+  mx-auto
+  max-w-[1180px]
+  text-center
+  text-[clamp(34px,4.1vw,58px)]
+  font-bold
+  leading-[1.04]
+  tracking-[-0.055em]
+  text-white
+">
+  <span className="block lg:whitespace-nowrap">
+    Whether you're scaling a team or growing a career
+  </span>
+  <span className="mt-1 block lg:whitespace-nowrap">
+    — OnSpot is built for both sides of
+    <span className="
+      ml-2
+      bg-gradient-to-r
+      from-[#AFA8FF]
+      via-[#8B7CFF]
+      to-[#5AA7FF]
+      bg-clip-text
+      text-transparent
+    ">
+      great work.
+    </span>
+  </span>
+</h2>
+
+If the headline still wraps on desktop, reduce max size from 58px to 54px.
+
+==================================================
+3. WORK DIFFERENTLY — CARD AREA COMPACT
+==================================================
+
+Make the content below the title more compact.
+
+Grid wrapper:
+<div className="
+  mx-auto
+  mt-12
+  grid
+  max-w-[1180px]
+  gap-6
+  lg:grid-cols-[0.9fr_1.1fr]
+  lg:items-start
+">
+
+Left card:
+- rounded-[28px]
+- p-7 lg:p-8
+- Keep content same.
+
+Comparison card/table:
+- rounded-[28px]
+- table padding reduced from px-5 py-5 to px-4 py-4.
+- Header bar padding px-5 py-4.
+- Reduce table font to text-[13px] or text-sm.
+
+For all Work Differently cards:
+Use white cards on the dark background:
+
+className="
+  rounded-[28px]
+  border
+  border-white/14
+  bg-white
+  text-[#050A1F]
+  shadow-[0_24px_80px_rgba(0,0,0,0.22)]
+"
+
+This creates dark/light contrast inside the dark section.
+
+==================================================
+4. REAL PEOPLE SECTION — SMALLER TITLE
+==================================================
+
+Current issue:
+“Real people. Real work. Real impact.” title is too huge.
+
+Goal:
+Keep it impactful but smaller so the collage and CTA fit better in one screen.
+
+Update the section padding:
+<section className="bg-[#15162D] px-6 py-18 sm:py-20 lg:py-24">
+
+Update heading:
+
+<h2 className="
+  mx-auto
+  max-w-[980px]
+  text-center
+  text-[clamp(42px,5.4vw,76px)]
+  font-bold
+  leading-[0.98]
+  tracking-[-0.055em]
+  text-white
+">
+  <span className="block">Real people. Real work.</span>
+  <span className="mt-2 block text-[#AAA8FF]">Real impact.</span>
+</h2>
+
+Reduce collage top margin:
+mt-10 instead of mt-14 or mt-16
+
+Reduce closing line:
+<p className="mt-8 text-center text-[clamp(18px,1.5vw,24px)] font-semibold text-white/62">
+  Behind every workflow is a <span className="text-white">real person</span> making the work better.
+</p>
+
+CTA margin:
+mt-6
+
+==================================================
+5. WHY ONSPOT — SMALLER TITLE AND FIT BETTER
+==================================================
+
+Current issue:
+“Not a service provider. An architect.” is too large.
+
+Goal:
+Still strong, but more compact and fits with the four cards.
+
+Update section wrapper:
+<section className="bg-[#F3F6FC] px-6 py-20 sm:py-24 lg:py-28">
+
+Header wrapper:
+<div className="max-w-[780px]">
+
+Eyebrow:
+<p className="
+  mb-4
+  text-xs
+  font-bold
+  uppercase
+  tracking-[0.30em]
+  text-[#4B4FC4]
+">
+  Why OnSpot
+</p>
+
+Headline:
+<h2 className="
+  max-w-[760px]
+  text-[clamp(42px,5vw,74px)]
+  font-bold
+  leading-[0.96]
+  tracking-[-0.06em]
+  text-[#050A1F]
+">
+  <span className="block">Not a service provider.</span>
+  <span className="
+    mt-1
+    block
+    max-w-[560px]
+    bg-gradient-to-r
+    from-[#6B35F5]
+    via-[#7C4DFF]
+    to-[#3B82F6]
+    bg-clip-text
+    italic
+    text-transparent
+  ">
+    An architect.
+  </span>
+</h2>
+
+Paragraph:
+<p className="
+  mt-6
+  max-w-[660px]
+  text-[clamp(17px,1.4vw,21px)]
+  leading-[1.45]
+  text-[#536077]
+">
+  We design the operating layer behind modern outsourcing — combining AI-ready systems, vetted talent, and human accountability so your team can scale without losing control.
+</p>
+
+Cards grid margin:
+mt-12 instead of mt-16
+
+Card style:
+p-6 instead of p-7
+rounded-[24px]
+
+Card title:
+text-xl instead of text-2xl
+
+Card description:
+text-sm leading-relaxed
+
+CTA margin:
+mt-10
+
+==================================================
+6. THE PEOPLE BEHIND THE PLATFORM — SMALLER TITLE AND PHOTOS
+==================================================
+
+Current issue:
+The title is too large and the people grid is too tall.
+
+Goal:
+Make the title and people photos a bit smaller so the section fits better in one screen.
+
+Section wrapper:
+<section className="bg-white px-6 py-20 sm:py-24 lg:py-28">
+
+Header:
+<h2 className="
+  mx-auto
+  max-w-[1080px]
+  text-center
+  text-[clamp(44px,5.3vw,78px)]
+  font-bold
+  leading-[0.98]
+  tracking-[-0.06em]
+  text-[#050A1F]
+">
+  The <span className="bg-gradient-to-r from-[#6B35F5] via-[#7C4DFF] to-[#3B82F6] bg-clip-text text-transparent">People</span> Behind the Platform
+</h2>
+
+Subtitle:
+<p className="
+  mx-auto
+  mt-5
+  max-w-[820px]
+  text-center
+  text-[clamp(18px,1.7vw,24px)]
+  leading-[1.35]
+  text-[#536077]
+">
+  Powered by professionals from the US, Philippines, and beyond.<br />
+  The Superhuman BPO Network.
+</p>
+
+People grid:
+- Reduce top margin to mt-12.
+- Reduce max width to max-w-[1180px].
+- Reduce gap to gap-5.
+- Make cards smaller.
+
+Grid:
+<div className="mx-auto mt-12 grid max-w-[1180px] grid-cols-2 gap-5 lg:grid-cols-4">
+
+Card/image wrapper:
+className="
+  aspect-[1.42/1]
+  overflow-hidden
+  rounded-[24px]
+"
+
+If current card uses fixed height, replace it with responsive aspect ratio:
+aspect-[1.42/1]
+
+CTA:
+- mt-10
+- Keep button same link and text.
+- Button can be h-13 instead of h-14.
+
+==================================================
+7. GENERAL SECTION RHYTHM
+==================================================
+
+Create alternating backgrounds:
+
+Insights:
+Light #F5F7FC
+
+Work Differently:
+Dark brand gradient
+
+Trusted By:
+Light / existing soft background
+
+Real People:
+Dark #15162D
+
+Transformations:
+Light #F3F6FC
+
+Why OnSpot:
+Light is okay, but if it follows a light section, add more top border/spacing or keep it very soft #EEF3FA.
+
+The People Behind the Platform:
+White or very light
+
+Footer CTA:
+Keep existing gradient/card style.
+
+==================================================
+FINAL CHECK
+==================================================
+
+After applying:
+- Insights and Work Differently are visually separated.
+- Work Differently has a darker background.
+- Work Differently headline is smaller and fits better.
+- Work Differently cards are compact and readable.
+- Real People heading is smaller.
+- Why OnSpot heading is smaller and better balanced.
+- The People Behind the Platform heading and image cards are smaller.
+- No content is removed.
+- No button links are changed.
+- No photo crops are changed.

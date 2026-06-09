@@ -405,7 +405,7 @@ export default function Home() {
 
       {/* ── Spacer between stats and Insights ── */}
       {/* ── 2. FEATURED INSIGHTS — gradient panel ── */}
-      <section className="relative bg-[#F5F7FC] px-6 py-24 sm:py-28 lg:py-32">
+      <section className="relative bg-[#F5F7FC] px-6 py-20 sm:py-24 lg:py-28">
         <div className="mx-auto max-w-[1320px]">
           <div className="rounded-[40px] bg-gradient-to-br from-[#4B4FC4] via-[#3568E8] to-[#13B8C8] p-8 shadow-[0_28px_90px_rgba(44,63,170,0.22)] sm:p-10 lg:p-12">
 
@@ -491,166 +491,158 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Spacer between Insights and Work Differently ── */}
-      <div aria-hidden="true" className="h-20 bg-[#f7f8fb] sm:h-24 lg:h-32" />
+      {/* ── 3. WORK DIFFERENTLY ── */}
+      <section className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.28),transparent_34%),linear-gradient(135deg,#151632_0%,#232B74_52%,#11142B_100%)] px-6 py-20 text-white sm:py-24 lg:py-28">
+        <div className="container relative z-10 mx-auto px-4 sm:px-6">
 
-      {/* ── 3 + 4. WORK DIFFERENTLY + TRUSTED BY (shared bg) ── */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#f5f3ff] via-[#f7f9ff] to-[#eafaff]">
-        <div className="pointer-events-none absolute -left-40 top-20 h-[520px] w-[520px] rounded-full bg-violet-300/10 blur-3xl" />
-        <div className="pointer-events-none absolute -right-40 bottom-20 h-[520px] w-[520px] rounded-full bg-cyan-300/10 blur-3xl" />
+          {/* Headline */}
+          <div className="mx-auto max-w-[1180px] text-center mb-12">
+            <p className="mb-4 text-xs font-bold uppercase tracking-[0.32em] text-white/70">
+              Work Differently
+            </p>
+            <h2 className="mx-auto max-w-[1180px] text-center text-[clamp(34px,4.1vw,58px)] font-bold leading-[1.04] tracking-[-0.055em] text-white">
+              <span className="block lg:whitespace-nowrap">
+                Whether you're scaling a team or growing a career
+              </span>
+              <span className="mt-1 block lg:whitespace-nowrap">
+                — OnSpot is built for both sides of{" "}
+                <span className="bg-gradient-to-r from-[#AFA8FF] via-[#8B7CFF] to-[#5AA7FF] bg-clip-text text-transparent">
+                  great work.
+                </span>
+              </span>
+            </h2>
+          </div>
 
-        {/* ── 3. WORK DIFFERENTLY ── */}
-        <div className="relative overflow-hidden bg-[#F6F8FF] px-6 pt-28 pb-20 sm:pt-32 sm:pb-28 lg:pt-36 lg:pb-36">
-          <div className="container relative z-10 mx-auto px-4 sm:px-6">
+          {/* Two-column: left text/CTAs + right comparison table */}
+          <div className="mx-auto grid max-w-[1180px] gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
 
-            {/* Headline */}
-            <div className="mx-auto max-w-[1500px] text-center mb-16 sm:mb-20">
-              <p className="mb-7 text-[15px] font-bold uppercase tracking-[0.34em] text-[#4B4FC4]">
-                Work Differently
+            {/* Left block */}
+            <div className="rounded-[28px] border border-white/14 bg-white p-7 shadow-[0_24px_80px_rgba(0,0,0,0.22)] lg:p-8">
+              <p className="mb-4 text-sm font-bold uppercase tracking-[0.24em] text-[#4B4FC4]">
+                Built for both sides
               </p>
-              <h2 className="mx-auto max-w-[1450px] text-center text-[clamp(40px,4.25vw,68px)] font-bold leading-[1.05] tracking-[-0.055em] text-[#050A1F]">
-                <span className="block lg:whitespace-nowrap">
-                  Whether you're scaling a team or growing a career
-                </span>
-                <span className="mt-3 block lg:whitespace-nowrap">
-                  — OnSpot is built for both sides of{" "}
-                  <span className="bg-gradient-to-r from-[#6B35F5] via-[#7C4DFF] to-[#3B82F6] bg-clip-text text-transparent">
-                    great work.
-                  </span>
-                </span>
-              </h2>
+              <h3 className="text-[clamp(26px,2.6vw,38px)] font-bold leading-[1.05] tracking-[-0.04em] text-[#050A1F]">
+                One platform. Two clear paths.
+              </h3>
+              <p className="mt-4 text-base leading-relaxed text-[#536077]">
+                Companies get faster, cleaner hiring. Professionals get real opportunities, steady growth, and work that respects their terms.
+              </p>
+              <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+                <Link
+                  href="/hire-talent"
+                  className="inline-flex h-11 items-center justify-center rounded-full bg-gradient-to-r from-[#6B35F5] to-[#2F7CF6] px-6 text-sm font-bold text-white shadow-[0_14px_34px_rgba(83,68,230,0.24)] transition hover:-translate-y-0.5"
+                >
+                  Find the right talent →
+                </Link>
+                <Link
+                  href="/find-best-matches"
+                  className="inline-flex h-11 items-center justify-center rounded-full border border-[#B8C0EA] bg-white px-6 text-sm font-bold text-[#3F46A8] transition hover:bg-[#F2F4FF]"
+                >
+                  Find your next opportunity →
+                </Link>
+              </div>
             </div>
 
-            {/* Two-column: left text/CTAs + right comparison table */}
-            <div className="mx-auto grid max-w-[1280px] gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
-
-              {/* Left block */}
-              <div className="rounded-[32px] border border-[#DCE2F2] bg-white p-8 shadow-[0_20px_70px_rgba(45,55,105,0.08)] lg:p-10">
-                <p className="mb-4 text-sm font-bold uppercase tracking-[0.24em] text-[#4B4FC4]">
-                  Built for both sides
-                </p>
-                <h3 className="text-[clamp(30px,3vw,44px)] font-bold leading-[1.05] tracking-[-0.04em] text-[#050A1F]">
-                  One platform. Two clear paths.
-                </h3>
-                <p className="mt-5 text-lg leading-relaxed text-[#536077]">
-                  Companies get faster, cleaner hiring. Professionals get real opportunities, steady growth, and work that respects their terms.
-                </p>
-                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                  <Link
-                    href="/hire-talent"
-                    className="inline-flex h-12 items-center justify-center rounded-full bg-gradient-to-r from-[#6B35F5] to-[#2F7CF6] px-6 text-sm font-bold text-white shadow-[0_14px_34px_rgba(83,68,230,0.24)] transition hover:-translate-y-0.5"
-                  >
-                    Find the right talent →
-                  </Link>
-                  <Link
-                    href="/find-best-matches"
-                    className="inline-flex h-12 items-center justify-center rounded-full border border-[#B8C0EA] bg-white px-6 text-sm font-bold text-[#3F46A8] transition hover:bg-[#F2F4FF]"
-                  >
-                    Find your next opportunity →
-                  </Link>
+            {/* Right: comparison table card */}
+            <div className="overflow-hidden rounded-[28px] border border-white/14 bg-white shadow-[0_24px_80px_rgba(0,0,0,0.22)]">
+              {/* Card header */}
+              <div className="flex items-center justify-between border-b border-[#DCE2F2] bg-white px-5 py-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#4B4FC4]">
+                    Audience Paths
+                  </p>
+                  <h3 className="mt-1.5 text-xl font-bold tracking-[-0.03em] text-[#050A1F]">
+                    Companies vs. Professionals
+                  </h3>
                 </div>
               </div>
 
-              {/* Right: comparison table card */}
-              <div className="overflow-hidden rounded-[32px] border border-[#D6DDED] bg-white shadow-[0_24px_80px_rgba(45,55,105,0.10)]">
-                {/* Card header */}
-                <div className="flex items-center justify-between border-b border-[#DCE2F2] bg-white px-6 py-5">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#4B4FC4]">
-                      Audience Paths
-                    </p>
-                    <h3 className="mt-2 text-2xl font-bold tracking-[-0.03em] text-[#050A1F]">
-                      Companies vs. Professionals
-                    </h3>
-                  </div>
-                </div>
-
-                {/* Scrollable table */}
-                <div className="overflow-x-auto">
-                  <table className="min-w-[640px] w-full border-collapse text-left">
-                    <thead>
-                      <tr className="bg-[#F5F7FC]">
-                        <th className="border-b border-r border-[#DCE2F2] px-5 py-4 text-sm font-bold text-[#334155]">Dimension</th>
-                        <th className="border-b border-r border-[#DCE2F2] px-5 py-4 text-sm font-bold text-[#334155]">For Companies</th>
-                        <th className="border-b border-[#DCE2F2] px-5 py-4 text-sm font-bold text-[#334155]">For Professionals</th>
+              {/* Scrollable table */}
+              <div className="overflow-x-auto">
+                <table className="min-w-[600px] w-full border-collapse text-left">
+                  <thead>
+                    <tr className="bg-[#F5F7FC]">
+                      <th className="border-b border-r border-[#DCE2F2] px-4 py-3 text-[13px] font-bold text-[#334155]">Dimension</th>
+                      <th className="border-b border-r border-[#DCE2F2] px-4 py-3 text-[13px] font-bold text-[#334155]">For Companies</th>
+                      <th className="border-b border-[#DCE2F2] px-4 py-3 text-[13px] font-bold text-[#334155]">For Professionals</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      {
+                        dim: "Primary value",
+                        co: "Hire faster with less overhead",
+                        pro: "Real work with real growth",
+                      },
+                      {
+                        dim: "Best for",
+                        co: "Teams scaling roles, pods, or operations",
+                        pro: "Talent looking for steady, flexible opportunities",
+                      },
+                      {
+                        dim: "How it works",
+                        co: "Contract, project, or full-time support",
+                        pro: "Matched with quality clients and clear expectations",
+                      },
+                      {
+                        dim: "Control",
+                        co: "Direct access, zero middlemen",
+                        pro: "Remote work, flexible schedule, open access",
+                      },
+                      {
+                        dim: "Reach",
+                        co: "50+ countries and local expertise",
+                        pro: "Top global brands and reputation-building work",
+                      },
+                    ].map((row, i, arr) => (
+                      <tr key={row.dim}>
+                        <td className={`border-r border-[#E3E8F4] px-4 py-4 align-top text-[13px] font-semibold leading-relaxed text-[#050A1F]${i < arr.length - 1 ? " border-b" : ""}`}>
+                          {row.dim}
+                        </td>
+                        <td className={`border-r border-[#E3E8F4] px-4 py-4 align-top text-[13px] leading-relaxed text-[#536077]${i < arr.length - 1 ? " border-b" : ""}`}>
+                          {row.co}
+                        </td>
+                        <td className={`px-4 py-4 align-top text-[13px] leading-relaxed text-[#536077]${i < arr.length - 1 ? " border-b border-[#E3E8F4]" : ""}`}>
+                          {row.pro}
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        {
-                          dim: "Primary value",
-                          co: "Hire faster with less overhead",
-                          pro: "Real work with real growth",
-                        },
-                        {
-                          dim: "Best for",
-                          co: "Teams scaling roles, pods, or operations",
-                          pro: "Talent looking for steady, flexible opportunities",
-                        },
-                        {
-                          dim: "How it works",
-                          co: "Contract, project, or full-time support",
-                          pro: "Matched with quality clients and clear expectations",
-                        },
-                        {
-                          dim: "Control",
-                          co: "Direct access, zero middlemen",
-                          pro: "Remote work, flexible schedule, open access",
-                        },
-                        {
-                          dim: "Reach",
-                          co: "50+ countries and local expertise",
-                          pro: "Top global brands and reputation-building work",
-                        },
-                      ].map((row, i, arr) => (
-                        <tr key={row.dim}>
-                          <td className={`border-r border-[#E3E8F4] px-5 py-5 align-top text-sm font-semibold leading-relaxed text-[#050A1F]${i < arr.length - 1 ? " border-b" : ""}`}>
-                            {row.dim}
-                          </td>
-                          <td className={`border-r border-[#E3E8F4] px-5 py-5 align-top text-sm leading-relaxed text-[#536077]${i < arr.length - 1 ? " border-b" : ""}`}>
-                            {row.co}
-                          </td>
-                          <td className={`px-5 py-5 align-top text-sm leading-relaxed text-[#536077]${i < arr.length - 1 ? " border-b border-[#E3E8F4]" : ""}`}>
-                            {row.pro}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-
             </div>
+
           </div>
         </div>
-        {/* ── 4. TRUSTED BY ── */}
-        <div className="relative bg-transparent pt-20 pb-20 sm:pt-24 sm:pb-24 lg:pt-28 lg:pb-28">
-          <div className="container mx-auto px-4 sm:px-6 relative z-10">
-            <div className="text-center space-y-10 sm:space-y-14">
-              <h2
-                className="mx-auto font-medium leading-[1.12] tracking-[-0.035em] text-slate-900 text-[clamp(30px,3vw,48px)]"
-                style={{ textWrap: "balance", maxWidth: "58ch" }}
+      </section>
+
+      {/* ── 4. TRUSTED BY ── */}
+      <div className="relative bg-[#F5F7FC] pt-20 pb-20 sm:pt-24 sm:pb-24 lg:pt-28 lg:pb-28">
+        <div className="container mx-auto px-4 sm:px-6 relative z-10">
+          <div className="text-center space-y-10 sm:space-y-14">
+            <h2
+              className="mx-auto font-medium leading-[1.12] tracking-[-0.035em] text-slate-900 text-[clamp(30px,3vw,48px)]"
+              style={{ textWrap: "balance", maxWidth: "58ch" }}
+            >
+              Trusted by global brands, hundreds of entrepreneurs, and
+              thousands of professionals worldwide.
+            </h2>
+            <TrustedLogos />
+            <div className="flex justify-center">
+              <a
+                href="/find-best-matches"
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-violet-300 bg-white/80 px-7 py-3.5 text-base font-semibold text-violet-700 shadow-sm backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-violet-50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2"
               >
-                Trusted by global brands, hundreds of entrepreneurs, and
-                thousands of professionals worldwide.
-              </h2>
-              <TrustedLogos />
-              <div className="flex justify-center">
-                <a
-                  href="/find-best-matches"
-                  className="inline-flex items-center justify-center gap-2 rounded-full border border-violet-300 bg-white/80 px-7 py-3.5 text-base font-semibold text-violet-700 shadow-sm backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-violet-50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2"
-                >
-                  Join 100+ companies hiring with OnSpot
-                  <ArrowRight className="h-4 w-4" />
-                </a>
-              </div>
+                Join 100+ companies hiring with OnSpot
+                <ArrowRight className="h-4 w-4" />
+              </a>
             </div>
           </div>
         </div>
       </div>
 
       {/* ── 5. SUPERHUMAN NETWORK ── */}
-      <div className="relative overflow-hidden bg-[#17152E] py-24 text-white">
+      <div className="relative overflow-hidden bg-[#17152E] py-20 text-white sm:py-24 lg:py-28">
         {/* Background glow */}
         <div className="pointer-events-none absolute left-1/2 top-0 h-80 w-80 -translate-x-1/2 rounded-full bg-[#3F4698]/25 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-20 left-10 h-64 w-64 rounded-full bg-[#3F4698]/15 blur-3xl" />
@@ -658,15 +650,14 @@ export default function Home() {
 
         {/* Header */}
         <div className="relative z-10 px-4 text-center">
-          <h2 className="mx-auto mt-5 max-w-[1200px] px-6 text-center font-bold leading-[1.05] tracking-tight text-white text-[clamp(44px,6vw,96px)]">
+          <h2 className="mx-auto mt-5 max-w-[980px] px-6 text-center font-bold leading-[0.98] tracking-[-0.055em] text-white text-[clamp(42px,5.4vw,76px)]">
             <span className="block">Real people. Real work.</span>
-            <span className="mt-3 block text-[#B8B7FF]">Real impact.</span>
+            <span className="mt-2 block text-[#AAA8FF]">Real impact.</span>
           </h2>
-          <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-white/55 sm:text-lg"></p>
         </div>
 
         {/* Mosaic gallery — 9 tiles, 3-row layout, no gaps */}
-        <div className="relative z-10 mx-auto mt-14 grid max-w-[1800px] grid-cols-2 gap-1.5 px-4 [grid-auto-rows:140px] md:grid-cols-12 md:[grid-auto-rows:165px] lg:[grid-auto-rows:185px]">
+        <div className="relative z-10 mx-auto mt-10 grid max-w-[1800px] grid-cols-2 gap-1.5 px-4 [grid-auto-rows:140px] md:grid-cols-12 md:[grid-auto-rows:165px] lg:[grid-auto-rows:185px]">
           {/* Tile 0 — Collaboration that scales: large left, 2 rows tall */}
           {/* md: cols 1-6, rows 1-2 */}
           <div className="group relative col-span-2 row-span-2 overflow-hidden bg-slate-800 md:col-span-6 md:row-span-2">
@@ -813,14 +804,14 @@ export default function Home() {
         </div>
 
         {/* Bottom caption */}
-        <p className="relative z-10 mx-auto mt-10 max-w-[1200px] px-6 text-center text-xl font-medium leading-snug tracking-[-0.025em] text-white/60 sm:text-2xl lg:whitespace-nowrap lg:text-3xl">
+        <p className="relative z-10 mx-auto mt-8 max-w-[900px] px-6 text-center text-[clamp(18px,1.5vw,24px)] font-semibold leading-snug text-white/62">
           Behind every workflow is a{" "}
-          <span className="text-white/85">real person</span> making the work
+          <span className="text-white">real person</span> making the work
           better.
         </p>
 
         {/* Meet the people CTA */}
-        <div className="relative z-10 mt-8 flex justify-center">
+        <div className="relative z-10 mt-6 flex justify-center">
           <a
             href="/about"
             className="inline-flex h-[48px] items-center justify-center gap-3 rounded-[14px] border border-white/10 bg-[#5B45E8] px-7 text-base font-semibold text-white shadow-[0_10px_24px_rgba(55,38,160,0.28)] transition-all duration-300 hover:bg-[#4B38CF] hover:-translate-y-0.5 active:bg-[#3F2FB5] focus:outline-none focus:ring-2 focus:ring-[#8E7CFF] focus:ring-offset-2 focus:ring-offset-[#17152F]"
@@ -1007,27 +998,27 @@ export default function Home() {
       </div>
 
       {/* ── 6. WHY PARTNER / WHY ONSPOT ── */}
-      <section className="bg-[#F3F6FC] px-6 py-24 sm:py-28 lg:py-32">
+      <section className="bg-[#F3F6FC] px-6 py-20 sm:py-24 lg:py-28">
         <div className="mx-auto max-w-[1320px]">
 
           {/* Header block */}
-          <div className="max-w-[880px]">
-            <p className="mb-5 text-sm font-bold uppercase tracking-[0.30em] text-[#4B4FC4]">
+          <div className="max-w-[780px]">
+            <p className="mb-4 text-xs font-bold uppercase tracking-[0.30em] text-[#4B4FC4]">
               Why OnSpot
             </p>
-            <h2 className="max-w-[820px] text-[clamp(48px,6vw,92px)] font-bold leading-[0.92] tracking-[-0.065em] text-[#050A1F]">
+            <h2 className="max-w-[760px] text-[clamp(42px,5vw,74px)] font-bold leading-[0.96] tracking-[-0.06em] text-[#050A1F]">
               <span className="block">Not a service provider.</span>
-              <span className="mt-2 block max-w-[640px] bg-gradient-to-r from-[#6B35F5] via-[#7C4DFF] to-[#3B82F6] bg-clip-text italic text-transparent">
+              <span className="mt-1 block max-w-[560px] bg-gradient-to-r from-[#6B35F5] via-[#7C4DFF] to-[#3B82F6] bg-clip-text italic text-transparent">
                 An architect.
               </span>
             </h2>
-            <p className="mt-8 max-w-[700px] text-[clamp(18px,1.6vw,24px)] leading-[1.45] text-[#536077]">
+            <p className="mt-6 max-w-[660px] text-[clamp(17px,1.4vw,21px)] leading-[1.45] text-[#536077]">
               We design the operating layer behind modern outsourcing — combining AI-ready systems, vetted talent, and human accountability so your team can scale without losing control.
             </p>
           </div>
 
           {/* Four pillar cards — 1 row on desktop */}
-          <div className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {[
               {
                 icon: <Bot className="h-6 w-6" />,
@@ -1060,18 +1051,18 @@ export default function Home() {
             ].map((card) => (
               <article
                 key={card.title}
-                className="rounded-[28px] border border-[#DCE2F2] bg-white p-7 shadow-[0_18px_55px_rgba(45,55,105,0.08)] transition hover:-translate-y-1 hover:shadow-[0_26px_70px_rgba(45,55,105,0.12)]"
+                className="rounded-[24px] border border-[#DCE2F2] bg-white p-6 shadow-[0_18px_55px_rgba(45,55,105,0.08)] transition hover:-translate-y-1 hover:shadow-[0_26px_70px_rgba(45,55,105,0.12)]"
               >
                 {/* Icon */}
-                <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EEF0FF] text-[#4B4FC4] shadow-[0_10px_30px_rgba(75,79,196,0.12)]">
+                <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EEF0FF] text-[#4B4FC4] shadow-[0_10px_30px_rgba(75,79,196,0.12)]">
                   {card.icon}
                 </div>
 
-                <p className="mb-4 text-xs font-bold uppercase tracking-[0.22em] text-[#13839A]">
+                <p className="mb-3 text-xs font-bold uppercase tracking-[0.22em] text-[#13839A]">
                   {card.label}
                 </p>
 
-                <h3 className="text-2xl font-bold tracking-[-0.035em] text-[#050A1F]">
+                <h3 className="text-xl font-bold tracking-[-0.035em] text-[#050A1F]">
                   {card.title}
                 </h3>
 
@@ -1079,7 +1070,7 @@ export default function Home() {
                   {card.tagline}
                 </p>
 
-                <p className="mt-4 text-base leading-relaxed text-[#536077]">
+                <p className="mt-3 text-sm leading-relaxed text-[#536077]">
                   {card.body}
                 </p>
               </article>
@@ -1087,7 +1078,7 @@ export default function Home() {
           </div>
 
           {/* See how it works CTA */}
-          <div className="mt-12 flex justify-center">
+          <div className="mt-10 flex justify-center">
             <Link
               href="#experience"
               className="inline-flex h-14 items-center justify-center gap-3 rounded-full bg-gradient-to-r from-[#6B35F5] to-[#2F7CF6] px-8 text-base font-bold text-white shadow-[0_18px_45px_rgba(83,68,230,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_24px_60px_rgba(83,68,230,0.30)]"
@@ -1100,20 +1091,17 @@ export default function Home() {
       </section>
 
       {/* ── 7. THE PROOF / TALENT PROFILES ── */}
-      <div className="relative bg-white py-20 sm:py-28">
+      <div className="relative bg-white py-20 sm:py-24 lg:py-28">
         <div className="container mx-auto px-4 sm:px-6">
-          <div className="mb-12 sm:mb-16 text-center">
-            <p className="text-base font-semibold uppercase tracking-[0.24em] text-indigo-700 sr-only sm:text-lg lg:text-xl">
-              The Proof
-            </p>
-            <h2 className="mx-auto mt-5 max-w-[1200px] text-center text-[clamp(48px,6vw,94px)] font-semibold tracking-[-0.055em] leading-[0.98] text-slate-950">
+          <div className="mb-12 text-center">
+            <h2 className="mx-auto mt-5 max-w-[1080px] text-center text-[clamp(44px,5.3vw,78px)] font-bold tracking-[-0.06em] leading-[0.98] text-[#050A1F]">
               The{" "}
-              <span className="bg-gradient-to-r from-indigo-700 via-violet-600 to-blue-500 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-[#6B35F5] via-[#7C4DFF] to-[#3B82F6] bg-clip-text text-transparent">
                 People
               </span>{" "}
               Behind the Platform
             </h2>
-            <p className="mx-auto mt-6 max-w-4xl text-center text-lg leading-relaxed text-slate-600 sm:text-xl lg:text-2xl">
+            <p className="mx-auto mt-5 max-w-[820px] text-center text-[clamp(18px,1.7vw,24px)] leading-[1.35] text-[#536077]">
               <span className="block">
                 Powered by professionals from the US, Philippines, and beyond.
               </span>
@@ -1121,7 +1109,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="mx-auto mt-12 grid max-w-[1400px] grid-cols-2 gap-5 lg:grid-cols-4">
+          <div className="mx-auto mt-12 grid max-w-[1180px] grid-cols-2 gap-5 lg:grid-cols-4">
             {[
               {
                 photo: JakeWainbergPhoto,
@@ -1199,7 +1187,7 @@ export default function Home() {
             ].map((person) => (
               <div
                 key={person.name}
-                className="group relative aspect-[4/3] overflow-hidden rounded-3xl bg-slate-100 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-xl"
+                className="group relative aspect-[1.42/1] overflow-hidden rounded-[24px] bg-slate-100 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-xl"
               >
                 {person.name === "Jael Atendido" ? (
                   <div className="relative h-full w-full overflow-hidden rounded-[inherit]">
