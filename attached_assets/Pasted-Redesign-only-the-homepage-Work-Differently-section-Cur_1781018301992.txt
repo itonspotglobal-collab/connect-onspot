@@ -1,0 +1,258 @@
+Redesign only the homepage “Work Differently” section.
+
+Current request:
+Use the attached “Service Distinction” reference as inspiration. Keep the same content and purpose, but remove the photos from the two cards. The section should become cleaner, more structured, and comparison-focused.
+
+Do not change:
+- section order
+- section background
+- homepage hero
+- Insights section
+- Trusted By section
+- other homepage sections
+- button link destinations
+- navigation/header
+
+==================================================
+1. KEEP SECTION HEADING CONTENT
+==================================================
+
+Keep the top label:
+
+WORK DIFFERENTLY
+
+Keep the main headline text:
+
+Whether you're scaling a team or growing a career
+— OnSpot is built for both sides of great work.
+
+Keep “great work.” with the OnSpot gradient.
+
+Keep the 2-line desktop headline layout if already working.
+
+==================================================
+2. REMOVE PHOTOS FROM THIS SECTION
+==================================================
+
+Remove the image/photo area from both Work Differently cards:
+- remove the handshake/company photo
+- remove the professionals headset photo
+
+Do not replace them with new photos.
+
+The cards should be text/table/content cards only.
+
+==================================================
+3. NEW LAYOUT INSPIRED BY REFERENCE
+==================================================
+
+Below the headline, create a two-column layout inspired by the reference screenshot:
+
+Left side:
+- short section explanation
+- audience split intro
+- two CTA buttons
+
+Right side:
+- comparison table/card between “For Companies” and “For Professionals”
+
+Use this structure:
+
+<div className="mx-auto mt-16 grid max-w-[1280px] gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+
+==================================================
+4. LEFT CONTENT BLOCK
+==================================================
+
+Left block:
+
+<div className="rounded-[32px] border border-[#DCE2F2] bg-white p-8 shadow-[0_20px_70px_rgba(45,55,105,0.08)] lg:p-10">
+  <p className="mb-4 text-sm font-bold uppercase tracking-[0.24em] text-[#4B4FC4]">
+    Built for both sides
+  </p>
+
+  <h3 className="text-[clamp(30px,3vw,44px)] font-bold leading-[1.05] tracking-[-0.04em] text-[#050A1F]">
+    One platform. Two clear paths.
+  </h3>
+
+  <p className="mt-5 text-lg leading-relaxed text-[#536077]">
+    Companies get faster, cleaner hiring. Professionals get real opportunities, steady growth, and work that respects their terms.
+  </p>
+
+  <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+    <Link href="/hire-talent" className="...">
+      Find the right talent →
+    </Link>
+
+    <Link href="/find-best-matches" className="...">
+      Find your next opportunity →
+    </Link>
+  </div>
+</div>
+
+Primary button style:
+className="
+  inline-flex
+  h-13
+  items-center
+  justify-center
+  rounded-full
+  bg-gradient-to-r
+  from-[#6B35F5]
+  to-[#2F7CF6]
+  px-6
+  text-sm
+  font-bold
+  text-white
+  shadow-[0_14px_34px_rgba(83,68,230,0.24)]
+  transition
+  hover:-translate-y-0.5
+"
+
+Secondary button style:
+className="
+  inline-flex
+  h-13
+  items-center
+  justify-center
+  rounded-full
+  border
+  border-[#B8C0EA]
+  bg-white
+  px-6
+  text-sm
+  font-bold
+  text-[#3F46A8]
+  transition
+  hover:bg-[#F2F4FF]
+"
+
+==================================================
+5. RIGHT COMPARISON TABLE CARD
+==================================================
+
+Create one clean comparison table/card on the right, inspired by the reference.
+
+Wrapper:
+
+<div className="
+  overflow-hidden
+  rounded-[32px]
+  border
+  border-[#D6DDED]
+  bg-white
+  shadow-[0_24px_80px_rgba(45,55,105,0.10)]
+">
+
+Table layout should have 3 columns:
+1. Dimension
+2. For Companies
+3. For Professionals
+
+Header row:
+- light grey background
+- bold labels
+
+Rows/content:
+
+Dimension: Primary value
+For Companies: Hire faster with less overhead
+For Professionals: Real work with real growth
+
+Dimension: Best for
+For Companies: Teams scaling roles, pods, or operations
+For Professionals: Talent looking for steady, flexible opportunities
+
+Dimension: How it works
+For Companies: Contract, project, or full-time support
+For Professionals: Matched with quality clients and clear expectations
+
+Dimension: Control
+For Companies: Direct access, zero middlemen
+For Professionals: Remote work, flexible schedule, open access
+
+Dimension: Reach
+For Companies: 50+ countries and local expertise
+For Professionals: Top global brands and reputation-building work
+
+==================================================
+6. TABLE STYLE
+==================================================
+
+Use this structure:
+
+<table className="w-full border-collapse text-left">
+  <thead>
+    <tr className="bg-[#F5F7FC]">
+      <th className="border-b border-r border-[#DCE2F2] px-5 py-4 text-sm font-bold text-[#334155]">Dimension</th>
+      <th className="border-b border-r border-[#DCE2F2] px-5 py-4 text-sm font-bold text-[#334155]">For Companies</th>
+      <th className="border-b border-[#DCE2F2] px-5 py-4 text-sm font-bold text-[#334155]">For Professionals</th>
+    </tr>
+  </thead>
+  <tbody>
+    ...
+  </tbody>
+</table>
+
+Body cell style:
+className="border-b border-r border-[#E3E8F4] px-5 py-5 align-top text-sm leading-relaxed text-[#536077]"
+
+Dimension column:
+className="font-semibold text-[#050A1F]"
+
+Last row should not have bottom border.
+
+==================================================
+7. MOBILE RESPONSIVE VERSION
+==================================================
+
+On mobile, the table may be too tight. Make the table horizontally scrollable:
+
+<div className="overflow-x-auto">
+  <table className="min-w-[720px] ...">
+    ...
+  </table>
+</div>
+
+Desktop should not feel cramped.
+
+==================================================
+8. OPTIONAL MINI TAGS ABOVE TABLE
+==================================================
+
+At the top of the right card above the table, add a small header bar:
+
+<div className="flex items-center justify-between border-b border-[#DCE2F2] bg-white px-6 py-5">
+  <div>
+    <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#4B4FC4]">
+      Audience Paths
+    </p>
+    <h3 className="mt-2 text-2xl font-bold tracking-[-0.03em] text-[#050A1F]">
+      Companies vs. Professionals
+    </h3>
+  </div>
+</div>
+
+==================================================
+9. REMOVE OLD CARD PHOTO DESIGN
+==================================================
+
+Remove or no longer render:
+- old two large cards with photo headers
+- image overlays
+- “For Companies” label over photo
+- “For Professionals” label over photo
+
+But preserve the ideas/features inside the new comparison content.
+
+==================================================
+FINAL RESULT
+==================================================
+
+The Work Differently section should:
+- have no photos
+- feel like the reference “Service Distinction” layout
+- show a clear structured comparison
+- keep the same messaging
+- look premium, minimal, and easy to scan
+- still guide companies and professionals to their respective CTAs
