@@ -74,7 +74,7 @@ import JakeWainbergPhoto from "@assets/Jake_1780574815787.png";
 import MarkApostolPhoto from "@assets/Macky_1780574815788.png";
 import RenierMacalinoPhoto from "@assets/REN_1780657869137.png";
 import JaelAtendidoPhoto from "@assets/Jael_1780909035045.png";
-import AndreaPinzonPhoto from "@assets/Andrea_Pinzon_1774264095055.jpeg";
+import ChristopherAlbaPhoto from "@assets/Christopher_Alba_1774264095055.jpg";
 import ShaneRubioPhoto from "@assets/Shane_1780657863305.png";
 import RachelCastroPhoto from "@assets/Rachel_Caztro_1774264095056.jpg";
 import JenniferDizonPhoto from "@assets/Jennifer_Dizon_1774430604160.jpg";
@@ -1176,43 +1176,53 @@ export default function Home() {
                 }
               >
                 {/* Icon */}
-                <div className={
-                  card.variant === "light"
-                    ? "mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EEF0FF] text-[#4B4FC4] shadow-[0_10px_30px_rgba(75,79,196,0.12)]"
-                    : "mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/12 text-[#8EF3F0] shadow-[0_10px_30px_rgba(0,0,0,0.18)]"
-                }>
+                <div
+                  className={
+                    card.variant === "light"
+                      ? "mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EEF0FF] text-[#4B4FC4] shadow-[0_10px_30px_rgba(75,79,196,0.12)]"
+                      : "mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/12 text-[#8EF3F0] shadow-[0_10px_30px_rgba(0,0,0,0.18)]"
+                  }
+                >
                   {card.icon}
                 </div>
 
-                <p className={
-                  card.variant === "light"
-                    ? "mb-3 text-xs font-bold uppercase tracking-[0.22em] text-[#13839A]"
-                    : "mb-3 text-xs font-bold uppercase tracking-[0.22em] text-[#8EF3F0]"
-                }>
+                <p
+                  className={
+                    card.variant === "light"
+                      ? "mb-3 text-xs font-bold uppercase tracking-[0.22em] text-[#13839A]"
+                      : "mb-3 text-xs font-bold uppercase tracking-[0.22em] text-[#8EF3F0]"
+                  }
+                >
                   {card.label}
                 </p>
 
-                <h3 className={
-                  card.variant === "light"
-                    ? "text-xl font-bold tracking-[-0.035em] text-[#050A1F]"
-                    : "text-xl font-bold tracking-[-0.035em] text-white"
-                }>
+                <h3
+                  className={
+                    card.variant === "light"
+                      ? "text-xl font-bold tracking-[-0.035em] text-[#050A1F]"
+                      : "text-xl font-bold tracking-[-0.035em] text-white"
+                  }
+                >
                   {card.title}
                 </h3>
 
-                <p className={
-                  card.variant === "light"
-                    ? "mt-2 text-sm font-bold text-[#4B4FC4]"
-                    : "mt-2 text-sm font-bold text-[#B9B6FF]"
-                }>
+                <p
+                  className={
+                    card.variant === "light"
+                      ? "mt-2 text-sm font-bold text-[#4B4FC4]"
+                      : "mt-2 text-sm font-bold text-[#B9B6FF]"
+                  }
+                >
                   {card.tagline}
                 </p>
 
-                <p className={
-                  card.variant === "light"
-                    ? "mt-3 text-sm leading-relaxed text-[#536077]"
-                    : "mt-3 text-sm leading-relaxed text-white/72"
-                }>
+                <p
+                  className={
+                    card.variant === "light"
+                      ? "mt-3 text-sm leading-relaxed text-[#536077]"
+                      : "mt-3 text-sm leading-relaxed text-white/72"
+                  }
+                >
                   {card.body}
                 </p>
               </article>
@@ -1281,13 +1291,16 @@ export default function Home() {
                 gender: "male",
               },
               {
-                photo: AndreaPinzonPhoto,
-                name: "Andrea Pinzon",
+                photo: MarielTolentinoPhoto,
+                name: "Mariel Tolentino",
                 flag: "🇵🇭",
-                role: "Virtual Assistant",
-                objectPosition: "object-top",
-                isReal: false,
+                role: "Content Creator",
+                objectPosition: "object-[center_28%]",
+                isReal: true,
                 gender: "female",
+                cropType: "absolute" as const,
+                imageWidth: "160%",
+                imageTransform: "translate(-64%, -66%)",
               },
               {
                 photo: MarkApostolPhoto,
@@ -1299,18 +1312,6 @@ export default function Home() {
                 gender: "male",
               },
               {
-                photo: MarielTolentinoPhoto,
-                name: "Mariel Tolentino",
-                flag: "🇵🇭",
-                role: "Content Creator",
-                objectPosition: "object-[center_28%]",
-                isReal: true,
-                gender: "female",
-                cropType: "absolute" as const,
-                imageWidth: "160%",
-                imageTransform: "translate(-50%, -34%)",
-              },
-              {
                 photo: MelissaRayosPhoto,
                 name: "Melissa Rayos",
                 flag: "🇵🇭",
@@ -1320,7 +1321,16 @@ export default function Home() {
                 gender: "female",
                 cropType: "absolute" as const,
                 imageWidth: "122%",
-                imageTransform: "translate(-50%, -54%)",
+                imageTransform: "translate(-43%, -44%)",
+              },
+              {
+                photo: ChristopherAlbaPhoto,
+                name: "Christopher Alba",
+                flag: "🇵🇭",
+                role: "Virtual Assistant",
+                objectPosition: "object-[center_20%]",
+                isReal: true,
+                gender: "male",
               },
               {
                 photo: JenniferDizonPhoto,

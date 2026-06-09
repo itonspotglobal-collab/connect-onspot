@@ -1,0 +1,148 @@
+Update only the homepage “The People Behind the Platform” people grid.
+
+Current request:
+Remove Andrea Pinzon and replace her with Christopher Alba. Then reorder the grid into the exact sequence below.
+
+Do not change:
+- section title
+- section subtitle
+- section layout
+- grid/card sizes
+- hover effects
+- CTA button
+- photo crop settings for existing people
+- other homepage sections
+
+==================================================
+1. REMOVE ANDREA PINZON
+==================================================
+
+Find the people array/data used for “The People Behind the Platform”.
+
+Remove this person completely:
+
+Andrea Pinzon
+
+Do not leave Andrea’s name, title, image, or photo crop settings anywhere in this grid.
+
+==================================================
+2. ADD / USE CHRISTOPHER ALBA
+==================================================
+
+Replace Andrea Pinzon with:
+
+Name:
+Christopher Alba
+
+Title:
+Virtual Assistant
+
+If Christopher Alba already exists in the project/assets, use his existing photo asset.
+
+If there is no Christopher Alba photo available yet, add the data entry with a placeholder using the current available image slot temporarily, but clearly name it Christopher Alba so the photo can be replaced later.
+
+Do not use Andrea Pinzon’s name or title.
+
+==================================================
+3. EXACT GRID ORDER
+==================================================
+
+Reorder the people grid into this exact sequence:
+
+Row 1:
+1. Jake Wainberg
+2. Jael Atendido
+3. Nur Laminero
+4. Mariel Tolentino
+
+Row 2:
+5. Mark Anthony Apostol
+6. Melissa Rayos
+7. Christopher Alba
+8. Jennifer Dizon
+
+Important:
+The visual grid should display exactly in that order from left to right, top to bottom.
+
+==================================================
+4. EXPECTED PEOPLE ARRAY ORDER
+==================================================
+
+The people array should look conceptually like this:
+
+const people = [
+  {
+    name: "Jake Wainberg",
+    title: "Founder & President",
+    ...
+  },
+  {
+    name: "Jael Atendido",
+    title: "Executive Assistant",
+    ...
+  },
+  {
+    name: "Nur Laminero",
+    title: "CEO of OnSpot",
+    ...
+  },
+  {
+    name: "Mariel Tolentino",
+    title: "Content Creator",
+    ...
+  },
+  {
+    name: "Mark Anthony Apostol",
+    title: "Head of People",
+    ...
+  },
+  {
+    name: "Melissa Rayos",
+    title: "Virtual Assistant",
+    ...
+  },
+  {
+    name: "Christopher Alba",
+    title: "Virtual Assistant",
+    ...
+  },
+  {
+    name: "Jennifer Dizon",
+    title: "Virtual Assistant",
+    ...
+  },
+];
+
+Keep each person’s existing photo/crop settings where applicable.
+
+==================================================
+5. CROP SETTINGS
+==================================================
+
+Keep the current working crop settings for:
+- Jake
+- Jael
+- Nur
+- Mariel
+- Mark
+- Melissa
+- Jennifer
+
+For Christopher Alba:
+- Use normal object-cover/object-center first.
+- If the photo looks off after replacement, we will adjust it separately.
+
+Do not reset Mariel or Melissa’s crop fixes.
+
+==================================================
+6. FINAL CHECK
+==================================================
+
+After applying:
+- Andrea Pinzon is gone.
+- Christopher Alba appears instead.
+- The order is exactly:
+  Jake, Jael, Nur, Mariel
+  Mark, Melissa, Christopher, Jennifer
+- All 8 people still display in a 4-column desktop grid.
+- No other sections are changed.
