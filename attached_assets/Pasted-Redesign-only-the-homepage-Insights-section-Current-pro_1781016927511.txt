@@ -1,0 +1,323 @@
+Redesign only the homepage Insights section.
+
+Current problem:
+The Insights section content is good, but the current layout feels off. It is too image-heavy and does not match the cleaner CTA-card style shown in the reference.
+
+Goal:
+Keep the same Insights heading, subtitle, description, and buttons, but redesign the article layout into 3 clean text-only cards inspired by the attached blue gradient CTA section.
+
+Do not change:
+- section order
+- article titles/content
+- Insights heading text
+- “Ideas worth sharing.”
+- section description
+- “Explore all” button
+- “Talk to an Expert” button/link
+- other homepage sections
+- stats strip
+- Work Differently section
+
+==================================================
+1. KEEP THE HEADER CONTENT
+==================================================
+
+Keep this content exactly:
+
+Heading:
+Insights
+
+Subtitle:
+Ideas worth sharing.
+
+Description:
+Perspectives on customer experience, global talent, and the future of work.
+
+Keep the “Explore all” button in the top/right area.
+
+Keep “Talk to an Expert” button under the cards.
+
+==================================================
+2. REMOVE ARTICLE THUMBNAILS
+==================================================
+
+Remove all article images/thumbnails from the Insights section.
+
+The Insights cards should be text-only:
+- category
+- title
+- read time
+- subtle arrow/icon optional
+
+Do not display article photos in this section anymore.
+
+==================================================
+3. NEW SECTION LAYOUT
+==================================================
+
+Use a clean rounded container inspired by the reference image.
+
+Section wrapper:
+
+<section className="relative bg-[#F5F7FC] px-6 py-24 sm:py-28 lg:py-32">
+  <div className="mx-auto max-w-[1320px]">
+    ...
+  </div>
+</section>
+
+Inside the max-width container, add one large rounded panel:
+
+<div className="
+  rounded-[40px]
+  bg-gradient-to-br
+  from-[#4B4FC4]
+  via-[#3568E8]
+  to-[#13B8C8]
+  p-8
+  shadow-[0_28px_90px_rgba(44,63,170,0.22)]
+  sm:p-10
+  lg:p-12
+">
+
+The panel should contain:
+- top header area
+- 3 insight cards below
+- Talk to an Expert CTA below or bottom-right depending on space
+
+==================================================
+4. HEADER INSIDE PANEL
+==================================================
+
+Inside the gradient panel, use white/light text:
+
+Small label:
+INSIGHTS
+
+Main title:
+Ideas worth sharing.
+
+Description:
+Perspectives on customer experience, global talent, and the future of work.
+
+Place “Explore all →” as a white/transparent outlined pill button on the right.
+
+Header layout:
+- Desktop: left text, right button
+- Mobile: stacked
+
+Use:
+<div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+
+For the text:
+<p className="mb-4 text-sm font-bold uppercase tracking-[0.28em] text-white/75">
+  Insights
+</p>
+
+<h2 className="max-w-[720px] text-[clamp(42px,6vw,76px)] font-bold leading-[0.95] tracking-[-0.055em] text-white">
+  Ideas worth sharing.
+</h2>
+
+<p className="mt-5 max-w-[620px] text-lg leading-relaxed text-white/82">
+  Perspectives on customer experience, global talent, and the future of work.
+</p>
+
+Explore button:
+<Link
+  href="/insights"
+  className="
+    inline-flex
+    h-12
+    items-center
+    justify-center
+    gap-2
+    rounded-full
+    border
+    border-white/30
+    bg-white/12
+    px-6
+    text-sm
+    font-semibold
+    text-white
+    backdrop-blur
+    transition
+    hover:bg-white/20
+  "
+>
+  Explore all →
+</Link>
+
+==================================================
+5. THREE TEXT-ONLY INSIGHT CARDS
+==================================================
+
+Replace the current image/card layout with exactly 3 cards.
+
+Use a responsive grid:
+
+<div className="grid gap-5 lg:grid-cols-3">
+
+Each card:
+
+<article className="
+  group
+  flex
+  min-h-[230px]
+  flex-col
+  justify-between
+  rounded-[28px]
+  border
+  border-white/20
+  bg-white/14
+  p-7
+  text-white
+  backdrop-blur-md
+  transition
+  hover:-translate-y-1
+  hover:bg-white/20
+  hover:shadow-[0_22px_60px_rgba(0,0,0,0.18)]
+">
+
+Card category label:
+<p className="
+  mb-6
+  text-xs
+  font-bold
+  uppercase
+  tracking-[0.22em]
+  text-white/70
+">
+  CATEGORY
+</p>
+
+Card title:
+<h3 className="
+  text-[24px]
+  font-bold
+  leading-[1.12]
+  tracking-[-0.025em]
+  text-white
+">
+  ARTICLE TITLE
+</h3>
+
+Bottom row:
+<div className="mt-8 flex items-center justify-between">
+  <span className="text-sm font-medium text-white/75">5 min read</span>
+  <span className="
+    flex
+    h-10
+    w-10
+    items-center
+    justify-center
+    rounded-full
+    bg-white/16
+    text-white
+    transition
+    group-hover:bg-white
+    group-hover:text-[#4B4FC4]
+  ">
+    →
+  </span>
+</div>
+
+==================================================
+6. CARD CONTENT
+==================================================
+
+Use these 3 insight cards:
+
+Card 1:
+Category:
+INDUSTRY TRENDS
+Title:
+Checklist for Winning Virtual Interviews
+Read time:
+5 min read
+
+Card 2:
+Category:
+GLOBAL OUTSOURCING
+Title:
+Leveraging Ghana's Tech Talent and the World-Class Customer Service of the Philippines
+Read time:
+5 min read
+
+Card 3:
+Category:
+TECHNOLOGY
+Title:
+Ghana's Software Development Capabilities: An Untapped Goldmine for Outsourcing
+Read time:
+4 min read
+
+Important:
+- No images.
+- No thumbnails.
+- No large featured article.
+- All 3 cards should be equal height.
+- Cards should feel like clean CTA/info cards.
+
+==================================================
+7. TALK TO AN EXPERT BUTTON
+==================================================
+
+Keep the “Talk to an Expert” button under the cards.
+
+Place it centered under the grid:
+
+<div className="mt-10 flex justify-center">
+  <Link
+    href="/lead-intake"
+    className="
+      inline-flex
+      h-14
+      items-center
+      justify-center
+      gap-3
+      rounded-full
+      bg-white
+      px-8
+      text-base
+      font-bold
+      text-[#3F46A8]
+      shadow-[0_18px_45px_rgba(0,0,0,0.18)]
+      transition
+      hover:-translate-y-0.5
+      hover:shadow-[0_24px_60px_rgba(0,0,0,0.22)]
+    "
+  >
+    Talk to an Expert →
+  </Link>
+</div>
+
+==================================================
+8. RESPONSIVE BEHAVIOR
+==================================================
+
+Desktop:
+- One gradient panel
+- Header text left, Explore button right
+- 3 cards in one row
+
+Tablet:
+- Header stacks if needed
+- cards can be 1 or 2 columns depending space
+
+Mobile:
+- cards stack vertically
+- panel padding smaller
+- title remains readable
+- no horizontal overflow
+
+==================================================
+FINAL RESULT
+==================================================
+
+The Insights section should look like a premium OnSpot content CTA block:
+- blue/violet/cyan gradient background panel
+- text-only article cards
+- clean, minimal, modern
+- no thumbnails
+- clear visual hierarchy
+- Explore all button remains
+- Talk to an Expert CTA remains and links to /lead-intake

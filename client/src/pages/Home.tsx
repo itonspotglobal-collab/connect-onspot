@@ -374,7 +374,7 @@ export default function Home() {
         <div className="mx-auto grid max-w-[1600px] grid-cols-2 divide-y divide-slate-200 md:grid-cols-4 md:divide-x md:divide-y-0 xl:grid-cols-[repeat(4,1fr)_auto]">
           {[
             { value: "72hrs", label: "AVG. TIME TO HIRE" },
-            { value: "200+", label: "GLOBAL CLIENTS" },
+            { value: "200+", label: "GLOBAL CLIENTS SERVED" },
             { value: "60%", label: "CLIENT COST SAVINGS" },
             { value: "2,000+", label: "TALENTS MATCHED" },
           ].map((stat) => (
@@ -404,164 +404,92 @@ export default function Home() {
       </div>
 
       {/* ── Spacer between stats and Insights ── */}
-      <div aria-hidden="true" className="h-24 bg-[#f7f8fb] sm:h-28 lg:h-36" />
+      {/* ── 2. FEATURED INSIGHTS — gradient panel ── */}
+      <section className="relative bg-[#F5F7FC] px-6 py-24 sm:py-28 lg:py-32">
+        <div className="mx-auto max-w-[1320px]">
+          <div className="rounded-[40px] bg-gradient-to-br from-[#4B4FC4] via-[#3568E8] to-[#13B8C8] p-8 shadow-[0_28px_90px_rgba(44,63,170,0.22)] sm:p-10 lg:p-12">
 
-      {/* ── 2. FEATURED INSIGHTS — card grid ── */}
-      <div className="bg-[#f7f8fb] py-8 sm:py-10 lg:py-12">
-        <div className="mx-auto w-full max-w-[1180px] px-5 sm:px-7 lg:px-8">
-          {/* Header */}
-          <div className="mb-6 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-            <div className="max-w-3xl">
-              <div className="overflow-visible leading-none">
-                <h2 className="inline-block overflow-visible bg-gradient-to-r from-[#6B35F5] via-[#7C4DFF] to-[#3B82F6] bg-clip-text pb-3 pr-3 text-[clamp(64px,8vw,112px)] font-bold leading-[1.08] tracking-[-0.055em] text-transparent">
+            {/* Header */}
+            <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p className="mb-4 text-sm font-bold uppercase tracking-[0.28em] text-white/75">
                   Insights
+                </p>
+                <h2 className="max-w-[720px] text-[clamp(42px,6vw,76px)] font-bold leading-[0.95] tracking-[-0.055em] text-white">
+                  Ideas worth sharing.
                 </h2>
+                <p className="mt-5 max-w-[620px] text-lg leading-relaxed text-white/80">
+                  Perspectives on customer experience, global talent, and the future of work.
+                </p>
               </div>
-              <p className="mt-3 text-2xl font-medium tracking-[-0.035em] leading-tight text-slate-700 sm:text-3xl lg:text-4xl">
-                Ideas worth sharing.
-              </p>
-              <p className="mt-3 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg">
-                Perspectives on customer experience, global talent, and the
-                future of work.
-              </p>
-            </div>
-            <a
-              href="/insights"
-              className="inline-flex shrink-0 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-indigo-600 transition hover:border-indigo-200 hover:bg-indigo-50"
-            >
-              Explore all
-              <ArrowRight className="h-4 w-4" />
-            </a>
-          </div>
-
-          {/* Editorial layout — dynamic homepage posts with static fallback */}
-          {(() => {
-            const staticPosts = [
-              {
-                id: 1,
-                slug: "process-efficiency-foundation-customer-service",
-                category: "PROCESS OPTIMIZATION",
-                title:
-                  "Process Efficiency: The Foundation of Exceptional Customer Service",
-                readTime: "6 min read",
-                coverImageUrl: null as string | null,
-              },
-              {
-                id: 2,
-                slug: "leveraging-ghanas-tech-talent-philippines-customer-service",
-                category: "GLOBAL OUTSOURCING",
-                title:
-                  "Leveraging Ghana's Tech Talent and the World-Class Customer Service of the Philippines",
-                readTime: "5 min read",
-                coverImageUrl: null as string | null,
-              },
-              {
-                id: 3,
-                slug: "ghana-software-development-outsourcing-goldmine",
-                category: "TECHNOLOGY",
-                title:
-                  "Ghana's Software Development Capabilities: An Untapped Goldmine for Outsourcing",
-                readTime: "4 min read",
-                coverImageUrl: null as string | null,
-              },
-            ];
-            const posts =
-              featuredPosts.length > 0
-                ? featuredPosts.slice(0, 3)
-                : staticPosts;
-            const [featured, ...secondary] = posts;
-            const featuredThumb = (featured as any).coverImageUrl as
-              | string
-              | null
-              | undefined;
-
-            return (
-              <div className="grid gap-6">
-                {/* Featured article */}
-                <a
-                  href={`/insights/${featured.slug}`}
-                  className="group relative overflow-hidden rounded-[2rem] bg-slate-900 shadow-sm"
+              <div className="shrink-0">
+                <Link
+                  href="/insights"
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-white/30 bg-white/12 px-6 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
                 >
-                  {featuredThumb ? (
-                    <img
-                      src={featuredThumb}
-                      alt={featured.title}
-                      className="h-[250px] w-full object-cover transition duration-500 group-hover:scale-[1.02] sm:h-[290px] lg:h-[330px]"
-                    />
-                  ) : (
-                    <div className="h-[250px] w-full bg-gradient-to-br from-indigo-900 via-violet-900 to-slate-900 sm:h-[290px] lg:h-[330px]" />
-                  )}
-                  {/* Dark overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-                  {/* Text */}
-                  <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6 lg:p-7">
-                    <span className="text-xs font-semibold uppercase tracking-[0.18em] text-white/75">
-                      {(featured as any).category || "Insights"}
-                    </span>
-                    <h3 className="mt-2 max-w-4xl text-xl font-semibold leading-tight text-white sm:text-2xl lg:text-3xl">
-                      {featured.title}
-                    </h3>
-                    <p className="mt-2 text-xs font-medium text-white/70 sm:text-sm">
-                      {(featured as any).readTime || "5 min read"}
+                  Explore all →
+                </Link>
+              </div>
+            </div>
+
+            {/* Three text-only insight cards */}
+            <div className="grid gap-5 lg:grid-cols-3">
+              {[
+                {
+                  slug: "checklist-winning-virtual-interviews",
+                  category: "INDUSTRY TRENDS",
+                  title: "Checklist for Winning Virtual Interviews",
+                  readTime: "5 min read",
+                },
+                {
+                  slug: "leveraging-ghanas-tech-talent-philippines-customer-service",
+                  category: "GLOBAL OUTSOURCING",
+                  title: "Leveraging Ghana's Tech Talent and the World-Class Customer Service of the Philippines",
+                  readTime: "5 min read",
+                },
+                {
+                  slug: "ghana-software-development-outsourcing-goldmine",
+                  category: "TECHNOLOGY",
+                  title: "Ghana's Software Development Capabilities: An Untapped Goldmine for Outsourcing",
+                  readTime: "4 min read",
+                },
+              ].map((post) => (
+                <a
+                  key={post.slug}
+                  href={`/insights/${post.slug}`}
+                  className="group flex min-h-[230px] flex-col justify-between rounded-[28px] border border-white/20 bg-white/14 p-7 text-white backdrop-blur-md transition hover:-translate-y-1 hover:bg-white/20 hover:shadow-[0_22px_60px_rgba(0,0,0,0.18)]"
+                >
+                  <div>
+                    <p className="mb-6 text-xs font-bold uppercase tracking-[0.22em] text-white/70">
+                      {post.category}
                     </p>
+                    <h3 className="text-[24px] font-bold leading-[1.12] tracking-[-0.025em] text-white">
+                      {post.title}
+                    </h3>
+                  </div>
+                  <div className="mt-8 flex items-center justify-between">
+                    <span className="text-sm font-medium text-white/75">{post.readTime}</span>
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/16 text-white transition group-hover:bg-white group-hover:text-[#4B4FC4]">
+                      →
+                    </span>
                   </div>
                 </a>
+              ))}
+            </div>
 
-                {/* Two smaller cards */}
-                <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                  {secondary.map((post) => {
-                    const thumb = (post as any).coverImageUrl as
-                      | string
-                      | null
-                      | undefined;
-                    return (
-                      <a
-                        key={post.id}
-                        href={`/insights/${post.slug}`}
-                        className="group overflow-hidden rounded-[1.75rem] bg-white shadow-sm ring-1 ring-slate-200/80 transition hover:-translate-y-0.5 hover:shadow-md"
-                      >
-                        {thumb ? (
-                          <div className="h-28 overflow-hidden bg-slate-100 sm:h-32 lg:h-36">
-                            <img
-                              src={thumb}
-                              alt={post.title}
-                              className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
-                            />
-                          </div>
-                        ) : (
-                          <div className="h-28 bg-gradient-to-br from-indigo-100 via-violet-100 to-cyan-100 sm:h-32 lg:h-36" />
-                        )}
-                        <div className="p-4 sm:p-5">
-                          <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 sm:text-xs">
-                            {(post as any).category || "Insights"}
-                          </span>
-                          <h3 className="mt-2 text-base font-semibold leading-snug text-slate-950 transition-colors group-hover:text-indigo-700 sm:text-lg">
-                            {post.title}
-                          </h3>
-                          <p className="mt-3 text-xs font-medium text-slate-500 sm:text-sm">
-                            {(post as any).readTime || "5 min read"}
-                          </p>
-                        </div>
-                      </a>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })()}
+            {/* Talk to an expert CTA */}
+            <div className="mt-10 flex justify-center">
+              <Link
+                href="/lead-intake"
+                className="inline-flex h-14 items-center justify-center gap-3 rounded-full bg-white px-8 text-base font-bold text-[#3F46A8] shadow-[0_18px_45px_rgba(0,0,0,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_24px_60px_rgba(0,0,0,0.22)]"
+              >
+                Talk to an Expert →
+              </Link>
+            </div>
 
-          {/* Talk to an expert CTA */}
-          <div className="mt-10 flex justify-center">
-            <a
-              href="/lead-intake"
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-500 px-7 py-3.5 text-base font-semibold text-white shadow-[0_12px_32px_rgba(79,70,229,0.25)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(79,70,229,0.32)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
-            >
-              <ArrowRight className="h-4 w-4" />
-              Talk to an expert
-            </a>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* ── Spacer between Insights and Work Differently ── */}
       <div aria-hidden="true" className="h-20 bg-[#f7f8fb] sm:h-24 lg:h-32" />
@@ -1457,7 +1385,7 @@ export default function Home() {
             </div>
             <div>
               <div className="text-[28px] font-semibold text-[#080B1C] md:text-[32px]">
-                50+
+                10+
               </div>
               <div className="mt-1 text-[14px] text-[#58677D] md:text-[15px]">
                 countries served
