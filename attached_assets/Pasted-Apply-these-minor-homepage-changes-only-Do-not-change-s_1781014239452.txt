@@ -1,0 +1,235 @@
+Apply these minor homepage changes only.
+
+Do not change:
+- section order
+- card layout
+- employee/talent grid
+- photos/crops
+- nav bar
+- footer layout except button/link targets if needed
+- unrelated styling
+
+==================================================
+1. PROFESSIONALS CARD COLOR — LIGHTER GREY
+==================================================
+
+Current issue:
+The “Real work. Real growth.” card is too dark/heavy.
+
+Goal:
+Change the Professionals card to a lighter grey, but still keep contrast from the page background and the Companies card.
+
+Use these colors:
+
+Card background:
+#E9ECF6
+
+Card border:
+#D3D8EA
+
+Heading text:
+#050A1F
+
+Feature title:
+#111827
+
+Feature description:
+#4B5568
+
+Icon tile background:
+rgba(78, 83, 196, 0.10)
+
+Icon color:
+#4B4FC4
+
+Dividers:
+rgba(75, 85, 99, 0.16)
+
+Button border:
+rgba(75, 79, 196, 0.45)
+
+Button text:
+#3F46A8
+
+Button hover:
+rgba(75, 79, 196, 0.08)
+
+Update only the “For Professionals / Real work. Real growth.” card container to:
+
+className="
+  overflow-hidden
+  rounded-[32px]
+  border
+  border-[#D3D8EA]
+  bg-[#E9ECF6]
+  shadow-[0_24px_70px_rgba(67,76,122,0.14)]
+"
+
+Important:
+- Do not change the Companies card.
+- Keep both cards equal height.
+- Keep the top image unchanged.
+- The Professionals card should look light grey, not dark navy, and not the same color as the background.
+
+==================================================
+2. ADD MORE WHITE SPACE BEFORE TRUSTED BY SECTION
+==================================================
+
+Problem:
+The Work Differently cards feel too close to the “Trusted by” brands section.
+
+Goal:
+Add more vertical breathing room between Work Differently and Trusted By.
+
+After the Work Differently cards section, add bottom padding/margin:
+
+Desktop:
+- pb-32 or mb-28
+
+Tablet:
+- pb-24 or mb-20
+
+Mobile:
+- pb-16 or mb-14
+
+Preferred Tailwind on the Work Differently section wrapper:
+
+className="
+  ...
+  pb-20
+  sm:pb-24
+  lg:pb-32
+"
+
+If the Trusted By section has top padding, make sure it starts with:
+
+className="
+  pt-20
+  sm:pt-24
+  lg:pt-28
+"
+
+Expected result:
+There should be a clear blank separation before the Trusted By/logo section begins.
+
+==================================================
+3. LINK BUTTON: CALCULATE YOUR SAVINGS
+==================================================
+
+Find the “Calculate your Savings” button in the stats strip.
+
+Link it to the existing Value Calculator page under “Why OnSpot”.
+
+Use the correct existing route if already defined.
+
+Preferred href:
+"/value-calculator"
+
+If the project uses a different route for Value Calculator, use the existing route from the navigation dropdown.
+
+Button text should remain:
+Calculate your Savings
+
+Make it a real link:
+<Link href="/value-calculator">...</Link>
+
+==================================================
+4. LINK BUTTON: TALK TO AN EXPERT
+==================================================
+
+Find the “Talk to an Expert” button under the Insights section.
+
+Link it to:
+
+"/lead-intake"
+
+Use:
+<Link href="/lead-intake">Talk to an Expert</Link>
+
+==================================================
+5. LINK BUTTON: MEET THE PEOPLE BEHIND THE WORK
+==================================================
+
+Find the “Meet the people behind the work” button in the “Real people. Real work. Real impact.” section.
+
+Link it to About OnSpot.
+
+Preferred href:
+"/about"
+
+If the existing About OnSpot route is different, use the existing route from the site navigation.
+
+Button text should remain:
+Meet the people behind the work
+
+==================================================
+6. LINK BUTTON: START YOUR TRANSFORMATION
+==================================================
+
+Find the “Start your transformation” button in the Transformation section.
+
+Link it to:
+
+"/hire-talent"
+
+Use:
+<Link href="/hire-talent">Start your transformation</Link>
+
+==================================================
+7. LINK BUTTON: EXPLORE OUR TALENT NETWORK
+==================================================
+
+Find the “Explore our Talent Network” button in The People Behind the Platform section.
+
+Link it to:
+
+"/hire-talent"
+
+Use:
+<Link href="/hire-talent">Explore our talent network</Link>
+
+==================================================
+8. LINK BUTTON: GET MATCHED — IT’S FREE
+==================================================
+
+Find the CTA button:
+
+Get matched — it's free
+
+Link it to:
+
+"/find-best-matches"
+
+Use:
+<Link href="/find-best-matches">Get matched — it's free</Link>
+
+==================================================
+9. LINK TEXT: JOIN AS TALENT
+==================================================
+
+Find the text link:
+
+Join as talent →
+
+Link it to:
+
+"/find-best-matches"
+
+Use:
+<Link href="/find-best-matches">Join as talent →</Link>
+
+==================================================
+FINAL CHECK
+==================================================
+
+After applying:
+- Professionals card is light grey, readable, and distinct from the background.
+- There is more whitespace before the Trusted By section.
+- Calculate your Savings links to Value Calculator.
+- Talk to an Expert links to /lead-intake.
+- Meet the people behind the work links to About OnSpot.
+- Start your transformation links to /hire-talent.
+- Explore our talent network links to /hire-talent.
+- Get matched — it’s free links to /find-best-matches.
+- Join as talent links to /find-best-matches.
+- No unrelated homepage sections changed.

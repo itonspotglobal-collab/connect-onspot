@@ -391,7 +391,7 @@ export default function Home() {
           {/* CTA cell — 5th column on xl, full-width row on smaller screens */}
           <div className="col-span-2 flex items-center justify-center border-t border-slate-200 px-6 py-5 md:col-span-4 md:border-l-0 md:border-t xl:col-span-1 xl:border-l xl:border-t-0">
             <a
-              href="#contact"
+              href="/value-calculator"
               className="inline-flex h-[64px] min-w-[260px] w-full items-center justify-center gap-3 whitespace-nowrap rounded-[14px] border border-[#D9DDEB] bg-[#EEF0F8] px-8 text-[17px] font-semibold text-[#40499D] shadow-[0_6px_16px_rgba(63,73,157,0.12)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#E3E6F2] hover:shadow-[0_8px_18px_rgba(63,73,157,0.16)] focus:outline-none focus:ring-2 focus:ring-[#40499D]/25 focus:ring-offset-2 sm:w-auto"
             >
               <ArrowRight className="h-4 w-4" />
@@ -551,7 +551,7 @@ export default function Home() {
           {/* Talk to an expert CTA */}
           <div className="mt-10 flex justify-center">
             <a
-              href="#contact"
+              href="/lead-intake"
               className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-500 px-7 py-3.5 text-base font-semibold text-white shadow-[0_12px_32px_rgba(79,70,229,0.25)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(79,70,229,0.32)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
             >
               <ArrowRight className="h-4 w-4" />
@@ -570,7 +570,7 @@ export default function Home() {
         <div className="pointer-events-none absolute -right-40 bottom-20 h-[520px] w-[520px] rounded-full bg-cyan-300/10 blur-3xl" />
 
         {/* ── 3. WORK DIFFERENTLY ── */}
-        <div className="relative overflow-hidden bg-[#F6F8FF] px-6 pt-28 pb-20 sm:pt-32 sm:pb-24 lg:pt-36 lg:pb-28">
+        <div className="relative overflow-hidden bg-[#F6F8FF] px-6 pt-28 pb-20 sm:pt-32 sm:pb-28 lg:pt-36 lg:pb-36">
           <div className="container relative z-10 mx-auto px-4 sm:px-6">
             <div className="mx-auto max-w-[1500px] text-center mb-16 sm:mb-20">
               <p className="mb-7 text-[15px] font-bold uppercase tracking-[0.34em] text-[#4B4FC4]">
@@ -666,7 +666,7 @@ export default function Home() {
               </div>
 
               {/* Card 2: For Professionals */}
-              <div className="group flex h-full flex-col overflow-hidden rounded-[32px] border border-white/10 bg-[#2E3242] shadow-[0_24px_70px_rgba(22,26,44,0.22)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_32px_80px_rgba(22,26,44,0.30)]">
+              <div className="group flex h-full flex-col overflow-hidden rounded-[32px] border border-[#D3D8EA] bg-[#E9ECF6] shadow-[0_24px_70px_rgba(67,76,122,0.14)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_32px_80px_rgba(67,76,122,0.20)]">
                 {/* Image header */}
                 <div className="relative h-[210px] w-full overflow-hidden sm:h-[230px] lg:h-[250px]">
                   <img
@@ -683,7 +683,7 @@ export default function Home() {
 
                 {/* Card body */}
                 <div className="flex flex-1 flex-col p-5 sm:p-6">
-                  <h3 className="text-2xl font-bold leading-tight text-white sm:text-3xl">
+                  <h3 className="text-2xl font-bold leading-tight text-[#050A1F] sm:text-3xl">
                     Real work. Real growth.
                   </h3>
 
@@ -712,16 +712,16 @@ export default function Home() {
                     ].map((item) => (
                       <div
                         key={item.title}
-                        className="flex items-start gap-3 border-b border-white/10 py-3"
+                        className="flex items-start gap-3 border-b border-[rgba(75,85,99,0.16)] py-3"
                       >
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-[#B9B5FF]">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgba(78,83,196,0.10)] text-[#4B4FC4]">
                           {item.icon}
                         </div>
                         <div>
-                          <p className="font-semibold text-white">
+                          <p className="font-semibold text-[#111827]">
                             {item.title}
                           </p>
-                          <p className="mt-0.5 text-sm text-[#CBD2E1]">
+                          <p className="mt-0.5 text-sm text-[#4B5568]">
                             {item.sub}
                           </p>
                         </div>
@@ -732,7 +732,7 @@ export default function Home() {
                   <div className="mt-4">
                     <a
                       href="/find-best-matches"
-                      className="mt-8 inline-flex w-full items-center justify-center rounded-full border border-white/30 px-6 py-4 text-sm font-semibold text-white transition hover:bg-white/10"
+                      className="mt-8 inline-flex w-full items-center justify-center rounded-full border border-[rgba(75,79,196,0.45)] px-6 py-4 text-sm font-semibold text-[#3F46A8] transition hover:bg-[rgba(75,79,196,0.08)]"
                     >
                       Find your next opportunity →
                     </a>
@@ -743,7 +743,7 @@ export default function Home() {
           </div>
         </div>
         {/* ── 4. TRUSTED BY ── */}
-        <div className="relative bg-transparent pt-8 pb-20 sm:pt-10 sm:pb-24 lg:pt-12 lg:pb-28">
+        <div className="relative bg-transparent pt-20 pb-20 sm:pt-24 sm:pb-24 lg:pt-28 lg:pb-28">
           <div className="container mx-auto px-4 sm:px-6 relative z-10">
             <div className="text-center space-y-10 sm:space-y-14">
               <h2
@@ -941,7 +941,7 @@ export default function Home() {
         {/* Meet the people CTA */}
         <div className="relative z-10 mt-8 flex justify-center">
           <a
-            href="#people-behind-platform"
+            href="/about"
             className="inline-flex h-[48px] items-center justify-center gap-3 rounded-[14px] border border-white/10 bg-[#5B45E8] px-7 text-base font-semibold text-white shadow-[0_10px_24px_rgba(55,38,160,0.28)] transition-all duration-300 hover:bg-[#4B38CF] hover:-translate-y-0.5 active:bg-[#3F2FB5] focus:outline-none focus:ring-2 focus:ring-[#8E7CFF] focus:ring-offset-2 focus:ring-offset-[#17152F]"
           >
             Meet the people behind the work
@@ -1115,7 +1115,7 @@ export default function Home() {
           {/* Start your transformation CTA */}
           <div className="mt-10 flex justify-center">
             <a
-              href="#contact"
+              href="/hire-talent"
               className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-indigo-700 to-violet-600 px-7 py-3.5 text-base font-semibold text-white shadow-[0_12px_32px_rgba(67,56,202,0.25)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(67,56,202,0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
             >
               <Sparkles className="h-4 w-4" />
@@ -1395,7 +1395,7 @@ export default function Home() {
 
           <div className="mt-10 flex justify-center">
             <a
-              href="/talent-pool"
+              href="/hire-talent"
               className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 px-7 py-3.5 text-base font-semibold text-white shadow-md transition hover:-translate-y-0.5 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
             >
               Explore our talent network
@@ -1431,7 +1431,7 @@ export default function Home() {
 
           {/* Primary CTA */}
           <a
-            href="#contact"
+            href="/find-best-matches"
             className="mt-10 inline-flex h-[60px] items-center justify-center gap-3 rounded-[14px] bg-[linear-gradient(90deg,#6F35E8_0%,#2368E8_100%)] px-8 text-[18px] font-semibold text-white shadow-[0_12px_30px_rgba(62,67,193,0.28)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(62,67,193,0.34)]"
           >
             Get matched — it's free
