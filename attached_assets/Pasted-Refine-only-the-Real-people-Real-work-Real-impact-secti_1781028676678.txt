@@ -1,0 +1,235 @@
+Refine only the “Real people. Real work. Real impact.” section so it fits better in one screen.
+
+Current issue:
+The section is still too tall. The image collage is too large, and the title/collage/closing line/CTA do not fit comfortably within one viewport.
+
+Goal:
+Keep the same design and content, but make the section more compact:
+- slightly smaller title
+- smaller collage
+- reduced vertical spacing
+- closing sentence and CTA visible without excessive scrolling
+- keep the same dark background
+- keep the same images
+- keep the same CTA text/link
+
+Do not change:
+- section content
+- image sources
+- image order
+- CTA link
+- other homepage sections
+- navigation
+- footer
+
+==================================================
+1. REDUCE SECTION VERTICAL PADDING
+==================================================
+
+Update the section wrapper to use smaller vertical padding:
+
+<section className="
+  bg-[#15162D]
+  px-6
+  py-14
+  sm:py-16
+  lg:py-18
+">
+
+If `lg:py-18` is not supported in Tailwind, use:
+lg:py-20
+
+Avoid using `py-24`, `py-28`, or larger on this section.
+
+==================================================
+2. REDUCE TITLE SIZE
+==================================================
+
+Update the heading size:
+
+<h2 className="
+  mx-auto
+  max-w-[900px]
+  text-center
+  text-[clamp(36px,4.4vw,62px)]
+  font-bold
+  leading-[0.98]
+  tracking-[-0.055em]
+  text-white
+">
+  <span className="block">Real people. Real work.</span>
+  <span className="mt-1 block text-[#AAA8FF]">Real impact.</span>
+</h2>
+
+Important:
+- Keep “Real impact.” on the second line.
+- Do not make the title larger than 62px on desktop.
+- Use `mt-1` between title lines, not a large gap.
+
+==================================================
+3. MAKE COLLAGE SMALLER
+==================================================
+
+Find the collage wrapper/container.
+
+Reduce its width and top spacing:
+
+<div className="
+  mx-auto
+  mt-8
+  max-w-[1220px]
+  overflow-hidden
+">
+
+If the collage currently uses max-w larger than 1220px, reduce it to:
+max-w-[1180px]
+
+Recommended:
+max-w-[1180px]
+
+==================================================
+4. REDUCE COLLAGE HEIGHT
+==================================================
+
+If the collage uses fixed heights or grid rows, reduce them.
+
+Desktop target:
+- total collage height should be around 360px to 420px max.
+
+If using CSS grid rows, use:
+
+className="
+  grid
+  h-[390px]
+  grid-cols-...
+  grid-rows-...
+  gap-1
+"
+
+If current height is around 520px or more, reduce it to:
+
+h-[390px]
+
+For large screens:
+lg:h-[390px]
+xl:h-[410px]
+
+For tablet:
+h-[340px]
+
+For mobile:
+Do not force this desktop collage layout if it causes overflow. Let images stack or simplify.
+
+==================================================
+5. REDUCE GAPS BETWEEN COLLAGE IMAGES
+==================================================
+
+The collage should stay tight like the current design.
+
+Use:
+gap-1
+
+or:
+gap-[3px]
+
+Do not use large gaps.
+
+==================================================
+6. KEEP IMAGES CROPPED CLEANLY
+==================================================
+
+Each collage image should keep:
+
+className="
+  h-full
+  w-full
+  object-cover
+"
+
+Do not use object-contain.
+Do not add white gaps.
+Do not change image sources.
+
+==================================================
+7. REDUCE CLOSING TEXT SPACING AND SIZE
+==================================================
+
+Update closing sentence:
+
+<p className="
+  mx-auto
+  mt-7
+  max-w-[900px]
+  text-center
+  text-[clamp(17px,1.35vw,22px)]
+  font-semibold
+  leading-snug
+  text-white/62
+">
+  Behind every workflow is a <span className="text-white">real person</span> making the work better.
+</p>
+
+Important:
+- Use `mt-7`, not `mt-10` or larger.
+- Keep the phrase “real person” highlighted.
+
+==================================================
+8. REDUCE CTA SPACING
+==================================================
+
+Update CTA wrapper:
+
+<div className="mt-5 flex justify-center">
+
+Button can remain the same, but if too large, use:
+
+className="
+  inline-flex
+  h-11
+  items-center
+  justify-center
+  gap-2
+  rounded-full
+  bg-gradient-to-r
+  from-[#7C4DFF]
+  to-[#5B5CF6]
+  px-6
+  text-sm
+  font-bold
+  text-white
+  shadow-[0_16px_38px_rgba(91,92,246,0.28)]
+  transition
+  hover:-translate-y-0.5
+"
+
+Keep text:
+Meet the people behind the work →
+
+==================================================
+9. DESKTOP FIT TARGET
+==================================================
+
+On desktop, the section should visually fit close to one viewport:
+
+Recommended section structure:
+- top padding: ~60–72px
+- title block: ~120px
+- collage top margin: 32px
+- collage height: 390–410px
+- closing line: ~30px
+- CTA + bottom spacing: ~70px
+
+Total target height:
+approximately 720–820px depending viewport.
+
+==================================================
+10. FINAL CHECK
+==================================================
+
+After applying:
+- The title is smaller but still strong.
+- The collage is smaller and not overpowering.
+- The closing sentence and CTA are visible without much scrolling.
+- The section still feels premium and cinematic.
+- No images or content changed.
+- No other sections changed.

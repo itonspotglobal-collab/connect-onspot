@@ -642,7 +642,7 @@ export default function Home() {
       </div>
 
       {/* ── 5. SUPERHUMAN NETWORK ── */}
-      <div className="relative overflow-hidden bg-[#17152E] py-20 text-white sm:py-24 lg:py-28">
+      <div className="relative overflow-hidden bg-[#17152E] py-14 text-white sm:py-16 lg:py-20">
         {/* Background glow */}
         <div className="pointer-events-none absolute left-1/2 top-0 h-80 w-80 -translate-x-1/2 rounded-full bg-[#3F4698]/25 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-20 left-10 h-64 w-64 rounded-full bg-[#3F4698]/15 blur-3xl" />
@@ -650,14 +650,14 @@ export default function Home() {
 
         {/* Header */}
         <div className="relative z-10 px-4 text-center">
-          <h2 className="mx-auto mt-5 max-w-[900px] px-6 text-center font-bold leading-[0.98] tracking-[-0.055em] text-white text-[clamp(34px,4.4vw,64px)]">
+          <h2 className="mx-auto mt-5 max-w-[900px] px-6 text-center font-bold leading-[0.98] tracking-[-0.055em] text-white text-[clamp(36px,4.4vw,62px)]">
             <span className="block">Real people. Real work.</span>
-            <span className="mt-2 block text-[clamp(30px,3.8vw,56px)] text-[#AAA8FF]">Real impact.</span>
+            <span className="mt-1 block text-[#AAA8FF]">Real impact.</span>
           </h2>
         </div>
 
         {/* Mosaic gallery — 9 tiles, 3-row layout, no gaps */}
-        <div className="relative z-10 mx-auto mt-10 grid max-w-[1800px] grid-cols-2 gap-1.5 px-4 [grid-auto-rows:140px] md:grid-cols-12 md:[grid-auto-rows:165px] lg:[grid-auto-rows:185px]">
+        <div className="relative z-10 mx-auto mt-8 grid max-w-[1180px] grid-cols-2 gap-1.5 px-4 [grid-auto-rows:118px] md:grid-cols-12 md:[grid-auto-rows:138px] lg:[grid-auto-rows:155px]">
           {/* Tile 0 — Collaboration that scales: large left, 2 rows tall */}
           {/* md: cols 1-6, rows 1-2 */}
           <div className="group relative col-span-2 row-span-2 overflow-hidden bg-slate-800 md:col-span-6 md:row-span-2">
@@ -804,20 +804,18 @@ export default function Home() {
         </div>
 
         {/* Bottom caption */}
-        <p className="relative z-10 mx-auto mt-8 max-w-[900px] px-6 text-center text-[clamp(18px,1.5vw,24px)] font-semibold leading-snug text-white/62">
+        <p className="relative z-10 mx-auto mt-7 max-w-[900px] px-6 text-center text-[clamp(17px,1.35vw,22px)] font-semibold leading-snug text-white/62">
           Behind every workflow is a{" "}
-          <span className="text-white">real person</span> making the work
-          better.
+          <span className="text-white">real person</span> making the work better.
         </p>
 
         {/* Meet the people CTA */}
-        <div className="relative z-10 mt-6 flex justify-center">
+        <div className="relative z-10 mt-5 flex justify-center">
           <a
             href="/about"
-            className="inline-flex h-[48px] items-center justify-center gap-3 rounded-[14px] border border-white/10 bg-[#5B45E8] px-7 text-base font-semibold text-white shadow-[0_10px_24px_rgba(55,38,160,0.28)] transition-all duration-300 hover:bg-[#4B38CF] hover:-translate-y-0.5 active:bg-[#3F2FB5] focus:outline-none focus:ring-2 focus:ring-[#8E7CFF] focus:ring-offset-2 focus:ring-offset-[#17152F]"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#7C4DFF] to-[#5B5CF6] px-6 text-sm font-bold text-white shadow-[0_16px_38px_rgba(91,92,246,0.28)] transition hover:-translate-y-0.5"
           >
-            Meet the people behind the work
-            <ArrowRight className="h-4 w-4" />
+            Meet the people behind the work →
           </a>
         </div>
       </div>
