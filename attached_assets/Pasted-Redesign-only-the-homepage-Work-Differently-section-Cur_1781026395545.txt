@@ -1,0 +1,413 @@
+Redesign only the homepage “Work Differently” section.
+
+Current issue:
+The current design compares Companies vs. Professionals too directly, which makes it feel like Talent vs. Client. I don’t want this section to feel like a comparison table anymore.
+
+Goal:
+Keep the same idea and content direction, but change the design/layout to feel more like the attached “Enterprise Snapshot” reference:
+- left side: strong section message and CTAs
+- right side: premium snapshot card with small metric/value boxes
+- no comparison table
+- no photos
+- no “Companies vs. Professionals” framing
+
+Do not change:
+- section order
+- section background dark gradient
+- button links
+- other homepage sections
+- Insights section
+- Real People section
+- Why OnSpot section
+- footer
+
+==================================================
+1. KEEP TOP SECTION LABEL AND MAIN HEADING
+==================================================
+
+Keep the top label:
+
+WORK DIFFERENTLY
+
+Keep the headline:
+
+Whether you're scaling a team or growing a career
+— OnSpot is built for both sides of great work.
+
+Keep “great work.” in the existing brand gradient.
+
+Make sure the heading stays compact and follows visual hierarchy:
+- label is small
+- headline is strong but not oversized
+- content below is smaller and structured
+
+==================================================
+2. REMOVE CURRENT COMPARISON TABLE DESIGN
+==================================================
+
+Remove the current right-side comparison table/card:
+- remove “Companies vs. Professionals”
+- remove Dimension / For Companies / For Professionals table
+- remove the comparison rows
+
+Also remove the current left card title if it feels duplicated:
+“One platform. Two clear paths.”
+
+Replace the whole lower area with the new layout below.
+
+==================================================
+3. NEW TWO-COLUMN LAYOUT
+==================================================
+
+Under the headline, create a two-column layout inspired by the Enterprise Snapshot reference.
+
+Desktop:
+- left: main content and CTA buttons
+- right: snapshot card
+
+Use:
+
+<div className="
+  mx-auto
+  mt-14
+  grid
+  max-w-[1280px]
+  gap-10
+  lg:grid-cols-[0.95fr_1.05fr]
+  lg:items-center
+">
+
+==================================================
+4. LEFT CONTENT BLOCK
+==================================================
+
+Left side should not look like a card. It should feel like premium text content on the dark background.
+
+Use:
+
+<div className="max-w-[620px]">
+  <p className="
+    mb-4
+    inline-flex
+    rounded-full
+    border
+    border-white/18
+    bg-white/8
+    px-4
+    py-2
+    text-xs
+    font-bold
+    uppercase
+    tracking-[0.22em]
+    text-white/78
+    backdrop-blur
+  ">
+    Built for both sides
+  </p>
+
+  <h3 className="
+    text-[clamp(34px,4vw,58px)]
+    font-bold
+    leading-[1.02]
+    tracking-[-0.055em]
+    text-white
+  ">
+    One system for hiring, growth, and delivery.
+  </h3>
+
+  <p className="
+    mt-6
+    max-w-[560px]
+    text-[clamp(17px,1.5vw,21px)]
+    leading-[1.55]
+    text-white/72
+  ">
+    Companies get faster, cleaner hiring. Professionals get real opportunities, steady growth, and work that respects their terms.
+  </p>
+
+  <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+    <Link href="/hire-talent" className="PRIMARY_BUTTON_CLASSES">
+      Find the right talent →
+    </Link>
+
+    <Link href="/find-best-matches" className="SECONDARY_BUTTON_CLASSES">
+      Find your next opportunity →
+    </Link>
+  </div>
+</div>
+
+Primary button classes:
+
+className="
+  inline-flex
+  h-13
+  items-center
+  justify-center
+  rounded-full
+  bg-gradient-to-r
+  from-[#6B35F5]
+  to-[#2F7CF6]
+  px-7
+  text-sm
+  font-bold
+  text-white
+  shadow-[0_16px_42px_rgba(83,68,230,0.32)]
+  transition
+  hover:-translate-y-0.5
+"
+
+Secondary button classes:
+
+className="
+  inline-flex
+  h-13
+  items-center
+  justify-center
+  rounded-full
+  border
+  border-white/24
+  bg-white/10
+  px-7
+  text-sm
+  font-bold
+  text-white
+  backdrop-blur
+  transition
+  hover:bg-white/16
+"
+
+==================================================
+5. RIGHT SNAPSHOT CARD
+==================================================
+
+Replace the comparison table with one premium snapshot card.
+
+Use:
+
+<div className="
+  rounded-[34px]
+  border
+  border-white/18
+  bg-white
+  p-7
+  text-[#050A1F]
+  shadow-[0_28px_90px_rgba(0,0,0,0.28)]
+  sm:p-8
+  lg:p-9
+">
+
+Card header:
+
+<div className="flex items-start justify-between gap-5">
+  <div>
+    <p className="
+      text-xs
+      font-bold
+      uppercase
+      tracking-[0.26em]
+      text-[#7A86A6]
+    ">
+      Operating snapshot
+    </p>
+
+    <h3 className="
+      mt-3
+      max-w-[420px]
+      text-[clamp(26px,2.4vw,36px)]
+      font-bold
+      leading-[1.05]
+      tracking-[-0.045em]
+      text-[#050A1F]
+    ">
+      One platform. Two clear paths.
+    </h3>
+  </div>
+
+  <div className="
+    shrink-0
+    rounded-[20px]
+    bg-[#ECEBFF]
+    px-5
+    py-4
+    text-sm
+    font-bold
+    leading-tight
+    text-[#4B4FC4]
+  ">
+    Human + AI
+  </div>
+</div>
+
+==================================================
+6. SNAPSHOT METRIC BOXES
+==================================================
+
+Inside the right card, add 4 small boxes like the reference.
+
+Use:
+
+<div className="mt-8 grid gap-4 sm:grid-cols-2">
+
+Box style:
+
+<div className="
+  rounded-[20px]
+  border
+  border-[#DCE2F2]
+  bg-[#F8FAFF]
+  p-5
+">
+
+Each box has a small label and value.
+
+Box 1:
+Label:
+HIRING SPEED
+Value:
+Hire in days
+Subtext:
+72-hour match average
+
+Box 2:
+Label:
+WORK MODEL
+Value:
+Contract, project, full-time
+Subtext:
+Flexible support
+
+Box 3:
+Label:
+GLOBAL REACH
+Value:
+50+ countries
+Subtext:
+Local expertise
+
+Box 4:
+Label:
+CAREER ACCESS
+Value:
+Steady pipeline
+Subtext:
+No gaps, no chasing
+
+Label class:
+className="
+  mb-3
+  text-xs
+  font-bold
+  uppercase
+  tracking-[0.20em]
+  text-[#8A96B3]
+"
+
+Value class:
+className="
+  text-[clamp(20px,2vw,28px)]
+  font-bold
+  leading-tight
+  tracking-[-0.035em]
+  text-[#050A1F]
+"
+
+Subtext class:
+className="
+  mt-2
+  text-sm
+  leading-relaxed
+  text-[#536077]
+"
+
+==================================================
+7. SNAPSHOT USE CASES / TAGS
+==================================================
+
+Below the 4 boxes, add a soft “Built to support” area inspired by the reference.
+
+Use:
+
+<div className="
+  mt-5
+  rounded-[22px]
+  border
+  border-[#DCE2F2]
+  bg-[#F5F7FC]
+  p-5
+">
+  <p className="mb-4 text-sm font-bold text-[#334155]">
+    Built to support
+  </p>
+
+  <div className="flex flex-wrap gap-2">
+    TAGS
+  </div>
+</div>
+
+Tags:
+- Faster hiring
+- Dedicated talent
+- Flexible teams
+- Top global brands
+- Remote-first work
+- Zero middlemen
+
+Tag class:
+
+<span className="
+  rounded-full
+  border
+  border-[#DCE2F2]
+  bg-white
+  px-4
+  py-2
+  text-sm
+  font-medium
+  text-[#536077]
+">
+  Faster hiring
+</span>
+
+==================================================
+8. VISUAL HIERARCHY
+==================================================
+
+Make sure this section follows visual hierarchy:
+
+1. WORK DIFFERENTLY label
+2. Main headline
+3. Left-side supporting headline
+4. Paragraph
+5. CTA buttons
+6. Snapshot card and metric boxes
+
+Do not make the snapshot card title bigger than the main Work Differently headline.
+
+==================================================
+9. RESPONSIVE BEHAVIOR
+==================================================
+
+Desktop:
+- left content and right snapshot side-by-side
+- no table
+- no photos
+
+Tablet:
+- stacked but balanced
+
+Mobile:
+- headline wraps naturally
+- snapshot boxes become 1 column
+- no horizontal overflow
+
+==================================================
+FINAL RESULT
+==================================================
+
+The Work Differently section should:
+- no longer compare Talent vs. Client directly
+- no longer use a table
+- no longer have photos
+- look like a premium Apple-inspired enterprise snapshot layout
+- keep the same core idea/content
+- clearly communicate that OnSpot supports both hiring and professional growth through one operating system

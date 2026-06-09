@@ -513,103 +513,119 @@ export default function Home() {
             </h2>
           </div>
 
-          {/* Two-column: left text/CTAs + right comparison table */}
-          <div className="mx-auto grid max-w-[1180px] gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+          {/* Two-column: left text content + right snapshot card */}
+          <div className="mx-auto mt-14 grid max-w-[1280px] gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
 
-            {/* Left block */}
-            <div className="rounded-[28px] border border-white/14 bg-white p-7 shadow-[0_24px_80px_rgba(0,0,0,0.22)] lg:p-8">
-              <p className="mb-4 text-sm font-bold uppercase tracking-[0.24em] text-[#4B4FC4]">
+            {/* Left: premium text on dark bg — no card wrapper */}
+            <div className="max-w-[620px]">
+              <p className="mb-4 inline-flex rounded-full border border-white/18 bg-white/8 px-4 py-2 text-xs font-bold uppercase tracking-[0.22em] text-white/78 backdrop-blur">
                 Built for both sides
               </p>
-              <h3 className="text-[clamp(26px,2.6vw,38px)] font-bold leading-[1.05] tracking-[-0.04em] text-[#050A1F]">
-                One platform. Two clear paths.
+              <h3 className="text-[clamp(30px,3.6vw,52px)] font-bold leading-[1.02] tracking-[-0.055em] text-white">
+                One system for hiring, growth, and delivery.
               </h3>
-              <p className="mt-4 text-base leading-relaxed text-[#536077]">
+              <p className="mt-6 max-w-[560px] text-[clamp(16px,1.4vw,19px)] leading-[1.55] text-white/72">
                 Companies get faster, cleaner hiring. Professionals get real opportunities, steady growth, and work that respects their terms.
               </p>
-              <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+              <div className="mt-8 flex flex-wrap gap-3">
                 <Link
                   href="/hire-talent"
-                  className="inline-flex h-11 items-center justify-center rounded-full bg-gradient-to-r from-[#6B35F5] to-[#2F7CF6] px-6 text-sm font-bold text-white shadow-[0_14px_34px_rgba(83,68,230,0.24)] transition hover:-translate-y-0.5"
+                  className="inline-flex h-[52px] items-center justify-center rounded-full bg-gradient-to-r from-[#6B35F5] to-[#2F7CF6] px-7 text-sm font-bold text-white shadow-[0_16px_42px_rgba(83,68,230,0.32)] transition hover:-translate-y-0.5"
                 >
                   Find the right talent →
                 </Link>
                 <Link
                   href="/find-best-matches"
-                  className="inline-flex h-11 items-center justify-center rounded-full border border-[#B8C0EA] bg-white px-6 text-sm font-bold text-[#3F46A8] transition hover:bg-[#F2F4FF]"
+                  className="inline-flex h-[52px] items-center justify-center rounded-full border border-white/24 bg-white/10 px-7 text-sm font-bold text-white backdrop-blur transition hover:bg-white/16"
                 >
                   Find your next opportunity →
                 </Link>
               </div>
             </div>
 
-            {/* Right: comparison table card */}
-            <div className="overflow-hidden rounded-[28px] border border-white/14 bg-white shadow-[0_24px_80px_rgba(0,0,0,0.22)]">
+            {/* Right: enterprise snapshot card */}
+            <div className="rounded-[34px] border border-white/18 bg-white p-7 text-[#050A1F] shadow-[0_28px_90px_rgba(0,0,0,0.28)] sm:p-8 lg:p-9">
+
               {/* Card header */}
-              <div className="flex items-center justify-between border-b border-[#DCE2F2] bg-white px-5 py-4">
+              <div className="flex items-start justify-between gap-5">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#4B4FC4]">
-                    Audience Paths
+                  <p className="text-xs font-bold uppercase tracking-[0.26em] text-[#7A86A6]">
+                    Operating snapshot
                   </p>
-                  <h3 className="mt-1.5 text-xl font-bold tracking-[-0.03em] text-[#050A1F]">
-                    Companies vs. Professionals
+                  <h3 className="mt-3 max-w-[420px] text-[clamp(22px,2vw,32px)] font-bold leading-[1.05] tracking-[-0.045em] text-[#050A1F]">
+                    One platform. Two clear paths.
                   </h3>
+                </div>
+                <div className="shrink-0 rounded-[16px] bg-[#ECEBFF] px-4 py-3 text-sm font-bold leading-tight text-[#4B4FC4]">
+                  Human + AI
                 </div>
               </div>
 
-              {/* Scrollable table */}
-              <div className="overflow-x-auto">
-                <table className="min-w-[600px] w-full border-collapse text-left">
-                  <thead>
-                    <tr className="bg-[#F5F7FC]">
-                      <th className="border-b border-r border-[#DCE2F2] px-4 py-3 text-[13px] font-bold text-[#334155]">Dimension</th>
-                      <th className="border-b border-r border-[#DCE2F2] px-4 py-3 text-[13px] font-bold text-[#334155]">For Companies</th>
-                      <th className="border-b border-[#DCE2F2] px-4 py-3 text-[13px] font-bold text-[#334155]">For Professionals</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[
-                      {
-                        dim: "Primary value",
-                        co: "Hire faster with less overhead",
-                        pro: "Real work with real growth",
-                      },
-                      {
-                        dim: "Best for",
-                        co: "Teams scaling roles, pods, or operations",
-                        pro: "Talent looking for steady, flexible opportunities",
-                      },
-                      {
-                        dim: "How it works",
-                        co: "Contract, project, or full-time support",
-                        pro: "Matched with quality clients and clear expectations",
-                      },
-                      {
-                        dim: "Control",
-                        co: "Direct access, zero middlemen",
-                        pro: "Remote work, flexible schedule, open access",
-                      },
-                      {
-                        dim: "Reach",
-                        co: "50+ countries and local expertise",
-                        pro: "Top global brands and reputation-building work",
-                      },
-                    ].map((row, i, arr) => (
-                      <tr key={row.dim}>
-                        <td className={`border-r border-[#E3E8F4] px-4 py-4 align-top text-[13px] font-semibold leading-relaxed text-[#050A1F]${i < arr.length - 1 ? " border-b" : ""}`}>
-                          {row.dim}
-                        </td>
-                        <td className={`border-r border-[#E3E8F4] px-4 py-4 align-top text-[13px] leading-relaxed text-[#536077]${i < arr.length - 1 ? " border-b" : ""}`}>
-                          {row.co}
-                        </td>
-                        <td className={`px-4 py-4 align-top text-[13px] leading-relaxed text-[#536077]${i < arr.length - 1 ? " border-b border-[#E3E8F4]" : ""}`}>
-                          {row.pro}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              {/* Metric boxes */}
+              <div className="mt-7 grid gap-3 sm:grid-cols-2">
+                {[
+                  {
+                    label: "Hiring Speed",
+                    value: "Hire in days",
+                    sub: "72-hour match average",
+                  },
+                  {
+                    label: "Work Model",
+                    value: "Contract, project, full-time",
+                    sub: "Flexible support",
+                  },
+                  {
+                    label: "Global Reach",
+                    value: "50+ countries",
+                    sub: "Local expertise",
+                  },
+                  {
+                    label: "Career Access",
+                    value: "Steady pipeline",
+                    sub: "No gaps, no chasing",
+                  },
+                ].map((box) => (
+                  <div
+                    key={box.label}
+                    className="rounded-[18px] border border-[#DCE2F2] bg-[#F8FAFF] p-4"
+                  >
+                    <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.22em] text-[#8A96B3]">
+                      {box.label}
+                    </p>
+                    <p className="text-[clamp(17px,1.6vw,22px)] font-bold leading-tight tracking-[-0.03em] text-[#050A1F]">
+                      {box.value}
+                    </p>
+                    <p className="mt-1.5 text-[13px] leading-relaxed text-[#536077]">
+                      {box.sub}
+                    </p>
+                  </div>
+                ))}
               </div>
+
+              {/* Tags area */}
+              <div className="mt-4 rounded-[20px] border border-[#DCE2F2] bg-[#F5F7FC] p-4">
+                <p className="mb-3 text-[13px] font-bold text-[#334155]">
+                  Built to support
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    "Faster hiring",
+                    "Dedicated talent",
+                    "Flexible teams",
+                    "Top global brands",
+                    "Remote-first work",
+                    "Zero middlemen",
+                  ].map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full border border-[#DCE2F2] bg-white px-3.5 py-1.5 text-[13px] font-medium text-[#536077]"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
             </div>
 
           </div>
