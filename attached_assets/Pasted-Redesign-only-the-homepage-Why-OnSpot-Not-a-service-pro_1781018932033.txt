@@ -1,0 +1,276 @@
+Redesign only the homepage “Why OnSpot” / “Not a service provider. An architect.” section.
+
+Current request:
+Use the attached “Operating Process” reference as inspiration. Keep the same content and messaging, but remove all photos from the cards. Retain the small icon/logo above each card title.
+
+Do not change:
+- section order
+- section background color unless needed for consistency
+- section heading text
+- section paragraph text
+- CTA button text/link
+- footer
+- navigation
+- other homepage sections
+
+==================================================
+1. KEEP SECTION TEXT CONTENT
+==================================================
+
+Keep the eyebrow label:
+
+WHY ONSPOT
+
+Keep the title:
+
+Not a service provider.
+An architect.
+
+Keep “An architect.” styled in the brand gradient / accent color.
+
+Keep the paragraph:
+
+We design the operating layer behind modern outsourcing — combining AI-ready systems, vetted talent, and human accountability so your team can scale without losing control.
+
+Keep the CTA button:
+
+See how it works →
+
+The CTA should remain linked to the current destination.
+
+==================================================
+2. REMOVE ALL CARD PHOTOS
+==================================================
+
+Remove the image/photo area from the four Why OnSpot cards.
+
+Remove these visual image blocks:
+- AI robot / tech image
+- people group image
+- office ecosystem image
+- meeting/team image
+
+Do not replace them with photos.
+
+The cards should become clean text-only process/value cards like the reference screenshot.
+
+==================================================
+3. RETAIN SMALL ICONS ABOVE TITLES
+==================================================
+
+Keep the small icon/logo above each card title.
+
+Each card should still show its icon in a small rounded square/pill, similar to the current icon style.
+
+Icon wrapper style:
+
+<div className="
+  mb-6
+  flex
+  h-12
+  w-12
+  items-center
+  justify-center
+  rounded-2xl
+  bg-[#EEF0FF]
+  text-[#4B4FC4]
+  shadow-[0_10px_30px_rgba(75,79,196,0.12)]
+">
+  ICON HERE
+</div>
+
+Do not remove the icons.
+
+==================================================
+4. NEW LAYOUT INSPIRED BY REFERENCE
+==================================================
+
+Use the reference layout:
+- top left heading block
+- below it, four compact rounded cards in a row on desktop
+- no image thumbnails
+- clean white cards
+- soft shadow
+- enough breathing room
+
+Section wrapper:
+
+<section className="bg-[#F3F6FC] px-6 py-24 sm:py-28 lg:py-32">
+  <div className="mx-auto max-w-[1320px]">
+    ...
+  </div>
+</section>
+
+Header block:
+
+<div className="max-w-[780px]">
+  <p className="mb-5 text-sm font-bold uppercase tracking-[0.28em] text-[#4B4FC4]">
+    Why OnSpot
+  </p>
+
+  <h2 className="text-[clamp(44px,6vw,84px)] font-bold leading-[0.95] tracking-[-0.06em] text-[#050A1F]">
+    Not a service provider.<br />
+    <span className="bg-gradient-to-r from-[#6B35F5] via-[#7C4DFF] to-[#3B82F6] bg-clip-text italic text-transparent">
+      An architect.
+    </span>
+  </h2>
+
+  <p className="mt-8 max-w-[700px] text-xl leading-relaxed text-[#536077]">
+    We design the operating layer behind modern outsourcing — combining AI-ready systems, vetted talent, and human accountability so your team can scale without losing control.
+  </p>
+</div>
+
+==================================================
+5. FOUR CARD GRID
+==================================================
+
+Below the header, create this card grid:
+
+<div className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+
+Each card:
+
+<article className="
+  rounded-[28px]
+  border
+  border-[#DCE2F2]
+  bg-white
+  p-7
+  shadow-[0_18px_55px_rgba(45,55,105,0.08)]
+  transition
+  hover:-translate-y-1
+  hover:shadow-[0_26px_70px_rgba(45,55,105,0.12)]
+">
+  ICON WRAPPER
+
+  <p className="mb-4 text-xs font-bold uppercase tracking-[0.22em] text-[#13839A]">
+    STEP / VALUE LABEL
+  </p>
+
+  <h3 className="text-2xl font-bold tracking-[-0.035em] text-[#050A1F]">
+    TITLE
+  </h3>
+
+  <p className="mt-4 text-base leading-relaxed text-[#536077]">
+    DESCRIPTION
+  </p>
+</article>
+
+==================================================
+6. CARD CONTENT
+==================================================
+
+Use the same four cards/content currently in the section:
+
+Card 1:
+Small label:
+AI FOUNDATION
+Title:
+AI-first infrastructure
+Subtitle/accent:
+Intelligent by design
+Description:
+Every system and workflow enhanced by intelligence that amplifies human potential — not automation for its own sake.
+
+Card 2:
+Small label:
+HUMAN CULTURE
+Title:
+Human-centered culture
+Subtitle/accent:
+People, not resources
+Description:
+Elite Filipino talent treated as partners. We invest in their growth because your success depends on it.
+
+Card 3:
+Small label:
+CONNECTED WORKFLOW
+Title:
+Connected ecosystem
+Subtitle/accent:
+Seamless integration
+Description:
+Your tools, your workflow, working in harmony. We don't disrupt what you've built — we elevate it.
+
+Card 4:
+Small label:
+SCALABLE MODEL
+Title:
+Scalable excellence
+Subtitle/accent:
+Grow without compromise
+Description:
+Scale from 1 to 100 without losing quality, culture, or control. Same excellence at every stage.
+
+For the subtitle/accent line, place it under the title:
+
+<p className="mt-2 text-sm font-bold text-[#4B4FC4]">
+  Intelligent by design
+</p>
+
+Then description below it.
+
+==================================================
+7. CTA BUTTON PLACEMENT
+==================================================
+
+Move the “See how it works →” button below the four cards, centered.
+
+Use:
+
+<div className="mt-12 flex justify-center">
+  <Link
+    href="CURRENT_EXISTING_LINK"
+    className="
+      inline-flex
+      h-14
+      items-center
+      justify-center
+      gap-3
+      rounded-full
+      bg-gradient-to-r
+      from-[#6B35F5]
+      to-[#2F7CF6]
+      px-8
+      text-base
+      font-bold
+      text-white
+      shadow-[0_18px_45px_rgba(83,68,230,0.24)]
+      transition
+      hover:-translate-y-0.5
+      hover:shadow-[0_24px_60px_rgba(83,68,230,0.30)]
+    "
+  >
+    See how it works →
+  </Link>
+</div>
+
+==================================================
+8. RESPONSIVE BEHAVIOR
+==================================================
+
+Desktop:
+- 4 cards in one row
+- heading left aligned
+- clean process-card look
+
+Tablet:
+- 2 cards per row
+
+Mobile:
+- 1 card per row
+- title wraps naturally
+- no horizontal overflow
+
+==================================================
+FINAL RESULT
+==================================================
+
+The Why OnSpot section should:
+- remove all photos
+- retain the small icons above each title
+- feel like the second screenshot/reference
+- look cleaner and more structured
+- preserve all existing content
+- keep the “See how it works” CTA
+- feel premium, minimal, and process-driven

@@ -1007,118 +1007,97 @@ export default function Home() {
       </div>
 
       {/* ── 6. WHY PARTNER / WHY ONSPOT ── */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#F6F4FF] via-[#F8F7FF] to-[#EEF2FF] py-24 sm:py-28">
-        <div className="pointer-events-none absolute -top-24 right-0 h-72 w-72 rounded-full bg-[#3F4698]/10 blur-3xl" />
-        <div className="pointer-events-none absolute bottom-0 left-0 h-80 w-80 rounded-full bg-[#3F4698]/5 blur-3xl" />
+      <section className="bg-[#F3F6FC] px-6 py-24 sm:py-28 lg:py-32">
+        <div className="mx-auto max-w-[1320px]">
 
-        <div className="container relative z-10 mx-auto max-w-[1400px] px-6 sm:px-8 lg:px-12">
-          {/* Header — full-width typography, no image */}
-          <div className="max-w-5xl">
-            <p className="text-[18px] font-semibold uppercase tracking-[0.22em] text-[#4B46C8] lg:text-[20px]">
+          {/* Header block */}
+          <div className="max-w-[780px]">
+            <p className="mb-5 text-sm font-bold uppercase tracking-[0.28em] text-[#4B4FC4]">
               Why OnSpot
             </p>
-            <h2 className="mt-6 max-w-[950px] text-[54px] font-semibold tracking-[-0.05em] leading-[0.95] md:text-[68px] lg:text-[82px]">
-              <span className="block text-[#070A1A]">
-                Not a service provider.
-              </span>
-              <span className="mt-2 block italic text-[#4F46D8]">
+            <h2 className="text-[clamp(44px,6vw,84px)] font-bold leading-[0.95] tracking-[-0.06em] text-[#050A1F]">
+              Not a service provider.<br />
+              <span className="bg-gradient-to-r from-[#6B35F5] via-[#7C4DFF] to-[#3B82F6] bg-clip-text italic text-transparent">
                 An architect.
               </span>
             </h2>
-            <p className="mt-8 max-w-[760px] text-[20px] leading-[1.45] text-[#56647A] lg:text-[23px]">
-              We design the operating layer behind modern outsourcing —
-              combining AI-ready systems, vetted talent, and human
-              accountability so your team can scale without losing control.
+            <p className="mt-8 max-w-[700px] text-xl leading-relaxed text-[#536077]">
+              We design the operating layer behind modern outsourcing — combining AI-ready systems, vetted talent, and human accountability so your team can scale without losing control.
             </p>
           </div>
 
-          {/* Four pillar cards — 2×2 grid */}
-          <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2">
+          {/* Four pillar cards — 1 row on desktop */}
+          <div className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {[
               {
                 icon: <Bot className="h-6 w-6" />,
-                img: WhyAIFirstInfrastructure,
-                imgAlt: "AI workflow and laptop",
+                label: "AI Foundation",
                 title: "AI-first infrastructure",
                 tagline: "Intelligent by design",
                 body: "Every system and workflow enhanced by intelligence that amplifies human potential — not automation for its own sake.",
               },
               {
                 icon: <Users className="h-6 w-6" />,
-                img: WhyHumanCenteredCulture,
-                imgAlt: "Team culture",
+                label: "Human Culture",
                 title: "Human-centered culture",
                 tagline: "People, not resources",
                 body: "Elite Filipino talent treated as partners. We invest in their growth because your success depends on it.",
-                imgPosition: "center 24%",
               },
               {
                 icon: <Globe className="h-6 w-6" />,
-                img: WhyConnectedEcosystem,
-                imgAlt: "Connected workflow",
+                label: "Connected Workflow",
                 title: "Connected ecosystem",
                 tagline: "Seamless integration",
                 body: "Your tools, your workflow, working in harmony. We don't disrupt what you've built — we elevate it.",
               },
               {
                 icon: <TrendingUp className="h-6 w-6" />,
-                img: WhyScalableExcellence,
-                imgAlt: "Scalable team",
+                label: "Scalable Model",
                 title: "Scalable excellence",
                 tagline: "Grow without compromise",
                 body: "Scale from 1 to 100 without losing quality, culture, or control. Same excellence at every stage.",
               },
             ].map((card) => (
-              <div
+              <article
                 key={card.title}
-                className="group overflow-hidden rounded-[24px] border border-[#3F4698]/15 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
+                className="rounded-[28px] border border-[#DCE2F2] bg-white p-7 shadow-[0_18px_55px_rgba(45,55,105,0.08)] transition hover:-translate-y-1 hover:shadow-[0_26px_70px_rgba(45,55,105,0.12)]"
               >
-                {/* Photo header */}
-                <div className="relative h-44 w-full overflow-hidden bg-slate-100 sm:h-48">
-                  <img
-                    src={card.img}
-                    alt={card.imgAlt}
-                    className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                    style={
-                      (card as any).imgPosition
-                        ? { objectPosition: (card as any).imgPosition }
-                        : undefined
-                    }
-                    loading="lazy"
-                  />
+                {/* Icon */}
+                <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EEF0FF] text-[#4B4FC4] shadow-[0_10px_30px_rgba(75,79,196,0.12)]">
+                  {card.icon}
                 </div>
 
-                {/* Card body with floating icon badge */}
-                <div className="relative px-8 pb-8 pt-10">
-                  <div className="absolute -top-5 left-8 z-20 flex h-11 w-11 items-center justify-center rounded-xl bg-[#EEEAFE] text-[#3F4698] shadow-sm ring-4 ring-white">
-                    {card.icon}
-                  </div>
-                  <h3 className="text-xl font-bold text-slate-950">
-                    {card.title}
-                  </h3>
-                  <p className="mt-2 text-sm font-semibold text-[#3F4698]">
-                    {card.tagline}
-                  </p>
-                  <p className="mt-4 text-sm leading-relaxed text-slate-600">
-                    {card.body}
-                  </p>
-                </div>
-              </div>
+                <p className="mb-4 text-xs font-bold uppercase tracking-[0.22em] text-[#13839A]">
+                  {card.label}
+                </p>
+
+                <h3 className="text-2xl font-bold tracking-[-0.035em] text-[#050A1F]">
+                  {card.title}
+                </h3>
+
+                <p className="mt-2 text-sm font-bold text-[#4B4FC4]">
+                  {card.tagline}
+                </p>
+
+                <p className="mt-4 text-base leading-relaxed text-[#536077]">
+                  {card.body}
+                </p>
+              </article>
             ))}
           </div>
 
           {/* See how it works CTA */}
-          <div className="mt-10 flex justify-center">
-            <a
+          <div className="mt-12 flex justify-center">
+            <Link
               href="#experience"
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-indigo-700 px-7 py-3.5 text-base font-semibold text-white shadow-md transition hover:-translate-y-0.5 hover:bg-indigo-800 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+              className="inline-flex h-14 items-center justify-center gap-3 rounded-full bg-gradient-to-r from-[#6B35F5] to-[#2F7CF6] px-8 text-base font-bold text-white shadow-[0_18px_45px_rgba(83,68,230,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_24px_60px_rgba(83,68,230,0.30)]"
             >
-              See how it works
-              <ArrowRight className="h-4 w-4" />
-            </a>
+              See how it works →
+            </Link>
           </div>
+
         </div>
-      </div>
+      </section>
 
       {/* ── 7. THE PROOF / TALENT PROFILES ── */}
       <div className="relative bg-white py-20 sm:py-28">
