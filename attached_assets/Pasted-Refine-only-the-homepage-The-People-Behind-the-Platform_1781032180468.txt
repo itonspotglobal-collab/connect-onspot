@@ -1,0 +1,150 @@
+Refine only the homepage “The People Behind the Platform” people grid photo crops.
+
+Current issue:
+The people grid is mostly good, but Mariel Tolentino and Melissa Rayos still look visually off compared with the rest of the cards. Please apply the same type of manual crop fix that worked for Jael before: use custom per-person absolute image positioning instead of generic object-cover/object-center.
+
+Goal:
+Make Mariel and Melissa feel aligned with the other people cards:
+- face/head visible
+- head level visually consistent with surrounding people
+- photo fills the rounded card
+- no white gaps
+- no object-contain
+- no distorted/stretching
+- no changes to other people photos
+
+Do not change:
+- section title
+- section subtitle
+- people grid layout
+- card size
+- card spacing
+- hover effects
+- CTA button
+- other sections
+- Jake/Nur/Jael/Mark/Rachel/Jennifer crops
+
+==================================================
+1. USE CUSTOM CROP SETTINGS PER PERSON
+==================================================
+
+If the people are generated from an array, add optional crop fields for Mariel and Melissa only.
+
+Example:
+
+{
+  name: "Mariel Tolentino",
+  cropType: "absolute",
+  imageWidth: "155%",
+  imageTransform: "translate(-50%, -36%)"
+}
+
+{
+  name: "Melissa Rayos",
+  cropType: "absolute",
+  imageWidth: "125%",
+  imageTransform: "translate(-50%, -52%)"
+}
+
+Then update the image renderer so when `cropType === "absolute"`, it uses custom absolute positioning.
+
+==================================================
+2. ABSOLUTE IMAGE RENDERER
+==================================================
+
+For custom-cropped people only, render the image like this:
+
+<div className="relative h-full w-full overflow-hidden rounded-[inherit]">
+  <img
+    src={person.photo}
+    alt={person.name}
+    loading="lazy"
+    className="absolute left-1/2 top-1/2 h-auto max-w-none"
+    style={{
+      width: person.imageWidth,
+      transform: person.imageTransform,
+    }}
+  />
+</div>
+
+Important:
+- Do NOT use object-cover on custom-cropped images.
+- Do NOT use object-center on custom-cropped images.
+- Do NOT use object-contain.
+- Do NOT add padding.
+- Do NOT allow white gaps.
+- Keep overflow-hidden on the wrapper.
+
+==================================================
+3. MARIEL TOLENTINO CROP
+==================================================
+
+Mariel’s current issue:
+Her card is showing too much sunset/sky/water and her face is too low.
+
+Use this starting crop:
+
+imageWidth: "155%"
+imageTransform: "translate(-50%, -36%)"
+
+If her face is still too low, move the image UP by making the Y value less negative:
+
+imageTransform: "translate(-50%, -32%)"
+
+If the image shows too much body and her head still feels small, increase width:
+
+imageWidth: "165%"
+
+Best likely setting:
+imageWidth: "160%"
+imageTransform: "translate(-50%, -34%)"
+
+Target:
+Mariel’s head/face should sit around the upper-middle area of the card, similar to Jael’s fixed crop. Do not leave her face near the bottom edge.
+
+==================================================
+4. MELISSA RAYOS CROP
+==================================================
+
+Melissa’s current issue:
+Her photo is closer to working, but the face/head alignment should be cleaner and more consistent with the rest.
+
+Use this starting crop:
+
+imageWidth: "125%"
+imageTransform: "translate(-50%, -52%)"
+
+If her head is too low, move image UP by using:
+
+imageTransform: "translate(-50%, -56%)"
+
+If too zoomed in, reduce width:
+
+imageWidth: "118%"
+
+Best likely setting:
+imageWidth: "122%"
+imageTransform: "translate(-50%, -54%)"
+
+Target:
+Melissa’s face should be clearly visible and vertically balanced, not too low or awkwardly cropped.
+
+==================================================
+5. DO NOT BREAK DEFAULT CROPS
+==================================================
+
+For all other people, keep the current existing image renderer and crop settings exactly as they are.
+
+Only Mariel Tolentino and Melissa Rayos should use this custom absolute crop logic.
+
+==================================================
+6. FINAL CHECK
+==================================================
+
+After applying:
+- Mariel’s face is visible and no longer buried near the bottom.
+- Melissa’s face/head aligns better with the other people.
+- Both photos fill their cards.
+- There are no white gaps.
+- No other people photos changed.
+- The section grid still looks consistent and polished.

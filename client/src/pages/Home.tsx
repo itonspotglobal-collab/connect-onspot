@@ -1306,6 +1306,9 @@ export default function Home() {
                 objectPosition: "object-[center_28%]",
                 isReal: true,
                 gender: "female",
+                cropType: "absolute" as const,
+                imageWidth: "160%",
+                imageTransform: "translate(-50%, -34%)",
               },
               {
                 photo: MelissaRayosPhoto,
@@ -1315,6 +1318,9 @@ export default function Home() {
                 objectPosition: "object-[center_18%]",
                 isReal: true,
                 gender: "female",
+                cropType: "absolute" as const,
+                imageWidth: "122%",
+                imageTransform: "translate(-50%, -54%)",
               },
               {
                 photo: JenniferDizonPhoto,
@@ -1340,6 +1346,19 @@ export default function Home() {
                       style={{
                         width: "155%",
                         transform: "translate(-50%, -53%)",
+                      }}
+                    />
+                  </div>
+                ) : (person as any).cropType === "absolute" ? (
+                  <div className="relative h-full w-full overflow-hidden rounded-[inherit]">
+                    <img
+                      src={person.photo}
+                      alt={person.name}
+                      loading="lazy"
+                      className="absolute left-1/2 top-1/2 h-auto max-w-none"
+                      style={{
+                        width: (person as any).imageWidth,
+                        transform: (person as any).imageTransform,
                       }}
                     />
                   </div>
