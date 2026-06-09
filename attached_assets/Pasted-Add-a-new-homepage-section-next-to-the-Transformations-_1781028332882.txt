@@ -1,0 +1,228 @@
+Add a new homepage section next to the “Transformations” section.
+
+Current request:
+Add the “OnSpot started from a real problem” section shown in the screenshot to the homepage. Insert it next to the Transformation section in the page flow. Since we are alternating dark and light backgrounds, this new section should use a dark background.
+
+Placement:
+Place this section immediately after the “Transformations / Real change. Real results.” section and before the next existing section.
+
+Do not change:
+- Transformation section content/design
+- Work Differently section
+- Insights section
+- Why OnSpot section
+- People section
+- footer
+- navigation
+- existing CTA links elsewhere
+
+==================================================
+1. NEW SECTION CONTENT
+==================================================
+
+Eyebrow:
+THE WHY
+
+Left title:
+OnSpot started
+from a real
+problem.
+
+Main card headline:
+Our founders were building businesses and ran into the same wall most operators eventually hit: growth was possible, but operations were becoming the bottleneck.
+
+Body paragraph 1:
+Hiring took too long. Costs kept rising. Teams became harder to manage. Founder time was being consumed by work that should have been systemized.
+
+Body paragraph 2:
+So instead of accepting that as normal, they built a better way. What began as an internal solution became a company built to help other businesses scale with more clarity, better people, and less friction.
+
+Body paragraph 3:
+That is why OnSpot exists. Not to be another outsourcing provider, but to become a trusted growth partner for businesses that need more than manpower. They need intelligence that removes drag, people who can lead and execute, and a support system that makes both work as one.
+
+CTA button:
+Explore How We Can Help →
+
+CTA link:
+Use "/why-onspot" if that route exists.
+If the site already has a better existing “Why OnSpot” route, use that existing route.
+
+==================================================
+2. SECTION BACKGROUND
+==================================================
+
+Use a dark premium background to alternate from the light Transformation section.
+
+Section wrapper:
+
+<section className="
+  relative
+  overflow-hidden
+  bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.24),transparent_34%),linear-gradient(135deg,#11142B_0%,#1D2360_48%,#151632_100%)]
+  px-6
+  py-20
+  text-white
+  sm:py-24
+  lg:py-28
+">
+
+Optional subtle glow:
+
+<div className="
+  pointer-events-none
+  absolute
+  right-[-12%]
+  top-[-20%]
+  h-[420px]
+  w-[420px]
+  rounded-full
+  bg-[#2F7CF6]/20
+  blur-[90px]
+" />
+
+==================================================
+3. LAYOUT
+==================================================
+
+Use a two-column layout like the screenshot, but adapted for dark mode.
+
+Container:
+
+<div className="relative z-10 mx-auto grid max-w-[1180px] gap-10 lg:grid-cols-[0.75fr_1.25fr] lg:items-start">
+
+Left column:
+
+<div>
+  <p className="
+    mb-5
+    text-xs
+    font-bold
+    uppercase
+    tracking-[0.30em]
+    text-[#AFA8FF]
+  ">
+    The Why
+  </p>
+
+  <h2 className="
+    max-w-[430px]
+    text-[clamp(38px,4.6vw,64px)]
+    font-bold
+    leading-[0.98]
+    tracking-[-0.055em]
+    text-white
+  ">
+    OnSpot started<br />
+    from a real<br />
+    problem.
+  </h2>
+</div>
+
+Right column card:
+
+<div className="
+  rounded-[32px]
+  border
+  border-white/14
+  bg-white/[0.08]
+  p-8
+  shadow-[0_28px_90px_rgba(0,0,0,0.28)]
+  backdrop-blur-xl
+  sm:p-10
+  lg:p-12
+">
+
+==================================================
+4. RIGHT CARD TYPOGRAPHY
+==================================================
+
+Main card headline:
+
+<h3 className="
+  max-w-[760px]
+  text-[clamp(26px,2.8vw,40px)]
+  font-semibold
+  leading-[1.08]
+  tracking-[-0.04em]
+  text-white
+">
+  Our founders were building businesses and ran into the same wall most operators eventually hit: growth was possible, but operations were becoming the bottleneck.
+</h3>
+
+Paragraph wrapper:
+
+<div className="mt-8 space-y-6 text-[clamp(16px,1.4vw,19px)] leading-relaxed text-white/72">
+  <p>Hiring took too long...</p>
+  <p>So instead of accepting...</p>
+  <p>That is why OnSpot exists...</p>
+</div>
+
+CTA:
+
+<div className="mt-8">
+  <Link
+    href="/why-onspot"
+    className="
+      inline-flex
+      h-12
+      items-center
+      justify-center
+      gap-2
+      rounded-full
+      bg-white
+      px-6
+      text-sm
+      font-bold
+      text-[#151632]
+      shadow-[0_16px_38px_rgba(0,0,0,0.22)]
+      transition
+      hover:-translate-y-0.5
+      hover:shadow-[0_22px_48px_rgba(0,0,0,0.30)]
+    "
+  >
+    Explore How We Can Help →
+  </Link>
+</div>
+
+==================================================
+5. VISUAL HIERARCHY
+==================================================
+
+Follow an inverted/cascading hierarchy:
+
+1. Small eyebrow: THE WHY
+2. Strong left headline: OnSpot started from a real problem.
+3. Larger right card statement
+4. Smaller supporting paragraphs
+5. CTA button
+
+The section should feel premium and story-driven, not like another generic text block.
+
+==================================================
+6. RESPONSIVE
+==================================================
+
+Desktop:
+- left headline and right story card side-by-side
+
+Tablet/mobile:
+- stack the left heading above the card
+- keep card padding smaller
+- no horizontal overflow
+
+Mobile classes:
+- section py-16
+- card p-6
+- headline should wrap naturally
+
+==================================================
+FINAL CHECK
+==================================================
+
+After applying:
+- New section appears after Transformations.
+- New section has dark background.
+- It uses the exact story content above.
+- Layout matches the screenshot concept but dark/premium.
+- CTA button is visible and linked.
+- No other homepage sections are changed.

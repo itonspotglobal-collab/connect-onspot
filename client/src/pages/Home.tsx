@@ -997,7 +997,55 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ── 6. WHY PARTNER / WHY ONSPOT ── */}
+      {/* ── 6. THE WHY / ORIGIN STORY ── */}
+      <section className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.24),transparent_34%),linear-gradient(135deg,#11142B_0%,#1D2360_48%,#151632_100%)] px-6 py-16 text-white sm:py-20 lg:py-24">
+        <div className="pointer-events-none absolute right-[-12%] top-[-20%] h-[420px] w-[420px] rounded-full bg-[#2F7CF6]/20 blur-[90px]" />
+        <div className="relative z-10 mx-auto grid max-w-[1180px] gap-10 lg:grid-cols-[0.75fr_1.25fr] lg:items-start">
+
+          {/* Left: eyebrow + title */}
+          <div>
+            <p className="mb-5 text-xs font-bold uppercase tracking-[0.30em] text-[#AFA8FF]">
+              The Why
+            </p>
+            <h2 className="max-w-[430px] text-[clamp(38px,4.6vw,64px)] font-bold leading-[0.98] tracking-[-0.055em] text-white">
+              OnSpot started<br />
+              from a real<br />
+              problem.
+            </h2>
+          </div>
+
+          {/* Right: story card */}
+          <div className="rounded-[32px] border border-white/14 bg-white/[0.08] p-8 shadow-[0_28px_90px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:p-10 lg:p-12">
+            <h3 className="max-w-[760px] text-[clamp(20px,2.2vw,30px)] font-semibold leading-[1.08] tracking-[-0.04em] text-white">
+              Our founders were building businesses and ran into the same wall most operators eventually hit: growth was possible, but operations were becoming the bottleneck.
+            </h3>
+
+            <div className="mt-8 space-y-6 text-[clamp(15px,1.3vw,18px)] leading-relaxed text-white/72">
+              <p>
+                Hiring took too long. Costs kept rising. Teams became harder to manage. Founder time was being consumed by work that should have been systemized.
+              </p>
+              <p>
+                So instead of accepting that as normal, they built a better way. What began as an internal solution became a company built to help other businesses scale with more clarity, better people, and less friction.
+              </p>
+              <p>
+                That is why OnSpot exists. Not to be another outsourcing provider, but to become a trusted growth partner for businesses that need more than manpower. They need intelligence that removes drag, people who can lead and execute, and a support system that makes both work as one.
+              </p>
+            </div>
+
+            <div className="mt-8">
+              <Link
+                href="/why-onspot"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-white px-6 text-sm font-bold text-[#151632] shadow-[0_16px_38px_rgba(0,0,0,0.22)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_48px_rgba(0,0,0,0.30)]"
+              >
+                Explore How We Can Help →
+              </Link>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ── 7. WHY PARTNER / WHY ONSPOT ── */}
       <section className="bg-[#F3F6FC] px-6 py-20 sm:py-24 lg:py-28">
         <div className="mx-auto max-w-[1320px]">
 
