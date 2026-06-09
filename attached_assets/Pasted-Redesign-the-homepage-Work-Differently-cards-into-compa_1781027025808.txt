@@ -1,0 +1,380 @@
+Redesign the homepage “Work Differently” cards into compact gradient checklist cards.
+
+Current issue:
+I like the idea of returning to the old “two paths” concept, but the two-card layout should feel more modern and compact. Use the attached “How Resourced Services works” card as the visual reference.
+
+Goal:
+Keep the current dark Work Differently section background and headline, but redesign the two lower cards into two compact gradient checklist cards:
+1. For Companies
+2. For Professionals
+
+No photos.
+No comparison table.
+No operating snapshot.
+No metric boxes.
+Retain the two-audience idea.
+
+Do not change:
+- section order
+- Work Differently headline
+- “great work.” gradient highlight
+- section background
+- button links
+- other homepage sections
+- navigation
+- footer
+
+==================================================
+1. KEEP WORK DIFFERENTLY HEADER
+==================================================
+
+Keep:
+
+Eyebrow:
+WORK DIFFERENTLY
+
+Headline:
+Whether you're scaling a team or growing a career
+— OnSpot is built for both sides of great work.
+
+Keep “great work.” highlighted with the existing gradient.
+
+Keep the heading compact so the full section can fit closer to one viewport.
+
+Recommended heading size:
+
+text-[clamp(34px,4.2vw,58px)]
+leading-[1.04]
+
+==================================================
+2. REMOVE CURRENT LOWER DESIGN
+==================================================
+
+Remove the current lower Work Differently layout if present:
+- remove “Operating Snapshot”
+- remove “One platform. Two clear paths.” snapshot card
+- remove metric boxes
+- remove “Built to support” tags
+- remove any comparison table
+- remove any photos
+
+Replace it with two compact gradient checklist cards.
+
+==================================================
+3. NEW TWO-CARD GRID
+==================================================
+
+Below the heading, use:
+
+<div className="
+  mx-auto
+  mt-12
+  grid
+  max-w-[1120px]
+  gap-6
+  lg:grid-cols-2
+">
+
+The max width is intentionally smaller so the section feels compact and fits better in one screen.
+
+==================================================
+4. SHARED CARD STYLE
+==================================================
+
+Each card should look like the reference:
+- rounded large corners
+- gradient background
+- compact header
+- strong white title
+- stacked checklist rows
+- CTA at the bottom
+- no photos
+
+Shared card wrapper:
+
+<article className="
+  relative
+  overflow-hidden
+  rounded-[30px]
+  border
+  border-white/16
+  p-7
+  text-white
+  shadow-[0_28px_80px_rgba(0,0,0,0.26)]
+  sm:p-8
+">
+
+Add a subtle overlay inside each card:
+
+<div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_34%)]" />
+
+Wrap actual content in:
+
+<div className="relative z-10">
+
+==================================================
+5. COMPANIES CARD
+==================================================
+
+Companies card gradient:
+
+className="
+  relative overflow-hidden rounded-[30px] border border-white/16
+  bg-[linear-gradient(135deg,#2B2578_0%,#2757B8_55%,#18A8D8_100%)]
+  p-7 text-white shadow-[0_28px_80px_rgba(0,0,0,0.26)] sm:p-8
+"
+
+Small label:
+FOR COMPANIES
+
+Title:
+Hire faster. Spend less.
+
+Description:
+Build your team with direct access, flexible engagement models, and talent matched around how your work actually runs.
+
+Checklist rows:
+
+1.
+Hire in days
+72-hour match average
+
+2.
+Hire your way
+Contract, project, full-time
+
+3.
+No middlemen
+Direct access, zero markups
+
+4.
+50+ countries
+Global reach, local expertise
+
+CTA:
+Find the right talent →
+
+Link:
+"/hire-talent"
+
+==================================================
+6. PROFESSIONALS CARD
+==================================================
+
+Professionals card gradient:
+
+className="
+  relative overflow-hidden rounded-[30px] border border-white/16
+  bg-[linear-gradient(135deg,#31245F_0%,#6B35F5_52%,#22B8B0_100%)]
+  p-7 text-white shadow-[0_28px_80px_rgba(0,0,0,0.26)] sm:p-8
+"
+
+Small label:
+FOR PROFESSIONALS
+
+Title:
+Real work. Real growth.
+
+Description:
+Get matched with quality opportunities, steady pipelines, and flexible work that respects your terms.
+
+Checklist rows:
+
+1.
+Steady pipeline
+No gaps, no chasing
+
+2.
+Top global brands
+Builds your reputation fast
+
+3.
+Your terms
+Remote, flexible schedule
+
+4.
+Zero gatekeeping
+Pure merit, open access
+
+CTA:
+Find your next opportunity →
+
+Link:
+"/find-best-matches"
+
+==================================================
+7. CARD TYPOGRAPHY
+==================================================
+
+Inside each card, use this hierarchy:
+
+Label:
+
+<p className="
+  mb-4
+  text-xs
+  font-bold
+  uppercase
+  tracking-[0.24em]
+  text-white/72
+">
+  For Companies
+</p>
+
+Title:
+
+<h3 className="
+  max-w-[460px]
+  text-[clamp(30px,3vw,44px)]
+  font-bold
+  leading-[1.02]
+  tracking-[-0.05em]
+  text-white
+">
+  Hire faster. Spend less.
+</h3>
+
+Description:
+
+<p className="
+  mt-4
+  max-w-[500px]
+  text-base
+  leading-relaxed
+  text-white/76
+">
+  Build your team with direct access...
+</p>
+
+==================================================
+8. CHECKLIST ROW STYLE
+==================================================
+
+Checklist container:
+
+<div className="mt-7 space-y-3">
+
+Each checklist row:
+
+<div className="
+  flex
+  items-start
+  gap-4
+  rounded-2xl
+  border
+  border-white/14
+  bg-white/10
+  px-5
+  py-4
+  backdrop-blur
+">
+
+Dot/icon:
+
+<span className="
+  mt-1.5
+  h-2.5
+  w-2.5
+  shrink-0
+  rounded-full
+  bg-[#6EF3F1]
+  shadow-[0_0_18px_rgba(110,243,241,0.7)]
+" />
+
+Text:
+
+<div>
+  <h4 className="text-base font-bold leading-tight text-white">
+    Hire in days
+  </h4>
+  <p className="mt-1 text-sm leading-relaxed text-white/70">
+    72-hour match average
+  </p>
+</div>
+
+For the Professionals card, the dot can use:
+bg-[#C8B8FF]
+
+==================================================
+9. CTA BUTTON INSIDE EACH CARD
+==================================================
+
+Place the CTA below the checklist:
+
+<Link
+  href="/hire-talent"
+  className="
+    mt-7
+    inline-flex
+    h-12
+    items-center
+    justify-center
+    gap-2
+    rounded-full
+    bg-white
+    px-6
+    text-sm
+    font-bold
+    text-[#2E3FA8]
+    shadow-[0_16px_34px_rgba(0,0,0,0.18)]
+    transition
+    hover:-translate-y-0.5
+    hover:shadow-[0_22px_44px_rgba(0,0,0,0.24)]
+  "
+>
+  Find the right talent →
+</Link>
+
+For Professionals card:
+Use href="/find-best-matches"
+Text:
+Find your next opportunity →
+
+==================================================
+10. MAKE IT FIT IN ONE SCREEN
+==================================================
+
+Reduce vertical spacing in the section:
+
+Section wrapper:
+py-16 sm:py-20 lg:py-24
+
+Heading bottom margin/grid top margin:
+mt-10 or mt-12 only
+
+Card padding:
+p-7 sm:p-8
+
+Checklist row padding:
+px-5 py-4
+
+Avoid huge gaps.
+
+Expected desktop height:
+The Work Differently section should feel close to one full viewport, not overly tall.
+
+==================================================
+11. RESPONSIVE
+==================================================
+
+Desktop:
+- two cards side by side
+- compact height
+- equal visual weight
+
+Tablet/mobile:
+- cards stack vertically
+- keep spacing clean
+- no horizontal overflow
+
+==================================================
+FINAL RESULT
+==================================================
+
+The Work Differently section should:
+- keep the dark premium background
+- have two gradient checklist cards like the reference
+- retain the old “For Companies” and “For Professionals” idea
+- remove photos, comparison table, and snapshot metrics
+- feel compact enough to fit better in one screen
+- keep CTA links working

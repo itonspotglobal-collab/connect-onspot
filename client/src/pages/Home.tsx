@@ -496,15 +496,15 @@ export default function Home() {
       </section>
 
       {/* ── 3. WORK DIFFERENTLY ── */}
-      <section className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.28),transparent_34%),linear-gradient(135deg,#151632_0%,#232B74_52%,#11142B_100%)] px-6 py-20 text-white sm:py-24 lg:py-28">
+      <section className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.28),transparent_34%),linear-gradient(135deg,#151632_0%,#232B74_52%,#11142B_100%)] px-6 py-16 text-white sm:py-20 lg:py-24">
         <div className="container relative z-10 mx-auto px-4 sm:px-6">
 
           {/* Headline */}
-          <div className="mx-auto max-w-[1180px] text-center mb-12">
+          <div className="mx-auto max-w-[1120px] text-center mb-10">
             <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.34em] text-white/60">
               Work Differently
             </p>
-            <h2 className="mx-auto max-w-[1100px] text-center text-[clamp(28px,3.4vw,50px)] font-bold leading-[1.06] tracking-[-0.05em] text-white">
+            <h2 className="mx-auto max-w-[1100px] text-center text-[clamp(28px,3.4vw,50px)] font-bold leading-[1.04] tracking-[-0.05em] text-white">
               <span className="block lg:whitespace-nowrap">
                 Whether you're scaling a team or growing a career
               </span>
@@ -517,132 +517,87 @@ export default function Home() {
             </h2>
           </div>
 
-          {/* Two-column: left text content + right snapshot card */}
-          {/* Two audience cards */}
-          <div className="mx-auto mt-14 grid max-w-[1280px] gap-7 lg:grid-cols-2">
+          {/* Two gradient checklist cards */}
+          <div className="mx-auto mt-12 grid max-w-[1120px] gap-6 lg:grid-cols-2">
 
             {/* Card 1: For Companies */}
-            <article className="overflow-hidden rounded-[30px] border border-white/14 bg-white text-[#050A1F] shadow-[0_28px_90px_rgba(0,0,0,0.24)]">
-              {/* Header strip */}
-              <div className="flex items-start gap-4 border-b border-[#DCE2F2] bg-[#F3F1FF] px-7 py-6">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#E8E5FF] text-[#4B4FC4]">
-                  <Building2 className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#4B4FC4]">
-                    For Companies
-                  </p>
-                  <h3 className="mt-1 text-[clamp(18px,1.8vw,26px)] font-bold leading-[1.1] tracking-[-0.035em] text-[#050A1F]">
-                    Hire faster, smarter, and without the overhead
-                  </h3>
-                </div>
-              </div>
+            <article className="relative overflow-hidden rounded-[30px] border border-white/16 bg-[linear-gradient(135deg,#2B2578_0%,#2757B8_55%,#18A8D8_100%)] p-7 text-white shadow-[0_28px_80px_rgba(0,0,0,0.26)] sm:p-8">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_34%)]" />
+              <div className="relative z-10">
+                <p className="mb-4 text-xs font-bold uppercase tracking-[0.24em] text-white/72">
+                  For Companies
+                </p>
+                <h3 className="max-w-[460px] text-[clamp(26px,2.8vw,40px)] font-bold leading-[1.02] tracking-[-0.05em] text-white">
+                  Hire faster. Spend less.
+                </h3>
+                <p className="mt-4 max-w-[500px] text-base leading-relaxed text-white/76">
+                  Build your team with direct access, flexible engagement models, and talent matched around how your work actually runs.
+                </p>
 
-              {/* Feature rows */}
-              {[
-                {
-                  icon: <Zap className="h-4 w-4" />,
-                  title: "Days, not months",
-                  desc: "Skip the lengthy agency cycles. Our pre-vetted talent network means we match you in days — not after a six-week search.",
-                },
-                {
-                  icon: <Sliders className="h-4 w-4" />,
-                  title: "Flexible engagements, your way",
-                  desc: "Contract, project-based, part-time, or full-time — structure the engagement around how your team actually works.",
-                },
-                {
-                  icon: <ArrowRight className="h-4 w-4" />,
-                  title: "Direct access, no middleman",
-                  desc: "Work with talent directly. No layers of account managers, no inflated markups — just the right person for the job.",
-                },
-                {
-                  icon: <Globe className="h-4 w-4" />,
-                  title: "Global reach, local expertise",
-                  desc: "Access professionals across 50+ countries with the regional know-how to hit the ground running from day one.",
-                },
-              ].map((row, i, arr) => (
-                <div
-                  key={row.title}
-                  className={`grid grid-cols-[36px_1fr] gap-4 px-7 py-5${i < arr.length - 1 ? " border-b border-[#E3E8F4]" : ""}`}
+                <div className="mt-7 space-y-3">
+                  {[
+                    { title: "Hire in days", sub: "72-hour match average" },
+                    { title: "Hire your way", sub: "Contract, project, full-time" },
+                    { title: "No middlemen", sub: "Direct access, zero markups" },
+                    { title: "50+ countries", sub: "Global reach, local expertise" },
+                  ].map((item) => (
+                    <div key={item.title} className="flex items-start gap-4 rounded-2xl border border-white/14 bg-white/10 px-5 py-4 backdrop-blur">
+                      <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-[#6EF3F1] shadow-[0_0_18px_rgba(110,243,241,0.7)]" />
+                      <div>
+                        <h4 className="text-base font-bold leading-tight text-white">{item.title}</h4>
+                        <p className="mt-1 text-sm leading-relaxed text-white/70">{item.sub}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <Link
+                  href="/hire-talent"
+                  className="mt-7 inline-flex h-12 items-center justify-center gap-2 rounded-full bg-white px-6 text-sm font-bold text-[#2E3FA8] shadow-[0_16px_34px_rgba(0,0,0,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_44px_rgba(0,0,0,0.24)]"
                 >
-                  <div className="pt-0.5 text-[#4B4FC4]">{row.icon}</div>
-                  <div>
-                    <h4 className="text-[15px] font-bold tracking-[-0.02em] text-[#050A1F]">{row.title}</h4>
-                    <p className="mt-1.5 text-sm leading-relaxed text-[#536077]">{row.desc}</p>
-                  </div>
-                </div>
-              ))}
-
-              {/* Bottom CTA */}
-              <Link
-                href="/hire-talent"
-                className="flex items-center justify-between border-t border-[#DCE2F2] px-7 py-5 text-[15px] font-bold text-[#4B4FC4] transition hover:bg-[#F5F7FF]"
-              >
-                Find the right talent
-                <span>→</span>
-              </Link>
+                  Find the right talent →
+                </Link>
+              </div>
             </article>
 
             {/* Card 2: For Professionals */}
-            <article className="overflow-hidden rounded-[30px] border border-white/14 bg-white text-[#050A1F] shadow-[0_28px_90px_rgba(0,0,0,0.24)]">
-              {/* Header strip */}
-              <div className="flex items-start gap-4 border-b border-[#CDEDEA] bg-[#E9FBF8] px-7 py-6">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#C9F4EE] text-[#0F9B95]">
-                  <Users className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#0F9B95]">
-                    For Professionals
-                  </p>
-                  <h3 className="mt-1 text-[clamp(18px,1.8vw,26px)] font-bold leading-[1.1] tracking-[-0.035em] text-[#050A1F]">
-                    Grow your career with work that keeps coming
-                  </h3>
-                </div>
-              </div>
+            <article className="relative overflow-hidden rounded-[30px] border border-white/16 bg-[linear-gradient(135deg,#31245F_0%,#6B35F5_52%,#22B8B0_100%)] p-7 text-white shadow-[0_28px_80px_rgba(0,0,0,0.26)] sm:p-8">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_34%)]" />
+              <div className="relative z-10">
+                <p className="mb-4 text-xs font-bold uppercase tracking-[0.24em] text-white/72">
+                  For Professionals
+                </p>
+                <h3 className="max-w-[460px] text-[clamp(26px,2.8vw,40px)] font-bold leading-[1.02] tracking-[-0.05em] text-white">
+                  Real work. Real growth.
+                </h3>
+                <p className="mt-4 max-w-[500px] text-base leading-relaxed text-white/76">
+                  Get matched with quality opportunities, steady pipelines, and flexible work that respects your terms.
+                </p>
 
-              {/* Feature rows */}
-              {[
-                {
-                  icon: <TrendingUp className="h-4 w-4" />,
-                  title: "A steady pipeline of real work",
-                  desc: "No more chasing leads or gaps between projects. OnSpot keeps your pipeline active with quality engagements matched to your skills.",
-                },
-                {
-                  icon: <Star className="h-4 w-4" />,
-                  title: "Work that builds your reputation",
-                  desc: "Get placed with leading companies globally — the kind of work that strengthens your portfolio and opens doors.",
-                },
-                {
-                  icon: <Laptop className="h-4 w-4" />,
-                  title: "Flexible on your terms",
-                  desc: "Remote-first, with engagements structured around your availability. You choose what fits your life and your goals.",
-                },
-                {
-                  icon: <ShieldCheck className="h-4 w-4" />,
-                  title: "Zero gatekeeping",
-                  desc: "No favoritism, no opaque processes. Your skills speak for themselves — we match you on merit and make sure you're seen.",
-                },
-              ].map((row, i, arr) => (
-                <div
-                  key={row.title}
-                  className={`grid grid-cols-[36px_1fr] gap-4 px-7 py-5${i < arr.length - 1 ? " border-b border-[#E3E8F4]" : ""}`}
+                <div className="mt-7 space-y-3">
+                  {[
+                    { title: "Steady pipeline", sub: "No gaps, no chasing" },
+                    { title: "Top global brands", sub: "Builds your reputation fast" },
+                    { title: "Your terms", sub: "Remote, flexible schedule" },
+                    { title: "Zero gatekeeping", sub: "Pure merit, open access" },
+                  ].map((item) => (
+                    <div key={item.title} className="flex items-start gap-4 rounded-2xl border border-white/14 bg-white/10 px-5 py-4 backdrop-blur">
+                      <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-[#C8B8FF] shadow-[0_0_18px_rgba(200,184,255,0.65)]" />
+                      <div>
+                        <h4 className="text-base font-bold leading-tight text-white">{item.title}</h4>
+                        <p className="mt-1 text-sm leading-relaxed text-white/70">{item.sub}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <Link
+                  href="/find-best-matches"
+                  className="mt-7 inline-flex h-12 items-center justify-center gap-2 rounded-full bg-white px-6 text-sm font-bold text-[#4B35A8] shadow-[0_16px_34px_rgba(0,0,0,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_44px_rgba(0,0,0,0.24)]"
                 >
-                  <div className="pt-0.5 text-[#0F9B95]">{row.icon}</div>
-                  <div>
-                    <h4 className="text-[15px] font-bold tracking-[-0.02em] text-[#050A1F]">{row.title}</h4>
-                    <p className="mt-1.5 text-sm leading-relaxed text-[#536077]">{row.desc}</p>
-                  </div>
-                </div>
-              ))}
-
-              {/* Bottom CTA */}
-              <Link
-                href="/find-best-matches"
-                className="flex items-center justify-between border-t border-[#CDEDEA] px-7 py-5 text-[15px] font-bold text-[#0F9B95] transition hover:bg-[#F0FFFC]"
-              >
-                Find your next opportunity
-                <span>→</span>
-              </Link>
+                  Find your next opportunity →
+                </Link>
+              </div>
             </article>
 
           </div>
