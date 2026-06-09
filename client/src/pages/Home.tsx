@@ -23,11 +23,15 @@ import {
   ChevronRight,
   Globe,
   SlidersHorizontal,
+  Sliders,
   Eye,
   Calendar,
   ArrowUpRight,
   User,
   BookOpen,
+  Building2,
+  Laptop,
+  ShieldCheck,
 } from "lucide-react";
 import { SiX, SiThreads, SiTiktok, SiYoutube } from "react-icons/si";
 import { Link } from "wouter";
@@ -514,119 +518,132 @@ export default function Home() {
           </div>
 
           {/* Two-column: left text content + right snapshot card */}
-          <div className="mx-auto mt-14 grid max-w-[1280px] gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+          {/* Two audience cards */}
+          <div className="mx-auto mt-14 grid max-w-[1280px] gap-7 lg:grid-cols-2">
 
-            {/* Left: premium text on dark bg — no card wrapper */}
-            <div className="max-w-[620px]">
-              <p className="mb-4 inline-flex rounded-full border border-white/18 bg-white/8 px-4 py-2 text-xs font-bold uppercase tracking-[0.22em] text-white/78 backdrop-blur">
-                Built for both sides
-              </p>
-              <h3 className="text-[clamp(30px,3.6vw,52px)] font-bold leading-[1.02] tracking-[-0.055em] text-white">
-                One system for hiring, growth, and delivery.
-              </h3>
-              <p className="mt-6 max-w-[560px] text-[clamp(16px,1.4vw,19px)] leading-[1.55] text-white/72">
-                Companies get faster, cleaner hiring. Professionals get real opportunities, steady growth, and work that respects their terms.
-              </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Link
-                  href="/hire-talent"
-                  className="inline-flex h-[52px] items-center justify-center rounded-full bg-gradient-to-r from-[#6B35F5] to-[#2F7CF6] px-7 text-sm font-bold text-white shadow-[0_16px_42px_rgba(83,68,230,0.32)] transition hover:-translate-y-0.5"
-                >
-                  Find the right talent →
-                </Link>
-                <Link
-                  href="/find-best-matches"
-                  className="inline-flex h-[52px] items-center justify-center rounded-full border border-white/24 bg-white/10 px-7 text-sm font-bold text-white backdrop-blur transition hover:bg-white/16"
-                >
-                  Find your next opportunity →
-                </Link>
-              </div>
-            </div>
-
-            {/* Right: enterprise snapshot card */}
-            <div className="rounded-[34px] border border-white/18 bg-white p-7 text-[#050A1F] shadow-[0_28px_90px_rgba(0,0,0,0.28)] sm:p-8 lg:p-9">
-
-              {/* Card header */}
-              <div className="flex items-start justify-between gap-5">
+            {/* Card 1: For Companies */}
+            <article className="overflow-hidden rounded-[30px] border border-white/14 bg-white text-[#050A1F] shadow-[0_28px_90px_rgba(0,0,0,0.24)]">
+              {/* Header strip */}
+              <div className="flex items-start gap-4 border-b border-[#DCE2F2] bg-[#F3F1FF] px-7 py-6">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#E8E5FF] text-[#4B4FC4]">
+                  <Building2 className="h-5 w-5" />
+                </div>
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.26em] text-[#7A86A6]">
-                    Operating snapshot
+                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#4B4FC4]">
+                    For Companies
                   </p>
-                  <h3 className="mt-3 max-w-[420px] text-[clamp(22px,2vw,32px)] font-bold leading-[1.05] tracking-[-0.045em] text-[#050A1F]">
-                    One platform. Two clear paths.
+                  <h3 className="mt-1 text-[clamp(18px,1.8vw,26px)] font-bold leading-[1.1] tracking-[-0.035em] text-[#050A1F]">
+                    Hire faster, smarter, and without the overhead
                   </h3>
                 </div>
-                <div className="shrink-0 rounded-[16px] bg-[#ECEBFF] px-4 py-3 text-sm font-bold leading-tight text-[#4B4FC4]">
-                  Human + AI
-                </div>
               </div>
 
-              {/* Metric boxes */}
-              <div className="mt-7 grid gap-3 sm:grid-cols-2">
-                {[
-                  {
-                    label: "Hiring Speed",
-                    value: "Hire in days",
-                    sub: "72-hour match average",
-                  },
-                  {
-                    label: "Work Model",
-                    value: "Contract, project, full-time",
-                    sub: "Flexible support",
-                  },
-                  {
-                    label: "Global Reach",
-                    value: "50+ countries",
-                    sub: "Local expertise",
-                  },
-                  {
-                    label: "Career Access",
-                    value: "Steady pipeline",
-                    sub: "No gaps, no chasing",
-                  },
-                ].map((box) => (
-                  <div
-                    key={box.label}
-                    className="rounded-[18px] border border-[#DCE2F2] bg-[#F8FAFF] p-4"
-                  >
-                    <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.22em] text-[#8A96B3]">
-                      {box.label}
-                    </p>
-                    <p className="text-[clamp(17px,1.6vw,22px)] font-bold leading-tight tracking-[-0.03em] text-[#050A1F]">
-                      {box.value}
-                    </p>
-                    <p className="mt-1.5 text-[13px] leading-relaxed text-[#536077]">
-                      {box.sub}
-                    </p>
+              {/* Feature rows */}
+              {[
+                {
+                  icon: <Zap className="h-4 w-4" />,
+                  title: "Days, not months",
+                  desc: "Skip the lengthy agency cycles. Our pre-vetted talent network means we match you in days — not after a six-week search.",
+                },
+                {
+                  icon: <Sliders className="h-4 w-4" />,
+                  title: "Flexible engagements, your way",
+                  desc: "Contract, project-based, part-time, or full-time — structure the engagement around how your team actually works.",
+                },
+                {
+                  icon: <ArrowRight className="h-4 w-4" />,
+                  title: "Direct access, no middleman",
+                  desc: "Work with talent directly. No layers of account managers, no inflated markups — just the right person for the job.",
+                },
+                {
+                  icon: <Globe className="h-4 w-4" />,
+                  title: "Global reach, local expertise",
+                  desc: "Access professionals across 50+ countries with the regional know-how to hit the ground running from day one.",
+                },
+              ].map((row, i, arr) => (
+                <div
+                  key={row.title}
+                  className={`grid grid-cols-[36px_1fr] gap-4 px-7 py-5${i < arr.length - 1 ? " border-b border-[#E3E8F4]" : ""}`}
+                >
+                  <div className="pt-0.5 text-[#4B4FC4]">{row.icon}</div>
+                  <div>
+                    <h4 className="text-[15px] font-bold tracking-[-0.02em] text-[#050A1F]">{row.title}</h4>
+                    <p className="mt-1.5 text-sm leading-relaxed text-[#536077]">{row.desc}</p>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
 
-              {/* Tags area */}
-              <div className="mt-4 rounded-[20px] border border-[#DCE2F2] bg-[#F5F7FC] p-4">
-                <p className="mb-3 text-[13px] font-bold text-[#334155]">
-                  Built to support
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    "Faster hiring",
-                    "Dedicated talent",
-                    "Flexible teams",
-                    "Top global brands",
-                    "Remote-first work",
-                    "Zero middlemen",
-                  ].map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-full border border-[#DCE2F2] bg-white px-3.5 py-1.5 text-[13px] font-medium text-[#536077]"
-                    >
-                      {tag}
-                    </span>
-                  ))}
+              {/* Bottom CTA */}
+              <Link
+                href="/hire-talent"
+                className="flex items-center justify-between border-t border-[#DCE2F2] px-7 py-5 text-[15px] font-bold text-[#4B4FC4] transition hover:bg-[#F5F7FF]"
+              >
+                Find the right talent
+                <span>→</span>
+              </Link>
+            </article>
+
+            {/* Card 2: For Professionals */}
+            <article className="overflow-hidden rounded-[30px] border border-white/14 bg-white text-[#050A1F] shadow-[0_28px_90px_rgba(0,0,0,0.24)]">
+              {/* Header strip */}
+              <div className="flex items-start gap-4 border-b border-[#CDEDEA] bg-[#E9FBF8] px-7 py-6">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#C9F4EE] text-[#0F9B95]">
+                  <Users className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#0F9B95]">
+                    For Professionals
+                  </p>
+                  <h3 className="mt-1 text-[clamp(18px,1.8vw,26px)] font-bold leading-[1.1] tracking-[-0.035em] text-[#050A1F]">
+                    Grow your career with work that keeps coming
+                  </h3>
                 </div>
               </div>
 
-            </div>
+              {/* Feature rows */}
+              {[
+                {
+                  icon: <TrendingUp className="h-4 w-4" />,
+                  title: "A steady pipeline of real work",
+                  desc: "No more chasing leads or gaps between projects. OnSpot keeps your pipeline active with quality engagements matched to your skills.",
+                },
+                {
+                  icon: <Star className="h-4 w-4" />,
+                  title: "Work that builds your reputation",
+                  desc: "Get placed with leading companies globally — the kind of work that strengthens your portfolio and opens doors.",
+                },
+                {
+                  icon: <Laptop className="h-4 w-4" />,
+                  title: "Flexible on your terms",
+                  desc: "Remote-first, with engagements structured around your availability. You choose what fits your life and your goals.",
+                },
+                {
+                  icon: <ShieldCheck className="h-4 w-4" />,
+                  title: "Zero gatekeeping",
+                  desc: "No favoritism, no opaque processes. Your skills speak for themselves — we match you on merit and make sure you're seen.",
+                },
+              ].map((row, i, arr) => (
+                <div
+                  key={row.title}
+                  className={`grid grid-cols-[36px_1fr] gap-4 px-7 py-5${i < arr.length - 1 ? " border-b border-[#E3E8F4]" : ""}`}
+                >
+                  <div className="pt-0.5 text-[#0F9B95]">{row.icon}</div>
+                  <div>
+                    <h4 className="text-[15px] font-bold tracking-[-0.02em] text-[#050A1F]">{row.title}</h4>
+                    <p className="mt-1.5 text-sm leading-relaxed text-[#536077]">{row.desc}</p>
+                  </div>
+                </div>
+              ))}
+
+              {/* Bottom CTA */}
+              <Link
+                href="/find-best-matches"
+                className="flex items-center justify-between border-t border-[#CDEDEA] px-7 py-5 text-[15px] font-bold text-[#0F9B95] transition hover:bg-[#F0FFFC]"
+              >
+                Find your next opportunity
+                <span>→</span>
+              </Link>
+            </article>
 
           </div>
         </div>

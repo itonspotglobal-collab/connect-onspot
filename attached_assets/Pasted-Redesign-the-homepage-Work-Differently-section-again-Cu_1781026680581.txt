@@ -1,0 +1,390 @@
+Redesign the homepage “Work Differently” section again.
+
+Current issue:
+I like the new premium dark layout and snapshot-card style, but the content now feels too abstract and lost the old idea. I want to retain the old concept: two clear audiences/paths — companies and professionals — but without making it feel like a strict comparison table.
+
+Goal:
+Keep the current dark background and premium layout direction, but bring back the old two-card idea:
+- one card for companies
+- one card for professionals
+- no photos
+- no comparison table
+- no “Dimension / For Companies / For Professionals” grid
+- no enterprise snapshot metric layout
+
+Use the second screenshot as the content/layout reference:
+two clean cards side by side, each with a header, icon, features, and CTA.
+
+Do not change:
+- Work Differently section heading
+- dark background
+- “great work.” gradient highlight
+- button links
+- other homepage sections
+- Insights section
+- Real People section
+- Why OnSpot section
+- footer
+
+==================================================
+1. KEEP SECTION HEADING
+==================================================
+
+Keep:
+
+Eyebrow:
+WORK DIFFERENTLY
+
+Headline:
+Whether you're scaling a team or growing a career
+— OnSpot is built for both sides of great work.
+
+Keep “great work.” highlighted in the OnSpot gradient.
+
+Keep the headline compact and premium.
+
+==================================================
+2. REMOVE SNAPSHOT CARD
+==================================================
+
+Remove the current right-side “Operating Snapshot” card.
+
+Remove:
+- Operating Snapshot
+- One platform. Two clear paths.
+- Human + AI badge
+- Hiring Speed / Work Model / Global Reach / Career Access boxes
+- Built to support tags
+
+Replace the entire lower content area with two side-by-side cards.
+
+==================================================
+3. NEW TWO-CARD LAYOUT
+==================================================
+
+Below the heading, use:
+
+<div className="
+  mx-auto
+  mt-14
+  grid
+  max-w-[1280px]
+  gap-7
+  lg:grid-cols-2
+">
+
+Each card should be text-only and no photos.
+
+Card 1 = Companies
+Card 2 = Professionals
+
+Both cards should have:
+- soft colored header strip
+- icon tile
+- audience label
+- short headline
+- four feature rows
+- bottom CTA row
+
+==================================================
+4. COMPANIES CARD
+==================================================
+
+Card wrapper:
+
+<article className="
+  overflow-hidden
+  rounded-[30px]
+  border
+  border-white/14
+  bg-white
+  text-[#050A1F]
+  shadow-[0_28px_90px_rgba(0,0,0,0.24)]
+">
+
+Header strip:
+
+<div className="
+  flex
+  items-start
+  gap-4
+  border-b
+  border-[#DCE2F2]
+  bg-[#F3F1FF]
+  px-7
+  py-6
+">
+  <div className="
+    flex
+    h-12
+    w-12
+    shrink-0
+    items-center
+    justify-center
+    rounded-2xl
+    bg-[#E8E5FF]
+    text-[#4B4FC4]
+  ">
+    ICON
+  </div>
+
+  <div>
+    <p className="
+      text-xs
+      font-bold
+      uppercase
+      tracking-[0.22em]
+      text-[#4B4FC4]
+    ">
+      For Companies
+    </p>
+
+    <h3 className="
+      mt-1
+      text-[clamp(22px,2vw,30px)]
+      font-bold
+      leading-[1.1]
+      tracking-[-0.035em]
+      text-[#050A1F]
+    ">
+      Hire faster, smarter, and without the overhead
+    </h3>
+  </div>
+</div>
+
+Feature rows:
+
+Use 4 rows with icons, title, and description:
+
+1.
+Title:
+Days, not months
+Description:
+Skip the lengthy agency cycles. Our pre-vetted talent network means we match you in days — not after a six-week search.
+
+2.
+Title:
+Flexible engagements, your way
+Description:
+Contract, project-based, part-time, or full-time — structure the engagement around how your team actually works.
+
+3.
+Title:
+Direct access, no middleman
+Description:
+Work with talent directly. No layers of account managers, no inflated markups — just the right person for the job.
+
+4.
+Title:
+Global reach, local expertise
+Description:
+Access professionals across 50+ countries with the regional know-how to hit the ground running from day one.
+
+Each row:
+
+<div className="
+  grid
+  grid-cols-[44px_1fr]
+  gap-4
+  border-b
+  border-[#E3E8F4]
+  px-7
+  py-6
+  last:border-b-0
+">
+  <div className="pt-1 text-[#4B4FC4]">ICON</div>
+  <div>
+    <h4 className="text-lg font-bold tracking-[-0.02em] text-[#050A1F]">
+      Days, not months
+    </h4>
+    <p className="mt-2 text-base leading-relaxed text-[#536077]">
+      ...
+    </p>
+  </div>
+</div>
+
+Bottom CTA row:
+
+<Link
+  href="/hire-talent"
+  className="
+    flex
+    items-center
+    justify-between
+    border-t
+    border-[#DCE2F2]
+    px-7
+    py-5
+    text-base
+    font-bold
+    text-[#4B4FC4]
+    transition
+    hover:bg-[#F5F7FF]
+  "
+>
+  Find the right talent
+  <span>→</span>
+</Link>
+
+==================================================
+5. PROFESSIONALS CARD
+==================================================
+
+Card wrapper:
+
+<article className="
+  overflow-hidden
+  rounded-[30px]
+  border
+  border-white/14
+  bg-white
+  text-[#050A1F]
+  shadow-[0_28px_90px_rgba(0,0,0,0.24)]
+">
+
+Header strip:
+
+Use a soft cyan/teal tint so it feels different but still OnSpot-branded:
+
+<div className="
+  flex
+  items-start
+  gap-4
+  border-b
+  border-[#CDEDEA]
+  bg-[#E9FBF8]
+  px-7
+  py-6
+">
+  <div className="
+    flex
+    h-12
+    w-12
+    shrink-0
+    items-center
+    justify-center
+    rounded-2xl
+    bg-[#C9F4EE]
+    text-[#0F9B95]
+  ">
+    ICON
+  </div>
+
+  <div>
+    <p className="
+      text-xs
+      font-bold
+      uppercase
+      tracking-[0.22em]
+      text-[#0F9B95]
+    ">
+      For Professionals
+    </p>
+
+    <h3 className="
+      mt-1
+      text-[clamp(22px,2vw,30px)]
+      font-bold
+      leading-[1.1]
+      tracking-[-0.035em]
+      text-[#050A1F]
+    ">
+      Grow your career with work that keeps coming
+    </h3>
+  </div>
+</div>
+
+Feature rows:
+
+1.
+Title:
+A steady pipeline of real work
+Description:
+No more chasing leads or gaps between projects. OnSpot keeps your pipeline active with quality engagements matched to your skills.
+
+2.
+Title:
+Work that builds your reputation
+Description:
+Get placed with leading companies globally — the kind of work that strengthens your portfolio and opens doors.
+
+3.
+Title:
+Flexible on your terms
+Description:
+Remote-first, with engagements structured around your availability. You choose what fits your life and your goals.
+
+4.
+Title:
+Zero gatekeeping
+Description:
+No favoritism, no opaque processes. Your skills speak for themselves — we match you on merit and make sure you're seen.
+
+Use the same row structure, but icon color should be:
+
+text-[#0F9B95]
+
+Bottom CTA row:
+
+<Link
+  href="/find-best-matches"
+  className="
+    flex
+    items-center
+    justify-between
+    border-t
+    border-[#CDEDEA]
+    px-7
+    py-5
+    text-base
+    font-bold
+    text-[#0F9B95]
+    transition
+    hover:bg-[#F0FFFC]
+  "
+>
+  Find your next opportunity
+  <span>→</span>
+</Link>
+
+==================================================
+6. VISUAL HIERARCHY
+==================================================
+
+Make sure the section hierarchy is clear:
+
+1. WORK DIFFERENTLY eyebrow
+2. Main headline
+3. Two audience cards
+4. Card audience label
+5. Card headline
+6. Feature rows
+7. Bottom CTA
+
+The cards should be strong but should not overpower the main headline.
+
+==================================================
+7. RESPONSIVE
+==================================================
+
+Desktop:
+- two cards side by side
+- equal height
+
+Tablet/mobile:
+- cards stack vertically
+- no horizontal overflow
+- feature descriptions remain readable
+
+==================================================
+8. FINAL RESULT
+==================================================
+
+The Work Differently section should:
+- keep the dark premium background
+- remove photos
+- remove strict comparison table
+- remove snapshot metrics
+- restore the old idea of two paths/cards
+- clearly serve both companies and professionals
+- feel clean, premium, and easy to scan
