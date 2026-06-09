@@ -1011,17 +1011,17 @@ export default function Home() {
         <div className="mx-auto max-w-[1320px]">
 
           {/* Header block */}
-          <div className="max-w-[780px]">
-            <p className="mb-5 text-sm font-bold uppercase tracking-[0.28em] text-[#4B4FC4]">
+          <div className="max-w-[880px]">
+            <p className="mb-5 text-sm font-bold uppercase tracking-[0.30em] text-[#4B4FC4]">
               Why OnSpot
             </p>
-            <h2 className="text-[clamp(44px,6vw,84px)] font-bold leading-[0.95] tracking-[-0.06em] text-[#050A1F]">
-              Not a service provider.<br />
-              <span className="bg-gradient-to-r from-[#6B35F5] via-[#7C4DFF] to-[#3B82F6] bg-clip-text italic text-transparent">
+            <h2 className="max-w-[820px] text-[clamp(48px,6vw,92px)] font-bold leading-[0.92] tracking-[-0.065em] text-[#050A1F]">
+              <span className="block">Not a service provider.</span>
+              <span className="mt-2 block max-w-[640px] bg-gradient-to-r from-[#6B35F5] via-[#7C4DFF] to-[#3B82F6] bg-clip-text italic text-transparent">
                 An architect.
               </span>
             </h2>
-            <p className="mt-8 max-w-[700px] text-xl leading-relaxed text-[#536077]">
+            <p className="mt-8 max-w-[700px] text-[clamp(18px,1.6vw,24px)] leading-[1.45] text-[#536077]">
               We design the operating layer behind modern outsourcing — combining AI-ready systems, vetted talent, and human accountability so your team can scale without losing control.
             </p>
           </div>
