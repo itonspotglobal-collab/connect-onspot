@@ -1,0 +1,287 @@
+Refine the homepage “Work Differently” section.
+
+Current state:
+The new two gradient checklist cards look good, but the content alignment needs polish. The buttons are not visually aligned and centered consistently. I also want to bring back the mini icons/logos from the previous design to make the feature rows more visually representative.
+
+Goal:
+Keep the current two-card gradient design, but:
+1. Align all content consistently.
+2. Center and align both CTA buttons.
+3. Add mini icons to each checklist row.
+4. Keep the section compact enough to fit close to one screen.
+5. Do not change the wording/content.
+
+Do not change:
+- Work Differently headline
+- dark section background
+- card gradients
+- card content/copy
+- CTA links
+- other homepage sections
+- navigation
+- footer
+
+==================================================
+1. MAKE BOTH CARDS EQUAL HEIGHT
+==================================================
+
+The two cards should align perfectly.
+
+Update the grid/card layout:
+
+<div className="
+  mx-auto
+  mt-12
+  grid
+  max-w-[1120px]
+  gap-6
+  lg:grid-cols-2
+  lg:items-stretch
+">
+
+Each card should include:
+
+className="
+  relative
+  flex
+  h-full
+  flex-col
+  overflow-hidden
+  rounded-[30px]
+  border
+  border-white/18
+  p-7
+  text-white
+  shadow-[0_28px_80px_rgba(0,0,0,0.26)]
+  sm:p-8
+"
+
+Important:
+- Add `flex h-full flex-col` to both cards.
+- Both cards should have the same internal structure.
+
+==================================================
+2. ALIGN CARD CONTENT
+==================================================
+
+Inside each card, use this structure:
+
+<article className="... flex h-full flex-col ...">
+  <div className="relative z-10 flex h-full flex-col">
+    <div>
+      LABEL
+      TITLE
+      DESCRIPTION
+    </div>
+
+    <div className="mt-7 space-y-3">
+      CHECKLIST ROWS
+    </div>
+
+    <div className="mt-auto pt-7 flex justify-center">
+      CTA BUTTON
+    </div>
+  </div>
+</article>
+
+This is important:
+- `mt-auto` pushes both buttons to the bottom.
+- `flex justify-center` centers both buttons.
+- Both buttons should sit on the same horizontal baseline.
+
+==================================================
+3. CENTER CTA BUTTONS
+==================================================
+
+Change both card CTA buttons to be centered.
+
+Use this wrapper for both:
+
+<div className="mt-auto pt-7 flex justify-center">
+  <Link
+    href="..."
+    className="
+      inline-flex
+      h-12
+      min-w-[230px]
+      items-center
+      justify-center
+      gap-2
+      rounded-full
+      bg-white
+      px-6
+      text-sm
+      font-bold
+      text-[#2E3FA8]
+      shadow-[0_16px_34px_rgba(0,0,0,0.18)]
+      transition
+      hover:-translate-y-0.5
+      hover:shadow-[0_22px_44px_rgba(0,0,0,0.24)]
+    "
+  >
+    Find the right talent →
+  </Link>
+</div>
+
+For Professionals:
+- href should remain "/find-best-matches"
+- text should remain "Find your next opportunity →"
+- use the same `min-w-[230px]`
+- keep the same white button style so both buttons match.
+
+==================================================
+4. ADD MINI ICONS TO CHECKLIST ROWS
+==================================================
+
+Replace the small dot-only markers with the mini icons from the previous design.
+
+Companies card icons:
+- Hire in days: lightning icon
+- Hire your way: sliders/settings icon
+- No middlemen: arrow/right icon or users icon
+- 50+ countries: globe icon
+
+Professionals card icons:
+- Steady pipeline: trending-up icon
+- Top global brands: star icon
+- Your terms: clock icon
+- Zero gatekeeping: check-circle icon
+
+Use the existing icon library already used in the project, likely Lucide icons. Import only what is needed if not already imported:
+
+import {
+  Zap,
+  SlidersHorizontal,
+  ArrowRight,
+  Globe2,
+  TrendingUp,
+  Star,
+  Clock,
+  CheckCircle2
+} from "lucide-react";
+
+If these exact icons are already imported under slightly different names, reuse the existing imports.
+
+==================================================
+5. CHECKLIST ROW STYLE WITH ICON TILE
+==================================================
+
+Each checklist row should use this structure:
+
+<div className="
+  flex
+  items-start
+  gap-4
+  rounded-2xl
+  border
+  border-white/18
+  bg-white/10
+  px-5
+  py-4
+  backdrop-blur
+">
+  <div className="
+    flex
+    h-9
+    w-9
+    shrink-0
+    items-center
+    justify-center
+    rounded-xl
+    bg-white/14
+    text-[#6EF3F1]
+  ">
+    <Zap className="h-5 w-5" />
+  </div>
+
+  <div>
+    <h4 className="text-base font-bold leading-tight text-white">
+      Hire in days
+    </h4>
+    <p className="mt-1 text-sm leading-relaxed text-white/70">
+      72-hour match average
+    </p>
+  </div>
+</div>
+
+For Companies icon color:
+text-[#6EF3F1]
+
+For Professionals icon color:
+text-[#D7C9FF]
+
+Keep row text aligned left.
+
+==================================================
+6. MAKE HEADER AREA CONSISTENT
+==================================================
+
+Both card header text blocks should have the same spacing:
+
+Label:
+className="
+  mb-4
+  text-xs
+  font-bold
+  uppercase
+  tracking-[0.24em]
+  text-white/72
+"
+
+Title:
+className="
+  max-w-[460px]
+  text-[clamp(30px,3vw,44px)]
+  font-bold
+  leading-[1.02]
+  tracking-[-0.05em]
+  text-white
+"
+
+Description:
+className="
+  mt-4
+  max-w-[500px]
+  text-base
+  font-semibold
+  leading-relaxed
+  text-white/82
+"
+
+Important:
+- Keep descriptions aligned left.
+- Do not center all text in the cards.
+- Only center the CTA buttons.
+
+==================================================
+7. KEEP SECTION COMPACT
+==================================================
+
+Make sure this still fits close to one screen:
+
+Section padding:
+py-16 sm:py-20 lg:py-24
+
+Grid top margin:
+mt-10 or mt-12
+
+Card padding:
+p-7 sm:p-8
+
+Checklist row padding:
+px-5 py-4
+
+Do not add extra vertical spacing above or below the cards.
+
+==================================================
+8. FINAL CHECK
+==================================================
+
+After applying:
+- Both cards are equal height.
+- Checklist rows align consistently.
+- Mini icons appear in every checklist row.
+- Both CTA buttons are centered.
+- Both CTA buttons sit at the same vertical level.
+- The design still matches the current gradient-card style.
+- The section still feels compact and premium.

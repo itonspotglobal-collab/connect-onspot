@@ -518,31 +518,35 @@ export default function Home() {
           </div>
 
           {/* Two gradient checklist cards */}
-          <div className="mx-auto mt-12 grid max-w-[1120px] gap-6 lg:grid-cols-2">
+          <div className="mx-auto mt-12 grid max-w-[1120px] gap-6 lg:grid-cols-2 lg:items-stretch">
 
             {/* Card 1: For Companies */}
-            <article className="relative overflow-hidden rounded-[30px] border border-white/16 bg-[linear-gradient(135deg,#2B2578_0%,#2757B8_55%,#18A8D8_100%)] p-7 text-white shadow-[0_28px_80px_rgba(0,0,0,0.26)] sm:p-8">
+            <article className="relative flex h-full flex-col overflow-hidden rounded-[30px] border border-white/18 bg-[linear-gradient(135deg,#2B2578_0%,#2757B8_55%,#18A8D8_100%)] p-7 text-white shadow-[0_28px_80px_rgba(0,0,0,0.26)] sm:p-8">
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_34%)]" />
-              <div className="relative z-10">
-                <p className="mb-4 text-xs font-bold uppercase tracking-[0.24em] text-white/72">
-                  For Companies
-                </p>
-                <h3 className="max-w-[460px] text-[clamp(26px,2.8vw,40px)] font-bold leading-[1.02] tracking-[-0.05em] text-white">
-                  Hire faster. Spend less.
-                </h3>
-                <p className="mt-4 max-w-[500px] text-base leading-relaxed text-white/76">
-                  Build your team with direct access, flexible engagement models, and talent matched around how your work actually runs.
-                </p>
+              <div className="relative z-10 flex h-full flex-col">
+                <div>
+                  <p className="mb-4 text-xs font-bold uppercase tracking-[0.24em] text-white/72">
+                    For Companies
+                  </p>
+                  <h3 className="max-w-[460px] text-[clamp(30px,3vw,44px)] font-bold leading-[1.02] tracking-[-0.05em] text-white">
+                    Hire faster. Spend less.
+                  </h3>
+                  <p className="mt-4 max-w-[500px] text-base font-semibold leading-relaxed text-white/82">
+                    Build your team with direct access, flexible engagement models, and talent matched around how your work actually runs.
+                  </p>
+                </div>
 
                 <div className="mt-7 space-y-3">
                   {[
-                    { title: "Hire in days", sub: "72-hour match average" },
-                    { title: "Hire your way", sub: "Contract, project, full-time" },
-                    { title: "No middlemen", sub: "Direct access, zero markups" },
-                    { title: "50+ countries", sub: "Global reach, local expertise" },
+                    { icon: <Zap className="h-5 w-5" />, title: "Hire in days", sub: "72-hour match average" },
+                    { icon: <SlidersHorizontal className="h-5 w-5" />, title: "Hire your way", sub: "Contract, project, full-time" },
+                    { icon: <Users className="h-5 w-5" />, title: "No middlemen", sub: "Direct access, zero markups" },
+                    { icon: <Globe className="h-5 w-5" />, title: "50+ countries", sub: "Global reach, local expertise" },
                   ].map((item) => (
-                    <div key={item.title} className="flex items-start gap-4 rounded-2xl border border-white/14 bg-white/10 px-5 py-4 backdrop-blur">
-                      <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-[#6EF3F1] shadow-[0_0_18px_rgba(110,243,241,0.7)]" />
+                    <div key={item.title} className="flex items-start gap-4 rounded-2xl border border-white/18 bg-white/10 px-5 py-4 backdrop-blur">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/14 text-[#6EF3F1]">
+                        {item.icon}
+                      </div>
                       <div>
                         <h4 className="text-base font-bold leading-tight text-white">{item.title}</h4>
                         <p className="mt-1 text-sm leading-relaxed text-white/70">{item.sub}</p>
@@ -551,38 +555,44 @@ export default function Home() {
                   ))}
                 </div>
 
-                <Link
-                  href="/hire-talent"
-                  className="mt-7 inline-flex h-12 items-center justify-center gap-2 rounded-full bg-white px-6 text-sm font-bold text-[#2E3FA8] shadow-[0_16px_34px_rgba(0,0,0,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_44px_rgba(0,0,0,0.24)]"
-                >
-                  Find the right talent →
-                </Link>
+                <div className="mt-auto flex justify-center pt-7">
+                  <Link
+                    href="/hire-talent"
+                    className="inline-flex h-12 min-w-[230px] items-center justify-center gap-2 rounded-full bg-white px-6 text-sm font-bold text-[#2E3FA8] shadow-[0_16px_34px_rgba(0,0,0,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_44px_rgba(0,0,0,0.24)]"
+                  >
+                    Find the right talent →
+                  </Link>
+                </div>
               </div>
             </article>
 
             {/* Card 2: For Professionals */}
-            <article className="relative overflow-hidden rounded-[30px] border border-white/16 bg-[linear-gradient(135deg,#31245F_0%,#6B35F5_52%,#22B8B0_100%)] p-7 text-white shadow-[0_28px_80px_rgba(0,0,0,0.26)] sm:p-8">
+            <article className="relative flex h-full flex-col overflow-hidden rounded-[30px] border border-white/18 bg-[linear-gradient(135deg,#31245F_0%,#6B35F5_52%,#22B8B0_100%)] p-7 text-white shadow-[0_28px_80px_rgba(0,0,0,0.26)] sm:p-8">
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_34%)]" />
-              <div className="relative z-10">
-                <p className="mb-4 text-xs font-bold uppercase tracking-[0.24em] text-white/72">
-                  For Professionals
-                </p>
-                <h3 className="max-w-[460px] text-[clamp(26px,2.8vw,40px)] font-bold leading-[1.02] tracking-[-0.05em] text-white">
-                  Real work. Real growth.
-                </h3>
-                <p className="mt-4 max-w-[500px] text-base leading-relaxed text-white/76">
-                  Get matched with quality opportunities, steady pipelines, and flexible work that respects your terms.
-                </p>
+              <div className="relative z-10 flex h-full flex-col">
+                <div>
+                  <p className="mb-4 text-xs font-bold uppercase tracking-[0.24em] text-white/72">
+                    For Professionals
+                  </p>
+                  <h3 className="max-w-[460px] text-[clamp(30px,3vw,44px)] font-bold leading-[1.02] tracking-[-0.05em] text-white">
+                    Real work. Real growth.
+                  </h3>
+                  <p className="mt-4 max-w-[500px] text-base font-semibold leading-relaxed text-white/82">
+                    Get matched with quality opportunities, steady pipelines, and flexible work that respects your terms.
+                  </p>
+                </div>
 
                 <div className="mt-7 space-y-3">
                   {[
-                    { title: "Steady pipeline", sub: "No gaps, no chasing" },
-                    { title: "Top global brands", sub: "Builds your reputation fast" },
-                    { title: "Your terms", sub: "Remote, flexible schedule" },
-                    { title: "Zero gatekeeping", sub: "Pure merit, open access" },
+                    { icon: <TrendingUp className="h-5 w-5" />, title: "Steady pipeline", sub: "No gaps, no chasing" },
+                    { icon: <Star className="h-5 w-5" />, title: "Top global brands", sub: "Builds your reputation fast" },
+                    { icon: <Clock className="h-5 w-5" />, title: "Your terms", sub: "Remote, flexible schedule" },
+                    { icon: <CheckCircle2 className="h-5 w-5" />, title: "Zero gatekeeping", sub: "Pure merit, open access" },
                   ].map((item) => (
-                    <div key={item.title} className="flex items-start gap-4 rounded-2xl border border-white/14 bg-white/10 px-5 py-4 backdrop-blur">
-                      <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-[#C8B8FF] shadow-[0_0_18px_rgba(200,184,255,0.65)]" />
+                    <div key={item.title} className="flex items-start gap-4 rounded-2xl border border-white/18 bg-white/10 px-5 py-4 backdrop-blur">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/14 text-[#D7C9FF]">
+                        {item.icon}
+                      </div>
                       <div>
                         <h4 className="text-base font-bold leading-tight text-white">{item.title}</h4>
                         <p className="mt-1 text-sm leading-relaxed text-white/70">{item.sub}</p>
@@ -591,12 +601,14 @@ export default function Home() {
                   ))}
                 </div>
 
-                <Link
-                  href="/find-best-matches"
-                  className="mt-7 inline-flex h-12 items-center justify-center gap-2 rounded-full bg-white px-6 text-sm font-bold text-[#4B35A8] shadow-[0_16px_34px_rgba(0,0,0,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_44px_rgba(0,0,0,0.24)]"
-                >
-                  Find your next opportunity →
-                </Link>
+                <div className="mt-auto flex justify-center pt-7">
+                  <Link
+                    href="/find-best-matches"
+                    className="inline-flex h-12 min-w-[230px] items-center justify-center gap-2 rounded-full bg-white px-6 text-sm font-bold text-[#4B35A8] shadow-[0_16px_34px_rgba(0,0,0,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_44px_rgba(0,0,0,0.24)]"
+                  >
+                    Find your next opportunity →
+                  </Link>
+                </div>
               </div>
             </article>
 
